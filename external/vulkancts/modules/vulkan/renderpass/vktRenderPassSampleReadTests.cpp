@@ -496,9 +496,9 @@ void beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCommandBuffer secCmdBu
     const VkCommandBufferInheritanceInfo bufferInheritanceInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
         &inheritanceRenderingInfo,                         // const void* pNext;
-        DE_NULL,                                           // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                    // VkRenderPass renderPass;
         0u,                                                // uint32_t subpass;
-        DE_NULL,                                           // VkFramebuffer framebuffer;
+        VK_NULL_HANDLE,                                    // VkFramebuffer framebuffer;
         VK_FALSE,                                          // VkBool32 occlusionQueryEnable;
         (VkQueryControlFlags)0u,                           // VkQueryControlFlags queryFlags;
         (VkQueryPipelineStatisticFlags)0u                  // VkQueryPipelineStatisticFlags pipelineStatistics;
@@ -763,7 +763,7 @@ tcu::TestStatus SampleReadTestInstance::iterateInternalDynamicRendering()
             *m_srcImageView,                             // VkImageView                imageView
             m_srcInputImageReadLayout,                   // VkImageLayout            imageLayout
             VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits    resolveMode
-            DE_NULL,                                     // VkImageView                resolveImageView
+            VK_NULL_HANDLE,                              // VkImageView                resolveImageView
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,    // VkImageLayout            resolveImageLayout
             VK_ATTACHMENT_LOAD_OP_DONT_CARE,             // VkAttachmentLoadOp        loadOp
             VK_ATTACHMENT_STORE_OP_DONT_CARE,            // VkAttachmentStoreOp        storeOp

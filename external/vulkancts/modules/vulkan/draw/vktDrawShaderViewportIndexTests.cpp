@@ -328,7 +328,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         pipelineLayout,                   // VkPipelineLayout layout;
         renderPass,                       // VkRenderPass renderPass;
         0u,                               // uint32_t subpass;
-        DE_NULL,                          // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                   // VkPipeline basePipelineHandle;
         0,                                // int32_t basePipelineIndex;
     };
 
@@ -347,7 +347,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         graphicsPipelineInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-    return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
+    return createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineInfo);
 }
 
 std::vector<UVec4> generateGrid(const int numCells, const UVec2 &renderSize)

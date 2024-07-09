@@ -350,9 +350,9 @@ tcu::TestStatus drawTriangleTest(Context &context, DrawTriangleMode mode)
         device,                               // const VkDevice                                device
         *pipelineLayout,                      // const VkPipelineLayout                        pipelineLayout
         *vertexShaderModule,                  // const VkShaderModule                          vertexShaderModule
-        DE_NULL,                              // const VkShaderModule                          tessellationControlModule
-        DE_NULL,                              // const VkShaderModule                          tessellationEvalModule
-        DE_NULL,                              // const VkShaderModule                          geometryShaderModule
+        VK_NULL_HANDLE,                       // const VkShaderModule                          tessellationControlModule
+        VK_NULL_HANDLE,                       // const VkShaderModule                          tessellationEvalModule
+        VK_NULL_HANDLE,                       // const VkShaderModule                          geometryShaderModule
         *fragmentShaderModule,                // const VkShaderModule                          fragmentShaderModule
         renderPassUsedForPipeline,            // const VkRenderPass                            renderPass
         viewports,                            // const std::vector<VkViewport>&                viewports
@@ -821,7 +821,7 @@ Move<VkPipeline> createSimpleGraphicsPipeline(const DeviceInterface &vk, const V
         pipelineLayout,                // VkPipelineLayout                                 layout;
         renderPass,                    // VkRenderPass                                     renderPass;
         0u,                            // uint32_t                                         subpass;
-        DE_NULL,                       // VkPipeline                                       basePipelineHandle;
+        VK_NULL_HANDLE,                // VkPipeline                                       basePipelineHandle;
         0                              // int                                              basePipelineIndex;
     };
 
@@ -1119,11 +1119,11 @@ tcu::TestStatus pipelineLayoutLifetimeTest(Context &context, VkPipelineBindPoint
             (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags              flags
             shaderStageCreateInfo,                          // VkPipelineShaderStageCreateInfo    stage
             pipelineLayoutB,                                // VkPipelineLayout                   layout
-            DE_NULL,                                        // VkPipeline                         basePipelineHandle
+            VK_NULL_HANDLE,                                 // VkPipeline                         basePipelineHandle
             0                                               // int                                basePipelineIndex
         };
 
-        pipeline = createComputePipeline(vk, device, DE_NULL, &computePipelineCreateInfo);
+        pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &computePipelineCreateInfo);
     }
 
     if (isGraphics)
@@ -1334,11 +1334,11 @@ tcu::TestStatus destroyEarlyTest(Context &context, DestroyPipelineLayoutMode mod
         0u,                                                 // VkPipelineCreateFlags flags;
         shaderInfo,                                         // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout.get(),                               // VkPipelineLayout layout;
-        DE_NULL,                                            // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                     // VkPipeline basePipelineHandle;
         0,                                                  // int32_t basePipelineIndex;
     };
 
-    const auto pipeline = vk::createComputePipeline(vkd, device, DE_NULL, &pipelineInfo);
+    const auto pipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineInfo);
 
     // Delete pipeline layout just after creating pipeline - this is what the test is for
     if (DPLM_DESTROY_AFTER_CREATE_COMPUTE_PIPELINES == mode)
@@ -1494,7 +1494,7 @@ Move<VkPipeline> createSimpleGraphicsPipelineInvalidPointers(
         pipelineLayout,     // VkPipelineLayout                                 layout;
         renderPass,         // VkRenderPass                                     renderPass;
         0u,                 // uint32_t                                         subpass;
-        DE_NULL,            // VkPipeline                                       basePipelineHandle;
+        VK_NULL_HANDLE,     // VkPipeline                                       basePipelineHandle;
         0                   // int                                              basePipelineIndex;
     };
 
@@ -1651,11 +1651,11 @@ tcu::TestStatus pipelineInvalidPointersUnusedStructsTest(Context &context, VkPip
             (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags              flags
             shaderStageCreateInfo,                          // VkPipelineShaderStageCreateInfo    stage
             *pipelineLayout,                                // VkPipelineLayout                   layout
-            DE_NULL,                                        // VkPipeline                         basePipelineHandle
+            VK_NULL_HANDLE,                                 // VkPipeline                         basePipelineHandle
             0                                               // int                                basePipelineIndex
         };
 
-        pipeline = createComputePipeline(vk, device, DE_NULL, &computePipelineCreateInfo);
+        pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &computePipelineCreateInfo);
     }
 
     if (isGraphics)

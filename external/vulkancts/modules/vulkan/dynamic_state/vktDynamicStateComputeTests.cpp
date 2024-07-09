@@ -1068,10 +1068,10 @@ tcu::TestStatus DynamicStateComputeInstance::iterateCompute(void)
         0u,                                             // VkPipelineCreateFlags flags;
         shaderStageInfo,                                // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout.get(),                           // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
-    const auto pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineInfo);
+    const auto pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineInfo);
 
     DE_ASSERT(!m_params.states.empty());
 

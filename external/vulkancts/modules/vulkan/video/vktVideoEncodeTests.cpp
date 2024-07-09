@@ -2423,6 +2423,7 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_video_queue");
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
+    context.requireDeviceFunctionality("VK_KHR_video_encode_queue");
 
     switch (m_testDefinition->getTestType())
     {
@@ -2441,6 +2442,7 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
         break;
     case TEST_TYPE_H264_ENCODE_INLINE_QUERY:
     case TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
         context.requireDeviceFunctionality("VK_KHR_video_maintenance1");
         break;
     case TEST_TYPE_H265_ENCODE_I:
@@ -2458,6 +2460,7 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
         break;
     case TEST_TYPE_H265_ENCODE_INLINE_QUERY:
     case TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
         context.requireDeviceFunctionality("VK_KHR_video_maintenance1");
         break;
     default:

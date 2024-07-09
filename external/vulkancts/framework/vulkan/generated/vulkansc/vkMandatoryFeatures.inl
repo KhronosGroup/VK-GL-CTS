@@ -16,7 +16,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 
 	VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
 	const InstanceInterface&			vki					= context.getInstanceInterface();
-	const vector<VkExtensionProperties>	deviceExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const vector<VkExtensionProperties>	deviceExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 	const uint32_t						usedApiVersion		= context.getUsedApiVersion();
 
 	tcu::TestLog& log = context.getTestContext().getLog();
@@ -135,6 +135,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR physicalDeviceGlobalPriorityQueryFeaturesKHR;
+	deMemset(&physicalDeviceGlobalPriorityQueryFeaturesKHR, 0, sizeof(physicalDeviceGlobalPriorityQueryFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_global_priority") )
+	{
+		physicalDeviceGlobalPriorityQueryFeaturesKHR.sType = getStructureType<VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR>();
+		*nextPtr = &physicalDeviceGlobalPriorityQueryFeaturesKHR;
+		nextPtr  = &physicalDeviceGlobalPriorityQueryFeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceHostQueryResetFeatures physicalDeviceHostQueryResetFeatures;
 	deMemset(&physicalDeviceHostQueryResetFeatures, 0, sizeof(physicalDeviceHostQueryResetFeatures));
 
@@ -156,7 +166,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceIndexTypeUint8FeaturesKHR physicalDeviceIndexTypeUint8FeaturesKHR;
 	deMemset(&physicalDeviceIndexTypeUint8FeaturesKHR, 0, sizeof(physicalDeviceIndexTypeUint8FeaturesKHR));
 
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_index_type_uint8") )
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_index_type_uint8") || canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_index_type_uint8") )
 	{
 		physicalDeviceIndexTypeUint8FeaturesKHR.sType = getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesKHR>();
 		*nextPtr = &physicalDeviceIndexTypeUint8FeaturesKHR;
@@ -166,7 +176,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceLineRasterizationFeaturesKHR physicalDeviceLineRasterizationFeaturesKHR;
 	deMemset(&physicalDeviceLineRasterizationFeaturesKHR, 0, sizeof(physicalDeviceLineRasterizationFeaturesKHR));
 
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_line_rasterization") )
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_line_rasterization") || canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_line_rasterization") )
 	{
 		physicalDeviceLineRasterizationFeaturesKHR.sType = getStructureType<VkPhysicalDeviceLineRasterizationFeaturesKHR>();
 		*nextPtr = &physicalDeviceLineRasterizationFeaturesKHR;
@@ -368,7 +378,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR physicalDeviceVertexAttributeDivisorFeaturesKHR;
 	deMemset(&physicalDeviceVertexAttributeDivisorFeaturesKHR, 0, sizeof(physicalDeviceVertexAttributeDivisorFeaturesKHR));
 
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_vertex_attribute_divisor") )
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_vertex_attribute_divisor") )
 	{
 		physicalDeviceVertexAttributeDivisorFeaturesKHR.sType = getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR>();
 		*nextPtr = &physicalDeviceVertexAttributeDivisorFeaturesKHR;
@@ -1007,6 +1017,24 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature bufferDeviceAddress not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_global_priority_query")) )
+	{
+		if ( physicalDeviceGlobalPriorityQueryFeaturesKHR.globalPriorityQuery == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature globalPriorityQuery not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_global_priority")) )
+	{
+		if ( physicalDeviceGlobalPriorityQueryFeaturesKHR.globalPriorityQuery == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature globalPriorityQuery not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

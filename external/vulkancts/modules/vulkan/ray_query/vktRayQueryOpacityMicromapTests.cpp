@@ -475,10 +475,10 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         device,                         // const VkDevice                                    device
         pipelineLayout,                 // const VkPipelineLayout                            pipelineLayout
         vertexModule,                   // const VkShaderModule                                vertexShaderModule
-        DE_NULL,                        // const VkShaderModule                                tessellationControlModule
-        DE_NULL,                        // const VkShaderModule                                tessellationEvalModule
-        DE_NULL,                        // const VkShaderModule                                geometryShaderModule
-        DE_NULL,                        // const VkShaderModule                                fragmentShaderModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                tessellationControlModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                tessellationEvalModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                geometryShaderModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                fragmentShaderModule
         renderPass,                     // const VkRenderPass                                renderPass
         subpass,                        // const uint32_t                                    subpass
         &vertexInputStateCreateInfo,    // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
@@ -584,7 +584,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
         VK_MICROMAP_TYPE_OPACITY_MICROMAP_EXT,     // VkMicromapTypeEXT type;
         0,                                         // VkBuildMicromapFlagsEXT flags;
         VK_BUILD_MICROMAP_MODE_BUILD_EXT,          // VkBuildMicromapModeEXT mode;
-        DE_NULL,                                   // VkMicromapEXT dstMicromap;
+        VK_NULL_HANDLE,                            // VkMicromapEXT dstMicromap;
         1,                                         // uint32_t usageCountsCount;
         &mmUsage,                                  // const VkMicromapUsageEXT* pUsageCounts;
         DE_NULL,                                   // const VkMicromapUsageEXT* const* ppUsageCounts;
@@ -991,10 +991,10 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
             0u,                                             // VkPipelineCreateFlags flags;
             shaderInfo,                                     // VkPipelineShaderStageCreateInfo stage;
             pipelineLayout.get(),                           // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
-        pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineInfo);
+        pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineInfo);
 
         // Dispatch work with ray queries.
         vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get());

@@ -1461,7 +1461,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
         DE_NULL,                                  // const void* pNext;
         (VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags  flags;
-        DE_NULL,                                  // VkImage image;
+        VK_NULL_HANDLE,                           // VkImage image;
         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
         imageFormat,                              // VkFormat format;
         {
@@ -1520,7 +1520,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
         imageViewCreateInfo.image = **images[i];
         imageViews[i]             = createImageView(vk, device, &imageViewCreateInfo, NULL);
 
-        imageDescriptors[i] = makeDescriptorImageInfo(DE_NULL, *imageViews[i], VK_IMAGE_LAYOUT_GENERAL);
+        imageDescriptors[i] = makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViews[i], VK_IMAGE_LAYOUT_GENERAL);
     }
 
     vk::DescriptorSetLayoutBuilder layoutBuilder;
@@ -1657,7 +1657,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
             (vk::VkPipeline)0, // basePipelineHandle
             0u,                // basePipelineIndex
         };
-        pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+        pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
     }
     else
     {
@@ -1814,11 +1814,11 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
             pipelineLayout.get(),          // VkPipelineLayout layout;
             renderPass.get(),              // VkRenderPass renderPass;
             0u,                            // uint32_t subpass;
-            DE_NULL,                       // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                // VkPipeline basePipelineHandle;
             0                              // int basePipelineIndex;
         };
 
-        pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+        pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
     const VkQueue queue             = m_context.getUniversalQueue();

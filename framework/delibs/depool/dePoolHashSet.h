@@ -77,9 +77,9 @@ DE_END_EXTERN_C
     {                                                                                                                 \
         DE_PTR_TYPE(TYPENAME) hashSet = DE_POOL_NEW(pool, TYPENAME);                                                  \
         if (!hashSet)                                                                                                 \
-            return DE_NULL;                                                                                           \
-        if ((hashSet->hash = TYPENAME##Hash_create(pool)) == DE_NULL)                                                 \
-            return DE_NULL;                                                                                           \
+            return NULL;                                                                                              \
+        if ((hashSet->hash = TYPENAME##Hash_create(pool)) == NULL)                                                    \
+            return NULL;                                                                                              \
         return hashSet;                                                                                               \
     }                                                                                                                 \
                                                                                                                       \
@@ -96,7 +96,7 @@ DE_END_EXTERN_C
     DE_INLINE bool TYPENAME##_insert(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)                     \
     {                                                                                                                 \
         TYPENAME##Set **setPtr = TYPENAME##Hash_find(hashSet->hash, key);                                             \
-        TYPENAME##Set *set     = setPtr ? *setPtr : DE_NULL;                                                          \
+        TYPENAME##Set *set     = setPtr ? *setPtr : NULL;                                                             \
         if (!set)                                                                                                     \
         {                                                                                                             \
             set = TYPENAME##Set_create(hashSet->hash->pool);                                                          \
@@ -115,7 +115,7 @@ DE_END_EXTERN_C
     DE_INLINE bool TYPENAME##_safeInsert(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)                 \
     {                                                                                                                 \
         TYPENAME##Set **setPtr = TYPENAME##Hash_find(hashSet->hash, key);                                             \
-        TYPENAME##Set *set     = setPtr ? *setPtr : DE_NULL;                                                          \
+        TYPENAME##Set *set     = setPtr ? *setPtr : NULL;                                                             \
         if (!set)                                                                                                     \
         {                                                                                                             \
             return TYPENAME##_insert(hashSet, key, value);                                                            \
@@ -129,7 +129,7 @@ DE_END_EXTERN_C
     DE_INLINE TYPENAME##Set *TYPENAME##_find(const TYPENAME *hashSet, KEYTYPE key)                                    \
     {                                                                                                                 \
         TYPENAME##Set **setPtr = TYPENAME##Hash_find(hashSet->hash, key);                                             \
-        return setPtr ? *setPtr : DE_NULL;                                                                            \
+        return setPtr ? *setPtr : NULL;                                                                               \
     }                                                                                                                 \
                                                                                                                       \
     DE_INLINE void TYPENAME##_delete(DE_PTR_TYPE(TYPENAME) hashSet, KEYTYPE key, VALUETYPE value)                     \

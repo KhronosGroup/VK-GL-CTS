@@ -503,7 +503,7 @@ void createGraphicsPipelines(const DeviceInterface &vkd, const VkDevice device, 
             pipelineLayout,                // VkPipelineLayout                                 layout;
             renderPass,                    // VkRenderPass                                     renderPass;
             0u,                            // uint32_t                                         subpass;
-            DE_NULL,                       // VkPipeline                                       basePipelineHandle;
+            VK_NULL_HANDLE,                // VkPipeline                                       basePipelineHandle;
             0                              // int                                              basePipelineIndex;
         };
 
@@ -1852,7 +1852,7 @@ public:
         {
             std::vector<Move<VkPipeline>> pipelines;
             for (uint32_t i = 0; i < pipelineCount; ++i)
-                pipelines.emplace_back(createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo));
+                pipelines.emplace_back(createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo));
             return;
         }
 

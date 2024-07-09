@@ -50,10 +50,10 @@ public:
 
     const char *getTestNamePostfix(void) const;
 
-    virtual void verifyBoolean(tcu::TestContext &testCtx, GLenum name, bool reference) = DE_NULL;
+    virtual void verifyBoolean(tcu::TestContext &testCtx, GLenum name, bool reference) = 0;
     virtual void verifyBoolean4(tcu::TestContext &testCtx, GLenum name, bool reference0, bool reference1,
-                                bool reference2, bool reference3)                      = DE_NULL;
-    virtual void verifyBooleanAnything(tcu::TestContext &testCtx, GLenum name)         = DE_NULL;
+                                bool reference2, bool reference3)                      = 0;
+    virtual void verifyBooleanAnything(tcu::TestContext &testCtx, GLenum name)         = 0;
 
 private:
     const char *const m_testNamePostfix;

@@ -1977,8 +1977,8 @@ tcu::TestStatus DataSpillTestInstance::iterate(void)
             std::vector<VkDescriptorImageInfo> combinedSamplerInfos;
 
             for (size_t i = 0; i < kNumAloneImages; ++i)
-                textureDescInfos.push_back(
-                    makeDescriptorImageInfo(DE_NULL, textureViews[i].get(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+                textureDescInfos.push_back(makeDescriptorImageInfo(VK_NULL_HANDLE, textureViews[i].get(),
+                                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
             for (size_t i = 0; i < kNumAloneSamplers; ++i)
                 textureSamplerInfos.push_back(
                     makeDescriptorImageInfo(samplers[i].get(), DE_NULL, VK_IMAGE_LAYOUT_UNDEFINED));
@@ -1999,7 +1999,7 @@ tcu::TestStatus DataSpillTestInstance::iterate(void)
         else if (storageImageNeeded(m_params.dataType))
         {
             const auto storageImageDescriptorInfo =
-                makeDescriptorImageInfo(DE_NULL, textureViews.back().get(), VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, textureViews.back().get(), VK_IMAGE_LAYOUT_GENERAL);
             updateBuilder.writeSingle(ds, DescriptorSetUpdateBuilder::Location::binding(4u),
                                       VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &storageImageDescriptorInfo);
         }

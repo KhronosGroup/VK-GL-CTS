@@ -64,7 +64,7 @@ Move<VkPipeline> makeComputePipeline(const DeviceInterface &vk, const VkDevice d
         pipelineFlags,                                  // VkPipelineCreateFlags flags;
         pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout,                                 // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
     return createComputePipeline(vk, device, pipelineCache, &pipelineCreateInfo);
@@ -171,7 +171,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         DE_NULL,                                             // const void*                         pNext
         0u,                                                  // VkPipelineShaderStageCreateFlags    flags
         VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits               stage
-        DE_NULL,                                             // VkShaderModule                      module
+        VK_NULL_HANDLE,                                      // VkShaderModule                      module
         "main",                                              // const char*                         pName
         DE_NULL                                              // const VkSpecializationInfo*         pSpecializationInfo
     };
@@ -364,11 +364,11 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         pipelineLayout,                   // VkPipelineLayout                                 layout
         renderPass,                       // VkRenderPass                                     renderPass
         subpass,                          // uint32_t                                         subpass
-        DE_NULL,                          // VkPipeline                                       basePipelineHandle
+        VK_NULL_HANDLE,                   // VkPipeline                                       basePipelineHandle
         0                                 // int32_t                                          basePipelineIndex;
     };
 
-    return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    return createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 #ifndef CTS_USES_VULKANSC
@@ -389,7 +389,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         nullptr,                                             // const void*                         pNext
         0u,                                                  // VkPipelineShaderStageCreateFlags    flags
         VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits               stage
-        DE_NULL,                                             // VkShaderModule                      module
+        VK_NULL_HANDLE,                                      // VkShaderModule                      module
         "main",                                              // const char*                         pName
         nullptr                                              // const VkSpecializationInfo*         pSpecializationInfo
     };
@@ -524,7 +524,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         -1                                    // int32_t                                          basePipelineIndex;
     };
 
-    return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    return createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice device, const VkFormat colorFormat,

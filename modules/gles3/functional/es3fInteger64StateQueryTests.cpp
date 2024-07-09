@@ -52,8 +52,7 @@ public:
 
     const char *getTestNamePostfix(void) const;
 
-    virtual void verifyUnsignedInteger64GreaterOrEqual(tcu::TestContext &testCtx, GLenum name,
-                                                       GLuint64 reference) = DE_NULL;
+    virtual void verifyUnsignedInteger64GreaterOrEqual(tcu::TestContext &testCtx, GLenum name, GLuint64 reference) = 0;
 
 private:
     const char *const m_testNamePostfix;

@@ -256,9 +256,9 @@ void beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCommandBuffer secCmdBu
     const VkCommandBufferInheritanceInfo bufferInheritanceInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
         &inheritanceRenderingInfo,                         // const void* pNext;
-        DE_NULL,                                           // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                    // VkRenderPass renderPass;
         0u,                                                // uint32_t subpass;
-        DE_NULL,                                           // VkFramebuffer framebuffer;
+        VK_NULL_HANDLE,                                    // VkFramebuffer framebuffer;
         VK_FALSE,                                          // VkBool32 occlusionQueryEnable;
         (VkQueryControlFlags)0u,                           // VkQueryControlFlags queryFlags;
         (VkQueryPipelineStatisticFlags)0u                  // VkQueryPipelineStatisticFlags pipelineStatistics;
@@ -740,7 +740,7 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance(Context &context, con
         m_descriptorSetSubpass1 = allocateDescriptorSet(vk, vkDevice, &descriptorSetAllocateInfo);
 
         const VkDescriptorImageInfo inputImageInfo = {
-            DE_NULL,                // VkSampleri sampler;
+            VK_NULL_HANDLE,         // VkSampler sampler;
             *m_inputAttachmentView, // VkImageView imageView;
             m_inputImageReadLayout  // VkImageLayout imageLayout;
         };
@@ -982,7 +982,7 @@ void UnusedAttachmentTestInstance::createCommandBufferDynamicRendering(const Dev
             *m_colorAttachmentView,                        // VkImageView imageView;
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,      // VkImageLayout imageLayout;
             VK_RESOLVE_MODE_NONE,                          // VkResolveModeFlagBits resolveMode;
-            DE_NULL,                                       // VkImageView resolveImageView;
+            VK_NULL_HANDLE,                                // VkImageView resolveImageView;
             VK_IMAGE_LAYOUT_UNDEFINED,                     // VkImageLayout resolveImageLayout;
             VK_ATTACHMENT_LOAD_OP_CLEAR,                   // VkAttachmentLoadOp loadOp;
             VK_ATTACHMENT_STORE_OP_STORE,                  // VkAttachmentStoreOp storeOp;

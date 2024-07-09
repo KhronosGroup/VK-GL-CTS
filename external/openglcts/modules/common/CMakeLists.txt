@@ -115,6 +115,8 @@ set(GLCTS_COMMON_SRCS
 	glcTextureLodBasicTests.hpp
 	glcTextureRepeatModeTests.cpp
 	glcTextureRepeatModeTests.hpp
+	glcTransformFeedbackTests.cpp
+	glcTransformFeedbackTests.hpp
 	glcUniformBlockCase.cpp
 	glcUniformBlockCase.hpp
 	glcUniformBlockTests.cpp

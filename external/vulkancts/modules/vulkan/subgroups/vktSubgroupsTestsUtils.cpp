@@ -242,7 +242,7 @@ Move<VkPipeline> makeGraphicsPipeline(
         DE_NULL,                                             // const void*                         pNext
         0u,                                                  // VkPipelineShaderStageCreateFlags    flags
         VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits               stage
-        DE_NULL,                                             // VkShaderModule                      module
+        VK_NULL_HANDLE,                                      // VkShaderModule                      module
         "main",                                              // const char*                         pName
         DE_NULL                                              // const VkSpecializationInfo*         pSpecializationInfo
     };
@@ -505,11 +505,11 @@ Move<VkPipeline> makeGraphicsPipeline(
         pipelineLayout,                       // VkPipelineLayout                                 layout
         renderPass,                           // VkRenderPass                                     renderPass
         subpass,                              // uint32_t                                         subpass
-        DE_NULL,                              // VkPipeline                                       basePipelineHandle
+        VK_NULL_HANDLE,                       // VkPipeline                                       basePipelineHandle
         0                                     // int32_t                                          basePipelineIndex;
     };
 
-    return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    return createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 Move<VkPipeline> makeGraphicsPipeline(
@@ -3904,13 +3904,14 @@ Move<VkPipeline> makeComputePipeline(Context &context, const VkPipelineLayout pi
         basePipelineHandle, // VkPipeline basePipelineHandle;
         -1,                 // int32_t basePipelineIndex;
 #else
-        DE_NULL, // VkPipeline basePipelineHandle;
-        0,       // int32_t basePipelineIndex;
+        VK_NULL_HANDLE, // VkPipeline basePipelineHandle;
+        0,              // int32_t basePipelineIndex;
 #endif // CTS_USES_VULKANSC
     };
     static_cast<void>(basePipelineHandle);
 
-    return createComputePipeline(context.getDeviceInterface(), context.getDevice(), DE_NULL, &pipelineCreateInfo);
+    return createComputePipeline(context.getDeviceInterface(), context.getDevice(), VK_NULL_HANDLE,
+                                 &pipelineCreateInfo);
 }
 
 #ifndef CTS_USES_VULKANSC
@@ -3945,7 +3946,7 @@ Move<VkPipeline> makeMeshPipeline(Context &context, const VkPipelineLayout pipel
         nullptr,                                             // const void* pNext;
         pipelineShaderStageFlags,                            // VkPipelineShaderStageCreateFlags flags;
         VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,                  // VkShaderStageFlagBits stage;
-        DE_NULL,                                             // VkShaderModule module;
+        VK_NULL_HANDLE,                                      // VkShaderModule module;
         "main",                                              // const char* pName;
         &info,                                               // const VkSpecializationInfo* pSpecializationInfo;
     };
@@ -3989,7 +3990,7 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
         context.getSubgroupSizeControlProperties();
 #else
     const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-        context.getSubgroupSizeControlPropertiesEXT();
+        context.getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
     const VkDeviceSize elementSize     = getFormatSizeInBytes(format);
     const VkDeviceSize maxSubgroupSize = isRequiredSubgroupSize ? deMax32(subgroupSizeControlProperties.maxSubgroupSize,

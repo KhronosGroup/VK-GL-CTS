@@ -47,12 +47,14 @@
 #include "tcuMatrix.hpp"
 #include "tcuResultCollector.hpp"
 #include "tcuMaybe.hpp"
+#include "tcuFloat.hpp"
 
 #include "gluContextInfo.hpp"
 #include "gluVarType.hpp"
 #include "gluRenderContext.hpp"
 #include "glwDefs.hpp"
 
+#include <cstdint>
 #include <cmath>
 #include <string>
 #include <sstream>
@@ -60,9 +62,11 @@
 #include <map>
 #include <utility>
 #include <limits>
+#include <tuple>
+#include <valarray>
 
 // Uncomment this to get evaluation trace dumps to std::cerr
-// #define GLS_ENABLE_TRACE
+//#define GLS_ENABLE_TRACE
 
 // set this to true to dump even passing results
 #define GLS_LOG_ALL_RESULTS false
@@ -118,6 +122,7 @@ using tcu::FloatFormat;
 using tcu::Interval;
 using tcu::Matrix;
 using tcu::MessageBuilder;
+using tcu::TestContext;
 using tcu::TestLog;
 using tcu::Vector;
 
@@ -532,6 +537,60 @@ bool intervalContains(const Interval &interval, T value, const tcu::Maybe<U> &mo
     return interval.contains(value);
 }
 
+template <class T>
+struct FloatTypeSelector;
+template <>
+struct FloatTypeSelector<int>
+{
+    typedef tcu::Float64 type;
+    static type instance(const int &value)
+    {
+        return tcu::Float64(double(value));
+    }
+};
+template <>
+struct FloatTypeSelector<deFloat16>
+{
+    typedef tcu::Float16 type;
+    static type instance(const deFloat16 &value)
+    {
+        return tcu::Float16(value);
+    }
+    template <class F>
+    static deFloat16 conv(const F &f)
+    {
+        return f.bits();
+    }
+};
+template <>
+struct FloatTypeSelector<float>
+{
+    typedef tcu::Float32 type;
+    static type instance(const float &value)
+    {
+        return tcu::Float32(value);
+    }
+    template <class F>
+    static float conv(const F &f)
+    {
+        return f.asFloat();
+    }
+};
+template <>
+struct FloatTypeSelector<double>
+{
+    typedef tcu::Float64 type;
+    static type instance(const double &value)
+    {
+        return tcu::Float64(value);
+    }
+    template <class F>
+    static double conv(const F &f)
+    {
+        return f.asDouble();
+    }
+};
+
 //! Common traits for scalar types.
 template <typename T>
 struct ScalarTraits
@@ -572,12 +631,14 @@ struct ScalarTraits
     }
 };
 
+typedef typename tcu::Float16::StorageType Float16Storage;
+
 template <>
-struct ScalarTraits<uint16_t>
+struct ScalarTraits<Float16Storage>
 {
     typedef Interval IVal;
 
-    static Interval doMakeIVal(const uint16_t &value)
+    static Interval doMakeIVal(const Float16Storage &value)
     {
         // Thankfully all scalar types have a well-defined conversion to `double`,
         // hence Interval can represent their ranges without problems.
@@ -594,7 +655,7 @@ struct ScalarTraits<uint16_t>
         return fmt.convert(ival);
     }
 
-    static Interval doRound(const FloatFormat &fmt, uint16_t value)
+    static Interval doRound(const FloatFormat &fmt, Float16Storage value)
     {
         return fmt.roundOut(double(deFloat16To32(value)), false);
     }
@@ -1001,6 +1062,93 @@ struct Traits<Void>
     }
 };
 
+template <class GenType>
+struct IntervalWriter
+{
+    IntervalWriter(const Interval &interval) : m_interval(interval)
+    {
+    }
+
+    void writeInterval(const Interval &interval, std::ostream &stream) const
+    {
+        std::ostringstream os;
+
+        if (interval.empty())
+            os << (interval.hasNaN() ? "{ NaN }" : "{}");
+
+        else if (interval == Interval::unbounded(true))
+            os << "<any>";
+
+        else if (interval.lo() == interval.hi())
+        {
+            const auto lo = FloatTypeSelector<GenType>::type::template convert(tcu::Float64(interval.lo()));
+            os << '{';
+            void(lo.isDenorm() ? (os << std::hexfloat << interval.lo() << std::defaultfloat) : (os << interval.lo()));
+            os << '}';
+        }
+        else
+        {
+            const auto lo = FloatTypeSelector<GenType>::type::template convert(tcu::Float64(interval.lo()));
+            const auto hi = FloatTypeSelector<GenType>::type::template convert(tcu::Float64(interval.hi()));
+
+            os << '[';
+            void(lo.isDenorm() ? (os << std::hexfloat << interval.lo() << std::defaultfloat) : (os << interval.lo()));
+            os << ", ";
+            void(hi.isDenorm() ? (os << std::hexfloat << interval.hi() << std::defaultfloat) : (os << interval.hi()));
+            os << ']';
+        }
+
+        os.flush();
+        stream << os.str();
+    }
+
+    void write(std::ostream &stream) const
+    {
+        writeInterval(m_interval, stream);
+    }
+
+    const Interval &m_interval;
+};
+template <>
+struct IntervalWriter<Void>
+{
+    IntervalWriter(const Void &)
+    {
+    }
+    void write(std::ostream &) const
+    {
+    }
+};
+template <class GenType, int Size>
+struct IntervalWriter<Vector<GenType, Size>> : public IntervalWriter<GenType>
+{
+    IntervalWriter(const Vector<Interval, Size> &intervals)
+        : IntervalWriter<GenType>(intervals[0])
+        , m_intervals(intervals)
+    {
+    }
+
+    void write(std::ostream &stream) const
+    {
+        for (int i = 0; i < Size; ++i)
+            writeInterval(m_intervals[i], stream);
+    }
+
+    const Vector<Interval, Size> &m_intervals;
+};
+
+template <class GenType>
+IntervalWriter<GenType> writeInterval(const typename Traits<GenType>::IVal &intervals)
+{
+    return IntervalWriter<GenType>(intervals);
+}
+template <class GenType>
+std::ostream &operator<<(std::ostream &stream, const IntervalWriter<GenType> &intervals)
+{
+    intervals.write(stream);
+    return stream;
+}
+
 //! This is needed for container-generic operations.
 //! We want a scalar type T to be its own "one-element vector".
 template <typename T, int Size>
@@ -1008,6 +1156,8 @@ struct ContainerOf
 {
     typedef Vector<T, Size> Container;
 };
+template <class T, int Size>
+using ContainerOf_t = typename ContainerOf<T, Size>::Container;
 
 template <typename T>
 struct ContainerOf<T, 1>
@@ -1109,6 +1259,7 @@ class ExpandContext;
 class Statement;
 class StatementP;
 class FuncBase;
+struct CaseContext;
 template <typename T>
 class ExprP;
 template <typename T>
@@ -1117,6 +1268,8 @@ template <typename T>
 class VariableP;
 template <typename T>
 class DefaultSampling;
+template <typename T>
+struct DefaultSubnormalsSampling;
 
 typedef set<const FuncBase *> FuncSet;
 
@@ -1362,6 +1515,84 @@ protected:
     bool m_isDeclaration;
 };
 
+template <class X, class... Y>
+struct TupleTraits
+{
+    typedef std::tuple<typename Traits<X>::IVal, typename Traits<Y>::IVal...> type;
+};
+
+template <class X, class... Y>
+class VariableStatement<std::tuple<X, Y...>> : public Statement
+{
+public:
+    typedef std::tuple<X, Y...> Z;
+    typedef typename TupleTraits<X, Y...>::type IVal;
+    typedef std::tuple<VariableP<X>, VariableP<Y>...> Vars;
+
+    VariableStatement(const VariableP<X> &variable, const VariableP<Y> &...variables, const ExprP<Z> &value,
+                      bool isDeclaration)
+        : m_variable(variable)
+        , m_variables(std::make_tuple(variable, variables...))
+        , m_value(value)
+        , m_isDeclaration(isDeclaration)
+    {
+    }
+
+protected:
+    void doPrint(ostream &os) const
+    {
+        if (m_isDeclaration)
+            os << glu::declare(getVarTypeOf<X>(), m_variable->getName());
+        else
+            os << m_variable->getName();
+
+        os << " = ";
+        os << *m_value << ";\n";
+    }
+
+    void doGetUsedFuncs(FuncSet &dst) const
+    {
+        m_value->getUsedFuncs(dst);
+    }
+
+    void doExecute(EvalContext &ctx) const
+    {
+        IVal result = m_value->evaluate(ctx);
+        applyResult<std::tuple_size_v<Z> - 1, Y...>(result, ctx, m_isDeclaration);
+    }
+
+    void doFail(EvalContext &ctx) const
+    {
+        IVal result = m_value->fails(ctx);
+        applyResult<std::tuple_size_v<Z> - 1, Y...>(result, ctx, m_isDeclaration);
+    }
+
+protected:
+    template <std::size_t I, class, class... U>
+    void applyResult(const IVal &result, EvalContext &ctx, bool bindORlookup) const
+    {
+        if (bindORlookup)
+            ctx.env.bind(*std::get<I>(m_variables), std::get<I>(result));
+        else
+            ctx.env.lookup(*std::get<I>(m_variables)) = std::get<I>(result);
+
+        applyResult<I - 1, U...>(result, ctx, bindORlookup);
+    }
+    template <std::size_t>
+    void applyResult(const IVal &result, EvalContext &ctx, bool bindORlookup) const
+    {
+        if (bindORlookup)
+            ctx.env.bind(*std::get<0>(m_variables), std::get<0>(result));
+        else
+            ctx.env.lookup(*std::get<0>(m_variables)) = std::get<0>(result);
+    }
+
+    VariableP<X> m_variable;
+    Vars m_variables;
+    ExprP<Z> m_value;
+    bool m_isDeclaration;
+};
+
 template <typename T>
 StatementP variableStatement(const VariableP<T> &variable, const ExprP<T> &value, bool isDeclaration)
 {
@@ -1436,6 +1667,10 @@ public:
     {
         this->doPrintExpr(os);
     }
+    void printExprEx(ostream &os, const EvalContext &ctx) const
+    {
+        this->doPrintExprEx(os, ctx);
+    }
 
     //! Output the functions that this expression refers to
     void getUsedFuncs(FuncSet &dst) const
@@ -1446,6 +1681,10 @@ public:
 protected:
     virtual void doPrintExpr(ostream &) const
     {
+    }
+    virtual void doPrintExprEx(ostream &os, const EvalContext &) const
+    {
+        doPrintExpr(os);
     }
     virtual void doGetUsedFuncs(FuncSet &) const
     {
@@ -1474,6 +1713,26 @@ protected:
     }
 };
 
+template <class X, class... Y>
+class Expr<std::tuple<X, Y...>> : public ExprBase
+{
+public:
+    typedef std::tuple<typename Traits<X>::IVal, typename Traits<Y>::IVal...> IVal;
+
+    IVal evaluate(const EvalContext &ctx) const;
+    IVal fails(const EvalContext &ctx) const
+    {
+        return this->doFails(ctx);
+    }
+
+protected:
+    virtual IVal doEvaluate(const EvalContext &ctx) const = 0;
+    virtual IVal doFails(const EvalContext &ctx) const
+    {
+        return doEvaluate(ctx);
+    }
+};
+
 //! Evaluate an expression with the given context, optionally tracing the calls to stderr.
 template <typename T>
 typename Traits<T>::IVal Expr<T>::evaluate(const EvalContext &ctx) const
@@ -1486,8 +1745,48 @@ typename Traits<T>::IVal Expr<T>::evaluate(const EvalContext &ctx) const
     if (isTypeValid<T>())
     {
         std::cerr << string(ctx.callDepth, ' ');
-        this->printExpr(std::cerr);
+        this->printExprEx(std::cerr, newCtx);
         std::cerr << " -> " << intervalToString<T>(highpFmt, ret) << std::endl;
+    }
+    return ret;
+#else
+    return this->doEvaluate(ctx);
+#endif
+}
+
+template <std::size_t I, class Tp>
+void tupleIntervalToString(const Tp &, const FloatFormat &, bool, std::ostream &)
+{
+}
+template <std::size_t I, class Tp, class X, class... Y>
+void tupleIntervalToString(const Tp &tp, const FloatFormat &fmt, bool next, std::ostream &os)
+{
+    if (next)
+        os << ", ";
+    os << writeInterval<X>(std::get<I>(tp));
+    tupleIntervalToString<I + 1, Tp, Y...>(tp, fmt, true, os);
+}
+
+template <class X, class... Y>
+typename Expr<std::tuple<X, Y...>>::IVal Expr<std::tuple<X, Y...>>::evaluate(const EvalContext &ctx) const
+{
+#ifdef GLS_ENABLE_TRACE
+    static const FloatFormat highpFmt(-126, 127, 23, true, tcu::MAYBE, tcu::YES, tcu::MAYBE);
+    EvalContext newCtx(ctx.format, ctx.floatPrecision, ctx.env, ctx.callDepth + 1);
+    const IVal ret = this->doEvaluate(newCtx);
+
+    if (isTypeValid<std::tuple_element_t<0, IVal>>())
+    {
+        std::cerr << string(ctx.callDepth, ' ');
+        this->printExprEx(std::cerr, ctx);
+
+        std::ostringstream os;
+        os << '{';
+        tupleIntervalToString<0, IVal, X, Y...>(ret, highpFmt, false, os);
+        os << '}';
+        os.flush();
+
+        std::cerr << " -> " << os.str() << std::endl;
     }
     return ret;
 #else
@@ -1731,6 +2030,13 @@ ExprP<T> constant(const T &value)
     return exprP(new Constant<T>(value));
 }
 
+template <typename T, typename V>
+ExprP<T> constant_cast(V value)
+{
+    const T tmp = static_cast<T>(value);
+    return exprP(new Constant<T>(tmp));
+}
+
 template <typename T>
 class FloatConstant : public Expr<T>
 {
@@ -1823,6 +2129,36 @@ struct Signature
     typedef Tuple4<const Arg0 &, const Arg1 &, const Arg2 &, const Arg3 &> Args;
     typedef Tuple4<const IArg0 &, const IArg1 &, const IArg2 &, const IArg3 &> IArgs;
     typedef Tuple4<ExprP<Arg0>, ExprP<Arg1>, ExprP<Arg2>, ExprP<Arg3>> ArgExprs;
+
+    typedef Void Ret1;
+    typedef typename Traits<Void>::IVal IRet1;
+
+    enum
+    {
+        RESULT_COUNT = 1
+    };
+};
+template <typename R0, typename R1, typename P0 = Void, typename P1 = Void, typename P2 = Void, typename P3 = Void>
+struct Signature2 : public Signature<R0, P0, P1, P2, P3>
+{
+    typedef R1 Ret1;
+    typedef typename Traits<Ret1>::IVal IRet1;
+    static_assert(!std::is_same<Ret1, Void>::value, "???");
+
+    enum
+    {
+        RESULT_COUNT = 2
+    };
+};
+template <class Sig>
+struct SigResult1
+{
+    typedef typename Sig::Ret1 Ret1;
+    typedef typename Sig::IRet1 IRet1;
+    enum
+    {
+        RESULT_COUNT = Sig::RESULT_COUNT
+    };
 };
 
 typedef vector<const ExprBase *> BaseArgExprs;
@@ -1893,11 +2229,13 @@ class Func : public FuncBase
 public:
     typedef Sig_ Sig;
     typedef typename Sig::Ret Ret;
+    typedef typename SigResult1<Sig_>::Ret1 Ret1;
     typedef typename Sig::Arg0 Arg0;
     typedef typename Sig::Arg1 Arg1;
     typedef typename Sig::Arg2 Arg2;
     typedef typename Sig::Arg3 Arg3;
     typedef typename Sig::IRet IRet;
+    typedef typename SigResult1<Sig_>::IRet1 IRet1;
     typedef typename Sig::IArg0 IArg0;
     typedef typename Sig::IArg1 IArg1;
     typedef typename Sig::IArg2 IArg2;
@@ -1906,23 +2244,36 @@ public:
     typedef typename Sig::IArgs IArgs;
     typedef typename Sig::ArgExprs ArgExprs;
 
+    enum
+    {
+        RESULT_COUNT = SigResult1<Sig_>::RESULT_COUNT
+    };
+    typedef std::tuple<IRet, IRet1> PerhapsApplyResult;
+    typedef std::conditional_t<RESULT_COUNT == 1, IRet, PerhapsApplyResult> ApplyResult;
+
     void print(ostream &os, const BaseArgExprs &args) const
     {
         this->doPrint(os, args);
     }
 
-    IRet apply(const EvalContext &ctx, const IArg0 &arg0 = IArg0(), const IArg1 &arg1 = IArg1(),
-               const IArg2 &arg2 = IArg2(), const IArg3 &arg3 = IArg3()) const
+    void printEx(ostream &os, const BaseArgExprs &args, const EvalContext &ctx) const
+    {
+        this->doPrintEx(os, args, ctx);
+    }
+
+    ApplyResult apply(const EvalContext &ctx, const IArg0 &arg0 = IArg0(), const IArg1 &arg1 = IArg1(),
+                      const IArg2 &arg2 = IArg2(), const IArg3 &arg3 = IArg3()) const
     {
         return this->applyArgs(ctx, IArgs(arg0, arg1, arg2, arg3));
     }
 
-    IRet fail(const EvalContext &ctx, const IArg0 &arg0 = IArg0(), const IArg1 &arg1 = IArg1(),
-              const IArg2 &arg2 = IArg2(), const IArg3 &arg3 = IArg3()) const
+    ApplyResult fail(const EvalContext &ctx, const IArg0 &arg0 = IArg0(), const IArg1 &arg1 = IArg1(),
+                     const IArg2 &arg2 = IArg2(), const IArg3 &arg3 = IArg3()) const
     {
         return this->doFail(ctx, IArgs(arg0, arg1, arg2, arg3));
     }
-    IRet applyArgs(const EvalContext &ctx, const IArgs &args) const
+
+    ApplyResult applyArgs(const EvalContext &ctx, const IArgs &args) const
     {
         return this->doApply(ctx, args);
     }
@@ -1935,11 +2286,12 @@ public:
     }
 
 protected:
-    virtual IRet doApply(const EvalContext &, const IArgs &) const = 0;
-    virtual IRet doFail(const EvalContext &ctx, const IArgs &args) const
+    virtual ApplyResult doApply(const EvalContext &, const IArgs &) const = 0;
+    virtual ApplyResult doFail(const EvalContext &ctx, const IArgs &args) const
     {
         return this->doApply(ctx, args);
     }
+
     virtual void doPrint(ostream &os, const BaseArgExprs &args) const
     {
         os << getName() << "(";
@@ -1957,6 +2309,12 @@ protected:
             os << ", " << *args[3];
 
         os << ")";
+    }
+
+    virtual void doPrintEx(ostream &os, const BaseArgExprs &args, const EvalContext &) const
+    {
+        doPrint(os, args);
+        os << ' ';
     }
 
     virtual const ParamNames &doGetParamNames(void) const
@@ -2138,6 +2496,88 @@ protected:
         return this->m_func.fail(ctx, ctx.env.lookup(var0), ctx.env.lookup(var1), ctx.env.lookup(var2),
                                  ctx.env.lookup(var3));
     }
+
+    void doPrintExprEx(ostream &os, const EvalContext &ctx) const
+    {
+        BaseArgExprs args;
+        args.push_back(this->m_args.a.get());
+        args.push_back(this->m_args.b.get());
+        args.push_back(this->m_args.c.get());
+        args.push_back(this->m_args.d.get());
+        this->m_func.printEx(os, args, ctx);
+    }
+};
+
+template <class R0, class R1, class P0, class P1, class P2, class P3>
+class ApplyVar<Signature2<R0, R1, P0, P1, P2, P3>> : public Expr<std::tuple<R0, R1>>
+{
+public:
+    typedef typename ApplyVar::IVal ApplyResult;
+    typedef Signature2<R0, R1, P0, P1, P2, P3> Sig;
+    typedef Func<Sig> ApplyFunc;
+    typedef typename ApplyFunc::ArgExprs ArgExprs;
+
+    ApplyVar(const ApplyFunc &func, const ExprP<P0> &arg0 = exprP<P0>(), const ExprP<P1> &arg1 = exprP<P1>(),
+             const ExprP<P2> &arg2 = exprP<P2>(), const ExprP<P3> &arg3 = exprP<P3>())
+        : m_func(func)
+        , m_args(arg0, arg1, arg2, arg3)
+    {
+    }
+
+    void doPrintExpr(ostream &os) const
+    {
+        BaseArgExprs args;
+        args.push_back(m_args.a.get());
+        args.push_back(m_args.b.get());
+        args.push_back(m_args.c.get());
+        args.push_back(m_args.d.get());
+        m_func.print(os, args);
+    }
+
+    void doPrintExprEx(ostream &os, const EvalContext &ctx) const
+    {
+        BaseArgExprs args;
+        args.push_back(m_args.a.get());
+        args.push_back(m_args.b.get());
+        args.push_back(m_args.c.get());
+        args.push_back(m_args.d.get());
+        m_func.printEx(os, args, ctx);
+    }
+
+    void doGetUsedFuncs(FuncSet &dst) const
+    {
+        m_func.getUsedFuncs(dst);
+        m_args.a->getUsedFuncs(dst);
+        m_args.b->getUsedFuncs(dst);
+        m_args.c->getUsedFuncs(dst);
+        m_args.d->getUsedFuncs(dst);
+    }
+
+    ApplyResult doEvaluate(const EvalContext &ctx) const
+    {
+        const Variable<P0> &var0 = static_cast<const Variable<P0> &>(*m_args.a);
+        const Variable<P1> &var1 = static_cast<const Variable<P1> &>(*m_args.b);
+        const Variable<P2> &var2 = static_cast<const Variable<P2> &>(*m_args.c);
+        const Variable<P3> &var3 = static_cast<const Variable<P3> &>(*m_args.d);
+
+        return m_func.apply(ctx, ctx.env.lookup(var0), ctx.env.lookup(var1), ctx.env.lookup(var2),
+                            ctx.env.lookup(var3));
+    }
+
+    ApplyResult doFails(const EvalContext &ctx) const
+    {
+        const Variable<P0> &var0 = static_cast<const Variable<P0> &>(*this->m_args.a);
+        const Variable<P1> &var1 = static_cast<const Variable<P1> &>(*this->m_args.b);
+        const Variable<P2> &var2 = static_cast<const Variable<P2> &>(*this->m_args.c);
+        const Variable<P3> &var3 = static_cast<const Variable<P3> &>(*this->m_args.d);
+
+        return this->m_func.fail(ctx, ctx.env.lookup(var0), ctx.env.lookup(var1), ctx.env.lookup(var2),
+                                 ctx.env.lookup(var3));
+    }
+
+protected:
+    const ApplyFunc &m_func;
+    ArgExprs m_args;
 };
 
 template <typename Sig>
@@ -3517,12 +3957,17 @@ template <class T>
 class ATan2 : public CFloatFunc2<T>
 {
 public:
+    using Arg0  = typename ATan2::Arg0;
+    using Arg1  = typename ATan2::Arg1;
+    using IArg0 = typename ATan2::IArg0;
+    using IArg1 = typename ATan2::IArg1;
+
     ATan2(void) : CFloatFunc2<T>("atan", deAtan2)
     {
     }
 
 protected:
-    Interval innerExtrema(const EvalContext &ctx, const Interval &yi, const Interval &xi) const
+    virtual Interval innerExtrema(const EvalContext &ctx, const Interval &yi, const Interval &xi) const override
     {
         Interval ret;
 
@@ -3543,7 +3988,7 @@ protected:
         return ret;
     }
 
-    double precision(const EvalContext &ctx, double ret, double, double) const
+    virtual double precision(const EvalContext &ctx, double ret, double, double) const override
     {
         if (ctx.floatPrecision == glu::PRECISION_HIGHP)
             return ctx.format.ulp(ret, 4096.0);
@@ -3551,22 +3996,35 @@ protected:
             return ctx.format.ulp(ret, 5.0);
     }
 
-    Interval getCodomain(const EvalContext &ctx) const
+    virtual Interval getCodomain(const EvalContext &ctx) const override
     {
         return ctx.format.roundOut(Interval(-DE_PI_DOUBLE, DE_PI_DOUBLE), true);
     }
+
+    struct R
+    {
+    };
+    virtual void doPrintEx(ostream &os, const BaseArgExprs &args, const EvalContext &ctx) const override
+    {
+        const Variable<Arg0> &var0 = static_cast<const Variable<Arg0> &>(*args[0]);
+        const Variable<Arg1> &var1 = static_cast<const Variable<Arg1> &>(*args[1]);
+        const IArg0 val0           = ctx.env.lookup(var0);
+        const IArg1 val1           = ctx.env.lookup(var1);
+
+        os << this->getName() << '(' << writeInterval<Arg0>(val0) << ", " << writeInterval<Arg1>(val1) << ')';
+    }
 };
 
+#define ATAN2_TEST_NAME "atan2"
+#define ATAN2_Y_SUBNORMAL_TEST_NAME ATAN2_TEST_NAME "_y_subnormal"
 ExprP<float> atan2(const ExprP<float> &x, const ExprP<float> &y)
 {
     return app<ATan2<Signature<float, float, float>>>(x, y);
 }
-
 ExprP<deFloat16> atan2(const ExprP<deFloat16> &x, const ExprP<deFloat16> &y)
 {
     return app<ATan2<Signature<deFloat16, deFloat16, deFloat16>>>(x, y);
 }
-
 ExprP<double> atan2(const ExprP<double> &x, const ExprP<double> &y)
 {
     return app<ATan2<Signature<double, double, double>>>(x, y);
@@ -4596,11 +5054,17 @@ public:
     }
 
 protected:
-    TIRet doApply(const EvalContext &ctx, const TIArgs &iargs) const
+    typename Modf::ApplyResult doApply(const EvalContext &ctx, const TIArgs &iargs) const
     {
         Interval fracIV;
-        Interval &wholeIV = const_cast<Interval &>(iargs.b);
-        double intPart    = 0;
+        Interval wholeIV;
+        double intPart = 0;
+
+        if constexpr (!std::is_same_v<std::decay_t<decltype(iargs.b)>, Void>)
+        {
+            // Initialize the second parameter even though it is an output parameter
+            wholeIV = const_cast<Interval &>(iargs.b);
+        }
 
         TCU_INTERVAL_APPLY_MONOTONE1(fracIV, x, iargs.a, frac, frac = deModf(x, &intPart));
         TCU_INTERVAL_APPLY_MONOTONE1(wholeIV, x, iargs.a, whole, deModf(x, &intPart); whole = intPart);
@@ -4612,7 +5076,7 @@ protected:
             fracIV |= TCU_NAN;
         }
 
-        return fracIV;
+        return std::make_tuple(fracIV, wholeIV);
     }
 
     int getOutParamIndex(void) const
@@ -4620,9 +5084,9 @@ protected:
         return 1;
     }
 };
-typedef Modf<Signature<float, float, float>> Modf32Bit;
-typedef Modf<Signature<deFloat16, deFloat16, deFloat16>> Modf16Bit;
-typedef Modf<Signature<double, double, double>> Modf64Bit;
+typedef Modf<Signature2<float, float, float, float>> Modf32Bit;
+typedef Modf<Signature2<deFloat16, deFloat16, deFloat16, deFloat16>> Modf16Bit;
+typedef Modf<Signature2<double, double, double, double>> Modf64Bit;
 
 template <class T>
 class ModfStruct : public Modf<T>
@@ -4637,9 +5101,9 @@ public:
         return SPIRV_CASETYPE_MODFSTRUCT;
     }
 };
-typedef ModfStruct<Signature<float, float, float>> ModfStruct32Bit;
-typedef ModfStruct<Signature<deFloat16, deFloat16, deFloat16>> ModfStruct16Bit;
-typedef ModfStruct<Signature<double, double, double>> ModfStruct64Bit;
+typedef ModfStruct<Signature2<float, float, float>> ModfStruct32Bit;
+typedef ModfStruct<Signature2<deFloat16, deFloat16, deFloat16>> ModfStruct16Bit;
+typedef ModfStruct<Signature2<double, double, double>> ModfStruct64Bit;
 
 template <class T>
 class Min : public PreciseFunc2<T>
@@ -4810,29 +5274,29 @@ ExprP<SmoothStep<Signature<double, double, double, double>>::Ret> SmoothStep<
     return (t * t * (constant(3.0) - constant(2.0) * t));
 }
 
-//Signature<float, float, int>
-//Signature<float, deFloat16, int>
-//Signature<double, double, int>
-template <class T>
-class FrExp : public PrimitiveFunc<T>
+template <class Sig>
+class FrExp : public PrimitiveFunc<Sig>
 {
 public:
-    string getName(void) const
+    string getName() const
     {
         return "frexp";
     }
 
-    typedef typename FrExp::IRet IRet;
+    typedef typename FrExp::IRet IRet0;
+    typedef typename FrExp::IRet1 IRet1;
     typedef typename FrExp::IArgs IArgs;
     typedef typename FrExp::IArg0 IArg0;
     typedef typename FrExp::IArg1 IArg1;
+    typedef typename FrExp::Arg0 Arg0;
+    typedef typename FrExp::Arg1 Arg1;
 
 protected:
-    IRet doApply(const EvalContext &, const IArgs &iargs) const
+    typename FrExp::ApplyResult doApply(const EvalContext &, const IArgs &iargs) const
     {
-        IRet ret;
-        const IArg0 &x  = iargs.a;
-        IArg1 &exponent = const_cast<IArg1 &>(iargs.b);
+        const IArg0 &x = iargs.a;
+        IRet0 ret{};
+        IRet1 exponent{};
 
         if (x.hasNaN() || x.contains(TCU_INFINITY) || x.contains(-TCU_INFINITY))
         {
@@ -4867,7 +5331,17 @@ protected:
             }
         }
 
-        return ret;
+        return std::make_tuple(ret, exponent);
+    }
+
+    void doPrintEx(ostream &os, const BaseArgExprs &args, const EvalContext &ctx) const
+    {
+        const Variable<Arg0> &var0 = static_cast<const Variable<Arg0> &>(*args[0]);
+        const Variable<Arg1> &var1 = static_cast<const Variable<Arg1> &>(*args[1]);
+        const IArg0 val0           = ctx.env.lookup(var0);
+        const IArg1 val1           = ctx.env.lookup(var1);
+
+        os << getName() << '(' << writeInterval<Arg0>(val0) << ", " << writeInterval<Arg1>(val1) << ')';
     }
 
     int getOutParamIndex(void) const
@@ -4875,44 +5349,64 @@ protected:
         return 1;
     }
 };
-typedef FrExp<Signature<float, float, int>> Frexp32Bit;
-typedef FrExp<Signature<deFloat16, deFloat16, int>> Frexp16Bit;
-typedef FrExp<Signature<double, double, int>> Frexp64Bit;
 
-template <class T>
-class FrexpStruct : public FrExp<T>
+#define FREXP_SUBNORMALS_TEST_NAME "frexp_subnormals"
+#define FREXPSTRUCT_SUBNORMALS_TEST_NAME "frexpstruct_subnormals"
+typedef FrExp<Signature2<float, int, float, int>> Frexp32Bit;
+typedef FrExp<Signature2<deFloat16, int, deFloat16, int>> Frexp16Bit;
+typedef FrExp<Signature2<double, int, double, int>> Frexp64Bit;
+
+template <class Sig>
+class FrexpStruct : public FrExp<Sig>
 {
 public:
-    virtual string getName(void) const
+    typedef typename Sig::Arg0 Arg0;
+    typedef typename Sig::IArg0 IArg0;
+
+    virtual string getName() const override
     {
         return "frexpstruct";
     }
-    virtual SpirVCaseT getSpirvCase(void) const
+    virtual SpirVCaseT getSpirvCase() const override
     {
         return SPIRV_CASETYPE_FREXPSTRUCT;
     }
-};
-typedef FrexpStruct<Signature<float, float, int>> FrexpStruct32Bit;
-typedef FrexpStruct<Signature<deFloat16, deFloat16, int>> FrexpStruct16Bit;
-typedef FrexpStruct<Signature<double, double, int>> FrexpStruct64Bit;
 
-//Signature<float, float, int>
-//Signature<deFloat16, deFloat16, int>
-//Signature<double, double, int>
-template <class T>
-class LdExp : public PrimitiveFunc<T>
+protected:
+    virtual void doPrintEx(ostream &os, const BaseArgExprs &args, const EvalContext &ctx) const override
+    {
+        const Variable<Arg0> &var0 = static_cast<const Variable<Arg0> &>(*args[0]);
+        const IArg0 val0           = ctx.env.lookup(var0);
+
+        os << getName() << '(' << writeInterval<Arg0>(val0) << ')';
+    }
+};
+typedef FrexpStruct<Signature2<float, int, float>> FrexpStruct32Bit;
+typedef FrexpStruct<Signature2<deFloat16, int, deFloat16>> FrexpStruct16Bit;
+typedef FrexpStruct<Signature2<double, int, double>> FrexpStruct64Bit;
+
+#define LDEXP_SUBNORMALS_TEST_NAME "ldexp_subnormals"
+typedef Signature<deFloat16, deFloat16, int> LdexpSign16;
+typedef Signature<float, float, int> LdexpSign32;
+typedef Signature<double, double, int> LdexpSign64;
+template <class Sig>
+class LdExp : public PrimitiveFunc<Sig>
 {
 public:
     typedef typename LdExp::IRet IRet;
     typedef typename LdExp::IArgs IArgs;
+    typedef typename LdExp::Arg0 Arg0;
+    typedef typename LdExp::Arg1 Arg1;
+    typedef typename LdExp::IArg0 IArg0;
+    typedef typename LdExp::IArg1 IArg1;
 
-    string getName(void) const
+    virtual string getName(void) const override
     {
         return "ldexp";
     }
 
 protected:
-    Interval doApply(const EvalContext &ctx, const IArgs &iargs) const
+    virtual Interval doApply(const EvalContext &ctx, const IArgs &iargs) const override
     {
         const int minExp = ctx.format.getMinExp();
         const int maxExp = ctx.format.getMaxExp();
@@ -4926,10 +5420,20 @@ protected:
             ret |= TCU_NAN;
         return ctx.format.convert(ret);
     }
+
+    virtual void doPrintEx(ostream &os, const BaseArgExprs &args, const EvalContext &ctx) const override
+    {
+        const Variable<Arg0> &var0 = static_cast<const Variable<Arg0> &>(*args[0]);
+        const Variable<Arg1> &var1 = static_cast<const Variable<Arg1> &>(*args[1]);
+        const IArg0 val0           = ctx.env.lookup(var0);
+        const IArg1 val1           = ctx.env.lookup(var1);
+
+        os << getName() << '(' << writeInterval<Arg0>(val0) << ", " << writeInterval<Arg1>(val1) << ')';
+    }
 };
 
 template <>
-Interval LdExp<Signature<double, double, int>>::doApply(const EvalContext &ctx, const IArgs &iargs) const
+Interval LdExp<LdexpSign64>::doApply(const EvalContext &ctx, const IArgs &iargs) const
 {
     const int minExp = ctx.format.getMinExp();
     const int maxExp = ctx.format.getMaxExp();
@@ -5672,15 +6176,15 @@ ExprP<T> operator/(const ExprP<T> &arg0, const ExprP<T> &arg1)
 }
 
 template <typename Sig_, int Size>
-class GenFunc : public PrimitiveFunc<Signature<typename ContainerOf<typename Sig_::Ret, Size>::Container,
-                                               typename ContainerOf<typename Sig_::Arg0, Size>::Container,
-                                               typename ContainerOf<typename Sig_::Arg1, Size>::Container,
-                                               typename ContainerOf<typename Sig_::Arg2, Size>::Container,
-                                               typename ContainerOf<typename Sig_::Arg3, Size>::Container>>
+class GenFunc
+    : public PrimitiveFunc<Signature<ContainerOf_t<typename Sig_::Ret, Size>, ContainerOf_t<typename Sig_::Arg0, Size>,
+                                     ContainerOf_t<typename Sig_::Arg1, Size>, ContainerOf_t<typename Sig_::Arg2, Size>,
+                                     ContainerOf_t<typename Sig_::Arg3, Size>>>
 {
 public:
     typedef typename GenFunc::IArgs IArgs;
     typedef typename GenFunc::IRet IRet;
+    typedef typename GenFunc::IRet1 IRet1;
 
     GenFunc(const Func<Sig_> &scalarFunc) : m_func(scalarFunc)
     {
@@ -5717,6 +6221,11 @@ protected:
         m_func.print(os, args);
     }
 
+    void doPrintEx(ostream &os, const BaseArgExprs &args, const EvalContext &ctx) const
+    {
+        m_func.printEx(os, args, ctx);
+    }
+
     IRet doApply(const EvalContext &ctx, const IArgs &iargs) const
     {
         IRet ret;
@@ -5736,6 +6245,147 @@ protected:
         for (int ndx = 0; ndx < Size; ++ndx)
         {
             ret[ndx] = m_func.fail(ctx, iargs.a[ndx], iargs.b[ndx], iargs.c[ndx], iargs.d[ndx]);
+        }
+
+        return ret;
+    }
+
+    void doGetUsedFuncs(FuncSet &dst) const
+    {
+        m_func.getUsedFuncs(dst);
+    }
+
+    const Func<Sig_> &m_func;
+};
+
+template <class>
+struct ApplyResultAccessor;
+template <class... X>
+struct ApplyResultAccessor<std::tuple<X...>>
+{
+    typedef std::tuple<X...> TDestination;
+
+    ApplyResultAccessor(TDestination &dst) : m_dst(dst)
+    {
+    }
+
+    template <std::size_t N, class... Y>
+    void set(const std::tuple<Y...> &src)
+    {
+        typedef std::tuple<Y...> TSource;
+        static_assert(std::tuple_size_v<TDestination> == std::tuple_size_v<TSource>, "???");
+        set<0, N, TSource, Y...>(src);
+    }
+
+protected:
+    template <std::size_t I, std::size_t N, class TSource>
+    void set(const TSource &)
+    {
+    }
+    template <std::size_t I, std::size_t N, class TSource, class, class... Z>
+    void set(const TSource &src)
+    {
+        for (uint32_t k = 0; k < N; ++k)
+            std::get<I>(m_dst)[k] = std::get<I>(src);
+        set<I + 1, N, TSource, Z...>(src);
+    }
+
+    TDestination &m_dst;
+};
+
+template <class R0, class R1, class P0, class P1, class P2, class P3, int Size>
+class GenFunc<Signature2<R0, R1, P0, P1, P2, P3>, Size>
+    : public PrimitiveFunc<Signature2<ContainerOf_t<R0, Size>, ContainerOf_t<R1, Size>, ContainerOf_t<P0, Size>,
+                                      ContainerOf_t<P1, Size>, ContainerOf_t<P2, Size>, ContainerOf_t<P3, Size>>>
+{
+public:
+    typedef Signature2<R0, R1, P0, P1, P2, P3> Sig_;
+    typedef typename GenFunc::IArgs IArgs;
+    typedef typename GenFunc::ApplyResult ApplyResult;
+
+    GenFunc(const Func<Sig_> &scalarFunc) : m_func(scalarFunc)
+    {
+    }
+
+    SpirVCaseT getSpirvCase(void) const
+    {
+        return m_func.getSpirvCase();
+    }
+
+    string getName(void) const
+    {
+        return m_func.getName();
+    }
+
+    int getOutParamIndex(void) const
+    {
+        return m_func.getOutParamIndex();
+    }
+
+    string getRequiredExtension(void) const
+    {
+        return m_func.getRequiredExtension();
+    }
+
+    Interval getInputRange(const bool is16bit) const
+    {
+        return m_func.getInputRange(is16bit);
+    }
+
+protected:
+    void doPrint(ostream &os, const BaseArgExprs &args) const
+    {
+        m_func.print(os, args);
+    }
+
+    void doPrintEx(ostream &os, const BaseArgExprs &args, const EvalContext &ctx) const
+    {
+        m_func.printEx(os, args, ctx);
+    }
+
+    ApplyResult doApply(const EvalContext &ctx, const IArgs &iargs) const
+    {
+        ApplyResult ret{};
+        ApplyResultAccessor<ApplyResult> access(ret);
+
+        switch (Size - 1)
+        {
+        case 3:
+            access.template set<4>(m_func.apply(ctx, iargs.a[3], iargs.b[3], iargs.c[3], iargs.d[3]));
+            // Fallthrough
+        case 2:
+            access.template set<3>(m_func.apply(ctx, iargs.a[2], iargs.b[2], iargs.c[2], iargs.d[2]));
+            // Fallthrough
+        case 1:
+            access.template set<2>(m_func.apply(ctx, iargs.a[1], iargs.b[1], iargs.c[1], iargs.d[1]));
+            // Fallthrough
+        case 0:
+            access.template set<1>(m_func.apply(ctx, iargs.a[0], iargs.b[0], iargs.c[0], iargs.d[0]));
+            // Fallthrough
+        }
+
+        return ret;
+    }
+
+    ApplyResult doFail(const EvalContext &ctx, const IArgs &iargs) const
+    {
+        ApplyResult ret{};
+        ApplyResultAccessor<ApplyResult> access(ret);
+
+        switch (Size - 1)
+        {
+        case 3:
+            access.template set<4>(m_func.fail(ctx, iargs.a[3], iargs.b[3], iargs.c[3], iargs.d[3]));
+            // Fallthrough
+        case 2:
+            access.template set<3>(m_func.fail(ctx, iargs.a[2], iargs.b[2], iargs.c[2], iargs.d[2]));
+            // Fallthrough
+        case 1:
+            access.template set<2>(m_func.fail(ctx, iargs.a[1], iargs.b[1], iargs.c[1], iargs.d[1]));
+            // Fallthrough
+        case 0:
+            access.template set<1>(m_func.fail(ctx, iargs.a[0], iargs.b[0], iargs.c[0], iargs.d[0]));
+            // Fallthrough
         }
 
         return ret;
@@ -5920,12 +6570,11 @@ template <typename T>
 class Sampling
 {
 public:
-    virtual ~Sampling()
-    {
-    }
+    typedef T value_type;
 
-    virtual void genFixeds(const FloatFormat &, const Precision, vector<T> &, const Interval &) const
+    virtual void genFixeds(const FloatFormat &, const Precision, vector<T> &v, const Interval &) const
     {
+        v.push_back(T());
     }
     virtual T genRandom(const FloatFormat &, const Precision, Random &, const Interval &) const
     {
@@ -6015,8 +6664,8 @@ public:
 
 static bool isDenorm16(deFloat16 v)
 {
-    const uint16_t mantissa = 0x03FF;
-    const uint16_t exponent = 0x7C00;
+    const Float16Storage mantissa = 0x03FF;
+    const Float16Storage exponent = 0x7C00;
     return ((exponent & v) == 0 && (mantissa & v) != 0);
 }
 
@@ -6218,27 +6867,27 @@ deFloat16 DefaultSampling<deFloat16>::genRandom(const FloatFormat &format, const
 void DefaultSampling<deFloat16>::genFixeds(const FloatFormat &format, const Precision prec, vector<deFloat16> &dst,
                                            const Interval &inputRange) const
 {
-    dst.push_back(uint16_t(0x3E00)); //1.5
-    dst.push_back(uint16_t(0x3D00)); //1.25
-    dst.push_back(uint16_t(0x3F00)); //1.75
+    dst.push_back(Float16Storage(0x3E00)); //1.5
+    dst.push_back(Float16Storage(0x3D00)); //1.25
+    dst.push_back(Float16Storage(0x3F00)); //1.75
     // Zero
-    dst.push_back(uint16_t(0x0000));
-    dst.push_back(uint16_t(0x8000));
+    dst.push_back(Float16Storage(0x0000));
+    dst.push_back(Float16Storage(0x8000));
     // Infinity
-    dst.push_back(uint16_t(0x7c00));
-    dst.push_back(uint16_t(0xfc00));
+    dst.push_back(Float16Storage(0x7c00));
+    dst.push_back(Float16Storage(0xfc00));
     // SNaN
-    dst.push_back(uint16_t(0x7c0f));
-    dst.push_back(uint16_t(0xfc0f));
+    dst.push_back(Float16Storage(0x7c0f));
+    dst.push_back(Float16Storage(0xfc0f));
     // QNaN
-    dst.push_back(uint16_t(0x7cf0));
-    dst.push_back(uint16_t(0xfcf0));
+    dst.push_back(Float16Storage(0x7cf0));
+    dst.push_back(Float16Storage(0xfcf0));
     // Normalized
-    dst.push_back(uint16_t(0x0401));
-    dst.push_back(uint16_t(0x8401));
+    dst.push_back(Float16Storage(0x0401));
+    dst.push_back(Float16Storage(0x8401));
     // Some normal number
-    dst.push_back(uint16_t(0x14cb));
-    dst.push_back(uint16_t(0x94cb));
+    dst.push_back(Float16Storage(0x14cb));
+    dst.push_back(Float16Storage(0x94cb));
 
     const int minExp          = format.getMinExp();
     const int maxExp          = format.getMaxExp();
@@ -6280,6 +6929,146 @@ void DefaultSampling<deFloat16>::removeNotInRange(vector<deFloat16> &dst, const 
             it = dst.erase(it);
     }
 }
+
+template <class>
+struct SubnormalExp
+{
+    static int getMin()
+    {
+        DE_ASSERT(0);
+        return 0;
+    }
+    static int getMax()
+    {
+        DE_ASSERT(0);
+        return 0;
+    }
+};
+template <class F>
+struct SubnormalExp<FloatTypeSelector<F>>
+{
+    using FloatT    = typename FloatTypeSelector<F>::type;
+    using MantissaT = typename FloatT::StorageType;
+
+    static int getFractionBits()
+    {
+        return FloatT::MANTISSA_BITS;
+    }
+    static int getMin()
+    {
+        const MantissaT man = static_cast<MantissaT>(1);
+        const FloatT val    = FloatT::constructBits(1, (-FloatT::EXPONENT_BIAS), man);
+        int exp             = 0;
+
+        static_cast<void>(std::frexp(val.asDouble(), &exp));
+
+        return exp;
+    }
+    static int getMax()
+    {
+        const MantissaT man = static_cast<MantissaT>(MantissaT(1) << (FloatT::MANTISSA_BITS - 1));
+        const FloatT val    = FloatT::constructBits(1, (-FloatT::EXPONENT_BIAS), man);
+        int exp             = 0;
+
+        static_cast<void>(std::frexp(val.asDouble(), &exp));
+
+        return exp;
+    }
+};
+template <>
+struct SubnormalExp<deFloat16> : public SubnormalExp<FloatTypeSelector<deFloat16>>
+{
+};
+template <>
+struct SubnormalExp<float> : public SubnormalExp<FloatTypeSelector<float>>
+{
+};
+template <>
+struct SubnormalExp<double> : public SubnormalExp<FloatTypeSelector<double>>
+{
+};
+
+template <class T>
+struct DefaultSubnormalsSampling : public Sampling<T>
+{
+    using SelectorT = FloatTypeSelector<T>;
+    using FloatType = typename SelectorT::type;
+    using MantissaT = typename FloatType::StorageType;
+
+    static T genSingleSubnormal(const FloatFormat &fmt, const Precision prec, Random &rnd, const Interval &inputRange);
+    static void genSubnormals(const FloatFormat &fmt, const Precision prec, vector<T> &outValues,
+                              const Interval &inputRange);
+    virtual void genFixeds(const FloatFormat &fmt, const Precision prec, vector<T> &outValues,
+                           const Interval &inputRange) const override
+    {
+        return genSubnormals(fmt, prec, outValues, inputRange);
+    }
+    virtual T genRandom(const FloatFormat &fmt, const Precision prec, Random &rnd,
+                        const Interval &inputRange) const override
+    {
+        return genSingleSubnormal(fmt, prec, rnd, inputRange);
+    }
+};
+
+template <class T>
+T DefaultSubnormalsSampling<T>::genSingleSubnormal(const FloatFormat &fmt, const Precision prec, Random &rnd,
+                                                   const Interval &inputRange)
+{
+    static vector<T> subnormals;
+    if (subnormals.empty())
+        genSubnormals(fmt, prec, subnormals, inputRange);
+    const auto idx = static_cast<uint32_t>(rnd.getInt(0, static_cast<int>(subnormals.size() - 1)));
+    DE_ASSERT(idx < subnormals.size());
+    return subnormals.at(idx);
+}
+template <class T>
+void DefaultSubnormalsSampling<T>::genSubnormals(const FloatFormat &fmt, const Precision, vector<T> &outValues,
+                                                 const Interval &)
+{
+    using SamplingT = DefaultSubnormalsSampling<T>;
+    using FloatT    = typename SamplingT::FloatType;
+
+    DE_ASSERT(fmt.getFractionBits() <= FloatT::MANTISSA_BITS);
+
+    const MantissaT fullMantissaMask = static_cast<MantissaT>((static_cast<MantissaT>(1) << FloatT::MANTISSA_BITS) - 1);
+    const MantissaT masks[]{0b0001, 0b0011, 0b0101, 0b1001, 0b0111, 0b1011, 0b1101, 0b1111};
+    const int appliedMantissaBits = std::min(int(FloatT::MANTISSA_BITS), fmt.getFractionBits());
+    const int offset              = int(FloatT::MANTISSA_BITS) - appliedMantissaBits;
+
+    for (const MantissaT mask : masks)
+    {
+        const int cmsb = de::findMSB(uint32_t(mask));
+        DE_ASSERT(cmsb >= 0);
+        for (int shift = 0; shift < (appliedMantissaBits - cmsb); ++shift)
+        {
+            const MantissaT man = static_cast<MantissaT>(mask << (shift + offset));
+            const int sgn       = ((cmsb + shift) % 3 == 0) ? 1 : (-1);
+            const FloatT val    = FloatT::constructBits(sgn, (-FloatT::EXPONENT_BIAS), man);
+
+            DE_ASSERT((man & fullMantissaMask) != 0);
+            DE_UNREF(fullMantissaMask);
+
+            outValues.push_back(SamplingT::SelectorT::template conv(val));
+        }
+    }
+}
+
+template <class T, int Size>
+struct DefaultSubnormalsSampling<tcu::Vector<T, Size>> : public Sampling<tcu::Vector<T, Size>>
+{
+    typedef tcu::Vector<T, Size> Vec;
+
+    virtual void genFixeds(const FloatFormat &fmt, const Precision prec, std::vector<Vec> &outValues,
+                           const Interval &inputRange) const override
+    {
+        std::vector<T> scalars;
+
+        DefaultSubnormalsSampling<T>::genSubnormals(fmt, prec, scalars, inputRange);
+
+        for (size_t scalarNdx = 0; scalarNdx < scalars.size(); ++scalarNdx)
+            outValues.push_back(Vec(scalars.at(scalarNdx)));
+    }
+};
 
 template <typename T, int Size>
 class DefaultSampling<Vector<T, Size>> : public Sampling<Vector<T, Size>>
@@ -6474,6 +7263,90 @@ struct DefaultSamplings : Samplings<In>
     }
 };
 
+template <class>
+struct SamplingsMaker;
+template <>
+struct SamplingsMaker<Void>
+{
+    typedef Sampling<Void> Sampling0;
+    typedef Sampling<Void> Sampling1;
+    typedef Sampling<Void> Sampling2;
+    typedef Sampling<Void> Sampling3;
+
+    template <class In>
+    static const DefaultSamplings<In> &makeSamplings()
+    {
+        return instance<DefaultSamplings<In>>();
+    }
+
+    template <int N>
+    static auto makeVectorized()
+    {
+        return SamplingsMaker<Void>();
+    }
+};
+template <class, class>
+struct TemplateTypeReplacer;
+template <template <class> class TemplateType, class OldTemplateParam, class NewTemplateParam>
+struct TemplateTypeReplacer<TemplateType<OldTemplateParam>, NewTemplateParam>
+{
+    typedef TemplateType<NewTemplateParam> type;
+};
+template <class Sampling0_, class Sampling1_, class Sampling2_, class Sampling3_>
+struct SamplingsMaker<std::tuple<Sampling0_, Sampling1_, Sampling2_, Sampling3_>>
+{
+    typedef Sampling0_ Sampling0;
+    typedef Sampling1_ Sampling1;
+    typedef Sampling2_ Sampling2;
+    typedef Sampling3_ Sampling3;
+
+    typedef typename Sampling0::value_type In0;
+    typedef typename Sampling1::value_type In1;
+    typedef typename Sampling2::value_type In2;
+    typedef typename Sampling3::value_type In3;
+
+    typedef InTypes<In0, In1, In2, In3> InTypesType;
+    typedef Samplings<InTypesType> SamplingsType;
+
+    struct ManagedSamplings : public SamplingsType
+    {
+        ManagedSamplings()
+            : SamplingsType(instance<Sampling0>(), instance<Sampling1>(), instance<Sampling2>(), instance<Sampling3>())
+        {
+        }
+    };
+
+    template <int N>
+    struct Vectorized
+    {
+        typedef typename TemplateTypeReplacer<Sampling0, ContainerOf_t<In0, N>>::type Samp0;
+        typedef typename TemplateTypeReplacer<Sampling1, ContainerOf_t<In1, N>>::type Samp1;
+        typedef typename TemplateTypeReplacer<Sampling2, ContainerOf_t<In2, N>>::type Samp2;
+        typedef typename TemplateTypeReplacer<Sampling3, ContainerOf_t<In3, N>>::type Samp3;
+    };
+
+    template <int N>
+    static auto makeVectorized()
+    {
+        return SamplingsMaker<std::tuple<typename Vectorized<N>::Samp0, typename Vectorized<N>::Samp1,
+                                         typename Vectorized<N>::Samp2, typename Vectorized<N>::Samp3>>();
+    }
+
+    template <class In>
+    static const ManagedSamplings &makeSamplings()
+    {
+        return instance<ManagedSamplings>();
+    }
+};
+
+template <class Sampling0 = DefaultSampling<Void>, class Sampling1 = DefaultSampling<Void>,
+          class Sampling2 = DefaultSampling<Void>, class Sampling3 = DefaultSampling<Void>,
+          class Result = SamplingsMaker<std::tuple<Sampling0, Sampling1, Sampling2, Sampling3>>>
+Result makeSamplings()
+{
+    return Result();
+}
+
 template <typename In, typename Out>
 class BuiltinPrecisionCaseTestInstance : public TestInstance
 {
@@ -6498,7 +7371,7 @@ protected:
     const Samplings<In> &m_samplings;
     StatementP m_stmt;
     de::UniquePtr<ShaderExecutor> m_executor;
-    bool m_modularOp;
+    const bool m_modularOp;
 };
 
 template <class In, class Out>
@@ -6546,7 +7419,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate(void)
     };
 
     // Print out the statement and its definitions
-    testLog << TestLog::Message << "Statement: " << m_stmt << TestLog::EndMessage;
+    testLog << TestLog::Message << "Statement: " << de::toString(*m_stmt) << TestLog::EndMessage;
     {
         ostringstream oss;
         FuncSet funcs;
@@ -6703,7 +7576,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate(void)
                 {
                     builder << "Output:\n"
                             << comparisonMessage(outputs.out0[valueNdx]) << "Expected result:\n"
-                            << comparisonMessageInterval<typename Out::Out0>(reference0) << "\n";
+                            << comparisonMessageInterval<Out0>(reference0) << "\n";
                 }
                 else
                 {
@@ -6714,8 +7587,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate(void)
                                          value16ToString(highpFmt, outputs.out0[valueNdx]) :
                                          value32ToString(highpFmt, outputs.out0[valueNdx])))
                             << "\n"
-                            << "\tExpected range: " << intervalToString<typename Out::Out0>(highpFmt, reference0)
-                            << "\n";
+                            << "\tExpected range: " << intervalToString<Out0>(highpFmt, reference0) << "\n";
                 }
             }
 
@@ -6727,7 +7599,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate(void)
                                                                  value16ToString(highpFmt, outputs.out1[valueNdx]) :
                                                                  value32ToString(highpFmt, outputs.out1[valueNdx])))
                         << "\n"
-                        << "\tExpected range: " << intervalToString<typename Out::Out1>(highpFmt, reference1) << "\n";
+                        << "\tExpected range: " << intervalToString<Out1>(highpFmt, reference1) << "\n";
             }
 
             builder << TestLog::EndMessage;
@@ -6777,8 +7649,9 @@ protected:
         return m_ctx.floatFormat;
     }
 
+    typedef std::valarray<std::reference_wrapper<const StatementP>> StatementArray;
     template <typename In, typename Out>
-    void testStatement(const Variables<In, Out> &variables, const Statement &stmt, SpirVCaseT spirvCase);
+    void testStatement(const Variables<In, Out> &variables, const StatementArray &stmts, SpirVCaseT spirvCase);
 
     template <typename T>
     Symbol makeSymbol(const Variable<T> &variable)
@@ -6792,7 +7665,8 @@ protected:
 };
 
 template <typename In, typename Out>
-void PrecisionCase::testStatement(const Variables<In, Out> &variables, const Statement &stmt, SpirVCaseT spirvCase)
+void PrecisionCase::testStatement(const Variables<In, Out> &variables, const StatementArray &stmts,
+                                  SpirVCaseT spirvCase)
 {
     const int inCount  = numInputs<In>();
     const int outCount = numOutputs<Out>();
@@ -6850,7 +7724,18 @@ void PrecisionCase::testStatement(const Variables<In, Out> &variables, const Sta
         break;
     }
 
-    m_spec.source    = de::toString(stmt);
+    {
+        std::ostringstream os;
+        for (auto begin = std::begin(stmts), i = begin; i != std::end(stmts); ++i)
+        {
+            if (i != begin)
+                os << '\n';
+            os << de::toString(*i->get());
+        }
+        os.flush();
+        m_spec.source = os.str();
+    }
+
     m_spec.spirvCase = spirvCase;
 }
 
@@ -6950,7 +7835,7 @@ struct InputLess<InTuple<In>>
 };
 
 template <typename In>
-Inputs<In> generateInputs(const Samplings<In> &samplings, const FloatFormat &floatFormat, Precision intPrecision,
+Inputs<In> generateInputs(const Samplings<In> &samplings, const FloatFormat &floatFormat, const Precision &intPrecision,
                           size_t numSamples, uint32_t seed, const Interval &inputRange)
 {
     Random rnd(seed);
@@ -7019,12 +7904,17 @@ protected:
     StatementP m_stmt;
 };
 
-template <typename Sig>
+template <typename Sig, typename SamplingsMakerType>
 class FuncCase : public FuncCaseBase
 {
 public:
     typedef Func<Sig> CaseFunc;
     typedef typename Sig::Ret Ret;
+    typedef typename CaseFunc::Ret1 Ret1;
+    static_assert(!std::is_same<Void, Ret>::value,
+                  "For function with single result the first one must not be of Void type");
+    static_assert(std::is_same<Void, Ret1>::value,
+                  "For function with single result the second one must be of Void type");
     typedef typename Sig::Arg0 Arg0;
     typedef typename Sig::Arg1 Arg1;
     typedef typename Sig::Arg2 Arg2;
@@ -7039,7 +7929,6 @@ public:
     {
         buildTest();
     }
-
     virtual TestInstance *createInstance(Context &context) const
     {
         return new BuiltinPrecisionCaseTestInstance<In, Out>(context, m_ctx, m_spec, m_variables, getSamplings(),
@@ -7050,7 +7939,7 @@ protected:
     void buildTest(void);
     virtual const Samplings<In> &getSamplings(void) const
     {
-        return instance<DefaultSamplings<In>>();
+        return SamplingsMakerType::template makeSamplings<In>();
     }
 
 private:
@@ -7059,8 +7948,8 @@ private:
     bool m_modularOp;
 };
 
-template <typename Sig>
-void FuncCase<Sig>::buildTest(void)
+template <typename Sig, typename SamplingsMakerType>
+void FuncCase<Sig, SamplingsMakerType>::buildTest(void)
 {
     m_variables.out0 = variable<Ret>("out0");
     m_variables.out1 = variable<Void>("out1");
@@ -7073,26 +7962,33 @@ void FuncCase<Sig>::buildTest(void)
         ExprP<Ret> expr = applyVar(m_func, m_variables.in0, m_variables.in1, m_variables.in2, m_variables.in3);
         m_stmt          = variableAssignment(m_variables.out0, expr);
 
-        this->testStatement(m_variables, *m_stmt, m_func.getSpirvCase());
+        this->testStatement(m_variables, {m_stmt}, m_func.getSpirvCase());
     }
 }
 
-template <typename Sig>
+template <typename Sig, typename SamplingsMakerType>
 class InOutFuncCase : public FuncCaseBase
 {
 public:
     typedef Func<Sig> CaseFunc;
-    typedef typename Sig::Ret Ret;
+    typedef typename Sig::Ret Ret0;
+    typedef typename CaseFunc::Ret1 Ret1;
+    static_assert(!std::is_same<Void, Ret0>::value,
+                  "For function with twice result the first one must not be of Void type");
+    static_assert(!std::is_same<Void, Ret1>::value,
+                  "For function with twice result the second one must not be of Void type");
     typedef typename Sig::Arg0 Arg0;
     typedef typename Sig::Arg1 Arg1;
     typedef typename Sig::Arg2 Arg2;
     typedef typename Sig::Arg3 Arg3;
-    typedef InTypes<Arg0, Arg2, Arg3> In;
-    typedef OutTypes<Ret, Arg1> Out;
+    typedef InTypes<Arg0, Arg1, Arg2, Arg3> In;
+    typedef OutTypes<Ret0, Ret1> Out;
 
     InOutFuncCase(const CaseContext &context, const string &name, const CaseFunc &func, bool modularOp = false)
         : FuncCaseBase(context, name, func)
         , m_func(func)
+        , m_variables()
+        , m_varResult1()
         , m_modularOp(modularOp)
     {
         buildTest();
@@ -7107,47 +8003,62 @@ protected:
     void buildTest(void);
     virtual const Samplings<In> &getSamplings(void) const
     {
-        return instance<DefaultSamplings<In>>();
+        return SamplingsMakerType::template makeSamplings<In>();
     }
 
 private:
     const CaseFunc &m_func;
     Variables<In, Out> m_variables;
+    VariableP<Ret1> m_varResult1;
     bool m_modularOp;
 };
 
-template <typename Sig>
-void InOutFuncCase<Sig>::buildTest(void)
+template <typename Sig, typename SamplingsMakerType>
+void InOutFuncCase<Sig, SamplingsMakerType>::buildTest(void)
 {
-    m_variables.out0 = variable<Ret>("out0");
-    m_variables.out1 = variable<Arg1>("out1");
+    m_variables.out0 = variable<Ret0>("out0");
+    m_variables.out1 = variable<Ret1>("out1");
     m_variables.in0  = variable<Arg0>("in0");
-    m_variables.in1  = variable<Arg2>("in1");
-    m_variables.in2  = variable<Arg3>("in2");
+    m_variables.in1  = variable<Arg1>("in1");
+    m_variables.in2  = variable<Void>("in2");
     m_variables.in3  = variable<Void>("in3");
 
-    {
-        ExprP<Ret> expr = applyVar(m_func, m_variables.in0, m_variables.out1, m_variables.in1, m_variables.in2);
-        m_stmt          = variableAssignment(m_variables.out0, expr);
+    m_varResult1 = variable<Ret1>("in1");
 
-        this->testStatement(m_variables, *m_stmt, m_func.getSpirvCase());
+    {
+        ExprP<std::tuple<Ret0, Ret1>> expr =
+            exprP(new ApplyVar<Sig>(m_func, m_variables.in0, m_variables.in1, m_variables.in2, m_variables.in3));
+        m_stmt =
+            StatementP(new VariableStatement<std::tuple<Ret0, Ret1>>(m_variables.out0, m_variables.out1, expr, false));
+        auto stmtCopy = variableStatement(m_variables.out1, static_cast<ExprP<Ret1>>(m_varResult1), false);
+
+        this->testStatement(m_variables, {m_stmt, stmtCopy}, m_func.getSpirvCase());
     }
 }
 
-template <typename Sig>
+template <typename Sig, typename SamplingsMakerType>
 PrecisionCase *createFuncCase(const CaseContext &context, const string &name, const Func<Sig> &func,
-                              bool modularOp = false)
+                              const SamplingsMakerType &, bool modularOp = false)
 {
-    switch (func.getOutParamIndex())
+    static_assert(SigResult1<Sig>::RESULT_COUNT == 1 || SigResult1<Sig>::RESULT_COUNT == 2, "???");
+
+    PrecisionCase *aCase = nullptr;
+
+    if constexpr (SigResult1<Sig>::RESULT_COUNT == 1)
     {
-    case -1:
-        return new FuncCase<Sig>(context, name, func, modularOp);
-    case 1:
-        return new InOutFuncCase<Sig>(context, name, func, modularOp);
-    default:
-        DE_FATAL("Impossible");
+        if (func.getOutParamIndex() == 1)
+            deAssertFail(("Impossible: " + func.getName()).c_str(), __FILE__, __LINE__);
+        aCase = new FuncCase<Sig, SamplingsMakerType>(context, name, func, modularOp);
     }
-    return DE_NULL;
+    else
+    {
+        if (func.getOutParamIndex() == -1)
+            deAssertFail(("Impossible: " + func.getName()).c_str(), __FILE__, __LINE__);
+        aCase = new InOutFuncCase<Sig, SamplingsMakerType>(context, name, func, modularOp);
+    }
+
+    DE_ASSERT(aCase);
+    return aCase;
 }
 
 class CaseFactory
@@ -7175,7 +8086,7 @@ public:
     }
 };
 
-template <typename Sig>
+template <class Sig, class SamplingsMakerType>
 class GenFuncCaseFactory : public CaseFactory
 {
 public:
@@ -7190,10 +8101,14 @@ public:
     {
         TestCaseGroup *group = new TestCaseGroup(ctx.testContext, ctx.name.c_str());
 
-        group->addChild(createFuncCase(ctx, "scalar", m_funcs.func, m_modularOp));
-        group->addChild(createFuncCase(ctx, "vec2", m_funcs.func2, m_modularOp));
-        group->addChild(createFuncCase(ctx, "vec3", m_funcs.func3, m_modularOp));
-        group->addChild(createFuncCase(ctx, "vec4", m_funcs.func4, m_modularOp));
+        group->addChild(createFuncCase(ctx, "scalar", m_funcs.func, SamplingsMakerType(), m_modularOp));
+        group->addChild(
+            createFuncCase(ctx, "vec2", m_funcs.func2, SamplingsMakerType::template makeVectorized<2>(), m_modularOp));
+        group->addChild(
+            createFuncCase(ctx, "vec3", m_funcs.func3, SamplingsMakerType::template makeVectorized<3>(), m_modularOp));
+        group->addChild(
+            createFuncCase(ctx, "vec4", m_funcs.func4, SamplingsMakerType::template makeVectorized<4>(), m_modularOp));
+
         return MovePtr<TestNode>(group);
     }
 
@@ -7206,10 +8121,10 @@ public:
         return "Function '" + m_funcs.func.getName() + "'";
     }
 
-private:
+protected:
     const GenFuncs<Sig> m_funcs;
-    string m_name;
-    bool m_modularOp;
+    const string m_name;
+    const bool m_modularOp;
 };
 
 template <template <int, class> class GenF, typename T>
@@ -7220,10 +8135,10 @@ public:
     {
         TestCaseGroup *group = new TestCaseGroup(ctx.testContext, ctx.name.c_str());
 
-        group->addChild(createFuncCase(ctx, "scalar", instance<GenF<1, T>>()));
-        group->addChild(createFuncCase(ctx, "vec2", instance<GenF<2, T>>()));
-        group->addChild(createFuncCase(ctx, "vec3", instance<GenF<3, T>>()));
-        group->addChild(createFuncCase(ctx, "vec4", instance<GenF<4, T>>()));
+        group->addChild(createFuncCase(ctx, "scalar", instance<GenF<1, T>>(), SamplingsMaker<Void>()));
+        group->addChild(createFuncCase(ctx, "vec2", instance<GenF<2, T>>(), SamplingsMaker<Void>()));
+        group->addChild(createFuncCase(ctx, "vec3", instance<GenF<3, T>>(), SamplingsMaker<Void>()));
+        group->addChild(createFuncCase(ctx, "vec4", instance<GenF<4, T>>(), SamplingsMaker<Void>()));
 
         return MovePtr<TestNode>(group);
     }
@@ -7243,7 +8158,7 @@ public:
     {
         TestCaseGroup *group = new TestCaseGroup(ctx.testContext, ctx.name.c_str());
 
-        group->addChild(createFuncCase(ctx, "mat2", instance<GenF<2>>()));
+        group->addChild(createFuncCase(ctx, "mat2", instance<GenF<2>>(), SamplingsMaker<Void>()));
 
         // There is no defined precision for mediump/RelaxedPrecision in Vulkan
         if (ctx.name != "mediump")
@@ -7324,7 +8239,7 @@ private:
     void addCase(const CaseContext &ctx, TestCaseGroup *group) const
     {
         const char *const name = dataTypeNameOf<Matrix<float, Rows, Cols>>();
-        group->addChild(createFuncCase(ctx, name, instance<GenF<Rows, Cols, T>>()));
+        group->addChild(createFuncCase(ctx, name, instance<GenF<Rows, Cols, T>>(), SamplingsMaker<Void>()));
     }
 };
 
@@ -7338,7 +8253,7 @@ public:
 
     MovePtr<TestNode> createCase(const CaseContext &ctx) const
     {
-        return MovePtr<TestNode>(createFuncCase(ctx, ctx.name.c_str(), m_func));
+        return MovePtr<TestNode>(createFuncCase(ctx, ctx.name.c_str(), m_func, SamplingsMaker<Void>()));
     }
     string getName(void) const
     {
@@ -7397,7 +8312,21 @@ void addScalarFactory(BuiltinFuncs &funcs, string name = "", bool modularOp = fa
         name = instance<F>().getName();
 
     funcs.addFactory(SharedPtr<const CaseFactory>(
-        new GenFuncCaseFactory<typename F::Sig>(makeVectorizedFuncs<F>(), name, modularOp)));
+        new GenFuncCaseFactory<typename F::Sig, SamplingsMaker<Void>>(makeVectorizedFuncs<F>(), name, modularOp)));
+}
+
+template <class F, class Sampling0, class Sampling1, class Sampling2, class Sampling3>
+void addScalarFactory(BuiltinFuncs &funcs,
+                      const SamplingsMaker<std::tuple<Sampling0, Sampling1, Sampling2, Sampling3>> &,
+                      string name = string(), bool modularOp = false)
+{
+    if (name.empty())
+        name = instance<F>().getName();
+
+    typedef SamplingsMaker<std::tuple<Sampling0, Sampling1, Sampling2, Sampling3>> MakerType;
+
+    funcs.addFactory(SharedPtr<const CaseFactory>(
+        new GenFuncCaseFactory<typename F::Sig, MakerType>(makeVectorizedFuncs<F>(), name, modularOp)));
 }
 
 MovePtr<const CaseFactories> createBuiltinCases()
@@ -7419,7 +8348,9 @@ MovePtr<const CaseFactories> createBuiltinCases()
 
     addScalarFactory<ASin>(*funcs);
     addScalarFactory<ACos>(*funcs);
-    addScalarFactory<ATan2<Signature<float, float, float>>>(*funcs, "atan2");
+    addScalarFactory<ATan2<Signature<float, float, float>>>(*funcs, ATAN2_TEST_NAME);
+    addScalarFactory<ATan2<Signature<float, float, float>>>(
+        *funcs, makeSamplings<DefaultSampling<float>, DefaultSubnormalsSampling<float>>(), ATAN2_Y_SUBNORMAL_TEST_NAME);
     addScalarFactory<ATan<Signature<float, float>>>(*funcs);
     addScalarFactory<Sinh>(*funcs);
     addScalarFactory<Cosh>(*funcs);
@@ -7475,8 +8406,17 @@ MovePtr<const CaseFactories> createBuiltinCases()
 #endif // CTS_USES_VULKANSC
 
     addScalarFactory<Frexp32Bit>(*funcs);
+    addScalarFactory<Frexp32Bit>(*funcs, makeSamplings<DefaultSubnormalsSampling<float>, Sampling<int>>(),
+                                 FREXP_SUBNORMALS_TEST_NAME);
+
     addScalarFactory<FrexpStruct32Bit>(*funcs);
-    addScalarFactory<LdExp<Signature<float, float, int>>>(*funcs);
+    addScalarFactory<FrexpStruct32Bit>(*funcs, makeSamplings<DefaultSubnormalsSampling<float>>(),
+                                       FREXPSTRUCT_SUBNORMALS_TEST_NAME);
+
+    addScalarFactory<LdExp<LdexpSign32>>(*funcs);
+    addScalarFactory<LdExp<LdexpSign32>>(
+        *funcs, makeSamplings<DefaultSubnormalsSampling<float>, DefaultSampling<int>>(), LDEXP_SUBNORMALS_TEST_NAME);
+
     addScalarFactory<Fma<Signature<float, float, float, float>>>(*funcs);
 
     return MovePtr<const CaseFactories>(funcs.release());
@@ -7538,8 +8478,17 @@ MovePtr<const CaseFactories> createBuiltinDoubleCases()
 #endif // CTS_USES_VULKANSC
 
     addScalarFactory<Frexp64Bit>(*funcs);
+    addScalarFactory<Frexp64Bit>(*funcs, makeSamplings<DefaultSubnormalsSampling<double>, Sampling<int>>(),
+                                 FREXP_SUBNORMALS_TEST_NAME);
+
     addScalarFactory<FrexpStruct64Bit>(*funcs);
-    addScalarFactory<LdExp<Signature<double, double, int>>>(*funcs);
+    addScalarFactory<FrexpStruct64Bit>(*funcs, makeSamplings<DefaultSubnormalsSampling<double>>(),
+                                       FREXPSTRUCT_SUBNORMALS_TEST_NAME);
+
+    addScalarFactory<LdExp<LdexpSign64>>(*funcs);
+    addScalarFactory<LdExp<LdexpSign64>>(
+        *funcs, makeSamplings<DefaultSubnormalsSampling<double>, DefaultSampling<int>>(), LDEXP_SUBNORMALS_TEST_NAME);
+
     addScalarFactory<Fma<Signature<double, double, double, double>>>(*funcs);
 
     return MovePtr<const CaseFactories>(funcs.release());
@@ -7563,7 +8512,11 @@ MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
     addScalarFactory<Tan16Bit>(*funcs);
     addScalarFactory<ASin16Bit>(*funcs);
     addScalarFactory<ACos16Bit>(*funcs);
-    addScalarFactory<ATan2<Signature<deFloat16, deFloat16, deFloat16>>>(*funcs, "atan2");
+
+    addScalarFactory<ATan2<Signature<deFloat16, deFloat16, deFloat16>>>(*funcs, ATAN2_TEST_NAME);
+    addScalarFactory<ATan2<Signature<deFloat16, deFloat16, deFloat16>>>(
+        *funcs, makeSamplings<DefaultSampling<deFloat16>, DefaultSubnormalsSampling<deFloat16>>(),
+        ATAN2_Y_SUBNORMAL_TEST_NAME);
     addScalarFactory<ATan<Signature<deFloat16, deFloat16>>>(*funcs);
 
     addScalarFactory<Sinh16Bit>(*funcs);
@@ -7619,8 +8572,18 @@ MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
 #endif // CTS_USES_VULKANSC
 
     addScalarFactory<Frexp16Bit>(*funcs);
+    addScalarFactory<Frexp16Bit>(*funcs, makeSamplings<DefaultSubnormalsSampling<deFloat16>, Sampling<int>>(),
+                                 FREXP_SUBNORMALS_TEST_NAME);
+
     addScalarFactory<FrexpStruct16Bit>(*funcs);
-    addScalarFactory<LdExp<Signature<deFloat16, deFloat16, int>>>(*funcs);
+    addScalarFactory<FrexpStruct16Bit>(*funcs, makeSamplings<DefaultSubnormalsSampling<deFloat16>>(),
+                                       FREXPSTRUCT_SUBNORMALS_TEST_NAME);
+
+    addScalarFactory<LdExp<LdexpSign16>>(*funcs);
+    addScalarFactory<LdExp<LdexpSign16>>(*funcs,
+                                         makeSamplings<DefaultSubnormalsSampling<deFloat16>, DefaultSampling<int>>(),
+                                         LDEXP_SUBNORMALS_TEST_NAME);
+
     addScalarFactory<Fma<Signature<deFloat16, deFloat16, deFloat16, deFloat16>>>(*funcs);
 
     return MovePtr<const CaseFactories>(funcs.release());

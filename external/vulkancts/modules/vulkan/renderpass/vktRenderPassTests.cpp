@@ -42,6 +42,7 @@
 #include "vktDynamicRenderingTests.hpp"
 #include "vktDynamicRenderingLocalReadTests.hpp"
 #include "vktDynamicRenderingDepthStencilResolveTests.hpp"
+#include "vktRenderPassNestedCommandBuffersTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktRenderPassDepthStencilWriteConditionsTests.hpp"
 #include "vktRenderPassSubpassMergeFeedbackTests.hpp"
@@ -2052,8 +2053,8 @@ void fillRenderingInputAttachmentIndexInfo(const std::vector<AttachmentReference
 void prepareAttachmentRemapping(const Subpass &subpass, const std::vector<Attachment> &allAttachments,
                                 const std::vector<uint32_t> &colorAttachmentIndices,
                                 std::vector<uint32_t> &colorAttachmentLocations,
-                                std::vector<uint32_t> &colorAttachmentInputIndices, uint32_t localDepthAttachmentIndex,
-                                uint32_t localStencilAttachmentIndex,
+                                std::vector<uint32_t> &colorAttachmentInputIndices, uint32_t &localDepthAttachmentIndex,
+                                uint32_t &localStencilAttachmentIndex,
                                 VkRenderingAttachmentLocationInfoKHR &renderingAttachmentLocationInfo,
                                 VkRenderingInputAttachmentIndexInfoKHR &renderingInputAttachmentIndexInfo)
 {
@@ -2271,10 +2272,10 @@ void beginDynamicRendering(const DeviceInterface &vk, VkCommandBuffer commandBuf
     VkRenderingAttachmentInfoKHR depthAttachment{
         vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
         DE_NULL,                                             // const void* pNext;
-        DE_NULL,                                             // VkImageView imageView;
+        VK_NULL_HANDLE,                                      // VkImageView imageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                           // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                                // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                             // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                           // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_LOAD,                          // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                        // VkAttachmentStoreOp storeOp;
@@ -6097,7 +6098,7 @@ tcu::TestStatus RenderPassNoDrawLoadStoreTestInstance::iterate()
             colorAttachmentView.get(),                   // VkImageView imageView;
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,    // VkImageLayout imageLayout;
             VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits resolveMode;
-            DE_NULL,                                     // VkImageView resolveImageView;
+            VK_NULL_HANDLE,                              // VkImageView resolveImageView;
             VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout resolveImageLayout;
             VK_ATTACHMENT_LOAD_OP_CLEAR,                 // VkAttachmentLoadOp loadOp;
             VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp storeOp;
@@ -8407,8 +8408,13 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
 #endif // CTS_USES_VULKANSC
 
         if (groupParams->useSecondaryCmdBuffer == false)
+        {
             noDrawGroup->addChild(
                 new RenderPassNoDrawLoadStoreTestCase(testCtx, "no_draw_clear_load_store", groupParams));
+#ifndef CTS_USES_VULKANSC
+            renderingTests->addChild(createNestedCommandBufferTests(testCtx, groupParams));
+#endif // CTS_USES_VULKANSC
+        }
     }
 
     renderingTests->addChild(suballocationTestGroup.release());

@@ -576,7 +576,7 @@ void ImageSamplingInstance::setup()
         {
             const VkDescriptorImageInfo descriptorSamplerInfo = {
                 *m_sampler,                              // VkSampler sampler;
-                DE_NULL,                                 // VkImageView imageView;
+                VK_NULL_HANDLE,                          // VkImageView imageView;
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // VkImageLayout imageLayout;
             };
             setUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0),

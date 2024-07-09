@@ -273,7 +273,7 @@ StateObjects::StateObjects(const vk::DeviceInterface &vk, vkt::Context &context,
         pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
         pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
         pipelineCreateInfo.addState(vf_info);
-        m_pipeline = vk::createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+        m_pipeline = vk::createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     {

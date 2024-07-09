@@ -64,10 +64,6 @@
 // VulkanSC supports VK_EXT_calibrated_timestamps but not VK_KHR_calibrated_timestamps
 #define VkCalibratedTimestampInfoKHR VkCalibratedTimestampInfoEXT
 #define VkTimeDomainKHR VkTimeDomainEXT
-#define VK_TIME_DOMAIN_DEVICE_KHR VK_TIME_DOMAIN_DEVICE_EXT
-#define VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT
-#define VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT
-#define VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT
 #endif // CTS_USES_VULKANSC
 
 #if (DE_OS == DE_OS_WIN32)
@@ -3117,9 +3113,9 @@ void TwoCmdBuffersTestInstance::configCommandBuffer(void)
         const VkCommandBufferInheritanceInfo inheritanceInfo = {
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType                  sType;
             DE_NULL,                                           // const void*                      pNext;
-            DE_NULL,                                           // VkRenderPass                     renderPass;
+            VK_NULL_HANDLE,                                    // VkRenderPass                     renderPass;
             0u,                                                // uint32_t                         subpass;
-            DE_NULL,                                           // VkFramebuffer                    framebuffer;
+            VK_NULL_HANDLE,                                    // VkFramebuffer                    framebuffer;
             VK_FALSE,                                          // VkBool32                         occlusionQueryEnable;
             0u,                                                // VkQueryControlFlags              queryFlags;
             0u                                                 // VkQueryPipelineStatisticFlags    pipelineStatistics;
@@ -3288,7 +3284,7 @@ ConsistentQueryResultsTestInstance::ConsistentQueryResultsTestInstance(Context &
         vk::VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                     // uint32_t srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                     // uint32_t dstQueueFamilyIndex;
-        DE_NULL,                                     // VkBuffer buffer;
+        VK_NULL_HANDLE,                              // VkBuffer buffer;
         0ull,                                        // VkDeviceSize offset;
         VK_WHOLE_SIZE                                // VkDeviceSize size;
     };
@@ -3346,12 +3342,30 @@ tcu::TestStatus ConsistentQueryResultsTestInstance::iterate(void)
     checkTimestampBits(tsBuffer64Bits, m_timestampMask);
     checkTimestampBits(tsGet64Bits, m_timestampMask);
 
+#ifndef CTS_USES_VULKANSC
+    const bool hasMaint7 = m_context.getMaintenance7Features().maintenance7;
+#else
+    const bool hasMaint7 = false;
+#endif
+
     // Check results are consistent.
-    if (tsBuffer32Bits == tsGet32Bits && tsBuffer64Bits == tsGet64Bits &&
-        (((tsGet64Bits & maxDeUint32Value) == tsGet32Bits) ||
-         ((tsGet64Bits > maxDeUint32Value) && (maxDeUint32Value == tsGet32Bits))))
+    if (hasMaint7)
     {
-        return tcu::TestStatus::pass("Pass");
+        // If maintenance7 is supported, 32 bit queries _must_ be equivalent to the lower 32 bits of the 64 bit query
+        if (tsBuffer32Bits == tsGet32Bits && tsBuffer64Bits == tsGet64Bits &&
+            (((tsGet64Bits & maxDeUint32Value) == tsGet32Bits)))
+        {
+            return tcu::TestStatus::pass("Pass");
+        }
+    }
+    else
+    {
+        if (tsBuffer32Bits == tsGet32Bits && tsBuffer64Bits == tsGet64Bits &&
+            (((tsGet64Bits & maxDeUint32Value) == tsGet32Bits) ||
+             ((tsGet64Bits > maxDeUint32Value) && (maxDeUint32Value == tsGet32Bits))))
+        {
+            return tcu::TestStatus::pass("Pass");
+        }
     }
 
     std::ostringstream msg;

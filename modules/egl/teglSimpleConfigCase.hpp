@@ -53,7 +53,7 @@ protected:
     }
 
 private:
-    virtual void executeForConfig(eglw::EGLDisplay display, eglw::EGLConfig config) = DE_NULL;
+    virtual void executeForConfig(eglw::EGLDisplay display, eglw::EGLConfig config) = 0;
 
     SimpleConfigCase(const SimpleConfigCase &other);
     SimpleConfigCase &operator=(const SimpleConfigCase &other);

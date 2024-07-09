@@ -919,9 +919,9 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
             vkDevice,              // const VkDevice                                device
             *m_pipelineLayout,     // const VkPipelineLayout                        pipelineLayout
             *m_vertexShaderModule, // const VkShaderModule                          vertexShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationControlShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationEvalShaderModule
-            DE_NULL,               // const VkShaderModule                          geometryShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
             rasterizationStateInfo.rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
             // const VkShaderModule                          fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                            renderPass
@@ -1180,9 +1180,9 @@ void BaseRenderingTestInstance::drawPrimitives(
             vkDevice,              // const VkDevice                                device
             *m_pipelineLayout,     // const VkPipelineLayout                        pipelineLayout
             *m_vertexShaderModule, // const VkShaderModule                          vertexShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationControlShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationEvalShaderModule
-            DE_NULL,               // const VkShaderModule                          geometryShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
             rasterizationStateInfo.rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
             // const VkShaderModule                          fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                            renderPass
@@ -1214,9 +1214,9 @@ void BaseRenderingTestInstance::drawPrimitives(
             vkDevice,              // const VkDevice                                device
             *m_pipelineLayout,     // const VkPipelineLayout                        pipelineLayout
             *m_vertexShaderModule, // const VkShaderModule                          vertexShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationControlShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationEvalShaderModule
-            DE_NULL,               // const VkShaderModule                          geometryShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
             rasterizationStateInfo.rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
             // const VkShaderModule                          fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                            renderPass
@@ -1453,7 +1453,7 @@ protected:
 
 private:
     virtual void generateTriangles(int iteration, std::vector<tcu::Vec4> &outData,
-                                   std::vector<TriangleSceneSpec::SceneTriangle> &outTriangles) = DE_NULL;
+                                   std::vector<TriangleSceneSpec::SceneTriangle> &outTriangles) = 0;
     virtual bool compareAndVerify(std::vector<TriangleSceneSpec::SceneTriangle> &triangles, tcu::Surface &resultImage,
                                   std::vector<tcu::Vec4> &drawBuffer);
 
@@ -1568,7 +1568,7 @@ protected:
 
 private:
     virtual void generateLines(int iteration, std::vector<tcu::Vec4> &outData,
-                               std::vector<LineSceneSpec::SceneLine> &outLines) = DE_NULL;
+                               std::vector<LineSceneSpec::SceneLine> &outLines) = 0;
     virtual bool compareAndVerify(std::vector<LineSceneSpec::SceneLine> &lines, tcu::Surface &resultImage,
                                   tcu::Surface &secondDrawResultImage, std::vector<tcu::Vec4> &drawBuffer);
 
@@ -2653,9 +2653,9 @@ Move<VkPipeline> PointSizeTestInstance::createPipeline(void)
         vkDevice,                // const VkDevice                                     device
         *m_pipelineLayout,       // const VkPipelineLayout                             pipelineLayout
         *m_vertexShaderModule,   // const VkShaderModule                                 vertexShaderModule
-        DE_NULL,                 // const VkShaderModule                                 tessellationControlShaderModule
-        DE_NULL,                 // const VkShaderModule                                 tessellationEvalShaderModule
-        DE_NULL,                 // const VkShaderModule                                 geometryShaderModule
+        VK_NULL_HANDLE,          // const VkShaderModule                                 tessellationControlShaderModule
+        VK_NULL_HANDLE,          // const VkShaderModule                                 tessellationEvalShaderModule
+        VK_NULL_HANDLE,          // const VkShaderModule                                 geometryShaderModule
         *m_fragmentShaderModule, // const VkShaderModule                                 fragmentShaderModule
         *m_renderPass,           // const VkRenderPass                                 renderPass
         viewports,               // const std::vector<VkViewport>&                     viewports
@@ -7010,9 +7010,9 @@ void DiscardTestInstance::drawPrimitivesDiscard(tcu::Surface &result, const std:
             vkDevice,              // const VkDevice                                    device
             *m_pipelineLayout,     // const VkPipelineLayout                            pipelineLayout
             *m_vertexShaderModule, // const VkShaderModule                                vertexShaderModule
-            DE_NULL, // const VkShaderModule                                tessellationControlShaderModule
-            DE_NULL, // const VkShaderModule                                tessellationEvalShaderModule
-            DE_NULL, // const VkShaderModule                                geometryShaderModule
+            VK_NULL_HANDLE, // const VkShaderModule                                tessellationControlShaderModule
+            VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalShaderModule
+            VK_NULL_HANDLE, // const VkShaderModule                                geometryShaderModule
             rasterizationStateInfo->rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
             // const VkShaderModule                                fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                                renderPass

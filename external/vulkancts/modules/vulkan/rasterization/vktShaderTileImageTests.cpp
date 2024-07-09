@@ -1161,7 +1161,7 @@ void ShaderTileImageTestInstance::generateComputePipeline()
         0u,                       // basePipelineIndex
     };
 
-    m_computePipeline = createComputePipeline(m_vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+    m_computePipeline = createComputePipeline(m_vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
 
     VkDescriptorPoolCreateFlags poolCreateFlags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
@@ -1191,8 +1191,9 @@ void ShaderTileImageTestInstance::generateComputePipeline()
             DE_NULL,                                // pTexelBufferView
         };
 
-        imageInfo    = makeDescriptorImageInfo(DE_NULL, *m_imageColorView[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        w.dstBinding = 0;
+        imageInfo =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *m_imageColorView[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        w.dstBinding     = 0;
         w.descriptorType = bindings[0].descriptorType;
         m_vk.updateDescriptorSets(device, 1, &w, 0, NULL);
 
@@ -1417,13 +1418,13 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
         &pipelineColorBlendStateInfo,    // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
         DE_NULL,                         // const VkPipelineDynamicStateCreateInfo* pDynamicState;
         *m_graphicsPipelineLayout,       // VkPipelineLayout layout;
-        DE_NULL,                         // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                  // VkRenderPass renderPass;
         0u,                              // uint32_t subpass;
-        DE_NULL,                         // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                  // VkPipeline basePipelineHandle;
         0,                               // int32_t basePipelineIndex;
     };
 
-    return createGraphicsPipeline(m_vk, device, DE_NULL, &graphicsPipelineInfo);
+    return createGraphicsPipeline(m_vk, device, VK_NULL_HANDLE, &graphicsPipelineInfo);
 }
 
 void ShaderTileImageTestInstance::generateAttachments()
@@ -1759,7 +1760,7 @@ void ShaderTileImageTestInstance::rendering()
             *m_imageColorView[colorIndex],                   // VkImageView imageView;
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
             VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-            DE_NULL,                                         // VkImageView resolveImageView;
+            VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
             VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
             VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
             VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -1796,7 +1797,7 @@ void ShaderTileImageTestInstance::rendering()
         *m_imageDepthStencilView,                        // VkImageView imageView;
         depthStencilLayout,                              // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                         // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;

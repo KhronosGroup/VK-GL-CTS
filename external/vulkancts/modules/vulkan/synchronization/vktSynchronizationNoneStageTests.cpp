@@ -738,9 +738,9 @@ Move<VkPipeline> NoneStageTestInstance::buildPipeline(uint32_t subpass, VkImageA
         device,                               // VkDevice                                        device
         pipelineLayout,                       // VkPipelineLayout                                pipelineLayout
         vertShaderModule,                     // VkShaderModule                                vertexShaderModule
-        DE_NULL,                              // VkShaderModule                                tessellationControlModule
-        DE_NULL,                              // VkShaderModule                                tessellationEvalModule
-        DE_NULL,                              // VkShaderModule                                geometryShaderModule
+        VK_NULL_HANDLE,                       // VkShaderModule                                tessellationControlModule
+        VK_NULL_HANDLE,                       // VkShaderModule                                tessellationEvalModule
+        VK_NULL_HANDLE,                       // VkShaderModule                                geometryShaderModule
         fragShaderModule,                     // VkShaderModule                                fragmentShaderModule
         renderPass,                           // VkRenderPass                                    renderPass
         viewports,                            // std::vector<VkViewport>&                        viewports

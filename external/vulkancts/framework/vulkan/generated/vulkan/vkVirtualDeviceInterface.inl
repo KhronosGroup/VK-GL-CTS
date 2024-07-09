@@ -53,10 +53,10 @@ virtual VkResult			createPipelineCache										(VkDevice device, const VkPipeli
 virtual void				destroyPipelineCache									(VkDevice device, VkPipelineCache pipelineCache, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			getPipelineCacheData									(VkDevice device, VkPipelineCache pipelineCache, size_t* pDataSize, void* pData) const = 0;
 virtual VkResult			mergePipelineCaches										(VkDevice device, VkPipelineCache dstCache, uint32_t srcCacheCount, const VkPipelineCache* pSrcCaches) const = 0;
-virtual VkResult			createPipelineBinariesKHR								(VkDevice device, uint32_t createInfoCount, const VkPipelineBinaryCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryKHR* pPipelineBinaries) const = 0;
+virtual VkResult			createPipelineBinariesKHR								(VkDevice device, const VkPipelineBinaryCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryHandlesInfoKHR* pBinaries) const = 0;
 virtual void				destroyPipelineBinaryKHR								(VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator) const = 0;
-virtual VkResult			getPipelineBinaryKeysKHR								(VkDevice device, const VkPipelineBinaryKeysCreateInfoKHR* pCreateInfo, uint32_t* pKeyCount, VkPipelineBinaryKeyKHR* pKeys) const = 0;
-virtual VkResult			getPipelineBinaryDataKHR								(VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData) const = 0;
+virtual VkResult			getPipelineKeyKHR										(VkDevice device, const VkPipelineCreateInfoKHR* pPipelineCreateInfo, VkPipelineBinaryKeyKHR* pPipelineKey) const = 0;
+virtual VkResult			getPipelineBinaryDataKHR								(VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, VkPipelineBinaryKeyKHR* pPipelineBinaryKey, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData) const = 0;
 virtual VkResult			releaseCapturedPipelineDataKHR							(VkDevice device, const VkReleaseCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			createGraphicsPipelines									(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const = 0;
 virtual VkResult			createComputePipelines									(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const = 0;
@@ -507,4 +507,4 @@ virtual void				setLatencyMarkerNV										(VkDevice device, VkSwapchainKHR swa
 virtual void				getLatencyTimingsNV										(VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const = 0;
 virtual void				queueNotifyOutOfBandNV									(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const = 0;
 virtual void				cmdSetRenderingAttachmentLocationsKHR					(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo) const = 0;
-virtual void				cmdSetRenderingInputAttachmentIndicesKHR				(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo) const = 0;
+virtual void				cmdSetRenderingInputAttachmentIndicesKHR				(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pInputAttachmentIndexInfo) const = 0;

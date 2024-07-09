@@ -83,7 +83,7 @@ def genEnumStrImpl (groupName, values, definitions):
                 yield "case %s:\treturn \"%s\";" % (value, value)
             else:
                 print("Warning: %s not defined, skipping" % value)
-        yield "default:\treturn DE_NULL;"
+        yield "default:\treturn nullptr;"
 
     for caseLine in indentLines(genCases()):
         yield "\t\t" + caseLine

@@ -245,7 +245,7 @@ void hashPNextChain(std::size_t &seed, const void *pNext, const std::map<uint64_
             hash_combine(seed, uint32_t(ptr->domainOrigin));
             break;
         }
-        case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT:
+        case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_KHR:
         {
             VkPipelineVertexInputDivisorStateCreateInfoEXT *ptr =
                 (VkPipelineVertexInputDivisorStateCreateInfoEXT *)pNext;
@@ -938,7 +938,7 @@ VkGraphicsPipelineCreateInfo prepareSimpleGraphicsPipelineCI(
         pipelineLayout,                // VkPipelineLayout                                 layout;
         renderPass,                    // VkRenderPass                                     renderPass;
         0u,                            // uint32_t                                         subpass;
-        DE_NULL,                       // VkPipeline                                       basePipelineHandle;
+        VK_NULL_HANDLE,                // VkPipeline                                       basePipelineHandle;
         0                              // int                                              basePipelineIndex;
     };
 

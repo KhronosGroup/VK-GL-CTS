@@ -76,10 +76,10 @@ DE_END_EXTERN_C
     {                                                                                                                \
         DE_PTR_TYPE(TYPENAME) heap = DE_POOL_NEW(pool, TYPENAME);                                                    \
         if (!heap)                                                                                                   \
-            return DE_NULL;                                                                                          \
+            return NULL;                                                                                             \
         heap->array = TYPENAME##Array_create(pool);                                                                  \
         if (!heap->array)                                                                                            \
-            return DE_NULL;                                                                                          \
+            return NULL;                                                                                             \
         return heap;                                                                                                 \
     }                                                                                                                \
                                                                                                                      \

@@ -157,11 +157,7 @@ XlibWindow::XlibWindow(XlibDisplay &display, int width, int height, ::Visual *vi
     ::Window root        = DefaultRootWindow(dpy);
     unsigned long mask   = CWBorderPixel | CWEventMask;
 
-    // If redirect is enabled, window size can't be guaranteed and it is up to
-    // the window manager to decide whether to honor sizing requests. However,
-    // overriding that causes window to appear as an overlay, which causes
-    // other issues, so this is disabled by default.
-    const bool overrideRedirect = false;
+    const bool overrideRedirect = true;
 
     int depth = CopyFromParent;
 
@@ -260,22 +256,11 @@ void XlibWindow::getDimensions(int *width, int *height) const
 void XlibWindow::setDimensions(int width, int height)
 {
     ::Display *dpy = m_display.getXDisplay();
-    XEvent myevent;
-    XResizeWindow(dpy, m_window, width, height);
-    XSync(dpy, false);
+    int width_, height_ = 0;
 
-    while (XPending(dpy))
-    {
-        XNextEvent(dpy, &myevent);
-        if (myevent.type == ConfigureNotify)
-        {
-            XConfigureEvent e = myevent.xconfigure;
-            if (e.width == width && e.height == height)
-                break;
-        }
-        else
-            m_display.processEvent(myevent);
-    }
+    XResizeWindow(dpy, m_window, width, height);
+    getDimensions(&width_, &height_);
+    DE_ASSERT(width_ == width && height_ == height);
 }
 
 void XlibWindow::processEvents(void)

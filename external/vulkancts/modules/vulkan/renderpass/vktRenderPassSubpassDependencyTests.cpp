@@ -162,9 +162,9 @@ void beginSecondaryCmdBuffer(const DeviceInterface &vkd, VkCommandBuffer secCmdB
     const VkCommandBufferInheritanceInfo bufferInheritanceInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
         &inheritanceRenderingInfo,                         // const void* pNext;
-        DE_NULL,                                           // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                    // VkRenderPass renderPass;
         0u,                                                // uint32_t subpass;
-        DE_NULL,                                           // VkFramebuffer framebuffer;
+        VK_NULL_HANDLE,                                    // VkFramebuffer framebuffer;
         VK_FALSE,                                          // VkBool32 occlusionQueryEnable;
         (VkQueryControlFlags)0u,                           // VkQueryControlFlags queryFlags;
         (VkQueryPipelineStatisticFlags)0u                  // VkQueryPipelineStatisticFlags pipelineStatistics;
@@ -782,9 +782,9 @@ vector<SharedPtrVkPipeline> ExternalDependencyTestInstance::createRenderPipeline
             device,                // const VkDevice                                device
             layout,                // const VkPipelineLayout                        pipelineLayout
             *vertexShaderModule,   // const VkShaderModule                            vertexShaderModule
-            DE_NULL,               // const VkShaderModule                            tessellationControlShaderModule
-            DE_NULL,               // const VkShaderModule                            tessellationEvalShaderModule
-            DE_NULL,               // const VkShaderModule                            geometryShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                            tessellationControlShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                            tessellationEvalShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                            geometryShaderModule
             *fragmentShaderModule, // const VkShaderModule                            fragmentShaderModule
             renderPass,            // const VkRenderPass                            renderPass
             viewports,             // const std::vector<VkViewport>&                viewports
@@ -1298,9 +1298,9 @@ vector<SharedPtrVkPipeline> SubpassDependencyTestInstance::createRenderPipelines
             device,              // const VkDevice                                    device
             layout,              // const VkPipelineLayout                            pipelineLayout
             *vertexShaderModule, // const VkShaderModule                                vertexShaderModule
-            DE_NULL,             // const VkShaderModule                                tessellationControlShaderModule
-            DE_NULL,             // const VkShaderModule                                tessellationEvalShaderModule
-            DE_NULL,             // const VkShaderModule                                geometryShaderModule
+            VK_NULL_HANDLE,      // const VkShaderModule                                tessellationControlShaderModule
+            VK_NULL_HANDLE,      // const VkShaderModule                                tessellationEvalShaderModule
+            VK_NULL_HANDLE,      // const VkShaderModule                                geometryShaderModule
             *fragmentShaderModule, // const VkShaderModule                                fragmentShaderModule
             renderPass,            // const VkRenderPass                                renderPass
             viewports,             // const std::vector<VkViewport>&                    viewports
@@ -1398,7 +1398,7 @@ vector<SharedPtrVkDescriptorSet> SubpassDependencyTestInstance::createDescriptor
                                                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
             const VkDescriptorImageInfo imageInfo = {
-                DE_NULL,              // VkSampler        sampler
+                VK_NULL_HANDLE,       // VkSampler        sampler
                 **imageViews[setNdx], // VkImageView        imageView
                 imageLayout           // VkImageLayout    imageLayout
             };
@@ -1472,7 +1472,7 @@ tcu::TestStatus SubpassDependencyTestInstance::iterateInternal(void)
             VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, // VkImageLayout            newLayout
             VK_QUEUE_FAMILY_IGNORED,                         // uint32_t                    srcQueueFamilyIndex
             VK_QUEUE_FAMILY_IGNORED,                         // uint32_t                    dstQueueFamilyIndex
-            DE_NULL,                                         // VkImage                    image
+            VK_NULL_HANDLE,                                  // VkImage                    image
             imageSubresourceRange                            // VkImageSubresourceRange    subresourceRange
         };
 
@@ -2076,8 +2076,8 @@ tcu::TestStatus SubpassSelfDependencyBackwardsTestInstance::iterateInternal(void
             device,                // const VkDevice                                device
             *pipelineLayout,       // const VkPipelineLayout                        pipelineLayout
             *vertexShaderModule,   // const VkShaderModule                            vertexShaderModule
-            DE_NULL,               // const VkShaderModule                            tessellationControlShaderModule
-            DE_NULL,               // const VkShaderModule                            tessellationEvalShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                            tessellationControlShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                            tessellationEvalShaderModule
             *geometryShaderModule, // const VkShaderModule                            geometryShaderModule
             *fragmentShaderModule, // const VkShaderModule                            fragmentShaderModule
             *renderPass,           // const VkRenderPass                            renderPass
@@ -2528,7 +2528,7 @@ void SeparateChannelsTestInstance::setup(void)
     if (!isDSFormat)
     {
         VkDescriptorImageInfo descInputAttachment =
-            makeDescriptorImageInfo(DE_NULL, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
 
         DescriptorSetUpdateBuilder()
             .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
@@ -3283,7 +3283,7 @@ void SingleAttachmentTestInstance::setup(void)
 #endif // CTS_USES_VULKANSC
 
     // Update descriptor set information.
-    VkDescriptorImageInfo descIOAttachment = makeDescriptorImageInfo(DE_NULL, *m_imageViewInput, ioImageLayout);
+    VkDescriptorImageInfo descIOAttachment = makeDescriptorImageInfo(VK_NULL_HANDLE, *m_imageViewInput, ioImageLayout);
     VkDescriptorImageInfo descImageSampler =
         makeDescriptorImageInfo(*m_sampler, *m_imageViewInput, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 

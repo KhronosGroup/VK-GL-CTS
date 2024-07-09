@@ -548,8 +548,8 @@ void SlicedViewTestInstance::runPipeline(const DeviceInterface &vkd, const VkDev
     m_pipelineLayout = makePipelineLayout(vkd, device, m_setLayout.get());
 
     DescriptorSetUpdateBuilder updateBuilder;
-    const auto slicedImageDescInfo   = makeDescriptorImageInfo(DE_NULL, slicedImage, kUsageLayout);
-    const auto auxiliarImageDescInfo = makeDescriptorImageInfo(DE_NULL, auxiliarImage, kUsageLayout);
+    const auto slicedImageDescInfo   = makeDescriptorImageInfo(VK_NULL_HANDLE, slicedImage, kUsageLayout);
+    const auto auxiliarImageDescInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, auxiliarImage, kUsageLayout);
     updateBuilder.writeSingle(m_descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType,
                               &slicedImageDescInfo);
     updateBuilder.writeSingle(m_descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(1u), descriptorType,
@@ -675,7 +675,7 @@ bool SlicedViewTestInstance::runSamplingPipeline(const VkImage fullImage, const 
 
     DescriptorSetUpdateBuilder updateBuilder;
     const auto sampledImageInfo = makeDescriptorImageInfo(sampler.get(), slicedView, kUsageLayout);
-    const auto storageImageInfo = makeDescriptorImageInfo(DE_NULL, auxiliarView.get(), kUsageLayout);
+    const auto storageImageInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, auxiliarView.get(), kUsageLayout);
     updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &sampledImageInfo);
     updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(1u),

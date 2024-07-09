@@ -796,6 +796,14 @@ struct VkPushConstantRange
 	uint32_t			size;
 };
 
+struct VkPipelineBinaryHandlesInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	uint32_t				pipelineBinaryCount;
+	VkPipelineBinaryKHR*	pPipelineBinaries;
+};
+
 struct VkPipelineBinaryDataKHR
 {
 	size_t	dataSize;
@@ -810,22 +818,19 @@ struct VkPipelineBinaryKeyKHR
 	uint8_t			key[VK_MAX_PIPELINE_BINARY_KEY_SIZE_KHR];
 };
 
-struct VkPipelineBinaryCreateInfoKHR
+struct VkPipelineBinaryKeysAndDataKHR
 {
-	VkStructureType					sType;
-	const void*						pNext;
-	const VkPipelineBinaryKeyKHR*	pKey;
-	const VkPipelineBinaryDataKHR*	pDataInfo;
-	VkPipeline						pipeline;
+	uint32_t						binaryCount;
+	const VkPipelineBinaryKeyKHR*	pPipelineBinaryKeys;
+	const VkPipelineBinaryDataKHR*	pPipelineBinaryData;
 };
 
 struct VkPipelineBinaryInfoKHR
 {
-	VkStructureType					sType;
-	const void*						pNext;
-	uint32_t						binaryCount;
-	const VkPipelineBinaryKeyKHR*	pPipelineBinaryKeys;
-	const VkPipelineBinaryKHR*		pPipelineBinaries;
+	VkStructureType				sType;
+	const void*					pNext;
+	uint32_t					binaryCount;
+	const VkPipelineBinaryKHR*	pPipelineBinaries;
 };
 
 struct VkReleaseCapturedPipelineDataInfoKHR
@@ -842,10 +847,19 @@ struct VkPipelineBinaryDataInfoKHR
 	VkPipelineBinaryKHR	pipelineBinary;
 };
 
-struct VkPipelineBinaryKeysCreateInfoKHR
+struct VkPipelineCreateInfoKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
+};
+
+struct VkPipelineBinaryCreateInfoKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	const VkPipelineBinaryKeysAndDataKHR*	pKeysAndDataInfo;
+	VkPipeline								pipeline;
+	const VkPipelineCreateInfoKHR*			pPipelineCreateInfo;
 };
 
 struct VkPipelineLayoutCreateInfo
@@ -3255,6 +3269,52 @@ struct VkPhysicalDeviceMaintenance6PropertiesKHR
 	VkBool32		fragmentShadingRateClampCombinerInputs;
 };
 
+struct VkPhysicalDeviceMaintenance7FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance7;
+};
+
+struct VkPhysicalDeviceMaintenance7PropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		robustFragmentShadingRateAttachmentAccess;
+	VkBool32		separateDepthStencilAttachmentAccess;
+	uint32_t		maxDescriptorSetTotalUniformBuffersDynamic;
+	uint32_t		maxDescriptorSetTotalStorageBuffersDynamic;
+	uint32_t		maxDescriptorSetTotalBuffersDynamic;
+	uint32_t		maxDescriptorSetUpdateAfterBindTotalUniformBuffersDynamic;
+	uint32_t		maxDescriptorSetUpdateAfterBindTotalStorageBuffersDynamic;
+	uint32_t		maxDescriptorSetUpdateAfterBindTotalBuffersDynamic;
+};
+
+struct VkPhysicalDeviceLayeredApiPropertiesKHR
+{
+	VkStructureType					sType;
+	void*							pNext;
+	uint32_t						vendorID;
+	uint32_t						deviceID;
+	VkPhysicalDeviceLayeredApiKHR	layeredAPI;
+	char							deviceName[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE];
+};
+
+struct VkPhysicalDeviceLayeredApiPropertiesListKHR
+{
+	VkStructureType								sType;
+	void*										pNext;
+	uint32_t									layeredApiCount;
+	VkPhysicalDeviceLayeredApiPropertiesKHR*	pLayeredApis;
+};
+
+struct VkPhysicalDeviceLayeredApiVulkanPropertiesKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkPhysicalDeviceProperties2	properties;
+};
+
 struct VkRenderingAreaInfoKHR
 {
 	VkStructureType	sType;
@@ -4945,6 +5005,13 @@ struct VkPerformanceQuerySubmitInfoKHR
 	uint32_t		counterPassIndex;
 };
 
+struct VkPerformanceQueryReservationInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		maxPerformanceQueriesPerPool;
+};
+
 struct VkHeadlessSurfaceCreateInfoEXT
 {
 	VkStructureType					sType;
@@ -6251,6 +6318,20 @@ struct VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT
 	VkBool32		attachmentFeedbackLoopDynamicState;
 };
 
+struct VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		legacyVertexAttributes;
+};
+
+struct VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		nativeUnalignedPerformance;
+};
+
 struct VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT
 {
 	VkStructureType	sType;
@@ -6298,6 +6379,13 @@ struct VkPhysicalDeviceExternalMemoryRDMAFeaturesNV
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		externalMemoryRDMA;
+};
+
+struct VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderRelaxedExtendedInstruction;
 };
 
 struct VkVertexInputBindingDescription2EXT
@@ -7890,7 +7978,6 @@ struct VkPhysicalDevicePipelineBinaryPropertiesKHR
 	VkBool32		pipelineBinaryPrefersInternalCache;
 	VkBool32		pipelineBinaryPrecompiledInternalCache;
 	VkBool32		pipelineBinaryCompressedData;
-	VkBool32		pipelineBinaryUniqueBinaryKeyPairs;
 };
 
 struct VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT
@@ -9496,6 +9583,34 @@ struct VkPhysicalDeviceRawAccessChainsFeaturesNV
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shaderRawAccessChains;
+};
+
+struct VkPhysicalDeviceImageAlignmentControlFeaturesMESA
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		imageAlignmentControl;
+};
+
+struct VkPhysicalDeviceImageAlignmentControlPropertiesMESA
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		supportedImageAlignmentMask;
+};
+
+struct VkImageAlignmentControlCreateInfoMESA
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		maximumRequestedAlignment;
+};
+
+struct VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderReplicatedComposites;
 };
 
 struct StdVideoH264SpsVuiFlags

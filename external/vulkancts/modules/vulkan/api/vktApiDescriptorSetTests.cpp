@@ -167,11 +167,12 @@ tcu::TestStatus descriptorSetLayoutLifetimeGraphicsTest(Context &context)
         pipelineLayout.get(),          // VkPipelineLayout layout;
         renderPass.get(),              // VkRenderPass renderPass;
         0u,                            // uint32_t subpass;
-        DE_NULL,                       // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                // VkPipeline basePipelineHandle;
         0                              // int basePipelineIndex;
     };
 
-    Unique<VkPipeline> graphicsPipeline(createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo));
+    Unique<VkPipeline> graphicsPipeline(
+        createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo));
 
     VkFramebufferCreateInfo framebufferCreateInfo{
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType            sType
@@ -254,7 +255,7 @@ tcu::TestStatus descriptorSetLayoutLifetimeComputeTest(Context &context)
         (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags            flags
         shaderStageCreateInfo,                          // VkPipelineShaderStageCreateInfo    stage
         pipelineLayout.get(),                           // VkPipelineLayout                    layout
-        DE_NULL,                                        // VkPipeline                        basePipelineHandle
+        VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
         0                                               // int                                basePipelineIndex
     };
 
@@ -268,7 +269,7 @@ tcu::TestStatus descriptorSetLayoutLifetimeComputeTest(Context &context)
     const Unique<VkDescriptorSet> descriptorSet(
         createDescriptorSet(context, *descriptorPool, *descriptorSetLayout, *buffer, offset, result.getBuffer()));
 
-    Unique<VkPipeline> computePipeline(createComputePipeline(vk, device, DE_NULL, &computePipelineCreateInfo));
+    Unique<VkPipeline> computePipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &computePipelineCreateInfo));
 
     const VkCommandPoolCreateInfo cmdPoolInfo = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // Stype
@@ -524,11 +525,11 @@ tcu::TestStatus descriptorSetLayoutBindingOrderingTest(Context &context)
         (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags            flags
         shaderStageCreateInfo,                          // VkPipelineShaderStageCreateInfo    stage
         *pipelineLayout,                                // VkPipelineLayout                    layout
-        DE_NULL,                                        // VkPipeline                        basePipelineHandle
+        VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
         0                                               // int                                basePipelineIndex
     };
 
-    Unique<VkPipeline> computePipeline(createComputePipeline(vk, device, DE_NULL, &computePipelineCreateInfo));
+    Unique<VkPipeline> computePipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &computePipelineCreateInfo));
 
     beginCommandBuffer(vk, *cmdBuf, 0u);
     {

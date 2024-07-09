@@ -30,7 +30,7 @@ DE_IMPLEMENT_POOL_HASH_ARRAY(deTestHashArray, int16_t, int, deInt16Array, deIntA
 
 void dePoolHashArray_selfTest(void)
 {
-    deMemPool *pool            = deMemPool_createRoot(DE_NULL, 0);
+    deMemPool *pool            = deMemPool_createRoot(NULL, 0);
     deTestHashArray *hashArray = deTestHashArray_create(pool);
     deInt16Array *keyArray     = deInt16Array_create(pool);
     deIntArray *valueArray     = deIntArray_create(pool);
@@ -48,8 +48,8 @@ void dePoolHashArray_selfTest(void)
         }
         DE_TEST_ASSERT(deTestHashArray_getNumElements(hashArray) == 20);
 
-        deTestHashArray_copyToArray(hashArray, keyArray, DE_NULL);
-        deTestHashArray_copyToArray(hashArray, DE_NULL, valueArray);
+        deTestHashArray_copyToArray(hashArray, keyArray, NULL);
+        deTestHashArray_copyToArray(hashArray, NULL, valueArray);
         DE_TEST_ASSERT(deInt16Array_getNumElements(keyArray) == 20);
         DE_TEST_ASSERT(deIntArray_getNumElements(valueArray) == 20);
 
@@ -62,8 +62,8 @@ void dePoolHashArray_selfTest(void)
         deTestHashArray_reset(hashArray);
         DE_TEST_ASSERT(deTestHashArray_getNumElements(hashArray) == 0);
 
-        deTestHashArray_copyToArray(hashArray, keyArray, DE_NULL);
-        deTestHashArray_copyToArray(hashArray, DE_NULL, valueArray);
+        deTestHashArray_copyToArray(hashArray, keyArray, NULL);
+        deTestHashArray_copyToArray(hashArray, NULL, valueArray);
 
         DE_TEST_ASSERT(deInt16Array_getNumElements(keyArray) == 0);
         DE_TEST_ASSERT(deIntArray_getNumElements(valueArray) == 0);

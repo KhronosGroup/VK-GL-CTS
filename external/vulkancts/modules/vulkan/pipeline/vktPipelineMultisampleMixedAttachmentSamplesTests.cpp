@@ -1099,10 +1099,10 @@ void dispatchImageCheck(Context &context, const TestParams &params, WorkingData 
             makeDescriptorBufferInfo(*subpassData.compareBuffer, 0ull, subpassData.compareBufferSize);
         const VkDescriptorBufferInfo resultBufferInfo =
             makeDescriptorBufferInfo(*subpassData.resultBuffer, 0ull, subpassData.resultBufferSize);
-        const VkDescriptorImageInfo colorImageInfo =
-            makeDescriptorImageInfo(DE_NULL, *subpassData.colorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        const VkDescriptorImageInfo depthImageInfo =
-            makeDescriptorImageInfo(DE_NULL, *subpassData.depthOnlyImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        const VkDescriptorImageInfo colorImageInfo = makeDescriptorImageInfo(
+            VK_NULL_HANDLE, *subpassData.colorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        const VkDescriptorImageInfo depthImageInfo = makeDescriptorImageInfo(
+            VK_NULL_HANDLE, *subpassData.depthOnlyImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         const VkDescriptorImageInfo stencilImageInfo = makeDescriptorImageInfo(
             DE_NULL, *subpassData.stencilOnlyImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 

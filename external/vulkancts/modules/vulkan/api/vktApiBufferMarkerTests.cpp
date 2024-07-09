@@ -805,11 +805,11 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
             pipelineLayout.get(),            // VkPipelineLayout layout;
             renderPass.get(),                // VkRenderPass renderPass;
             0,                               // uint32_t subpass;
-            DE_NULL,                         // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                  // VkPipeline basePipelineHandle;
             0,                               // int32_t basePipelineIndex;
         };
 
-        pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
+        pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineInfo);
     }
     else if (params.method == MEMORY_DEP_DISPATCH)
     {
@@ -831,11 +831,11 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
             0u,                                             // VkPipelineCreateFlags              flags;
             shaderStageInfo,                                // VkPipelineShaderStageCreateInfo    stage;
             pipelineLayout.get(),                           // VkPipelineLayout                   layout;
-            DE_NULL,                                        // VkPipeline                         basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline                         basePipelineHandle;
             0                                               // int32_t                            basePipelineIndex;
         };
 
-        pipeline = createComputePipeline(vk, device, DE_NULL, &computePipelineInfo);
+        pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &computePipelineInfo);
     }
 
     if (params.base.useHostPtr)

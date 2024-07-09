@@ -643,8 +643,7 @@ protected:
     {
         DE_UNREF(program);
     }
-    virtual qpTestResult verify(const tcu::ConstPixelBufferAccess &result,
-                                const tcu::PixelBufferAccess &errorMask) = DE_NULL;
+    virtual qpTestResult verify(const tcu::ConstPixelBufferAccess &result, const tcu::PixelBufferAccess &errorMask) = 0;
 
     tcu::IVec2 getViewportSize(void) const;
     tcu::Vec4 getSurfaceThreshold(void) const;

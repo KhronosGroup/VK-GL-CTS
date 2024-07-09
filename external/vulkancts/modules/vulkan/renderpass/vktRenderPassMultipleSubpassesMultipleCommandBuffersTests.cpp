@@ -628,9 +628,9 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
             vkDevice,                // const VkDevice                                    device
             *m_pipelineLayout,       // const VkPipelineLayout                            pipelineLayout
             *m_vertexShaderModule,   // const VkShaderModule                                vertexShaderModule
-            DE_NULL,                 // const VkShaderModule                                tessellationControlModule
-            DE_NULL,                 // const VkShaderModule                                tessellationEvalModule
-            DE_NULL,                 // const VkShaderModule                                geometryShaderModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                tessellationControlModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                tessellationEvalModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                geometryShaderModule
             *m_fragmentShaderModule, // const VkShaderModule                                fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                                renderPass
             viewports,               // const std::vector<VkViewport>&                    viewports
@@ -649,9 +649,9 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
             vkDevice,                // const VkDevice                                    device
             *m_pipelineLayout,       // const VkPipelineLayout                            pipelineLayout
             *m_vertexShaderModule,   // const VkShaderModule                                vertexShaderModule
-            DE_NULL,                 // const VkShaderModule                                tessellationControlModule
-            DE_NULL,                 // const VkShaderModule                                tessellationEvalModule
-            DE_NULL,                 // const VkShaderModule                                geometryShaderModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                tessellationControlModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                tessellationEvalModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                geometryShaderModule
             *m_fragmentShaderModule, // const VkShaderModule                                fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                                renderPass
             viewports,               // const std::vector<VkViewport>&                    viewports
@@ -670,9 +670,9 @@ MultipleSubpassesMultipleCommandBuffersTestInstance::MultipleSubpassesMultipleCo
             vkDevice,                // const VkDevice                                    device
             *m_pipelineLayout,       // const VkPipelineLayout                            pipelineLayout
             *m_vertexShaderModule,   // const VkShaderModule                                vertexShaderModule
-            DE_NULL,                 // const VkShaderModule                                tessellationControlModule
-            DE_NULL,                 // const VkShaderModule                                tessellationEvalModule
-            DE_NULL,                 // const VkShaderModule                                geometryShaderModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                tessellationControlModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                tessellationEvalModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                geometryShaderModule
             *m_fragmentShaderModule, // const VkShaderModule                                fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                                renderPass
             viewports,               // const std::vector<VkViewport>&                    viewports

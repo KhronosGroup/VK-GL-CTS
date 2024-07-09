@@ -46,6 +46,7 @@
 
 #include "tcuTestCase.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuStringTemplate.hpp"
 
 #include <string>
 #include <sstream>
@@ -85,6 +86,7 @@ typedef enum
     UT_NV = 0,
     UT_KHR_A,
     UT_KHR_B,
+    UT_KHR_C,
     UT_KHR_Result,
 } UseType;
 
@@ -110,6 +112,7 @@ typedef enum
     TT_MATRIXMULADD_STRIDE0,
     TT_MULTICOMPONENT_LOAD,
     TT_MULTICOMPONENT_SAVE,
+    TT_MATRIXMULADD_CROSS,
 } TestType;
 
 typedef enum
@@ -156,7 +159,8 @@ bool isKhr(UseType useType)
 bool isMatrixMulAddOp(TestType testType)
 {
     return testType == TT_MATRIXMULADD || testType == TT_MATRIXMULADD_ARRAY || testType == TT_MATRIXMULADD_SATURATED ||
-           testType == TT_MATRIXMULADD_WRAPPING || testType == TT_MATRIXMULADD_STRIDE0;
+           testType == TT_MATRIXMULADD_WRAPPING || testType == TT_MATRIXMULADD_STRIDE0 ||
+           testType == TT_MATRIXMULADD_CROSS;
 }
 
 template <typename T>
@@ -257,7 +261,7 @@ uint32_t getSubgroupSizeFromMode(Context &context, const SubgroupSizeMode subgro
         context.getSubgroupSizeControlProperties();
 #else
     const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-        context.getSubgroupSizeControlPropertiesEXT();
+        context.getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
 
     switch (subgroupSizeMode)
@@ -304,6 +308,8 @@ public:
     virtual void checkSupport(Context &context) const;
 
 private:
+    virtual void initProgramsGLSL(SourceCollections &programCollection) const;
+    virtual void initProgramsSPIRV(SourceCollections &programCollection) const;
     CaseDef m_data;
 };
 
@@ -478,7 +484,7 @@ bool isSIntType(VkComponentTypeKHR t)
     }
 }
 
-void CooperativeMatrixTestCase::initPrograms(SourceCollections &programCollection) const
+void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programCollection) const
 {
     const char *suffix = (isKhr(m_data.useType) ? "" : "NV");
     const char *ext    = isKhr(m_data.useType) ? "#extension GL_KHR_cooperative_matrix : enable\n" :
@@ -855,6 +861,7 @@ void CooperativeMatrixTestCase::initPrograms(SourceCollections &programCollectio
     case TT_MATRIXTIMESSCALAR:
         css << "   matO = (" << typeStrA << "(2.0)*matA)*" << typeStrA << "(3.0);\n";
         break;
+    case TT_MATRIXMULADD_CROSS:
     case TT_MATRIXMULADD_STRIDE0:
     case TT_MATRIXMULADD_WRAPPING:
     case TT_MATRIXMULADD_SATURATED:
@@ -915,6 +922,327 @@ void CooperativeMatrixTestCase::initPrograms(SourceCollections &programCollectio
     const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 
     programCollection.glslSources.add("test") << glu::ComputeSource(css.str()) << buildOptions;
+}
+
+std::string getTypeName(const VkComponentTypeKHR type)
+{
+    switch (type)
+    {
+    case VK_COMPONENT_TYPE_SINT8_KHR:
+        return "s8";
+    case VK_COMPONENT_TYPE_SINT32_KHR:
+        return "s32";
+    case VK_COMPONENT_TYPE_UINT8_KHR:
+        return "u8";
+    case VK_COMPONENT_TYPE_UINT32_KHR:
+        return "u32";
+    default:
+        TCU_THROW(InternalError, "Support for this type is not implemented");
+    }
+}
+
+size_t getTypeWidth(const VkComponentTypeKHR type)
+{
+    switch (type)
+    {
+    case VK_COMPONENT_TYPE_SINT8_KHR:
+        return 1;
+    case VK_COMPONENT_TYPE_SINT32_KHR:
+        return 4;
+    case VK_COMPONENT_TYPE_UINT8_KHR:
+        return 1;
+    case VK_COMPONENT_TYPE_UINT32_KHR:
+        return 4;
+    default:
+        TCU_THROW(InternalError, "Support for this type is not implemented");
+    }
+}
+
+std::string getOppositeSignednessTypeName(const VkComponentTypeKHR type)
+{
+    std::string result = getTypeName(type);
+
+    if (result[0] == 'u')
+        result[0] = 's';
+    else if (result[0] == 's')
+        result[0] = 'u';
+    else
+        TCU_THROW(InternalError, "Support for this type is not implemented");
+
+    return result;
+}
+
+void CooperativeMatrixTestCase::initProgramsSPIRV(SourceCollections &programCollection) const
+{
+    std::string dims[4] = {
+        m_data.colMajor ? "M" : "K",
+        m_data.colMajor ? "K" : "N",
+        m_data.colMajor ? "M" : "N",
+        m_data.colMajor ? "M" : "N",
+    };
+    //  #version 450 core
+    //  #pragma use_vulkan_memory_model
+    //  #extension GL_KHR_shader_subgroup_basic : enable
+    //  #extension GL_KHR_memory_scope_semantics : enable
+    //  #extension GL_KHR_cooperative_matrix : enable
+    //  #extension GL_EXT_shader_explicit_arithmetic_types : enable
+    //  #extension GL_EXT_buffer_reference : enable
+    //  // strides overriden by spec constants
+    //  layout(constant_id = 6) const int M = 1;
+    //  layout(constant_id = 7) const int N = 1;
+    //  layout(constant_id = 8) const int K = 1;
+    //  layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z = 1) in;
+    //  const int workgroupsX = 4;
+    //  const uvec2 subgroupsPerWG = uvec2(2, 2);
+    //  layout(set=0, binding=0) coherent buffer InputA { int8_t x[]; } inputA;
+    //  layout(set=0, binding=1) coherent buffer InputB { int8_t x[]; } inputB;
+    //  layout(set=0, binding=2) coherent buffer InputC { int32_t x[]; } inputC;
+    //  layout(set=0, binding=3) coherent buffer Output { int32_t x[]; } outputO;
+    //  coopmat<int8_t, gl_ScopeSubgroup, M, K, gl_MatrixUseA> matA;
+    //  coopmat<int8_t, gl_ScopeSubgroup, K, N, gl_MatrixUseB> matB;
+    //  coopmat<int32_t, gl_ScopeSubgroup, M, N, gl_MatrixUseAccumulator> matC;
+    //  coopmat<int32_t, gl_ScopeSubgroup, M, N, gl_MatrixUseAccumulator> matO;
+    //  void main()
+    //  {
+    //     uvec2 subgroupXY = uvec2(gl_SubgroupID % subgroupsPerWG.x, gl_SubgroupID / subgroupsPerWG.x);
+    //     uvec2 matrixID = uvec2(gl_WorkGroupID.xy) * subgroupsPerWG + subgroupXY;
+    //     uint element0 = (K * 8 * M * matrixID.y + K * matrixID.x);
+    //     uint element1 = (N * 8 * K * matrixID.y + N * matrixID.x);
+    //     uint element2 = (N * 8 * M * matrixID.y + N * matrixID.x);
+    //     uint element3 = (N * 8 * M * matrixID.y + N * matrixID.x);
+    //     uint elementS0, elementS1, elementS2, elementS3;
+    //     coopMatLoad(matA, inputA.x, element0, K * 8, gl_CooperativeMatrixLayoutRowMajor);
+    //     coopMatLoad(matB, inputB.x, element1, N * 8, gl_CooperativeMatrixLayoutRowMajor);
+    //     coopMatLoad(matC, inputC.x, element2, N * 8, gl_CooperativeMatrixLayoutRowMajor);
+    //     matO = coopMatMulAdd(matA, matB, matC);
+    //     coopMatStore(matO, outputO.x, element3, N * 8, gl_CooperativeMatrixLayoutRowMajor);
+    //  }
+    const char *shaderTemplateGlobalString =
+        "OpCapability Shader\n"
+        "OpCapability Int8\n"
+        "OpCapability GroupNonUniform\n"
+        "OpCapability StorageBuffer8BitAccess\n"
+        "OpCapability VulkanMemoryModel\n"
+        "OpCapability CooperativeMatrixKHR\n"
+        "OpExtension \"SPV_KHR_8bit_storage\"\n"
+        "OpExtension \"SPV_KHR_cooperative_matrix\"\n"
+        "OpExtension \"SPV_KHR_vulkan_memory_model\"\n"
+        "%1 = OpExtInstImport \"GLSL.std.450\"\n"
+        "OpMemoryModel Logical Vulkan\n"
+        "OpEntryPoint GLCompute %main \"main\" %gl_SubgroupId %gl_WorkgroupID\n"
+        "OpExecutionMode %main LocalSize 1 1 1\n"
+        "OpDecorate %gl_SubgroupId BuiltIn SubgroupId\n"
+        "OpDecorate %gl_WorkgroupID BuiltIn WorkgroupId\n"
+
+        "OpDecorate %local_size_x SpecId 0\n"
+        "OpDecorate %local_size_y SpecId 1\n"
+        "OpDecorate %M            SpecId 6\n"
+        "OpDecorate %N            SpecId 7\n"
+        "OpDecorate %K            SpecId 8\n"
+
+        "OpDecorate %inputA_x ArrayStride ${STRIDE_A}\n"
+        "OpMemberDecorate %inputA_struct 0 Offset 0\n"
+        "OpDecorate %inputA_struct Block\n"
+        "OpDecorate %inputA_var DescriptorSet 0\n"
+        "OpDecorate %inputA_var Binding 0\n"
+
+        "OpDecorate %inputB_x ArrayStride ${STRIDE_B}\n"
+        "OpMemberDecorate %inputB_struct 0 Offset 0\n"
+        "OpDecorate %inputB_struct Block\n"
+        "OpDecorate %inputB_var DescriptorSet 0\n"
+        "OpDecorate %inputB_var Binding 1\n"
+
+        "OpDecorate %inputC_x ArrayStride ${STRIDE_C}\n"
+        "OpMemberDecorate %inputC_struct 0 Offset 0\n"
+        "OpDecorate %inputC_struct Block\n"
+        "OpDecorate %inputC_var DescriptorSet 0\n"
+        "OpDecorate %inputC_var Binding 2\n"
+
+        "OpDecorate %outputO_x ArrayStride ${STRIDE_R}\n"
+        "OpMemberDecorate %outputO_struct 0 Offset 0\n"
+        "OpDecorate %outputO_struct Block\n"
+        "OpDecorate %outputO_var DescriptorSet 0\n"
+        "OpDecorate %outputO_var Binding 3\n"
+
+        "OpDecorate %wg_size BuiltIn WorkgroupSize\n"
+        "%void            = OpTypeVoid\n"
+        "%voidfunc        = OpTypeFunction %void\n"
+        "%u8              = OpTypeInt 8 0\n"
+        "%s8              = OpTypeInt 8 1\n"
+        "%u32             = OpTypeInt 32 0\n"
+        "%s32             = OpTypeInt 32 1\n"
+        "%uvec2           = OpTypeVector %u32 2\n"
+        "%uvec3           = OpTypeVector %u32 3\n"
+        "%piu32           = OpTypePointer Input %u32\n"
+        "%gl_SubgroupId   = OpVariable %piu32 Input\n"
+        "%c0u             = OpConstant %u32 0\n"
+        "%c1u             = OpConstant %u32 1\n"
+        "%c2u             = OpConstant %u32 2\n"
+        "%c3u             = OpConstant %u32 3\n"
+        "%c5u             = OpConstant %u32 5\n"
+        "%c8s             = OpConstant %s32 8\n"
+        "%c0s             = OpConstant %s32 0\n"
+        "%layout          = OpConstant %s32 ${LAYOUT}\n"
+        "%piuvec3         = OpTypePointer Input %uvec3\n"
+        "%gl_WorkgroupID  = OpVariable %piuvec3 Input\n"
+        "%csubgroupsPerWG = OpConstantComposite %uvec2 %c2u %c2u\n"
+        "%K               = OpSpecConstant %s32 1\n"
+        "%M               = OpSpecConstant %s32 1\n"
+        "%N               = OpSpecConstant %s32 1\n"
+        "%Ku              = OpSpecConstantOp %u32 IAdd %K %c0u\n"
+        "%Mu              = OpSpecConstantOp %u32 IAdd %M %c0u\n"
+        "%Nu              = OpSpecConstantOp %u32 IAdd %N %c0u\n"
+
+        "%k8              = OpSpecConstantOp %s32 IMul %K %c8s\n"
+        "%mk8             = OpSpecConstantOp %s32 IMul %k8 %M\n"
+        "%mk8u            = OpSpecConstantOp %u32 IAdd %mk8 %c0u\n"
+
+        "%n8              = OpSpecConstantOp %s32 IMul %N %c8s\n"
+        "%nk8             = OpSpecConstantOp %s32 IMul %n8 %K\n"
+        "%nk8u            = OpSpecConstantOp %u32 IAdd %nk8 %c0u\n"
+
+        "%nm8             = OpSpecConstantOp %s32 IMul %n8 %M\n"
+        "%nm8u            = OpSpecConstantOp %u32 IAdd %nm8 %c0u\n"
+
+        "%strideAs        = OpSpecConstantOp %s32 IMul %${MULT_A} %c8s\n"
+        "%strideA         = OpSpecConstantOp %u32 IAdd %strideAs %c0u\n"
+        "%strideBs        = OpSpecConstantOp %s32 IMul %${MULT_B} %c8s\n"
+        "%strideB         = OpSpecConstantOp %u32 IAdd %strideBs %c0u\n"
+        "%strideCs        = OpSpecConstantOp %s32 IMul %${MULT_C} %c8s\n"
+        "%strideC         = OpSpecConstantOp %u32 IAdd %strideCs %c0u\n"
+        "%strideRs        = OpSpecConstantOp %s32 IMul %${MULT_R} %c8s\n"
+        "%strideR         = OpSpecConstantOp %u32 IAdd %strideRs %c0u\n"
+
+        "%psbmat_s8       = OpTypePointer StorageBuffer %s8\n"
+        "%psbmat_s32      = OpTypePointer StorageBuffer %s32\n"
+        "%psbmat_u8       = OpTypePointer StorageBuffer %u8\n"
+        "%psbmat_u32      = OpTypePointer StorageBuffer %u32\n"
+
+        "%matA            = OpTypeCooperativeMatrixKHR %${A_ELEM_TYPE} %c3u %M %K %c0u\n"
+        "%inputA_x        = OpTypeRuntimeArray %${A_ELEM_TYPE}\n"
+        "%inputA_struct   = OpTypeStruct %inputA_x\n"
+        "%inputA_ptr      = OpTypePointer StorageBuffer %inputA_struct\n"
+        "%inputA_var      = OpVariable %inputA_ptr StorageBuffer\n"
+
+        "%matB            = OpTypeCooperativeMatrixKHR %${B_ELEM_TYPE} %c3u %K %N %c1u\n"
+        "%inputB_x        = OpTypeRuntimeArray %${B_ELEM_TYPE}\n"
+        "%inputB_struct   = OpTypeStruct %inputB_x\n"
+        "%inputB_ptr      = OpTypePointer StorageBuffer %inputB_struct\n"
+        "%inputB_var      = OpVariable %inputB_ptr StorageBuffer\n"
+
+        "%matS            = OpTypeCooperativeMatrixKHR %${S_ELEM_TYPE} %c3u %M %N %c2u\n"
+        "%matU            = OpTypeCooperativeMatrixKHR %${U_ELEM_TYPE} %c3u %M %N %c2u\n"
+
+        "%inputC_x        = OpTypeRuntimeArray %${C_ELEM_TYPE}\n"
+        "%inputC_struct   = OpTypeStruct %inputC_x\n"
+        "%inputC_ptr      = OpTypePointer StorageBuffer %inputC_struct\n"
+        "%inputC_var      = OpVariable %inputC_ptr StorageBuffer\n"
+
+        "%outputO_x       = OpTypeRuntimeArray %${R_ELEM_TYPE}\n"
+        "%outputO_struct  = OpTypeStruct %outputO_x\n"
+        "%outputO_ptr     = OpTypePointer StorageBuffer %outputO_struct\n"
+        "%outputO_var     = OpVariable %outputO_ptr StorageBuffer\n"
+
+        "%local_size_x           = OpSpecConstant %u32 1\n"
+        "%local_size_y           = OpSpecConstant %u32 1\n"
+        "%wg_size                = OpSpecConstantComposite %uvec3 %local_size_x %local_size_y %c1u\n"
+        "%main                   = OpFunction %void None %voidfunc\n"
+        "%label                  = OpLabel\n"
+        "%gl_SubgroupId_         = OpLoad %u32 %gl_SubgroupId\n"
+        "%subgroupXY_x           = OpUMod %u32 %gl_SubgroupId_ %c2u\n"
+        "%subgroupXY_y           = OpUDiv %u32 %gl_SubgroupId_ %c2u\n"
+        "%subgroupXY_uvec2       = OpCompositeConstruct %uvec2 %subgroupXY_x %subgroupXY_y\n"
+        "%gl_WorkgroupID_uvec3   = OpLoad %uvec3 %gl_WorkgroupID\n"
+        "%gl_WorkgroupID_uvec2   = OpVectorShuffle %uvec2 %gl_WorkgroupID_uvec3 %gl_WorkgroupID_uvec3 0 1\n"
+        "%2xgl_WorkgroupID_uvec2 = OpIMul %uvec2 %gl_WorkgroupID_uvec2 %csubgroupsPerWG\n"
+        "%matrixID               = OpIAdd %uvec2 %2xgl_WorkgroupID_uvec2 %subgroupXY_uvec2\n"
+        "%matrixID_x             = OpCompositeExtract %u32 %matrixID 0\n"
+        "%matrixID_y             = OpCompositeExtract %u32 %matrixID 1\n"
+
+        "%e0a      = OpIMul %u32 %mk8u %matrixID_y\n"
+        "%e0b      = OpIMul %u32 %${MULT_A}u %matrixID_x\n"
+        "%element0 = OpIAdd %u32 %e0a %e0b\n"
+
+        "%e1a      = OpIMul %u32 %nk8u %matrixID_y\n"
+        "%e1b      = OpIMul %u32 %${MULT_B}u %matrixID_x\n"
+        "%element1 = OpIAdd %u32 %e1a %e1b\n"
+
+        "%e2a      = OpIMul %u32 %nm8u %matrixID_y\n"
+        "%e2b      = OpIMul %u32 %${MULT_C}u %matrixID_x\n"
+        "%element2 = OpIAdd %u32 %e2a %e2b\n"
+
+        "%e3a      = OpIMul %u32 %nm8u %matrixID_y\n"
+        "%e3b      = OpIMul %u32 %${MULT_R}u %matrixID_x\n"
+        "%element3 = OpIAdd %u32 %e3a %e3b\n"
+
+        "%Aij      = OpAccessChain %psbmat_${A_ELEM_TYPE} %inputA_var %c0s %element0\n"
+        "%Aij_mat  = OpCooperativeMatrixLoadKHR %matA %Aij %layout %strideA MakePointerVisible|NonPrivatePointer %c5u\n"
+
+        "%Bij      = OpAccessChain %psbmat_${B_ELEM_TYPE} %inputB_var %c0s %element1\n"
+        "%Bij_mat  = OpCooperativeMatrixLoadKHR %matB %Bij %layout %strideB MakePointerVisible|NonPrivatePointer %c5u\n"
+
+        "%Cij      = OpAccessChain %psbmat_${C_ELEM_TYPE} %inputC_var %c0s %element2\n"
+        "%Cij_mat  = OpCooperativeMatrixLoadKHR %${C_TYPE} %Cij %layout %strideC MakePointerVisible|NonPrivatePointer "
+        "%c5u\n"
+
+        "%matR     = OpCooperativeMatrixMulAddKHR %${R_TYPE} %Aij_mat %Bij_mat %Cij_mat ${SIGNEDNESS}\n"
+
+        "%Rij_mat  = OpAccessChain %psbmat_${R_ELEM_TYPE} %outputO_var %c0s %element3\n"
+        "OpCooperativeMatrixStoreKHR %Rij_mat %matR %layout %strideR MakePointerAvailable|NonPrivatePointer %c5u\n"
+
+        "OpReturn\n"
+        "OpFunctionEnd\n";
+    const tcu::StringTemplate shaderTemplateGlobal(shaderTemplateGlobalString);
+    const vk::SpirVAsmBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3);
+    const string spirMatATypeName =
+        m_data.useType == UT_KHR_A ? getOppositeSignednessTypeName(m_data.inputType) : getTypeName(m_data.inputType);
+    const string spirMatBTypeName =
+        m_data.useType == UT_KHR_B ? getOppositeSignednessTypeName(m_data.inputType) : getTypeName(m_data.inputType);
+    const string spirMatCTypeName = m_data.useType == UT_KHR_C ? (isSIntType(m_data.outputType) ? "matU" : "matS") :
+                                                                 (isSIntType(m_data.outputType) ? "matS" : "matU");
+    const string spirMatRTypeName = m_data.useType == UT_KHR_Result ?
+                                        (isSIntType(m_data.outputType) ? "matU" : "matS") :
+                                        (isSIntType(m_data.outputType) ? "matS" : "matU");
+    const string spirMatSTypeName = isSIntType(m_data.outputType) ? getTypeName(m_data.outputType) :
+                                                                    getOppositeSignednessTypeName(m_data.outputType);
+    const string spirMatUTypeName = isSIntType(m_data.outputType) ? getOppositeSignednessTypeName(m_data.outputType) :
+                                                                    getTypeName(m_data.outputType);
+    string signedness             = string(isSIntType(m_data.inputType) ? "|MatrixASignedComponentsKHR" : "") +
+                        string(isSIntType(m_data.inputType) ? "|MatrixBSignedComponentsKHR" : "") +
+                        string(isSIntType(m_data.outputType) ? "|MatrixCSignedComponentsKHR" : "") +
+                        string(isSIntType(m_data.outputType) ? "|MatrixResultSignedComponentsKHR" : "");
+    map<string, string> attributes;
+
+    attributes["A_ELEM_TYPE"] = spirMatATypeName;
+    attributes["B_ELEM_TYPE"] = spirMatBTypeName;
+    attributes["C_ELEM_TYPE"] = getTypeName(m_data.outputType);
+    attributes["R_ELEM_TYPE"] = getTypeName(m_data.outputType);
+    attributes["S_ELEM_TYPE"] = spirMatSTypeName;
+    attributes["U_ELEM_TYPE"] = spirMatUTypeName;
+    attributes["C_TYPE"]      = spirMatCTypeName;
+    attributes["R_TYPE"]      = spirMatRTypeName;
+    attributes["SIGNEDNESS"]  = signedness.empty() ? "" : signedness.substr(1);
+    attributes["MULT_A"]      = dims[0];
+    attributes["MULT_B"]      = dims[1];
+    attributes["MULT_C"]      = dims[2];
+    attributes["MULT_R"]      = dims[3];
+    attributes["STRIDE_A"]    = de::toString(getTypeWidth(m_data.inputType));
+    attributes["STRIDE_B"]    = de::toString(getTypeWidth(m_data.inputType));
+    attributes["STRIDE_C"]    = de::toString(getTypeWidth(m_data.outputType));
+    attributes["STRIDE_R"]    = de::toString(getTypeWidth(m_data.outputType));
+    attributes["LAYOUT"]      = m_data.colMajor ? "1" : "0";
+
+    const std::string shaderCode = shaderTemplateGlobal.specialize(attributes);
+
+    programCollection.spirvAsmSources.add("test") << shaderCode << buildOptions;
+}
+
+void CooperativeMatrixTestCase::initPrograms(SourceCollections &programCollection) const
+{
+    if (m_data.testType == TT_MATRIXMULADD_CROSS)
+        initProgramsSPIRV(programCollection);
+    else
+        initProgramsGLSL(programCollection);
 }
 
 TestInstance *CooperativeMatrixTestCase::createInstance(Context &context) const
@@ -1970,6 +2298,8 @@ const char *getUseType(UseType useType)
         return "khr_a";
     case UT_KHR_B:
         return "khr_b";
+    case UT_KHR_C:
+        return "khr_c";
     case UT_KHR_Result:
         return "khr_r";
     default:
@@ -2049,6 +2379,8 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {TT_MATRIXMULADD_WRAPPING, "matrixmuladd_wrapping"},
         // OpCooperativeMatrixMulAdd w/stride==0
         {TT_MATRIXMULADD_STRIDE0, "matrixmuladd_stride0"},
+        // OpCooperativeMatrixMulAdd
+        {TT_MATRIXMULADD_CROSS, "matrixmuladd_cross"},
     };
     TestGroupCase2 dtCases[] = {
         // A/B are fp32 C/D are fp32
@@ -2151,22 +2483,37 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                         const VkComponentTypeKHR outputType = (VkComponentTypeKHR)dtCases[dtNdx].value[1];
                         const bool isMatrixMul              = isMatrixMulAddOp(testType);
 
-                        // useType isn't used for matrixmul shaders. Don't generate 3 copies of those tests.
-                        if (isMatrixMul && (useType == UT_KHR_A || useType == UT_KHR_B))
+                        if (testType == TT_MATRIXMULADD_CROSS)
                         {
-                            continue;
+                            if (isFloatType(inputType) || isFloatType(outputType) || useType == UT_NV ||
+                                scCases[scNdx].value != SC_BUFFER)
+                                continue;
                         }
-
-                        // NV extension doesn't support mixing signedness
-                        if (isMatrixMul && (useType == UT_NV) && isSIntType(inputType) != isSIntType(outputType))
+                        else
                         {
-                            continue;
+                            // Rest of tests do not run on matrix C
+                            if (useType == UT_KHR_C)
+                            {
+                                continue;
+                            }
+
+                            // useType isn't used for matrixmul shaders. Don't generate 3 copies of those tests.
+                            if (isMatrixMul && (useType == UT_KHR_A || useType == UT_KHR_B))
+                            {
+                                continue;
+                            }
+
+                            // NV extension doesn't support mixing signedness
+                            if (isMatrixMul && (useType == UT_NV) && isSIntType(inputType) != isSIntType(outputType))
+                            {
+                                continue;
+                            }
+
+                            if (isMatrixMul && componentTypeInfo[inputType].bits > componentTypeInfo[outputType].bits)
+                                continue;
                         }
 
                         if (!isMatrixMul && inputType != outputType)
-                            continue;
-
-                        if (isMatrixMul && componentTypeInfo[inputType].bits > componentTypeInfo[outputType].bits)
                             continue;
 
                         if (testType == TT_MUL && useType == UT_NV)
@@ -2211,6 +2558,9 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
             group->addChild(ttGroup.release());
         }
     }
+
+    if (useType == UT_KHR_C)
+        return group.release();
 
     {
         const string name = string("convert");
@@ -2332,6 +2682,7 @@ tcu::TestCaseGroup *createCooperativeMatrixTests(tcu::TestContext &testCtx,
     group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_NV));
     group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_A));
     group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_B));
+    group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_C));
     group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_Result));
 
     return group.release();

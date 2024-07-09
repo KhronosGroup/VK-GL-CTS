@@ -183,6 +183,8 @@ enum TestType
     TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS,
     TEST_TYPE_H265_DECODE_INLINE_QUERY_RESULT_WITH_STATUS,
     TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES,
+    TEST_TYPE_H265_DECODE_SLIST_A,
+    TEST_TYPE_H265_DECODE_SLIST_B,
 
     TEST_TYPE_AV1_DECODE_I,
     TEST_TYPE_AV1_DECODE_I_P,
@@ -283,6 +285,12 @@ static const char *testTypeToStr(TestType type)
         break;
     case TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES:
         testName = "h265_resources_without_profiles";
+        break;
+    case TEST_TYPE_H265_DECODE_SLIST_A:
+        testName = "h265_slist_a";
+        break;
+    case TEST_TYPE_H265_DECODE_SLIST_B:
+        testName = "h265_slist_b";
         break;
     case TEST_TYPE_AV1_DECODE_I:
         testName = "av1_i";
@@ -421,6 +429,8 @@ struct DecodeTestParam
     {TEST_TYPE_H265_DECODE_INLINE_QUERY_RESULT_WITH_STATUS,
      {CLIP_D, ALL_FRAMES, (DecoderOption)(DecoderOption::UseStatusQueries | DecoderOption::UseInlineStatusQueries)}},
     {TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES, {CLIP_D, ALL_FRAMES, DecoderOption::ResourcesWithoutProfiles}},
+    {TEST_TYPE_H265_DECODE_SLIST_A, {CLIP_ITU_SLIST_A_HEVC, 28, DecoderOption::Default}},
+    {TEST_TYPE_H265_DECODE_SLIST_B, {CLIP_ITU_SLIST_B_HEVC, 28, DecoderOption::Default}},
 
     {TEST_TYPE_AV1_DECODE_I, {CLIP_BASIC_8, 1, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_I_P, {CLIP_BASIC_8, 2, DecoderOption::Default}},
@@ -1459,6 +1469,7 @@ TestInstance *VideoDecodeTestCase::createInstance(Context &context) const
 void VideoDecodeTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_video_queue");
+    context.requireDeviceFunctionality("VK_KHR_video_decode_queue");
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
     switch (m_testDefinition->getTestType())
@@ -1490,6 +1501,8 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_H265_DECODE_I_P_B_13:
     case TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER:
     case TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS:
+    case TEST_TYPE_H265_DECODE_SLIST_A:
+    case TEST_TYPE_H265_DECODE_SLIST_B:
     {
         context.requireDeviceFunctionality("VK_KHR_video_decode_h265");
         break;
@@ -1498,6 +1511,7 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES:
     {
         context.requireDeviceFunctionality("VK_KHR_video_decode_h265");
+        context.requireDeviceFunctionality("VK_KHR_video_maintenance1");
         break;
     }
     case TEST_TYPE_AV1_DECODE_I:
@@ -1572,6 +1586,7 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
 void InterleavingDecodeTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_video_queue");
+    context.requireDeviceFunctionality("VK_KHR_video_decode_queue");
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
 #ifdef DE_DEBUG

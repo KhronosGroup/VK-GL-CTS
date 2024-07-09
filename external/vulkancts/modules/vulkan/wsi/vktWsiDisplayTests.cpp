@@ -501,13 +501,13 @@ bool DisplayCoverageTestInstance::getDisplays2(DisplayVector &displays)
     uint32_t countReported                         = 0u;
     uint32_t countRetrieved                        = 0u;
     const VkDisplayPropertiesKHR displayProperties = {
-        DE_NULL,  // VkDisplayKHR                    display
-        DE_NULL,  // const char*                    displayName
-        {0, 0},   // VkExtent2D                    physicalDimensions
-        {0, 0},   // VkExtent2D                    physicalResolution
-        0,        // VkSurfaceTransformFlagsKHR    supportedTransforms
-        VK_FALSE, // VkBool32                        planeReorderPossible
-        VK_FALSE  // VkBool32                        persistentContent
+        VK_NULL_HANDLE, // VkDisplayKHR                    display
+        DE_NULL,        // const char*                    displayName
+        {0, 0},         // VkExtent2D                    physicalDimensions
+        {0, 0},         // VkExtent2D                    physicalResolution
+        0,              // VkSurfaceTransformFlagsKHR    supportedTransforms
+        VK_FALSE,       // VkBool32                        planeReorderPossible
+        VK_FALSE        // VkBool32                        persistentContent
     };
     const VkDisplayProperties2KHR displayProperties2 = {
         VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR, // VkStructureType            sType
@@ -586,14 +586,15 @@ bool DisplayCoverageTestInstance::getDisplays2(DisplayVector &displays)
 bool DisplayCoverageTestInstance::getDisplayModeProperties2(VkDisplayKHR display,
                                                             DisplayModeProperties2Vector &modeProperties)
 {
-    uint32_t countReported                                   = 0u;
-    uint32_t countRetrieved                                  = 0u;
-    const VkDisplayModePropertiesKHR displayModeProperties   = {DE_NULL, // VkDisplayModeKHR                displayMode
-                                                                {
-                                                                  // VkDisplayModeParametersKHR    parameters
-                                                                  {0, 0}, // VkExtent2D                    visibleRegion
-                                                                  0 // uint32_t                        refreshRate
-                                                              }};
+    uint32_t countReported                                 = 0u;
+    uint32_t countRetrieved                                = 0u;
+    const VkDisplayModePropertiesKHR displayModeProperties = {
+        VK_NULL_HANDLE, // VkDisplayModeKHR                displayMode
+        {
+            // VkDisplayModeParametersKHR    parameters
+            {0, 0}, // VkExtent2D                    visibleRegion
+            0       // uint32_t                        refreshRate
+        }};
     const VkDisplayModeProperties2KHR displayModeProperties2 = {
         VK_STRUCTURE_TYPE_DISPLAY_MODE_PROPERTIES_2_KHR, // VkStructureType                sType
         DE_NULL,                                         // void*                        pNext
@@ -802,7 +803,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
         const uint32_t displayCountExpected              = std::min(displayCountRequested, displayCountReported);
         const VkDisplayPropertiesKHR invalidDisplayProps = {
             // Most values are set to fail the test to make sure driver updates these
-            DE_NULL,                             // VkDisplayKHR display;
+            VK_NULL_HANDLE,                      // VkDisplayKHR display;
             DE_NULL,                             // const char* displayName;
             {0, 0},                              // VkExtent2D physicalDimensions;
             {0, 0},                              // VkExtent2D physicalResolution;
@@ -947,8 +948,8 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
         const uint32_t planeCountExpected                   = std::min(planeCountRequested, planeCountReported);
         const VkDisplayPlanePropertiesKHR invalidPlaneProps = {
             // Most values are set to fail the test to make sure driver updates these
-            DE_NULL,     // VkDisplayKHR    currentDisplay
-            DEUINT32_MAX // uint32_t        currentStackIndex
+            VK_NULL_HANDLE, // VkDisplayKHR    currentDisplay
+            DEUINT32_MAX    // uint32_t        currentStackIndex
         };
         const VkDisplayKHR canaryDisplay = static_cast<VkDisplayKHR>(0xABCDEF11);
         const uint32_t canaryItemCount   = 1;
@@ -1073,7 +1074,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneSupportedDisplay
              displayCountRequested++)
         {
             const uint32_t displayCountExpected = std::min(displayCountRequested, displayCountReported);
-            const VkDisplayKHR nullDisplay      = DE_NULL;
+            const VkDisplayKHR nullDisplay      = VK_NULL_HANDLE;
             const VkDisplayKHR canaryDisplay    = static_cast<VkDisplayKHR>(0xABCDEF11);
             const uint32_t canaryItemCount      = 1;
             std::vector<VkDisplayKHR> displaysForPlane(displayCountRequested + canaryItemCount, nullDisplay);
@@ -1158,7 +1159,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModePropertiesKHR(voi
              modesCountRequested          = nextTestNumber(modesCountRequested, modesCountReported + 2))
         {
             const uint32_t modesCountExpected         = std::min(modesCountRequested, modesCountReported);
-            const VkDisplayModeKHR nullDisplayMode    = DE_NULL;
+            const VkDisplayModeKHR nullDisplayMode    = VK_NULL_HANDLE;
             const VkDisplayModePropertiesKHR nullMode = {nullDisplayMode, // VkDisplayModeKHR                displayMode
                                                          {
                                                              // VkDisplayModeParametersKHR    parameters
@@ -1235,7 +1236,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testCreateDisplayModeKHR(void)
         const VkDisplayKHR display                               = *it;
         DisplayModePropertiesVector::size_type builtinModesCount = 0u;
         VkDisplayModePropertiesKHR validModeProperties;
-        VkDisplayModeKHR mode = DE_NULL;
+        VkDisplayModeKHR mode = VK_NULL_HANDLE;
         DisplayModePropertiesVector modes;
         VkDisplayModeCreateInfoKHR createInfo = {
             VK_STRUCTURE_TYPE_DISPLAY_MODE_CREATE_INFO_KHR, // VkStructureType                sType
@@ -1263,7 +1264,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testCreateDisplayModeKHR(void)
         for (uint32_t testIndex = 0; testIndex < 3; testIndex++)
         {
             VkDisplayModeCreateInfoKHR createInfoFail(createInfo);
-            VkDisplayModeKHR modeFail = DE_NULL;
+            VkDisplayModeKHR modeFail = VK_NULL_HANDLE;
 
             createInfoFail.parameters = validModeProperties.parameters;
 
@@ -1615,7 +1616,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testDisplaySurface(SurfaceTestKind 
                                 alphaMode,                             // VkDisplayPlaneAlphaFlagBitsKHR    alphaMode
                                 {                                      // VkExtent2D                        imageExtent
                                  planeCapabilities.minDstExtent.width, planeCapabilities.minDstExtent.height}};
-                            VkSurfaceKHR surface = DE_NULL;
+                            VkSurfaceKHR surface = VK_NULL_HANDLE;
 
                             result = m_vki.createDisplayPlaneSurfaceKHR(
                                 instance,    // VkInstance                            instance
@@ -1730,7 +1731,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
         const uint32_t displayCountExpected = std::min(displayCountRequested, displayCountReported);
         const VkDisplayPropertiesKHR nonUpdatedDisplayProperties = {
             // Most values are set to fail the test to make sure driver updates them
-            DE_NULL,                             // VkDisplayKHR                    display
+            VK_NULL_HANDLE,                      // VkDisplayKHR                    display
             DE_NULL,                             // const char*                    displayName
             {0, 0},                              // VkExtent2D                    physicalDimensions
             {0, 0},                              // VkExtent2D                    physicalResolution
@@ -1869,7 +1870,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
         const uint32_t planeCountExpected                           = std::min(planeCountRequested, planeCountReported);
         const VkDisplayPlanePropertiesKHR nonUpdatedPlaneProperties = {
             // Most values are set to fail the test to make sure driver updates them
-            DE_NULL,           // VkDisplayKHR    currentDisplay
+            VK_NULL_HANDLE,    // VkDisplayKHR    currentDisplay
             planeCountReported // uint32_t        currentStackIndex
         };
         const VkStructureType queryStructureType = VK_STRUCTURE_TYPE_DISPLAY_PLANE_PROPERTIES_2_KHR;
@@ -2082,7 +2083,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModeProperties2KHR(vo
              modesCountRequested          = nextTestNumber(modesCountRequested, modesCountReported + 2))
         {
             const uint32_t modesCountExpected      = std::min(modesCountRequested, modesCountReported);
-            const VkDisplayModeKHR nullDisplayMode = DE_NULL;
+            const VkDisplayModeKHR nullDisplayMode = VK_NULL_HANDLE;
             const VkDisplayModePropertiesKHR nonUpdatedModeProperties = {
                 nullDisplayMode, // VkDisplayModeKHR                displayMode
                 {

@@ -116,7 +116,7 @@ DE_END_EXTERN_C
     {                                                                                                  \
         iter->hash         = hash;                                                                     \
         iter->curSlotIndex = 0;                                                                        \
-        iter->curSlot      = DE_NULL;                                                                  \
+        iter->curSlot      = NULL;                                                                     \
         iter->curElemIndex = 0;                                                                        \
         if (TYPENAME##_getNumElements(hash) > 0)                                                       \
         {                                                                                              \
@@ -137,7 +137,7 @@ DE_END_EXTERN_C
                                                                                                        \
     DE_INLINE bool TYPENAME##Iter_hasItem(const TYPENAME##Iter *iter)                                  \
     {                                                                                                  \
-        return (iter->curSlot != DE_NULL);                                                             \
+        return (iter->curSlot != NULL);                                                                \
     }                                                                                                  \
                                                                                                        \
     DE_INLINE void TYPENAME##Iter_next(TYPENAME##Iter *iter)                                           \
@@ -164,7 +164,7 @@ DE_END_EXTERN_C
                 if (curSlotIndex < slotTableSize)                                                      \
                     iter->curSlot = hash->slotTable[curSlotIndex];                                     \
                 else                                                                                   \
-                    iter->curSlot = DE_NULL;                                                           \
+                    iter->curSlot = NULL;                                                              \
             }                                                                                          \
         }                                                                                              \
     }                                                                                                  \
@@ -214,7 +214,7 @@ DE_END_EXTERN_C
         /* Alloc struct. */                                                                                         \
         DE_PTR_TYPE(TYPENAME) set = DE_POOL_NEW(pool, TYPENAME);                                                    \
         if (!set)                                                                                                   \
-            return DE_NULL;                                                                                         \
+            return NULL;                                                                                            \
                                                                                                                     \
         /* Init array. */                                                                                           \
         memset(set, 0, sizeof(TYPENAME));                                                                           \
@@ -237,7 +237,7 @@ DE_END_EXTERN_C
                 slot->numUsed            = 0;                                                                       \
                 slot                     = nextSlot;                                                                \
             }                                                                                                       \
-            set->slotTable[slotNdx] = DE_NULL;                                                                      \
+            set->slotTable[slotNdx] = NULL;                                                                         \
         }                                                                                                           \
         set->numElements = 0;                                                                                       \
     }                                                                                                               \
@@ -255,7 +255,7 @@ DE_END_EXTERN_C
                                                                                                                     \
         if (slot)                                                                                                   \
         {                                                                                                           \
-            slot->nextSlot = DE_NULL;                                                                               \
+            slot->nextSlot = NULL;                                                                                  \
             slot->numUsed  = 0;                                                                                     \
         }                                                                                                           \
                                                                                                                     \
@@ -280,7 +280,7 @@ DE_END_EXTERN_C
                 newSlotTable[slotNdx] = oldSlotTable[slotNdx];                                                      \
                                                                                                                     \
             for (slotNdx = oldSlotTableSize; slotNdx < newSlotTableSize; slotNdx++)                                 \
-                newSlotTable[slotNdx] = DE_NULL;                                                                    \
+                newSlotTable[slotNdx] = NULL;                                                                       \
                                                                                                                     \
             set->slotTableSize = newSlotTableSize;                                                                  \
             set->slotTable     = newSlotTable;                                                                      \
@@ -288,7 +288,7 @@ DE_END_EXTERN_C
             for (slotNdx = 0; slotNdx < oldSlotTableSize; slotNdx++)                                                \
             {                                                                                                       \
                 TYPENAME##Slot *slot  = oldSlotTable[slotNdx];                                                      \
-                newSlotTable[slotNdx] = DE_NULL;                                                                    \
+                newSlotTable[slotNdx] = NULL;                                                                       \
                 while (slot)                                                                                        \
                 {                                                                                                   \
                     int elemNdx;                                                                                    \
@@ -382,7 +382,7 @@ DE_END_EXTERN_C
     {                                                                                                               \
         int slotNdx;                                                                                                \
         TYPENAME##Slot *slot;                                                                                       \
-        TYPENAME##Slot *prevSlot = DE_NULL;                                                                         \
+        TYPENAME##Slot *prevSlot = NULL;                                                                            \
                                                                                                                     \
         DE_ASSERT(set->numElements > 0);                                                                            \
         slotNdx = (int)(HASHFUNC(key) & (uint32_t)(set->slotTableSize - 1));                                        \
@@ -411,9 +411,9 @@ DE_END_EXTERN_C
                     if (lastSlot->numUsed == 0)                                                                     \
                     {                                                                                               \
                         if (prevSlot)                                                                               \
-                            prevSlot->nextSlot = DE_NULL;                                                           \
+                            prevSlot->nextSlot = NULL;                                                              \
                         else                                                                                        \
-                            set->slotTable[slotNdx] = DE_NULL;                                                      \
+                            set->slotTable[slotNdx] = NULL;                                                         \
                                                                                                                     \
                         lastSlot->nextSlot = set->slotFreeList;                                                     \
                         set->slotFreeList  = lastSlot;                                                              \

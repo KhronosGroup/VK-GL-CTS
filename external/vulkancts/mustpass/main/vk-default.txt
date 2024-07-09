@@ -21,6 +21,7 @@ vk-default/graphicsfuzz.txt
 vk-default/image/astc-decode-mode.txt
 vk-default/image/atomic-operations.txt
 vk-default/image/depth-stencil-descriptor.txt
+vk-default/image/depth-stencil-separate-access.txt
 vk-default/image/extend-operands-spirv1p4.txt
 vk-default/image/extended-usage-bit.txt
 vk-default/image/extended-usage-bit-compatibility.txt
@@ -31,6 +32,7 @@ vk-default/image/load-store.txt
 vk-default/image/load-store-lod.txt
 vk-default/image/load-store-multisample.txt
 vk-default/image/misaligned-cube.txt
+vk-default/image/mismatched-dimensionality.txt
 vk-default/image/mismatched-formats.txt
 vk-default/image/mismatched-write-op.txt
 vk-default/image/mutable.txt

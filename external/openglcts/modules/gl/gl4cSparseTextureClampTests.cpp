@@ -48,6 +48,9 @@ using namespace glu;
 namespace gl4cts
 {
 
+extern std::vector<GLint> SparseTextureCommitmentFormats;
+extern std::vector<GLint> SparseTextureCommitmentTargets;
+
 const char *stc_compute_textureFill = "#version 430 core\n"
                                       "\n"
                                       "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
@@ -172,22 +175,11 @@ const char *stc_fragment_lookupColor = "#version 450 core\n"
  *
  *  @param context     Rendering context
  */
-SparseTextureClampLookupResidencyTestCase::SparseTextureClampLookupResidencyTestCase(deqp::Context &context)
-    : SparseTexture2LookupTestCase(
-          context, "SparseTextureClampLookupResidency",
-          "Verifies if sparse texture clamp lookup functions generates access residency information")
-{
-    /* Left blank intentionally */
-}
-
-/** Constructor.
- *
- *  @param context     Rendering context
- */
 SparseTextureClampLookupResidencyTestCase::SparseTextureClampLookupResidencyTestCase(deqp::Context &context,
                                                                                      const char *name,
-                                                                                     const char *description)
-    : SparseTexture2LookupTestCase(context, name, description)
+                                                                                     const char *description,
+                                                                                     GLint target, GLint format)
+    : SparseTexture2LookupTestCase(context, name, description, target, format)
 {
     /* Left blank intentionally */
 }
@@ -195,9 +187,6 @@ SparseTextureClampLookupResidencyTestCase::SparseTextureClampLookupResidencyTest
 /** Stub init method */
 void SparseTextureClampLookupResidencyTestCase::init()
 {
-    SparseTextureCommitmentTestCase::init();
-    mSupportedInternalFormats.push_back(GL_DEPTH_COMPONENT16);
-
     FunctionToken f;
     f = FunctionToken("sparseTextureClampARB", "<CUBE_REFZ_DEF>, <LOD>");
     f.allowedTargets.insert(GL_TEXTURE_2D);
@@ -517,10 +506,10 @@ void SparseTextureClampLookupResidencyTestCase::draw(GLint target, GLint layer, 
  *
  *  @param context     Rendering context
  */
-SparseTextureClampLookupColorTestCase::SparseTextureClampLookupColorTestCase(deqp::Context &context)
-    : SparseTextureClampLookupResidencyTestCase(
-          context, "SparseTextureClampLookupColor",
-          "Verifies if sparse and non-sparse texture clamp lookup functions works as expected")
+SparseTextureClampLookupColorTestCase::SparseTextureClampLookupColorTestCase(deqp::Context &context, const char *name,
+                                                                             const char *description, GLint target,
+                                                                             GLint format)
+    : SparseTextureClampLookupResidencyTestCase(context, name, description, target, format)
 {
     /* Left blank intentionally */
 }
@@ -528,11 +517,6 @@ SparseTextureClampLookupColorTestCase::SparseTextureClampLookupColorTestCase(deq
 /** Stub init method */
 void SparseTextureClampLookupColorTestCase::init()
 {
-    SparseTextureCommitmentTestCase::init();
-    mSupportedTargets.push_back(GL_TEXTURE_1D);
-    mSupportedTargets.push_back(GL_TEXTURE_1D_ARRAY);
-    mSupportedInternalFormats.push_back(GL_DEPTH_COMPONENT16);
-
     FunctionToken f;
     f = FunctionToken("sparseTextureClampARB", "<CUBE_REFZ_DEF>, <LOD>");
     f.allowedTargets.insert(GL_TEXTURE_2D);
@@ -616,81 +600,69 @@ tcu::TestNode::IterateResult SparseTextureClampLookupColorTestCase::iterate()
         return STOP;
     }
 
-    const Functions &gl = m_context.getRenderContext().getFunctions();
-
-    bool result = true;
-
-    GLuint texture;
-
-    for (std::vector<glw::GLint>::const_iterator iter = mSupportedTargets.begin(); iter != mSupportedTargets.end();
-         ++iter)
+    if (caseAllowed(mTarget, mFormat))
     {
-        const GLint &target = *iter;
-
-        for (std::vector<glw::GLint>::const_iterator formIter = mSupportedInternalFormats.begin();
-             formIter != mSupportedInternalFormats.end(); ++formIter)
+        for (std::vector<FunctionToken>::const_iterator tokIter = mFunctions.begin(); tokIter != mFunctions.end();
+             ++tokIter)
         {
-            const GLint &format = *formIter;
-
-            if (!caseAllowed(target, format))
+            // Check if target is allowed for current lookup function
+            FunctionToken funcToken = *tokIter;
+            if (!funcAllowed(mTarget, mFormat, funcToken))
                 continue;
 
-            for (std::vector<FunctionToken>::const_iterator tokIter = mFunctions.begin(); tokIter != mFunctions.end();
-                 ++tokIter)
+            bool isSparse = false;
+            if (funcToken.name.find("sparse", 0) != std::string::npos)
+                isSparse = true;
+
+            mLog.str("");
+            mLog << "Testing sparse texture lookup color functions for target: " << mTarget << ", format: " << mFormat
+                 << " - ";
+
+            const Functions &gl = m_context.getRenderContext().getFunctions();
+            GLuint texture;
+
+            if (isSparse)
+                sparseAllocateTexture(gl, mTarget, mFormat, texture, 3);
+            else
+                allocateTexture(gl, mTarget, mFormat, texture, 3);
+
+            if (mFormat == GL_DEPTH_COMPONENT16)
+                setupDepthMode(gl, mTarget, texture);
+
+            int l;
+            int maxLevels = 0;
+            for (l = 0; l < mState.levels; ++l)
             {
-                // Check if target is allowed for current lookup function
-                FunctionToken funcToken = *tokIter;
-                if (!funcAllowed(target, format, funcToken))
-                    continue;
-
-                bool isSparse = false;
-                if (funcToken.name.find("sparse", 0) != std::string::npos)
-                    isSparse = true;
-
-                mLog.str("");
-                mLog << "Testing sparse texture lookup color functions for target: " << target << ", format: " << format
-                     << " - ";
-
-                if (isSparse)
-                    sparseAllocateTexture(gl, target, format, texture, 3);
-                else
-                    allocateTexture(gl, target, format, texture, 3);
-
-                if (format == GL_DEPTH_COMPONENT16)
-                    setupDepthMode(gl, target, texture);
-
-                int l;
-                int maxLevels = 0;
-                for (l = 0; l < mState.levels; ++l)
+                if (!isSparse || commitTexturePage(gl, mTarget, mFormat, texture, l))
                 {
-                    if (!isSparse || commitTexturePage(gl, target, format, texture, l))
-                    {
-                        writeDataToTexture(gl, target, format, texture, l);
-                        maxLevels = l;
-                    }
+                    writeDataToTexture(gl, mTarget, mFormat, texture, l);
+                    maxLevels = l;
                 }
+            }
 
-                for (l = 0; l <= maxLevels; ++l)
-                {
-                    result = result && verifyLookupTextureData(gl, target, format, texture, l, funcToken);
-
-                    if (!result)
-                        break;
-                }
-
-                Texture::Delete(gl, texture);
+            bool result = true;
+            for (l = 0; l <= maxLevels; ++l)
+            {
+                result = result && verifyLookupTextureData(gl, mTarget, mFormat, texture, l, funcToken);
 
                 if (!result)
-                {
-                    m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail" << tcu::TestLog::EndMessage;
-                    m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-                    return STOP;
-                }
+                    break;
+            }
+
+            Texture::Delete(gl, texture);
+
+            if (!result)
+            {
+                m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail" << tcu::TestLog::EndMessage;
+
+                m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+                return STOP;
             }
         }
     }
 
     m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
     return STOP;
 }
 
@@ -1150,8 +1122,84 @@ SparseTextureClampTests::SparseTextureClampTests(deqp::Context &context)
 void SparseTextureClampTests::init()
 {
     addChild(new ShaderExtensionTestCase(m_context, "GL_ARB_sparse_texture_clamp"));
-    addChild(new SparseTextureClampLookupResidencyTestCase(m_context));
-    addChild(new SparseTextureClampLookupColorTestCase(m_context));
+
+    addSparseTextureClampLookupResidencyTestCase();
+    addSparseTextureClampLookupColorTestCase();
+}
+
+void SparseTextureClampTests::addSparseTextureClampLookupResidencyTestCase()
+{
+    std::vector<GLint> additionalFormats;
+    additionalFormats.push_back(GL_DEPTH_COMPONENT16);
+
+    const char *description =
+        "Verifies if sparse texture clamp lookup functions generates access residency information";
+
+    auto addTest = [&](GLint target, GLint format)
+    {
+        std::string name = std::string("SparseTextureClampLookupResidency") + "_" +
+                           SparseTextureUtils::getTextureTargetString(target) + "_" +
+                           SparseTextureUtils::getTextureFormatString(format);
+        addChild(new SparseTextureClampLookupResidencyTestCase(m_context, name.c_str(), description, target, format));
+    };
+
+    for (size_t format = 0; format < SparseTextureCommitmentFormats.size(); format++)
+    {
+        for (size_t target = 0; target < SparseTextureCommitmentTargets.size(); target++)
+        {
+            addTest(SparseTextureCommitmentTargets[target], SparseTextureCommitmentFormats[format]);
+        }
+    }
+    for (size_t format = 0; format < additionalFormats.size(); format++)
+    {
+        for (size_t target = 0; target < SparseTextureCommitmentTargets.size(); target++)
+        {
+            addTest(SparseTextureCommitmentTargets[target], additionalFormats[format]);
+        }
+    }
+}
+
+void SparseTextureClampTests::addSparseTextureClampLookupColorTestCase()
+{
+    std::vector<GLint> additionalTargets;
+    additionalTargets.push_back(GL_TEXTURE_1D);
+    additionalTargets.push_back(GL_TEXTURE_1D_ARRAY);
+
+    std::vector<GLint> additionalFormats;
+    additionalFormats.push_back(GL_DEPTH_COMPONENT16);
+
+    const char *description = "Verifies if sparse and non-sparse texture clamp lookup functions works as expected";
+
+    auto addTest = [&](GLint target, GLint format)
+    {
+        std::string name = std::string("SparseTextureClampLookupColor") + "_" +
+                           SparseTextureUtils::getTextureTargetString(target) + "_" +
+                           SparseTextureUtils::getTextureFormatString(format);
+        addChild(new SparseTextureClampLookupColorTestCase(m_context, name.c_str(), description, target, format));
+    };
+
+    for (size_t format = 0; format < SparseTextureCommitmentFormats.size(); format++)
+    {
+        for (size_t target = 0; target < SparseTextureCommitmentTargets.size(); target++)
+        {
+            addTest(SparseTextureCommitmentTargets[target], SparseTextureCommitmentFormats[format]);
+        }
+        for (size_t target = 0; target < additionalTargets.size(); target++)
+        {
+            addTest(additionalTargets[target], SparseTextureCommitmentFormats[format]);
+        }
+    }
+    for (size_t format = 0; format < additionalFormats.size(); format++)
+    {
+        for (size_t target = 0; target < SparseTextureCommitmentTargets.size(); target++)
+        {
+            addTest(SparseTextureCommitmentTargets[target], additionalFormats[format]);
+        }
+        for (size_t target = 0; target < additionalTargets.size(); target++)
+        {
+            addTest(additionalTargets[target], additionalFormats[format]);
+        }
+    }
 }
 
 } // namespace gl4cts

@@ -443,9 +443,9 @@ tcu::TestStatus renderTriangleTest(Context &context)
                              vkDevice,          // const VkDevice                    device
                              *pipelineLayout,   // const VkPipelineLayout            pipelineLayout
                              *vertShaderModule, // const VkShaderModule              vertexShaderModule
-                             DE_NULL,           // const VkShaderModule              tessellationControlModule
-                             DE_NULL,           // const VkShaderModule              tessellationEvalModule
-                             DE_NULL,           // const VkShaderModule              geometryShaderModule
+                             VK_NULL_HANDLE,    // const VkShaderModule              tessellationControlModule
+                             VK_NULL_HANDLE,    // const VkShaderModule              tessellationEvalModule
+                             VK_NULL_HANDLE,    // const VkShaderModule              geometryShaderModule
                              *fragShaderModule, // const VkShaderModule              fragmentShaderModule
                              *renderPass,       // const VkRenderPass                renderPass
                              viewports,         // const std::vector<VkViewport>&    viewports
@@ -731,9 +731,9 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest(Context &context)
                              vkDevice,          // const VkDevice                    device
                              *pipelineLayout,   // const VkPipelineLayout            pipelineLayout
                              *vertShaderModule, // const VkShaderModule              vertexShaderModule
-                             DE_NULL,           // const VkShaderModule              tessellationControlShaderModule
-                             DE_NULL,           // const VkShaderModule              tessellationEvalShaderModule
-                             DE_NULL,           // const VkShaderModule              geometryShaderModule
+                             VK_NULL_HANDLE,    // const VkShaderModule              tessellationControlShaderModule
+                             VK_NULL_HANDLE,    // const VkShaderModule              tessellationEvalShaderModule
+                             VK_NULL_HANDLE,    // const VkShaderModule              geometryShaderModule
                              *fragShaderModule, // const VkShaderModule              fragmentShaderModule
                              *renderPass,       // const VkRenderPass                renderPass
                              viewports,         // const std::vector<VkViewport>&    viewports

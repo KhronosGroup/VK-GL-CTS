@@ -52,7 +52,7 @@ const char *deGetSocketResultName(deSocketResult result)
     case DE_SOCKETRESULT_ERROR:
         return "DE_SOCKETRESULT_ERROR";
     default:
-        return DE_NULL;
+        return NULL;
     }
 }
 
@@ -65,7 +65,7 @@ const char *deGetSocketFamilyName(deSocketFamily family)
     case DE_SOCKETFAMILY_INET6:
         return "DE_SOCKETFAMILY_INET6";
     default:
-        return DE_NULL;
+        return NULL;
     }
 }
 
@@ -129,11 +129,11 @@ bool deSocketAddress_setHost(deSocketAddress *address, const char *host)
     if (address->host)
     {
         deFree(address->host);
-        address->host = DE_NULL;
+        address->host = NULL;
     }
 
     address->host = deStrdup(host);
-    return address->host != DE_NULL;
+    return address->host != NULL;
 }
 
 const char *deSocketAddress_getHost(const deSocketAddress *address)
@@ -247,8 +247,8 @@ static uint16_t deNetworkToHostOrder16(uint16_t v)
 #endif
 }
 
-DE_STATIC_ASSERT(sizeof(((struct sockaddr_in *)DE_NULL)->sin_port) == sizeof(uint16_t));
-DE_STATIC_ASSERT(sizeof(((struct sockaddr_in6 *)DE_NULL)->sin6_port) == sizeof(uint16_t));
+DE_STATIC_ASSERT(sizeof(((struct sockaddr_in *)NULL)->sin_port) == sizeof(uint16_t));
+DE_STATIC_ASSERT(sizeof(((struct sockaddr_in6 *)NULL)->sin6_port) == sizeof(uint16_t));
 
 static int deSocketFamilyToBsdFamily(deSocketFamily family)
 {
@@ -298,9 +298,9 @@ static bool deSocketAddressToBsdAddress(const deSocketAddress *address, size_t b
     deMemset(bsdAddr, 0, bsdAddrBufSize);
 
     /* Resolve host. */
-    if (address->host != DE_NULL)
+    if (address->host != NULL)
     {
-        struct addrinfo *result = DE_NULL;
+        struct addrinfo *result = NULL;
         struct addrinfo hints;
 
         deMemset(&hints, 0, sizeof(hints));
@@ -308,7 +308,7 @@ static bool deSocketAddressToBsdAddress(const deSocketAddress *address, size_t b
         hints.ai_socktype = deSocketTypeToBsdType(address->type);
         hints.ai_protocol = deSocketProtocolToBsdProtocol(address->protocol);
 
-        if (getaddrinfo(address->host, DE_NULL, &hints, &result) != 0 || !result)
+        if (getaddrinfo(address->host, NULL, &hints, &result) != 0 || !result)
         {
             if (result)
                 freeaddrinfo(result);
@@ -432,7 +432,7 @@ deSocket *deSocket_create(void)
 #if defined(DE_USE_WINSOCK)
     /* Make sure WSA is up. */
     if (!initWinsock())
-        return DE_NULL;
+        return NULL;
 #endif
 
     sock->stateLock = deMutex_create(0);
@@ -559,7 +559,7 @@ bool deSocket_listen(deSocket *sock, const deSocketAddress *address)
 deSocket *deSocket_accept(deSocket *sock, deSocketAddress *clientAddress)
 {
     deSocketHandle newFd = DE_INVALID_SOCKET_HANDLE;
-    deSocket *newSock    = DE_NULL;
+    deSocket *newSock    = NULL;
     uint8_t bsdAddrBuf[sizeof(struct sockaddr_in6)];
     struct sockaddr *bsdAddr = (struct sockaddr *)&bsdAddrBuf[0];
     NativeSocklen bsdAddrLen = (NativeSocklen)sizeof(bsdAddrBuf);
@@ -568,7 +568,7 @@ deSocket *deSocket_accept(deSocket *sock, deSocketAddress *clientAddress)
 
     newFd = accept(sock->handle, bsdAddr, &bsdAddrLen);
     if (!deSocketHandleIsValid(newFd))
-        return DE_NULL;
+        return NULL;
 
     newSock = (deSocket *)deCalloc(sizeof(deSocket));
     if (!newSock)
@@ -578,7 +578,7 @@ deSocket *deSocket_accept(deSocket *sock, deSocketAddress *clientAddress)
 #else
         close(newFd);
 #endif
-        return DE_NULL;
+        return NULL;
     }
 
     newSock->stateLock    = deMutex_create(0);

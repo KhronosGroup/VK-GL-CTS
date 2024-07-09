@@ -697,7 +697,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
                                               planeCompatibleFormat, subresourceRange));
             imageViews.push_back(imageView);
             const VkDescriptorImageInfo imageSparseInfo =
-                makeDescriptorImageInfo(DE_NULL, imageView->get(), VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, imageView->get(), VK_IMAGE_LAYOUT_GENERAL);
 
             DescriptorSetUpdateBuilder()
                 .writeSingle(descriptorSet->get(), DescriptorSetUpdateBuilder::Location::binding(0u),

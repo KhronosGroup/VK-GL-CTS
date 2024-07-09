@@ -1613,6 +1613,50 @@ void CopyImageToImage::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src,
     }
 }
 
+static void checkTransferQueueGranularity(Context &context, const VkExtent3D &extent, VkImageType imageType)
+{
+    const auto queueIndex = context.getTransferQueueFamilyIndex();
+    if (queueIndex == -1)
+        TCU_THROW(NotSupportedError, "No queue family found that only supports transfer queue.");
+
+    const std::vector<VkQueueFamilyProperties> queueProps =
+        getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+    DE_ASSERT((int)queueProps.size() > queueIndex);
+    const VkQueueFamilyProperties *xferProps = &queueProps[queueIndex];
+
+    std::ostringstream ss;
+    switch (imageType)
+    {
+    case VK_IMAGE_TYPE_1D:
+        if (extent.width < xferProps->minImageTransferGranularity.width)
+        {
+            ss << "1d copy extent " << extent.width << " too small for queue granularity";
+            TCU_THROW(NotSupportedError, ss.str());
+        }
+        break;
+    case VK_IMAGE_TYPE_2D:
+        if (extent.width < xferProps->minImageTransferGranularity.width ||
+            extent.height < xferProps->minImageTransferGranularity.height)
+        {
+            ss << "2d copy extent (" << extent.width << ", " << extent.height << ") too small for queue granularity";
+            TCU_THROW(NotSupportedError, ss.str());
+        }
+        break;
+    case VK_IMAGE_TYPE_3D:
+        if (extent.width < xferProps->minImageTransferGranularity.width ||
+            extent.height < xferProps->minImageTransferGranularity.height ||
+            extent.depth < xferProps->minImageTransferGranularity.depth)
+        {
+            ss << "3d copy extent (" << extent.width << ", " << extent.height << ", " << extent.depth
+               << ") too small for queue granularity";
+            TCU_THROW(NotSupportedError, ss.str());
+        }
+        break;
+    default:
+        DE_ASSERT(false && "Unexpected image type");
+    }
+}
+
 class CopyImageToImageTestCase : public vkt::TestCase
 {
 public:
@@ -1704,6 +1748,18 @@ public:
                  m_params.src.image.extent.depth > limits.maxImageDimension3D))
             {
                 TCU_THROW(NotSupportedError, "Requested 3D dst image dimensions not supported");
+            }
+        }
+
+        // Check queue transfer granularity requirements
+        if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+        {
+            for (const auto &res : {m_params.src, m_params.dst})
+                checkTransferQueueGranularity(context, res.image.extent, res.image.imageType);
+            for (const auto &region : m_params.regions)
+            {
+                checkTransferQueueGranularity(context, region.imageCopy.extent, m_params.src.image.imageType);
+                checkTransferQueueGranularity(context, region.imageCopy.extent, m_params.dst.image.imageType);
             }
         }
     }
@@ -2226,6 +2282,11 @@ public:
                 TCU_THROW(NotSupportedError, "Requested 3D dst image dimensions not supported");
             }
         }
+
+        // Check queue transfer granularity requirements
+        if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+            for (const auto &res : {m_params.src, m_params.dst})
+                checkTransferQueueGranularity(context, res.image.extent, res.image.imageType);
     }
 
 private:
@@ -2686,6 +2747,16 @@ public:
     virtual void checkSupport(Context &context) const
     {
         checkExtensionSupport(context, m_params.extensionFlags);
+        // Check queue transfer granularity requirements
+        if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+        {
+            checkTransferQueueGranularity(context, m_params.src.image.extent, m_params.src.image.imageType);
+            for (const auto &region : m_params.regions)
+            {
+                checkTransferQueueGranularity(context, region.bufferImageCopy.imageExtent,
+                                              m_params.src.image.imageType);
+            }
+        }
     }
 
 private:
@@ -3199,6 +3270,16 @@ public:
     virtual void checkSupport(Context &context) const
     {
         checkExtensionSupport(context, m_params.extensionFlags);
+        // Check queue transfer granularity requirements
+        if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+        {
+            checkTransferQueueGranularity(context, m_params.dst.image.extent, m_params.dst.image.imageType);
+            for (const auto &region : m_params.regions)
+            {
+                checkTransferQueueGranularity(context, region.bufferImageCopy.imageExtent,
+                                              m_params.dst.image.imageType);
+            }
+        }
     }
 
 private:
@@ -6785,9 +6866,9 @@ ResolveImageToImage::ResolveImageToImage(Context &context, TestParams params, co
                 vkDevice,              // const VkDevice                                device
                 *pipelineLayout,       // const VkPipelineLayout                        pipelineLayout
                 *vertexShaderModule,   // const VkShaderModule                          vertexShaderModule
-                DE_NULL,               // const VkShaderModule                          tessellationControlModule
-                DE_NULL,               // const VkShaderModule                          tessellationEvalModule
-                DE_NULL,               // const VkShaderModule                          geometryShaderModule
+                VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlModule
+                VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalModule
+                VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
                 *fragmentShaderModule, // const VkShaderModule                          fragmentShaderModule
                 *renderPass,           // const VkRenderPass                            renderPass
                 viewports,             // const std::vector<VkViewport>&                viewports
@@ -7241,7 +7322,18 @@ tcu::TestStatus ResolveImageToImage::checkIntermediateCopy(void)
         nullptr, // const uint32_t* pPreserveAttachments;
     };
 
-    const VkRenderPassCreateInfo renderPassInfo = {
+    // self-dependency - load op is considered to write the attachment
+    const VkSubpassDependency subpassDependency{
+        0,                                             // uint32_t srcSubpass;
+        0,                                             // uint32_t dstSubpass;
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // VkPipelineStageFlags srcStageMask;
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // VkPipelineStageFlags dstStageMask;
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // VkAccessFlags srcAccessMask;
+        VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,           // VkAccessFlags dstAccessMask;
+        VK_DEPENDENCY_BY_REGION_BIT                    // VkDependencyFlags dependencyFlags;
+    };
+
+    const VkRenderPassCreateInfo renderPassInfo{
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,            // VkStructureType sType;
         nullptr,                                              // const void* pNext;
         0u,                                                   // VkRenderPassCreateFlags flags;
@@ -7249,8 +7341,8 @@ tcu::TestStatus ResolveImageToImage::checkIntermediateCopy(void)
         attachmentDescriptions.data(),                        // const VkAttachmentDescription* pAttachments;
         1u,                                                   // uint32_t subpassCount;
         &subpassDescription,                                  // const VkSubpassDescription* pSubpasses;
-        0u,                                                   // uint32_t dependencyCount;
-        nullptr,                                              // const VkSubpassDependency* pDependencies;
+        1u,                                                   // uint32_t dependencyCount;
+        &subpassDependency,                                   // const VkSubpassDependency* pDependencies;
     };
 
     const auto renderPass = createRenderPass(vkd, device, &renderPassInfo);
@@ -7307,7 +7399,7 @@ tcu::TestStatus ResolveImageToImage::checkIntermediateCopy(void)
     imageInfos.reserve(imageViewsRaw.size());
     for (size_t i = 0; i < imageViewsRaw.size(); ++i)
         imageInfos.push_back(
-            makeDescriptorImageInfo(DE_NULL, imageViewsRaw[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+            makeDescriptorImageInfo(VK_NULL_HANDLE, imageViewsRaw[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
     for (size_t i = 0; i < imageInfos.size(); ++i)
         updater.writeSingle(descriptorSetAttachments.get(),
@@ -7367,9 +7459,9 @@ tcu::TestStatus ResolveImageToImage::checkIntermediateCopy(void)
         device,                              // const VkDevice                                device
         pipelineLayout.get(),                // const VkPipelineLayout                        pipelineLayout
         vertexModule.get(),                  // const VkShaderModule                          vertexShaderModule
-        DE_NULL,                             // const VkShaderModule                          tessellationControlModule
-        DE_NULL,                             // const VkShaderModule                          tessellationEvalModule
-        DE_NULL,                             // const VkShaderModule                          geometryShaderModule
+        VK_NULL_HANDLE,                      // const VkShaderModule                          tessellationControlModule
+        VK_NULL_HANDLE,                      // const VkShaderModule                          tessellationEvalModule
+        VK_NULL_HANDLE,                      // const VkShaderModule                          geometryShaderModule
         verificationModule.get(),            // const VkShaderModule                          fragmentShaderModule
         renderPass.get(),                    // const VkRenderPass                            renderPass
         viewports,                           // const std::vector<VkViewport>&                viewports
@@ -7389,6 +7481,10 @@ tcu::TestStatus ResolveImageToImage::checkIntermediateCopy(void)
     // Make sure multisample copy data is available to the fragment shader.
     const auto imagesBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
 
+    // Make sure input attachment can be read by the shader after the loadop is executed at the start of the renderpass
+    const auto loadBarrier =
+        makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
+
     // Make sure verification buffer data is available on the host.
     const auto bufferBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
 
@@ -7397,6 +7493,9 @@ tcu::TestStatus ResolveImageToImage::checkIntermediateCopy(void)
     vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 1u,
                            &imagesBarrier, 0u, nullptr, 0u, nullptr);
     beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), makeRect2D(m_params.src.image.extent));
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_DEPENDENCY_BY_REGION_BIT, 1u, &loadBarrier,
+                           0u, nullptr, 0u, nullptr);
     vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
     vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBufferHandler, &vertexBufferOffset);
     vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), VK_SHADER_STAGE_FRAGMENT_BIT, 0u, pushConstantSize,
@@ -8455,9 +8554,9 @@ tcu::TestStatus DepthStencilMSAA::iterate(void)
                     vkDevice,            // const VkDevice                                    device
                     *pipelineLayout,     // const VkPipelineLayout                            pipelineLayout
                     *vertexShaderModule, // const VkShaderModule                                vertexShaderModule
-                    DE_NULL, // const VkShaderModule                                tessellationControlModule
-                    DE_NULL, // const VkShaderModule                                tessellationEvalModule
-                    DE_NULL, // const VkShaderModule                                geometryShaderModule
+                    VK_NULL_HANDLE, // const VkShaderModule                                tessellationControlModule
+                    VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalModule
+                    VK_NULL_HANDLE, // const VkShaderModule                                geometryShaderModule
                     *fragmentShaderModule, // const VkShaderModule                                fragmentShaderModule
                     *renderPass,           // const VkRenderPass                                renderPass
                     viewports,             // const std::vector<VkViewport>&                    viewports
@@ -8835,7 +8934,7 @@ tcu::TestStatus DepthStencilMSAA::checkCopyResults(VkCommandBuffer cmdBuffer,
     for (size_t i = 0; i < imageViewsRaw.size(); ++i)
     {
         imageInfos.push_back(
-            makeDescriptorImageInfo(DE_NULL, imageViewsRaw[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+            makeDescriptorImageInfo(VK_NULL_HANDLE, imageViewsRaw[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
         updater.writeSingle(descriptorSetAttachments.get(),
                             DescriptorSetUpdateBuilder::Location::binding(static_cast<uint32_t>(i)),
                             VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &imageInfos[i]);
@@ -8891,9 +8990,9 @@ tcu::TestStatus DepthStencilMSAA::checkCopyResults(VkCommandBuffer cmdBuffer,
         device,                   // const VkDevice                                    device
         pipelineLayout.get(),     // const VkPipelineLayout                            pipelineLayout
         vertexModule.get(),       // const VkShaderModule                                vertexShaderModule
-        DE_NULL,                  // const VkShaderModule                                tessellationControlModule
-        DE_NULL,                  // const VkShaderModule                                tessellationEvalModule
-        DE_NULL,                  // const VkShaderModule                                geometryShaderModule
+        VK_NULL_HANDLE,           // const VkShaderModule                                tessellationControlModule
+        VK_NULL_HANDLE,           // const VkShaderModule                                tessellationEvalModule
+        VK_NULL_HANDLE,           // const VkShaderModule                                geometryShaderModule
         verificationModule.get(), // const VkShaderModule                                fragmentShaderModule
         renderPass.get(),         // const VkRenderPass                                renderPass
         viewports,                // const std::vector<VkViewport>&                    viewports

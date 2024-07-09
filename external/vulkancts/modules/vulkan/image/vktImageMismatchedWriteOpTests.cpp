@@ -940,7 +940,8 @@ tcu::TestStatus MismatchedWriteOpTestInstance::iterate(void)
 
     ut::StorageBuffer2D buffer(m_context, m_test->getBufferFormat(), m_params->textureWidth, m_params->textureHeight);
 
-    VkDescriptorImageInfo inputImageInfo = makeDescriptorImageInfo(DE_NULL, image.getView(), VK_IMAGE_LAYOUT_GENERAL);
+    VkDescriptorImageInfo inputImageInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, image.getView(), VK_IMAGE_LAYOUT_GENERAL);
     VkDescriptorBufferInfo outputBufferInfo = makeDescriptorBufferInfo(buffer.getBuffer(), 0u, buffer.getSize());
 
     DescriptorSetUpdateBuilder builder;

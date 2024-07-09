@@ -3555,8 +3555,8 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     vector<SamplerHandleSp> inResourceSamplers;
     Move<VkDescriptorPool> descriptorPool;
     Move<VkDescriptorSetLayout> setLayout;
-    VkDescriptorSetLayout rawSetLayout = DE_NULL;
-    VkDescriptorSet rawSet             = DE_NULL;
+    VkDescriptorSetLayout rawSetLayout = VK_NULL_HANDLE;
+    VkDescriptorSet rawSet             = VK_NULL_HANDLE;
 
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -4228,11 +4228,11 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         *pipelineLayout,         // VkPipelineLayout layout;
         *renderPass,             // VkRenderPass renderPass;
         0u,                      // uint32_t subpass;
-        DE_NULL,                 // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,          // VkPipeline basePipelineHandle;
         0u,                      // int32_t basePipelineIndex;
     };
 
-    const Unique<VkPipeline> pipeline(createGraphicsPipeline(vk, device, DE_NULL, &pipelineParams));
+    const Unique<VkPipeline> pipeline(createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineParams));
 
     if (needInterface)
     {

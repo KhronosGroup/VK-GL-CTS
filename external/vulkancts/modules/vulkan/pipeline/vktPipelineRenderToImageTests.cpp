@@ -1012,7 +1012,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
         const VkImageAspectFlags depthStencilAspect = getFormatAspectFlags(caseDef.depthStencilFormat);
         const bool useDepth                         = (depthStencilAspect & VK_IMAGE_ASPECT_DEPTH_BIT) != 0;
         const bool useStencil                       = (depthStencilAspect & VK_IMAGE_ASPECT_STENCIL_BIT) != 0;
-        VkPipeline basePipeline                     = DE_NULL;
+        VkPipeline basePipeline                     = VK_NULL_HANDLE;
 
         // Color attachments are first in the framebuffer
         pipelines.reserve(numSlices);
@@ -1303,7 +1303,7 @@ void drawToMipLevel(const Context &context, const CaseDef &caseDef, const int mi
 
     // For each image layer or slice (3D), create an attachment and a pipeline
     {
-        VkPipeline basePipeline = DE_NULL;
+        VkPipeline basePipeline = VK_NULL_HANDLE;
 
         // Color attachments are first in the framebuffer
         pipelines.reserve(numSlices);

@@ -1339,7 +1339,7 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline(
         0,                                                 // int32_t basePipelineIndex;
     };
 
-    return createGraphicsPipeline(*m_device, *m_logicalDevice, DE_NULL, &graphicsPipelineParams);
+    return createGraphicsPipeline(*m_device, *m_logicalDevice, VK_NULL_HANDLE, &graphicsPipelineParams);
 }
 
 void MultiViewRenderTestInstance::readImage(VkImage image, const tcu::PixelBufferAccess &dst)
@@ -4204,7 +4204,7 @@ void MultiViewDepthStencilTestInstance::draw(const uint32_t subpassCount, VkRend
                     m_colorAttachment->getImageView(),                   // VkImageView imageView;
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,            // VkImageLayout imageLayout;
                     VK_RESOLVE_MODE_NONE,                                // VkResolveModeFlagBits resolveMode;
-                    DE_NULL,                                             // VkImageView resolveImageView;
+                    VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
                     VK_IMAGE_LAYOUT_UNDEFINED,                           // VkImageLayout resolveImageLayout;
                     VK_ATTACHMENT_LOAD_OP_LOAD,                          // VkAttachmentLoadOp loadOp;
                     vk::VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -4218,7 +4218,7 @@ void MultiViewDepthStencilTestInstance::draw(const uint32_t subpassCount, VkRend
                 m_dsAttachment->getImageView(),                   // VkImageView imageView;
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout imageLayout;
                 VK_RESOLVE_MODE_NONE,                             // VkResolveModeFlagBits resolveMode;
-                DE_NULL,                                          // VkImageView resolveImageView;
+                VK_NULL_HANDLE,                                   // VkImageView resolveImageView;
                 VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout resolveImageLayout;
                 VK_ATTACHMENT_LOAD_OP_LOAD,                       // VkAttachmentLoadOp loadOp;
                 VK_ATTACHMENT_STORE_OP_STORE,                     // VkAttachmentStoreOp storeOp;

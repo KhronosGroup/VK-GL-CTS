@@ -561,6 +561,9 @@ ENUM_GROUPS = [
 
         # GL_EXT_read_format_bgra
         "BGRA",
+
+        # GL_EXT_texture_format_BGRA8888
+        "BGRA8_EXT",
         ]),
 
     ("CompressedTextureFormat", [

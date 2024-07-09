@@ -620,7 +620,7 @@ void GraphicQueryTestBase::initStateObjects(void)
         pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
         pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
         pipelineCreateInfo.addState(vf_info);
-        m_pipeline = createGraphicsPipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+        m_pipeline = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     // vertex buffer
@@ -969,7 +969,7 @@ void ComputeQueryTestBase::initStateObjects(void)
             DE_NULL,                                        // basePipelineHandle
             0,                                              // basePipelineIndex
         };
-        m_pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+        m_pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     m_buffer = Buffer::createAndAlloc(vkd, device, BufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),

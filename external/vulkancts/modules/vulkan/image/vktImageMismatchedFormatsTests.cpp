@@ -433,7 +433,7 @@ tcu::TestStatus MismatchedFormatTestInstance::iterate(void)
     Move<VkImageView> storageImageView =
         makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D, m_format, subresourceRange);
     VkDescriptorImageInfo storageImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *storageImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *storageImageView, VK_IMAGE_LAYOUT_GENERAL);
 
     DescriptorSetUpdateBuilder builder;
     builder

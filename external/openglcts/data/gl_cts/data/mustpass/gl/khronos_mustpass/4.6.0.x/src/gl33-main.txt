@@ -2884,5 +2884,5 @@ KHR-GL33.cull_distance.functional
 KHR-GL33.cull_distance.negative
 KHR-GL33.texture_swizzle.api_errors
 KHR-GL33.texture_swizzle.intial_state
-KHR-GL33.texture_swizzle.smoke
-KHR-GL33.texture_swizzle.functional
+KHR-GL33.texture_swizzle.smoke*
+KHR-GL33.texture_swizzle.functional*

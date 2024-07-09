@@ -408,11 +408,11 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         pipelineLayout,                  // VkPipelineLayout layout;
         renderPass,                      // VkRenderPass renderPass;
         0u,                              // uint32_t subpass;
-        DE_NULL,                         // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                  // VkPipeline basePipelineHandle;
         0,                               // int32_t basePipelineIndex;
     };
 
-    return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
+    return createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineInfo);
 }
 
 //! Return true if there are any red (or all zero) pixels in the image
@@ -651,7 +651,7 @@ protected:
         return referenceBufferCreateInfo;
     }
 
-    void draw(const VkPrimitiveTopology topology, const VkDescriptorSetLayout descriptorSetLayout = DE_NULL,
+    void draw(const VkPrimitiveTopology topology, const VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE,
               Renderer::SpecializationMap specMap = Renderer::SpecializationMap(), bool useDeviceGroups = false,
               uint32_t deviceID = 0)
     {

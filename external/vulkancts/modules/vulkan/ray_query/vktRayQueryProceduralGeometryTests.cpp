@@ -134,10 +134,10 @@ tcu::TestStatus RayQueryProceduralGeometryTestBase::iterate(void)
          VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, (VkPipelineShaderStageCreateFlags)0,
          VK_SHADER_STAGE_COMPUTE_BIT, *shaderModule, "main", DE_NULL},
         *pipelineLayout, // VkPipelineLayout                        layout
-        DE_NULL,         // VkPipeline                            basePipelineHandle
+        VK_NULL_HANDLE,  // VkPipeline                            basePipelineHandle
         0,               // int32_t                                basePipelineIndex
     };
-    Move<VkPipeline> pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+    Move<VkPipeline> pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
     m_cmdPool   = createCommandPool(vkd, device, 0, queueFamilyIndex);
     m_cmdBuffer = allocateCommandBuffer(vkd, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);

@@ -520,8 +520,8 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkFormat format, 
         m_device,             // const VkDevice                                device
         renderPipelineLayout, // const VkPipelineLayout                        pipelineLayout
         *vertexShaderModule,  // const VkShaderModule                          vertexShaderModule
-        DE_NULL,              // const VkShaderModule                          tessellationControlShaderModule
-        DE_NULL,              // const VkShaderModule                          tessellationEvalShaderModule
+        VK_NULL_HANDLE,       // const VkShaderModule                          tessellationControlShaderModule
+        VK_NULL_HANDLE,       // const VkShaderModule                          tessellationEvalShaderModule
         m_config.imageLayers == 1 ?
             DE_NULL :
             *geometryShaderModule,           // const VkShaderModule                          geometryShaderModule
@@ -1220,9 +1220,15 @@ struct Programs
     }
 };
 
+void checkSupport(Context &context)
+{
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
+}
+
 void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
 {
-    typedef InstanceFactory1<DepthStencilResolveTest, TestConfig, Programs> DSResolveTestInstance;
+    typedef InstanceFactory1WithSupport<DepthStencilResolveTest, TestConfig, FunctionSupport0, Programs>
+        DSResolveTestInstance;
 
     struct FormatData
     {
@@ -1375,7 +1381,8 @@ void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
                                                            0u,
                                                            useSeparateDepthStencilLayouts,
                                                            groupParams};
-                            formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testConfig));
+                            formatGroup->addChild(
+                                new DSResolveTestInstance(testCtx, testName, testConfig, checkSupport));
                         }
 
                         if (hasStencil)
@@ -1401,7 +1408,8 @@ void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
                                                            expectedValue,
                                                            useSeparateDepthStencilLayouts,
                                                            groupParams};
-                            formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testConfig));
+                            formatGroup->addChild(
+                                new DSResolveTestInstance(testCtx, testName, testConfig, checkSupport));
                         }
                     }
                 }

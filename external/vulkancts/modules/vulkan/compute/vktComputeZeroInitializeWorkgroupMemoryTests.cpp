@@ -1263,7 +1263,7 @@ tcu::TestStatus RepeatedPipelineInstance::iterate(void)
     const VkComputePipelineCreateInfo pipelineInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, DE_NULL, 0u, shaderInfo, *pipelineLayout, (VkPipeline)0, 0u,
     };
-    Move<VkPipeline> pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineInfo, NULL);
+    Move<VkPipeline> pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineInfo, NULL);
 
     const VkQueue queue             = context.getUniversalQueue();
     Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,

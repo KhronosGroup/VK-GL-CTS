@@ -542,7 +542,7 @@ void DrawTestInstanceBase::initPipeline(const vk::VkDevice device)
     }
 #endif // CTS_USES_VULKANSC
 
-    m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
+    m_pipeline = vk::createGraphicsPipeline(m_vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 void DrawTestInstanceBase::preRenderBarriers(void)
@@ -597,9 +597,9 @@ void DrawTestInstanceBase::beginSecondaryCmdBuffer(const vk::DeviceInterface &vk
     const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
         &inheritanceRenderingInfo,                             // const void* pNext;
-        DE_NULL,                                               // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                        // VkRenderPass renderPass;
         0u,                                                    // uint32_t subpass;
-        DE_NULL,                                               // VkFramebuffer framebuffer;
+        VK_NULL_HANDLE,                                        // VkFramebuffer framebuffer;
         VK_FALSE,                                              // VkBool32 occlusionQueryEnable;
         (vk::VkQueryControlFlags)0u,                           // VkQueryControlFlags queryFlags;
         (vk::VkQueryPipelineStatisticFlags)0u                  // VkQueryPipelineStatisticFlags pipelineStatistics;
@@ -635,9 +635,9 @@ void DrawTestInstanceBase::beginNestedCmdBuffer(const vk::DeviceInterface &vk, v
     const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
         &inheritanceRenderingInfo,                             // const void* pNext;
-        DE_NULL,                                               // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                        // VkRenderPass renderPass;
         0u,                                                    // uint32_t subpass;
-        DE_NULL,                                               // VkFramebuffer framebuffer;
+        VK_NULL_HANDLE,                                        // VkFramebuffer framebuffer;
         VK_FALSE,                                              // VkBool32 occlusionQueryEnable;
         (vk::VkQueryControlFlags)0u,                           // VkQueryControlFlags queryFlags;
         (vk::VkQueryPipelineStatisticFlags)0u                  // VkQueryPipelineStatisticFlags pipelineStatistics;
@@ -701,7 +701,7 @@ public:
     DrawTestInstance(Context &context, const T &data);
     virtual ~DrawTestInstance(void);
     virtual void generateDrawData(void);
-    virtual void draw(vk::VkCommandBuffer cmdBuffer, vk::VkBuffer indirectBuffer = DE_NULL,
+    virtual void draw(vk::VkCommandBuffer cmdBuffer, vk::VkBuffer indirectBuffer = VK_NULL_HANDLE,
                       vk::VkDeviceSize indirectOffset = 0ul);
     virtual tcu::TestStatus iterate(void);
 
@@ -798,14 +798,24 @@ void DrawTestCase<T>::checkSupport(Context &context) const
 
     if (m_data.groupParams.nestedSecondaryCmdBuffer)
     {
-        context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
-        const auto &features =
-            *vk::findStructure<vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
-        if (!features.nestedCommandBuffer)
-            TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
-        if (!features.nestedCommandBufferRendering)
-            TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported, so "
-                                         "VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT cannot be used");
+        bool maintenance7 = false;
+        if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance7"))
+        {
+            const auto &features =
+                *vk::findStructure<vk::VkPhysicalDeviceMaintenance7FeaturesKHR>(&context.getDeviceFeatures2());
+            maintenance7 = features.maintenance7;
+        }
+        if (!maintenance7)
+        {
+            context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+            const auto &features =
+                *vk::findStructure<vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+            if (!features.nestedCommandBuffer)
+                TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+            if (!features.nestedCommandBufferRendering)
+                TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported, so "
+                                             "VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT cannot be used");
+        }
     }
 
     if (m_data.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&

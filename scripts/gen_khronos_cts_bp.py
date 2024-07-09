@@ -146,8 +146,7 @@ LIB_KHRONOS_CTS_PLATFORM_EXCLUDE_PATTERNS = [
 LIB_KHRONOS_CTS_PLATFORM_EXTRA_INCLUDE_DIRS = [
 ]
 
-AUTO_GEN_WARNING = """
-// WARNING: This is auto-generated file. Do not modify, since changes will
+AUTO_GEN_WARNING = """// WARNING: This is auto-generated file. Do not modify, since changes will
 // be lost! Modify scripts/gen_khronos_cts_bp.py instead.
 """
 
@@ -166,6 +165,7 @@ cc_defaults {
         "-Wno-switch",
         "-Wno-unused-parameter",
         "-Wno-unused-variable",
+        "-Wno-macro-redefined",
     ],
 
     cpp_std: "c++17",
@@ -241,6 +241,9 @@ cc_defaults {
         "external/deqp-deps/SPIRV-Headers/include",
     ],
 
+    header_libs: ["jni_headers"],
+    shared_libs: ["libandroid"],
+
     sdk_version: "current",
     rtti: true,
     stl: "c++_static",
@@ -255,11 +258,11 @@ cc_library_static {
     defaults: ["khronosctscompilationflag_default"],
 
     srcs: [
-{SRC_FILES} ],
+{SRC_FILES}    ],
     export_include_dirs: [
-{EXPORT_INCLUDES} ],
+{EXPORT_INCLUDES}    ],
     static_libs: [
-{STATIC_LIBS} ],
+{STATIC_LIBS}    ],
 }
 
 """[1:-1]
@@ -412,7 +415,7 @@ if __name__ == "__main__":
                                                         libKhronosCTSPlatformStaticLibs)
 
     # put everything together into the final Android bp content
-    libKhronosCTSAndroidBpText = "\n".join([AUTO_GEN_WARNING,
+    libKhronosCTSAndroidBpText = "".join([AUTO_GEN_WARNING,
                                             CC_LIBRARY_KHRONOS_COMPILE_OPTION,
                                             libKhronosCTSCommonAndroidBpText,
                                             libKhronosCTSModulesAndroidBpText,

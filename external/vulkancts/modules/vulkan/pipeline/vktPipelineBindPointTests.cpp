@@ -360,7 +360,7 @@ void pushBufferDescriptor(const DeviceInterface &vkd, VkCommandBuffer cmdBuffer,
     const VkWriteDescriptorSet write = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
         nullptr,                                // const void* pNext;
-        DE_NULL,                                // VkDescriptorSet dstSet;
+        VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
         0u,                                     // uint32_t dstBinding;
         0u,                                     // uint32_t dstArrayElement;
         1u,                                     // uint32_t descriptorCount;
@@ -589,11 +589,11 @@ tcu::TestStatus BindPointInstance::iterate(void)
             0u,                                             // VkPipelineCreateFlags flags;
             computeShaderStageInfo,                         // VkPipelineShaderStageCreateInfo stage;
             computePipelineLayout.get(),                    // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0u,                                             // int32_t basePipelineIndex;
         };
 
-        computePipeline = createComputePipeline(vkd, device, DE_NULL, &computePipelineCreateInfo);
+        computePipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &computePipelineCreateInfo);
     }
 
     // Ray tracing pipeline and shader binding tables.

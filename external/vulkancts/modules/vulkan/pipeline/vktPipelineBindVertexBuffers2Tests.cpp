@@ -463,25 +463,10 @@ tcu::TestStatus BindBuffers2Instance::iterate(void)
             vertexData.push_back(0.0f);
     }
 
-    vk::VkClearValue clearColorValue  = defaultClearValue(vk::VK_FORMAT_R32G32B32A32_SFLOAT);
-    vk::VkDeviceSize colorBufferSize  = colorData.size() * sizeof(float);
-    vk::VkDeviceSize vertexBufferSize = vertexData.size() * sizeof(float);
+    vk::VkClearValue clearColorValue = defaultClearValue(vk::VK_FORMAT_R32G32B32A32_SFLOAT);
+    vk::VkDeviceSize colorDataSize   = colorData.size() * sizeof(float);
+    vk::VkDeviceSize vertexDataSize  = vertexData.size() * sizeof(float);
 
-    const auto colorCreateInfo  = vk::makeBufferCreateInfo(colorBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    const auto vertexCreateInfo = vk::makeBufferCreateInfo(vertexBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    de::MovePtr<vk::BufferWithMemory> colorBuffer = de::MovePtr<vk::BufferWithMemory>(
-        new vk::BufferWithMemory(vk, device, allocator, colorCreateInfo, vk::MemoryRequirement::HostVisible));
-    de::MovePtr<vk::BufferWithMemory> vertexBuffer = de::MovePtr<vk::BufferWithMemory>(
-        new vk::BufferWithMemory(vk, device, allocator, vertexCreateInfo, vk::MemoryRequirement::HostVisible));
-    copyAndFlush(vk, device, *colorBuffer, 0, colorData.data(), colorData.size() * sizeof(float));
-    copyAndFlush(vk, device, *vertexBuffer, 0, vertexData.data(), vertexData.size() * sizeof(float));
-
-    beginCommandBuffer(vk, *cmdBuffer);
-    renderPass.begin(vk, *cmdBuffer, vk::makeRect2D(0, 0, extent.width, extent.height), clearColorValue);
-    graphicsPipelineWrapper.bind(*cmdBuffer);
-
-    vk::VkBuffer buffers[]                = {**colorBuffer, **vertexBuffer, **colorBuffer, **vertexBuffer,
-                                             **colorBuffer, **vertexBuffer, **colorBuffer, **vertexBuffer};
     std::vector<vk::VkDeviceSize> offsets = {colorOffset, vertexOffset};
     if (m_count == 2)
     {
@@ -504,20 +489,45 @@ tcu::TestStatus BindBuffers2Instance::iterate(void)
         offsets.push_back(colorOffset + sizeof(float) * 3);
         offsets.push_back(vertexOffset + sizeof(float) * 3);
     }
+
+    std::vector<de::MovePtr<vk::BufferWithMemory>> colorBuffers;
+    std::vector<de::MovePtr<vk::BufferWithMemory>> vertexBuffers;
+    std::vector<vk::VkBuffer> buffers;
+    for (uint32_t i = 0; i < m_count; ++i)
+    {
+        const auto colorCreateInfo =
+            vk::makeBufferCreateInfo((colorDataSize + offsets[i * 2]), vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        colorBuffers.emplace_back(de::MovePtr<vk::BufferWithMemory>(
+            new vk::BufferWithMemory(vk, device, allocator, colorCreateInfo, vk::MemoryRequirement::HostVisible)));
+        copyAndFlush(vk, device, *colorBuffers[i], 0, colorData.data(), colorData.size() * sizeof(float));
+        buffers.push_back(**colorBuffers[i]);
+
+        const auto vertexCreateInfo =
+            vk::makeBufferCreateInfo((vertexDataSize + offsets[i * 2 + 1]), vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        vertexBuffers.emplace_back(de::MovePtr<vk::BufferWithMemory>(
+            new vk::BufferWithMemory(vk, device, allocator, vertexCreateInfo, vk::MemoryRequirement::HostVisible)));
+        copyAndFlush(vk, device, *vertexBuffers[i], 0, vertexData.data(), vertexData.size() * sizeof(float));
+        buffers.push_back(**vertexBuffers[i]);
+    }
+
+    beginCommandBuffer(vk, *cmdBuffer);
+    renderPass.begin(vk, *cmdBuffer, vk::makeRect2D(0, 0, extent.width, extent.height), clearColorValue);
+    graphicsPipelineWrapper.bind(*cmdBuffer);
+
     std::vector<vk::VkDeviceSize> sizes;
     for (uint32_t i = 0; i < m_count; ++i)
     {
-        sizes.push_back(colorBufferSize - offsets[i * 2]);
-        sizes.push_back(vertexBufferSize - offsets[i * 2 + 1]);
+        sizes.push_back(colorDataSize);
+        sizes.push_back(vertexDataSize);
     }
     vk::VkDeviceSize strides[] = {colorStride, vertexStride, colorStride, vertexStride,
                                   colorStride, vertexStride, colorStride, vertexStride};
     if (m_singleBind)
     {
 #ifndef CTS_USES_VULKANSC
-        vk.cmdBindVertexBuffers2(*cmdBuffer, 0, 2 * m_count, buffers, offsets.data(), sizes.data(), strides);
+        vk.cmdBindVertexBuffers2(*cmdBuffer, 0, 2 * m_count, buffers.data(), offsets.data(), sizes.data(), strides);
 #else
-        vk.cmdBindVertexBuffers2EXT(*cmdBuffer, 0, 2 * m_count, buffers, offsets.data(), sizes.data(), strides);
+        vk.cmdBindVertexBuffers2EXT(*cmdBuffer, 0, 2 * m_count, buffers.data(), offsets.data(), sizes.data(), strides);
 #endif
     }
     else
@@ -650,7 +660,7 @@ vk::VkDevice BindVertexBuffers2Instance::getDevice() const
 
 vk::VkQueue BindVertexBuffers2Instance::getQueue() const
 {
-    vk::VkQueue queue = DE_NULL;
+    vk::VkQueue queue = VK_NULL_HANDLE;
     if (m_robustness2)
     {
         const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();

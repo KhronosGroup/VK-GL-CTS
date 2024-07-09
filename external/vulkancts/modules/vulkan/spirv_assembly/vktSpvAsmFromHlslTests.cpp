@@ -182,7 +182,7 @@ tcu::TestStatus HlslTest::iterate(void)
         DE_NULL,
         0,
     };
-    Unique<VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+    Unique<VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
     const VkBufferMemoryBarrier hostWriteBarrier = makeBufferMemoryBarrier(
         VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *inBuffer, 0ull, inBufferSizeBytes);
     const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(

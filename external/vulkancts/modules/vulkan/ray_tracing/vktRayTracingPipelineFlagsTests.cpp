@@ -1329,7 +1329,7 @@ tcu::TestStatus PipelineFlagsInstance::iterate(void)
     const Move<VkImageView> imageView =
         makeImageView(vkd, device, **image, VK_IMAGE_VIEW_TYPE_2D, m_format, imageSubresourceRange);
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     const uint32_t resultBufferSize = (m_params.width * m_params.height * mapVkFormat(m_format).getPixelSize());
     const VkBufferCreateInfo resultBufferCreateInfo =

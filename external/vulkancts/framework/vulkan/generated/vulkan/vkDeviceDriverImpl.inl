@@ -258,9 +258,9 @@ VkResult DeviceDriver::mergePipelineCaches (VkDevice device, VkPipelineCache dst
     return m_vk.mergePipelineCaches(device, dstCache, srcCacheCount, pSrcCaches);
 }
 
-VkResult DeviceDriver::createPipelineBinariesKHR (VkDevice device, uint32_t createInfoCount, const VkPipelineBinaryCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryKHR* pPipelineBinaries) const
+VkResult DeviceDriver::createPipelineBinariesKHR (VkDevice device, const VkPipelineBinaryCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryHandlesInfoKHR* pBinaries) const
 {
-    return m_vk.createPipelineBinariesKHR(device, createInfoCount, pCreateInfos, pAllocator, pPipelineBinaries);
+    return m_vk.createPipelineBinariesKHR(device, pCreateInfo, pAllocator, pBinaries);
 }
 
 void DeviceDriver::destroyPipelineBinaryKHR (VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator) const
@@ -268,14 +268,14 @@ void DeviceDriver::destroyPipelineBinaryKHR (VkDevice device, VkPipelineBinaryKH
     m_vk.destroyPipelineBinaryKHR(device, pipelineBinary, pAllocator);
 }
 
-VkResult DeviceDriver::getPipelineBinaryKeysKHR (VkDevice device, const VkPipelineBinaryKeysCreateInfoKHR* pCreateInfo, uint32_t* pKeyCount, VkPipelineBinaryKeyKHR* pKeys) const
+VkResult DeviceDriver::getPipelineKeyKHR (VkDevice device, const VkPipelineCreateInfoKHR* pPipelineCreateInfo, VkPipelineBinaryKeyKHR* pPipelineKey) const
 {
-    return m_vk.getPipelineBinaryKeysKHR(device, pCreateInfo, pKeyCount, pKeys);
+    return m_vk.getPipelineKeyKHR(device, pPipelineCreateInfo, pPipelineKey);
 }
 
-VkResult DeviceDriver::getPipelineBinaryDataKHR (VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData) const
+VkResult DeviceDriver::getPipelineBinaryDataKHR (VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, VkPipelineBinaryKeyKHR* pPipelineBinaryKey, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData) const
 {
-    return m_vk.getPipelineBinaryDataKHR(device, pInfo, pPipelineBinaryDataSize, pPipelineBinaryData);
+    return m_vk.getPipelineBinaryDataKHR(device, pInfo, pPipelineBinaryKey, pPipelineBinaryDataSize, pPipelineBinaryData);
 }
 
 VkResult DeviceDriver::releaseCapturedPipelineDataKHR (VkDevice device, const VkReleaseCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator) const
@@ -2650,8 +2650,8 @@ void DeviceDriver::cmdSetRenderingAttachmentLocationsKHR (VkCommandBuffer comman
     m_vk.cmdSetRenderingAttachmentLocationsKHR(commandBuffer, pLocationInfo);
 }
 
-void DeviceDriver::cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo) const
+void DeviceDriver::cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pInputAttachmentIndexInfo) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetRenderingInputAttachmentIndicesKHR(commandBuffer, pLocationInfo);
+    m_vk.cmdSetRenderingInputAttachmentIndicesKHR(commandBuffer, pInputAttachmentIndexInfo);
 }

@@ -526,7 +526,7 @@ JNIEXPORT void JNICALL Java_org_khronos_cts_testercore_KhronosCTSTestLogParser_n
     try
     {
         TestLogParser *parser = (TestLogParser *)nativePointer;
-        TestLogListener listener(env, instrumentation);
+        KhronosCTSTestLogListener listener(env, instrumentation);
 
         logData = env->GetByteArrayElements(buffer, NULL);
 

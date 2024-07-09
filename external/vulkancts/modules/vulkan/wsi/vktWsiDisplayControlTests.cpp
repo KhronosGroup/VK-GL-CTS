@@ -235,7 +235,7 @@ VkSurfaceKHR createSurface(const InstanceInterface &vki, VkInstance instance, Vk
         {                                                  // VkExtent2D                        imageExtent
          planeCapabilities.minDstExtent.width, planeCapabilities.minDstExtent.height}};
 
-    VkSurfaceKHR surface = DE_NULL;
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
     result               = vki.createDisplayPlaneSurfaceKHR(instance, &createInfo, DE_NULL, &surface);
     if (result != VK_SUCCESS)
         TCU_FAIL("CreateDisplayPlaneSurfaceKHR failed");
@@ -441,9 +441,9 @@ Move<VkPipeline> createPipeline(const DeviceInterface &vkd, VkDevice device, VkR
         device,               // const VkDevice                                device
         layout,               // const VkPipelineLayout                        pipelineLayout
         vertexShaderModule,   // const VkShaderModule                          vertexShaderModule
-        DE_NULL,              // const VkShaderModule                          tessellationControlShaderModule
-        DE_NULL,              // const VkShaderModule                          tessellationEvalShaderModule
-        DE_NULL,              // const VkShaderModule                          geometryShaderModule
+        VK_NULL_HANDLE,       // const VkShaderModule                          tessellationControlShaderModule
+        VK_NULL_HANDLE,       // const VkShaderModule                          tessellationEvalShaderModule
+        VK_NULL_HANDLE,       // const VkShaderModule                          geometryShaderModule
         fragmentShaderModule, // const VkShaderModule                          fragmentShaderModule
         renderPass,           // const VkRenderPass                            renderPass
         viewports,            // const std::vector<VkViewport>&                viewports

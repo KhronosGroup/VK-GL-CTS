@@ -1738,7 +1738,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
             DE_NULL,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
-            DE_NULL,                                  // VkImage image;
+            VK_NULL_HANDLE,                           // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
             VK_FORMAT_R32_SINT,                       // VkFormat format;
             {                                         // VkComponentMapping channels;
@@ -1814,7 +1814,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
         DE_NULL,                                  // const void* pNext;
         0u,                                       // VkImageViewCreateFlags flags;
-        DE_NULL,                                  // VkImage image;
+        VK_NULL_HANDLE,                           // VkImage image;
         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
         VK_FORMAT_R32_SINT,                       // VkFormat format;
         {                                         // VkComponentMapping channels;
@@ -1859,7 +1859,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout        newLayout
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                dstQueueFamilyIndex
-        DE_NULL,                                // VkImage                image
+        VK_NULL_HANDLE,                         // VkImage                image
         {
             VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags    aspectMask
             0u,                        // uint32_t                baseMipLevel
@@ -1877,7 +1877,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout newLayout;
         VK_QUEUE_FAMILY_IGNORED,                  // uint32_t srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                  // uint32_t dstQueueFamilyIndex;
-        DE_NULL,                                  // VkImage image;
+        VK_NULL_HANDLE,                           // VkImage image;
         clearRange,                               // VkImageSubresourceRange subresourceRange;
     };
 
@@ -1890,7 +1890,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout        newLayout
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                dstQueueFamilyIndex
-        DE_NULL,                                // VkImage                image
+        VK_NULL_HANDLE,                         // VkImage                image
         {
             VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags    aspectMask
             0u,                        // uint32_t                baseMipLevel
@@ -1908,7 +1908,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_GENERAL,                                  // VkImageLayout newLayout;
         VK_QUEUE_FAMILY_IGNORED,                                  // uint32_t srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                                  // uint32_t dstQueueFamilyIndex;
-        DE_NULL,                                                  // VkImage image;
+        VK_NULL_HANDLE,                                           // VkImage image;
         clearRange,                                               // VkImageSubresourceRange subresourceRange;
     };
 
@@ -2127,7 +2127,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
         DE_NULL,                                  // const void* pNext;
         (VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags flags;
-        DE_NULL,                                  // VkImage image;
+        VK_NULL_HANDLE,                           // VkImage image;
         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
         VK_FORMAT_R32_SINT,                       // VkFormat format;
         {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -2255,7 +2255,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
                         if (s == 0 && b == 0)
                         {
                             imageInfoVec[vecIndex] =
-                                makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+                                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
                         }
                         else
                         {
@@ -2266,7 +2266,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
                         break;
                     case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
                         imageInfoVec[vecIndex] =
-                            makeDescriptorImageInfo(DE_NULL, inputAttachmentViews[attachmentIndex].get(),
+                            makeDescriptorImageInfo(VK_NULL_HANDLE, inputAttachmentViews[attachmentIndex].get(),
                                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                         ++attachmentIndex;
                         break;
@@ -2530,7 +2530,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
             (vk::VkPipeline)0, // basePipelineHandle
             0u,                // basePipelineIndex
         };
-        pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+        pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
     }
 #ifndef CTS_USES_VULKANSC
     else if (m_data.stage == STAGE_RAYGEN_NV)
@@ -2931,11 +2931,11 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
             pipelineLayout.get(),          // VkPipelineLayout layout;
             renderPass.get(),              // VkRenderPass renderPass;
             0u,                            // uint32_t subpass;
-            DE_NULL,                       // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                // VkPipeline basePipelineHandle;
             0                              // int basePipelineIndex;
         };
 
-        pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+        pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
     const VkImageMemoryBarrier imageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType

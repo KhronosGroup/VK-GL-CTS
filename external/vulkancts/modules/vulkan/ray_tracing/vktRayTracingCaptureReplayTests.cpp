@@ -1086,7 +1086,7 @@ std::vector<uint32_t> RayTracingCaptureReplayTestInstance::runTest(bool replay)
     const Move<VkImageView> imageView =
         makeImageView(vkd, device, **image, VK_IMAGE_VIEW_TYPE_3D, imageFormat, imageSubresourceRange);
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     const uint32_t pixelCount                       = m_data.width * m_data.height * pipelineCount;
     const VkBufferCreateInfo resultBufferCreateInfo = makeBufferCreateInfo(

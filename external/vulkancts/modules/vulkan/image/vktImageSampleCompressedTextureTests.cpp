@@ -325,7 +325,7 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate(void)
             cubeStorageImageViews.emplace_back(makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D,
                                                              m_imageViewFormat, cubeSubresourceRanges[i]));
             cubeStorageDscrImageInfos.emplace_back(
-                makeDescriptorImageInfo(DE_NULL, *cubeStorageImageViews[i], VK_IMAGE_LAYOUT_GENERAL));
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *cubeStorageImageViews[i], VK_IMAGE_LAYOUT_GENERAL));
             cubeStorageDscrSets.emplace_back(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
             updateBuilder.writeSingle(*cubeStorageDscrSets[i], DescriptorSetUpdateBuilder::Location::binding(0u),
                                       VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &cubeStorageDscrImageInfos[i]);
@@ -336,7 +336,7 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate(void)
     {
         storageImageImageView =
             makeImageView(vk, device, *storageImage, VK_IMAGE_VIEW_TYPE_2D, m_imageViewFormat, imageSubresourceRange);
-        storageImageDscrInfo      = makeDescriptorImageInfo(DE_NULL, *storageImageImageView, VK_IMAGE_LAYOUT_GENERAL);
+        storageImageDscrInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, *storageImageImageView, VK_IMAGE_LAYOUT_GENERAL);
         storageImageDescriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 
         DescriptorSetUpdateBuilder()

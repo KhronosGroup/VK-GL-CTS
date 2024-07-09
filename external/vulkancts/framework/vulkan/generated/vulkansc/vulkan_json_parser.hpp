@@ -1019,7 +1019,7 @@ static void parse_VkVertexInputBindingDivisorDescriptionEXT(const char *s, Json:
 static void parse_VkPipelineVertexInputDivisorStateCreateInfoEXT(const char *s, Json::Value &obj,
                                                                  VkPipelineVertexInputDivisorStateCreateInfoEXT &o);
 static void parse_VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT(
-    const char *s, Json::Value &obj, VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT &o);
+    const char *s, Json::Value &obj, VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR &o);
 static void parse_VkPhysicalDevicePCIBusInfoPropertiesEXT(const char *s, Json::Value &obj,
                                                           VkPhysicalDevicePCIBusInfoPropertiesEXT &o);
 static void parse_VkPhysicalDevice8BitStorageFeatures(const char *s, Json::Value &obj,
@@ -1707,7 +1707,7 @@ static void *parsePNextChain(Json::Value &obj)
         parse_VkPhysicalDeviceHostQueryResetFeatures("", pNextObj, *((VkPhysicalDeviceHostQueryResetFeatures *)p));
     }
     break;
-    case VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT:
+    case VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR:
     {
         p = s_globalMem.allocate(sizeof(VkDeviceQueueGlobalPriorityCreateInfoEXT));
         parse_VkDeviceQueueGlobalPriorityCreateInfoEXT("", pNextObj, *((VkDeviceQueueGlobalPriorityCreateInfoEXT *)p));
@@ -1807,18 +1807,18 @@ static void *parsePNextChain(Json::Value &obj)
         parse_VkTimelineSemaphoreSubmitInfo("", pNextObj, *((VkTimelineSemaphoreSubmitInfo *)p));
     }
     break;
-    case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT:
+    case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_KHR:
     {
         p = s_globalMem.allocate(sizeof(VkPipelineVertexInputDivisorStateCreateInfoEXT));
         parse_VkPipelineVertexInputDivisorStateCreateInfoEXT("", pNextObj,
                                                              *((VkPipelineVertexInputDivisorStateCreateInfoEXT *)p));
     }
     break;
-    case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT:
+    case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_KHR:
     {
-        p = s_globalMem.allocate(sizeof(VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT));
+        p = s_globalMem.allocate(sizeof(VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR));
         parse_VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT(
-            "", pNextObj, *((VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT *)p));
+            "", pNextObj, *((VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR *)p));
     }
     break;
     case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT:
@@ -1854,7 +1854,7 @@ static void *parsePNextChain(Json::Value &obj)
                                                            *((VkPhysicalDeviceShaderAtomicFloatFeaturesEXT *)p));
     }
     break;
-    case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT:
+    case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR:
     {
         p = s_globalMem.allocate(sizeof(VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT));
         parse_VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT(
@@ -14325,12 +14325,12 @@ static void parse_VkCalibratedTimestampInfoEXT(const char *s, Json::Value &obj, 
 }
 
 static void parse_VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT(
-    const char *s, Json::Value &obj, VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT &o)
+    const char *s, Json::Value &obj, VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR &o)
 {
 
     parse_VkStructureType("sType", obj["sType"], (o.sType));
 
-    o.pNext = (VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT *)parsePNextChain(obj);
+    o.pNext = (VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR *)parsePNextChain(obj);
 
     parse_uint32_t("maxVertexAttribDivisor", obj["maxVertexAttribDivisor"], (o.maxVertexAttribDivisor));
 }

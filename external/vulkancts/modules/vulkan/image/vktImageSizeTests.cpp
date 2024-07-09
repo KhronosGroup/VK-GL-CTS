@@ -446,7 +446,7 @@ VkDescriptorSetLayout ImageSizeTestInstance::prepareDescriptors(void)
     m_descriptorSet = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
 
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorBufferInfo descriptorBufferInfo =
         makeDescriptorBufferInfo(m_resultBuffer->get(), 0ull, m_resultBufferSizeBytes);
 

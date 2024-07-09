@@ -835,9 +835,9 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
             vkDevice,                // const VkDevice                                    device
             *m_pipelineLayout,       // const VkPipelineLayout                            pipelineLayout
             *m_vertexShaderModule,   // const VkShaderModule                                vertexShaderModule
-            DE_NULL,                 // const VkShaderModule                                tessellationControlModule
-            DE_NULL,                 // const VkShaderModule                                tessellationEvalModule
-            DE_NULL,                 // const VkShaderModule                                geometryShaderModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                tessellationControlModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                tessellationEvalModule
+            VK_NULL_HANDLE,          // const VkShaderModule                                geometryShaderModule
             *m_fragmentShaderModule, // const VkShaderModule                                fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                                renderPass
             viewports,               // const std::vector<VkViewport>&                    viewports
@@ -987,7 +987,7 @@ void UnusedClearAttachmentTestInstance::createCommandBufferDynamicRendering(cons
             (m_testParams.colorUsed[i]) ? *m_colorAttachmentViews[i] : 0, // VkImageView imageView;
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                     // VkImageLayout imageLayout;
             VK_RESOLVE_MODE_NONE,                                         // VkResolveModeFlagBits resolveMode;
-            DE_NULL,                                                      // VkImageView resolveImageView;
+            VK_NULL_HANDLE,                                               // VkImageView resolveImageView;
             VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout resolveImageLayout;
             VK_ATTACHMENT_LOAD_OP_LOAD,                                   // VkAttachmentLoadOp loadOp;
             VK_ATTACHMENT_STORE_OP_STORE,                                 // VkAttachmentStoreOp storeOp;
@@ -1001,7 +1001,7 @@ void UnusedClearAttachmentTestInstance::createCommandBufferDynamicRendering(cons
         (m_testParams.depthStencilUsed) ? *m_depthAttachmentView : 0, // VkImageView imageView;
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,             // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                                         // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                                      // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                               // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_LOAD,                                   // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                                 // VkAttachmentStoreOp storeOp;

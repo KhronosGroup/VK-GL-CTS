@@ -1382,7 +1382,10 @@ struct ShaderModule
     static Move<VkShaderModule> create(const Environment &env, const Resources &res, const Parameters &)
     {
         const VkShaderModuleCreateInfo shaderModuleInfo = {
-            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, DE_NULL, (VkShaderModuleCreateFlags)0, res.binary.getSize(),
+            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            VK_NULL_HANDLE,
+            (VkShaderModuleCreateFlags)0,
+            res.binary.getSize(),
             (const uint32_t *)res.binary.getBinary(),
         };
 
@@ -1456,11 +1459,11 @@ struct PipelineCache
                 (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags            flags
                 stageCreateInfo,                                // VkPipelineShaderStageCreateInfo    stage
                 *pipelineLayout,                                // VkPipelineLayout                    layout
-                DE_NULL,                                        // VkPipeline                        basePipelineHandle
+                VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
                 0u                                              // int32_t                            basePipelineIndex
             };
 
-            Move<VkPipeline> pipeline = createComputePipeline(env.vkd, env.device, DE_NULL, &pipelineInfo);
+            Move<VkPipeline> pipeline = createComputePipeline(env.vkd, env.device, VK_NULL_HANDLE, &pipelineInfo);
         }
 #else
         VkPipelineCacheCreateFlags pipelineCacheCreateFlags =
@@ -1564,11 +1567,11 @@ struct MergedPipelineCache
                 (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags            flags
                 stageCreateInfo,                                // VkPipelineShaderStageCreateInfo    stage
                 *pipelineLayout,                                // VkPipelineLayout                    layout
-                DE_NULL,                                        // VkPipeline                        basePipelineHandle
+                VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
                 0u                                              // int32_t                            basePipelineIndex
             };
 
-            Move<VkPipeline> pipeline = createComputePipeline(env.vkd, env.device, DE_NULL, &pipelineInfo);
+            Move<VkPipeline> pipeline = createComputePipeline(env.vkd, env.device, VK_NULL_HANDLE, &pipelineInfo);
         }
 
         VkPipelineCacheCreateFlags pipelineCacheCreateFlags =

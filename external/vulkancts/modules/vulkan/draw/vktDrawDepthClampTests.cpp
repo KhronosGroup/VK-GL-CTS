@@ -464,7 +464,7 @@ DepthClampTestInstance::DepthClampTestInstance(Context &context, const TestParam
         pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-    m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 tcu::ConstPixelBufferAccess DepthClampTestInstance::draw()
@@ -654,7 +654,7 @@ void DepthClampTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkCle
         *m_depthTargetView,                               // VkImageView imageView;
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                             // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                          // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                   // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_LOAD,                       // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                     // VkAttachmentStoreOp storeOp;

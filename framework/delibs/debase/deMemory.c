@@ -142,7 +142,7 @@ void *deAlignedMalloc(size_t numBytes, size_t alignBytes)
 #if (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_POSIX)
     /* posix_memalign() requires that alignment must be 2^N * sizeof(void*) */
     const size_t ptrAlignedAlign = deAlignSize(alignBytes, sizeof(void *));
-    void *ptr                    = DE_NULL;
+    void *ptr                    = NULL;
 
     DE_ASSERT(deIsPowerOfTwoSize(alignBytes) && deIsPowerOfTwoSize(ptrAlignedAlign / sizeof(void *)));
 
@@ -154,7 +154,7 @@ void *deAlignedMalloc(size_t numBytes, size_t alignBytes)
     else
     {
         DE_ASSERT(!ptr);
-        return DE_NULL;
+        return NULL;
     }
 
 #elif (DE_ALIGNED_MALLOC == DE_ALIGNED_MALLOC_WIN32)
@@ -178,7 +178,7 @@ void *deAlignedMalloc(size_t numBytes, size_t alignBytes)
         return alignedPtr;
     }
     else
-        return DE_NULL;
+        return NULL;
 #else
 #error "Invalid DE_ALIGNED_MALLOC"
 #endif
@@ -217,7 +217,7 @@ void *deAlignedRealloc(void *ptr, size_t numBytes, size_t alignBytes)
                     return newPtr;
                 }
                 else
-                    return DE_NULL;
+                    return NULL;
             }
             else
                 return ptr;
@@ -225,7 +225,7 @@ void *deAlignedRealloc(void *ptr, size_t numBytes, size_t alignBytes)
         else
         {
             deAlignedFree(ptr);
-            return DE_NULL;
+            return NULL;
         }
     }
     else

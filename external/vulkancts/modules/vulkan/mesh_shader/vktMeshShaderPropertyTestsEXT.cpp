@@ -469,7 +469,7 @@ tcu::TestStatus PayloadShMemSizeInstance::iterate(void)
         nullptr,                                             // const void* pNext;
         0u,                                                  // VkPipelineShaderStageCreateFlags flags;
         VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,                  // VkShaderStageFlagBits stage;
-        DE_NULL,                                             // VkShaderModule module;
+        VK_NULL_HANDLE,                                      // VkShaderModule module;
         "main",                                              // const char* pName;
         &specInfo,                                           // const VkSpecializationInfo* pSpecializationInfo;
     };
@@ -1495,7 +1495,7 @@ tcu::TestStatus MaxMeshOutputComponentsInstance::iterate(void)
         nullptr,                                             // const void* pNext;
         0u,                                                  // VkPipelineShaderStageCreateFlags flags;
         VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,                  // VkShaderStageFlagBits stage;
-        DE_NULL,                                             // VkShaderModule module;
+        VK_NULL_HANDLE,                                      // VkShaderModule module;
         "main",                                              // const char* pName;
         &specInfo,                                           // const VkSpecializationInfo* pSpecializationInfo;
     };
@@ -2266,7 +2266,7 @@ tcu::TestStatus MaxMeshOutputSizeInstance::iterate(void)
         nullptr,                                             // const void* pNext;
         0u,                                                  // VkPipelineShaderStageCreateFlags flags;
         VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,                  // VkShaderStageFlagBits stage;
-        DE_NULL,                                             // VkShaderModule module;
+        VK_NULL_HANDLE,                                      // VkShaderModule module;
         "main",                                              // const char* pName;
         &specInfo,                                           // const VkSpecializationInfo* pSpecializationInfo;
     };

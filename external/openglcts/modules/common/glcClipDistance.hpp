@@ -217,7 +217,7 @@ public:
 
 protected:
     /* Protected methods */
-    virtual void test(void) = DE_NULL;
+    virtual void test(void) = 0;
 
 protected:
     /* Protected constants */

@@ -53,7 +53,7 @@ static bool writeEscaped(qpXmlWriter *writer, const char *str)
     do
     {
         /* Check for characters that need to be escaped. */
-        const char *repl = DE_NULL;
+        const char *repl = NULL;
         switch (*s)
         {
         case 0:
@@ -194,7 +194,7 @@ qpXmlWriter *qpXmlWriter_createFileWriter(FILE *outputFile, bool useCompression,
 {
     qpXmlWriter *writer = (qpXmlWriter *)deCalloc(sizeof(qpXmlWriter));
     if (!writer)
-        return DE_NULL;
+        return NULL;
 
     DE_UNREF(useCompression); /* no compression supported. */
 
@@ -397,7 +397,7 @@ bool qpXmlWriter_writeBase64(qpXmlWriter *writer, const uint8_t *data, size_t nu
 
 bool qpXmlWriter_writeStringElement(qpXmlWriter *writer, const char *elementName, const char *elementContent)
 {
-    if (!qpXmlWriter_startElement(writer, elementName, 0, DE_NULL) ||
+    if (!qpXmlWriter_startElement(writer, elementName, 0, NULL) ||
         (elementContent && !qpXmlWriter_writeString(writer, elementContent)) ||
         !qpXmlWriter_endElement(writer, elementName))
         return false;

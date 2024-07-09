@@ -57,7 +57,7 @@ public:
 
 protected:
     /* Protected methods */
-    virtual void test(const glw::Functions &gl) = DE_NULL;
+    virtual void test(const glw::Functions &gl) = 0;
 
     /* Protected members */
     bool m_extensionSupported;
@@ -102,7 +102,7 @@ protected:
 
     float readDepthValue(const glw::Functions &gl, const GLuint readDepthProgramId, const GLuint testProgramId);
 
-    virtual bool verify(GLuint caseNo, GLfloat depth, GLfloat offsetDepth, GLfloat offsetClampDepth) = DE_NULL;
+    virtual bool verify(GLuint caseNo, GLfloat depth, GLfloat offsetDepth, GLfloat offsetClampDepth) = 0;
 };
 
 /** Test verifies if polygon offset clamp works as expected for zero and infinite clamp values

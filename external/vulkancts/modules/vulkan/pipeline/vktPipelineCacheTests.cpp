@@ -819,9 +819,6 @@ void GraphicsTestInstance::preparePipelinesForBinaries(bool createFromBlobs = fa
 
     if (m_param->getPipelineConstructionType() != PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
     {
-        const auto &pipelineCreateInfo = m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipelineCreateInfo();
-        m_binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
-
         if (createFromBlobs)
         {
             // read binaries data out of the device
@@ -851,18 +848,6 @@ void GraphicsTestInstance::preparePipelinesForBinaries(bool createFromBlobs = fa
     }
     else
     {
-        // grab keys from all pipeline parts separately
-        uint32_t startingKey[5];
-        for (uint32_t idx = 0; idx < 4; ++idx)
-        {
-            startingKey[idx]                   = static_cast<uint32_t>(m_binaries->getKeyCount());
-            const auto &pipelinePartCreateInfo = m_pipeline[PIPELINE_NDX_NO_BLOBS].getPartialPipelineCreateInfo(idx);
-            m_binaries->getPipelineBinaryKeys(&pipelinePartCreateInfo, false);
-        }
-
-        // add aditional element to avoid if statement in next loop
-        startingKey[4] = static_cast<uint32_t>(m_binaries->getKeyCount());
-
         if (createFromBlobs)
         {
             // read binaries data out of the device
@@ -888,11 +873,6 @@ void GraphicsTestInstance::preparePipelinesForBinaries(bool createFromBlobs = fa
 
         // use proper keys for each pipeline part
         VkPipelineBinaryInfoKHR pipelinePartBinaryInfo[4];
-        for (uint32_t idx = 0; idx < 4; ++idx)
-        {
-            uint32_t binaryCount        = startingKey[idx + 1] - startingKey[idx];
-            pipelinePartBinaryInfo[idx] = m_binaries->preparePipelineBinaryInfo(startingKey[idx], binaryCount);
-        }
 
         preparePipelineWrapper(m_pipeline[PIPELINE_NDX_USE_BLOBS], DE_NULL, false, useShaderStages, DE_NULL,
                                &pipelinePartBinaryInfo[0], &pipelinePartBinaryInfo[1], &pipelinePartBinaryInfo[2],
@@ -1187,8 +1167,6 @@ void ComputeTestInstance::buildPipeline(uint32_t ndx)
         {
             // create pipeline
             m_pipeline[ndx] = createComputePipeline(vk, vkDevice, DE_NULL, &pipelineCreateInfo);
-
-            m_binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
 
             // prepare pipeline binaries
             m_binaries->createPipelineBinariesFromPipeline(*m_pipeline[ndx]);
@@ -1670,8 +1648,6 @@ void MergeBlobsTestInstance::createPipelineBinaries(const InstanceInterface &vki
             .setupFragmentOutputState(*m_renderPassFramebuffer[PIPELINE_NDX_NO_BLOBS])
             .buildPipeline();
 
-        const auto &pipelineCreateInfo = localPipeline.getPipelineCreateInfo();
-        binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
         binaries->createPipelineBinariesFromPipeline(localPipeline.getPipeline());
 
         // read binaries data out of the device
@@ -1690,8 +1666,6 @@ void MergeBlobsTestInstance::createPipelineBinaries(const InstanceInterface &vki
     {
         preparePipelineWrapper(localPipeline);
 
-        const auto &pipelineCreateInfo = localPipeline.getPipelineCreateInfo();
-        binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
         binaries->createPipelineBinariesFromPipeline(localPipeline.getPipeline());
         return;
     }
@@ -1699,8 +1673,6 @@ void MergeBlobsTestInstance::createPipelineBinaries(const InstanceInterface &vki
     {
         preparePipelineWrapper(localPipeline, DE_NULL, true);
 
-        const auto &pipelineCreateInfo = localPipeline.getPipelineCreateInfo();
-        binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
         binaries->createPipelineBinariesFromPipeline(localPipeline.getPipeline());
         return;
     }
@@ -1739,14 +1711,6 @@ void MergeBlobsTestInstance::preparePipelines(void)
         VkPipelineBinaryInfoKHR pipelineBinaryInfo       = m_binaries->preparePipelineBinaryInfo();
         VkPipelineBinaryInfoKHR secondPipelineBinaryInfo = m_secondBinaries->preparePipelineBinaryInfo();
 
-        // merge binary keys
-        std::vector<VkPipelineBinaryKeyKHR> mergedKeys(pipelineBinaryInfo.pPipelineBinaryKeys,
-                                                       pipelineBinaryInfo.pPipelineBinaryKeys +
-                                                           pipelineBinaryInfo.binaryCount);
-        mergedKeys.insert(mergedKeys.end(), std::make_move_iterator(secondPipelineBinaryInfo.pPipelineBinaryKeys),
-                          std::make_move_iterator(secondPipelineBinaryInfo.pPipelineBinaryKeys +
-                                                  secondPipelineBinaryInfo.binaryCount));
-
         // merge binaries
         std::vector<VkPipelineBinaryKHR> mergedBinaries(pipelineBinaryInfo.pPipelineBinaries,
                                                         pipelineBinaryInfo.pPipelineBinaries +
@@ -1754,11 +1718,6 @@ void MergeBlobsTestInstance::preparePipelines(void)
         mergedBinaries.insert(
             mergedBinaries.end(), std::make_move_iterator(secondPipelineBinaryInfo.pPipelineBinaries),
             std::make_move_iterator(secondPipelineBinaryInfo.pPipelineBinaries + secondPipelineBinaryInfo.binaryCount));
-
-        // reuse pipelineBinaryInfo for merged binaries
-        pipelineBinaryInfo.binaryCount         = (uint32_t)mergedKeys.size();
-        pipelineBinaryInfo.pPipelineBinaryKeys = mergedKeys.data();
-        pipelineBinaryInfo.pPipelineBinaries   = mergedBinaries.data();
 
         preparePipelineWrapper(m_pipeline[PIPELINE_NDX_USE_BLOBS], DE_NULL, false, true, &pipelineBinaryInfo);
         preparePipelineWrapper(m_pipeline[PIPELINE_NDX_NO_BLOBS]);

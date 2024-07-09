@@ -247,7 +247,7 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
         VK_NULL_HANDLE,                                      // VkImageView imageView;
         vk::VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout imageLayout;
         vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                             // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
         vk::VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
         vk::VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
         vk::VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -985,7 +985,7 @@ bool ShaderObjectStateInstance::hasDynamicState(const std::vector<vk::VkDynamicS
                                                 const vk::VkDynamicState dynamicState)
 {
     if (!m_params.pipeline)
-        return false;
+        return true;
     return std::find(dynamicStates.begin(), dynamicStates.end(), dynamicState) != dynamicStates.end();
 }
 
@@ -1005,7 +1005,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
     };
     if (m_params.depthClamp)
         viewport.maxDepth = 0.5f;
-    if (!m_params.pipeline || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT))
+    if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT))
         vk.cmdSetViewportWithCount(cmdBuffer, 1u, &viewport);
     vk::VkRect2D scissor = {
         {
@@ -1017,47 +1017,46 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
             32,
         },
     };
-    if (!m_params.pipeline || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT))
+    if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT))
         vk.cmdSetScissorWithCount(cmdBuffer, 1u, &scissor);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.lines) ||
+    if (!m_params.rasterizerDiscardEnable && m_params.lines &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_WIDTH))
         vk.cmdSetLineWidth(cmdBuffer, 1.0f);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.depthBiasEnable))
+    if ((!m_params.rasterizerDiscardEnable && m_params.depthBiasEnable) &&
+        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_BIAS))
         vk.cmdSetDepthBias(cmdBuffer, 4.0f, 1.0f, 4.0f);
     else if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_BIAS))
         vk.cmdSetDepthBias(cmdBuffer, 1.0f, 0.0f, 1.0f);
     float blendConstants[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-    if ((!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.colorBlendEnable) ||
+    if (m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.colorBlendEnable &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_BLEND_CONSTANTS))
         vk.cmdSetBlendConstants(cmdBuffer, blendConstants);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.depthBoundsTestEnable) ||
+    if (!m_params.rasterizerDiscardEnable && m_params.depthBoundsTestEnable &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_BOUNDS))
         vk.cmdSetDepthBounds(cmdBuffer, 0.2f, 0.3f);
-    vk.cmdSetStencilCompareMask(cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xFFFFFFFF);
-    vk.cmdSetStencilWriteMask(cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xFFFFFFFF);
-    vk.cmdSetStencilReference(cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xFFFFFFFF);
-    if (!m_params.pipeline || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
+    if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK))
+        vk.cmdSetStencilCompareMask(cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xFFFFFFFF);
+    if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_STENCIL_WRITE_MASK))
+        vk.cmdSetStencilWriteMask(cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xFFFFFFFF);
+    if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_STENCIL_REFERENCE))
+        vk.cmdSetStencilReference(cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xFFFFFFFF);
+    if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
         vk.cmdBindVertexBuffers2(cmdBuffer, 0, 0, DE_NULL, DE_NULL, DE_NULL, DE_NULL);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CULL_MODE))
+    if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CULL_MODE))
         vk.cmdSetCullMode(cmdBuffer, m_params.cull ? vk::VK_CULL_MODE_FRONT_AND_BACK : vk::VK_CULL_MODE_NONE);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.depthBounds) ||
+    if (!m_params.rasterizerDiscardEnable && m_params.depthBounds &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE))
         vk.cmdSetDepthBoundsTestEnable(cmdBuffer, m_params.depthBoundsTestEnable ? VK_TRUE : VK_FALSE);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_COMPARE_OP))
+    if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_COMPARE_OP))
         vk.cmdSetDepthCompareOp(cmdBuffer, vk::VK_COMPARE_OP_LESS);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE))
+    if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE))
         vk.cmdSetDepthTestEnable(cmdBuffer, m_params.depthTestEnable ? VK_TRUE : VK_FALSE);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE))
+    if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE))
         vk.cmdSetDepthWriteEnable(cmdBuffer, VK_TRUE);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && (m_params.cull || m_params.stencilTestEnable)) ||
+    if (!m_params.rasterizerDiscardEnable && (m_params.cull || m_params.stencilTestEnable) &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_FRONT_FACE))
         vk.cmdSetFrontFace(cmdBuffer, vk::VK_FRONT_FACE_CLOCKWISE);
-    if ((!m_params.pipeline && m_params.vertShader) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY))
+    if (m_params.vertShader && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY))
     {
         if (m_params.tessShader)
             vk.cmdSetPrimitiveTopology(cmdBuffer, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
@@ -1066,61 +1065,53 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         else
             vk.cmdSetPrimitiveTopology(cmdBuffer, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
     }
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.stencilTestEnable) ||
+    if (!m_params.rasterizerDiscardEnable && m_params.stencilTestEnable &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_STENCIL_OP))
         vk.cmdSetStencilOp(cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, vk::VK_STENCIL_OP_REPLACE,
                            vk::VK_STENCIL_OP_REPLACE, vk::VK_STENCIL_OP_REPLACE, vk::VK_COMPARE_OP_GREATER);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE))
+    if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE))
         vk.cmdSetStencilTestEnable(cmdBuffer, m_params.stencilTestEnable ? VK_TRUE : VK_FALSE);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE))
+    if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE))
         vk.cmdSetDepthBiasEnable(cmdBuffer, m_params.depthBiasEnable ? VK_TRUE : VK_FALSE);
-    if ((!m_params.pipeline && m_params.vertShader) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE))
+    if (m_params.vertShader && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE))
         vk.cmdSetPrimitiveRestartEnable(cmdBuffer, VK_FALSE);
-    if (!m_params.pipeline || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE))
+    if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE))
         vk.cmdSetRasterizerDiscardEnable(cmdBuffer, m_params.rasterizerDiscardEnable ? VK_TRUE : VK_FALSE);
-    if ((!m_params.pipeline && m_params.vertShader) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
+    if (m_params.vertShader && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
         if (extensionEnabled(deviceExtensions, "VK_EXT_shader_object") ||
             extensionEnabled(deviceExtensions, "VK_EXT_vertex_input_dynamic_state"))
             vk.cmdSetVertexInputEXT(cmdBuffer, 0u, DE_NULL, 0u, DE_NULL);
-    if ((!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.logicOpEnable) ||
+    if (m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.logicOpEnable &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LOGIC_OP_EXT))
         vk.cmdSetLogicOpEXT(cmdBuffer, vk::VK_LOGIC_OP_COPY);
-    if (!m_params.pipeline || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT))
+    if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT))
         vk.cmdSetPatchControlPointsEXT(cmdBuffer, 4u);
-    if ((!m_params.pipeline && m_params.tessShader) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_TESSELLATION_DOMAIN_ORIGIN_EXT))
+    if (m_params.tessShader && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_TESSELLATION_DOMAIN_ORIGIN_EXT))
         vk.cmdSetTessellationDomainOriginEXT(cmdBuffer, vk::VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT);
-    if (!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.depthClamp)
+    if (!m_params.rasterizerDiscardEnable && m_params.depthClamp)
         vk.cmdSetDepthClampEnableEXT(cmdBuffer, VK_TRUE);
     else if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLAMP_ENABLE_EXT))
         vk.cmdSetDepthClampEnableEXT(cmdBuffer, m_params.depthClamp ? VK_TRUE : VK_FALSE);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_POLYGON_MODE_EXT))
+    if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_POLYGON_MODE_EXT))
         vk.cmdSetPolygonModeEXT(cmdBuffer, vk::VK_POLYGON_MODE_FILL);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) ||
+    if (!m_params.rasterizerDiscardEnable &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_RASTERIZATION_SAMPLES_EXT))
         vk.cmdSetRasterizationSamplesEXT(cmdBuffer, vk::VK_SAMPLE_COUNT_1_BIT);
     vk::VkSampleMask sampleMask = 0xFFFFFFFF;
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_SAMPLE_MASK_EXT))
+    if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_SAMPLE_MASK_EXT))
         vk.cmdSetSampleMaskEXT(cmdBuffer, vk::VK_SAMPLE_COUNT_1_BIT, &sampleMask);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) ||
+    if (!m_params.rasterizerDiscardEnable &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT))
         vk.cmdSetAlphaToCoverageEnableEXT(cmdBuffer, VK_FALSE);
-    if (!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.alphaToOne)
+    if (!m_params.rasterizerDiscardEnable && m_params.alphaToOne)
         vk.cmdSetAlphaToOneEnableEXT(cmdBuffer, VK_TRUE);
     else if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_ALPHA_TO_ONE_ENABLE_EXT))
         vk.cmdSetAlphaToOneEnableEXT(cmdBuffer, m_params.alphaToOne ? VK_TRUE : VK_FALSE);
-    if (!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.logicOp)
-        vk.cmdSetLogicOpEnableEXT(cmdBuffer, m_params.logicOpEnable ? VK_TRUE : VK_FALSE);
-    else if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT))
+    if (m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.logicOp &&
+        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT))
         vk.cmdSetLogicOpEnableEXT(cmdBuffer, m_params.logicOpEnable ? VK_TRUE : VK_FALSE);
     vk::VkBool32 colorBlendEnable = m_params.colorBlendEnable ? VK_TRUE : VK_FALSE;
-    if ((!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable) ||
+    if (m_params.fragShader && !m_params.rasterizerDiscardEnable &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT))
         vk.cmdSetColorBlendEnableEXT(cmdBuffer, 0u, 1u, &colorBlendEnable);
     vk::VkColorBlendEquationEXT colorBlendEquation = {
@@ -1131,42 +1122,39 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         vk::VK_BLEND_FACTOR_ONE, // VkBlendFactor dstAlphaBlendFactor;
         vk::VK_BLEND_OP_ADD,     // VkBlendOp alphaBlendOp;
     };
-    if ((!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable) ||
+    if (m_params.fragShader && !m_params.rasterizerDiscardEnable &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT))
         vk.cmdSetColorBlendEquationEXT(cmdBuffer, 0u, 1u, &colorBlendEquation);
     vk::VkColorComponentFlags colorWriteMask = vk::VK_COLOR_COMPONENT_R_BIT | vk::VK_COLOR_COMPONENT_G_BIT |
                                                vk::VK_COLOR_COMPONENT_B_BIT | vk::VK_COLOR_COMPONENT_A_BIT;
-    if ((!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable) ||
+    if (m_params.fragShader && !m_params.rasterizerDiscardEnable &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT))
         vk.cmdSetColorWriteMaskEXT(cmdBuffer, 0u, 1u, &colorWriteMask);
-    if ((!m_params.pipeline && m_params.geomShader && m_params.geometryStreams) ||
+    if (m_params.geomShader && m_params.geometryStreams &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_RASTERIZATION_STREAM_EXT))
         vk.cmdSetRasterizationStreamEXT(cmdBuffer, 0u);
     if (m_params.discardRectangles)
         vk.cmdSetDiscardRectangleEnableEXT(cmdBuffer, m_params.discardRectanglesEnable ? VK_TRUE : VK_FALSE);
-    if ((!m_params.pipeline && m_params.discardRectanglesEnable) ||
+    if (m_params.discardRectanglesEnable &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT))
         vk.cmdSetDiscardRectangleModeEXT(cmdBuffer, vk::VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT);
-    if ((!m_params.pipeline && m_params.discardRectanglesEnable) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT))
+    if (m_params.discardRectanglesEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT))
         vk.cmdSetDiscardRectangleEXT(cmdBuffer, 0u, 1u, &scissor);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization) ||
+    if (!m_params.rasterizerDiscardEnable && m_params.conservativeRasterization &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT))
         vk.cmdSetConservativeRasterizationModeEXT(cmdBuffer,
                                                   m_params.conservativeRasterizationOverestimate ?
                                                       vk::VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT :
                                                       vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT);
-    if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization &&
-         m_params.conservativeRasterizationOverestimate) ||
+    if (!m_params.rasterizerDiscardEnable && m_params.conservativeRasterization &&
+        m_params.conservativeRasterizationOverestimate &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT))
         vk.cmdSetExtraPrimitiveOverestimationSizeEXT(
             cmdBuffer,
             de::min(1.0f, m_context.getConservativeRasterizationPropertiesEXT().maxExtraPrimitiveOverestimationSize));
-    if ((!m_params.pipeline && m_params.depthClip) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT))
+    if (m_params.depthClip && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT))
         vk.cmdSetDepthClipEnableEXT(cmdBuffer, VK_TRUE);
-    if ((!m_params.pipeline && m_params.sampleLocations) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_ENABLE_EXT))
+    if (m_params.sampleLocations && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_ENABLE_EXT))
         vk.cmdSetSampleLocationsEnableEXT(cmdBuffer, m_params.sampleLocationsEnable ? VK_TRUE : VK_FALSE);
     vk::VkSampleLocationEXT sampleLocation                 = {0.5f, 0.5f};
     const vk::VkSampleLocationsInfoEXT sampleLocationsInfo = {
@@ -1177,28 +1165,25 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         1,                                               // uint32_t                      sampleLocationsCount;
         &sampleLocation,                                 // const VkSampleLocationEXT*    pSampleLocations;
     };
-    if ((!m_params.pipeline && m_params.sampleLocations && m_params.sampleLocationsEnable) ||
+    if (m_params.sampleLocations && m_params.sampleLocationsEnable &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT))
         vk.cmdSetSampleLocationsEXT(cmdBuffer, &sampleLocationsInfo);
-    if ((!m_params.pipeline && m_params.provokingVertex) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT))
+    if (m_params.provokingVertex && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT))
         vk.cmdSetProvokingVertexModeEXT(cmdBuffer, vk::VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT);
-    if (m_params.pipeline || (!m_params.rasterizerDiscardEnable && m_params.lineRasterization && m_params.lines))
+    if ((!m_params.rasterizerDiscardEnable && m_params.lineRasterization && m_params.lines))
     {
-        if (!m_params.pipeline || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT))
+        if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT))
             vk.cmdSetLineRasterizationModeEXT(cmdBuffer, vk::VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT);
-        if (!m_params.pipeline || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT))
+        if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT))
             vk.cmdSetLineStippleEnableEXT(cmdBuffer, m_params.stippledLineEnable ? VK_TRUE : VK_FALSE);
-        if ((!m_params.pipeline && m_params.stippledLineEnable) ||
-            hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT))
+        if (m_params.stippledLineEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT))
             vk.cmdSetLineStippleKHR(cmdBuffer, 1u, 0x1);
     }
-    if ((!m_params.pipeline && m_params.depthClipControl) ||
+    if (m_params.depthClipControl &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE_EXT))
         vk.cmdSetDepthClipNegativeOneToOneEXT(cmdBuffer, VK_TRUE);
     vk::VkBool32 colorWriteEnable = m_params.colorWriteEnable ? VK_TRUE : VK_FALSE;
-    if ((!m_params.pipeline && m_params.colorWrite) ||
-        hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT))
+    if (m_params.colorWrite && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT))
         vk.cmdSetColorWriteEnableEXT(cmdBuffer, 1u, &colorWriteEnable);
 }
 
@@ -2152,6 +2137,12 @@ void ShaderObjectStateCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state3");
         if (!eds3Features.extendedDynamicState3ColorBlendEnable)
             TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendEnable not supported");
+    }
+    if (m_params.logicOpEnable && m_params.pipeline)
+    {
+        context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state3");
+        if (!eds3Features.extendedDynamicState3LogicOpEnable)
+            TCU_THROW(NotSupportedError, "extendedDynamicState3LogicOpEnable not supported");
     }
 }
 

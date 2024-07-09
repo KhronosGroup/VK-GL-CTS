@@ -392,9 +392,9 @@ tcu::TestStatus secondaryCommandBufferCase(Context &context, TestConfig config)
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, //VkStructureType sType;
         DE_NULL,                                           //const void* pNext;
-        DE_NULL,                                           //VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                    //VkRenderPass renderPass;
         0u,                                                //uint32_t subpass;
-        DE_NULL,                                           //VkFramebuffer framebuffer;
+        VK_NULL_HANDLE,                                    //VkFramebuffer framebuffer;
         VK_FALSE,                                          //VkBool32 occlusionQueryEnable;
         (VkQueryControlFlags)0u,                           //VkQueryControlFlags queryFlags;
         (VkQueryPipelineStatisticFlags)0u,                 //VkQueryPipelineStatisticFlags pipelineStatistics;

@@ -377,7 +377,7 @@ public:
     virtual void deinit(void);
     IterateResult iterate(void);
 
-    virtual void testFBO(void) = DE_NULL;
+    virtual void testFBO(void) = 0;
 
 protected:
     const FrameBufferType m_fboType;

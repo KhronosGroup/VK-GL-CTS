@@ -892,7 +892,7 @@ Move<VkPipeline> PrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline(cons
                                                                             const VkDevice device,
                                                                             const VkRenderPass renderPass)
 {
-    const VkDescriptorSetLayout descriptorSetLayout = DE_NULL;
+    const VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
     const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, descriptorSetLayout));
     const std::vector<VkViewport> viewports(1, makeViewport(makeExtent2D(IMAGE_WIDTH, IMAGE_HEIGHT)));
     const std::vector<VkRect2D> scissors(1, makeRect2D(makeExtent2D(IMAGE_WIDTH, IMAGE_HEIGHT)));
@@ -2100,7 +2100,7 @@ Move<VkPipeline> ConcurrentPrimitivesGeneratedQueryTestInstance::makeGraphicsPip
                                                                                       const VkDevice device,
                                                                                       const VkRenderPass renderPass)
 {
-    const VkDescriptorSetLayout descriptorSetLayout = DE_NULL;
+    const VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
     const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, descriptorSetLayout));
     const std::vector<VkViewport> viewports(1, makeViewport(makeExtent2D(m_imageWidth, m_imageHeight)));
     const std::vector<VkRect2D> scissors(1, makeRect2D(makeExtent2D(m_imageWidth, m_imageHeight)));

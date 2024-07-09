@@ -1480,7 +1480,7 @@ void SamplerDescriptor::init(Context &context, PipelineType pipelineType)
     {
         const VkDescriptorImageInfo imageInfo = {
             **m_samplers[i],          // VkSampler        sampler
-            DE_NULL,                  // VkImageView        imageView
+            VK_NULL_HANDLE,           // VkImageView        imageView
             VK_IMAGE_LAYOUT_UNDEFINED // VkImageLayout    imageLayout
         };
 
@@ -2164,11 +2164,11 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
                 (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags            flags
                 shaderStageInfo,                                // VkPipelineShaderStageCreateInfo    stage
                 *pipelineLayout,                                // VkPipelineLayout                    layout
-                DE_NULL,                                        // VkPipeline                        basePipelineHandle
+                VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
                 0                                               // int32_t                            basePipelineIndex
             };
 
-            pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineInfo);
+            pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineInfo);
         }
     }
     else
@@ -2366,9 +2366,9 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
                 device,                // const VkDevice                                device
                 *pipelineLayout,       // const VkPipelineLayout                        pipelineLayout
                 *vertexShaderModule,   // const VkShaderModule                          vertexShaderModule
-                DE_NULL,               // const VkShaderModule                          tessellationControlShaderModule
-                DE_NULL,               // const VkShaderModule                          tessellationEvalShaderModule
-                DE_NULL,               // const VkShaderModule                          geometryShaderModule
+                VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
+                VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
+                VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
                 *fragmentShaderModule, // const VkShaderModule                          fragmentShaderModule
                 *renderPass,           // const VkRenderPass                            renderPass
                 viewports,             // const std::vector<VkViewport>&                viewports

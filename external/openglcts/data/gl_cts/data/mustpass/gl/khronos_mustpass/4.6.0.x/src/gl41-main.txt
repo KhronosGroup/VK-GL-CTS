@@ -2884,8 +2884,8 @@ KHR-GL41.cull_distance.functional
 KHR-GL41.cull_distance.negative
 KHR-GL41.texture_swizzle.api_errors
 KHR-GL41.texture_swizzle.intial_state
-KHR-GL41.texture_swizzle.smoke
-KHR-GL41.texture_swizzle.functional
+KHR-GL41.texture_swizzle.smoke*
+KHR-GL41.texture_swizzle.functional*
 KHR-GL41.draw_elements_base_vertex_tests.basevertex_behavior1
 KHR-GL41.draw_elements_base_vertex_tests.basevertex_behavior2
 KHR-GL41.draw_elements_base_vertex_tests.AEP_shader_stages

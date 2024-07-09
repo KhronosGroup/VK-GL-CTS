@@ -38,30 +38,35 @@ class PipelineBinaryWrapper
 public:
     PipelineBinaryWrapper(const DeviceInterface &vk, const VkDevice vkDevice);
 
-    void getPipelineBinaryKeys(const void *pPipelineCreateInfo, bool clearPrevious = true);
-    void createPipelineBinariesFromPipeline(VkPipeline pipeline);
-    void createPipelineBinariesFromBinaryData(const std::vector<VkPipelineBinaryDataKHR> &pipelineDataInfo);
-    void createPipelineBinariesFromCreateInfo(const std::vector<VkPipelineBinaryCreateInfoKHR> &createInfos);
+    // Generate unique key for whole pipeline basing on create info. Note: pNext chain from PipelineCreateInfo must be available
+    VkPipelineBinaryKeyKHR getPipelineKey(const void *pPipelineCreateInfo) const;
+
+    VkResult createPipelineBinariesFromPipeline(VkPipeline pipeline);
+    VkResult createPipelineBinariesFromInternalCache(const void *pPipelineCreateInfo);
+    VkResult createPipelineBinariesFromBinaryData(const std::vector<VkPipelineBinaryDataKHR> &pipelineDataInfo);
+    VkResult createPipelineBinariesFromCreateInfo(const VkPipelineBinaryCreateInfoKHR &createInfos);
+
     void getPipelineBinaryData(std::vector<VkPipelineBinaryDataKHR> &pipelineDataInfo,
                                std::vector<std::vector<uint8_t>> &pipelineDataBlob);
+
     void deletePipelineBinariesAndKeys(void);
     void deletePipelineBinariesKeepKeys(void);
 
-    VkPipelineBinaryInfoKHR preparePipelineBinaryInfo(
-        uint32_t binaryIndex = 0, uint32_t binaryCount = std::numeric_limits<uint32_t>::max()) const;
+    VkPipelineBinaryInfoKHR preparePipelineBinaryInfo(void) const;
 
-    uint32_t getKeyCount() const;
-    uint32_t getBinariesCount() const;
-    const VkPipelineBinaryKeyKHR *getPipelineKeys() const;
-    const VkPipelineBinaryKHR *getPipelineBinaries() const;
+    uint32_t getKeyCount(void) const;
+    uint32_t getBinariesCount(void) const;
+
+    const VkPipelineBinaryKeyKHR *getBinaryKeys(void) const;
+    const VkPipelineBinaryKHR *getPipelineBinaries(void) const;
 
 protected:
     const DeviceInterface &m_vk;
     const VkDevice m_device;
 
-    std::vector<VkPipelineBinaryKeyKHR> m_pipelineKeys;
-    std::vector<VkPipelineBinaryKHR> m_pipelineBinariesRaw;
-    std::vector<Move<VkPipelineBinaryKHR>> m_pipelineBinaries;
+    std::vector<VkPipelineBinaryKeyKHR> m_binaryKeys;
+    std::vector<Move<VkPipelineBinaryKHR>> m_binaries;
+    std::vector<VkPipelineBinaryKHR> m_binariesRaw;
 };
 
 } // namespace vk

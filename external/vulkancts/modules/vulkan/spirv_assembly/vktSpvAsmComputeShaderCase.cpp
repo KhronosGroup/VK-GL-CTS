@@ -682,7 +682,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
         case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
         {
             const VkDescriptorImageInfo imgInfo = {
-                DE_NULL,                  // VkSampler sampler;
+                VK_NULL_HANDLE,           // VkSampler sampler;
                 **inputImageViews.back(), // VkImageView imageView;
                 VK_IMAGE_LAYOUT_GENERAL   // VkImageLayout imageLayout;
             };
@@ -694,7 +694,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
         case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
         {
             const VkDescriptorImageInfo imgInfo = {
-                DE_NULL,                                 // VkSampler sampler;
+                VK_NULL_HANDLE,                          // VkSampler sampler;
                 **inputImageViews.back(),                // VkImageView imageView;
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // VkImageLayout imageLayout;
             };
@@ -707,7 +707,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
         {
             const VkDescriptorImageInfo imgInfo = {
                 **inputSamplers.back(), // VkSampler sampler;
-                DE_NULL,                // VkImageView imageView;
+                VK_NULL_HANDLE,         // VkImageView imageView;
                 VK_IMAGE_LAYOUT_GENERAL // VkImageLayout imageLayout;
             };
 

@@ -2160,7 +2160,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout        newLayout
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                dstQueueFamilyIndex
-        DE_NULL,                                // VkImage                image
+        VK_NULL_HANDLE,                         // VkImage                image
         barrierRange,                           // VkImageSubresourceRange subresourceRange;
     };
 
@@ -2173,7 +2173,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout newLayout;
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t dstQueueFamilyIndex;
-        DE_NULL,                                // VkImage image;
+        VK_NULL_HANDLE,                         // VkImage image;
         barrierRange,                           // VkImageSubresourceRange subresourceRange;
     };
 
@@ -2272,7 +2272,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
         DE_NULL,                                  // const void* pNext;
         (VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags flags;
-        DE_NULL,                                  // VkImage image;
+        VK_NULL_HANDLE,                           // VkImage image;
         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
         m_data.format,                            // VkFormat format;
         {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -2498,7 +2498,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                         makeComputePipeline(vk, device, *pipelineLayoutFillImage, *shaderModuleFillImage);
 
                     const VkDescriptorImageInfo descResultImageInfo =
-                        makeDescriptorImageInfo(DE_NULL, **imageViews[b], VK_IMAGE_LAYOUT_GENERAL);
+                        makeDescriptorImageInfo(VK_NULL_HANDLE, **imageViews[b], VK_IMAGE_LAYOUT_GENERAL);
                     const VkDescriptorBufferInfo descResultBufferInfo =
                         makeDescriptorBufferInfo(bufferR64, 0, sizeImageR64);
 
@@ -2626,7 +2626,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                 default:
                     // Other descriptor types.
                     if (b == 1 && m_data.nullDescriptor)
-                        bufferInfoVec[vecIndex] = makeDescriptorBufferInfo(DE_NULL, 0, VK_WHOLE_SIZE);
+                        bufferInfoVec[vecIndex] = makeDescriptorBufferInfo(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
                     else
                         bufferInfoVec[vecIndex] = makeDescriptorBufferInfo(**buffer, 0, layout.refData.size());
                     break;
@@ -2832,7 +2832,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
             static_cast<VkPipelineCreateFlags>(0u),         // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             *pipelineLayout,                                // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
 
@@ -2845,7 +2845,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         }
 #endif
 
-        pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+        pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 #ifndef CTS_USES_VULKANSC
     else if (m_data.stage == STAGE_RAYGEN)
@@ -3249,7 +3249,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         }
 #endif
         if (*pipeline == VK_NULL_HANDLE)
-            pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+            pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
     const VkImageMemoryBarrier imageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType

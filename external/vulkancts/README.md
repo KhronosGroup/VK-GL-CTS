@@ -805,6 +805,10 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
   --deqp-print-validation-errors
     Print validation errors to standard error
 
+  --deqp-duplicate-case-name-check=[enable|disable]
+    Check for duplicate case names when creating test hierarchy
+    default: 'enable' in Debug mode, 'disable' in Release mode
+
   --deqp-optimization-recipe=<value>
     Shader optimization recipe (0=disabled, 1=performance, 2=size)
     default: '0'

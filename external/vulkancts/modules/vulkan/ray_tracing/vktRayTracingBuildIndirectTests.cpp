@@ -574,7 +574,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuildIndirectTestInstance::runTest(
         new BufferWithMemory(vkd, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible));
 
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     const VkImageMemoryBarrier preImageBarrier =
         makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -668,7 +668,7 @@ void RayTracingBuildIndirectTestInstance::checkSupportInInstance(void) const
 
 VkBuffer RayTracingBuildIndirectTestInstance::initIndirectTopAccelerationStructure(void)
 {
-    VkBuffer result = DE_NULL;
+    VkBuffer result = VK_NULL_HANDLE;
 
     m_indirectAccelerationStructureTop = prepareBuffer(sizeof(VkAccelerationStructureBuildRangeInfoKHR), "wr-ast");
     result                             = **m_indirectAccelerationStructureTop;
@@ -678,7 +678,7 @@ VkBuffer RayTracingBuildIndirectTestInstance::initIndirectTopAccelerationStructu
 
 VkBuffer RayTracingBuildIndirectTestInstance::initIndirectBottomAccelerationStructure(void)
 {
-    VkBuffer result = DE_NULL;
+    VkBuffer result = VK_NULL_HANDLE;
 
     m_indirectAccelerationStructureBottom =
         prepareBuffer(sizeof(VkAccelerationStructureBuildRangeInfoKHR) * m_data.geometriesGroupCount, "wr-asb");

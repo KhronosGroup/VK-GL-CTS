@@ -2213,9 +2213,9 @@ void ShaderRenderCaseInstance::render(uint32_t numVertices, uint32_t numIndices,
             vkDevice,                 // const VkDevice                                device
             *pipelineLayout,          // const VkPipelineLayout                        pipelineLayout
             *vertexShaderModule,      // const VkShaderModule                          vertexShaderModule
-            DE_NULL,                  // const VkShaderModule                          tessellationControlShaderModule
-            DE_NULL,                  // const VkShaderModule                          tessellationEvalShaderModule
-            DE_NULL,                  // const VkShaderModule                          geometryShaderModule
+            VK_NULL_HANDLE,           // const VkShaderModule                          tessellationControlShaderModule
+            VK_NULL_HANDLE,           // const VkShaderModule                          tessellationEvalShaderModule
+            VK_NULL_HANDLE,           // const VkShaderModule                          geometryShaderModule
             *fragmentShaderModule,    // const VkShaderModule                          fragmentShaderModule
             *renderPass,              // const VkRenderPass                            renderPass
             viewports,                // const std::vector<VkViewport>&                viewports

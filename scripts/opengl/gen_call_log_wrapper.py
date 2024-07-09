@@ -343,7 +343,7 @@ CALL_LOG_SPECS = {
             argOutPrints =
             {
                 6: pointer(size = "1"),
-                7: pointer(size = "((length == DE_NULL) ? (count) : ((count < *length) ? (count) : (*length)))")
+                7: pointer(size = "((length == nullptr) ? (count) : ((count < *length) ? (count) : (*length)))")
             }),
     "glDebugMessageInsert": LogSpec({0: enum("DebugMessageSource"), 1: enum("DebugMessageType"), 3: enum("DebugMessageSeverity")}),
     "glDebugMessageControl": LogSpec({0: enum("DebugMessageSource"), 1: enum("DebugMessageType"), 2: enum("DebugMessageSeverity"), 4: pointer(size = "(count)")}),

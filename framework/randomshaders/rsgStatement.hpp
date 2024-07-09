@@ -40,9 +40,9 @@ public:
     Statement(void);
     virtual ~Statement(void);
 
-    virtual Statement *createNextChild(GeneratorState &state)            = DE_NULL;
-    virtual void tokenize(GeneratorState &state, TokenStream &str) const = DE_NULL;
-    virtual void execute(ExecutionContext &execCtx) const                = DE_NULL;
+    virtual Statement *createNextChild(GeneratorState &state)            = 0;
+    virtual void tokenize(GeneratorState &state, TokenStream &str) const = 0;
+    virtual void execute(ExecutionContext &execCtx) const                = 0;
 
 protected:
 };

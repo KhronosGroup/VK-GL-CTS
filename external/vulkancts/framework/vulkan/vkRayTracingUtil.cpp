@@ -1187,8 +1187,8 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
             VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,                  //  VkAccelerationStructureTypeKHR type;
             m_buildFlags,                                   //  VkBuildAccelerationStructureFlagsKHR flags;
             VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR, //  VkBuildAccelerationStructureModeKHR mode;
-            DE_NULL,                                        //  VkAccelerationStructureKHR srcAccelerationStructure;
-            DE_NULL,                                        //  VkAccelerationStructureKHR dstAccelerationStructure;
+            VK_NULL_HANDLE,                                 //  VkAccelerationStructureKHR srcAccelerationStructure;
+            VK_NULL_HANDLE,                                 //  VkAccelerationStructureKHR dstAccelerationStructure;
             geometryCount,                                  //  uint32_t geometryCount;
             m_useArrayOfPointers ?
                 DE_NULL :
@@ -2377,8 +2377,8 @@ auto BottomLevelAccelerationStructurePoolMember::computeBuildSize(const DeviceIn
             VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,                  //  VkAccelerationStructureTypeKHR type;
             m_buildFlags,                                   //  VkBuildAccelerationStructureFlagsKHR flags;
             VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR, //  VkBuildAccelerationStructureModeKHR mode;
-            DE_NULL,                                        //  VkAccelerationStructureKHR srcAccelerationStructure;
-            DE_NULL,                                        //  VkAccelerationStructureKHR dstAccelerationStructure;
+            VK_NULL_HANDLE,                                 //  VkAccelerationStructureKHR srcAccelerationStructure;
+            VK_NULL_HANDLE,                                 //  VkAccelerationStructureKHR dstAccelerationStructure;
             static_cast<uint32_t>(accelerationStructureGeometriesKHR.size()), //  uint32_t geometryCount;
             m_useArrayOfPointers ?
                 DE_NULL :
@@ -2831,8 +2831,8 @@ void TopLevelAccelerationStructureKHR::getCreationSizes(const DeviceInterface &v
             VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,                     //  VkAccelerationStructureTypeKHR type;
             m_buildFlags,                                   //  VkBuildAccelerationStructureFlagsKHR flags;
             VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR, //  VkBuildAccelerationStructureModeKHR mode;
-            DE_NULL,                                        //  VkAccelerationStructureKHR srcAccelerationStructure;
-            DE_NULL,                                        //  VkAccelerationStructureKHR dstAccelerationStructure;
+            VK_NULL_HANDLE,                                 //  VkAccelerationStructureKHR srcAccelerationStructure;
+            VK_NULL_HANDLE,                                 //  VkAccelerationStructureKHR dstAccelerationStructure;
             1u,                                             //  uint32_t geometryCount;
             (m_usePPGeometries ?
                  nullptr :
@@ -2900,8 +2900,8 @@ void TopLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const V
             VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,                     //  VkAccelerationStructureTypeKHR type;
             m_buildFlags,                                   //  VkBuildAccelerationStructureFlagsKHR flags;
             VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR, //  VkBuildAccelerationStructureModeKHR mode;
-            DE_NULL,                                        //  VkAccelerationStructureKHR srcAccelerationStructure;
-            DE_NULL,                                        //  VkAccelerationStructureKHR dstAccelerationStructure;
+            VK_NULL_HANDLE,                                 //  VkAccelerationStructureKHR srcAccelerationStructure;
+            VK_NULL_HANDLE,                                 //  VkAccelerationStructureKHR dstAccelerationStructure;
             1u,                                             //  uint32_t geometryCount;
             (m_usePPGeometries ?
                  nullptr :
@@ -3792,10 +3792,10 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR(const DeviceInterface &vk
         pipelineInterfaceCreateInfoPtr, //  VkRayTracingPipelineInterfaceCreateInfoKHR* pLibraryInterface;
         &dynamicStateCreateInfo,        //  const VkPipelineDynamicStateCreateInfo* pDynamicState;
         pipelineLayout,                 //  VkPipelineLayout layout;
-        (VkPipeline)DE_NULL,            //  VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                 //  VkPipeline basePipelineHandle;
         0,                              //  int32_t basePipelineIndex;
     };
-    VkPipeline object = DE_NULL;
+    VkPipeline object = VK_NULL_HANDLE;
     VkResult result   = vk.createRayTracingPipelinesKHR(device, deferredOperation.get(), pipelineCache, 1u,
                                                         &pipelineCreateInfo, DE_NULL, &object);
     const bool allowCompileRequired =

@@ -297,6 +297,15 @@ inline VkPipelineBinaryDataKHR makePipelineBinaryDataKHR (size_t dataSize, void*
 	return res;
 }
 
+inline VkPipelineBinaryKeysAndDataKHR makePipelineBinaryKeysAndDataKHR (uint32_t binaryCount, const VkPipelineBinaryKeyKHR* pPipelineBinaryKeys, const VkPipelineBinaryDataKHR* pPipelineBinaryData)
+{
+	VkPipelineBinaryKeysAndDataKHR res;
+	res.binaryCount			= binaryCount;
+	res.pPipelineBinaryKeys	= pPipelineBinaryKeys;
+	res.pPipelineBinaryData	= pPipelineBinaryData;
+	return res;
+}
+
 inline VkClearDepthStencilValue makeClearDepthStencilValue (float depth, uint32_t stencil)
 {
 	VkClearDepthStencilValue res;

@@ -512,7 +512,7 @@ vk::VkResult createUncheckedInstance(Context &context, const vk::VkInstanceCreat
     }
 #endif // CTS_USES_VULKANSC
 
-    vk::VkInstance raw_instance = DE_NULL;
+    vk::VkInstance raw_instance = VK_NULL_HANDLE;
     vk::VkResult result         = vkp.createInstance(&createInfo, pAllocator, &raw_instance);
 
 #ifndef CTS_USES_VULKANSC

@@ -396,7 +396,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
         VK_MICROMAP_TYPE_OPACITY_MICROMAP_EXT,     // VkMicromapTypeEXT type;
         0,                                         // VkBuildMicromapFlagsEXT flags;
         VK_BUILD_MICROMAP_MODE_BUILD_EXT,          // VkBuildMicromapModeEXT mode;
-        DE_NULL,                                   // VkMicromapEXT dstMicromap;
+        VK_NULL_HANDLE,                            // VkMicromapEXT dstMicromap;
         1,                                         // uint32_t usageCountsCount;
         &mmUsage,                                  // const VkMicromapUsageEXT* pUsageCounts;
         DE_NULL,                                   // const VkMicromapUsageEXT* const* ppUsageCounts;

@@ -631,9 +631,6 @@ void PipelineBinaryInstance::setupRayTracingPipeline()
     vkd.createRayTracingPipelinesKHR(device, DE_NULL, DE_NULL, 1u, &pipelineCreateInfo, DE_NULL, &object);
     m_pipeline = Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vkd, device, DE_NULL));
 
-    // retrieve pipeline binary keys
-    m_binaries.getPipelineBinaryKeys(&pipelineCreateInfo);
-
     // create pipeline binary objects
     m_binaries.createPipelineBinariesFromPipeline(object);
     VkPipelineBinaryInfoKHR pipelineBinaryInfo = m_binaries.preparePipelineBinaryInfo();

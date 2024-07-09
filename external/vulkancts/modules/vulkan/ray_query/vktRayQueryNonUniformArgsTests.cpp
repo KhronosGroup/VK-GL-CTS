@@ -314,11 +314,11 @@ tcu::TestStatus NonUniformArgsInstance::iterate(void)
         0u,                                             // VkPipelineCreateFlags flags;
         stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout.get(),                           // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
 
-    const auto pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+    const auto pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
     // Fill input buffer values.
     {

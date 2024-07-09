@@ -939,11 +939,11 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             pipelineLayoutPass0.get(),     // VkPipelineLayout layout;
             renderPass.get(),              // VkRenderPass renderPass;
             0u,                            // uint32_t subpass;
-            DE_NULL,                       // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                // VkPipeline basePipelineHandle;
             0                              // int basePipelineIndex;
         };
 
-        pipelinePass0 = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+        pipelinePass0 = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
     // Create pipeline for pass 1
@@ -982,7 +982,8 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
         descriptorPool = poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
         descriptorSet  = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 
-        VkDescriptorImageInfo imageInfo = makeDescriptorImageInfo(DE_NULL, *cbImagePass0View, VK_IMAGE_LAYOUT_GENERAL);
+        VkDescriptorImageInfo imageInfo =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *cbImagePass0View, VK_IMAGE_LAYOUT_GENERAL);
 
         VkWriteDescriptorSet writeDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // sType
@@ -1070,11 +1071,11 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             pipelineLayoutPass1.get(),     // VkPipelineLayout layout;
             renderPass.get(),              // VkRenderPass renderPass;
             1u,                            // uint32_t subpass;
-            DE_NULL,                       // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                // VkPipeline basePipelineHandle;
             0                              // int basePipelineIndex;
         };
 
-        pipelinePass1 = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+        pipelinePass1 = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
     // Create command buffer

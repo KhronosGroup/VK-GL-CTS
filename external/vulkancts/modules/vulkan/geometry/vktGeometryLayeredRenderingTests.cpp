@@ -316,8 +316,8 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         device,         // const VkDevice                                    device
         pipelineLayout, // const VkPipelineLayout                            pipelineLayout
         vertexModule,   // const VkShaderModule                                vertexShaderModule
-        DE_NULL,        // const VkShaderModule                                tessellationControlModule
-        DE_NULL,        // const VkShaderModule                                tessellationEvalModule
+        VK_NULL_HANDLE, // const VkShaderModule                                tessellationControlModule
+        VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalModule
         geometryModule, // const VkShaderModule                                geometryShaderModule
         fragmentModule, // const VkShaderModule                                fragmentShaderModule
         renderPass,     // const VkRenderPass                                renderPass
@@ -1777,7 +1777,7 @@ tcu::TestStatus testSecondaryCmdBuffer(Context &context, const TestParams params
     zeroBuffer(vk, device, *colorBufferAlloc, colorBufferSize);
 
     const VkDescriptorImageInfo imageDescriptorInfo =
-        makeDescriptorImageInfo(DE_NULL, *offscreenImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *offscreenImageView, VK_IMAGE_LAYOUT_GENERAL);
 
     DescriptorSetUpdateBuilder()
         .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),

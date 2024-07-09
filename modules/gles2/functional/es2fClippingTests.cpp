@@ -476,7 +476,7 @@ class RenderTestCase : public TestCase
 public:
     RenderTestCase(Context &context, const char *name, const char *description);
 
-    virtual void testRender(void) = DE_NULL;
+    virtual void testRender(void) = 0;
     virtual void init(void)
     {
     }
@@ -641,7 +641,7 @@ public:
                        const ColorlessLineData *linesEnd, float lineWidth, const rr::WindowRectangle &viewport);
 
     virtual void verifyImage(const tcu::ConstPixelBufferAccess &testImageAccess,
-                             const tcu::ConstPixelBufferAccess &referenceImageAccess) = DE_NULL;
+                             const tcu::ConstPixelBufferAccess &referenceImageAccess) = 0;
     void init(void);
     void testRender(void);
 
@@ -924,7 +924,7 @@ public:
                      const TriangleData *polysEnd, const rr::WindowRectangle &viewport);
 
     virtual void verifyImage(const tcu::ConstPixelBufferAccess &testImageAccess,
-                             const tcu::ConstPixelBufferAccess &referenceImageAccess) = DE_NULL;
+                             const tcu::ConstPixelBufferAccess &referenceImageAccess) = 0;
     void testRender(void);
 
 private:
@@ -1125,7 +1125,7 @@ class FillTest : public RenderTestCase
 public:
     FillTest(Context &context, const char *name, const char *description, const rr::WindowRectangle &viewport);
 
-    virtual void render(sglr::Context &ctx) = DE_NULL;
+    virtual void render(sglr::Context &ctx) = 0;
     void testRender(void);
 
 protected:

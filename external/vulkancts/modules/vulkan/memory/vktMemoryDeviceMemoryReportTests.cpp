@@ -1787,7 +1787,7 @@ tcu::TestStatus vkDeviceMemoryAllocateAndFreeTest(Context &context)
         recorder.setCallbackMarker(MARKER_ALLOCATE);
 
         VkResult result                               = VK_SUCCESS;
-        VkDeviceMemory memory                         = DE_NULL;
+        VkDeviceMemory memory                         = VK_NULL_HANDLE;
         const VkMemoryAllocateInfo memoryAllocateInfo = {
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType sType;
             DE_NULL,                                // const void* pNext;

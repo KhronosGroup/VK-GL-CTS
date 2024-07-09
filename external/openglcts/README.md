@@ -682,6 +682,10 @@ Full list of parameters for the `glcts` binary:
     Enable or disable the compact version of the log
     default: 'disable'
 
+  --deqp-duplicate-case-name-check=[enable|disable]
+    Check for duplicate case names when creating test hierarchy
+    default: 'enable' in Debug mode, 'disable' in Release mode
+
   --deqp-renderdoc=[enable|disable]
     Enable RenderDoc frame markers
     default: 'disable'

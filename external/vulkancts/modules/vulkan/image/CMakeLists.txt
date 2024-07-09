@@ -16,6 +16,8 @@ set(DEQP_VK_VKSC_IMAGE_SRCS
 	vktImageAtomicSpirvShaders.hpp
 	vktImageLoadStoreTests.cpp
 	vktImageLoadStoreTests.hpp
+	vktImageMismatchedDimensionalityTests.cpp
+	vktImageMismatchedDimensionalityTests.hpp
 	vktImageMismatchedFormatsTests.cpp
 	vktImageMismatchedFormatsTests.hpp
 	vktImageMutableTests.cpp
@@ -50,6 +52,8 @@ set(DEQP_VK_VKSC_IMAGE_SRCS
 	vktImageExtendedUsageBitTests.hpp
 	vktImageTransfer.cpp
 	vktImageTransfer.hpp
+	vktImageDepthStencilSeparateTests.cpp
+	vktImageDepthStencilSeparateTests.hpp
 	)
 
 set(DEQP_VK_IMAGE_SRCS

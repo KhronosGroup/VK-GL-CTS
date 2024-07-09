@@ -268,7 +268,7 @@ public:
             {
                 if (submissionIter->isSparseBinding)
                 {
-                    VkFence fence = DE_NULL;
+                    VkFence fence = VK_NULL_HANDLE;
 
                     if (m_params.bindSparseUseFence)
                     {

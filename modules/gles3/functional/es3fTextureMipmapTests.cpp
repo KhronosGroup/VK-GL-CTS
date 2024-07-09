@@ -1408,8 +1408,8 @@ public:
     IterateResult iterate(void);
 
 protected:
-    virtual void setTextureParams(int cellNdx)                            = DE_NULL;
-    virtual void getReferenceParams(ReferenceParams &params, int cellNdx) = DE_NULL;
+    virtual void setTextureParams(int cellNdx)                            = 0;
+    virtual void getReferenceParams(ReferenceParams &params, int cellNdx) = 0;
 
     const int m_texWidth;
     const int m_texHeight;
@@ -1713,8 +1713,8 @@ public:
     IterateResult iterate(void);
 
 protected:
-    virtual void setTextureParams(int cellNdx)                            = DE_NULL;
-    virtual void getReferenceParams(ReferenceParams &params, int cellNdx) = DE_NULL;
+    virtual void setTextureParams(int cellNdx)                            = 0;
+    virtual void getReferenceParams(ReferenceParams &params, int cellNdx) = 0;
 
     const int m_texSize;
 
@@ -2046,8 +2046,8 @@ public:
     IterateResult iterate(void);
 
 protected:
-    virtual void setTextureParams(int cellNdx)                            = DE_NULL;
-    virtual void getReferenceParams(ReferenceParams &params, int cellNdx) = DE_NULL;
+    virtual void setTextureParams(int cellNdx)                            = 0;
+    virtual void getReferenceParams(ReferenceParams &params, int cellNdx) = 0;
 
     const int m_texWidth;
     const int m_texHeight;

@@ -89,15 +89,15 @@ class StandardPageSizesTestCase : public deqp::TestCase
 {
 public:
     /* Public methods */
-    StandardPageSizesTestCase(deqp::Context &context);
+    StandardPageSizesTestCase(deqp::Context &context, const char *name, GLint target,
+                              std::pair<GLint, PageSizeStruct> format);
 
-    void init();
     tcu::TestNode::IterateResult iterate();
 
 private:
     /* Private methods */
-    std::vector<GLint> mSupportedTargets;
-    std::map<GLint, PageSizeStruct> mStandardVirtualPageSizesTable;
+    GLint mTarget;
+    std::pair<GLint, PageSizeStruct> mFormat;
 
     /* Private members */
 };
@@ -108,9 +108,9 @@ class SparseTexture2AllocationTestCase : public SparseTextureAllocationTestCase
 {
 public:
     /* Public methods */
-    SparseTexture2AllocationTestCase(deqp::Context &context);
+    SparseTexture2AllocationTestCase(deqp::Context &context, const char *name, GLint target, GLint fullArrayTarget,
+                                     GLint format);
 
-    virtual void init();
     virtual tcu::TestNode::IterateResult iterate();
 
 private:
@@ -123,11 +123,10 @@ class SparseTexture2CommitmentTestCase : public SparseTextureCommitmentTestCase
 {
 public:
     /* Public methods */
-    SparseTexture2CommitmentTestCase(deqp::Context &context);
 
-    SparseTexture2CommitmentTestCase(deqp::Context &context, const char *name, const char *description);
+    SparseTexture2CommitmentTestCase(deqp::Context &context, const char *name, const char *description, GLint target,
+                                     GLint format);
 
-    virtual void init();
     virtual tcu::TestNode::IterateResult iterate();
 
 protected:
@@ -164,9 +163,9 @@ class UncommittedRegionsAccessTestCase : public SparseTexture2CommitmentTestCase
 {
 public:
     /* Public methods */
-    UncommittedRegionsAccessTestCase(deqp::Context &context);
+    UncommittedRegionsAccessTestCase(deqp::Context &context, const char *name, const char *description, GLint target,
+                                     GLint format);
 
-    virtual void init();
     virtual tcu::TestNode::IterateResult iterate();
 
 private:
@@ -201,9 +200,8 @@ class SparseTexture2LookupTestCase : public SparseTexture2CommitmentTestCase
 {
 public:
     /* Public methods */
-    SparseTexture2LookupTestCase(deqp::Context &context);
-
-    SparseTexture2LookupTestCase(deqp::Context &context, const char *name, const char *description);
+    SparseTexture2LookupTestCase(deqp::Context &context, const char *name, const char *description, GLint target,
+                                 GLint format);
 
     void init();
     tcu::TestNode::IterateResult iterate();
@@ -276,6 +274,12 @@ public:
 private:
     SparseTexture2Tests(const SparseTexture2Tests &other);
     SparseTexture2Tests &operator=(const SparseTexture2Tests &other);
+
+    void addStandardPageSizesTestCase();
+    void addSparseTexture2AllocationTestCase();
+    void addSparseTexture2CommitmentTestCase();
+    void addUncommittedRegionsAccessTestCase();
+    void addSparseTexture2LookupTestCase();
 };
 
 void replaceToken(const GLchar *token, const GLchar *text, std::string &string);

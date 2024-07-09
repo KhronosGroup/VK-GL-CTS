@@ -1630,7 +1630,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
         (vk::VkPipeline)0,  // basePipelineHandle
         0u,                 // basePipelineIndex
     };
-    Move<VkPipeline> computePipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+    Move<VkPipeline> computePipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
 
     for (uint32_t modeIdx = 0; modeIdx < ATTACHMENT_MODE_COUNT; ++modeIdx)
     {
@@ -1800,7 +1800,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                     w.descriptorType = bindings[0].descriptorType;
                     vk.updateDescriptorSets(device, 1, &w, 0, NULL);
 
-                    imageInfo        = makeDescriptorImageInfo(DE_NULL, *cbImageView, VK_IMAGE_LAYOUT_GENERAL);
+                    imageInfo        = makeDescriptorImageInfo(VK_NULL_HANDLE, *cbImageView, VK_IMAGE_LAYOUT_GENERAL);
                     w.dstBinding     = 1;
                     w.descriptorType = bindings[1].descriptorType;
                     vk.updateDescriptorSets(device, 1, &w, 0, NULL);
@@ -1827,13 +1827,13 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                         w.descriptorType = bindings[5].descriptorType;
                         vk.updateDescriptorSets(device, 1, &w, 0, NULL);
 
-                        imageInfo        = makeDescriptorImageInfo(DE_NULL, *dImageView, VK_IMAGE_LAYOUT_GENERAL);
-                        w.dstBinding     = 6;
+                        imageInfo    = makeDescriptorImageInfo(VK_NULL_HANDLE, *dImageView, VK_IMAGE_LAYOUT_GENERAL);
+                        w.dstBinding = 6;
                         w.descriptorType = bindings[6].descriptorType;
                         vk.updateDescriptorSets(device, 1, &w, 0, NULL);
 
-                        imageInfo        = makeDescriptorImageInfo(DE_NULL, *sImageView, VK_IMAGE_LAYOUT_GENERAL);
-                        w.dstBinding     = 7;
+                        imageInfo    = makeDescriptorImageInfo(VK_NULL_HANDLE, *sImageView, VK_IMAGE_LAYOUT_GENERAL);
+                        w.dstBinding = 7;
                         w.descriptorType = bindings[7].descriptorType;
                         vk.updateDescriptorSets(device, 1, &w, 0, NULL);
                     }
@@ -3025,7 +3025,7 @@ void FSRTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkImageView 
     VkRenderingFragmentShadingRateAttachmentInfoKHR shadingRateAttachmentInfo{
         VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR, // VkStructureType sType;
         DE_NULL,                                                               // const void* pNext;
-        m_data.useAttachment() ? srImageView : DE_NULL,                        // VkImageView imageView;
+        m_data.useAttachment() ? srImageView : VK_NULL_HANDLE,                 // VkImageView imageView;
         srImageLayout,                                                         // VkImageLayout imageLayout;
         srTexelSize // VkExtent2D shadingRateAttachmentTexelSize;
     };
@@ -3036,7 +3036,7 @@ void FSRTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkImageView 
         cbImageView,                                         // VkImageView imageView;
         VK_IMAGE_LAYOUT_GENERAL,                             // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                                // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                             // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                           // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_LOAD,                          // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                        // VkAttachmentStoreOp storeOp;
@@ -3051,7 +3051,7 @@ void FSRTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkImageView 
             dsImageView,                                     // VkImageView imageView;
             VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout imageLayout;
             VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-            DE_NULL,                                         // VkImageView resolveImageView;
+            VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
             VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
             VK_ATTACHMENT_LOAD_OP_LOAD,                      // VkAttachmentLoadOp loadOp;
             VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;

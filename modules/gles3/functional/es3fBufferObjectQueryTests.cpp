@@ -78,8 +78,8 @@ public:
 
     const char *getTestNamePostfix(void) const;
 
-    virtual void verifyInteger(tcu::TestContext &testCtx, GLenum target, GLenum name, GLint reference)     = DE_NULL;
-    virtual void verifyInteger64(tcu::TestContext &testCtx, GLenum target, GLenum name, GLint64 reference) = DE_NULL;
+    virtual void verifyInteger(tcu::TestContext &testCtx, GLenum target, GLenum name, GLint reference)     = 0;
+    virtual void verifyInteger64(tcu::TestContext &testCtx, GLenum target, GLenum name, GLint64 reference) = 0;
 
 private:
     const char *const m_testNamePostfix;
@@ -236,7 +236,7 @@ public:
     {
     }
 
-    virtual void testBuffer(void) = DE_NULL;
+    virtual void testBuffer(void) = 0;
 
     void test(void)
     {

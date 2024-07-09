@@ -464,9 +464,9 @@ GraphicsEnvironment::GraphicsEnvironment(Context &context, const DeviceInterface
             m_device,                // const VkDevice                                device
             *m_pipelineLayout,       // const VkPipelineLayout                        pipelineLayout
             *m_vertexShaderModule,   // const VkShaderModule                          vertexShaderModule
-            DE_NULL,                 // const VkShaderModule                          tessellationControlShaderModule
-            DE_NULL,                 // const VkShaderModule                          tessellationEvalShaderModule
-            DE_NULL,                 // const VkShaderModule                          geometryShaderModule
+            VK_NULL_HANDLE,          // const VkShaderModule                          tessellationControlShaderModule
+            VK_NULL_HANDLE,          // const VkShaderModule                          tessellationEvalShaderModule
+            VK_NULL_HANDLE,          // const VkShaderModule                          geometryShaderModule
             *m_fragmentShaderModule, // const VkShaderModule                          fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                            renderPass
             viewports,               // const std::vector<VkViewport>&                viewports
@@ -590,11 +590,11 @@ ComputeEnvironment::ComputeEnvironment(Context &context, const DeviceInterface &
             0u,                                             // VkPipelineCreateFlags flags;
             computeStageParams,                             // VkPipelineShaderStageCreateInfo stage;
             *m_pipelineLayout,                              // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0u                                              // int32_t basePipelineIndex;
         };
 
-        m_computePipeline = createComputePipeline(vk, m_device, DE_NULL, &computePipelineParams);
+        m_computePipeline = createComputePipeline(vk, m_device, VK_NULL_HANDLE, &computePipelineParams);
     }
 
     // Record commands

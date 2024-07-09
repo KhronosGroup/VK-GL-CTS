@@ -952,7 +952,7 @@ tcu::TestStatus MeshQueryInstance::iterate(void)
     const auto rawPipeLayout  = pipelineLayout.get();
 
     Move<VkCommandBuffer> secCmdBufferPtr;
-    VkCommandBuffer secCmdBuffer = DE_NULL;
+    VkCommandBuffer secCmdBuffer = VK_NULL_HANDLE;
 
     if (m_params->useSecondary)
     {

@@ -10,7 +10,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsFe
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -42,8 +42,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsFe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -52,7 +52,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsCo
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -86,8 +86,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsCo
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -96,7 +96,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPrivateDataFeatures (Cont
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -128,8 +128,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPrivateDataFeatures (Cont
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -138,7 +138,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures 
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -171,8 +171,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures 
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -181,7 +181,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewFeatures (Contex
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -215,8 +215,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewFeatures (Contex
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -225,7 +225,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPresentIdFeaturesKHR (Con
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -257,8 +257,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPresentIdFeaturesKHR (Con
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -267,7 +267,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPresentWaitFeaturesKHR (C
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -299,8 +299,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPresentWaitFeaturesKHR (C
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -309,7 +309,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures (Con
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -344,8 +344,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures (Con
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -354,7 +354,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTyp
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -386,8 +386,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTyp
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -396,7 +396,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFea
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -428,8 +428,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFea
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -438,7 +438,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures (
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -470,8 +470,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures (
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -480,7 +480,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFea
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -512,8 +512,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFea
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -522,7 +522,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiDrawFeaturesEXT (Con
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -554,8 +554,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiDrawFeaturesEXT (Con
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -564,7 +564,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestInlineUniformBlockFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -597,8 +597,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestInlineUniformBlockFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -607,7 +607,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMaintenance4Features (Con
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -639,8 +639,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMaintenance4Features (Con
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -649,7 +649,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMaintenance5FeaturesKHR (
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -681,8 +681,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMaintenance5FeaturesKHR (
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -691,7 +691,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMaintenance6FeaturesKHR (
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -723,8 +723,50 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMaintenance6FeaturesKHR (
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMaintenance7FeaturesKHR (Context& context)
+{
+    const PlatformInterface&                vkp = context.getPlatformInterface();
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const InstanceDriver&                    instanceDriver            (instance.getDriver());
+    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
+    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
+
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceMaintenance7FeaturesKHR>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceMaintenance7FeaturesKHR, maintenance7),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceMaintenance7FeaturesKHR*>(featuresStruct);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -733,7 +775,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -765,8 +807,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -775,7 +817,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -808,8 +850,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -818,7 +860,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures (C
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -850,8 +892,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures (C
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -860,7 +902,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestGlobalPriorityQueryFeatur
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -892,8 +934,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestGlobalPriorityQueryFeatur
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -902,7 +944,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDeviceMemoryReportFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -934,8 +976,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDeviceMemoryReportFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -944,7 +986,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -995,8 +1037,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1005,7 +1047,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1037,8 +1079,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1047,7 +1089,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures (Cont
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1081,8 +1123,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures (Cont
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1091,7 +1133,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestConditionalRenderingFeatu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1124,8 +1166,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestConditionalRenderingFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1134,7 +1176,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1168,8 +1210,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1178,7 +1220,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1211,8 +1253,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1221,7 +1263,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1264,8 +1306,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1274,7 +1316,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloat2Feature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1317,8 +1359,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloat2Feature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1327,7 +1369,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFea
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1360,8 +1402,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFea
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1370,7 +1412,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT (Co
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1402,8 +1444,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT (Co
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1412,7 +1454,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTransformFeedbackFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1445,8 +1487,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTransformFeedbackFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1455,7 +1497,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRepresentativeFragmentTes
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1487,8 +1529,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRepresentativeFragmentTes
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1497,7 +1539,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExclusiveScissorFeaturesN
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1529,8 +1571,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExclusiveScissorFeaturesN
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1539,7 +1581,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCornerSampledImageFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1571,8 +1613,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCornerSampledImageFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1581,7 +1623,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestComputeShaderDerivativesF
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1614,8 +1656,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestComputeShaderDerivativesF
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1624,7 +1666,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderImageFootprintFeatu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1656,8 +1698,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderImageFootprintFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1666,7 +1708,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDedicatedAllocationImageA
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1698,8 +1740,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDedicatedAllocationImageA
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1708,7 +1750,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCopyMemoryIndirectFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1740,8 +1782,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCopyMemoryIndirectFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1750,7 +1792,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMemoryDecompressionFeatur
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1782,8 +1824,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMemoryDecompressionFeatur
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1792,7 +1834,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShadingRateImageFeaturesN
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1825,8 +1867,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShadingRateImageFeaturesN
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1835,7 +1877,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestInvocationMaskFeaturesHUA
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1867,8 +1909,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestInvocationMaskFeaturesHUA
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1877,7 +1919,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMeshShaderFeaturesNV (Con
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1910,8 +1952,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMeshShaderFeaturesNV (Con
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1920,7 +1962,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMeshShaderFeaturesEXT (Co
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -1956,8 +1998,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMeshShaderFeaturesEXT (Co
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1966,7 +2008,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAccelerationStructureFeat
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2002,8 +2044,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAccelerationStructureFeat
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2012,7 +2054,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingPipelineFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2048,8 +2090,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingPipelineFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2058,7 +2100,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayQueryFeaturesKHR (Cont
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2090,8 +2132,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayQueryFeaturesKHR (Cont
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2100,7 +2142,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingMaintenance1Fea
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2133,8 +2175,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingMaintenance1Fea
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2143,7 +2185,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentDensityMapFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2177,8 +2219,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentDensityMapFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2187,7 +2229,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentDensityMap2Featur
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2219,8 +2261,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentDensityMap2Featur
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2229,7 +2271,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentDensityMapOffsetF
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2261,8 +2303,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentDensityMapOffsetF
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2271,7 +2313,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2303,8 +2345,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2313,7 +2355,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayo
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2345,8 +2387,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayo
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2355,7 +2397,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEX
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2387,8 +2429,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEX
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2397,7 +2439,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMemoryPriorityFeaturesEXT
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2429,8 +2471,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMemoryPriorityFeaturesEXT
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2439,7 +2481,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPageableDeviceLocalMemory
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2471,8 +2513,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPageableDeviceLocalMemory
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2481,7 +2523,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatur
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2515,8 +2557,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatur
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2525,7 +2567,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatur
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2559,8 +2601,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatur
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2569,7 +2611,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2601,8 +2643,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2611,7 +2653,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDR
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2643,8 +2685,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDR
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2653,7 +2695,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCooperativeMatrixFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2686,8 +2728,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCooperativeMatrixFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2696,7 +2738,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesE
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2728,8 +2770,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesE
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2738,7 +2780,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPresentBarrierFeaturesNV 
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2770,8 +2812,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPresentBarrierFeaturesNV 
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2780,7 +2822,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesK
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2813,8 +2855,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesK
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2823,7 +2865,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCoverageReductionModeFeat
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2855,8 +2897,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCoverageReductionModeFeat
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2865,7 +2907,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderIntegerFunctions2Fe
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2897,8 +2939,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderIntegerFunctions2Fe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2907,7 +2949,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR (C
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2940,8 +2982,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR (C
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2950,7 +2992,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesKHR
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2982,8 +3024,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesKHR
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2992,7 +3034,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSMBuiltinsFeaturesN
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3024,8 +3066,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSMBuiltinsFeaturesN
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3034,7 +3076,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFe
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3068,8 +3110,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3078,7 +3120,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayou
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3110,8 +3152,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayou
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3120,7 +3162,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPrimitiveTopologyListRest
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3153,8 +3195,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPrimitiveTopologyListRest
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3163,7 +3205,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineExecutablePropert
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3195,8 +3237,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineExecutablePropert
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3205,7 +3247,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvoc
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3237,8 +3279,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvoc
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3247,7 +3289,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeatu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3279,8 +3321,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3289,7 +3331,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeatur
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3322,8 +3364,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeatur
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3332,7 +3374,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLineRasterizationFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3369,8 +3411,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLineRasterizationFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3379,7 +3421,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineCreationCacheCont
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3411,8 +3453,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineCreationCacheCont
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3421,7 +3463,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan11Features (Context
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3459,13 +3501,13 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan11Features (Context
         FEATURE_ITEM (VkPhysicalDeviceVulkan11Features, shaderDrawParameters),
         };
         auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVulkan11Features*>(featuresStruct);
-        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 12, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, DE_NULL, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 12, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, nullptr, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
     }
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3474,7 +3516,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan12Features (Context
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3547,13 +3589,13 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan12Features (Context
         FEATURE_ITEM (VkPhysicalDeviceVulkan12Features, subgroupBroadcastDynamicId),
         };
         auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVulkan12Features*>(featuresStruct);
-        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 47, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, DE_NULL, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 47, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, nullptr, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
     }
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3562,7 +3604,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan13Features (Context
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3603,13 +3645,13 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan13Features (Context
         FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, maintenance4),
         };
         auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVulkan13Features*>(featuresStruct);
-        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 15, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, DE_NULL, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 15, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, nullptr, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
     }
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3618,7 +3660,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCoherentMemoryFeaturesAMD
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3650,8 +3692,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCoherentMemoryFeaturesAMD
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3660,7 +3702,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3693,8 +3735,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3703,7 +3745,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBorderColorSwizzleFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3736,8 +3778,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBorderColorSwizzleFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3746,7 +3788,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeatu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3778,8 +3820,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3788,7 +3830,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2Feat
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3822,8 +3864,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2Feat
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3832,7 +3874,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicState3Feat
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3894,8 +3936,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicState3Feat
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3904,7 +3946,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDiagnosticsConfigFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3936,8 +3978,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDiagnosticsConfigFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3946,7 +3988,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestZeroInitializeWorkgroupMe
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -3978,8 +4020,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestZeroInitializeWorkgroupMe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -3988,7 +4030,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSubgroupUniformCont
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4020,8 +4062,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSubgroupUniformCont
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4030,7 +4072,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT (C
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4064,8 +4106,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT (C
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4074,7 +4116,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageRobustnessFeatures (
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4106,8 +4148,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageRobustnessFeatures (
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4116,7 +4158,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestWorkgroupMemoryExplicitLa
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4151,8 +4193,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestWorkgroupMemoryExplicitLa
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4161,7 +4203,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPortabilitySubsetFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4207,8 +4249,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPortabilitySubsetFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4217,7 +4259,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT (C
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4250,8 +4292,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT (C
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4260,7 +4302,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubpassShadingFeaturesHUA
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4292,8 +4334,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubpassShadingFeaturesHUA
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4302,7 +4344,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestClusterCullingShaderFeatu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4335,8 +4377,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestClusterCullingShaderFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4345,7 +4387,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestClusterCullingShaderVrsFe
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4377,8 +4419,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestClusterCullingShaderVrsFe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4387,7 +4429,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64Fea
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4420,8 +4462,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64Fea
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4430,7 +4472,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeatur
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4464,8 +4506,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeatur
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4474,7 +4516,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocation
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4506,8 +4548,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocation
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4516,7 +4558,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShadingRateEnumsF
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4550,8 +4592,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShadingRateEnumsF
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4560,7 +4602,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImage2DViewOf3DFeaturesEX
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4593,8 +4635,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImage2DViewOf3DFeaturesEX
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4603,7 +4645,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageSlicedViewOf3DFeatur
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4635,8 +4677,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageSlicedViewOf3DFeatur
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4645,7 +4687,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAttachmentFeedbackLoopDyn
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4677,8 +4719,50 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAttachmentFeedbackLoopDyn
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLegacyVertexAttributesFeaturesEXT (Context& context)
+{
+    const PlatformInterface&                vkp = context.getPlatformInterface();
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const InstanceDriver&                    instanceDriver            (instance.getDriver());
+    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
+    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
+
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT, legacyVertexAttributes),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT*>(featuresStruct);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4687,7 +4771,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMutableDescriptorTypeFeat
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4719,8 +4803,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMutableDescriptorTypeFeat
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4729,7 +4813,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthClipControlFeaturesE
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4761,8 +4845,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthClipControlFeaturesE
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4771,7 +4855,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFe
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4803,8 +4887,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4813,7 +4897,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemoryRDMAFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4845,8 +4929,50 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemoryRDMAFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderRelaxedExtendedInstructionFeaturesKHR (Context& context)
+{
+    const PlatformInterface&                vkp = context.getPlatformInterface();
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const InstanceDriver&                    instanceDriver            (instance.getDriver());
+    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
+    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
+
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR, shaderRelaxedExtendedInstruction),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR*>(featuresStruct);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4855,7 +4981,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesE
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4887,8 +5013,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesE
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4897,7 +5023,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSynchronization2Features 
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4929,8 +5055,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSynchronization2Features 
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4939,7 +5065,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestHostImageCopyFeaturesEXT 
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -4971,8 +5097,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestHostImageCopyFeaturesEXT 
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -4981,7 +5107,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPrimitivesGeneratedQueryF
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5015,8 +5141,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPrimitivesGeneratedQueryF
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5025,7 +5151,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLegacyDitheringFeaturesEX
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5057,8 +5183,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLegacyDitheringFeaturesEX
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5067,7 +5193,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultisampledRenderToSingl
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5099,8 +5225,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultisampledRenderToSingl
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5109,7 +5235,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineProtectedAccessFe
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5141,8 +5267,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineProtectedAccessFe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5151,7 +5277,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVideoMaintenance1Features
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5183,8 +5309,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVideoMaintenance1Features
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5193,7 +5319,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestInheritedViewportScissorF
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5225,8 +5351,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestInheritedViewportScissorF
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5235,7 +5361,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeat
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5267,8 +5393,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeat
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5277,7 +5403,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestProvokingVertexFeaturesEX
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5310,8 +5436,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestProvokingVertexFeaturesEX
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5320,7 +5446,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorBufferFeaturesE
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5355,8 +5481,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorBufferFeaturesE
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5365,7 +5491,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderIntegerDotProductFe
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5397,8 +5523,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderIntegerDotProductFe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5407,7 +5533,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShaderBarycentric
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5439,8 +5565,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShaderBarycentric
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5449,7 +5575,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingMotionBlurFeatu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5482,8 +5608,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingMotionBlurFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5492,7 +5618,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingValidationFeatu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5524,8 +5650,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingValidationFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5534,7 +5660,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRGBA10X6FormatsFeaturesEX
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5566,8 +5692,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRGBA10X6FormatsFeaturesEX
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5576,7 +5702,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDynamicRenderingFeatures 
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5608,8 +5734,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDynamicRenderingFeatures 
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5618,7 +5744,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageViewMinLodFeaturesEX
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5650,8 +5776,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageViewMinLodFeaturesEX
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5660,7 +5786,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRasterizationOrderAttachm
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5694,8 +5820,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRasterizationOrderAttachm
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5704,7 +5830,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLinearColorAttachmentFeat
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5736,8 +5862,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLinearColorAttachmentFeat
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5746,7 +5872,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestGraphicsPipelineLibraryFe
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5778,8 +5904,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestGraphicsPipelineLibraryFe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5788,7 +5914,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineBinaryFeaturesKHR
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5820,8 +5946,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineBinaryFeaturesKHR
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5830,7 +5956,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorSetHostMappingF
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5862,8 +5988,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorSetHostMappingF
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5872,7 +5998,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestNestedCommandBufferFeatur
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5906,8 +6032,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestNestedCommandBufferFeatur
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5916,7 +6042,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderModuleIdentifierFea
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5948,8 +6074,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderModuleIdentifierFea
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -5958,7 +6084,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageCompressionControlFe
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -5990,8 +6116,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageCompressionControlFe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6000,7 +6126,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageCompressionControlSw
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6032,8 +6158,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageCompressionControlSw
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6042,7 +6168,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubpassMergeFeedbackFeatu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6074,8 +6200,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubpassMergeFeedbackFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6084,7 +6210,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestOpacityMicromapFeaturesEX
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6118,8 +6244,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestOpacityMicromapFeaturesEX
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6128,7 +6254,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDisplacementMicromapFeatu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6160,8 +6286,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDisplacementMicromapFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6170,7 +6296,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelinePropertiesFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6202,8 +6328,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelinePropertiesFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6212,7 +6338,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderEarlyAndLateFragmen
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6244,8 +6370,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderEarlyAndLateFragmen
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6254,7 +6380,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestNonSeamlessCubeMapFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6286,8 +6412,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestNonSeamlessCubeMapFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6296,7 +6422,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineRobustnessFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6328,8 +6454,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineRobustnessFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6338,7 +6464,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageProcessingFeaturesQC
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6372,8 +6498,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageProcessingFeaturesQC
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6382,7 +6508,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTilePropertiesFeaturesQCO
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6414,8 +6540,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTilePropertiesFeaturesQCO
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6424,7 +6550,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAmigoProfilingFeaturesSEC
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6456,8 +6582,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAmigoProfilingFeaturesSEC
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6466,7 +6592,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAttachmentFeedbackLoopLay
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6498,8 +6624,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAttachmentFeedbackLoopLay
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6508,7 +6634,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthClampZeroOneFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6540,8 +6666,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthClampZeroOneFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6550,7 +6676,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAddressBindingReportFeatu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6582,8 +6708,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAddressBindingReportFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6592,7 +6718,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestOpticalFlowFeaturesNV (Co
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6624,8 +6750,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestOpticalFlowFeaturesNV (Co
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6634,7 +6760,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFaultFeaturesEXT (Context
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6667,8 +6793,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFaultFeaturesEXT (Context
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6677,7 +6803,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineLibraryGroupHandl
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6709,8 +6835,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPipelineLibraryGroupHandl
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6719,7 +6845,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderCoreBuiltinsFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6751,8 +6877,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderCoreBuiltinsFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6761,7 +6887,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFrameBoundaryFeaturesEXT 
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6793,8 +6919,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFrameBoundaryFeaturesEXT 
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6803,7 +6929,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDynamicRenderingUnusedAtt
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6835,8 +6961,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDynamicRenderingUnusedAtt
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6845,7 +6971,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSwapchainMaintenance1Feat
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6877,8 +7003,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSwapchainMaintenance1Feat
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6887,7 +7013,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthBiasControlFeaturesE
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6922,8 +7048,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthBiasControlFeaturesE
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6932,7 +7058,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingInvocationReord
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -6964,8 +7090,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingInvocationReord
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -6974,7 +7100,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedSparseAddressSpac
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7006,8 +7132,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedSparseAddressSpac
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7016,7 +7142,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewPerViewViewports
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7048,8 +7174,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewPerViewViewports
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7058,7 +7184,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingPositionFetchFe
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7090,8 +7216,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingPositionFetchFe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7100,7 +7226,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewPerViewRenderAre
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7132,8 +7258,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewPerViewRenderAre
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7142,7 +7268,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderObjectFeaturesEXT (
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7174,8 +7300,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderObjectFeaturesEXT (
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7184,7 +7310,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderTileImageFeaturesEX
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7218,8 +7344,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderTileImageFeaturesEX
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7228,7 +7354,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemoryScreenBuffe
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7260,8 +7386,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemoryScreenBuffe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7270,7 +7396,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCooperativeMatrixFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7303,8 +7429,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCooperativeMatrixFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7313,7 +7439,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderEnqueueFeaturesAMDX
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7345,8 +7471,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderEnqueueFeaturesAMDX
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7355,7 +7481,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCubicClampFeaturesQCOM (C
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7387,8 +7513,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCubicClampFeaturesQCOM (C
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7397,7 +7523,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcrDegammaFeaturesQCOM 
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7429,8 +7555,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcrDegammaFeaturesQCOM 
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7439,7 +7565,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCubicWeightsFeaturesQCOM 
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7471,8 +7597,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCubicWeightsFeaturesQCOM 
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7481,7 +7607,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageProcessing2FeaturesQ
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7513,8 +7639,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageProcessing2FeaturesQ
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7523,7 +7649,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorPoolOverallocat
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7555,8 +7681,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorPoolOverallocat
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7565,7 +7691,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPerStageDescriptorSetFeat
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7598,8 +7724,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPerStageDescriptorSetFeat
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7608,7 +7734,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalFormatResolveFeat
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7640,8 +7766,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalFormatResolveFeat
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7650,7 +7776,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCudaKernelLaunchFeaturesN
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7682,8 +7808,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCudaKernelLaunchFeaturesN
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7692,7 +7818,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSchedulingControlsFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7724,8 +7850,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSchedulingControlsFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7734,7 +7860,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRelaxedLineRasterizationF
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7766,8 +7892,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRelaxedLineRasterizationF
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7776,7 +7902,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRenderPassStripedFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7808,8 +7934,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRenderPassStripedFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7818,7 +7944,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderMaximalReconvergenc
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7850,8 +7976,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderMaximalReconvergenc
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7860,7 +7986,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSubgroupRotateFeatu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7893,8 +8019,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSubgroupRotateFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7903,7 +8029,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderExpectAssumeFeature
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7935,8 +8061,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderExpectAssumeFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7945,7 +8071,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderFloatControls2Featu
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -7977,8 +8103,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderFloatControls2Featu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -7987,7 +8113,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDynamicRenderingLocalRead
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -8019,8 +8145,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDynamicRenderingLocalRead
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -8029,7 +8155,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderQuadControlFeatures
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -8061,8 +8187,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderQuadControlFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -8071,7 +8197,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloat16Vector
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -8103,8 +8229,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloat16Vector
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -8113,7 +8239,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMapMemoryPlacedFeaturesEX
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -8147,8 +8273,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMapMemoryPlacedFeaturesEX
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -8157,7 +8283,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRawAccessChainsFeaturesNV
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -8189,8 +8315,92 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRawAccessChainsFeaturesNV
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageAlignmentControlFeaturesMESA (Context& context)
+{
+    const PlatformInterface&                vkp = context.getPlatformInterface();
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const InstanceDriver&                    instanceDriver            (instance.getDriver());
+    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
+    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
+
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceImageAlignmentControlFeaturesMESA>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceImageAlignmentControlFeaturesMESA, imageAlignmentControl),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceImageAlignmentControlFeaturesMESA*>(featuresStruct);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderReplicatedCompositesFeaturesEXT (Context& context)
+{
+    const PlatformInterface&                vkp = context.getPlatformInterface();
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const InstanceDriver&                    instanceDriver            (instance.getDriver());
+    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
+    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
+
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT, shaderReplicatedComposites),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT*>(featuresStruct);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -8214,6 +8424,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "maintenance4_features", createDeviceWithUnsupportedFeaturesTestMaintenance4Features);
 	addFunctionCase(testGroup, "maintenance5_features_khr", createDeviceWithUnsupportedFeaturesTestMaintenance5FeaturesKHR);
 	addFunctionCase(testGroup, "maintenance6_features_khr", createDeviceWithUnsupportedFeaturesTestMaintenance6FeaturesKHR);
+	addFunctionCase(testGroup, "maintenance7_features_khr", createDeviceWithUnsupportedFeaturesTestMaintenance7FeaturesKHR);
 	addFunctionCase(testGroup, "shader_draw_parameters_features", createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatures);
 	addFunctionCase(testGroup, "shader_float16_int8_features", createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features);
 	addFunctionCase(testGroup, "host_query_reset_features", createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures);
@@ -8303,10 +8514,12 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "image_2d_view_of_3d_features_ext", createDeviceWithUnsupportedFeaturesTestImage2DViewOf3DFeaturesEXT);
 	addFunctionCase(testGroup, "image_sliced_view_of_3d_features_ext", createDeviceWithUnsupportedFeaturesTestImageSlicedViewOf3DFeaturesEXT);
 	addFunctionCase(testGroup, "attachment_feedback_loop_dynamic_state_features_ext", createDeviceWithUnsupportedFeaturesTestAttachmentFeedbackLoopDynamicStateFeaturesEXT);
+	addFunctionCase(testGroup, "legacy_vertex_attributes_features_ext", createDeviceWithUnsupportedFeaturesTestLegacyVertexAttributesFeaturesEXT);
 	addFunctionCase(testGroup, "mutable_descriptor_type_features_ext", createDeviceWithUnsupportedFeaturesTestMutableDescriptorTypeFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clip_control_features_ext", createDeviceWithUnsupportedFeaturesTestDepthClipControlFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFeaturesEXT);
 	addFunctionCase(testGroup, "external_memory_rdma_features_nv", createDeviceWithUnsupportedFeaturesTestExternalMemoryRDMAFeaturesNV);
+	addFunctionCase(testGroup, "shader_relaxed_extended_instruction_features_khr", createDeviceWithUnsupportedFeaturesTestShaderRelaxedExtendedInstructionFeaturesKHR);
 	addFunctionCase(testGroup, "color_write_enable_features_ext", createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesEXT);
 	addFunctionCase(testGroup, "synchronization2_features", createDeviceWithUnsupportedFeaturesTestSynchronization2Features);
 	addFunctionCase(testGroup, "host_image_copy_features_ext", createDeviceWithUnsupportedFeaturesTestHostImageCopyFeaturesEXT);
@@ -8386,5 +8599,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_atomic_float16_vector_features_nv", createDeviceWithUnsupportedFeaturesTestShaderAtomicFloat16VectorFeaturesNV);
 	addFunctionCase(testGroup, "map_memory_placed_features_ext", createDeviceWithUnsupportedFeaturesTestMapMemoryPlacedFeaturesEXT);
 	addFunctionCase(testGroup, "raw_access_chains_features_nv", createDeviceWithUnsupportedFeaturesTestRawAccessChainsFeaturesNV);
+	addFunctionCase(testGroup, "image_alignment_control_features_mesa", createDeviceWithUnsupportedFeaturesTestImageAlignmentControlFeaturesMESA);
+	addFunctionCase(testGroup, "shader_replicated_composites_features_ext", createDeviceWithUnsupportedFeaturesTestShaderReplicatedCompositesFeaturesEXT);
 }
 

@@ -75,13 +75,13 @@ VKAPI_ATTR VkResult VKAPI_CALL createPipelineCache (VkDevice device, const VkPip
 	VK_NULL_RETURN((*pPipelineCache = allocateNonDispHandle<PipelineCache, VkPipelineCache>(device, pCreateInfo, pAllocator)));
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL createPipelineBinariesKHR (VkDevice device, uint32_t createInfoCount, const VkPipelineBinaryCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryKHR* pPipelineBinaries)
+VKAPI_ATTR VkResult VKAPI_CALL createPipelineBinariesKHR (VkDevice device, const VkPipelineBinaryCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryHandlesInfoKHR* pBinaries)
 {
 	DE_UNREF(pAllocator);
 	DE_UNREF(device);
-	DE_UNREF(createInfoCount);
-	DE_UNREF(pCreateInfos);
-	DE_UNREF(pPipelineBinaries);
+	DE_UNREF(pCreateInfo);
+	DE_UNREF(pAllocator);
+	DE_UNREF(pBinaries);
 	return VK_SUCCESS;
 }
 
@@ -810,19 +810,19 @@ VKAPI_ATTR VkResult VKAPI_CALL mergePipelineCaches (VkDevice device, VkPipelineC
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPipelineBinaryKeysKHR (VkDevice device, const VkPipelineBinaryKeysCreateInfoKHR* pCreateInfo, uint32_t* pKeyCount, VkPipelineBinaryKeyKHR* pKeys)
+VKAPI_ATTR VkResult VKAPI_CALL getPipelineKeyKHR (VkDevice device, const VkPipelineCreateInfoKHR* pPipelineCreateInfo, VkPipelineBinaryKeyKHR* pPipelineKey)
 {
 	DE_UNREF(device);
-	DE_UNREF(pCreateInfo);
-	DE_UNREF(pKeyCount);
-	DE_UNREF(pKeys);
+	DE_UNREF(pPipelineCreateInfo);
+	DE_UNREF(pPipelineKey);
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPipelineBinaryDataKHR (VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData)
+VKAPI_ATTR VkResult VKAPI_CALL getPipelineBinaryDataKHR (VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, VkPipelineBinaryKeyKHR* pPipelineBinaryKey, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData)
 {
 	DE_UNREF(device);
 	DE_UNREF(pInfo);
+	DE_UNREF(pPipelineBinaryKey);
 	DE_UNREF(pPipelineBinaryDataSize);
 	DE_UNREF(pPipelineBinaryData);
 	return VK_SUCCESS;
@@ -4250,10 +4250,10 @@ VKAPI_ATTR void VKAPI_CALL cmdSetRenderingAttachmentLocationsKHR (VkCommandBuffe
 	DE_UNREF(pLocationInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo)
+VKAPI_ATTR void VKAPI_CALL cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pInputAttachmentIndexInfo)
 {
 	DE_UNREF(commandBuffer);
-	DE_UNREF(pLocationInfo);
+	DE_UNREF(pInputAttachmentIndexInfo);
 }
 
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
@@ -4412,7 +4412,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkMergePipelineCaches,										mergePipelineCaches),
 	VK_NULL_FUNC_ENTRY(vkCreatePipelineBinariesKHR,									createPipelineBinariesKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyPipelineBinaryKHR,									destroyPipelineBinaryKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPipelineBinaryKeysKHR,									getPipelineBinaryKeysKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPipelineKeyKHR,											getPipelineKeyKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineBinaryDataKHR,									getPipelineBinaryDataKHR),
 	VK_NULL_FUNC_ENTRY(vkReleaseCapturedPipelineDataKHR,							releaseCapturedPipelineDataKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateGraphicsPipelines,									createGraphicsPipelines),

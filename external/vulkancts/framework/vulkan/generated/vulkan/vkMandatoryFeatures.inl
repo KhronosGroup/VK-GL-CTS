@@ -16,7 +16,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 
 	VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
 	const InstanceInterface&			vki					= context.getInstanceInterface();
-	const vector<VkExtensionProperties>	deviceExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const vector<VkExtensionProperties>	deviceExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 	const uint32_t						usedApiVersion		= context.getUsedApiVersion();
 
 	tcu::TestLog& log = context.getTestContext().getLog();
@@ -939,6 +939,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceShaderQuadControlFeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderQuadControlFeaturesKHR>();
 		*nextPtr = &physicalDeviceShaderQuadControlFeaturesKHR;
 		nextPtr  = &physicalDeviceShaderQuadControlFeaturesKHR.pNext;
+	}
+
+	vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT physicalDeviceShaderReplicatedCompositesFeaturesEXT;
+	deMemset(&physicalDeviceShaderReplicatedCompositesFeaturesEXT, 0, sizeof(physicalDeviceShaderReplicatedCompositesFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_replicated_composites") )
+	{
+		physicalDeviceShaderReplicatedCompositesFeaturesEXT.sType = getStructureType<VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT>();
+		*nextPtr = &physicalDeviceShaderReplicatedCompositesFeaturesEXT;
+		nextPtr  = &physicalDeviceShaderReplicatedCompositesFeaturesEXT.pNext;
 	}
 
 	vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures physicalDeviceShaderSubgroupExtendedTypesFeatures;
@@ -2068,6 +2078,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderObjectFeaturesEXT.shaderObject == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderObject not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_replicated_composites")) )
+	{
+		if ( physicalDeviceShaderReplicatedCompositesFeaturesEXT.shaderReplicatedComposites == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderReplicatedComposites not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

@@ -12989,6 +12989,10 @@ dEQP-GLES2.functional.fbo.render.color_clear.tex2d_rgba
 dEQP-GLES2.functional.fbo.render.color_clear.tex2d_rgba_stencil_index8
 dEQP-GLES2.functional.fbo.render.color_clear.tex2d_rgba_depth_component16
 dEQP-GLES2.functional.fbo.render.color_clear.tex2d_rgba_depth_component16_stencil_index8
+dEQP-GLES2.functional.fbo.render.color_clear.tex2d_bgra
+dEQP-GLES2.functional.fbo.render.color_clear.tex2d_bgra_stencil_index8
+dEQP-GLES2.functional.fbo.render.color_clear.tex2d_bgra_depth_component16
+dEQP-GLES2.functional.fbo.render.color_clear.tex2d_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb565
 dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb565_stencil_index8
 dEQP-GLES2.functional.fbo.render.color_clear.rbo_rgb565_depth_component16
@@ -13009,6 +13013,8 @@ dEQP-GLES2.functional.fbo.render.stencil_clear.tex2d_rgb_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil_clear.tex2d_rgb_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil_clear.tex2d_rgba_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil_clear.tex2d_rgba_depth_component16_stencil_index8
+dEQP-GLES2.functional.fbo.render.stencil_clear.tex2d_bgra_stencil_index8
+dEQP-GLES2.functional.fbo.render.stencil_clear.tex2d_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil_clear.rbo_rgb565_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil_clear.rbo_rgb565_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil_clear.rbo_rgb5_a1_stencil_index8
@@ -13021,14 +13027,20 @@ dEQP-GLES2.functional.fbo.render.color.mix_tex2d_rgb
 dEQP-GLES2.functional.fbo.render.color.mix_tex2d_rgb_depth_component16
 dEQP-GLES2.functional.fbo.render.color.mix_tex2d_rgba
 dEQP-GLES2.functional.fbo.render.color.mix_tex2d_rgba_depth_component16
+dEQP-GLES2.functional.fbo.render.color.mix_tex2d_bgra
+dEQP-GLES2.functional.fbo.render.color.mix_tex2d_bgra_depth_component16
 dEQP-GLES2.functional.fbo.render.color.mix_npot_tex2d_rgb
 dEQP-GLES2.functional.fbo.render.color.mix_npot_tex2d_rgb_depth_component16
 dEQP-GLES2.functional.fbo.render.color.mix_npot_tex2d_rgba
 dEQP-GLES2.functional.fbo.render.color.mix_npot_tex2d_rgba_depth_component16
+dEQP-GLES2.functional.fbo.render.color.mix_npot_tex2d_bgra
+dEQP-GLES2.functional.fbo.render.color.mix_npot_tex2d_bgra_depth_component16
 dEQP-GLES2.functional.fbo.render.color.blend_tex2d_rgb
 dEQP-GLES2.functional.fbo.render.color.blend_tex2d_rgb_depth_component16
 dEQP-GLES2.functional.fbo.render.color.blend_tex2d_rgba
 dEQP-GLES2.functional.fbo.render.color.blend_tex2d_rgba_depth_component16
+dEQP-GLES2.functional.fbo.render.color.blend_tex2d_bgra
+dEQP-GLES2.functional.fbo.render.color.blend_tex2d_bgra_depth_component16
 dEQP-GLES2.functional.fbo.render.color.blend_rbo_rgb565
 dEQP-GLES2.functional.fbo.render.color.blend_rbo_rgb565_depth_component16
 dEQP-GLES2.functional.fbo.render.color.blend_rbo_rgb5_a1
@@ -13041,6 +13053,8 @@ dEQP-GLES2.functional.fbo.render.color.blend_npot_tex2d_rgb
 dEQP-GLES2.functional.fbo.render.color.blend_npot_tex2d_rgb_depth_component16
 dEQP-GLES2.functional.fbo.render.color.blend_npot_tex2d_rgba
 dEQP-GLES2.functional.fbo.render.color.blend_npot_tex2d_rgba_depth_component16
+dEQP-GLES2.functional.fbo.render.color.blend_npot_tex2d_bgra
+dEQP-GLES2.functional.fbo.render.color.blend_npot_tex2d_bgra_depth_component16
 dEQP-GLES2.functional.fbo.render.color.blend_npot_rbo_rgb565
 dEQP-GLES2.functional.fbo.render.color.blend_npot_rbo_rgb565_depth_component16
 dEQP-GLES2.functional.fbo.render.color.blend_npot_rbo_rgb5_a1
@@ -13051,12 +13065,14 @@ dEQP-GLES2.functional.fbo.render.color.blend_npot_rbo_bgra
 dEQP-GLES2.functional.fbo.render.color.blend_npot_rbo_bgra_depth_component16
 dEQP-GLES2.functional.fbo.render.depth.tex2d_rgb_depth_component16
 dEQP-GLES2.functional.fbo.render.depth.tex2d_rgba_depth_component16
+dEQP-GLES2.functional.fbo.render.depth.tex2d_bgra_depth_component16
 dEQP-GLES2.functional.fbo.render.depth.rbo_rgb565_depth_component16
 dEQP-GLES2.functional.fbo.render.depth.rbo_rgb5_a1_depth_component16
 dEQP-GLES2.functional.fbo.render.depth.rbo_rgba4_depth_component16
 dEQP-GLES2.functional.fbo.render.depth.rbo_bgra_depth_component16
 dEQP-GLES2.functional.fbo.render.depth.npot_tex2d_rgb_depth_component16
 dEQP-GLES2.functional.fbo.render.depth.npot_tex2d_rgba_depth_component16
+dEQP-GLES2.functional.fbo.render.depth.npot_tex2d_bgra_depth_component16
 dEQP-GLES2.functional.fbo.render.depth.npot_rbo_rgb565_depth_component16
 dEQP-GLES2.functional.fbo.render.depth.npot_rbo_rgb5_a1_depth_component16
 dEQP-GLES2.functional.fbo.render.depth.npot_rbo_rgba4_depth_component16
@@ -13065,6 +13081,8 @@ dEQP-GLES2.functional.fbo.render.stencil.tex2d_rgb_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil.tex2d_rgb_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil.tex2d_rgba_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil.tex2d_rgba_depth_component16_stencil_index8
+dEQP-GLES2.functional.fbo.render.stencil.tex2d_bgra_stencil_index8
+dEQP-GLES2.functional.fbo.render.stencil.tex2d_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil.rbo_rgb565_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil.rbo_rgb565_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil.rbo_rgb5_a1_stencil_index8
@@ -13077,6 +13095,8 @@ dEQP-GLES2.functional.fbo.render.stencil.npot_tex2d_rgb_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil.npot_tex2d_rgb_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil.npot_tex2d_rgba_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil.npot_tex2d_rgba_depth_component16_stencil_index8
+dEQP-GLES2.functional.fbo.render.stencil.npot_tex2d_bgra_stencil_index8
+dEQP-GLES2.functional.fbo.render.stencil.npot_tex2d_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil.npot_rbo_rgb565_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil.npot_rbo_rgb565_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil.npot_rbo_rgb5_a1_stencil_index8
@@ -13087,6 +13107,7 @@ dEQP-GLES2.functional.fbo.render.stencil.npot_rbo_bgra_stencil_index8
 dEQP-GLES2.functional.fbo.render.stencil.npot_rbo_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.shared_colorbuffer_clear.tex2d_rgb
 dEQP-GLES2.functional.fbo.render.shared_colorbuffer_clear.tex2d_rgba
+dEQP-GLES2.functional.fbo.render.shared_colorbuffer_clear.tex2d_bgra
 dEQP-GLES2.functional.fbo.render.shared_colorbuffer_clear.rbo_rgb565
 dEQP-GLES2.functional.fbo.render.shared_colorbuffer_clear.rbo_rgb5_a1
 dEQP-GLES2.functional.fbo.render.shared_colorbuffer_clear.rbo_rgba4
@@ -13099,6 +13120,10 @@ dEQP-GLES2.functional.fbo.render.shared_colorbuffer.tex2d_rgba
 dEQP-GLES2.functional.fbo.render.shared_colorbuffer.tex2d_rgba_stencil_index8
 dEQP-GLES2.functional.fbo.render.shared_colorbuffer.tex2d_rgba_depth_component16
 dEQP-GLES2.functional.fbo.render.shared_colorbuffer.tex2d_rgba_depth_component16_stencil_index8
+dEQP-GLES2.functional.fbo.render.shared_colorbuffer.tex2d_bgra
+dEQP-GLES2.functional.fbo.render.shared_colorbuffer.tex2d_bgra_stencil_index8
+dEQP-GLES2.functional.fbo.render.shared_colorbuffer.tex2d_bgra_depth_component16
+dEQP-GLES2.functional.fbo.render.shared_colorbuffer.tex2d_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.shared_colorbuffer.rbo_rgb565
 dEQP-GLES2.functional.fbo.render.shared_colorbuffer.rbo_rgb565_stencil_index8
 dEQP-GLES2.functional.fbo.render.shared_colorbuffer.rbo_rgb565_depth_component16
@@ -13119,6 +13144,8 @@ dEQP-GLES2.functional.fbo.render.shared_depthbuffer.tex2d_rgb_depth_component16
 dEQP-GLES2.functional.fbo.render.shared_depthbuffer.tex2d_rgb_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.shared_depthbuffer.tex2d_rgba_depth_component16
 dEQP-GLES2.functional.fbo.render.shared_depthbuffer.tex2d_rgba_depth_component16_stencil_index8
+dEQP-GLES2.functional.fbo.render.shared_depthbuffer.tex2d_bgra_depth_component16
+dEQP-GLES2.functional.fbo.render.shared_depthbuffer.tex2d_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.shared_depthbuffer.rbo_rgb565_depth_component16
 dEQP-GLES2.functional.fbo.render.shared_depthbuffer.rbo_rgb565_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.shared_depthbuffer.rbo_rgb5_a1_depth_component16
@@ -13135,6 +13162,10 @@ dEQP-GLES2.functional.fbo.render.resize.tex2d_rgba
 dEQP-GLES2.functional.fbo.render.resize.tex2d_rgba_stencil_index8
 dEQP-GLES2.functional.fbo.render.resize.tex2d_rgba_depth_component16
 dEQP-GLES2.functional.fbo.render.resize.tex2d_rgba_depth_component16_stencil_index8
+dEQP-GLES2.functional.fbo.render.resize.tex2d_bgra
+dEQP-GLES2.functional.fbo.render.resize.tex2d_bgra_stencil_index8
+dEQP-GLES2.functional.fbo.render.resize.tex2d_bgra_depth_component16
+dEQP-GLES2.functional.fbo.render.resize.tex2d_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.resize.rbo_rgb565
 dEQP-GLES2.functional.fbo.render.resize.rbo_rgb565_stencil_index8
 dEQP-GLES2.functional.fbo.render.resize.rbo_rgb565_depth_component16
@@ -13159,6 +13190,10 @@ dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.rebind_tex2d_rgba
 dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.rebind_tex2d_rgba_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.rebind_tex2d_rgba_depth_component16
 dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.rebind_tex2d_rgba_depth_component16_stencil_index8
+dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.rebind_tex2d_bgra
+dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.rebind_tex2d_bgra_stencil_index8
+dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.rebind_tex2d_bgra_depth_component16
+dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.rebind_tex2d_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.rebind_rbo_rgb565
 dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.rebind_rbo_rgb565_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.rebind_rbo_rgb565_depth_component16
@@ -13183,6 +13218,10 @@ dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.no_rebind_tex2d_rgba
 dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.no_rebind_tex2d_rgba_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.no_rebind_tex2d_rgba_depth_component16
 dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.no_rebind_tex2d_rgba_depth_component16_stencil_index8
+dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.no_rebind_tex2d_bgra
+dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.no_rebind_tex2d_bgra_stencil_index8
+dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.no_rebind_tex2d_bgra_depth_component16
+dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.no_rebind_tex2d_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.no_rebind_rbo_rgb565
 dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.no_rebind_rbo_rgb565_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_colorbuffer.no_rebind_rbo_rgb565_depth_component16
@@ -13203,6 +13242,8 @@ dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.rebind_tex2d_rgb_depth_com
 dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.rebind_tex2d_rgb_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.rebind_tex2d_rgba_depth_component16
 dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.rebind_tex2d_rgba_depth_component16_stencil_index8
+dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.rebind_tex2d_bgra_depth_component16
+dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.rebind_tex2d_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.rebind_rbo_rgb565_depth_component16
 dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.rebind_rbo_rgb565_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.rebind_rbo_rgb5_a1_depth_component16
@@ -13215,6 +13256,8 @@ dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.no_rebind_tex2d_rgb_depth_
 dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.no_rebind_tex2d_rgb_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.no_rebind_tex2d_rgba_depth_component16
 dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.no_rebind_tex2d_rgba_depth_component16_stencil_index8
+dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.no_rebind_tex2d_bgra_depth_component16
+dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.no_rebind_tex2d_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.no_rebind_rbo_rgb565_depth_component16
 dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.no_rebind_rbo_rgb565_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_depthbuffer.no_rebind_rbo_rgb5_a1_depth_component16
@@ -13227,6 +13270,8 @@ dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.rebind_tex2d_rgb_stencil
 dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.rebind_tex2d_rgb_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.rebind_tex2d_rgba_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.rebind_tex2d_rgba_depth_component16_stencil_index8
+dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.rebind_tex2d_bgra_stencil_index8
+dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.rebind_tex2d_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.rebind_rbo_rgb565_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.rebind_rbo_rgb565_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.rebind_rbo_rgb5_a1_stencil_index8
@@ -13239,6 +13284,8 @@ dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.no_rebind_tex2d_rgb_sten
 dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.no_rebind_tex2d_rgb_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.no_rebind_tex2d_rgba_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.no_rebind_tex2d_rgba_depth_component16_stencil_index8
+dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.no_rebind_tex2d_bgra_stencil_index8
+dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.no_rebind_tex2d_bgra_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.no_rebind_rbo_rgb565_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.no_rebind_rbo_rgb565_depth_component16_stencil_index8
 dEQP-GLES2.functional.fbo.render.recreate_stencilbuffer.no_rebind_rbo_rgb5_a1_stencil_index8
@@ -13299,6 +13346,7 @@ dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.stencil_in
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.rgb565
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.sr8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.srg8_ext
+dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.color0.bgra8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.stencil.depth_component_unsigned_short
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.stencil.depth_component_unsigned_int
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.stencil.red_unsigned_byte
@@ -13346,6 +13394,7 @@ dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.stencil.stencil_i
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.stencil.rgb565
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.stencil.sr8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.stencil.srg8_ext
+dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.stencil.bgra8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.depth.depth_component_unsigned_short
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.depth.depth_component_unsigned_int
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.depth.red_unsigned_byte
@@ -13393,6 +13442,7 @@ dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.depth.stencil_ind
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.depth.rgb565
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.depth.sr8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.depth.srg8_ext
+dEQP-GLES2.functional.fbo.completeness.renderable.renderbuffer.depth.bgra8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.depth_component_unsigned_short
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.depth_component_unsigned_int
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.red_unsigned_byte
@@ -13439,6 +13489,7 @@ dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.stencil_index8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.rgb565
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.sr8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.srg8_ext
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.color0.bgra8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.depth_component_unsigned_short
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.depth_component_unsigned_int
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.red_unsigned_byte
@@ -13486,6 +13537,7 @@ dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.stencil_index8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.rgb565
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.sr8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.srg8_ext
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.stencil.bgra8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.depth_component_unsigned_short
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.depth_component_unsigned_int
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.red_unsigned_byte
@@ -13533,6 +13585,7 @@ dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.stencil_index8
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.rgb565
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.sr8_ext
 dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.srg8_ext
+dEQP-GLES2.functional.fbo.completeness.renderable.texture.depth.bgra8_ext
 dEQP-GLES2.functional.fbo.completeness.attachment_combinations.none_none_none_none
 dEQP-GLES2.functional.fbo.completeness.attachment_combinations.none_none_none_rbo
 dEQP-GLES2.functional.fbo.completeness.attachment_combinations.none_none_none_tex

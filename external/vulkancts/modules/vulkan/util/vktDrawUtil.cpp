@@ -413,11 +413,11 @@ void VulkanDrawContext::registerDrawObject(const PipelineState &pipelineState, c
 
     // Graphics pipeline
     {
-        VkShaderModule vertShader        = DE_NULL;
-        VkShaderModule tessControlShader = DE_NULL;
-        VkShaderModule tessEvalShader    = DE_NULL;
-        VkShaderModule geomShader        = DE_NULL;
-        VkShaderModule fragShader        = DE_NULL;
+        VkShaderModule vertShader        = VK_NULL_HANDLE;
+        VkShaderModule tessControlShader = VK_NULL_HANDLE;
+        VkShaderModule tessEvalShader    = VK_NULL_HANDLE;
+        VkShaderModule geomShader        = VK_NULL_HANDLE;
+        VkShaderModule fragShader        = VK_NULL_HANDLE;
 
         DE_ASSERT(drawCallData.topology != VK_PRIMITIVE_TOPOLOGY_PATCH_LIST || pipelineState.numPatchControlPoints > 0);
 

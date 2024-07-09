@@ -45,15 +45,15 @@ public:
     {
     }
 
-    virtual void start(const char *name, const char *params, const char *workingDir, const char *caseList) = DE_NULL;
-    virtual void terminate(void)                                                                           = DE_NULL;
-    virtual void cleanup(void)                                                                             = DE_NULL;
+    virtual void start(const char *name, const char *params, const char *workingDir, const char *caseList) = 0;
+    virtual void terminate(void)                                                                           = 0;
+    virtual void cleanup(void)                                                                             = 0;
 
-    virtual bool isRunning(void)        = DE_NULL;
-    virtual int getExitCode(void) const = DE_NULL;
+    virtual bool isRunning(void)        = 0;
+    virtual int getExitCode(void) const = 0;
 
-    virtual int readTestLog(uint8_t *dst, int numBytes) = DE_NULL;
-    virtual int readInfoLog(uint8_t *dst, int numBytes) = DE_NULL;
+    virtual int readTestLog(uint8_t *dst, int numBytes) = 0;
+    virtual int readInfoLog(uint8_t *dst, int numBytes) = 0;
 
 protected:
     TestProcess(void)

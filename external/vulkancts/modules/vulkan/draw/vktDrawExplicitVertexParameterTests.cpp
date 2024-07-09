@@ -530,7 +530,7 @@ tcu::TestStatus DrawTestInstance::iterate(void)
             pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-        m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+        m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     // Queue draw and read results.
@@ -698,7 +698,7 @@ void DrawTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkRect2D re
         useMultisampling ? *m_multisampleTargetView : *m_colorTargetView,      // VkImageView imageView;
         VK_IMAGE_LAYOUT_GENERAL,                                               // VkImageLayout imageLayout;
         useMultisampling ? VK_RESOLVE_MODE_AVERAGE_BIT : VK_RESOLVE_MODE_NONE, // VkResolveModeFlagBits resolveMode;
-        useMultisampling ? *m_colorTargetView : DE_NULL,                       // VkImageView resolveImageView;
+        useMultisampling ? *m_colorTargetView : VK_NULL_HANDLE,                // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_GENERAL,                                               // VkImageLayout resolveImageLayout;
         useMultisampling ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD, // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                                                // VkAttachmentStoreOp storeOp;

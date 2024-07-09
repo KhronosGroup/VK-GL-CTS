@@ -559,9 +559,9 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
         if (m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
         {
             const VkDescriptorImageInfo descriptorSamplerInfo = {
-                *m_sampler,    // VkSampler sampler;
-                DE_NULL,       // VkImageView imageView;
-                m_imageLayout, // VkImageLayout imageLayout;
+                *m_sampler,     // VkSampler sampler;
+                VK_NULL_HANDLE, // VkImageView imageView;
+                m_imageLayout,  // VkImageLayout imageLayout;
             };
             setUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0),
                                          VK_DESCRIPTOR_TYPE_SAMPLER, &descriptorSamplerInfo);
@@ -1154,9 +1154,9 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
         if (m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
         {
             const VkDescriptorImageInfo descriptorSamplerInfo = {
-                *m_sampler,    // VkSampler sampler;
-                DE_NULL,       // VkImageView imageView;
-                m_imageLayout, // VkImageLayout imageLayout;
+                *m_sampler,     // VkSampler sampler;
+                VK_NULL_HANDLE, // VkImageView imageView;
+                m_imageLayout,  // VkImageLayout imageLayout;
             };
             setUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0),
                                          VK_DESCRIPTOR_TYPE_SAMPLER, &descriptorSamplerInfo);

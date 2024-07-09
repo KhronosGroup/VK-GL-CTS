@@ -24162,6 +24162,12 @@ dEQP-GLES3.functional.texture.filtering.2d.formats.bgra_nearest_mipmap_nearest
 dEQP-GLES3.functional.texture.filtering.2d.formats.bgra_linear_mipmap_nearest
 dEQP-GLES3.functional.texture.filtering.2d.formats.bgra_nearest_mipmap_linear
 dEQP-GLES3.functional.texture.filtering.2d.formats.bgra_linear_mipmap_linear
+dEQP-GLES3.functional.texture.filtering.2d.formats.bgra8_nearest
+dEQP-GLES3.functional.texture.filtering.2d.formats.bgra8_linear
+dEQP-GLES3.functional.texture.filtering.2d.formats.bgra8_nearest_mipmap_nearest
+dEQP-GLES3.functional.texture.filtering.2d.formats.bgra8_linear_mipmap_nearest
+dEQP-GLES3.functional.texture.filtering.2d.formats.bgra8_nearest_mipmap_linear
+dEQP-GLES3.functional.texture.filtering.2d.formats.bgra8_linear_mipmap_linear
 dEQP-GLES3.functional.texture.filtering.2d.formats.etc1_rgb8_nearest
 dEQP-GLES3.functional.texture.filtering.2d.formats.etc1_rgb8_linear
 dEQP-GLES3.functional.texture.filtering.2d.formats.etc1_rgb8_nearest_mipmap_nearest
@@ -24390,6 +24396,12 @@ dEQP-GLES3.functional.texture.filtering.cube.formats.bgra_nearest_mipmap_nearest
 dEQP-GLES3.functional.texture.filtering.cube.formats.bgra_linear_mipmap_nearest
 dEQP-GLES3.functional.texture.filtering.cube.formats.bgra_nearest_mipmap_linear
 dEQP-GLES3.functional.texture.filtering.cube.formats.bgra_linear_mipmap_linear
+dEQP-GLES3.functional.texture.filtering.cube.formats.bgra8_nearest
+dEQP-GLES3.functional.texture.filtering.cube.formats.bgra8_linear
+dEQP-GLES3.functional.texture.filtering.cube.formats.bgra8_nearest_mipmap_nearest
+dEQP-GLES3.functional.texture.filtering.cube.formats.bgra8_linear_mipmap_nearest
+dEQP-GLES3.functional.texture.filtering.cube.formats.bgra8_nearest_mipmap_linear
+dEQP-GLES3.functional.texture.filtering.cube.formats.bgra8_linear_mipmap_linear
 dEQP-GLES3.functional.texture.filtering.cube.formats.etc1_rgb8_nearest
 dEQP-GLES3.functional.texture.filtering.cube.formats.etc1_rgb8_linear
 dEQP-GLES3.functional.texture.filtering.cube.formats.etc1_rgb8_nearest_mipmap_nearest
@@ -24614,6 +24626,12 @@ dEQP-GLES3.functional.texture.filtering.2d_array.formats.bgra_nearest_mipmap_nea
 dEQP-GLES3.functional.texture.filtering.2d_array.formats.bgra_linear_mipmap_nearest
 dEQP-GLES3.functional.texture.filtering.2d_array.formats.bgra_nearest_mipmap_linear
 dEQP-GLES3.functional.texture.filtering.2d_array.formats.bgra_linear_mipmap_linear
+dEQP-GLES3.functional.texture.filtering.2d_array.formats.bgra8_nearest
+dEQP-GLES3.functional.texture.filtering.2d_array.formats.bgra8_linear
+dEQP-GLES3.functional.texture.filtering.2d_array.formats.bgra8_nearest_mipmap_nearest
+dEQP-GLES3.functional.texture.filtering.2d_array.formats.bgra8_linear_mipmap_nearest
+dEQP-GLES3.functional.texture.filtering.2d_array.formats.bgra8_nearest_mipmap_linear
+dEQP-GLES3.functional.texture.filtering.2d_array.formats.bgra8_linear_mipmap_linear
 dEQP-GLES3.functional.texture.filtering.2d_array.sizes.4x8x8_nearest
 dEQP-GLES3.functional.texture.filtering.2d_array.sizes.4x8x8_linear
 dEQP-GLES3.functional.texture.filtering.2d_array.sizes.4x8x8_nearest_mipmap_nearest
@@ -24830,6 +24848,12 @@ dEQP-GLES3.functional.texture.filtering.3d.formats.bgra_nearest_mipmap_nearest
 dEQP-GLES3.functional.texture.filtering.3d.formats.bgra_linear_mipmap_nearest
 dEQP-GLES3.functional.texture.filtering.3d.formats.bgra_nearest_mipmap_linear
 dEQP-GLES3.functional.texture.filtering.3d.formats.bgra_linear_mipmap_linear
+dEQP-GLES3.functional.texture.filtering.3d.formats.bgra8_nearest
+dEQP-GLES3.functional.texture.filtering.3d.formats.bgra8_linear
+dEQP-GLES3.functional.texture.filtering.3d.formats.bgra8_nearest_mipmap_nearest
+dEQP-GLES3.functional.texture.filtering.3d.formats.bgra8_linear_mipmap_nearest
+dEQP-GLES3.functional.texture.filtering.3d.formats.bgra8_nearest_mipmap_linear
+dEQP-GLES3.functional.texture.filtering.3d.formats.bgra8_linear_mipmap_linear
 dEQP-GLES3.functional.texture.filtering.3d.sizes.4x8x8_nearest
 dEQP-GLES3.functional.texture.filtering.3d.sizes.4x8x8_linear
 dEQP-GLES3.functional.texture.filtering.3d.sizes.4x8x8_nearest_mipmap_nearest
@@ -31160,6 +31184,7 @@ dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.color0.rgba8_snor
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.color0.sr8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.color0.srg8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.color0.rgb10_a2ui
+dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.color0.bgra8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.stencil.depth_component_unsigned_short
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.stencil.depth_component_unsigned_int
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.stencil.red_unsigned_byte
@@ -31238,6 +31263,7 @@ dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.stencil.rgba8_sno
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.stencil.sr8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.stencil.srg8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.stencil.rgb10_a2ui
+dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.stencil.bgra8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.depth.depth_component_unsigned_short
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.depth.depth_component_unsigned_int
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.depth.red_unsigned_byte
@@ -31316,6 +31342,7 @@ dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.depth.rgba8_snorm
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.depth.sr8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.depth.srg8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.depth.rgb10_a2ui
+dEQP-GLES3.functional.fbo.completeness.renderable.renderbuffer.depth.bgra8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.depth_component_unsigned_short
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.depth_component_unsigned_int
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.red_unsigned_byte
@@ -31393,6 +31420,7 @@ dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.rgba8_snorm
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.sr8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.srg8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.rgb10_a2ui
+dEQP-GLES3.functional.fbo.completeness.renderable.texture.color0.bgra8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.stencil.depth_component_unsigned_short
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.stencil.depth_component_unsigned_int
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.stencil.red_unsigned_byte
@@ -31471,6 +31499,7 @@ dEQP-GLES3.functional.fbo.completeness.renderable.texture.stencil.rgba8_snorm
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.stencil.sr8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.stencil.srg8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.stencil.rgb10_a2ui
+dEQP-GLES3.functional.fbo.completeness.renderable.texture.stencil.bgra8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.depth.depth_component_unsigned_short
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.depth.depth_component_unsigned_int
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.depth.red_unsigned_byte
@@ -31549,6 +31578,7 @@ dEQP-GLES3.functional.fbo.completeness.renderable.texture.depth.rgba8_snorm
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.depth.sr8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.depth.srg8_ext
 dEQP-GLES3.functional.fbo.completeness.renderable.texture.depth.rgb10_a2ui
+dEQP-GLES3.functional.fbo.completeness.renderable.texture.depth.bgra8_ext
 dEQP-GLES3.functional.fbo.completeness.attachment_combinations.none_none_none_none
 dEQP-GLES3.functional.fbo.completeness.attachment_combinations.none_none_none_rbo
 dEQP-GLES3.functional.fbo.completeness.attachment_combinations.none_none_none_tex

@@ -650,8 +650,8 @@ public:
     ReferenceMemory(size_t size);
 
     void set(size_t pos, uint8_t val);
-    uint8_t get(size_t pos) const;
-    bool isDefined(size_t pos) const;
+    uint8_t get(uint64_t pos) const;
+    bool isDefined(uint64_t pos) const;
 
     void setDefined(size_t offset, size_t size, const void *data);
     void setUndefined(size_t offset, size_t size);
@@ -701,18 +701,18 @@ void ReferenceMemory::setUndefined(size_t offset, size_t size)
         m_defined[(offset + pos) / 64] |= 0x1ull << ((offset + pos) % 64);
 }
 
-uint8_t ReferenceMemory::get(size_t pos) const
+uint8_t ReferenceMemory::get(uint64_t pos) const
 {
     DE_ASSERT(pos < m_data.size());
     DE_ASSERT(isDefined(pos));
-    return m_data[pos];
+    return m_data[(size_t)pos];
 }
 
-bool ReferenceMemory::isDefined(size_t pos) const
+bool ReferenceMemory::isDefined(uint64_t pos) const
 {
     DE_ASSERT(pos < m_data.size());
 
-    return (m_defined[pos / 64] & (0x1ull << (pos % 64))) != 0;
+    return (m_defined[(size_t)pos / 64] & (0x1ull << (pos % 64))) != 0;
 }
 
 class Memory
@@ -4954,9 +4954,9 @@ void createPipelineWithResources(const vk::DeviceInterface &vkd, const vk::VkDev
             device,                    // const VkDevice                                device
             *resources.pipelineLayout, // const VkPipelineLayout                        pipelineLayout
             vertexShaderModule,        // const VkShaderModule                          vertexShaderModule
-            DE_NULL,                   // const VkShaderModule                          tessellationControlModule
-            DE_NULL,                   // const VkShaderModule                          tessellationEvalModule
-            DE_NULL,                   // const VkShaderModule                          geometryShaderModule
+            VK_NULL_HANDLE,            // const VkShaderModule                          tessellationControlModule
+            VK_NULL_HANDLE,            // const VkShaderModule                          tessellationEvalModule
+            VK_NULL_HANDLE,            // const VkShaderModule                          geometryShaderModule
             fragmentShaderModule,      // const VkShaderModule                          fragmentShaderModule
             renderPass,                // const VkRenderPass                            renderPass
             viewports,                 // const std::vector<VkViewport>&                viewports
@@ -5747,7 +5747,7 @@ void RenderVertexStorageTexelBuffer::prepare(PrepareRenderPassContext &context)
 
     {
         const uint32_t descriptorCount =
-            (uint32_t)(divRoundUp(m_bufferSize, (vk::VkDeviceSize)m_maxStorageTexelCount * 4));
+            (uint32_t)(divRoundUp(m_bufferSize, (vk::VkDeviceSize)m_maxStorageTexelCount * (uint64_t)(4)));
         const vk::VkDescriptorPoolSize poolSizes = {vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, descriptorCount};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -5782,9 +5782,10 @@ void RenderVertexStorageTexelBuffer::prepare(PrepareRenderPassContext &context)
 
                 context.getBuffer(),
                 vk::VK_FORMAT_R32_UINT,
-                descriptorSetNdx * m_maxStorageTexelCount * 4,
-                (uint32_t)de::min<vk::VkDeviceSize>(m_maxStorageTexelCount * 4,
-                                                    m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * 4)};
+                descriptorSetNdx * m_maxStorageTexelCount * (uint64_t)(4),
+                (uint32_t)de::min<vk::VkDeviceSize>(m_maxStorageTexelCount * (uint64_t)(4),
+                                                    m_bufferSize -
+                                                        descriptorSetNdx * m_maxStorageTexelCount * (uint64_t)(4))};
 
             VK_CHECK(vkd.createBufferView(device, &createInfo, DE_NULL, &m_bufferViews[descriptorSetNdx]));
         }
@@ -5815,10 +5816,11 @@ void RenderVertexStorageTexelBuffer::submit(SubmitContext &context)
 
     for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
     {
-        const uint32_t count = (uint32_t)(m_bufferSize < (descriptorSetNdx + 1) * m_maxStorageTexelCount * 4 ?
-                                              m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * 4 :
-                                              m_maxStorageTexelCount * 4) /
-                               2;
+        const uint32_t count =
+            (uint32_t)(m_bufferSize < (descriptorSetNdx + 1) * m_maxStorageTexelCount * (uint64_t)(4) ?
+                           m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * (uint64_t)(4) :
+                           m_maxStorageTexelCount * (uint64_t)(4)) /
+            2;
 
         vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u,
                                   1u, &m_descriptorSets[descriptorSetNdx], 0u, DE_NULL);
@@ -5830,13 +5832,14 @@ void RenderVertexStorageTexelBuffer::verify(VerifyRenderPassContext &context, si
 {
     for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
     {
-        const size_t offset  = descriptorSetNdx * m_maxStorageTexelCount * 4;
-        const uint32_t count = (uint32_t)(m_bufferSize < (descriptorSetNdx + 1) * m_maxStorageTexelCount * 4 ?
-                                              m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * 4 :
-                                              m_maxStorageTexelCount * 4) /
-                               2;
+        const uint64_t offset = descriptorSetNdx * m_maxStorageTexelCount * (uint64_t)(4);
+        const uint32_t count =
+            (uint32_t)(m_bufferSize < (descriptorSetNdx + 1) * m_maxStorageTexelCount * (uint64_t)(4) ?
+                           m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * (uint64_t)(4) :
+                           m_maxStorageTexelCount * (uint64_t)(4)) /
+            2;
 
-        DE_ASSERT(context.getReference().getSize() <= 4 * m_maxStorageTexelCount * m_descriptorSets.size());
+        DE_ASSERT(context.getReference().getSize() <= (uint64_t)(4) * m_maxStorageTexelCount * m_descriptorSets.size());
         DE_ASSERT(context.getReference().getSize() > offset);
         DE_ASSERT(offset + count * 2 <= context.getReference().getSize());
 
@@ -6859,7 +6862,7 @@ void RenderFragmentStorageTexelBuffer::prepare(PrepareRenderPassContext &context
 
     {
         const uint32_t descriptorCount =
-            (uint32_t)(divRoundUp(m_bufferSize, (vk::VkDeviceSize)m_maxStorageTexelCount * 4));
+            (uint32_t)(divRoundUp(m_bufferSize, (vk::VkDeviceSize)m_maxStorageTexelCount * (uint64_t)(4)));
         const vk::VkDescriptorPoolSize poolSizes = {vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, descriptorCount};
         const vk::VkDescriptorPoolCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -6878,10 +6881,11 @@ void RenderFragmentStorageTexelBuffer::prepare(PrepareRenderPassContext &context
 
     for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
     {
-        const uint32_t count = (uint32_t)(m_bufferSize < (descriptorSetNdx + 1) * m_maxStorageTexelCount * 4 ?
-                                              m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * 4 :
-                                              m_maxStorageTexelCount * 4) /
-                               4;
+        const uint32_t count =
+            (uint32_t)(m_bufferSize < (descriptorSetNdx + 1) * m_maxStorageTexelCount * (uint64_t)(4) ?
+                           m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * (uint64_t)(4) :
+                           m_maxStorageTexelCount * (uint64_t)(4)) /
+            4;
         const vk::VkDescriptorSetLayout layout             = *m_resources.descriptorSetLayout;
         const vk::VkDescriptorSetAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
                                                               DE_NULL,
@@ -6897,7 +6901,7 @@ void RenderFragmentStorageTexelBuffer::prepare(PrepareRenderPassContext &context
 
                                                            context.getBuffer(),
                                                            vk::VK_FORMAT_R32_UINT,
-                                                           descriptorSetNdx * m_maxStorageTexelCount * 4,
+                                                           descriptorSetNdx * m_maxStorageTexelCount * (uint64_t)(4),
                                                            count * 4};
 
             VK_CHECK(vkd.createBufferView(device, &createInfo, DE_NULL, &m_bufferViews[descriptorSetNdx]));
@@ -6940,9 +6944,9 @@ void RenderFragmentStorageTexelBuffer::submit(SubmitContext &context)
                             m_descriptorSets.size() * de::min<size_t>(m_maxStorageTexelCount, (size_t)m_bufferSize / 4),
                             m_targetWidth * m_targetHeight),
                         m_maxStorageTexelCount,
-                        (uint32_t)(m_bufferSize < (descriptorSetNdx + 1u) * m_maxStorageTexelCount * 4u ?
-                                       m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * 4u :
-                                       m_maxStorageTexelCount * 4u) /
+                        (uint32_t)(m_bufferSize < (descriptorSetNdx + 1u) * m_maxStorageTexelCount * (uint64_t)(4) ?
+                                       m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * (uint64_t)(4) :
+                                       m_maxStorageTexelCount * (uint64_t)(4)) /
                             4u};
 
         vkd.cmdBindDescriptorSets(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipelineLayout, 0u,
@@ -6968,14 +6972,15 @@ void RenderFragmentStorageTexelBuffer::verify(VerifyRenderPassContext &context, 
             for (size_t descriptorSetNdx = firstDescriptorSetNdx; descriptorSetNdx < m_descriptorSets.size();
                  descriptorSetNdx++)
             {
-                const size_t offset   = descriptorSetNdx * m_maxStorageTexelCount * 4;
+                const uint64_t offset = descriptorSetNdx * m_maxStorageTexelCount * (uint64_t)(4);
                 const uint32_t callId = (uint32_t)descriptorSetNdx;
 
-                const uint32_t id    = (uint32_t)y * 256u + (uint32_t)x;
-                const uint32_t count = (uint32_t)(m_bufferSize < (descriptorSetNdx + 1) * m_maxStorageTexelCount * 4 ?
-                                                      m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * 4 :
-                                                      m_maxStorageTexelCount * 4) /
-                                       4;
+                const uint32_t id = (uint32_t)y * 256u + (uint32_t)x;
+                const uint32_t count =
+                    (uint32_t)(m_bufferSize < (descriptorSetNdx + 1) * m_maxStorageTexelCount * (uint64_t)(4) ?
+                                   m_bufferSize - descriptorSetNdx * m_maxStorageTexelCount * (uint64_t)(4) :
+                                   m_maxStorageTexelCount * (uint64_t)(4)) /
+                    4;
 
                 if (y * 256u + x < callId * (m_maxStorageTexelCount / valuesPerPixel))
                     continue;

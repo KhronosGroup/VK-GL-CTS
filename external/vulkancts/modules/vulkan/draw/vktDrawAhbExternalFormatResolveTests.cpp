@@ -814,7 +814,7 @@ void AhbExternalFormatResolveTestInstance::createImagesAndViews(AndroidHardwareB
                 vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR, // VkStructureType    sType
                 &importInfo,                                              // const void*        pNext
                 m_resources.m_androidExternalImage.get(),                 // VkImage            image
-                DE_NULL,                                                  // VkBuffer            buffer
+                VK_NULL_HANDLE,                                           // VkBuffer            buffer
             };
 
             const vk::VkMemoryAllocateInfo allocateInfo = {

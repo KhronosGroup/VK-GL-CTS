@@ -1128,7 +1128,7 @@ void VideoCapabilitiesQueryTestCase::checkSupport(Context &context) const
         break;
     case TEST_TYPE_H265_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
     case TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
-        context.requireDeviceFunctionality("VK_EXT_video_encode_h265");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
         break;
     case TEST_TYPE_AV1_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
     case TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
@@ -1144,7 +1144,7 @@ void VideoCapabilitiesQueryTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_video_decode_h265");
         break;
     case TEST_TYPE_H265_ENCODE_CAPABILITIES_QUERY:
-        context.requireDeviceFunctionality("VK_EXT_video_encode_h265");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
         break;
     case TEST_TYPE_AV1_DECODE_CAPABILITIES_QUERY:
         context.requireDeviceFunctionality("VK_KHR_video_decode_av1");

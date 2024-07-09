@@ -1070,20 +1070,20 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
                 *vertShaderModule, // const VkShaderModule                          vertexShaderModule
                 m_drawTessellatedSphere ?
                     *tcssShaderModule :
-                    DE_NULL, // const VkShaderModule                          tessellationControlModule,
+                    VK_NULL_HANDLE, // const VkShaderModule                          tessellationControlModule,
                 m_drawTessellatedSphere ?
                     *tessShaderModule :
-                    DE_NULL,       // const VkShaderModule                          tessellationEvalModule,
-                DE_NULL,           // const VkShaderModule                          geometryShaderModule
-                *fragShaderModule, // const VkShaderModule                          fragmentShaderModule
-                *renderPass,       // const VkRenderPass                            renderPass
-                viewports,         // const std::vector<VkViewport>&                viewports
-                scissors,          // const std::vector<VkRect2D>&                  scissors
-                topology,          // const VkPrimitiveTopology                     topology
-                0u,                // const uint32_t                                subpass
-                3u,                // const uint32_t                                patchControlPoints
-                DE_NULL,           // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-                &rasterParams);    // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+                    VK_NULL_HANDLE, // const VkShaderModule                          tessellationEvalModule,
+                VK_NULL_HANDLE,     // const VkShaderModule                          geometryShaderModule
+                *fragShaderModule,  // const VkShaderModule                          fragmentShaderModule
+                *renderPass,        // const VkRenderPass                            renderPass
+                viewports,          // const std::vector<VkViewport>&                viewports
+                scissors,           // const std::vector<VkRect2D>&                  scissors
+                topology,           // const VkPrimitiveTopology                     topology
+                0u,                 // const uint32_t                                subpass
+                3u,                 // const uint32_t                                patchControlPoints
+                DE_NULL,            // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+                &rasterParams);     // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
         }
 
         // Create Framebuffer

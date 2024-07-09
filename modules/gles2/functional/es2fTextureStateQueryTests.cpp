@@ -53,8 +53,8 @@ public:
 
     const char *getTestNamePostfix(void) const;
 
-    virtual void verifyInteger(tcu::TestContext &testCtx, GLenum target, GLenum name, GLint reference) = DE_NULL;
-    virtual void verifyFloat(tcu::TestContext &testCtx, GLenum target, GLenum name, GLfloat reference) = DE_NULL;
+    virtual void verifyInteger(tcu::TestContext &testCtx, GLenum target, GLenum name, GLint reference) = 0;
+    virtual void verifyFloat(tcu::TestContext &testCtx, GLenum target, GLenum name, GLfloat reference) = 0;
 
 private:
     const char *const m_testNamePostfix;
@@ -213,7 +213,7 @@ public:
     {
     }
 
-    virtual void testTexture(void) = DE_NULL;
+    virtual void testTexture(void) = 0;
 
     void test(void)
     {

@@ -44,7 +44,8 @@ Move<VkPipeline> makeComputePipeline(const DeviceInterface &vk, const VkDevice d
                                      const void *pipelinePNext, const VkShaderModule shaderModule,
                                      const VkPipelineShaderStageCreateFlags shaderFlags,
                                      const VkSpecializationInfo *specializationInfo = DE_NULL,
-                                     const VkPipelineCache pipelineCache = DE_NULL, const uint32_t subgroupSize = 0);
+                                     const VkPipelineCache pipelineCache            = VK_NULL_HANDLE,
+                                     const uint32_t subgroupSize                    = 0);
 
 Move<VkPipeline> makeComputePipeline(const DeviceInterface &vk, VkDevice device, VkPipelineLayout pipelineLayout,
                                      VkShaderModule shaderModule);
@@ -134,7 +135,7 @@ VkBufferCreateInfo makeBufferCreateInfo(const VkDeviceSize size, const VkBufferU
                                         const VkBufferCreateFlags createFlags = 0, const void *pNext = DE_NULL);
 
 Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDevice device,
-                                          const VkDescriptorSetLayout descriptorSetLayout = DE_NULL,
+                                          const VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE,
                                           const VkPushConstantRange *pushConstantRange    = nullptr);
 
 Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDevice device,

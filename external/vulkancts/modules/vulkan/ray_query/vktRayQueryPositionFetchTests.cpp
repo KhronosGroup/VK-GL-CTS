@@ -86,7 +86,7 @@ struct TestParams
     uint32_t testFlagMask;
 };
 
-static constexpr uint32_t kNumThreadsAtOnce = 1024;
+static constexpr uint32_t kNumThreadsAtOnce = 128;
 
 class PositionFetchCase : public TestCase
 {
@@ -163,6 +163,15 @@ void PositionFetchCase::checkSupport(Context &context) const
 
         if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == false)
             TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
+    }
+
+    if (m_params.shaderSourceType == SST_RAY_GENERATION_SHADER || m_params.shaderSourceType == SST_COMPUTE_SHADER)
+    {
+        const VkPhysicalDeviceLimits &deviceLimits = context.getDeviceProperties().limits;
+        if (kNumThreadsAtOnce > deviceLimits.maxComputeWorkGroupSize[0])
+        {
+            TCU_THROW(NotSupportedError, "Compute workgroup size exceeds device limit");
+        }
     }
 
     switch (m_params.shaderSourceType)
@@ -247,7 +256,8 @@ void PositionFetchCase::initPrograms(vk::SourceCollections &programCollection) c
     {
         DE_ASSERT(m_params.shaderSourceType == SST_COMPUTE_SHADER);
         std::ostringstream comp;
-        comp << sharedHeader.str() << "layout(local_size_x=1024, local_size_y=1, local_size_z=1) in;\n"
+        comp << sharedHeader.str() << "layout(local_size_x=" << kNumThreadsAtOnce
+             << ", local_size_y=1, local_size_z=1) in;\n"
              << "\n"
              << "void main()\n"
              << "{\n"
@@ -378,10 +388,10 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         device,                         // const VkDevice                                    device
         pipelineLayout,                 // const VkPipelineLayout                            pipelineLayout
         vertexModule,                   // const VkShaderModule                                vertexShaderModule
-        DE_NULL,                        // const VkShaderModule                                tessellationControlModule
-        DE_NULL,                        // const VkShaderModule                                tessellationEvalModule
-        DE_NULL,                        // const VkShaderModule                                geometryShaderModule
-        DE_NULL,                        // const VkShaderModule                                fragmentShaderModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                tessellationControlModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                tessellationEvalModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                geometryShaderModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                fragmentShaderModule
         renderPass,                     // const VkRenderPass                                renderPass
         subpass,                        // const uint32_t                                    subpass
         &vertexInputStateCreateInfo,    // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
@@ -622,10 +632,10 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
             0u,                                             // VkPipelineCreateFlags flags;
             shaderInfo,                                     // VkPipelineShaderStageCreateInfo stage;
             pipelineLayout.get(),                           // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
-        pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineInfo);
+        pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineInfo);
 
         // Dispatch work with ray queries.
         vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get());

@@ -82,9 +82,44 @@ VkFormat getSingleComponentFormat(VkFormat format)
     return mapTextureFormat(texFormat);
 }
 
+VkImageAspectFlags getImageAspect(VkFormat format)
+{
+    return isDepthStencilFormat(format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+}
+
 inline VkBufferImageCopy makeBufferImageCopy(const Texture &texture)
 {
     return image::makeBufferImageCopy(makeExtent3D(texture.layerSize()), texture.numLayers());
+}
+
+VkBufferImageCopy makeBufferImageCopy(const Texture &texture, const VkImageAspectFlags &aspect)
+{
+    const VkBufferImageCopy copyParams = {
+        0ull,                                                            // VkDeviceSize bufferOffset;
+        0u,                                                              // uint32_t bufferRowLength;
+        0u,                                                              // uint32_t bufferImageHeight;
+        makeImageSubresourceLayers(aspect, 0u, 0u, texture.numLayers()), // VkImageSubresourceLayers imageSubresource;
+        makeOffset3D(0, 0, 0),                                           // VkOffset3D imageOffset;
+        makeExtent3D(texture.layerSize()),                               // VkExtent3D imageExtent;
+    };
+    return copyParams;
+}
+
+std::string getShaderImageFormatQualifierStr(const VkFormat &format)
+{
+    VkFormat testFormat;
+    switch (format)
+    {
+    case VK_FORMAT_D16_UNORM:
+        testFormat = VK_FORMAT_R16_UNORM;
+        break;
+    case VK_FORMAT_D32_SFLOAT:
+        testFormat = VK_FORMAT_R32_SFLOAT;
+        break;
+    default:
+        testFormat = format;
+    }
+    return getShaderImageFormatQualifier(mapVkFormat(testFormat));
 }
 
 tcu::ConstPixelBufferAccess getLayerOrSlice(const Texture &texture, const tcu::ConstPixelBufferAccess access,
@@ -394,12 +429,13 @@ inline bool formatsAreCompatible(const VkFormat format0, const VkFormat format1)
 }
 
 void commandImageWriteBarrierBetweenShaderInvocations(Context &context, const VkCommandBuffer cmdBuffer,
-                                                      const VkImage image, const Texture &texture)
+                                                      const VkImage image, const Texture &texture,
+                                                      VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT)
 {
     const DeviceInterface &vk = context.getDeviceInterface();
 
     const VkImageSubresourceRange fullImageSubresourceRange =
-        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, texture.numMipmapLevels(), 0u, texture.numLayers());
+        makeImageSubresourceRange(aspectMask, 0u, texture.numMipmapLevels(), 0u, texture.numLayers());
     const VkImageMemoryBarrier shaderWriteBarrier =
         makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, 0u, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, image,
                                fullImageSubresourceRange);
@@ -424,17 +460,18 @@ void commandBufferWriteBarrierBeforeHostRead(Context &context, const VkCommandBu
 
 //! Copy all layers of an image to a buffer.
 void commandCopyImageToBuffer(Context &context, const VkCommandBuffer cmdBuffer, const VkImage image,
-                              const VkBuffer buffer, const VkDeviceSize bufferSizeBytes, const Texture &texture)
+                              const VkBuffer buffer, const VkDeviceSize bufferSizeBytes, const Texture &texture,
+                              VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT)
 {
     const DeviceInterface &vk = context.getDeviceInterface();
 
     const VkImageSubresourceRange fullImageSubresourceRange =
-        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, texture.numLayers());
+        makeImageSubresourceRange(aspectMask, 0u, 1u, 0u, texture.numLayers());
     const VkImageMemoryBarrier prepareForTransferBarrier =
         makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
                                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image, fullImageSubresourceRange);
 
-    const VkBufferImageCopy copyRegion = makeBufferImageCopy(texture);
+    const VkBufferImageCopy copyRegion = makeBufferImageCopy(texture, aspectMask);
 
     const VkBufferMemoryBarrier copyBarrier =
         makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, buffer, 0ull, bufferSizeBytes);
@@ -709,8 +746,7 @@ void StoreTest::initPrograms(SourceCollections &programCollection) const
         (m_singleLayerBind ? getImageTypeForSingleLayer(m_texture.type()) : m_texture.type());
     const std::string imageTypeStr = getShaderImageType(mapVkFormat(m_format), usedImageType);
 
-    std::string maybeFmtQualStr =
-        m_declareImageFormatInShader ? ", " + getShaderImageFormatQualifier(mapVkFormat(m_format)) : "";
+    std::string maybeFmtQualStr = m_declareImageFormatInShader ? ", " + getShaderImageFormatQualifierStr(m_format) : "";
 
     std::ostringstream src;
     src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
@@ -1021,6 +1057,8 @@ VkDescriptorSetLayout ImageStoreTestInstance::prepareDescriptors(void)
                            .addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, numLayers)
                            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, numLayers);
 
+    const VkImageAspectFlags &aspectMask = getImageAspect(m_format);
+
     if (m_singleLayerBind)
     {
         for (int layerNdx = 0; layerNdx < numLayers; ++layerNdx)
@@ -1029,7 +1067,7 @@ VkDescriptorSetLayout ImageStoreTestInstance::prepareDescriptors(void)
                 makeVkSharedPtr(makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout));
             m_allImageViews[layerNdx] = makeVkSharedPtr(makeImageView(
                 vk, device, m_image->get(), mapImageViewType(getImageTypeForSingleLayer(m_texture.type())), m_format,
-                makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, layerNdx, 1u)));
+                makeImageSubresourceRange(aspectMask, 0u, 1u, layerNdx, 1u)));
         }
     }
     else // bind all layers at once
@@ -1038,7 +1076,7 @@ VkDescriptorSetLayout ImageStoreTestInstance::prepareDescriptors(void)
             makeVkSharedPtr(makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout));
         m_allImageViews[0] =
             makeVkSharedPtr(makeImageView(vk, device, m_image->get(), mapImageViewType(m_texture.type()), m_format,
-                                          makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers)));
+                                          makeImageSubresourceRange(aspectMask, 0u, 1u, 0u, numLayers)));
     }
 
     return *m_descriptorSetLayout; // not passing the ownership
@@ -1054,7 +1092,7 @@ void ImageStoreTestInstance::commandBindDescriptorsForLayer(const VkCommandBuffe
     const VkImageView imageView         = **m_allImageViews[layerNdx];
 
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     // Set the next chunk of the constants buffer. Each chunk begins with layer index that we've set before.
     const VkDescriptorBufferInfo descriptorConstantsBufferInfo = makeDescriptorBufferInfo(
@@ -1072,10 +1110,11 @@ void ImageStoreTestInstance::commandBindDescriptorsForLayer(const VkCommandBuffe
 
 void ImageStoreTestInstance::commandBeforeCompute(const VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk            = m_context.getDeviceInterface();
+    const VkImageAspectFlags &aspectMask = getImageAspect(m_format);
 
     const VkImageSubresourceRange fullImageSubresourceRange =
-        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_texture.numLayers());
+        makeImageSubresourceRange(aspectMask, 0u, 1u, 0u, m_texture.numLayers());
     const VkImageMemoryBarrier setImageLayoutBarrier =
         makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
                                m_image->get(), fullImageSubresourceRange);
@@ -1091,12 +1130,15 @@ void ImageStoreTestInstance::commandBeforeCompute(const VkCommandBuffer cmdBuffe
 
 void ImageStoreTestInstance::commandBetweenShaderInvocations(const VkCommandBuffer cmdBuffer)
 {
-    commandImageWriteBarrierBetweenShaderInvocations(m_context, cmdBuffer, m_image->get(), m_texture);
+    const VkImageAspectFlags &aspectMask = getImageAspect(m_format);
+    commandImageWriteBarrierBetweenShaderInvocations(m_context, cmdBuffer, m_image->get(), m_texture, aspectMask);
 }
 
 void ImageStoreTestInstance::commandAfterCompute(const VkCommandBuffer cmdBuffer)
 {
-    commandCopyImageToBuffer(m_context, cmdBuffer, m_image->get(), m_imageBuffer->get(), m_imageSizeBytes, m_texture);
+    const VkImageAspectFlags &aspectMask = getImageAspect(m_format);
+    commandCopyImageToBuffer(m_context, cmdBuffer, m_image->get(), m_imageBuffer->get(), m_imageSizeBytes, m_texture,
+                             aspectMask);
 }
 
 //! Store test for buffers
@@ -1391,7 +1433,7 @@ void LoadStoreTest::initPrograms(SourceCollections &programCollection) const
     const ImageType usedImageType =
         (m_singleLayerBind ? getImageTypeForSingleLayer(m_texture.type()) : m_texture.type());
     const bool noFormats                 = (!m_declareFormatInShaderReads && !m_declareFormatInShaderWrites);
-    const std::string formatQualifierStr = (noFormats ? "" : getShaderImageFormatQualifier(texFormat));
+    const std::string formatQualifierStr = (noFormats ? "" : getShaderImageFormatQualifierStr(m_format));
     const std::string uniformTypeStr     = getFormatPrefix(texFormat) + "textureBuffer";
     const std::string imageTypeStr       = getShaderImageType(texFormat, usedImageType);
     const std::string maybeRestrictStr   = (m_restrictImages ? "restrict " : "");
@@ -1688,13 +1730,15 @@ VkDescriptorSetLayout ImageLoadStoreTestInstance::prepareDescriptors(void)
                            .addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, numLayers)
                            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, numLayers);
 
+    const VkImageAspectFlags &aspectMask = getImageAspect(m_format);
+
     if (m_singleLayerBind)
     {
         for (int layerNdx = 0; layerNdx < numLayers; ++layerNdx)
         {
             const VkImageViewType viewType = mapImageViewType(getImageTypeForSingleLayer(m_texture.type()));
             const VkImageSubresourceRange subresourceRange =
-                makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, layerNdx, 1u);
+                makeImageSubresourceRange(aspectMask, 0u, 1u, layerNdx, 1u);
 
             m_allDescriptorSets[layerNdx] =
                 makeVkSharedPtr(makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout));
@@ -1706,9 +1750,8 @@ VkDescriptorSetLayout ImageLoadStoreTestInstance::prepareDescriptors(void)
     }
     else // bind all layers at once
     {
-        const VkImageViewType viewType = mapImageViewType(m_texture.type());
-        const VkImageSubresourceRange subresourceRange =
-            makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers);
+        const VkImageViewType viewType                 = mapImageViewType(m_texture.type());
+        const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(aspectMask, 0u, 1u, 0u, numLayers);
 
         m_allDescriptorSets[0] =
             makeVkSharedPtr(makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout));
@@ -1733,9 +1776,9 @@ void ImageLoadStoreTestInstance::commandBindDescriptorsForLayer(const VkCommandB
     const VkImageView dstImageView      = **m_allDstImageViews[layerNdx];
 
     const VkDescriptorImageInfo descriptorSrcImageInfo =
-        makeDescriptorImageInfo(DE_NULL, srcImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, srcImageView, VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorImageInfo descriptorDstImageInfo =
-        makeDescriptorImageInfo(DE_NULL, dstImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, dstImageView, VK_IMAGE_LAYOUT_GENERAL);
 
     DescriptorSetUpdateBuilder()
         .writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
@@ -1749,10 +1792,11 @@ void ImageLoadStoreTestInstance::commandBindDescriptorsForLayer(const VkCommandB
 
 void ImageLoadStoreTestInstance::commandBeforeCompute(const VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const DeviceInterface &vk            = m_context.getDeviceInterface();
+    const VkImageAspectFlags &aspectMask = getImageAspect(m_format);
 
     const VkImageSubresourceRange fullImageSubresourceRange =
-        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_texture.numLayers());
+        makeImageSubresourceRange(aspectMask, 0u, 1u, 0u, m_texture.numLayers());
     {
         const VkImageMemoryBarrier preCopyImageBarriers[] = {
             makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -1775,7 +1819,7 @@ void ImageLoadStoreTestInstance::commandBeforeCompute(const VkCommandBuffer cmdB
             VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             VK_IMAGE_LAYOUT_GENERAL, m_imageSrc->get(), fullImageSubresourceRange);
 
-        const VkBufferImageCopy copyRegion = makeBufferImageCopy(m_texture);
+        const VkBufferImageCopy copyRegion = makeBufferImageCopy(m_texture, aspectMask);
 
         vk.cmdCopyBufferToImage(cmdBuffer, m_imageBuffer->get(), m_imageSrc->get(),
                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
@@ -1787,13 +1831,15 @@ void ImageLoadStoreTestInstance::commandBeforeCompute(const VkCommandBuffer cmdB
 
 void ImageLoadStoreTestInstance::commandBetweenShaderInvocations(const VkCommandBuffer cmdBuffer)
 {
-    commandImageWriteBarrierBetweenShaderInvocations(m_context, cmdBuffer, m_imageDst->get(), m_texture);
+    const VkImageAspectFlags &aspectMask = getImageAspect(m_format);
+    commandImageWriteBarrierBetweenShaderInvocations(m_context, cmdBuffer, m_imageDst->get(), m_texture, aspectMask);
 }
 
 void ImageLoadStoreTestInstance::commandAfterCompute(const VkCommandBuffer cmdBuffer)
 {
-    commandCopyImageToBuffer(m_context, cmdBuffer, m_imageDst->get(), m_imageBuffer->get(), m_imageSizeBytes,
-                             m_texture);
+    const VkImageAspectFlags &aspectMask = getImageAspect(m_format);
+    commandCopyImageToBuffer(m_context, cmdBuffer, m_imageDst->get(), m_imageBuffer->get(), m_imageSizeBytes, m_texture,
+                             aspectMask);
 }
 
 //! Load/store Lod AMD test for images
@@ -2032,9 +2078,9 @@ void ImageLoadStoreLodAMDTestInstance::commandBindDescriptorsForLayer(const VkCo
     const VkImageView dstImageView      = **m_allDstImageViews[layerNdx];
 
     const VkDescriptorImageInfo descriptorSrcImageInfo =
-        makeDescriptorImageInfo(DE_NULL, srcImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, srcImageView, VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorImageInfo descriptorDstImageInfo =
-        makeDescriptorImageInfo(DE_NULL, dstImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, dstImageView, VK_IMAGE_LAYOUT_GENERAL);
 
     DescriptorSetUpdateBuilder()
         .writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
@@ -2372,9 +2418,9 @@ void ImageExtendOperandTestInstance::commandBindDescriptorsForLayer(const VkComm
     const VkDescriptorSet descriptorSet = **m_descriptorSet;
 
     const VkDescriptorImageInfo descriptorSrcImageInfo =
-        makeDescriptorImageInfo(DE_NULL, **m_imageSrcView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, **m_imageSrcView, VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorImageInfo descriptorDstImageInfo =
-        makeDescriptorImageInfo(DE_NULL, **m_imageDstView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, **m_imageDstView, VK_IMAGE_LAYOUT_GENERAL);
 
     typedef DescriptorSetUpdateBuilder::Location DSUBL;
     DescriptorSetUpdateBuilder()
@@ -2896,6 +2942,8 @@ static const VkFormat s_formatsThreeComponent[] = {
     VK_FORMAT_R16G16B16_SFLOAT, VK_FORMAT_R32G32B32_UINT, VK_FORMAT_R32G32B32_SINT,  VK_FORMAT_R32G32B32_SFLOAT,
 };
 
+static const VkFormat d_formats[] = {VK_FORMAT_D16_UNORM, VK_FORMAT_D32_SFLOAT};
+
 static const VkImageTiling s_tilings[] = {
     VK_IMAGE_TILING_OPTIMAL,
     VK_IMAGE_TILING_LINEAR,
@@ -2912,6 +2960,16 @@ const char *tilingSuffix(VkImageTiling tiling)
     default:
         return "unknown";
     }
+}
+
+bool isAllowedDepthFormat(const Texture &texture, VkFormat format, const VkImageTiling tiling)
+{
+    if (isDepthStencilFormat(format) && (tiling == VK_IMAGE_TILING_OPTIMAL) &&
+        ((texture.type() == IMAGE_TYPE_2D) || (texture.type() == IMAGE_TYPE_2D_ARRAY)))
+    {
+        return true;
+    }
+    return false;
 }
 
 } // namespace
@@ -2975,6 +3033,41 @@ tcu::TestCaseGroup *createImageStoreTests(tcu::TestContext &testCtx)
             }
         }
 
+        {
+            // Test depth formats with storage image
+
+            // Depth formats for storage images are only allowed with optimal tiling
+            const auto testTilingType = VK_IMAGE_TILING_OPTIMAL;
+
+            for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(d_formats); ++formatNdx)
+            {
+                const char *suffix           = tilingSuffix(testTilingType);
+                const auto testFormat        = d_formats[formatNdx];
+                const auto formatShortString = getFormatShortString(testFormat);
+
+                if (!isAllowedDepthFormat(texture, testFormat, testTilingType))
+                    continue;
+
+                groupWithoutFormatByImageViewType->addChild(
+                    new StoreTest(testCtx, formatShortString + suffix, texture, testFormat, testTilingType, 0));
+
+#if 0
+                /* 'with_format' tests require format declaration in shader.
+                   Since depth format has no spirv equivalent, r16 can be used for d16 and r32f can be used for d32_sfloat.
+                   The validation layers do not complain and it works on some implementations */
+
+                groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, formatShortString + suffix, texture, testFormat, testTilingType));
+                // Additional tests where the shader uses constant data for imageStore.
+                groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, formatShortString + "_constant" + suffix, texture, testFormat, testTilingType, StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER | StoreTest::FLAG_STORE_CONSTANT_VALUE));
+
+                if (isLayered)
+                    groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, formatShortString + "_single_layer" + suffix,
+                                                                            texture, testFormat, testTilingType,
+                                                                            StoreTest::FLAG_SINGLE_LAYER_BIND | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
+#endif
+            }
+        }
+
         testGroupWithFormat->addChild(groupWithFormatByImageViewType.release());
         testGroupWithoutFormat->addChild(groupWithoutFormatByImageViewType.release());
     }
@@ -3023,6 +3116,7 @@ tcu::TestCaseGroup *createImageLoadStoreTests(tcu::TestContext &testCtx)
                         testCtx, formatShortString + suffix, texture, s_formats[formatNdx], s_formats[formatNdx],
                         s_tilings[tilingNdx], LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
                 }
+
                 groupWithoutAnyFormatByImageViewType->addChild(
                     new LoadStoreTest(testCtx, formatShortString + suffix, texture, s_formats[formatNdx],
                                       s_formats[formatNdx], s_tilings[tilingNdx], 0u));
@@ -3091,6 +3185,39 @@ tcu::TestCaseGroup *createImageLoadStoreTests(tcu::TestContext &testCtx)
                         LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER |
                             LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
                 }
+            }
+        }
+
+        {
+            // Test depth formats with storage image
+
+            // Depth formats for storage images are only allowed with optimal tiling
+            const auto testTilingType = VK_IMAGE_TILING_OPTIMAL;
+
+            for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(d_formats); ++formatNdx)
+            {
+                const char *suffix           = tilingSuffix(testTilingType);
+                const auto testFormat        = d_formats[formatNdx];
+                const auto formatShortString = getFormatShortString(testFormat);
+
+                if (!isAllowedDepthFormat(texture, testFormat, testTilingType))
+                    continue;
+
+                groupWithoutAnyFormatByImageViewType->addChild(new LoadStoreTest(
+                    testCtx, formatShortString + suffix, texture, testFormat, testFormat, testTilingType, 0u));
+#if 0
+                /* 'with_format' tests and tests that have FLAG_DECLARE_FORMAT_IN_SHADER_* flags require format declaration in shader.
+                   Since depth format has no spirv equivalent, r16 can be used for d16 and r32f can be used for d32_sfloat.
+                   The validation layers do not complain and it works on some implementations */
+
+                groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + suffix, texture, testFormat, testFormat, testTilingType));
+                groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + suffix, texture, testFormat, testFormat, testTilingType, LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
+
+                if (isLayered)
+                    groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_single_layer" + suffix,
+                                                             texture, s_formats[formatNdx], s_formats[formatNdx], testTilingType,
+                                                             LoadStoreTest::FLAG_SINGLE_LAYER_BIND | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_READS | LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
+#endif
             }
         }
 

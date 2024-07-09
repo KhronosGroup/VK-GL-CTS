@@ -2062,7 +2062,8 @@ tcu::TestStatus RayQueryBuiltinTestInstance::iterate(void)
     de::MovePtr<BufferWithMemory> resultBuffer = de::MovePtr<BufferWithMemory>(
         new BufferWithMemory(vkd, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
 
-    const VkDescriptorImageInfo resultImageInfo = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+    const VkDescriptorImageInfo resultImageInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     const Move<VkCommandPool> cmdPool = createCommandPool(vkd, device, 0, queueFamilyIndex);
     const Move<VkCommandBuffer> cmdBuffer =

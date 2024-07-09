@@ -1499,20 +1499,20 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisorEXT(Context &context)
     const VkBool32 checkAlways            = VK_TRUE;
     const InstanceInterface &vk           = context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
-    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT vertexAttributeDivisorPropertiesEXT =
+    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR vertexAttributeDivisorPropertiesKHR =
         vk::initVulkanStructure();
-    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesEXT);
+    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesKHR);
     TestLog &log                                = context.getTestContext().getLog();
     bool limitsOk                               = true;
 
     vk.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 
     FeatureLimitTableItem featureLimitTable[] = {
-        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),
+        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesKHR.maxVertexAttribDivisor),
          LIM_MIN_UINT32((1 << 16) - 1)},
     };
 
-    log << TestLog::Message << vertexAttributeDivisorPropertiesEXT << TestLog::EndMessage;
+    log << TestLog::Message << vertexAttributeDivisorPropertiesKHR << TestLog::EndMessage;
 
     for (uint32_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
         limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
@@ -1526,16 +1526,14 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisorEXT(Context &context)
 tcu::TestStatus validateLimitsExtVertexAttributeDivisorKHR(Context &context)
 {
     const VkBool32 checkAlways = VK_TRUE;
-#ifndef CTS_USES_VULKANSC
-    const InstanceInterface &vki          = context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
     vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR vertexAttributeDivisorProperties =
         context.getVertexAttributeDivisorProperties();
+#ifndef CTS_USES_VULKANSC
+    const InstanceInterface &vki                = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice       = context.getPhysicalDevice();
     vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorProperties);
     vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
-#else
-    const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT &vertexAttributeDivisorProperties =
-        context.getVertexAttributeDivisorPropertiesEXT();
 #endif
     TestLog &log  = context.getTestContext().getLog();
     bool limitsOk = true;
@@ -4386,6 +4384,10 @@ VkImageUsageFlags getValidImageUsageFlags(const VkFormatFeatureFlags supportedFe
     if ((supportedFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) != 0)
         flags |= VK_IMAGE_USAGE_STORAGE_BIT;
 
+    if ((supportedFeatures &
+         (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) != 0)
+        flags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+
     return flags;
 }
 
@@ -4782,6 +4784,104 @@ tcu::TestStatus imageFormatProperties(Context &context, const VkFormat format, c
         }
     }
     return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
+struct ImageUsagePropertyCase
+{
+    typedef tcu::TestStatus (*Function)(Context &context, const VkFormat format, const VkImageUsageFlags usage,
+                                        const VkImageTiling tiling);
+
+    Function testFunction;
+    VkFormat format;
+    VkImageUsageFlags usage;
+    VkImageTiling tiling;
+
+    ImageUsagePropertyCase(Function testFunction_, VkFormat format_, VkImageUsageFlags usage_, VkImageTiling tiling_)
+        : testFunction(testFunction_)
+        , format(format_)
+        , usage(usage_)
+        , tiling(tiling_)
+    {
+    }
+
+    ImageUsagePropertyCase(void)
+        : testFunction((Function)DE_NULL)
+        , format(VK_FORMAT_UNDEFINED)
+        , usage(0)
+        , tiling(VK_CORE_IMAGE_TILING_LAST)
+    {
+    }
+};
+
+tcu::TestStatus unsupportedImageUsage(Context &context, const VkFormat format, const VkImageUsageFlags imageUsage,
+                                      const VkImageTiling tiling)
+{
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+#ifndef CTS_USES_VULKANSC
+    const VkFormatProperties3 formatProperties    = context.getFormatProperties(format);
+    const VkFormatFeatureFlags2 supportedFeatures = tiling == VK_IMAGE_TILING_LINEAR ?
+                                                        formatProperties.linearTilingFeatures :
+                                                        formatProperties.optimalTilingFeatures;
+#else
+    const VkFormatProperties formatProperties =
+        getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+    const VkFormatFeatureFlags supportedFeatures = tiling == VK_IMAGE_TILING_LINEAR ?
+                                                       formatProperties.linearTilingFeatures :
+                                                       formatProperties.optimalTilingFeatures;
+#endif
+    TestLog &log = context.getTestContext().getLog();
+
+    VkFormatFeatureFlags2 usageRequiredFeatures = 0u;
+    switch (imageUsage)
+    {
+    case VK_IMAGE_USAGE_SAMPLED_BIT:
+        usageRequiredFeatures = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+        break;
+    case VK_IMAGE_USAGE_STORAGE_BIT:
+        usageRequiredFeatures = VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
+        break;
+    case VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT:
+#ifndef CTS_USES_VULKANSC
+        if (tiling == VK_IMAGE_TILING_LINEAR && context.getLinearColorAttachmentFeatures().linearColorAttachment)
+        {
+            usageRequiredFeatures = VK_FORMAT_FEATURE_2_LINEAR_COLOR_ATTACHMENT_BIT_NV;
+        }
+        else
+        {
+            usageRequiredFeatures = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
+        }
+#else
+        usageRequiredFeatures = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
+#endif
+        break;
+    case VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT:
+        usageRequiredFeatures = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        break;
+    case VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT:
+        usageRequiredFeatures = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        break;
+    case VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR:
+        usageRequiredFeatures = VK_FORMAT_FEATURE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+        break;
+    default:
+        DE_ASSERT(0);
+    }
+
+    VkImageFormatProperties imageFormatProperties;
+    VkResult res = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, format, VK_IMAGE_TYPE_2D, tiling,
+                                                              imageUsage, 0u, &imageFormatProperties);
+
+    if ((supportedFeatures & usageRequiredFeatures) == 0 && res != VK_ERROR_FORMAT_NOT_SUPPORTED)
+    {
+        log << TestLog::Message << "Required format features for usage " << imageUsage
+            << " are not supported. Format features are " << supportedFeatures
+            << ", but vkGetPhysicalDeviceImageFormatProperties with usage " << imageUsage << " returned " << res
+            << TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
 }
 
 // VK_KHR_get_physical_device_properties2
@@ -7441,6 +7541,62 @@ void createImageFormatTests(tcu::TestCaseGroup *testGroup, ImageFormatPropertyCa
         ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_3D, VK_CORE_IMAGE_TILING_LAST)));
 }
 
+tcu::TestStatus execImageUsageTest(Context &context, ImageUsagePropertyCase testCase)
+{
+    return testCase.testFunction(context, testCase.format, testCase.usage, testCase.tiling);
+}
+
+void checkSupportImageUsage(Context &context, ImageUsagePropertyCase params)
+{
+    if (params.usage == VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR)
+        context.requireDeviceFunctionality("VK_KHR_fragment_shading_rate");
+}
+
+void createImageUsageTilingTests(tcu::TestCaseGroup *testGroup, ImageUsagePropertyCase params)
+{
+    struct UsageTest
+    {
+        const char *name;
+        VkImageUsageFlags usage;
+    } usageTests[] = {
+        {"sampled", VK_IMAGE_USAGE_SAMPLED_BIT},
+        {"storage", VK_IMAGE_USAGE_STORAGE_BIT},
+        {"color_attachment", VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT},
+        {"depth_stencil_attachment", VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT},
+        {"input_attachment", VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT},
+        {"fragment_shading_rate_attachment", VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR},
+    };
+
+    for (int rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(usageTests); ++rangeNdx)
+    {
+        const auto usage = usageTests[rangeNdx];
+
+        const VkFormat rangeBegin = VK_FORMAT_UNDEFINED;
+        const VkFormat rangeEnd   = VK_CORE_FORMAT_LAST;
+
+        for (VkFormat format = rangeBegin; format != rangeEnd; format = (VkFormat)(format + 1))
+        {
+            const char *const enumName = getFormatName(format);
+            const string caseName      = std::string(usage.name) + "_" + de::toLower(string(enumName).substr(10));
+
+            params.usage  = usage.usage;
+            params.format = format;
+
+            addFunctionCase(testGroup, caseName, checkSupportImageUsage, execImageUsageTest, params);
+        }
+    }
+}
+
+void createImageUsageTests(tcu::TestCaseGroup *testGroup, ImageUsagePropertyCase::Function testFunction)
+{
+    testGroup->addChild(
+        createTestGroup(testGroup->getTestContext(), "optimal", createImageUsageTilingTests,
+                        ImageUsagePropertyCase(testFunction, VK_FORMAT_UNDEFINED, 0u, VK_IMAGE_TILING_OPTIMAL)));
+    testGroup->addChild(
+        createTestGroup(testGroup->getTestContext(), "linear", createImageUsageTilingTests,
+                        ImageUsagePropertyCase(testFunction, VK_FORMAT_UNDEFINED, 0u, VK_IMAGE_TILING_LINEAR)));
+}
+
 // Android CTS -specific tests
 
 namespace android
@@ -7597,6 +7753,8 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
     infoTests->addChild(createTestGroup(testCtx, "format_properties", createFormatTests));
     infoTests->addChild(
         createTestGroup(testCtx, "image_format_properties", createImageFormatTests, imageFormatProperties));
+    infoTests->addChild(
+        createTestGroup(testCtx, "unsupported_image_usage", createImageUsageTests, unsupportedImageUsage));
 
     {
         de::MovePtr<tcu::TestCaseGroup> extCoreVersionGrp(new tcu::TestCaseGroup(testCtx, "extension_core_versions"));

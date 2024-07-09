@@ -435,7 +435,7 @@ public:
     }
 
     virtual IterateResult iterate(void);
-    virtual void render(sglr::Context &fboContext, Surface &dst) = DE_NULL;
+    virtual void render(sglr::Context &fboContext, Surface &dst) = 0;
 
     bool compare(const tcu::Surface &reference, const tcu::Surface &result);
 

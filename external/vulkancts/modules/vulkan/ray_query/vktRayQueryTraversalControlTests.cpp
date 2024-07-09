@@ -515,11 +515,11 @@ void GraphicsConfiguration::initConfiguration(Context &context, TestParams &test
         pipelineLayout.get(),                         // VkPipelineLayout layout;
         renderPass.get(),                             // VkRenderPass renderPass;
         0u,                                           // uint32_t subpass;
-        DE_NULL,                                      // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                               // VkPipeline basePipelineHandle;
         0                                             // int basePipelineIndex;
     };
 
-    pipeline = createGraphicsPipeline(vkd, device, DE_NULL, &graphicsPipelineCreateInfo);
+    pipeline = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
 
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                 // VkStructureType sType;
@@ -772,11 +772,11 @@ void ComputeConfiguration::initConfiguration(Context &context, TestParams &testP
         0u,                                             // VkPipelineCreateFlags flags;
         pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
         *pipelineLayout,                                // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
 
-    pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+    pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 void ComputeConfiguration::fillCommandBuffer(
@@ -1931,7 +1931,8 @@ tcu::TestStatus TraversalControlTestInstance::iterate(void)
     de::MovePtr<BufferWithMemory> resultBuffer = de::MovePtr<BufferWithMemory>(
         new BufferWithMemory(vkd, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
 
-    const VkDescriptorImageInfo resultImageInfo = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+    const VkDescriptorImageInfo resultImageInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     const Move<VkCommandPool> cmdPool = createCommandPool(vkd, device, 0, queueFamilyIndex);
     const Move<VkCommandBuffer> cmdBuffer =

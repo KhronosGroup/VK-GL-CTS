@@ -1526,7 +1526,7 @@ AccessInstance::AccessInstance(Context &context, Move<VkDevice> device,
             std::vector<VkBuffer>(1, *m_vertexBuffer), // std::vector<VkBuffer> vertexBuffers;
             DE_LENGTH_OF_ARRAY(vertices),              // uint32_t vertexCount;
             1,                                         // uint32_t instanceCount;
-            DE_NULL,                                   // VkBuffer indexBuffer;
+            VK_NULL_HANDLE,                            // VkBuffer indexBuffer;
             0u,                                        // uint32_t indexCount;
         };
 

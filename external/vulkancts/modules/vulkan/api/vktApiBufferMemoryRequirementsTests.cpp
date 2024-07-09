@@ -497,7 +497,7 @@ void MemoryRequirementsTest::checkSupport(Context &context) const
                     {
                         if (entryCount++)
                             str << std::endl;
-                        str << INFOUSAGE("VK_EXT_video_queue not supported by device");
+                        str << INFOUSAGE("VK_KHR_video_queue not supported by device");
                         msgs[2] = true;
                     }
                     notSupported = true;
@@ -514,7 +514,7 @@ void MemoryRequirementsTest::checkSupport(Context &context) const
                             {
                                 if (entryCount++)
                                     str << std::endl;
-                                str << INFOUSAGE("VK_EXT_video_encode_h264 not supported by device");
+                                str << INFOUSAGE("VK_KHR_video_encode_h264 not supported by device");
                                 msgs[3] = true;
                             }
                             notSupported = true;

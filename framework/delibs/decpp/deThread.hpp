@@ -53,7 +53,7 @@ public:
     bool isStarted(void) const;
 
     /** Thread entry point. */
-    virtual void run(void) = DE_NULL;
+    virtual void run(void) = 0;
 
 private:
     Thread(const Thread &other);            // Not allowed!

@@ -241,7 +241,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest(VkDeviceSize size)
             // Create the buffer
             {
                 VkResult result    = VK_ERROR_OUT_OF_HOST_MEMORY;
-                VkBuffer rawBuffer = DE_NULL;
+                VkBuffer rawBuffer = VK_NULL_HANDLE;
 
                 bufferParams.size = size;
                 buffer            = Move<VkBuffer>(); // free the previous buffer, if any
@@ -281,7 +281,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest(VkDeviceSize size)
             // Allocate the memory
             {
                 VkResult result          = VK_ERROR_OUT_OF_HOST_MEMORY;
-                VkDeviceMemory rawMemory = DE_NULL;
+                VkDeviceMemory rawMemory = VK_NULL_HANDLE;
 
                 const VkMemoryAllocateInfo memAlloc = {
                     VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType sType;
@@ -464,7 +464,7 @@ tcu::TestStatus DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest(
         // Create the buffer
         {
             VkResult result    = VK_ERROR_OUT_OF_HOST_MEMORY;
-            VkBuffer rawBuffer = DE_NULL;
+            VkBuffer rawBuffer = VK_NULL_HANDLE;
 
             bufferParams.size = size;
             buffer            = Move<VkBuffer>(); // free the previous buffer, if any
@@ -498,12 +498,12 @@ tcu::TestStatus DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest(
         // Allocate the memory
         {
             VkResult result          = VK_ERROR_OUT_OF_HOST_MEMORY;
-            VkDeviceMemory rawMemory = DE_NULL;
+            VkDeviceMemory rawMemory = VK_NULL_HANDLE;
 
             vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
                 VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType            sType
                 DE_NULL,                                          // const void*                pNext
-                DE_NULL,                                          // VkImage                    image
+                VK_NULL_HANDLE,                                   // VkImage                    image
                 *buffer                                           // VkBuffer                    buffer
             };
 
@@ -683,7 +683,7 @@ tcu::TestStatus testLargeBuffer(Context &context, LargeBufferParameters params)
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
     const VkPhysicalDeviceLimits limits =
         getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
-    VkBuffer rawBuffer = DE_NULL;
+    VkBuffer rawBuffer = VK_NULL_HANDLE;
 
 #ifndef CTS_USES_VULKANSC
     if (params.useMaxBufferSize)

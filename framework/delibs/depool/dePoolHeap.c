@@ -58,7 +58,7 @@ DE_DECLARE_POOL_HEAP(TestHeap, HeapItem, HeapItem_cmp);
  *//*--------------------------------------------------------------------*/
 void dePoolHeap_selfTest(void)
 {
-    deMemPool *pool = deMemPool_createRoot(DE_NULL, 0);
+    deMemPool *pool = deMemPool_createRoot(NULL, 0);
     TestHeap *heap  = TestHeap_create(pool);
     int i;
 

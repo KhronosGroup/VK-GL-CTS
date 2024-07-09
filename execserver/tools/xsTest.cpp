@@ -206,8 +206,8 @@ public:
         return m_name.c_str();
     }
 
-    virtual void runClient(de::Socket &socket) = DE_NULL;
-    virtual void runProgram(void)              = DE_NULL;
+    virtual void runClient(de::Socket &socket) = 0;
+    virtual void runProgram(void)              = 0;
 
 protected:
     TestContext &m_testCtx;

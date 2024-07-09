@@ -34,6 +34,7 @@
 #include "vktImageAstcDecodeModeTests.hpp"
 #include "vktImageMisalignedCubeTests.hpp"
 #include "vktImageSubresourceLayoutTests.hpp"
+#include "vktImageMismatchedDimensionalityTests.hpp"
 #include "vktImageMismatchedFormatsTests.hpp"
 #include "vktImageMismatchedWriteOpTests.hpp"
 #include "vktImageSampleDrawnCubeFaceTests.hpp"
@@ -41,6 +42,7 @@
 #include "vktImageSampleCompressedTextureTests.hpp"
 #include "vktImageExtendedUsageBitTests.hpp"
 #include "vktImageTransfer.hpp"
+#include "vktImageDepthStencilSeparateTests.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktImageHostImageCopyTests.hpp"
 #endif
@@ -84,8 +86,10 @@ void createChildren(tcu::TestCaseGroup *imageTests)
     imageTests->addChild(createImageExtendedUsageBitTests(testCtx));
     imageTests->addChild(createTransferQueueImageTests(testCtx));
 #ifndef CTS_USES_VULKANSC
+    imageTests->addChild(createImageMismatchedDimensionalityTests(testCtx));
     imageTests->addChild(createImageHostImageCopyTests(testCtx));
 #endif // CTS_USES_VULKANSC
+    imageTests->addChild(createImageDepthStencilSeparateTests(testCtx));
 }
 
 } // namespace

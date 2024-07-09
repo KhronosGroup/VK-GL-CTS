@@ -1803,9 +1803,9 @@ void supportedCheck(Context &context, CaseDefinition caseDef)
             context.getSubgroupSizeControlProperties();
 #else
         const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT &subgroupSizeControlFeatures =
-            context.getSubgroupSizeControlFeaturesEXT();
+            context.getSubgroupSizeControlFeatures();
         const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlPropertiesEXT();
+            context.getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
 
         if (subgroupSizeControlFeatures.subgroupSizeControl == false)
@@ -1943,7 +1943,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
             context.getSubgroupSizeControlProperties();
 #else
         const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlPropertiesEXT();
+            context.getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
         TestLog &log = context.getTestContext().getLog();
 

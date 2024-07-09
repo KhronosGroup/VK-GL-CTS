@@ -100,6 +100,11 @@ public:
     // An instance or device extension will not have a period in its name.
     void addRequirement(const std::string &requirement);
 
+    // Add a required property bit.
+    // A property bit is represented by a string of form "<structure>.<property>", where
+    // the structure name matches the Vulkan spec, but without the leading "VkPhysicalDevice".
+    void addPropertyRequirement(const std::string &requirement);
+
     void addImageRequirement(vk::VkImageCreateInfo info);
     void addBufferRequirement(BufferRequirement req);
     void setCheckSupportCallback(std::function<void(Context &, std::string)> func)
@@ -134,6 +139,11 @@ protected:
     // An example entry is: "VariablePointerFeatures.variablePointers".
     // Use a set for consistent ordering.
     std::set<std::string> m_required_features;
+
+    // Properties required by the test.
+    // A property bit is represented by a string of form "<structure>.<property>", where
+    // the structure name matches the Vulkan spec, but without the leading "VkPhysicalDevice".
+    std::set<std::string> m_required_properties;
 
     std::vector<vk::VkImageCreateInfo> m_imageRequirements;
     std::vector<BufferRequirement> m_bufferRequirements;

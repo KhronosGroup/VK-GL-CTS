@@ -103,7 +103,7 @@ const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
 		case VK_ATTACHMENT_LOAD_OP_CLEAR:		return "VK_ATTACHMENT_LOAD_OP_CLEAR";
 		case VK_ATTACHMENT_LOAD_OP_DONT_CARE:	return "VK_ATTACHMENT_LOAD_OP_DONT_CARE";
 		case VK_ATTACHMENT_LOAD_OP_NONE_KHR:	return "VK_ATTACHMENT_LOAD_OP_NONE_KHR";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -114,7 +114,7 @@ const char* getAttachmentStoreOpName (VkAttachmentStoreOp value)
 		case VK_ATTACHMENT_STORE_OP_STORE:		return "VK_ATTACHMENT_STORE_OP_STORE";
 		case VK_ATTACHMENT_STORE_OP_DONT_CARE:	return "VK_ATTACHMENT_STORE_OP_DONT_CARE";
 		case VK_ATTACHMENT_STORE_OP_NONE:		return "VK_ATTACHMENT_STORE_OP_NONE";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -141,7 +141,7 @@ const char* getBlendFactorName (VkBlendFactor value)
 		case VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR:		return "VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR";
 		case VK_BLEND_FACTOR_SRC1_ALPHA:				return "VK_BLEND_FACTOR_SRC1_ALPHA";
 		case VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA:		return "VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -200,7 +200,7 @@ const char* getBlendOpName (VkBlendOp value)
 		case VK_BLEND_OP_RED_EXT:					return "VK_BLEND_OP_RED_EXT";
 		case VK_BLEND_OP_GREEN_EXT:					return "VK_BLEND_OP_GREEN_EXT";
 		case VK_BLEND_OP_BLUE_EXT:					return "VK_BLEND_OP_BLUE_EXT";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -216,7 +216,7 @@ const char* getBorderColorName (VkBorderColor value)
 		case VK_BORDER_COLOR_INT_OPAQUE_WHITE:			return "VK_BORDER_COLOR_INT_OPAQUE_WHITE";
 		case VK_BORDER_COLOR_FLOAT_CUSTOM_EXT:			return "VK_BORDER_COLOR_FLOAT_CUSTOM_EXT";
 		case VK_BORDER_COLOR_INT_CUSTOM_EXT:			return "VK_BORDER_COLOR_INT_CUSTOM_EXT";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -256,7 +256,7 @@ const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion valu
 	switch (value)
 	{
 		case VK_PIPELINE_CACHE_HEADER_VERSION_ONE:	return "VK_PIPELINE_CACHE_HEADER_VERSION_ONE";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -384,7 +384,7 @@ const char* getComponentSwizzleName (VkComponentSwizzle value)
 		case VK_COMPONENT_SWIZZLE_G:		return "VK_COMPONENT_SWIZZLE_G";
 		case VK_COMPONENT_SWIZZLE_B:		return "VK_COMPONENT_SWIZZLE_B";
 		case VK_COMPONENT_SWIZZLE_A:		return "VK_COMPONENT_SWIZZLE_A";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -423,7 +423,7 @@ const char* getCommandBufferLevelName (VkCommandBufferLevel value)
 	{
 		case VK_COMMAND_BUFFER_LEVEL_PRIMARY:	return "VK_COMMAND_BUFFER_LEVEL_PRIMARY";
 		case VK_COMMAND_BUFFER_LEVEL_SECONDARY:	return "VK_COMMAND_BUFFER_LEVEL_SECONDARY";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -450,7 +450,7 @@ const char* getCompareOpName (VkCompareOp value)
 		case VK_COMPARE_OP_NOT_EQUAL:			return "VK_COMPARE_OP_NOT_EQUAL";
 		case VK_COMPARE_OP_GREATER_OR_EQUAL:	return "VK_COMPARE_OP_GREATER_OR_EQUAL";
 		case VK_COMPARE_OP_ALWAYS:				return "VK_COMPARE_OP_ALWAYS";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -487,7 +487,7 @@ const char* getDescriptorTypeName (VkDescriptorType value)
 		case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:				return "VK_DESCRIPTOR_TYPE_MUTABLE_EXT";
 		case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:	return "VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM";
 		case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:		return "VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -567,7 +567,7 @@ const char* getDynamicStateName (VkDynamicState value)
 		case VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV:	return "VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV";
 		case VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV:				return "VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV";
 		case VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT:		return "VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT";
-		default:														return DE_NULL;
+		default:														return nullptr;
 	}
 }
 
@@ -588,7 +588,7 @@ const char* getPolygonModeName (VkPolygonMode value)
 		case VK_POLYGON_MODE_LINE:				return "VK_POLYGON_MODE_LINE";
 		case VK_POLYGON_MODE_POINT:				return "VK_POLYGON_MODE_POINT";
 		case VK_POLYGON_MODE_FILL_RECTANGLE_NV:	return "VK_POLYGON_MODE_FILL_RECTANGLE_NV";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -843,10 +843,10 @@ const char* getFormatName (VkFormat value)
 		case VK_FORMAT_G16_B16R16_2PLANE_444_UNORM:					return "VK_FORMAT_G16_B16R16_2PLANE_444_UNORM";
 		case VK_FORMAT_A4R4G4B4_UNORM_PACK16:						return "VK_FORMAT_A4R4G4B4_UNORM_PACK16";
 		case VK_FORMAT_A4B4G4R4_UNORM_PACK16:						return "VK_FORMAT_A4B4G4R4_UNORM_PACK16";
-		case VK_FORMAT_R16G16_S10_5_NV:								return "VK_FORMAT_R16G16_S10_5_NV";
+		case VK_FORMAT_R16G16_SFIXED5_NV:							return "VK_FORMAT_R16G16_SFIXED5_NV";
 		case VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR:					return "VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR";
 		case VK_FORMAT_A8_UNORM_KHR:								return "VK_FORMAT_A8_UNORM_KHR";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -895,7 +895,7 @@ const char* getFrontFaceName (VkFrontFace value)
 	{
 		case VK_FRONT_FACE_COUNTER_CLOCKWISE:	return "VK_FRONT_FACE_COUNTER_CLOCKWISE";
 		case VK_FRONT_FACE_CLOCKWISE:			return "VK_FRONT_FACE_CLOCKWISE";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -989,7 +989,7 @@ const char* getImageLayoutName (VkImageLayout value)
 		case VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL:								return "VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL";
 		case VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL:							return "VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL";
 		case VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT:			return "VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT";
-		default:															return DE_NULL;
+		default:															return nullptr;
 	}
 }
 
@@ -1000,7 +1000,7 @@ const char* getImageTilingName (VkImageTiling value)
 		case VK_IMAGE_TILING_OPTIMAL:					return "VK_IMAGE_TILING_OPTIMAL";
 		case VK_IMAGE_TILING_LINEAR:					return "VK_IMAGE_TILING_LINEAR";
 		case VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT:	return "VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -1011,7 +1011,7 @@ const char* getImageTypeName (VkImageType value)
 		case VK_IMAGE_TYPE_1D:	return "VK_IMAGE_TYPE_1D";
 		case VK_IMAGE_TYPE_2D:	return "VK_IMAGE_TYPE_2D";
 		case VK_IMAGE_TYPE_3D:	return "VK_IMAGE_TYPE_3D";
-		default:				return DE_NULL;
+		default:				return nullptr;
 	}
 }
 
@@ -1066,7 +1066,7 @@ const char* getImageViewTypeName (VkImageViewType value)
 		case VK_IMAGE_VIEW_TYPE_1D_ARRAY:	return "VK_IMAGE_VIEW_TYPE_1D_ARRAY";
 		case VK_IMAGE_VIEW_TYPE_2D_ARRAY:	return "VK_IMAGE_VIEW_TYPE_2D_ARRAY";
 		case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:	return "VK_IMAGE_VIEW_TYPE_CUBE_ARRAY";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -1076,7 +1076,7 @@ const char* getSharingModeName (VkSharingMode value)
 	{
 		case VK_SHARING_MODE_EXCLUSIVE:		return "VK_SHARING_MODE_EXCLUSIVE";
 		case VK_SHARING_MODE_CONCURRENT:	return "VK_SHARING_MODE_CONCURRENT";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -1088,7 +1088,7 @@ const char* getIndexTypeName (VkIndexType value)
 		case VK_INDEX_TYPE_UINT32:		return "VK_INDEX_TYPE_UINT32";
 		case VK_INDEX_TYPE_NONE_KHR:	return "VK_INDEX_TYPE_NONE_KHR";
 		case VK_INDEX_TYPE_UINT8_KHR:	return "VK_INDEX_TYPE_UINT8_KHR";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -1112,7 +1112,7 @@ const char* getLogicOpName (VkLogicOp value)
 		case VK_LOGIC_OP_OR_INVERTED:	return "VK_LOGIC_OP_OR_INVERTED";
 		case VK_LOGIC_OP_NAND:			return "VK_LOGIC_OP_NAND";
 		case VK_LOGIC_OP_SET:			return "VK_LOGIC_OP_SET";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -1189,7 +1189,7 @@ const char* getPhysicalDeviceTypeName (VkPhysicalDeviceType value)
 		case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:		return "VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU";
 		case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:		return "VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU";
 		case VK_PHYSICAL_DEVICE_TYPE_CPU:				return "VK_PHYSICAL_DEVICE_TYPE_CPU";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -1202,7 +1202,7 @@ const char* getPipelineBindPointName (VkPipelineBindPoint value)
 		case VK_PIPELINE_BIND_POINT_EXECUTION_GRAPH_AMDX:	return "VK_PIPELINE_BIND_POINT_EXECUTION_GRAPH_AMDX";
 		case VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR:		return "VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR";
 		case VK_PIPELINE_BIND_POINT_SUBPASS_SHADING_HUAWEI:	return "VK_PIPELINE_BIND_POINT_SUBPASS_SHADING_HUAWEI";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -1260,7 +1260,7 @@ const char* getPrimitiveTopologyName (VkPrimitiveTopology value)
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:	return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY";
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:	return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY";
 		case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:						return "VK_PRIMITIVE_TOPOLOGY_PATCH_LIST";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -1329,7 +1329,7 @@ const char* getQueryTypeName (VkQueryType value)
 		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR:									return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SIZE_KHR";
 		case VK_QUERY_TYPE_MICROMAP_SERIALIZATION_SIZE_EXT:									return "VK_QUERY_TYPE_MICROMAP_SERIALIZATION_SIZE_EXT";
 		case VK_QUERY_TYPE_MICROMAP_COMPACTED_SIZE_EXT:										return "VK_QUERY_TYPE_MICROMAP_COMPACTED_SIZE_EXT";
-		default:																			return DE_NULL;
+		default:																			return nullptr;
 	}
 }
 
@@ -1355,8 +1355,8 @@ const char* getSubpassContentsName (VkSubpassContents value)
 	{
 		case VK_SUBPASS_CONTENTS_INLINE:									return "VK_SUBPASS_CONTENTS_INLINE";
 		case VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS:					return "VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS";
-		case VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_EXT:	return "VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_EXT";
-		default:															return DE_NULL;
+		case VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_KHR:	return "VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_KHR";
+		default:															return nullptr;
 	}
 }
 
@@ -1364,6 +1364,7 @@ const char* getResultName (VkResult value)
 {
 	switch (value)
 	{
+		case VK_ERROR_NOT_ENOUGH_SPACE_KHR:							return "VK_ERROR_NOT_ENOUGH_SPACE_KHR";
 		case VK_ERROR_COMPRESSION_EXHAUSTED_EXT:					return "VK_ERROR_COMPRESSION_EXHAUSTED_EXT";
 		case VK_ERROR_INVALID_VIDEO_STD_PARAMETERS_KHR:				return "VK_ERROR_INVALID_VIDEO_STD_PARAMETERS_KHR";
 		case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS:				return "VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS";
@@ -1412,7 +1413,7 @@ const char* getResultName (VkResult value)
 		case VK_PIPELINE_COMPILE_REQUIRED:							return "VK_PIPELINE_COMPILE_REQUIRED";
 		case VK_INCOMPATIBLE_SHADER_BINARY_EXT:						return "VK_INCOMPATIBLE_SHADER_BINARY_EXT";
 		case VK_PIPELINE_BINARY_MISSING_KHR:						return "VK_PIPELINE_BINARY_MISSING_KHR";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -1474,7 +1475,7 @@ const char* getStencilOpName (VkStencilOp value)
 		case VK_STENCIL_OP_INVERT:				return "VK_STENCIL_OP_INVERT";
 		case VK_STENCIL_OP_INCREMENT_AND_WRAP:	return "VK_STENCIL_OP_INCREMENT_AND_WRAP";
 		case VK_STENCIL_OP_DECREMENT_AND_WRAP:	return "VK_STENCIL_OP_DECREMENT_AND_WRAP";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -1748,6 +1749,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_ACQUIRE_PROFILING_LOCK_INFO_KHR:										return "VK_STRUCTURE_TYPE_ACQUIRE_PROFILING_LOCK_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR:												return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR:									return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR";
+		case VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_RESERVATION_INFO_KHR:								return "VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_RESERVATION_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO:						return "VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO:										return "VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO";
@@ -2315,8 +2317,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_RELEASE_CAPTURED_PIPELINE_DATA_INFO_KHR:								return "VK_STRUCTURE_TYPE_RELEASE_CAPTURED_PIPELINE_DATA_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_DATA_INFO_KHR:										return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_DATA_INFO_KHR";
-		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEYS_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEYS_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_CREATE_INFO_KHR:											return "VK_STRUCTURE_TYPE_PIPELINE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_DEVICE_PIPELINE_BINARY_INTERNAL_CACHE_CONTROL_KHR:					return "VK_STRUCTURE_TYPE_DEVICE_PIPELINE_BINARY_INTERNAL_CACHE_CONTROL_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_HANDLES_INFO_KHR:									return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_HANDLES_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM:												return "VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC";
@@ -2326,6 +2329,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_PROPERTIES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT:										return "VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM";
@@ -2383,9 +2388,19 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT:					return "VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_LIST_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_LIST_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV";
-		default:																					return DE_NULL;
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA";
+		case VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA:							return "VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA";
+		default:																					return nullptr;
 	}
 }
 
@@ -2398,7 +2413,7 @@ const char* getSystemAllocationScopeName (VkSystemAllocationScope value)
 		case VK_SYSTEM_ALLOCATION_SCOPE_CACHE:		return "VK_SYSTEM_ALLOCATION_SCOPE_CACHE";
 		case VK_SYSTEM_ALLOCATION_SCOPE_DEVICE:		return "VK_SYSTEM_ALLOCATION_SCOPE_DEVICE";
 		case VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE:	return "VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -2407,7 +2422,7 @@ const char* getInternalAllocationTypeName (VkInternalAllocationType value)
 	switch (value)
 	{
 		case VK_INTERNAL_ALLOCATION_TYPE_EXECUTABLE:	return "VK_INTERNAL_ALLOCATION_TYPE_EXECUTABLE";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -2420,7 +2435,7 @@ const char* getSamplerAddressModeName (VkSamplerAddressMode value)
 		case VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE:			return "VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE";
 		case VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER:		return "VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER";
 		case VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE:	return "VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -2431,7 +2446,7 @@ const char* getFilterName (VkFilter value)
 		case VK_FILTER_NEAREST:		return "VK_FILTER_NEAREST";
 		case VK_FILTER_LINEAR:		return "VK_FILTER_LINEAR";
 		case VK_FILTER_CUBIC_EXT:	return "VK_FILTER_CUBIC_EXT";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -2441,7 +2456,7 @@ const char* getSamplerMipmapModeName (VkSamplerMipmapMode value)
 	{
 		case VK_SAMPLER_MIPMAP_MODE_NEAREST:	return "VK_SAMPLER_MIPMAP_MODE_NEAREST";
 		case VK_SAMPLER_MIPMAP_MODE_LINEAR:		return "VK_SAMPLER_MIPMAP_MODE_LINEAR";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -2451,7 +2466,7 @@ const char* getVertexInputRateName (VkVertexInputRate value)
 	{
 		case VK_VERTEX_INPUT_RATE_VERTEX:	return "VK_VERTEX_INPUT_RATE_VERTEX";
 		case VK_VERTEX_INPUT_RATE_INSTANCE:	return "VK_VERTEX_INPUT_RATE_INSTANCE";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -2606,7 +2621,7 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV:			return "VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV";
 		case VK_OBJECT_TYPE_SHADER_EXT:							return "VK_OBJECT_TYPE_SHADER_EXT";
 		case VK_OBJECT_TYPE_PIPELINE_BINARY_KHR:				return "VK_OBJECT_TYPE_PIPELINE_BINARY_KHR";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -2634,7 +2649,7 @@ const char* getRayTracingInvocationReorderModeNVName (VkRayTracingInvocationReor
 	{
 		case VK_RAY_TRACING_INVOCATION_REORDER_MODE_NONE_NV:	return "VK_RAY_TRACING_INVOCATION_REORDER_MODE_NONE_NV";
 		case VK_RAY_TRACING_INVOCATION_REORDER_MODE_REORDER_NV:	return "VK_RAY_TRACING_INVOCATION_REORDER_MODE_REORDER_NV";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -2664,7 +2679,7 @@ const char* getIndirectCommandsTokenTypeNVName (VkIndirectCommandsTokenTypeNV va
 		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_NV:	return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_NV";
 		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PIPELINE_NV:			return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_PIPELINE_NV";
 		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DISPATCH_NV:			return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DISPATCH_NV";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -2683,7 +2698,7 @@ const char* getDescriptorUpdateTemplateTypeName (VkDescriptorUpdateTemplateType 
 	{
 		case VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET:			return "VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET";
 		case VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR:	return "VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR";
-		default:														return DE_NULL;
+		default:														return nullptr;
 	}
 }
 
@@ -2699,7 +2714,7 @@ const char* getViewportCoordinateSwizzleNVName (VkViewportCoordinateSwizzleNV va
 		case VK_VIEWPORT_COORDINATE_SWIZZLE_NEGATIVE_Z_NV:	return "VK_VIEWPORT_COORDINATE_SWIZZLE_NEGATIVE_Z_NV";
 		case VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_W_NV:	return "VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_W_NV";
 		case VK_VIEWPORT_COORDINATE_SWIZZLE_NEGATIVE_W_NV:	return "VK_VIEWPORT_COORDINATE_SWIZZLE_NEGATIVE_W_NV";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -2709,7 +2724,7 @@ const char* getDiscardRectangleModeEXTName (VkDiscardRectangleModeEXT value)
 	{
 		case VK_DISCARD_RECTANGLE_MODE_INCLUSIVE_EXT:	return "VK_DISCARD_RECTANGLE_MODE_INCLUSIVE_EXT";
 		case VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT:	return "VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -2735,7 +2750,7 @@ const char* getPointClippingBehaviorName (VkPointClippingBehavior value)
 	{
 		case VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES:		return "VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES";
 		case VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY:	return "VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -2747,7 +2762,7 @@ const char* getCoverageModulationModeNVName (VkCoverageModulationModeNV value)
 		case VK_COVERAGE_MODULATION_MODE_RGB_NV:	return "VK_COVERAGE_MODULATION_MODE_RGB_NV";
 		case VK_COVERAGE_MODULATION_MODE_ALPHA_NV:	return "VK_COVERAGE_MODULATION_MODE_ALPHA_NV";
 		case VK_COVERAGE_MODULATION_MODE_RGBA_NV:	return "VK_COVERAGE_MODULATION_MODE_RGBA_NV";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -2757,7 +2772,7 @@ const char* getCoverageReductionModeNVName (VkCoverageReductionModeNV value)
 	{
 		case VK_COVERAGE_REDUCTION_MODE_MERGE_NV:		return "VK_COVERAGE_REDUCTION_MODE_MERGE_NV";
 		case VK_COVERAGE_REDUCTION_MODE_TRUNCATE_NV:	return "VK_COVERAGE_REDUCTION_MODE_TRUNCATE_NV";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -2766,7 +2781,7 @@ const char* getValidationCacheHeaderVersionEXTName (VkValidationCacheHeaderVersi
 	switch (value)
 	{
 		case VK_VALIDATION_CACHE_HEADER_VERSION_ONE_EXT:	return "VK_VALIDATION_CACHE_HEADER_VERSION_ONE_EXT";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -2777,7 +2792,7 @@ const char* getShaderInfoTypeAMDName (VkShaderInfoTypeAMD value)
 		case VK_SHADER_INFO_TYPE_STATISTICS_AMD:	return "VK_SHADER_INFO_TYPE_STATISTICS_AMD";
 		case VK_SHADER_INFO_TYPE_BINARY_AMD:		return "VK_SHADER_INFO_TYPE_BINARY_AMD";
 		case VK_SHADER_INFO_TYPE_DISASSEMBLY_AMD:	return "VK_SHADER_INFO_TYPE_DISASSEMBLY_AMD";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -2789,7 +2804,7 @@ const char* getQueueGlobalPriorityKHRName (VkQueueGlobalPriorityKHR value)
 		case VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR:	return "VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR";
 		case VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR:		return "VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR";
 		case VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR:	return "VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -2801,7 +2816,7 @@ const char* getTimeDomainKHRName (VkTimeDomainKHR value)
 		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR:			return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR";
 		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR:		return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR";
 		case VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR:	return "VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -2812,7 +2827,7 @@ const char* getConservativeRasterizationModeEXTName (VkConservativeRasterization
 		case VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT:		return "VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT";
 		case VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT:	return "VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT";
 		case VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT:	return "VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -2857,7 +2872,7 @@ const char* getSemaphoreTypeName (VkSemaphoreType value)
 	{
 		case VK_SEMAPHORE_TYPE_BINARY:		return "VK_SEMAPHORE_TYPE_BINARY";
 		case VK_SEMAPHORE_TYPE_TIMELINE:	return "VK_SEMAPHORE_TYPE_TIMELINE";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -2921,7 +2936,7 @@ const char* getBuildAccelerationStructureModeKHRName (VkBuildAccelerationStructu
 	{
 		case VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR:	return "VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR";
 		case VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR:	return "VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -2933,7 +2948,7 @@ const char* getCopyAccelerationStructureModeKHRName (VkCopyAccelerationStructure
 		case VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR:		return "VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR";
 		case VK_COPY_ACCELERATION_STRUCTURE_MODE_SERIALIZE_KHR:		return "VK_COPY_ACCELERATION_STRUCTURE_MODE_SERIALIZE_KHR";
 		case VK_COPY_ACCELERATION_STRUCTURE_MODE_DESERIALIZE_KHR:	return "VK_COPY_ACCELERATION_STRUCTURE_MODE_DESERIALIZE_KHR";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -2944,7 +2959,7 @@ const char* getAccelerationStructureTypeKHRName (VkAccelerationStructureTypeKHR 
 		case VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR:		return "VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR";
 		case VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR:	return "VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR";
 		case VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR:		return "VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -2955,7 +2970,7 @@ const char* getGeometryTypeKHRName (VkGeometryTypeKHR value)
 		case VK_GEOMETRY_TYPE_TRIANGLES_KHR:	return "VK_GEOMETRY_TYPE_TRIANGLES_KHR";
 		case VK_GEOMETRY_TYPE_AABBS_KHR:		return "VK_GEOMETRY_TYPE_AABBS_KHR";
 		case VK_GEOMETRY_TYPE_INSTANCES_KHR:	return "VK_GEOMETRY_TYPE_INSTANCES_KHR";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -2966,7 +2981,7 @@ const char* getRayTracingShaderGroupTypeKHRName (VkRayTracingShaderGroupTypeKHR 
 		case VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR:				return "VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR";
 		case VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR:	return "VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR";
 		case VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR:	return "VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR";
-		default:														return DE_NULL;
+		default:														return nullptr;
 	}
 }
 
@@ -2977,7 +2992,7 @@ const char* getAccelerationStructureMemoryRequirementsTypeNVName (VkAcceleration
 		case VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_NV:			return "VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_NV";
 		case VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_BUILD_SCRATCH_NV:	return "VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_BUILD_SCRATCH_NV";
 		case VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_NV:	return "VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_NV";
-		default:																	return DE_NULL;
+		default:																	return nullptr;
 	}
 }
 
@@ -2988,7 +3003,7 @@ const char* getAccelerationStructureBuildTypeKHRName (VkAccelerationStructureBui
 		case VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR:				return "VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR";
 		case VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR:			return "VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR";
 		case VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_OR_DEVICE_KHR:	return "VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_OR_DEVICE_KHR";
-		default:														return DE_NULL;
+		default:														return nullptr;
 	}
 }
 
@@ -2998,7 +3013,7 @@ const char* getAccelerationStructureCompatibilityKHRName (VkAccelerationStructur
 	{
 		case VK_ACCELERATION_STRUCTURE_COMPATIBILITY_COMPATIBLE_KHR:	return "VK_ACCELERATION_STRUCTURE_COMPATIBILITY_COMPATIBLE_KHR";
 		case VK_ACCELERATION_STRUCTURE_COMPATIBILITY_INCOMPATIBLE_KHR:	return "VK_ACCELERATION_STRUCTURE_COMPATIBILITY_INCOMPATIBLE_KHR";
-		default:														return DE_NULL;
+		default:														return nullptr;
 	}
 }
 
@@ -3010,7 +3025,7 @@ const char* getShaderGroupShaderKHRName (VkShaderGroupShaderKHR value)
 		case VK_SHADER_GROUP_SHADER_CLOSEST_HIT_KHR:	return "VK_SHADER_GROUP_SHADER_CLOSEST_HIT_KHR";
 		case VK_SHADER_GROUP_SHADER_ANY_HIT_KHR:		return "VK_SHADER_GROUP_SHADER_ANY_HIT_KHR";
 		case VK_SHADER_GROUP_SHADER_INTERSECTION_KHR:	return "VK_SHADER_GROUP_SHADER_INTERSECTION_KHR";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -3021,7 +3036,7 @@ const char* getMemoryOverallocationBehaviorAMDName (VkMemoryOverallocationBehavi
 		case VK_MEMORY_OVERALLOCATION_BEHAVIOR_DEFAULT_AMD:		return "VK_MEMORY_OVERALLOCATION_BEHAVIOR_DEFAULT_AMD";
 		case VK_MEMORY_OVERALLOCATION_BEHAVIOR_ALLOWED_AMD:		return "VK_MEMORY_OVERALLOCATION_BEHAVIOR_ALLOWED_AMD";
 		case VK_MEMORY_OVERALLOCATION_BEHAVIOR_DISALLOWED_AMD:	return "VK_MEMORY_OVERALLOCATION_BEHAVIOR_DISALLOWED_AMD";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -3055,7 +3070,7 @@ const char* getPerformanceCounterScopeKHRName (VkPerformanceCounterScopeKHR valu
 		case VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR:	return "VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR";
 		case VK_PERFORMANCE_COUNTER_SCOPE_RENDER_PASS_KHR:		return "VK_PERFORMANCE_COUNTER_SCOPE_RENDER_PASS_KHR";
 		case VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_KHR:			return "VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_KHR";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -3074,7 +3089,7 @@ const char* getPerformanceCounterUnitKHRName (VkPerformanceCounterUnitKHR value)
 		case VK_PERFORMANCE_COUNTER_UNIT_AMPS_KHR:				return "VK_PERFORMANCE_COUNTER_UNIT_AMPS_KHR";
 		case VK_PERFORMANCE_COUNTER_UNIT_HERTZ_KHR:				return "VK_PERFORMANCE_COUNTER_UNIT_HERTZ_KHR";
 		case VK_PERFORMANCE_COUNTER_UNIT_CYCLES_KHR:			return "VK_PERFORMANCE_COUNTER_UNIT_CYCLES_KHR";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -3088,7 +3103,7 @@ const char* getPerformanceCounterStorageKHRName (VkPerformanceCounterStorageKHR 
 		case VK_PERFORMANCE_COUNTER_STORAGE_UINT64_KHR:		return "VK_PERFORMANCE_COUNTER_STORAGE_UINT64_KHR";
 		case VK_PERFORMANCE_COUNTER_STORAGE_FLOAT32_KHR:	return "VK_PERFORMANCE_COUNTER_STORAGE_FLOAT32_KHR";
 		case VK_PERFORMANCE_COUNTER_STORAGE_FLOAT64_KHR:	return "VK_PERFORMANCE_COUNTER_STORAGE_FLOAT64_KHR";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -3116,7 +3131,7 @@ const char* getPerformanceConfigurationTypeINTELName (VkPerformanceConfiguration
 	switch (value)
 	{
 		case VK_PERFORMANCE_CONFIGURATION_TYPE_COMMAND_QUEUE_METRICS_DISCOVERY_ACTIVATED_INTEL:	return "VK_PERFORMANCE_CONFIGURATION_TYPE_COMMAND_QUEUE_METRICS_DISCOVERY_ACTIVATED_INTEL";
-		default:																				return DE_NULL;
+		default:																				return nullptr;
 	}
 }
 
@@ -3125,7 +3140,7 @@ const char* getQueryPoolSamplingModeINTELName (VkQueryPoolSamplingModeINTEL valu
 	switch (value)
 	{
 		case VK_QUERY_POOL_SAMPLING_MODE_MANUAL_INTEL:	return "VK_QUERY_POOL_SAMPLING_MODE_MANUAL_INTEL";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -3135,7 +3150,7 @@ const char* getPerformanceOverrideTypeINTELName (VkPerformanceOverrideTypeINTEL 
 	{
 		case VK_PERFORMANCE_OVERRIDE_TYPE_NULL_HARDWARE_INTEL:		return "VK_PERFORMANCE_OVERRIDE_TYPE_NULL_HARDWARE_INTEL";
 		case VK_PERFORMANCE_OVERRIDE_TYPE_FLUSH_GPU_CACHES_INTEL:	return "VK_PERFORMANCE_OVERRIDE_TYPE_FLUSH_GPU_CACHES_INTEL";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -3145,7 +3160,7 @@ const char* getPerformanceParameterTypeINTELName (VkPerformanceParameterTypeINTE
 	{
 		case VK_PERFORMANCE_PARAMETER_TYPE_HW_COUNTERS_SUPPORTED_INTEL:		return "VK_PERFORMANCE_PARAMETER_TYPE_HW_COUNTERS_SUPPORTED_INTEL";
 		case VK_PERFORMANCE_PARAMETER_TYPE_STREAM_MARKER_VALID_BITS_INTEL:	return "VK_PERFORMANCE_PARAMETER_TYPE_STREAM_MARKER_VALID_BITS_INTEL";
-		default:															return DE_NULL;
+		default:															return nullptr;
 	}
 }
 
@@ -3158,7 +3173,7 @@ const char* getPerformanceValueTypeINTELName (VkPerformanceValueTypeINTEL value)
 		case VK_PERFORMANCE_VALUE_TYPE_FLOAT_INTEL:		return "VK_PERFORMANCE_VALUE_TYPE_FLOAT_INTEL";
 		case VK_PERFORMANCE_VALUE_TYPE_BOOL_INTEL:		return "VK_PERFORMANCE_VALUE_TYPE_BOOL_INTEL";
 		case VK_PERFORMANCE_VALUE_TYPE_STRING_INTEL:	return "VK_PERFORMANCE_VALUE_TYPE_STRING_INTEL";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -3170,7 +3185,7 @@ const char* getLineRasterizationModeKHRName (VkLineRasterizationModeKHR value)
 		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR:		return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR";
 		case VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR:			return "VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR";
 		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR:	return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -3205,7 +3220,7 @@ const char* getFragmentShadingRateNVName (VkFragmentShadingRateNV value)
 		case VK_FRAGMENT_SHADING_RATE_8_INVOCATIONS_PER_PIXEL_NV:		return "VK_FRAGMENT_SHADING_RATE_8_INVOCATIONS_PER_PIXEL_NV";
 		case VK_FRAGMENT_SHADING_RATE_16_INVOCATIONS_PER_PIXEL_NV:		return "VK_FRAGMENT_SHADING_RATE_16_INVOCATIONS_PER_PIXEL_NV";
 		case VK_FRAGMENT_SHADING_RATE_NO_INVOCATIONS_NV:				return "VK_FRAGMENT_SHADING_RATE_NO_INVOCATIONS_NV";
-		default:														return DE_NULL;
+		default:														return nullptr;
 	}
 }
 
@@ -3215,7 +3230,7 @@ const char* getFragmentShadingRateTypeNVName (VkFragmentShadingRateTypeNV value)
 	{
 		case VK_FRAGMENT_SHADING_RATE_TYPE_FRAGMENT_SIZE_NV:	return "VK_FRAGMENT_SHADING_RATE_TYPE_FRAGMENT_SIZE_NV";
 		case VK_FRAGMENT_SHADING_RATE_TYPE_ENUMS_NV:			return "VK_FRAGMENT_SHADING_RATE_TYPE_ENUMS_NV";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -3237,7 +3252,7 @@ const char* getSubpassMergeStatusEXTName (VkSubpassMergeStatusEXT value)
 		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_RESOLVE_ATTACHMENT_REUSE_EXT:		return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_RESOLVE_ATTACHMENT_REUSE_EXT";
 		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_SINGLE_SUBPASS_EXT:					return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_SINGLE_SUBPASS_EXT";
 		case VK_SUBPASS_MERGE_STATUS_NOT_MERGED_UNSPECIFIED_EXT:					return "VK_SUBPASS_MERGE_STATUS_NOT_MERGED_UNSPECIFIED_EXT";
-		default:																	return DE_NULL;
+		default:																	return nullptr;
 	}
 }
 
@@ -3348,7 +3363,7 @@ const char* getProvokingVertexModeEXTName (VkProvokingVertexModeEXT value)
 	{
 		case VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT:	return "VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT";
 		case VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT:	return "VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -3433,7 +3448,7 @@ tcu::Format::Bitfield<32> getRenderingFlagsStr (VkRenderingFlags value)
 		tcu::Format::BitDesc(VK_RENDERING_SUSPENDING_BIT,							"VK_RENDERING_SUSPENDING_BIT"),
 		tcu::Format::BitDesc(VK_RENDERING_RESUMING_BIT,								"VK_RENDERING_RESUMING_BIT"),
 		tcu::Format::BitDesc(VK_RENDERING_ENABLE_LEGACY_DITHERING_BIT_EXT,			"VK_RENDERING_ENABLE_LEGACY_DITHERING_BIT_EXT"),
-		tcu::Format::BitDesc(VK_RENDERING_CONTENTS_INLINE_BIT_EXT,					"VK_RENDERING_CONTENTS_INLINE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_RENDERING_CONTENTS_INLINE_BIT_KHR,					"VK_RENDERING_CONTENTS_INLINE_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3524,7 +3539,7 @@ const char* getPipelineRobustnessBufferBehaviorEXTName (VkPipelineRobustnessBuff
 		case VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED_EXT:				return "VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED_EXT";
 		case VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT:	return "VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT";
 		case VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT:	return "VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2_EXT";
-		default:																return DE_NULL;
+		default:																return nullptr;
 	}
 }
 
@@ -3536,7 +3551,7 @@ const char* getPipelineRobustnessImageBehaviorEXTName (VkPipelineRobustnessImage
 		case VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED_EXT:				return "VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED_EXT";
 		case VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_EXT:		return "VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_EXT";
 		case VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_2_EXT:	return "VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_2_EXT";
-		default:																return DE_NULL;
+		default:																return nullptr;
 	}
 }
 
@@ -3555,7 +3570,7 @@ const char* getDeviceAddressBindingTypeEXTName (VkDeviceAddressBindingTypeEXT va
 	{
 		case VK_DEVICE_ADDRESS_BINDING_TYPE_BIND_EXT:	return "VK_DEVICE_ADDRESS_BINDING_TYPE_BIND_EXT";
 		case VK_DEVICE_ADDRESS_BINDING_TYPE_UNBIND_EXT:	return "VK_DEVICE_ADDRESS_BINDING_TYPE_UNBIND_EXT";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -3565,7 +3580,7 @@ const char* getMicromapTypeEXTName (VkMicromapTypeEXT value)
 	{
 		case VK_MICROMAP_TYPE_OPACITY_MICROMAP_EXT:		return "VK_MICROMAP_TYPE_OPACITY_MICROMAP_EXT";
 		case VK_MICROMAP_TYPE_DISPLACEMENT_MICROMAP_NV:	return "VK_MICROMAP_TYPE_DISPLACEMENT_MICROMAP_NV";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -3574,7 +3589,7 @@ const char* getBuildMicromapModeEXTName (VkBuildMicromapModeEXT value)
 	switch (value)
 	{
 		case VK_BUILD_MICROMAP_MODE_BUILD_EXT:	return "VK_BUILD_MICROMAP_MODE_BUILD_EXT";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -3586,7 +3601,7 @@ const char* getCopyMicromapModeEXTName (VkCopyMicromapModeEXT value)
 		case VK_COPY_MICROMAP_MODE_SERIALIZE_EXT:	return "VK_COPY_MICROMAP_MODE_SERIALIZE_EXT";
 		case VK_COPY_MICROMAP_MODE_DESERIALIZE_EXT:	return "VK_COPY_MICROMAP_MODE_DESERIALIZE_EXT";
 		case VK_COPY_MICROMAP_MODE_COMPACT_EXT:		return "VK_COPY_MICROMAP_MODE_COMPACT_EXT";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -3616,7 +3631,7 @@ const char* getOpacityMicromapFormatEXTName (VkOpacityMicromapFormatEXT value)
 	{
 		case VK_OPACITY_MICROMAP_FORMAT_2_STATE_EXT:	return "VK_OPACITY_MICROMAP_FORMAT_2_STATE_EXT";
 		case VK_OPACITY_MICROMAP_FORMAT_4_STATE_EXT:	return "VK_OPACITY_MICROMAP_FORMAT_4_STATE_EXT";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -3628,7 +3643,7 @@ const char* getOpacityMicromapSpecialIndexEXTName (VkOpacityMicromapSpecialIndex
 		case VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_UNKNOWN_TRANSPARENT_EXT:	return "VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_UNKNOWN_TRANSPARENT_EXT";
 		case VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_OPAQUE_EXT:				return "VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_OPAQUE_EXT";
 		case VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_TRANSPARENT_EXT:			return "VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_TRANSPARENT_EXT";
-		default:																return DE_NULL;
+		default:																return nullptr;
 	}
 }
 
@@ -3637,7 +3652,7 @@ const char* getDeviceFaultVendorBinaryHeaderVersionEXTName (VkDeviceFaultVendorB
 	switch (value)
 	{
 		case VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_ONE_EXT:	return "VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_ONE_EXT";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -3666,7 +3681,7 @@ const char* getDepthBiasRepresentationEXTName (VkDepthBiasRepresentationEXT valu
 		case VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORMAT_EXT:			return "VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORMAT_EXT";
 		case VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORCE_UNORM_EXT:	return "VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORCE_UNORM_EXT";
 		case VK_DEPTH_BIAS_REPRESENTATION_FLOAT_EXT:									return "VK_DEPTH_BIAS_REPRESENTATION_FLOAT_EXT";
-		default:																		return DE_NULL;
+		default:																		return nullptr;
 	}
 }
 
@@ -3676,7 +3691,7 @@ const char* getDirectDriverLoadingModeLUNARGName (VkDirectDriverLoadingModeLUNAR
 	{
 		case VK_DIRECT_DRIVER_LOADING_MODE_EXCLUSIVE_LUNARG:	return "VK_DIRECT_DRIVER_LOADING_MODE_EXCLUSIVE_LUNARG";
 		case VK_DIRECT_DRIVER_LOADING_MODE_INCLUSIVE_LUNARG:	return "VK_DIRECT_DRIVER_LOADING_MODE_INCLUSIVE_LUNARG";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -3716,6 +3731,7 @@ tcu::Format::Bitfield<64> getPipelineCreateFlags2KHRStr (VkPipelineCreateFlags2K
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT,								"VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT,							"VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR,										"VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT,							"VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3761,7 +3777,7 @@ const char* getDisplacementMicromapFormatNVName (VkDisplacementMicromapFormatNV 
 		case VK_DISPLACEMENT_MICROMAP_FORMAT_64_TRIANGLES_64_BYTES_NV:		return "VK_DISPLACEMENT_MICROMAP_FORMAT_64_TRIANGLES_64_BYTES_NV";
 		case VK_DISPLACEMENT_MICROMAP_FORMAT_256_TRIANGLES_128_BYTES_NV:	return "VK_DISPLACEMENT_MICROMAP_FORMAT_256_TRIANGLES_128_BYTES_NV";
 		case VK_DISPLACEMENT_MICROMAP_FORMAT_1024_TRIANGLES_128_BYTES_NV:	return "VK_DISPLACEMENT_MICROMAP_FORMAT_1024_TRIANGLES_128_BYTES_NV";
-		default:															return DE_NULL;
+		default:															return nullptr;
 	}
 }
 
@@ -3786,7 +3802,7 @@ const char* getShaderCodeTypeEXTName (VkShaderCodeTypeEXT value)
 	{
 		case VK_SHADER_CODE_TYPE_BINARY_EXT:	return "VK_SHADER_CODE_TYPE_BINARY_EXT";
 		case VK_SHADER_CODE_TYPE_SPIRV_EXT:		return "VK_SHADER_CODE_TYPE_SPIRV_EXT";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -3798,7 +3814,7 @@ const char* getScopeKHRName (VkScopeKHR value)
 		case VK_SCOPE_WORKGROUP_KHR:	return "VK_SCOPE_WORKGROUP_KHR";
 		case VK_SCOPE_SUBGROUP_KHR:		return "VK_SCOPE_SUBGROUP_KHR";
 		case VK_SCOPE_QUEUE_FAMILY_KHR:	return "VK_SCOPE_QUEUE_FAMILY_KHR";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -3817,7 +3833,7 @@ const char* getComponentTypeKHRName (VkComponentTypeKHR value)
 		case VK_COMPONENT_TYPE_UINT16_KHR:	return "VK_COMPONENT_TYPE_UINT16_KHR";
 		case VK_COMPONENT_TYPE_UINT32_KHR:	return "VK_COMPONENT_TYPE_UINT32_KHR";
 		case VK_COMPONENT_TYPE_UINT64_KHR:	return "VK_COMPONENT_TYPE_UINT64_KHR";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -3829,7 +3845,7 @@ const char* getCubicFilterWeightsQCOMName (VkCubicFilterWeightsQCOM value)
 		case VK_CUBIC_FILTER_WEIGHTS_ZERO_TANGENT_CARDINAL_QCOM:	return "VK_CUBIC_FILTER_WEIGHTS_ZERO_TANGENT_CARDINAL_QCOM";
 		case VK_CUBIC_FILTER_WEIGHTS_B_SPLINE_QCOM:					return "VK_CUBIC_FILTER_WEIGHTS_B_SPLINE_QCOM";
 		case VK_CUBIC_FILTER_WEIGHTS_MITCHELL_NETRAVALI_QCOM:		return "VK_CUBIC_FILTER_WEIGHTS_MITCHELL_NETRAVALI_QCOM";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -3839,7 +3855,7 @@ const char* getBlockMatchWindowCompareModeQCOMName (VkBlockMatchWindowCompareMod
 	{
 		case VK_BLOCK_MATCH_WINDOW_COMPARE_MODE_MIN_QCOM:	return "VK_BLOCK_MATCH_WINDOW_COMPARE_MODE_MIN_QCOM";
 		case VK_BLOCK_MATCH_WINDOW_COMPARE_MODE_MAX_QCOM:	return "VK_BLOCK_MATCH_WINDOW_COMPARE_MODE_MAX_QCOM";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -3849,7 +3865,20 @@ const char* getLayeredDriverUnderlyingApiMSFTName (VkLayeredDriverUnderlyingApiM
 	{
 		case VK_LAYERED_DRIVER_UNDERLYING_API_NONE_MSFT:	return "VK_LAYERED_DRIVER_UNDERLYING_API_NONE_MSFT";
 		case VK_LAYERED_DRIVER_UNDERLYING_API_D3D12_MSFT:	return "VK_LAYERED_DRIVER_UNDERLYING_API_D3D12_MSFT";
-		default:											return DE_NULL;
+		default:											return nullptr;
+	}
+}
+
+const char* getPhysicalDeviceLayeredApiKHRName (VkPhysicalDeviceLayeredApiKHR value)
+{
+	switch (value)
+	{
+		case VK_PHYSICAL_DEVICE_LAYERED_API_VULKAN_KHR:		return "VK_PHYSICAL_DEVICE_LAYERED_API_VULKAN_KHR";
+		case VK_PHYSICAL_DEVICE_LAYERED_API_D3D12_KHR:		return "VK_PHYSICAL_DEVICE_LAYERED_API_D3D12_KHR";
+		case VK_PHYSICAL_DEVICE_LAYERED_API_METAL_KHR:		return "VK_PHYSICAL_DEVICE_LAYERED_API_METAL_KHR";
+		case VK_PHYSICAL_DEVICE_LAYERED_API_OPENGL_KHR:		return "VK_PHYSICAL_DEVICE_LAYERED_API_OPENGL_KHR";
+		case VK_PHYSICAL_DEVICE_LAYERED_API_OPENGLES_KHR:	return "VK_PHYSICAL_DEVICE_LAYERED_API_OPENGLES_KHR";
+		default:											return nullptr;
 	}
 }
 
@@ -3873,7 +3902,7 @@ const char* getColorSpaceKHRName (VkColorSpaceKHR value)
 		case VK_COLOR_SPACE_PASS_THROUGH_EXT:				return "VK_COLOR_SPACE_PASS_THROUGH_EXT";
 		case VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT:	return "VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT";
 		case VK_COLOR_SPACE_DISPLAY_NATIVE_AMD:				return "VK_COLOR_SPACE_DISPLAY_NATIVE_AMD";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -3911,7 +3940,7 @@ const char* getPresentModeKHRName (VkPresentModeKHR value)
 		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:				return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
 		case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:		return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
 		case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:	return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -3990,7 +4019,7 @@ const char* getDebugReportObjectTypeEXTName (VkDebugReportObjectTypeEXT value)
 		case VK_DEBUG_REPORT_OBJECT_TYPE_CUDA_MODULE_NV_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_CUDA_MODULE_NV_EXT";
 		case VK_DEBUG_REPORT_OBJECT_TYPE_CUDA_FUNCTION_NV_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_CUDA_FUNCTION_NV_EXT";
 		case VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA_EXT";
-		default:															return DE_NULL;
+		default:															return nullptr;
 	}
 }
 
@@ -4003,7 +4032,7 @@ const char* getDeviceMemoryReportEventTypeEXTName (VkDeviceMemoryReportEventType
 		case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_IMPORT_EXT:				return "VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_IMPORT_EXT";
 		case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_UNIMPORT_EXT:			return "VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_UNIMPORT_EXT";
 		case VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATION_FAILED_EXT:	return "VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATION_FAILED_EXT";
-		default:														return DE_NULL;
+		default:														return nullptr;
 	}
 }
 
@@ -4013,7 +4042,7 @@ const char* getRasterizationOrderAMDName (VkRasterizationOrderAMD value)
 	{
 		case VK_RASTERIZATION_ORDER_STRICT_AMD:		return "VK_RASTERIZATION_ORDER_STRICT_AMD";
 		case VK_RASTERIZATION_ORDER_RELAXED_AMD:	return "VK_RASTERIZATION_ORDER_RELAXED_AMD";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -4046,7 +4075,7 @@ const char* getValidationCheckEXTName (VkValidationCheckEXT value)
 	{
 		case VK_VALIDATION_CHECK_ALL_EXT:		return "VK_VALIDATION_CHECK_ALL_EXT";
 		case VK_VALIDATION_CHECK_SHADERS_EXT:	return "VK_VALIDATION_CHECK_SHADERS_EXT";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -4059,7 +4088,7 @@ const char* getValidationFeatureEnableEXTName (VkValidationFeatureEnableEXT valu
 		case VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT:						return "VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT";
 		case VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT:							return "VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT";
 		case VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT:			return "VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT";
-		default:																	return DE_NULL;
+		default:																	return nullptr;
 	}
 }
 
@@ -4075,7 +4104,7 @@ const char* getValidationFeatureDisableEXTName (VkValidationFeatureDisableEXT va
 		case VK_VALIDATION_FEATURE_DISABLE_CORE_CHECKS_EXT:				return "VK_VALIDATION_FEATURE_DISABLE_CORE_CHECKS_EXT";
 		case VK_VALIDATION_FEATURE_DISABLE_UNIQUE_HANDLES_EXT:			return "VK_VALIDATION_FEATURE_DISABLE_UNIQUE_HANDLES_EXT";
 		case VK_VALIDATION_FEATURE_DISABLE_SHADER_VALIDATION_CACHE_EXT:	return "VK_VALIDATION_FEATURE_DISABLE_SHADER_VALIDATION_CACHE_EXT";
-		default:														return DE_NULL;
+		default:														return nullptr;
 	}
 }
 
@@ -4192,7 +4221,7 @@ const char* getDisplayPowerStateEXTName (VkDisplayPowerStateEXT value)
 		case VK_DISPLAY_POWER_STATE_OFF_EXT:		return "VK_DISPLAY_POWER_STATE_OFF_EXT";
 		case VK_DISPLAY_POWER_STATE_SUSPEND_EXT:	return "VK_DISPLAY_POWER_STATE_SUSPEND_EXT";
 		case VK_DISPLAY_POWER_STATE_ON_EXT:			return "VK_DISPLAY_POWER_STATE_ON_EXT";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -4201,7 +4230,7 @@ const char* getDeviceEventTypeEXTName (VkDeviceEventTypeEXT value)
 	switch (value)
 	{
 		case VK_DEVICE_EVENT_TYPE_DISPLAY_HOTPLUG_EXT:	return "VK_DEVICE_EVENT_TYPE_DISPLAY_HOTPLUG_EXT";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -4210,7 +4239,7 @@ const char* getDisplayEventTypeEXTName (VkDisplayEventTypeEXT value)
 	switch (value)
 	{
 		case VK_DISPLAY_EVENT_TYPE_FIRST_PIXEL_OUT_EXT:	return "VK_DISPLAY_EVENT_TYPE_FIRST_PIXEL_OUT_EXT";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -4286,7 +4315,7 @@ const char* getTessellationDomainOriginName (VkTessellationDomainOrigin value)
 	{
 		case VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT:	return "VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT";
 		case VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT:	return "VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -4299,7 +4328,7 @@ const char* getSamplerYcbcrModelConversionName (VkSamplerYcbcrModelConversion va
 		case VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709:		return "VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709";
 		case VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601:		return "VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601";
 		case VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020:		return "VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -4309,7 +4338,7 @@ const char* getSamplerYcbcrRangeName (VkSamplerYcbcrRange value)
 	{
 		case VK_SAMPLER_YCBCR_RANGE_ITU_FULL:	return "VK_SAMPLER_YCBCR_RANGE_ITU_FULL";
 		case VK_SAMPLER_YCBCR_RANGE_ITU_NARROW:	return "VK_SAMPLER_YCBCR_RANGE_ITU_NARROW";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -4319,7 +4348,7 @@ const char* getChromaLocationName (VkChromaLocation value)
 	{
 		case VK_CHROMA_LOCATION_COSITED_EVEN:	return "VK_CHROMA_LOCATION_COSITED_EVEN";
 		case VK_CHROMA_LOCATION_MIDPOINT:		return "VK_CHROMA_LOCATION_MIDPOINT";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -4331,7 +4360,7 @@ const char* getSamplerReductionModeName (VkSamplerReductionMode value)
 		case VK_SAMPLER_REDUCTION_MODE_MIN:									return "VK_SAMPLER_REDUCTION_MODE_MIN";
 		case VK_SAMPLER_REDUCTION_MODE_MAX:									return "VK_SAMPLER_REDUCTION_MODE_MAX";
 		case VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_RANGECLAMP_QCOM:	return "VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_RANGECLAMP_QCOM";
-		default:															return DE_NULL;
+		default:															return nullptr;
 	}
 }
 
@@ -4342,7 +4371,7 @@ const char* getBlendOverlapEXTName (VkBlendOverlapEXT value)
 		case VK_BLEND_OVERLAP_UNCORRELATED_EXT:	return "VK_BLEND_OVERLAP_UNCORRELATED_EXT";
 		case VK_BLEND_OVERLAP_DISJOINT_EXT:		return "VK_BLEND_OVERLAP_DISJOINT_EXT";
 		case VK_BLEND_OVERLAP_CONJOINT_EXT:		return "VK_BLEND_OVERLAP_CONJOINT_EXT";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -4378,7 +4407,7 @@ const char* getFullScreenExclusiveEXTName (VkFullScreenExclusiveEXT value)
 		case VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT:					return "VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT";
 		case VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT:				return "VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT";
 		case VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT:	return "VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -4389,7 +4418,7 @@ const char* getShaderFloatControlsIndependenceName (VkShaderFloatControlsIndepen
 		case VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY:	return "VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY";
 		case VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL:			return "VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL";
 		case VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE:		return "VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -4402,7 +4431,7 @@ const char* getFragmentShadingRateCombinerOpKHRName (VkFragmentShadingRateCombin
 		case VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MIN_KHR:		return "VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MIN_KHR";
 		case VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_KHR:		return "VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_KHR";
 		case VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MUL_KHR:		return "VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MUL_KHR";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -4462,7 +4491,7 @@ const char* getOpticalFlowPerformanceLevelNVName (VkOpticalFlowPerformanceLevelN
 		case VK_OPTICAL_FLOW_PERFORMANCE_LEVEL_SLOW_NV:		return "VK_OPTICAL_FLOW_PERFORMANCE_LEVEL_SLOW_NV";
 		case VK_OPTICAL_FLOW_PERFORMANCE_LEVEL_MEDIUM_NV:	return "VK_OPTICAL_FLOW_PERFORMANCE_LEVEL_MEDIUM_NV";
 		case VK_OPTICAL_FLOW_PERFORMANCE_LEVEL_FAST_NV:		return "VK_OPTICAL_FLOW_PERFORMANCE_LEVEL_FAST_NV";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -4479,7 +4508,7 @@ const char* getOpticalFlowSessionBindingPointNVName (VkOpticalFlowSessionBinding
 		case VK_OPTICAL_FLOW_SESSION_BINDING_POINT_COST_NV:					return "VK_OPTICAL_FLOW_SESSION_BINDING_POINT_COST_NV";
 		case VK_OPTICAL_FLOW_SESSION_BINDING_POINT_BACKWARD_COST_NV:		return "VK_OPTICAL_FLOW_SESSION_BINDING_POINT_BACKWARD_COST_NV";
 		case VK_OPTICAL_FLOW_SESSION_BINDING_POINT_GLOBAL_FLOW_NV:			return "VK_OPTICAL_FLOW_SESSION_BINDING_POINT_GLOBAL_FLOW_NV";
-		default:															return DE_NULL;
+		default:															return nullptr;
 	}
 }
 
@@ -4516,7 +4545,7 @@ const char* getDeviceFaultAddressTypeEXTName (VkDeviceFaultAddressTypeEXT value)
 		case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_UNKNOWN_EXT:	return "VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_UNKNOWN_EXT";
 		case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_INVALID_EXT:	return "VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_INVALID_EXT";
 		case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_FAULT_EXT:	return "VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_FAULT_EXT";
-		default:															return DE_NULL;
+		default:															return nullptr;
 	}
 }
 
@@ -4554,7 +4583,7 @@ const char* getLayerSettingTypeEXTName (VkLayerSettingTypeEXT value)
 		case VK_LAYER_SETTING_TYPE_FLOAT32_EXT:	return "VK_LAYER_SETTING_TYPE_FLOAT32_EXT";
 		case VK_LAYER_SETTING_TYPE_FLOAT64_EXT:	return "VK_LAYER_SETTING_TYPE_FLOAT64_EXT";
 		case VK_LAYER_SETTING_TYPE_STRING_EXT:	return "VK_LAYER_SETTING_TYPE_STRING_EXT";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -4574,7 +4603,7 @@ const char* getLatencyMarkerNVName (VkLatencyMarkerNV value)
 		case VK_LATENCY_MARKER_OUT_OF_BAND_RENDERSUBMIT_END_NV:		return "VK_LATENCY_MARKER_OUT_OF_BAND_RENDERSUBMIT_END_NV";
 		case VK_LATENCY_MARKER_OUT_OF_BAND_PRESENT_START_NV:		return "VK_LATENCY_MARKER_OUT_OF_BAND_PRESENT_START_NV";
 		case VK_LATENCY_MARKER_OUT_OF_BAND_PRESENT_END_NV:			return "VK_LATENCY_MARKER_OUT_OF_BAND_PRESENT_END_NV";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -4584,7 +4613,7 @@ const char* getOutOfBandQueueTypeNVName (VkOutOfBandQueueTypeNV value)
 	{
 		case VK_OUT_OF_BAND_QUEUE_TYPE_RENDER_NV:	return "VK_OUT_OF_BAND_QUEUE_TYPE_RENDER_NV";
 		case VK_OUT_OF_BAND_QUEUE_TYPE_PRESENT_NV:	return "VK_OUT_OF_BAND_QUEUE_TYPE_PRESENT_NV";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -4610,6 +4639,7 @@ const char* getVendorIdName (VkVendorId value)
 {
 	switch (value)
 	{
+		case VK_VENDOR_ID_KHRONOS:	return "VK_VENDOR_ID_KHRONOS";
 		case VK_VENDOR_ID_VIV:		return "VK_VENDOR_ID_VIV";
 		case VK_VENDOR_ID_VSI:		return "VK_VENDOR_ID_VSI";
 		case VK_VENDOR_ID_KAZAN:	return "VK_VENDOR_ID_KAZAN";
@@ -4617,7 +4647,7 @@ const char* getVendorIdName (VkVendorId value)
 		case VK_VENDOR_ID_MESA:		return "VK_VENDOR_ID_MESA";
 		case VK_VENDOR_ID_POCL:		return "VK_VENDOR_ID_POCL";
 		case VK_VENDOR_ID_MOBILEYE:	return "VK_VENDOR_ID_MOBILEYE";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -4650,8 +4680,9 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_MESA_DOZEN:					return "VK_DRIVER_ID_MESA_DOZEN";
 		case VK_DRIVER_ID_MESA_NVK:						return "VK_DRIVER_ID_MESA_NVK";
 		case VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA:	return "VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA";
-		case VK_DRIVER_ID_MESA_AGXV:					return "VK_DRIVER_ID_MESA_AGXV";
-		default:										return DE_NULL;
+		case VK_DRIVER_ID_MESA_HONEYKRISP:				return "VK_DRIVER_ID_MESA_HONEYKRISP";
+		case VK_DRIVER_ID_RESERVED_27:					return "VK_DRIVER_ID_RESERVED_27";
+		default:										return nullptr;
 	}
 }
 
@@ -4671,7 +4702,7 @@ const char* getShadingRatePaletteEntryNVName (VkShadingRatePaletteEntryNV value)
 		case VK_SHADING_RATE_PALETTE_ENTRY_1_INVOCATION_PER_4X2_PIXELS_NV:	return "VK_SHADING_RATE_PALETTE_ENTRY_1_INVOCATION_PER_4X2_PIXELS_NV";
 		case VK_SHADING_RATE_PALETTE_ENTRY_1_INVOCATION_PER_2X4_PIXELS_NV:	return "VK_SHADING_RATE_PALETTE_ENTRY_1_INVOCATION_PER_2X4_PIXELS_NV";
 		case VK_SHADING_RATE_PALETTE_ENTRY_1_INVOCATION_PER_4X4_PIXELS_NV:	return "VK_SHADING_RATE_PALETTE_ENTRY_1_INVOCATION_PER_4X4_PIXELS_NV";
-		default:															return DE_NULL;
+		default:															return nullptr;
 	}
 }
 
@@ -4683,7 +4714,7 @@ const char* getCoarseSampleOrderTypeNVName (VkCoarseSampleOrderTypeNV value)
 		case VK_COARSE_SAMPLE_ORDER_TYPE_CUSTOM_NV:			return "VK_COARSE_SAMPLE_ORDER_TYPE_CUSTOM_NV";
 		case VK_COARSE_SAMPLE_ORDER_TYPE_PIXEL_MAJOR_NV:	return "VK_COARSE_SAMPLE_ORDER_TYPE_PIXEL_MAJOR_NV";
 		case VK_COARSE_SAMPLE_ORDER_TYPE_SAMPLE_MAJOR_NV:	return "VK_COARSE_SAMPLE_ORDER_TYPE_SAMPLE_MAJOR_NV";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -4695,7 +4726,7 @@ const char* getPipelineExecutableStatisticFormatKHRName (VkPipelineExecutableSta
 		case VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_INT64_KHR:		return "VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_INT64_KHR";
 		case VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_UINT64_KHR:	return "VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_UINT64_KHR";
 		case VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_FLOAT64_KHR:	return "VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_FLOAT64_KHR";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -4778,7 +4809,7 @@ const char* getQueryResultStatusKHRName (VkQueryResultStatusKHR value)
 		case VK_QUERY_RESULT_STATUS_ERROR_KHR:									return "VK_QUERY_RESULT_STATUS_ERROR_KHR";
 		case VK_QUERY_RESULT_STATUS_NOT_READY_KHR:								return "VK_QUERY_RESULT_STATUS_NOT_READY_KHR";
 		case VK_QUERY_RESULT_STATUS_COMPLETE_KHR:								return "VK_QUERY_RESULT_STATUS_COMPLETE_KHR";
-		default:																return DE_NULL;
+		default:																return nullptr;
 	}
 }
 
@@ -4849,7 +4880,7 @@ const char* getVideoEncodeTuningModeKHRName (VkVideoEncodeTuningModeKHR value)
 		case VK_VIDEO_ENCODE_TUNING_MODE_LOW_LATENCY_KHR:		return "VK_VIDEO_ENCODE_TUNING_MODE_LOW_LATENCY_KHR";
 		case VK_VIDEO_ENCODE_TUNING_MODE_ULTRA_LOW_LATENCY_KHR:	return "VK_VIDEO_ENCODE_TUNING_MODE_ULTRA_LOW_LATENCY_KHR";
 		case VK_VIDEO_ENCODE_TUNING_MODE_LOSSLESS_KHR:			return "VK_VIDEO_ENCODE_TUNING_MODE_LOSSLESS_KHR";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -5034,7 +5065,7 @@ const char* getAccelerationStructureMotionInstanceTypeNVName (VkAccelerationStru
 		case VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_STATIC_NV:			return "VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_STATIC_NV";
 		case VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_MATRIX_MOTION_NV:	return "VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_MATRIX_MOTION_NV";
 		case VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_SRT_MOTION_NV:		return "VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_SRT_MOTION_NV";
-		default:																return DE_NULL;
+		default:																return nullptr;
 	}
 }
 
@@ -5047,7 +5078,7 @@ const char* getdVideoH264ChromaFormatIdcName (StdVideoH264ChromaFormatIdc value)
 		case STD_VIDEO_H264_CHROMA_FORMAT_IDC_422:			return "STD_VIDEO_H264_CHROMA_FORMAT_IDC_422";
 		case STD_VIDEO_H264_CHROMA_FORMAT_IDC_444:			return "STD_VIDEO_H264_CHROMA_FORMAT_IDC_444";
 		case STD_VIDEO_H264_CHROMA_FORMAT_IDC_INVALID:		return "STD_VIDEO_H264_CHROMA_FORMAT_IDC_INVALID";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -5060,7 +5091,7 @@ const char* getdVideoH264ProfileIdcName (StdVideoH264ProfileIdc value)
 		case STD_VIDEO_H264_PROFILE_IDC_HIGH:					return "STD_VIDEO_H264_PROFILE_IDC_HIGH";
 		case STD_VIDEO_H264_PROFILE_IDC_HIGH_444_PREDICTIVE:	return "STD_VIDEO_H264_PROFILE_IDC_HIGH_444_PREDICTIVE";
 		case STD_VIDEO_H264_PROFILE_IDC_INVALID:				return "STD_VIDEO_H264_PROFILE_IDC_INVALID";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -5088,7 +5119,7 @@ const char* getdVideoH264LevelIdcName (StdVideoH264LevelIdc value)
 		case STD_VIDEO_H264_LEVEL_IDC_6_1:		return "STD_VIDEO_H264_LEVEL_IDC_6_1";
 		case STD_VIDEO_H264_LEVEL_IDC_6_2:		return "STD_VIDEO_H264_LEVEL_IDC_6_2";
 		case STD_VIDEO_H264_LEVEL_IDC_INVALID:	return "STD_VIDEO_H264_LEVEL_IDC_INVALID";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -5100,7 +5131,7 @@ const char* getdVideoH264PocTypeName (StdVideoH264PocType value)
 		case STD_VIDEO_H264_POC_TYPE_1:			return "STD_VIDEO_H264_POC_TYPE_1";
 		case STD_VIDEO_H264_POC_TYPE_2:			return "STD_VIDEO_H264_POC_TYPE_2";
 		case STD_VIDEO_H264_POC_TYPE_INVALID:	return "STD_VIDEO_H264_POC_TYPE_INVALID";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -5127,7 +5158,7 @@ const char* getdVideoH264AspectRatioIdcName (StdVideoH264AspectRatioIdc value)
 		case STD_VIDEO_H264_ASPECT_RATIO_IDC_2_1:			return "STD_VIDEO_H264_ASPECT_RATIO_IDC_2_1";
 		case STD_VIDEO_H264_ASPECT_RATIO_IDC_EXTENDED_SAR:	return "STD_VIDEO_H264_ASPECT_RATIO_IDC_EXTENDED_SAR";
 		case STD_VIDEO_H264_ASPECT_RATIO_IDC_INVALID:		return "STD_VIDEO_H264_ASPECT_RATIO_IDC_INVALID";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -5139,7 +5170,7 @@ const char* getdVideoH264WeightedBipredIdcName (StdVideoH264WeightedBipredIdc va
 		case STD_VIDEO_H264_WEIGHTED_BIPRED_IDC_EXPLICIT:	return "STD_VIDEO_H264_WEIGHTED_BIPRED_IDC_EXPLICIT";
 		case STD_VIDEO_H264_WEIGHTED_BIPRED_IDC_IMPLICIT:	return "STD_VIDEO_H264_WEIGHTED_BIPRED_IDC_IMPLICIT";
 		case STD_VIDEO_H264_WEIGHTED_BIPRED_IDC_INVALID:	return "STD_VIDEO_H264_WEIGHTED_BIPRED_IDC_INVALID";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -5152,7 +5183,7 @@ const char* getdVideoH264ModificationOfPicNumsIdcName (StdVideoH264ModificationO
 		case STD_VIDEO_H264_MODIFICATION_OF_PIC_NUMS_IDC_LONG_TERM:				return "STD_VIDEO_H264_MODIFICATION_OF_PIC_NUMS_IDC_LONG_TERM";
 		case STD_VIDEO_H264_MODIFICATION_OF_PIC_NUMS_IDC_END:					return "STD_VIDEO_H264_MODIFICATION_OF_PIC_NUMS_IDC_END";
 		case STD_VIDEO_H264_MODIFICATION_OF_PIC_NUMS_IDC_INVALID:				return "STD_VIDEO_H264_MODIFICATION_OF_PIC_NUMS_IDC_INVALID";
-		default:																return DE_NULL;
+		default:																return nullptr;
 	}
 }
 
@@ -5168,7 +5199,7 @@ const char* getdVideoH264MemMgmtControlOpName (StdVideoH264MemMgmtControlOp valu
 		case STD_VIDEO_H264_MEM_MGMT_CONTROL_OP_UNMARK_ALL:					return "STD_VIDEO_H264_MEM_MGMT_CONTROL_OP_UNMARK_ALL";
 		case STD_VIDEO_H264_MEM_MGMT_CONTROL_OP_MARK_CURRENT_AS_LONG_TERM:	return "STD_VIDEO_H264_MEM_MGMT_CONTROL_OP_MARK_CURRENT_AS_LONG_TERM";
 		case STD_VIDEO_H264_MEM_MGMT_CONTROL_OP_INVALID:					return "STD_VIDEO_H264_MEM_MGMT_CONTROL_OP_INVALID";
-		default:															return DE_NULL;
+		default:															return nullptr;
 	}
 }
 
@@ -5180,7 +5211,7 @@ const char* getdVideoH264CabacInitIdcName (StdVideoH264CabacInitIdc value)
 		case STD_VIDEO_H264_CABAC_INIT_IDC_1:		return "STD_VIDEO_H264_CABAC_INIT_IDC_1";
 		case STD_VIDEO_H264_CABAC_INIT_IDC_2:		return "STD_VIDEO_H264_CABAC_INIT_IDC_2";
 		case STD_VIDEO_H264_CABAC_INIT_IDC_INVALID:	return "STD_VIDEO_H264_CABAC_INIT_IDC_INVALID";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -5192,7 +5223,7 @@ const char* getdVideoH264DisableDeblockingFilterIdcName (StdVideoH264DisableDebl
 		case STD_VIDEO_H264_DISABLE_DEBLOCKING_FILTER_IDC_ENABLED:	return "STD_VIDEO_H264_DISABLE_DEBLOCKING_FILTER_IDC_ENABLED";
 		case STD_VIDEO_H264_DISABLE_DEBLOCKING_FILTER_IDC_PARTIAL:	return "STD_VIDEO_H264_DISABLE_DEBLOCKING_FILTER_IDC_PARTIAL";
 		case STD_VIDEO_H264_DISABLE_DEBLOCKING_FILTER_IDC_INVALID:	return "STD_VIDEO_H264_DISABLE_DEBLOCKING_FILTER_IDC_INVALID";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -5204,7 +5235,7 @@ const char* getdVideoH264SliceTypeName (StdVideoH264SliceType value)
 		case STD_VIDEO_H264_SLICE_TYPE_B:		return "STD_VIDEO_H264_SLICE_TYPE_B";
 		case STD_VIDEO_H264_SLICE_TYPE_I:		return "STD_VIDEO_H264_SLICE_TYPE_I";
 		case STD_VIDEO_H264_SLICE_TYPE_INVALID:	return "STD_VIDEO_H264_SLICE_TYPE_INVALID";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -5217,7 +5248,7 @@ const char* getdVideoH264PictureTypeName (StdVideoH264PictureType value)
 		case STD_VIDEO_H264_PICTURE_TYPE_I:			return "STD_VIDEO_H264_PICTURE_TYPE_I";
 		case STD_VIDEO_H264_PICTURE_TYPE_IDR:		return "STD_VIDEO_H264_PICTURE_TYPE_IDR";
 		case STD_VIDEO_H264_PICTURE_TYPE_INVALID:	return "STD_VIDEO_H264_PICTURE_TYPE_INVALID";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -5233,7 +5264,7 @@ const char* getdVideoH264NonVclNaluTypeName (StdVideoH264NonVclNaluType value)
 		case STD_VIDEO_H264_NON_VCL_NALU_TYPE_END_OF_STREAM:	return "STD_VIDEO_H264_NON_VCL_NALU_TYPE_END_OF_STREAM";
 		case STD_VIDEO_H264_NON_VCL_NALU_TYPE_PRECODED:			return "STD_VIDEO_H264_NON_VCL_NALU_TYPE_PRECODED";
 		case STD_VIDEO_H264_NON_VCL_NALU_TYPE_INVALID:			return "STD_VIDEO_H264_NON_VCL_NALU_TYPE_INVALID";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -5244,7 +5275,7 @@ const char* getdVideoDecodeH264FieldOrderCountName (StdVideoDecodeH264FieldOrder
 		case STD_VIDEO_DECODE_H264_FIELD_ORDER_COUNT_TOP:		return "STD_VIDEO_DECODE_H264_FIELD_ORDER_COUNT_TOP";
 		case STD_VIDEO_DECODE_H264_FIELD_ORDER_COUNT_BOTTOM:	return "STD_VIDEO_DECODE_H264_FIELD_ORDER_COUNT_BOTTOM";
 		case STD_VIDEO_DECODE_H264_FIELD_ORDER_COUNT_INVALID:	return "STD_VIDEO_DECODE_H264_FIELD_ORDER_COUNT_INVALID";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -5257,7 +5288,7 @@ const char* getdVideoH265ChromaFormatIdcName (StdVideoH265ChromaFormatIdc value)
 		case STD_VIDEO_H265_CHROMA_FORMAT_IDC_422:			return "STD_VIDEO_H265_CHROMA_FORMAT_IDC_422";
 		case STD_VIDEO_H265_CHROMA_FORMAT_IDC_444:			return "STD_VIDEO_H265_CHROMA_FORMAT_IDC_444";
 		case STD_VIDEO_H265_CHROMA_FORMAT_IDC_INVALID:		return "STD_VIDEO_H265_CHROMA_FORMAT_IDC_INVALID";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -5271,7 +5302,7 @@ const char* getdVideoH265ProfileIdcName (StdVideoH265ProfileIdc value)
 		case STD_VIDEO_H265_PROFILE_IDC_FORMAT_RANGE_EXTENSIONS:	return "STD_VIDEO_H265_PROFILE_IDC_FORMAT_RANGE_EXTENSIONS";
 		case STD_VIDEO_H265_PROFILE_IDC_SCC_EXTENSIONS:				return "STD_VIDEO_H265_PROFILE_IDC_SCC_EXTENSIONS";
 		case STD_VIDEO_H265_PROFILE_IDC_INVALID:					return "STD_VIDEO_H265_PROFILE_IDC_INVALID";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -5293,7 +5324,7 @@ const char* getdVideoH265LevelIdcName (StdVideoH265LevelIdc value)
 		case STD_VIDEO_H265_LEVEL_IDC_6_1:		return "STD_VIDEO_H265_LEVEL_IDC_6_1";
 		case STD_VIDEO_H265_LEVEL_IDC_6_2:		return "STD_VIDEO_H265_LEVEL_IDC_6_2";
 		case STD_VIDEO_H265_LEVEL_IDC_INVALID:	return "STD_VIDEO_H265_LEVEL_IDC_INVALID";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -5305,7 +5336,7 @@ const char* getdVideoH265SliceTypeName (StdVideoH265SliceType value)
 		case STD_VIDEO_H265_SLICE_TYPE_P:		return "STD_VIDEO_H265_SLICE_TYPE_P";
 		case STD_VIDEO_H265_SLICE_TYPE_I:		return "STD_VIDEO_H265_SLICE_TYPE_I";
 		case STD_VIDEO_H265_SLICE_TYPE_INVALID:	return "STD_VIDEO_H265_SLICE_TYPE_INVALID";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -5318,7 +5349,7 @@ const char* getdVideoH265PictureTypeName (StdVideoH265PictureType value)
 		case STD_VIDEO_H265_PICTURE_TYPE_I:			return "STD_VIDEO_H265_PICTURE_TYPE_I";
 		case STD_VIDEO_H265_PICTURE_TYPE_IDR:		return "STD_VIDEO_H265_PICTURE_TYPE_IDR";
 		case STD_VIDEO_H265_PICTURE_TYPE_INVALID:	return "STD_VIDEO_H265_PICTURE_TYPE_INVALID";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -5345,7 +5376,7 @@ const char* getdVideoH265AspectRatioIdcName (StdVideoH265AspectRatioIdc value)
 		case STD_VIDEO_H265_ASPECT_RATIO_IDC_2_1:			return "STD_VIDEO_H265_ASPECT_RATIO_IDC_2_1";
 		case STD_VIDEO_H265_ASPECT_RATIO_IDC_EXTENDED_SAR:	return "STD_VIDEO_H265_ASPECT_RATIO_IDC_EXTENDED_SAR";
 		case STD_VIDEO_H265_ASPECT_RATIO_IDC_INVALID:		return "STD_VIDEO_H265_ASPECT_RATIO_IDC_INVALID";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -5357,7 +5388,7 @@ const char* getdVideoAV1ProfileName (StdVideoAV1Profile value)
 		case STD_VIDEO_AV1_PROFILE_HIGH:			return "STD_VIDEO_AV1_PROFILE_HIGH";
 		case STD_VIDEO_AV1_PROFILE_PROFESSIONAL:	return "STD_VIDEO_AV1_PROFILE_PROFESSIONAL";
 		case STD_VIDEO_AV1_PROFILE_INVALID:			return "STD_VIDEO_AV1_PROFILE_INVALID";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -5390,7 +5421,7 @@ const char* getdVideoAV1LevelName (StdVideoAV1Level value)
 		case STD_VIDEO_AV1_LEVEL_7_2:		return "STD_VIDEO_AV1_LEVEL_7_2";
 		case STD_VIDEO_AV1_LEVEL_7_3:		return "STD_VIDEO_AV1_LEVEL_7_3";
 		case STD_VIDEO_AV1_LEVEL_INVALID:	return "STD_VIDEO_AV1_LEVEL_INVALID";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -5403,7 +5434,7 @@ const char* getdVideoAV1FrameTypeName (StdVideoAV1FrameType value)
 		case STD_VIDEO_AV1_FRAME_TYPE_INTRA_ONLY:	return "STD_VIDEO_AV1_FRAME_TYPE_INTRA_ONLY";
 		case STD_VIDEO_AV1_FRAME_TYPE_SWITCH:		return "STD_VIDEO_AV1_FRAME_TYPE_SWITCH";
 		case STD_VIDEO_AV1_FRAME_TYPE_INVALID:		return "STD_VIDEO_AV1_FRAME_TYPE_INVALID";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -5420,7 +5451,7 @@ const char* getdVideoAV1ReferenceNameName (StdVideoAV1ReferenceName value)
 		case STD_VIDEO_AV1_REFERENCE_NAME_ALTREF2_FRAME:	return "STD_VIDEO_AV1_REFERENCE_NAME_ALTREF2_FRAME";
 		case STD_VIDEO_AV1_REFERENCE_NAME_ALTREF_FRAME:		return "STD_VIDEO_AV1_REFERENCE_NAME_ALTREF_FRAME";
 		case STD_VIDEO_AV1_REFERENCE_NAME_INVALID:			return "STD_VIDEO_AV1_REFERENCE_NAME_INVALID";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -5434,7 +5465,7 @@ const char* getdVideoAV1InterpolationFilterName (StdVideoAV1InterpolationFilter 
 		case STD_VIDEO_AV1_INTERPOLATION_FILTER_BILINEAR:			return "STD_VIDEO_AV1_INTERPOLATION_FILTER_BILINEAR";
 		case STD_VIDEO_AV1_INTERPOLATION_FILTER_SWITCHABLE:			return "STD_VIDEO_AV1_INTERPOLATION_FILTER_SWITCHABLE";
 		case STD_VIDEO_AV1_INTERPOLATION_FILTER_INVALID:			return "STD_VIDEO_AV1_INTERPOLATION_FILTER_INVALID";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -5446,7 +5477,7 @@ const char* getdVideoAV1TxModeName (StdVideoAV1TxMode value)
 		case STD_VIDEO_AV1_TX_MODE_LARGEST:		return "STD_VIDEO_AV1_TX_MODE_LARGEST";
 		case STD_VIDEO_AV1_TX_MODE_SELECT:		return "STD_VIDEO_AV1_TX_MODE_SELECT";
 		case STD_VIDEO_AV1_TX_MODE_INVALID:		return "STD_VIDEO_AV1_TX_MODE_INVALID";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -5459,7 +5490,7 @@ const char* getdVideoAV1FrameRestorationTypeName (StdVideoAV1FrameRestorationTyp
 		case STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_SGRPROJ:		return "STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_SGRPROJ";
 		case STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_SWITCHABLE:	return "STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_SWITCHABLE";
 		case STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_INVALID:		return "STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_INVALID";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -5480,7 +5511,7 @@ const char* getdVideoAV1ColorPrimariesName (StdVideoAV1ColorPrimaries value)
 		case STD_VIDEO_AV1_COLOR_PRIMARIES_SMPTE_432:		return "STD_VIDEO_AV1_COLOR_PRIMARIES_SMPTE_432";
 		case STD_VIDEO_AV1_COLOR_PRIMARIES_EBU_3213:		return "STD_VIDEO_AV1_COLOR_PRIMARIES_EBU_3213";
 		case STD_VIDEO_AV1_COLOR_PRIMARIES_INVALID:			return "STD_VIDEO_AV1_COLOR_PRIMARIES_INVALID";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -5508,7 +5539,7 @@ const char* getdVideoAV1TransferCharacteristicsName (StdVideoAV1TransferCharacte
 		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_SMPTE_428:		return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_SMPTE_428";
 		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_HLG:			return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_HLG";
 		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_INVALID:		return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_INVALID";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -5532,7 +5563,7 @@ const char* getdVideoAV1MatrixCoefficientsName (StdVideoAV1MatrixCoefficients va
 		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_CHROMAT_CL:	return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_CHROMAT_CL";
 		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_ICTCP:		return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_ICTCP";
 		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_INVALID:		return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_INVALID";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -5545,303 +5576,303 @@ const char* getdVideoAV1ChromaSamplePositionName (StdVideoAV1ChromaSamplePositio
 		case STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_COLOCATED:	return "STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_COLOCATED";
 		case STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_RESERVED:		return "STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_RESERVED";
 		case STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_INVALID:		return "STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_INVALID";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
 tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineDynamicStateCreateFlagsStr (VkPipelineDynamicStateCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineMultisampleStateCreateFlagsStr (VkPipelineMultisampleStateCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineRasterizationStateCreateFlagsStr (VkPipelineRasterizationStateCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineViewportStateCreateFlagsStr (VkPipelineViewportStateCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineTessellationStateCreateFlagsStr (VkPipelineTessellationStateCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineInputAssemblyStateCreateFlagsStr (VkPipelineInputAssemblyStateCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineVertexInputStateCreateFlagsStr (VkPipelineVertexInputStateCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getBufferViewCreateFlagsStr (VkBufferViewCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDeviceCreateFlagsStr (VkDeviceCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getSemaphoreCreateFlagsStr (VkSemaphoreCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getShaderModuleCreateFlagsStr (VkShaderModuleCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDescriptorPoolResetFlagsStr (VkDescriptorPoolResetFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPrivateDataSlotCreateFlagsStr (VkPrivateDataSlotCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDescriptorUpdateTemplateCreateFlagsStr (VkDescriptorUpdateTemplateCreateFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getAcquireProfilingLockFlagsKHRStr (VkAcquireProfilingLockFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineCompilerControlFlagsAMDStr (VkPipelineCompilerControlFlagsAMD value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getShaderCorePropertiesFlagsAMDStr (VkShaderCorePropertiesFlagsAMD value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getRefreshObjectFlagsKHRStr (VkRefreshObjectFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getAccelerationStructureMotionInfoFlagsNVStr (VkAccelerationStructureMotionInfoFlagsNV value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getAccelerationStructureMotionInstanceFlagsNVStr (VkAccelerationStructureMotionInstanceFlagsNV value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDirectDriverLoadingFlagsLUNARGStr (VkDirectDriverLoadingFlagsLUNARG value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDisplayModeCreateFlagsKHRStr (VkDisplayModeCreateFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDisplaySurfaceCreateFlagsKHRStr (VkDisplaySurfaceCreateFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getAndroidSurfaceCreateFlagsKHRStr (VkAndroidSurfaceCreateFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getViSurfaceCreateFlagsNNStr (VkViSurfaceCreateFlagsNN value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getWaylandSurfaceCreateFlagsKHRStr (VkWaylandSurfaceCreateFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getWin32SurfaceCreateFlagsKHRStr (VkWin32SurfaceCreateFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getXlibSurfaceCreateFlagsKHRStr (VkXlibSurfaceCreateFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getXcbSurfaceCreateFlagsKHRStr (VkXcbSurfaceCreateFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDirectFBSurfaceCreateFlagsEXTStr (VkDirectFBSurfaceCreateFlagsEXT value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getIOSSurfaceCreateFlagsMVKStr (VkIOSSurfaceCreateFlagsMVK value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getMacOSSurfaceCreateFlagsMVKStr (VkMacOSSurfaceCreateFlagsMVK value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getMetalSurfaceCreateFlagsEXTStr (VkMetalSurfaceCreateFlagsEXT value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getImagePipeSurfaceCreateFlagsFUCHSIAStr (VkImagePipeSurfaceCreateFlagsFUCHSIA value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getStreamDescriptorSurfaceCreateFlagsGGPStr (VkStreamDescriptorSurfaceCreateFlagsGGP value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getHeadlessSurfaceCreateFlagsEXTStr (VkHeadlessSurfaceCreateFlagsEXT value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getScreenSurfaceCreateFlagsQNXStr (VkScreenSurfaceCreateFlagsQNX value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getCommandPoolTrimFlagsStr (VkCommandPoolTrimFlags value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineViewportSwizzleStateCreateFlagsNVStr (VkPipelineViewportSwizzleStateCreateFlagsNV value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineDiscardRectangleStateCreateFlagsEXTStr (VkPipelineDiscardRectangleStateCreateFlagsEXT value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineCoverageToColorStateCreateFlagsNVStr (VkPipelineCoverageToColorStateCreateFlagsNV value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineCoverageModulationStateCreateFlagsNVStr (VkPipelineCoverageModulationStateCreateFlagsNV value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineCoverageReductionStateCreateFlagsNVStr (VkPipelineCoverageReductionStateCreateFlagsNV value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getValidationCacheCreateFlagsEXTStr (VkValidationCacheCreateFlagsEXT value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDebugUtilsMessengerCreateFlagsEXTStr (VkDebugUtilsMessengerCreateFlagsEXT value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDebugUtilsMessengerCallbackDataFlagsEXTStr (VkDebugUtilsMessengerCallbackDataFlagsEXT value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDeviceMemoryReportFlagsEXTStr (VkDeviceMemoryReportFlagsEXT value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineRasterizationConservativeStateCreateFlagsEXTStr (VkPipelineRasterizationConservativeStateCreateFlagsEXT value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineRasterizationStateStreamCreateFlagsEXTStr (VkPipelineRasterizationStateStreamCreateFlagsEXT value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getPipelineRasterizationDepthClipStateCreateFlagsEXTStr (VkPipelineRasterizationDepthClipStateCreateFlagsEXT value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getSwapchainImageUsageFlagsANDROIDStr (VkSwapchainImageUsageFlagsANDROID value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getImageFormatConstraintsFlagsFUCHSIAStr (VkImageFormatConstraintsFlagsFUCHSIA value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getVideoSessionParametersCreateFlagsKHRStr (VkVideoSessionParametersCreateFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getVideoBeginCodingFlagsKHRStr (VkVideoBeginCodingFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getVideoEndCodingFlagsKHRStr (VkVideoEndCodingFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getVideoDecodeFlagsKHRStr (VkVideoDecodeFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getVideoEncodeFlagsKHRStr (VkVideoEncodeFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getVideoEncodeRateControlFlagsKHRStr (VkVideoEncodeRateControlFlagsKHR value)
 {
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 std::ostream& operator<< (std::ostream& s, const VkBaseOutStructure& value)
@@ -6930,9 +6961,20 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryCreateInfoKHR& 
 	s << "VkPipelineBinaryCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tpKey = " << value.pKey << '\n';
-	s << "\tpDataInfo = " << value.pDataInfo << '\n';
+	s << "\tpKeysAndDataInfo = " << value.pKeysAndDataInfo << '\n';
 	s << "\tpipeline = " << value.pipeline << '\n';
+	s << "\tpPipelineCreateInfo = " << value.pPipelineCreateInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryHandlesInfoKHR& value)
+{
+	s << "VkPipelineBinaryHandlesInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipelineBinaryCount = " << value.pipelineBinaryCount << '\n';
+	s << "\tpPipelineBinaries = " << value.pPipelineBinaries << '\n';
 	s << '}';
 	return s;
 }
@@ -6942,6 +6984,16 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryDataKHR& value)
 	s << "VkPipelineBinaryDataKHR = {\n";
 	s << "\tdataSize = " << value.dataSize << '\n';
 	s << "\tpData = " << value.pData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryKeysAndDataKHR& value)
+{
+	s << "VkPipelineBinaryKeysAndDataKHR = {\n";
+	s << "\tbinaryCount = " << value.binaryCount << '\n';
+	s << "\tpPipelineBinaryKeys = " << value.pPipelineBinaryKeys << '\n';
+	s << "\tpPipelineBinaryData = " << value.pPipelineBinaryData << '\n';
 	s << '}';
 	return s;
 }
@@ -6963,7 +7015,6 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryInfoKHR& value)
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tbinaryCount = " << value.binaryCount << '\n';
-	s << "\tpPipelineBinaryKeys = " << value.pPipelineBinaryKeys << '\n';
 	s << "\tpPipelineBinaries = " << value.pPipelineBinaries << '\n';
 	s << '}';
 	return s;
@@ -6989,9 +7040,9 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryDataInfoKHR& va
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryKeysCreateInfoKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkPipelineCreateInfoKHR& value)
 {
-	s << "VkPipelineBinaryKeysCreateInfoKHR = {\n";
+	s << "VkPipelineCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << '}';
@@ -10161,6 +10212,67 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance6Pro
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance7FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceMaintenance7FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaintenance7 = " << value.maintenance7 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance7PropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceMaintenance7PropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trobustFragmentShadingRateAttachmentAccess = " << value.robustFragmentShadingRateAttachmentAccess << '\n';
+	s << "\tseparateDepthStencilAttachmentAccess = " << value.separateDepthStencilAttachmentAccess << '\n';
+	s << "\tmaxDescriptorSetTotalUniformBuffersDynamic = " << value.maxDescriptorSetTotalUniformBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetTotalStorageBuffersDynamic = " << value.maxDescriptorSetTotalStorageBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetTotalBuffersDynamic = " << value.maxDescriptorSetTotalBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindTotalUniformBuffersDynamic = " << value.maxDescriptorSetUpdateAfterBindTotalUniformBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindTotalStorageBuffersDynamic = " << value.maxDescriptorSetUpdateAfterBindTotalStorageBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindTotalBuffersDynamic = " << value.maxDescriptorSetUpdateAfterBindTotalBuffersDynamic << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesListKHR& value)
+{
+	s << "VkPhysicalDeviceLayeredApiPropertiesListKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlayeredApiCount = " << value.layeredApiCount << '\n';
+	s << "\tpLayeredApis = " << value.pLayeredApis << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceLayeredApiPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvendorID = " << value.vendorID << '\n';
+	s << "\tdeviceID = " << value.deviceID << '\n';
+	s << "\tlayeredAPI = " << value.layeredAPI << '\n';
+	s << "\tdeviceName = " << (const char*)value.deviceName << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLayeredApiVulkanPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceLayeredApiVulkanPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tproperties = " << value.properties << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkRenderingAreaInfoKHR& value)
 {
 	s << "VkRenderingAreaInfoKHR = {\n";
@@ -12418,6 +12530,16 @@ std::ostream& operator<< (std::ostream& s, const VkPerformanceQuerySubmitInfoKHR
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPerformanceQueryReservationInfoKHR& value)
+{
+	s << "VkPerformanceQueryReservationInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxPerformanceQueriesPerPool = " << value.maxPerformanceQueriesPerPool << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkHeadlessSurfaceCreateInfoEXT& value)
 {
 	s << "VkHeadlessSurfaceCreateInfoEXT = {\n";
@@ -14089,6 +14211,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAttachmentFeedb
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlegacyVertexAttributes = " << value.legacyVertexAttributes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tnativeUnalignedPerformance = " << value.nativeUnalignedPerformance << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT = {\n";
@@ -14155,6 +14297,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalMemoryR
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\texternalMemoryRDMA = " << value.externalMemoryRDMA << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderRelaxedExtendedInstruction = " << value.shaderRelaxedExtendedInstruction << '\n';
 	s << '}';
 	return s;
 }
@@ -16491,7 +16643,6 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePipelineBinaryP
 	s << "\tpipelineBinaryPrefersInternalCache = " << value.pipelineBinaryPrefersInternalCache << '\n';
 	s << "\tpipelineBinaryPrecompiledInternalCache = " << value.pipelineBinaryPrecompiledInternalCache << '\n';
 	s << "\tpipelineBinaryCompressedData = " << value.pipelineBinaryCompressedData << '\n';
-	s << "\tpipelineBinaryUniqueBinaryKeyPairs = " << value.pipelineBinaryUniqueBinaryKeyPairs << '\n';
 	s << '}';
 	return s;
 }
@@ -18670,6 +18821,46 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRawAccessChains
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderRawAccessChains = " << value.shaderRawAccessChains << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageAlignmentControlFeaturesMESA& value)
+{
+	s << "VkPhysicalDeviceImageAlignmentControlFeaturesMESA = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageAlignmentControl = " << value.imageAlignmentControl << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageAlignmentControlPropertiesMESA& value)
+{
+	s << "VkPhysicalDeviceImageAlignmentControlPropertiesMESA = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsupportedImageAlignmentMask = " << value.supportedImageAlignmentMask << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageAlignmentControlCreateInfoMESA& value)
+{
+	s << "VkImageAlignmentControlCreateInfoMESA = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaximumRequestedAlignment = " << value.maximumRequestedAlignment << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderReplicatedComposites = " << value.shaderReplicatedComposites << '\n';
 	s << '}';
 	return s;
 }

@@ -932,7 +932,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
         DE_NULL,                                  // const void* pNext;
         (VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags flags;
-        DE_NULL,                                  // VkImage image;
+        VK_NULL_HANDLE,                           // VkImage image;
         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
         VK_FORMAT_R32_UINT,                       // VkFormat format;
         {
@@ -958,7 +958,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
     imageViewCreateInfo.image = **image;
     imageView                 = createImageView(vk, device, &imageViewCreateInfo, NULL);
 
-    VkDescriptorImageInfo imageInfo   = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+    VkDescriptorImageInfo imageInfo   = makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
     VkDescriptorBufferInfo bufferInfo = makeDescriptorBufferInfo(**buffers[0], 0, align);
 
     VkWriteDescriptorSet w = {
@@ -1012,7 +1012,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
             (vk::VkPipeline)0, // basePipelineHandle
             0u,                // basePipelineIndex
         };
-        pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+        pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
     }
 #if ENABLE_RAYTRACING
     else if (m_data.stage == STAGE_RAYGEN)
@@ -1221,11 +1221,11 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
             pipelineLayout.get(),          // VkPipelineLayout layout;
             renderPass.get(),              // VkRenderPass renderPass;
             0u,                            // uint32_t subpass;
-            DE_NULL,                       // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                // VkPipeline basePipelineHandle;
             0                              // int basePipelineIndex;
         };
 
-        pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+        pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
     m_context.getTestContext().touchWatchdogAndEnableIntervalTimeLimit();

@@ -700,7 +700,7 @@ tcu::TestStatus Image2DView3DImageInstance::iterate(void)
         if (useSampler)
         {
             const VkDescriptorImageInfo resultImageDescriptorInfo =
-                makeDescriptorImageInfo(DE_NULL, *resultImageView, VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *resultImageView, VK_IMAGE_LAYOUT_GENERAL);
             descriptorSetUpdateBuilder.writeSingle(*descriptorSet,
                                                    DescriptorSetUpdateBuilder::Location::binding(bindingIdx),
                                                    VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &resultImageDescriptorInfo);

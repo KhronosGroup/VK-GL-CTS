@@ -134,7 +134,7 @@ struct CaseDef
     bool useMaintenance5;
 };
 
-const uint32_t DEFAULT_UINT_CLEAR_VALUE  = 0x8000;
+const uint32_t DEFAULT_UINT_CLEAR_VALUE  = 0x7F000000;
 const uint32_t FIXED_POINT_DIVISOR       = 1024 * 1024;
 const uint32_t FIXED_POINT_ALLOWED_ERROR = 4;
 
@@ -991,12 +991,26 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
                                         "  ivec4 c = ivec4(r,0,0,1);\n"
                                         "  imageStore(result, p, c);\n";
 
+        const std::string updateImageConcurrentlyMin = "  ivec3 p = ivec3(gl_LaunchIDEXT);\n"
+                                                       "  int   r = int(" +
+                                                       de::toString(FIXED_POINT_DIVISOR) + ".0f * gl_" +
+                                                       std::string(m_data.name) +
+                                                       ");\n"
+                                                       "  imageAtomicMin(result, p, r);\n";
+
         switch (m_data.stage)
         {
         case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
         {
             programCollection.glslSources.add("rgen")
                 << glu::RaygenSource(updateRayTracingGLSL(raygenShader)) << buildOptions;
+
+            // The anyhit shader is launched multiple times for the same launch ID. To
+            // avoid write-after-write hazard on result image data and because intesection shader
+            // execution is not ordered, we need to use atomic operation to get proper (smallest)
+            // TMa result.
+            auto anyHitShaderUpdateImage =
+                (m_data.id == TEST_ID_RAY_T_MAX_EXT ? updateImageConcurrentlyMin : updateImage);
 
             {
                 std::stringstream css;
@@ -1008,7 +1022,7 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
                        "\n"
                        "void main()\n"
                        "{\n"
-                    << updateImage << "}\n";
+                    << anyHitShaderUpdateImage << "}\n";
 
                 programCollection.glslSources.add("ahit")
                     << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
@@ -1065,6 +1079,12 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
                 << glu::RaygenSource(updateRayTracingGLSL(raygenShader)) << buildOptions;
 
             {
+                // The intersection shader is launched multiple times for the same launch ID. To
+                // avoid write-after-write hazard on result image data and because intesection shader
+                // execution is not ordered, we need to use atomic operation to get proper (smallest)
+                // TMa result.
+                auto intersectionShaderUpdateImage =
+                    (m_data.id == TEST_ID_RAY_T_MAX_EXT ? updateImageConcurrentlyMin : updateImage);
                 std::stringstream css;
                 css << "#version 460 core\n"
                        "#extension GL_EXT_ray_tracing : require\n"
@@ -1073,7 +1093,7 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
                        "\n"
                        "void main()\n"
                        "{\n"
-                    << updateImage
+                    << intersectionShaderUpdateImage
                     << "\n"
                        "  float a = float(gl_LaunchIDEXT.x) / gl_LaunchSizeEXT.x;\n"
                        "  float b = 1.0f + float(gl_LaunchIDEXT.y) / gl_LaunchSizeEXT.y;\n"
@@ -1830,7 +1850,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuiltinLaunchTestInstance::runTest(void)
         new BufferWithMemory(vkd, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible));
 
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     const VkImageMemoryBarrier preImageBarrier =
         makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,

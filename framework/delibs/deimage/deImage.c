@@ -46,7 +46,7 @@ deImage *deImage_create(int width, int height, deImageFormat format)
     deImage *image = DE_NEW(deImage);
     int bpp        = deImageFormat_getBytesPerPixel(format);
     if (!image)
-        return DE_NULL;
+        return NULL;
 
     image->width  = width;
     image->height = height;
@@ -55,7 +55,7 @@ deImage *deImage_create(int width, int height, deImageFormat format)
     if (!image->pixels)
     {
         deFree(image);
-        return DE_NULL;
+        return NULL;
     }
     memset(image->pixels, 0, width * height * bpp);
 
@@ -105,7 +105,7 @@ deImage *deImage_convertFormat(const deImage *image, deImageFormat format)
     int height         = image->height;
     deImage *converted = deImage_create(width, height, format);
     if (!converted)
-        return DE_NULL;
+        return NULL;
 
     if (format == image->format)
         memcpy(converted->pixels, image->pixels, width * height * deImageFormat_getBytesPerPixel(format));

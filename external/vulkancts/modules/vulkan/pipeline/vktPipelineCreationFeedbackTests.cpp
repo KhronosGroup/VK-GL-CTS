@@ -540,8 +540,6 @@ GraphicsTestInstance::GraphicsTestInstance(Context &context, const TestParam *pa
 
         if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
         {
-            const auto &pipelineCreateInfo = m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipelineCreateInfo();
-            m_binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
             m_binaries->createPipelineBinariesFromPipeline(m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipeline());
             VkPipelineBinaryInfoKHR pipelineBinaryInfo = m_binaries->preparePipelineBinaryInfo();
 
@@ -588,27 +586,10 @@ GraphicsTestInstance::GraphicsTestInstance(Context &context, const TestParam *pa
         }
         else
         {
-            // grab keys from all pipeline parts separately
-            uint32_t startingKey[5];
-            for (uint32_t idx = 0; idx < 4u; ++idx)
-            {
-                startingKey[idx] = static_cast<uint32_t>(m_binaries->getKeyCount());
-                const auto &pipelinePartCreateInfo =
-                    m_pipeline[PIPELINE_NDX_NO_BLOBS].getPartialPipelineCreateInfo(idx);
-                m_binaries->getPipelineBinaryKeys(&pipelinePartCreateInfo, false);
-            }
-            // add element to avoid if statement in next loop
-            startingKey[4] = static_cast<uint32_t>(m_binaries->getKeyCount());
-
             m_binaries->createPipelineBinariesFromPipeline(m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipeline());
 
             // use proper keys for each pipeline part
             VkPipelineBinaryInfoKHR pipelinePartBinaryInfo[4];
-            for (uint32_t idx = 0; idx < 4; ++idx)
-            {
-                uint32_t binaryCount        = startingKey[idx + 1] - startingKey[idx];
-                pipelinePartBinaryInfo[idx] = m_binaries->preparePipelineBinaryInfo(startingKey[idx], binaryCount);
-            }
 
             // Create derivative pipeline that also uses binaries
             VkPipeline basePipeline = (m_pipeline[PIPELINE_NDX_NO_BLOBS].wasBuild()) ?
@@ -1224,7 +1205,7 @@ void ComputeTestInstance::buildPipeline(const TestParam *param, uint32_t ndx)
         {
             // create pipeline
             vk.createComputePipelines(vkDevice, *m_cache, 1u, &pipelineCreateInfo, DE_NULL, &m_pipeline[ndx]);
-            m_binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
+
             // prepare pipeline binaries
             m_binaries->createPipelineBinariesFromPipeline(m_pipeline[ndx]);
         }

@@ -1182,9 +1182,9 @@ tcu::TestStatus MeshShaderSyncInstance::iterate(void)
         {
             const auto &stage = mandatoryStages.at(pipelineIdx);
 
-            VkShaderModule taskModule = DE_NULL;
-            VkShaderModule meshModule = DE_NULL;
-            VkShaderModule fragModule = DE_NULL;
+            VkShaderModule taskModule = VK_NULL_HANDLE;
+            VkShaderModule meshModule = VK_NULL_HANDLE;
+            VkShaderModule fragModule = VK_NULL_HANDLE;
 
             const bool lastSubpass    = (pipelineIdx == pipelineCount - 1u);
             const auto pipelineStages = subpassStages(stage, lastSubpass);

@@ -189,7 +189,7 @@ void DrawTestsBaseClass::initPipeline(const vk::VkDevice device)
         pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-    m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
+    m_pipeline = vk::createGraphicsPipeline(m_vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 void DrawTestsBaseClass::preRenderBarriers(void)

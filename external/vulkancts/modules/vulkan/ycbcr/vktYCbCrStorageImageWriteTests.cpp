@@ -328,7 +328,7 @@ tcu::TestStatus testStorageImageWrite(Context &context, TestParameters params)
                                               subresourceRange, transferByViews ? &imageViewUsageCreateInfo : DE_NULL));
             imageViews.push_back(imageView);
             const VkDescriptorImageInfo imageInfo =
-                makeDescriptorImageInfo(DE_NULL, imageView->get(), VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, imageView->get(), VK_IMAGE_LAYOUT_GENERAL);
 
             DescriptorSetUpdateBuilder()
                 .writeSingle(descriptorSet->get(), DescriptorSetUpdateBuilder::Location::binding(0u),

@@ -845,7 +845,7 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(VkDevice device, 
         pipelineLayout,                // VkPipelineLayout                                    layout
         renderPass,                    // VkRenderPass                                        renderPass
         subpass,                       // uint32_t                                            subpass
-        DE_NULL,                       // VkPipeline                                        basePipelineHandle
+        VK_NULL_HANDLE,                // VkPipeline                                        basePipelineHandle
         0                              // int32_t basePipelineIndex;
     };
 
@@ -863,7 +863,7 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(VkDevice device, 
     }
 #endif // CTS_USES_VULKANSC
 
-    return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    return createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 Move<VkPipeline> AttachmentRateInstance::buildComputePipeline(VkDevice device, const vk::DeviceInterface &vk,
@@ -919,7 +919,7 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer commandBuffer,
         VkRenderingFragmentShadingRateAttachmentInfoKHR shadingRateAttachmentInfo{
             VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR, // VkStructureType sType;
             DE_NULL,                                                               // const void* pNext;
-            DE_NULL,                                                               // VkImageView imageView;
+            VK_NULL_HANDLE,                                                        // VkImageView imageView;
             VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR,          // VkImageLayout imageLayout;
             {0, 0} // VkExtent2D shadingRateAttachmentTexelSize;
         };
@@ -930,7 +930,7 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer commandBuffer,
             attachmentInfo[0].view,                              // VkImageView imageView;
             VK_IMAGE_LAYOUT_GENERAL,                             // VkImageLayout imageLayout;
             VK_RESOLVE_MODE_NONE,                                // VkResolveModeFlagBits resolveMode;
-            DE_NULL,                                             // VkImageView resolveImageView;
+            VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
             VK_IMAGE_LAYOUT_UNDEFINED,                           // VkImageLayout resolveImageLayout;
             VK_ATTACHMENT_LOAD_OP_CLEAR,                         // VkAttachmentLoadOp loadOp;
             VK_ATTACHMENT_STORE_OP_STORE,                        // VkAttachmentStoreOp storeOp;
@@ -1247,7 +1247,7 @@ bool AttachmentRateInstance::runComputeShaderMode(void)
             buildShadingRateObjects(device, vk, m_context.getDefaultAllocator(), 0, srWidth, srHeight, m_srUsage);
 
             const VkDescriptorImageInfo computeDescriptorInfo =
-                makeDescriptorImageInfo(DE_NULL, *m_srImageView[0], VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *m_srImageView[0], VK_IMAGE_LAYOUT_GENERAL);
             DescriptorSetUpdateBuilder()
                 .writeSingle(*computeDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
                              VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &computeDescriptorInfo)

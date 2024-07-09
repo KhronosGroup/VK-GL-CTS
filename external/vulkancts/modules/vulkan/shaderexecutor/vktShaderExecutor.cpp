@@ -1283,17 +1283,17 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
             vkDevice,            // const VkDevice                                device
             *pipelineLayout,     // const VkPipelineLayout                        pipelineLayout
             *vertexShaderModule, // const VkShaderModule                          vertexShaderModule
-            DE_NULL,             // const VkShaderModule                          tessellationControlShaderModule
-            DE_NULL,             // const VkShaderModule                          tessellationEvalShaderModule
+            VK_NULL_HANDLE,      // const VkShaderModule                          tessellationControlShaderModule
+            VK_NULL_HANDLE,      // const VkShaderModule                          tessellationEvalShaderModule
             useGeometryShader ? *geometryShaderModule :
-                                DE_NULL,      // const VkShaderModule                          geometryShaderModule
-            *fragmentShaderModule,            // const VkShaderModule                          fragmentShaderModule
-            *renderPass,                      // const VkRenderPass                            renderPass
-            viewports,                        // const std::vector<VkViewport>&                viewports
-            scissors,                         // const std::vector<VkRect2D>&                  scissors
-            VK_PRIMITIVE_TOPOLOGY_POINT_LIST, // const VkPrimitiveTopology                     topology
-            0u,                               // const uint32_t                                subpass
-            0u,                               // const uint32_t                                patchControlPoints
+                                VK_NULL_HANDLE, // const VkShaderModule                          geometryShaderModule
+            *fragmentShaderModule,              // const VkShaderModule                          fragmentShaderModule
+            *renderPass,                        // const VkRenderPass                            renderPass
+            viewports,                          // const std::vector<VkViewport>&                viewports
+            scissors,                           // const std::vector<VkRect2D>&                  scissors
+            VK_PRIMITIVE_TOPOLOGY_POINT_LIST,   // const VkPrimitiveTopology                     topology
+            0u,                                 // const uint32_t                                subpass
+            0u,                                 // const uint32_t                                patchControlPoints
             &vertexInputStateParams, // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
             DE_NULL,                 // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
             DE_NULL,                 // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
@@ -2889,7 +2889,7 @@ void ComputeShaderExecutor::execute(int numValues, const void *const *inputs, vo
             0u,                                             // int32_t basePipelineIndex;
         };
 
-        computePipeline = createComputePipeline(vk, vkDevice, DE_NULL, &computePipelineParams);
+        computePipeline = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &computePipelineParams);
     }
 
     const int maxValuesPerInvocation = m_context.getDeviceProperties().limits.maxComputeWorkGroupSize[0];
@@ -3529,7 +3529,7 @@ void TessellationExecutor::renderTess(uint32_t numValues, uint32_t vertexCount, 
             *vertexShaderModule,      // const VkShaderModule                          vertexShaderModule
             *tessControlShaderModule, // const VkShaderModule                          tessellationControlShaderModule
             *tessEvalShaderModule,    // const VkShaderModule                          tessellationEvalShaderModule
-            DE_NULL,                  // const VkShaderModule                          geometryShaderModule
+            VK_NULL_HANDLE,           // const VkShaderModule                          geometryShaderModule
             *fragmentShaderModule,    // const VkShaderModule                          fragmentShaderModule
             *renderPass,              // const VkRenderPass                            renderPass
             viewports,                // const std::vector<VkViewport>&                viewports

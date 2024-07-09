@@ -451,7 +451,7 @@ tcu::TestStatus TransientAttachmentTestInstance::iterate(void)
     const std::vector<VkDescriptorSet> descriptorSets = {descriptorSetAttachments.get()};
 
     const VkDescriptorImageInfo imageInfo = {
-        DE_NULL,                                 // VkSampler sampler;
+        VK_NULL_HANDLE,                          // VkSampler sampler;
         *inputImageView,                         // VkImageView imageView;
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // VkImageLayout imageLayout;
     };
@@ -497,9 +497,9 @@ tcu::TestStatus TransientAttachmentTestInstance::iterate(void)
         device,                              // const VkDevice                                device
         *pipelineLayout,                     // const VkPipelineLayout                        pipelineLayout
         *vertexModule,                       // const VkShaderModule                            vertexShaderModule
-        DE_NULL,                             // const VkShaderModule                            essellationControlModule
-        DE_NULL,                             // const VkShaderModule                            tessellationEvalModule
-        DE_NULL,                             // const VkShaderModule                            geometryShaderModule
+        VK_NULL_HANDLE,                      // const VkShaderModule                            essellationControlModule
+        VK_NULL_HANDLE,                      // const VkShaderModule                            tessellationEvalModule
+        VK_NULL_HANDLE,                      // const VkShaderModule                            geometryShaderModule
         *fragmentModule,                     // const VkShaderModule                            fragmentShaderModule
         *renderPassTwo,                      // const VkRenderPass                            renderPass
         viewports,                           // const std::vector<VkViewport>&                viewports

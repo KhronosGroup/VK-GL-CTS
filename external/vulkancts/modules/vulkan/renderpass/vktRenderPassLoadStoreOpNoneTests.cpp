@@ -608,10 +608,10 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer(const DeviceInterface &vk,
     VkRenderingAttachmentInfo depthAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,      // VkStructureType sType;
         DE_NULL,                                          // const void* pNext;
-        DE_NULL,                                          // VkImageView imageView;
+        VK_NULL_HANDLE,                                   // VkImageView imageView;
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                             // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                          // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                   // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_LOAD,                       // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                     // VkAttachmentStoreOp storeOp;
@@ -621,10 +621,10 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer(const DeviceInterface &vk,
     VkRenderingAttachmentInfo stencilAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,      // VkStructureType sType;
         DE_NULL,                                          // const void* pNext;
-        DE_NULL,                                          // VkImageView imageView;
+        VK_NULL_HANDLE,                                   // VkImageView imageView;
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                             // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                          // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                   // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_LOAD,                       // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                     // VkAttachmentStoreOp storeOp;
@@ -674,7 +674,7 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer(const DeviceInterface &vk,
                 *imageViews[i],                              // VkImageView imageView;
                 imageLayout,                                 // VkImageLayout imageLayout;
                 VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits resolveMode;
-                DE_NULL,                                     // VkImageView resolveImageView;
+                VK_NULL_HANDLE,                              // VkImageView resolveImageView;
                 VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout resolveImageLayout;
                 m_testParams.attachments[i].loadOp,          // VkAttachmentLoadOp loadOp;
                 m_testParams.attachments[i].storeOp,         // VkAttachmentStoreOp storeOp;
@@ -1189,7 +1189,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate(void)
                 if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_INPUT)
                 {
                     const VkDescriptorImageInfo inputImageInfo{
-                        DE_NULL,         // VkSampler        sampler
+                        VK_NULL_HANDLE,  // VkSampler        sampler
                         *imageViews[i],  // VkImageView        imageView
                         inputImageLayout // VkImageLayout    imageLayout
                     };

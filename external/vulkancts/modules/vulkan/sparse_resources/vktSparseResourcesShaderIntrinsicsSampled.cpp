@@ -113,8 +113,8 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         device,         // const VkDevice                                    device
         pipelineLayout, // const VkPipelineLayout                            pipelineLayout
         vertexModule,   // const VkShaderModule                                vertexShaderModule
-        DE_NULL,        // const VkShaderModule                                tessellationControlModule
-        DE_NULL,        // const VkShaderModule                                tessellationEvalModule
+        VK_NULL_HANDLE, // const VkShaderModule                                tessellationControlModule
+        VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalModule
         geometryModule, // const VkShaderModule                                geometryShaderModule
         fragmentModule, // const VkShaderModule                                fragmentShaderModule
         renderPass,     // const VkRenderPass                                renderPass

@@ -459,6 +459,7 @@ static void checkColorFormatSupport(sglr::Context &context, uint32_t sizedFormat
         break;
 
     case GL_BGRA:
+    case GL_BGRA8_EXT:
         if (!isExtensionSupported(context, "GL_EXT_texture_format_BGRA8888"))
             throw tcu::NotSupportedError("GL_EXT_texture_format_BGRA8888 is not supported");
         break;
@@ -606,7 +607,7 @@ public:
     }
 
     virtual IterateResult iterate(void);
-    virtual void render(sglr::Context &fboContext, Surface &dst) = DE_NULL;
+    virtual void render(sglr::Context &fboContext, Surface &dst) = 0;
 
     const FboConfig &getConfig(void) const
     {
@@ -2215,6 +2216,7 @@ void addChildVariants(deqp::gles2::TestCaseGroup *group)
         //        { GL_TEXTURE_2D, GL_LUMINANCE_ALPHA },
         {GL_TEXTURE_2D, GL_RGB},
         {GL_TEXTURE_2D, GL_RGBA},
+        {GL_TEXTURE_2D, GL_BGRA},
         {GL_RENDERBUFFER, GL_RGB565},
         {GL_RENDERBUFFER, GL_RGB5_A1},
         {GL_RENDERBUFFER, GL_RGBA4},

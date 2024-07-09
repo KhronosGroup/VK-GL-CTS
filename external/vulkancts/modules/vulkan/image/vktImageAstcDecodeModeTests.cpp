@@ -249,7 +249,7 @@ TestStatus BasicComputeTestInstance::iterate(void)
     VkDescriptorImageInfo descriptorImageInfos[] = {
         makeDescriptorImageInfo(*sampler, *testedView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
         makeDescriptorImageInfo(*sampler, *referenceView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-        makeDescriptorImageInfo(DE_NULL, *resultView, VK_IMAGE_LAYOUT_GENERAL),
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *resultView, VK_IMAGE_LAYOUT_GENERAL),
     };
     DescriptorSetUpdateBuilder()
         .writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),

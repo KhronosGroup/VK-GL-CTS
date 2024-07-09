@@ -1047,7 +1047,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
     for (VkQueueGlobalPriorityEXT globalPriority : globalPriorities)
     {
         const VkDeviceQueueGlobalPriorityCreateInfoEXT queueGlobalPriority = {
-            VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT, //sType;
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR, //sType;
             DE_NULL,                                                        //pNext;
             globalPriority                                                  //globalPriority;
         };
@@ -1111,7 +1111,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
             TCU_CHECK(!!queue);
 
             result = deviceDriver.queueWaitIdle(queue);
-            if (result == VK_ERROR_NOT_PERMITTED_EXT && mayBeDenied)
+            if (result == VK_ERROR_NOT_PERMITTED_KHR && mayBeDenied)
             {
                 continue;
             }
@@ -1141,7 +1141,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
         }
         catch (const Error &error)
         {
-            if ((error.getError() == VK_ERROR_NOT_PERMITTED_EXT && mayBeDenied)
+            if ((error.getError() == VK_ERROR_NOT_PERMITTED_KHR && mayBeDenied)
 #ifndef CTS_USES_VULKANSC
                 || (error.getError() == VK_ERROR_INITIALIZATION_FAILED && mustFail)
 #endif // CTS_USES_VULKANSC
@@ -1736,7 +1736,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest(Context &context)
                                                          DE_NULL,
                                                          &enabledFeatures};
 
-            VkDevice device = DE_NULL;
+            VkDevice device = VK_NULL_HANDLE;
             const VkResult res =
                 createUncheckedDevice(false, instanceDriver, physicalDevice, &deviceCreateInfo, DE_NULL, &device);
 
@@ -2602,8 +2602,8 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail(Context &context)
 {
     const PlatformInterface &vkp        = context.getPlatformInterface();
     const uint32_t chosenDevice         = context.getTestContext().getCommandLine().getVKDeviceId() - 1;
-    VkInstance instance                 = DE_NULL;
-    VkDevice device                     = DE_NULL;
+    VkInstance instance                 = VK_NULL_HANDLE;
+    VkDevice device                     = VK_NULL_HANDLE;
     uint32_t physicalDeviceCount        = 0;
     uint32_t queueFamilyCount           = 0;
     uint32_t queueFamilyIndex           = 0;

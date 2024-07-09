@@ -10824,12 +10824,6 @@ dEQP-GL45-ES31.functional.texture.filtering.cube_array.combinations.linear_mipma
 dEQP-GL45-ES31.functional.texture.filtering.cube_array.combinations.linear_mipmap_linear_linear_mirror_mirror
 dEQP-GL45-ES31.functional.texture.filtering.cube_array.no_edges_visible.nearest
 dEQP-GL45-ES31.functional.texture.filtering.cube_array.no_edges_visible.linear
-dEQP-GL45-ES31.functional.texture.format.unsized.alpha_cube_array_pot
-dEQP-GL45-ES31.functional.texture.format.unsized.alpha_cube_array_npot
-dEQP-GL45-ES31.functional.texture.format.unsized.luminance_cube_array_pot
-dEQP-GL45-ES31.functional.texture.format.unsized.luminance_cube_array_npot
-dEQP-GL45-ES31.functional.texture.format.unsized.luminance_alpha_cube_array_pot
-dEQP-GL45-ES31.functional.texture.format.unsized.luminance_alpha_cube_array_npot
 dEQP-GL45-ES31.functional.texture.format.unsized.rgb_unsigned_short_5_6_5_cube_array_pot
 dEQP-GL45-ES31.functional.texture.format.unsized.rgb_unsigned_short_5_6_5_cube_array_npot
 dEQP-GL45-ES31.functional.texture.format.unsized.rgb_unsigned_byte_cube_array_pot

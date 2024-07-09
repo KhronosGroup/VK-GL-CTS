@@ -175,7 +175,7 @@ class AtomicCounterBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
     /* Public methods */
-    AtomicCounterBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size,
+    AtomicCounterBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext,
                                        bool all_pages_committed);
 
     /* BufferStorageTestCase implementation */
@@ -188,7 +188,7 @@ public:
 
     const char *getName()
     {
-        return "case e";
+        return (m_all_pages_committed ? "case_e_all_pages" : "case_e");
     }
 
 private:
@@ -235,8 +235,7 @@ class BufferTextureStorageTestCase : public BufferStorageTestCase
 {
 public:
     /* Public methods */
-    BufferTextureStorageTestCase(const glw::Functions &gl, deqp::Context &context, tcu::TestContext &testContext,
-                                 glw::GLint page_size);
+    BufferTextureStorageTestCase(const glw::Functions &gl, deqp::Context &context, tcu::TestContext &testContext);
 
     /* BufferStorageTestCase implementation */
     void deinitTestCaseGlobal();
@@ -247,7 +246,7 @@ public:
 
     const char *getName()
     {
-        return "case f";
+        return "case_f";
     }
 
 private:
@@ -286,7 +285,8 @@ class ClearOpsBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
     /* Public methods */
-    ClearOpsBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
+    ClearOpsBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, unsigned int clear_op_type,
+                                  unsigned int iteration);
 
     /* BufferStorageTestCase implementation */
     void deinitTestCaseGlobal();
@@ -297,7 +297,7 @@ public:
 
     const char *getName()
     {
-        return "case c";
+        return "case_c";
     }
 
 private:
@@ -310,6 +310,8 @@ private:
     glw::GLuint m_sparse_bo;
     unsigned int m_sparse_bo_size_rounded;
     tcu::TestContext &m_testCtx;
+    unsigned int m_clear_op_type;
+    unsigned int m_iteration;
 };
 
 /** Implements the test case g for the test 2:
@@ -345,7 +347,7 @@ class CopyOpsBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
     /* Public methods */
-    CopyOpsBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
+    CopyOpsBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext);
 
     /* BufferStorageTestCase implementation */
     void deinitTestCaseGlobal();
@@ -356,7 +358,7 @@ public:
 
     const char *getName()
     {
-        return "case g";
+        return "case_g";
     }
 
 private:
@@ -423,8 +425,7 @@ class IndirectDispatchBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
     /* Public methods */
-    IndirectDispatchBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext,
-                                          glw::GLint page_size);
+    IndirectDispatchBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext);
 
     /* BufferStorageTestCase implementation */
     void deinitTestCaseGlobal();
@@ -435,7 +436,7 @@ public:
 
     const char *getName()
     {
-        return "case h";
+        return "case_h";
     }
 
 private:
@@ -467,7 +468,7 @@ class InvalidateBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
     /* Public methods */
-    InvalidateBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
+    InvalidateBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext);
 
     /* BufferStorageTestCase implementation */
     void deinitTestCaseGlobal();
@@ -478,14 +479,14 @@ public:
 
     const char *getName()
     {
-        return "case d";
+        return "case_d";
     }
 
 private:
     /* Private fields */
     const glw::Functions &m_gl;
     unsigned int m_n_pages_to_use;
-    const glw::GLint m_page_size;
+    glw::GLint m_page_size;
     glw::GLuint m_sparse_bo;
     unsigned int m_sparse_bo_size;
     unsigned int m_sparse_bo_size_rounded;
@@ -512,7 +513,7 @@ class PixelPackBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
     /* Public methods */
-    PixelPackBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
+    PixelPackBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext);
 
     /* BufferStorageTestCase implementation */
     void deinitTestCaseGlobal();
@@ -523,7 +524,7 @@ public:
 
     const char *getName()
     {
-        return "case k";
+        return "case_k";
     }
 
 private:
@@ -567,7 +568,7 @@ class PixelUnpackBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
     /* Public methods */
-    PixelUnpackBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
+    PixelUnpackBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext);
 
     /* BufferStorageTestCase implementation */
     void deinitTestCaseGlobal();
@@ -578,7 +579,7 @@ public:
 
     const char *getName()
     {
-        return "case l";
+        return "case_l";
     }
 
 private:
@@ -669,8 +670,8 @@ public:
     };
 
     /* Public methods */
-    QuadsBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size,
-                               _ibo_usage ibo_usage, bool use_color_data);
+    QuadsBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, _ibo_usage ibo_usage,
+                               bool use_color_data);
 
     /* BufferStorageTestCase implementation */
     void deinitTestCaseGlobal();
@@ -681,9 +682,9 @@ public:
 
     const char *getName()
     {
-        return (!m_use_color_data && m_ibo_usage == IBO_USAGE_NONE) ? "cases a1-a2" :
-               (!m_use_color_data && m_ibo_usage != IBO_USAGE_NONE) ? "cases a3-a4" :
-               (m_use_color_data && m_ibo_usage != IBO_USAGE_NONE)  ? "casea a5-a6" :
+        return (!m_use_color_data && m_ibo_usage == IBO_USAGE_NONE) ? "cases_a1-a2" :
+               (!m_use_color_data && m_ibo_usage != IBO_USAGE_NONE) ? "cases_a3-a4" :
+               (m_use_color_data && m_ibo_usage != IBO_USAGE_NONE)  ? "cases_a5-a6" :
                                                                       "?!";
     }
 
@@ -748,7 +749,7 @@ class QueryBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
     /* Public methods */
-    QueryBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
+    QueryBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext);
 
     /* BufferStorageTestCase implementation */
     void deinitTestCaseGlobal();
@@ -759,7 +760,7 @@ public:
 
     const char *getName()
     {
-        return "case m";
+        return "case_m";
     }
 
 private:
@@ -800,7 +801,7 @@ class SSBOStorageTestCase : public BufferStorageTestCase
 {
 public:
     /* Public methods */
-    SSBOStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
+    SSBOStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext);
 
     /* BufferStorageTestCase implementation */
     void deinitTestCaseGlobal();
@@ -811,7 +812,7 @@ public:
 
     const char *getName()
     {
-        return "case i";
+        return "case_i";
     }
 
 private:
@@ -918,7 +919,7 @@ public:
 
     /* Public methods */
     TransformFeedbackBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext,
-                                           glw::GLint page_size, bool all_pages_committed);
+                                           bool all_pages_committed, unsigned int tf_type, unsigned int draw_call_type);
 
     /* BufferStorageTestCase implementation */
     void deinitTestCaseGlobal();
@@ -928,8 +929,10 @@ public:
 
     const char *getName()
     {
-        return (m_all_pages_committed) ? "case b1" : "case b2";
+        return (m_all_pages_committed) ? "case_b1" : "case_b2";
     }
+
+    const char *drawCallTypeEnumToString(unsigned int draw_call);
 
 private:
     /* Private methods */
@@ -973,6 +976,8 @@ private:
     glw::GLuint m_result_bo_size_rounded;
     tcu::TestContext &m_testCtx;
     glw::GLuint m_vao;
+    unsigned int m_tf_type;
+    unsigned int m_draw_call_type;
 };
 
 /** Implements test case j for the test 2:
@@ -988,7 +993,7 @@ class UniformBufferStorageTestCase : public BufferStorageTestCase
 {
 public:
     /* Public methods */
-    UniformBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size);
+    UniformBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext);
 
     /* BufferStorageTestCase implementation */
     void deinitTestCaseGlobal();
@@ -999,7 +1004,7 @@ public:
 
     const char *getName()
     {
-        return "case j";
+        return "case_j";
     }
 
 private:
@@ -1040,7 +1045,7 @@ class BufferStorageTest : public deqp::TestCase
 {
 public:
     /* Public methods */
-    BufferStorageTest(deqp::Context &context);
+    BufferStorageTest(deqp::Context &context, BufferStorageTestCase *testCase, const char *name);
 
     void deinit();
     void init();
@@ -1052,12 +1057,9 @@ private:
     typedef TestCasesVector::const_iterator TestCasesVectorConstIterator;
     typedef TestCasesVector::iterator TestCasesVectorIterator;
 
-    /* Private methods */
-    void initTestCases();
-
     /* Private members */
     glw::GLuint m_sparse_bo;
-    TestCasesVector m_testCases;
+    BufferStorageTestCase *mTestCase;
 };
 
 /** Test group which encapsulates all sparse buffer conformance tests */
@@ -1072,6 +1074,8 @@ public:
 private:
     SparseBufferTests(const SparseBufferTests &other);
     SparseBufferTests &operator=(const SparseBufferTests &other);
+
+    void addBufferStorageTests();
 };
 
 } // namespace gl4cts

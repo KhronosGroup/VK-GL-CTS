@@ -2407,7 +2407,7 @@ void CallLogWrapper::glGetProgramResourceiv (glw::GLuint program, glw::GLenum pr
 	if (m_enableLog)
 	{
 		m_log << TestLog::Message << "// length = " << getPointerStr(length, 1) << TestLog::EndMessage;
-		m_log << TestLog::Message << "// params = " << getPointerStr(params, ((length == DE_NULL) ? (count) : ((count < *length) ? (count) : (*length)))) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, ((length == nullptr) ? (count) : ((count < *length) ? (count) : (*length)))) << TestLog::EndMessage;
 	}
 }
 

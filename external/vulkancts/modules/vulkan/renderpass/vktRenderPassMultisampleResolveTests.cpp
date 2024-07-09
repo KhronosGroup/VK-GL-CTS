@@ -121,15 +121,14 @@ VkImageLayout chooseInputImageLayout(const SharedGroupParams groupParams)
 
 #ifndef CTS_USES_VULKANSC
 void beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCommandBuffer secCmdBuffer, uint32_t colorAttachmentsCount,
-                             VkSampleCountFlagBits rasterizationSamples,
-                             const void *additionalInheritanceRenderingInfo = DE_NULL)
+                             VkSampleCountFlagBits rasterizationSamples)
 {
     VkCommandBufferUsageFlags usageFlags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     const std::vector<VkFormat> colorAttachmentFormats(colorAttachmentsCount, VK_FORMAT_R8G8B8A8_UNORM);
 
     const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        additionalInheritanceRenderingInfo,                              // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         0u,                                                              // VkRenderingFlagsKHR flags;
         0u,                                                              // uint32_t viewMask;
         colorAttachmentsCount,                                           // uint32_t colorAttachmentCount;
@@ -141,9 +140,9 @@ void beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCommandBuffer secCmdBu
     const VkCommandBufferInheritanceInfo bufferInheritanceInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
         &inheritanceRenderingInfo,                         // const void* pNext;
-        DE_NULL,                                           // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                    // VkRenderPass renderPass;
         0u,                                                // uint32_t subpass;
-        DE_NULL,                                           // VkFramebuffer framebuffer;
+        VK_NULL_HANDLE,                                    // VkFramebuffer framebuffer;
         VK_FALSE,                                          // VkBool32 occlusionQueryEnable;
         (VkQueryControlFlags)0u,                           // VkQueryControlFlags queryFlags;
         (VkQueryPipelineStatisticFlags)0u                  // VkQueryPipelineStatisticFlags pipelineStatistics;
@@ -871,10 +870,10 @@ void MultisampleRenderPassTestInstance::submitDynamicRendering(void)
         {
             vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
             DE_NULL,                                             // const void* pNext;
-            DE_NULL,                                             // VkImageView imageView;
+            VK_NULL_HANDLE,                                      // VkImageView imageView;
             vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
             vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-            DE_NULL,                                             // VkImageView resolveImageView;
+            VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
             vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout resolveImageLayout;
             vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,                 // VkAttachmentLoadOp loadOp;
             vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,                // VkAttachmentStoreOp storeOp;
@@ -1780,10 +1779,10 @@ Move<VkPipeline> MultisampleRenderPassTestInstance::createRenderPipeline(void)
         device,                  // const VkDevice                                device
         *m_renderPipelineLayout, // const VkPipelineLayout                        pipelineLayout
         *vertexShaderModule,     // const VkShaderModule                          vertexShaderModule
-        DE_NULL,                 // const VkShaderModule                          tessellationControlShaderModule
-        DE_NULL,                 // const VkShaderModule                          tessellationEvalShaderModule
+        VK_NULL_HANDLE,          // const VkShaderModule                          tessellationControlShaderModule
+        VK_NULL_HANDLE,          // const VkShaderModule                          tessellationEvalShaderModule
         m_layerCount != 1 ? *geometryShaderModule :
-                            DE_NULL,         // const VkShaderModule                          geometryShaderModule
+                            VK_NULL_HANDLE,  // const VkShaderModule                          geometryShaderModule
         *fragmentShaderModule,               // const VkShaderModule                          fragmentShaderModule
         *m_renderPass,                       // const VkRenderPass                            renderPass
         viewports,                           // const std::vector<VkViewport>&                viewports
@@ -2081,7 +2080,6 @@ void MaxAttachmenstsRenderPassTestInstance::submitDynamicRendering()
     {
         secCmdBuffers[0] = allocateCommandBuffer(vk, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
         secCmdBuffers[1] = allocateCommandBuffer(vk, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-        renderingInputAttachmentIndexInfo.pNext = &renderingAttachmentLocationInfo;
 
         // record secondary command buffer for first subpass
         beginSecondaryCmdBuffer(vk, *secCmdBuffers[0], (uint32_t)m_multisampleImages.size(), m_sampleCount);
@@ -2091,9 +2089,10 @@ void MaxAttachmenstsRenderPassTestInstance::submitDynamicRendering()
         endCommandBuffer(vk, *secCmdBuffers[0]);
 
         // record secondary command buffer for second subpass
-        beginSecondaryCmdBuffer(vk, *secCmdBuffers[1], (uint32_t)m_multisampleImages.size(), VK_SAMPLE_COUNT_1_BIT,
-                                &renderingInputAttachmentIndexInfo);
+        beginSecondaryCmdBuffer(vk, *secCmdBuffers[1], (uint32_t)m_multisampleImages.size(), VK_SAMPLE_COUNT_1_BIT);
         vk.cmdBeginRendering(*secCmdBuffers[1], &secondRenderingInfo);
+        vk.cmdSetRenderingAttachmentLocationsKHR(*secCmdBuffers[1], &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingInputAttachmentIndicesKHR(*secCmdBuffers[1], &renderingInputAttachmentIndexInfo);
         drawSecondSubpass(vk, *secCmdBuffers[1]);
         vk.cmdEndRendering(*secCmdBuffers[1]);
         endCommandBuffer(vk, *secCmdBuffers[1]);
@@ -2103,8 +2102,6 @@ void MaxAttachmenstsRenderPassTestInstance::submitDynamicRendering()
         // record primary command buffer
         beginCommandBuffer(vk, *cmdBuffer);
         preRenderCommands(vk, *cmdBuffer);
-        vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocationInfo);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(*cmdBuffer, &renderingInputAttachmentIndexInfo);
         vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffers[0]);
         inbetweenRenderCommands(vk, *cmdBuffer);
         vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffers[1]);
@@ -2474,7 +2471,7 @@ Move<VkDescriptorSet> MaxAttachmenstsRenderPassTestInstance::createDescriptorSet
     for (uint32_t idx = 0; idx < m_attachmentsCount; ++idx)
     {
         descriptorImageInfo[idx] = {
-            DE_NULL,                         // VkSampler        sampler
+            VK_NULL_HANDLE,                  // VkSampler        sampler
             **m_singlesampleImageViews[idx], // VkImageView        imageView
             m_inputImageReadLayout           // VkImageLayout    imageLayout
         };

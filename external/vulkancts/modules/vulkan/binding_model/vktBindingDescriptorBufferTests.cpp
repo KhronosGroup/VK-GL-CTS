@@ -5190,7 +5190,7 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
             VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT,   // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             *m_pipelineLayout,                              // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
 
@@ -5202,7 +5202,7 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
             pipelineCreateInfo.flags       = 0;
         }
 
-        m_pipeline = createComputePipeline(vk, *m_device, DE_NULL, &pipelineCreateInfo);
+        m_pipeline = createComputePipeline(vk, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
     else if (m_params.isRayTracing())
     {

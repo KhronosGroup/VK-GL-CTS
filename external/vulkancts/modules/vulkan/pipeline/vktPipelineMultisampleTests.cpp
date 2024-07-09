@@ -4956,7 +4956,7 @@ tcu::TestStatus VariableRateTestInstance::iterate(void)
         vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
         nullptr,                                       // const void* pNext;
         0u,                                            // VkFramebufferCreateFlags flags;
-        DE_NULL,                                       // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                // VkRenderPass renderPass;
         0u,                                            // uint32_t attachmentCount;
         nullptr,                                       // const VkImageView* pAttachments;
         kWidth32,                                      // uint32_t width;
@@ -5191,7 +5191,7 @@ tcu::TestStatus VariableRateTestInstance::iterate(void)
         vk::VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                     // uint32_t srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                     // uint32_t dstQueueFamilyIndex;
-        DE_NULL,                                     // VkBuffer buffer;
+        VK_NULL_HANDLE,                              // VkBuffer buffer;
         0u,                                          // VkDeviceSize offset;
         VK_WHOLE_SIZE,                               // VkDeviceSize size;
     };

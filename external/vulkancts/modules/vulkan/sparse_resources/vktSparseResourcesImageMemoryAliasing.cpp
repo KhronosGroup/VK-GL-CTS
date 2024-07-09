@@ -670,7 +670,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
             VkImageView imageView = **imageViews[mipLevelNdx];
 
             const VkDescriptorImageInfo descriptorImageSparseInfo =
-                makeDescriptorImageInfo(DE_NULL, imageView, VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, imageView, VK_IMAGE_LAYOUT_GENERAL);
 
             DescriptorSetUpdateBuilder()
                 .writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),

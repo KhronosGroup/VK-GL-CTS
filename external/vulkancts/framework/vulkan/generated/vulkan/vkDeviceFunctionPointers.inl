@@ -55,7 +55,7 @@ GetPipelineCacheDataFunc									getPipelineCacheData;
 MergePipelineCachesFunc										mergePipelineCaches;
 CreatePipelineBinariesKHRFunc								createPipelineBinariesKHR;
 DestroyPipelineBinaryKHRFunc								destroyPipelineBinaryKHR;
-GetPipelineBinaryKeysKHRFunc								getPipelineBinaryKeysKHR;
+GetPipelineKeyKHRFunc										getPipelineKeyKHR;
 GetPipelineBinaryDataKHRFunc								getPipelineBinaryDataKHR;
 ReleaseCapturedPipelineDataKHRFunc							releaseCapturedPipelineDataKHR;
 CreateGraphicsPipelinesFunc									createGraphicsPipelines;

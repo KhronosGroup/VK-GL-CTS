@@ -769,10 +769,10 @@ tcu::TestStatus FConvertTestInstance::iterate(void)
             DE_NULL, // const VkSpecializationInfo*         pSpecializationInfo;
         },
         *pipelineLayout, // VkPipelineLayout                   layout;
-        DE_NULL,         // VkPipeline                         basePipelineHandle;
+        VK_NULL_HANDLE,  // VkPipeline                         basePipelineHandle;
         0,               // int32_t                            basePipelineIndex;
     };
-    auto computePipeline = vk::createComputePipeline(vkd, device, DE_NULL, &computeCreateInfo);
+    auto computePipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &computeCreateInfo);
 
     // Run the shader.
     vk::beginCommandBuffer(vkd, *cmdBuffer);
