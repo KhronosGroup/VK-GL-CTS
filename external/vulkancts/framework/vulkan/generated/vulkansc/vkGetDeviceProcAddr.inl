@@ -145,8 +145,6 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdPipelineBarrier2KHR",
 		"vkCmdWriteTimestamp2KHR",
 		"vkQueueSubmit2KHR",
-		"vkCmdWriteBufferMarker2AMD",
-		"vkGetQueueCheckpointData2NV",
 		"vkCmdCopyBuffer2KHR",
 		"vkCmdCopyImage2KHR",
 		"vkCmdCopyBufferToImage2KHR",
@@ -185,6 +183,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetCalibratedTimestampsKHR",
 		"vkCmdSetCheckpointNV",
 		"vkGetQueueCheckpointDataNV",
+		"vkGetQueueCheckpointData2NV",
 		"vkGetPhysicalDeviceCalibrateableTimeDomainsEXT",
 		"vkGetCalibratedTimestampsEXT",
     };

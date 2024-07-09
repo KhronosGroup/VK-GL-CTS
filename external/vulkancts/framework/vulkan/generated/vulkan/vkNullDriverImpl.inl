@@ -2849,6 +2849,13 @@ VKAPI_ATTR uint32_t VKAPI_CALL getImageViewHandleNVX (VkDevice device, const VkI
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR uint64_t VKAPI_CALL getImageViewHandle64NVX (VkDevice device, const VkImageViewHandleInfoNVX* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getImageViewAddressNVX (VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties)
 {
 	DE_UNREF(device);
@@ -4212,30 +4219,35 @@ VKAPI_ATTR VkResult VKAPI_CALL getExecutionGraphPipelineNodeIndexAMDX (VkDevice 
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdInitializeGraphScratchMemoryAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch)
+VKAPI_ATTR void VKAPI_CALL cmdInitializeGraphScratchMemoryAMDX (VkCommandBuffer commandBuffer, VkPipeline executionGraph, VkDeviceAddress scratch, VkDeviceSize scratchSize)
 {
 	DE_UNREF(commandBuffer);
+	DE_UNREF(executionGraph);
 	DE_UNREF(scratch);
+	DE_UNREF(scratchSize);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo)
+VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(scratch);
+	DE_UNREF(scratchSize);
 	DE_UNREF(pCountInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphIndirectAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo)
+VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphIndirectAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(scratch);
+	DE_UNREF(scratchSize);
 	DE_UNREF(pCountInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceAddress countInfo)
+VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, VkDeviceAddress countInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(scratch);
+	DE_UNREF(scratchSize);
 	DE_UNREF(countInfo);
 }
 
@@ -4328,6 +4340,14 @@ VKAPI_ATTR void VKAPI_CALL cmdSetDepthClampRangeEXT (VkCommandBuffer commandBuff
 	DE_UNREF(commandBuffer);
 	DE_UNREF(depthClampMode);
 	DE_UNREF(pDepthClampRange);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixFlexibleDimensionsPropertiesNV* pProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pPropertyCount);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
 }
 
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
@@ -4430,6 +4450,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetDrmDisplayEXT,													getDrmDisplayEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceOpticalFlowImageFormatsNV,						getPhysicalDeviceOpticalFlowImageFormatsNV),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR,					getPhysicalDeviceCooperativeMatrixPropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV,	getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -4733,6 +4754,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetRayTracingShaderGroupStackSizeKHR,						getRayTracingShaderGroupStackSizeKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRayTracingPipelineStackSizeKHR,						cmdSetRayTracingPipelineStackSizeKHR),
 	VK_NULL_FUNC_ENTRY(vkGetImageViewHandleNVX,										getImageViewHandleNVX),
+	VK_NULL_FUNC_ENTRY(vkGetImageViewHandle64NVX,									getImageViewHandle64NVX),
 	VK_NULL_FUNC_ENTRY(vkGetImageViewAddressNVX,									getImageViewAddressNVX),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupSurfacePresentModes2EXT,						getDeviceGroupSurfacePresentModes2EXT),
 	VK_NULL_FUNC_ENTRY(vkAcquireFullScreenExclusiveModeEXT,							acquireFullScreenExclusiveModeEXT),

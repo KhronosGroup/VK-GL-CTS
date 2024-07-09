@@ -302,6 +302,7 @@ GetDeviceAccelerationStructureCompatibilityKHRFunc			getDeviceAccelerationStruct
 GetRayTracingShaderGroupStackSizeKHRFunc					getRayTracingShaderGroupStackSizeKHR;
 CmdSetRayTracingPipelineStackSizeKHRFunc					cmdSetRayTracingPipelineStackSizeKHR;
 GetImageViewHandleNVXFunc									getImageViewHandleNVX;
+GetImageViewHandle64NVXFunc									getImageViewHandle64NVX;
 GetImageViewAddressNVXFunc									getImageViewAddressNVX;
 GetDeviceGroupSurfacePresentModes2EXTFunc					getDeviceGroupSurfacePresentModes2EXT;
 AcquireFullScreenExclusiveModeEXTFunc						acquireFullScreenExclusiveModeEXT;

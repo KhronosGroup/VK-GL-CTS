@@ -113,6 +113,12 @@ dEQP-VK.video.encode.h264.i_p_b_13
 dEQP-VK.video.encode.h264.i_p_not_matching_order
 dEQP-VK.video.encode.h264.inline_query
 dEQP-VK.video.encode.h264.quality_level
+dEQP-VK.video.encode.h264.quantization_map_delta
+dEQP-VK.video.encode.h264.quantization_map_delta_rc_cbr
+dEQP-VK.video.encode.h264.quantization_map_delta_rc_disable
+dEQP-VK.video.encode.h264.quantization_map_delta_rc_vbr
+dEQP-VK.video.encode.h264.quantization_map_emphasis_cbr
+dEQP-VK.video.encode.h264.quantization_map_emphasis_vbr
 dEQP-VK.video.encode.h264.query_with_status
 dEQP-VK.video.encode.h264.rc_cbr
 dEQP-VK.video.encode.h264.rc_disable
@@ -126,6 +132,12 @@ dEQP-VK.video.encode.h265.i_p_b_13
 dEQP-VK.video.encode.h265.i_p_not_matching_order
 dEQP-VK.video.encode.h265.inline_query
 dEQP-VK.video.encode.h265.quality_level
+dEQP-VK.video.encode.h265.quantization_map_delta
+dEQP-VK.video.encode.h265.quantization_map_delta_rc_cbr
+dEQP-VK.video.encode.h265.quantization_map_delta_rc_disable
+dEQP-VK.video.encode.h265.quantization_map_delta_rc_vbr
+dEQP-VK.video.encode.h265.quantization_map_emphasis_cbr
+dEQP-VK.video.encode.h265.quantization_map_emphasis_vbr
 dEQP-VK.video.encode.h265.query_with_status
 dEQP-VK.video.encode.h265.rc_cbr
 dEQP-VK.video.encode.h265.rc_disable

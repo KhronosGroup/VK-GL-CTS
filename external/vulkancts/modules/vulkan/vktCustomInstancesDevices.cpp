@@ -512,7 +512,7 @@ vk::VkResult createUncheckedInstance(Context &context, const vk::VkInstanceCreat
     }
 #endif // CTS_USES_VULKANSC
 
-    vk::VkInstance raw_instance = VK_NULL_HANDLE;
+    vk::VkInstance raw_instance = DE_NULL;
     vk::VkResult result         = vkp.createInstance(&createInfo, pAllocator, &raw_instance);
 
 #ifndef CTS_USES_VULKANSC
@@ -822,6 +822,7 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
     const bool queryWithStatusForEncodeSupport =
         (videoDeviceFlags & VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_ENCODE_SUPPORT) != 0;
     const bool requireMaintenance1        = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_1) != 0;
+    const bool requireQuantizationMap     = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_QUANTIZATION_MAP) != 0;
     const bool requireYCBCRorNotSupported = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_YCBCR_OR_NOT_SUPPORTED) != 0;
     const bool requireSync2orNotSupported = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED) != 0;
     const bool requireTimelineSemOrNotSupported =
@@ -953,6 +954,10 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
         if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_video_maintenance1"))
             deviceExtensions.push_back("VK_KHR_video_maintenance1");
 
+    if (requireQuantizationMap)
+        if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_video_encode_quantization_map"))
+            deviceExtensions.push_back("VK_KHR_video_encode_quantization_map");
+
     if (requireTimelineSemOrNotSupported)
         if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
             deviceExtensions.push_back("VK_KHR_timeline_semaphore");
@@ -972,6 +977,12 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR, //  VkStructureType sType;
         nullptr,                                                                //  void* pNext;
         false,                                                                  //  VkBool32 videoMaintenance1;
+    };
+
+    vk::VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR quantizationMapFeatures = {
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR, //  VkStructureType sType;
+        nullptr,                                                                          //  void* pNext;
+        false, //  VkBool32 videoEncodeQuantizationMap;
     };
 
     vk::VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures = {
@@ -994,6 +1005,9 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
 
     if (requireMaintenance1)
         appendStructurePtrToVulkanChain((const void **)&features2.pNext, &maintenance1Features);
+
+    if (requireQuantizationMap)
+        appendStructurePtrToVulkanChain((const void **)&features2.pNext, &quantizationMapFeatures);
 
     if (requireTimelineSemOrNotSupported)
         if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))

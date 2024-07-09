@@ -343,6 +343,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkGetPhysicalDeviceSciSyncAttributesNV");
 		return;
 	}
+	if (extName == "VK_EXT_layer_settings")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_vertex_attribute_divisor")
 	{
 		return;
@@ -678,10 +682,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdPipelineBarrier2KHR");
 		functions.push_back("vkCmdWriteTimestamp2KHR");
 		functions.push_back("vkQueueSubmit2KHR");
-		// Dependencies: VK_NV_device_diagnostic_checkpoints
-		if (extensionIsSupported(vDEP, "VK_NV_device_diagnostic_checkpoints")) {
-			functions.push_back("vkGetQueueCheckpointData2NV");
-		}
 		return;
 	}
 	if (extName == "VK_EXT_ycbcr_2plane_444_formats")
@@ -757,6 +757,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkImportFenceSciSyncObjNV");
 		return;
 	}
+	if (extName == "VK_EXT_layer_settings")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_vertex_attribute_divisor")
 	{
 		return;
@@ -784,6 +788,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkCmdSetCheckpointNV");
 		functions.push_back("vkGetQueueCheckpointDataNV");
+		// Dependencies: VK_VERSION_1_3,VK_KHR_synchronization2
+		if (checkVersion(1, 3, apiVersion) || (checkVersion(1, 3, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_synchronization2"))) {
+			functions.push_back("vkGetQueueCheckpointData2NV");
+		}
 		return;
 	}
 	if (extName == "VK_KHR_format_feature_flags2")
@@ -819,6 +827,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_validation_features",
 	"VK_EXT_headless_surface",
 	"VK_EXT_application_parameters",
+	"VK_EXT_layer_settings",
 };
 
 ::std::string deviceExtensionNames[] =

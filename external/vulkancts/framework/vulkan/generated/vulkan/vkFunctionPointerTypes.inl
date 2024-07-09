@@ -426,6 +426,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceAccelerationStructureCompatibi
 typedef VKAPI_ATTR VkDeviceSize			(VKAPI_CALL* GetRayTracingShaderGroupStackSizeKHRFunc)								(VkDevice device, VkPipeline pipeline, uint32_t group, VkShaderGroupShaderKHR groupShader);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRayTracingPipelineStackSizeKHRFunc)								(VkCommandBuffer commandBuffer, uint32_t pipelineStackSize);
 typedef VKAPI_ATTR uint32_t				(VKAPI_CALL* GetImageViewHandleNVXFunc)												(VkDevice device, const VkImageViewHandleInfoNVX* pInfo);
+typedef VKAPI_ATTR uint64_t				(VKAPI_CALL* GetImageViewHandle64NVXFunc)											(VkDevice device, const VkImageViewHandleInfoNVX* pInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetImageViewAddressNVXFunc)											(VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSurfacePresentModes2EXTFunc)							(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, uint32_t* pPresentModeCount, VkPresentModeKHR* pPresentModes);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceGroupSurfacePresentModes2EXTFunc)								(VkDevice device, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes);
@@ -679,10 +680,10 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeMatrixPr
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetExecutionGraphPipelineScratchSizeAMDXFunc)							(VkDevice device, VkPipeline executionGraph, VkExecutionGraphPipelineScratchSizeAMDX* pSizeInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetExecutionGraphPipelineNodeIndexAMDXFunc)							(VkDevice device, VkPipeline executionGraph, const VkPipelineShaderStageNodeCreateInfoAMDX* pNodeInfo, uint32_t* pNodeIndex);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateExecutionGraphPipelinesAMDXFunc)									(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkExecutionGraphPipelineCreateInfoAMDX* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines);
-typedef VKAPI_ATTR void					(VKAPI_CALL* CmdInitializeGraphScratchMemoryAMDXFunc)								(VkCommandBuffer commandBuffer, VkDeviceAddress scratch);
-typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchGraphAMDXFunc)												(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo);
-typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchGraphIndirectAMDXFunc)										(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo);
-typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchGraphIndirectCountAMDXFunc)									(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceAddress countInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdInitializeGraphScratchMemoryAMDXFunc)								(VkCommandBuffer commandBuffer, VkPipeline executionGraph, VkDeviceAddress scratch, VkDeviceSize scratchSize);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchGraphAMDXFunc)												(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchGraphIndirectAMDXFunc)										(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchGraphIndirectCountAMDXFunc)									(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, VkDeviceAddress countInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindDescriptorSets2KHRFunc)											(VkCommandBuffer commandBuffer, const VkBindDescriptorSetsInfoKHR* pBindDescriptorSetsInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPushConstants2KHRFunc)												(VkCommandBuffer commandBuffer, const VkPushConstantsInfoKHR* pPushConstantsInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPushDescriptorSet2KHRFunc)											(VkCommandBuffer commandBuffer, const VkPushDescriptorSetInfoKHR* pPushDescriptorSetInfo);
@@ -697,3 +698,4 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* QueueNotifyOutOfBandNVFunc)											(
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRenderingAttachmentLocationsKHRFunc)								(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRenderingInputAttachmentIndicesKHRFunc)							(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pInputAttachmentIndexInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthClampRangeEXTFunc)											(VkCommandBuffer commandBuffer, VkDepthClampModeEXT depthClampMode, const VkDepthClampRangeEXT* pDepthClampRange);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNVFunc)	(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixFlexibleDimensionsPropertiesNV* pProperties);

@@ -302,6 +302,7 @@ virtual void				getDeviceAccelerationStructureCompatibilityKHR			(VkDevice devic
 virtual VkDeviceSize		getRayTracingShaderGroupStackSizeKHR					(VkDevice device, VkPipeline pipeline, uint32_t group, VkShaderGroupShaderKHR groupShader) const;
 virtual void				cmdSetRayTracingPipelineStackSizeKHR					(VkCommandBuffer commandBuffer, uint32_t pipelineStackSize) const;
 virtual uint32_t			getImageViewHandleNVX									(VkDevice device, const VkImageViewHandleInfoNVX* pInfo) const;
+virtual uint64_t			getImageViewHandle64NVX									(VkDevice device, const VkImageViewHandleInfoNVX* pInfo) const;
 virtual VkResult			getImageViewAddressNVX									(VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties) const;
 virtual VkResult			getDeviceGroupSurfacePresentModes2EXT					(VkDevice device, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes) const;
 virtual VkResult			acquireFullScreenExclusiveModeEXT						(VkDevice device, VkSwapchainKHR swapchain) const;
@@ -501,10 +502,10 @@ virtual VkResult			getScreenBufferPropertiesQNX							(VkDevice device, const st
 virtual VkResult			getExecutionGraphPipelineScratchSizeAMDX				(VkDevice device, VkPipeline executionGraph, VkExecutionGraphPipelineScratchSizeAMDX* pSizeInfo) const;
 virtual VkResult			getExecutionGraphPipelineNodeIndexAMDX					(VkDevice device, VkPipeline executionGraph, const VkPipelineShaderStageNodeCreateInfoAMDX* pNodeInfo, uint32_t* pNodeIndex) const;
 virtual VkResult			createExecutionGraphPipelinesAMDX						(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkExecutionGraphPipelineCreateInfoAMDX* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const;
-virtual void				cmdInitializeGraphScratchMemoryAMDX						(VkCommandBuffer commandBuffer, VkDeviceAddress scratch) const;
-virtual void				cmdDispatchGraphAMDX									(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const;
-virtual void				cmdDispatchGraphIndirectAMDX							(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const;
-virtual void				cmdDispatchGraphIndirectCountAMDX						(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceAddress countInfo) const;
+virtual void				cmdInitializeGraphScratchMemoryAMDX						(VkCommandBuffer commandBuffer, VkPipeline executionGraph, VkDeviceAddress scratch, VkDeviceSize scratchSize) const;
+virtual void				cmdDispatchGraphAMDX									(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo) const;
+virtual void				cmdDispatchGraphIndirectAMDX							(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo) const;
+virtual void				cmdDispatchGraphIndirectCountAMDX						(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, VkDeviceAddress countInfo) const;
 virtual void				cmdBindDescriptorSets2KHR								(VkCommandBuffer commandBuffer, const VkBindDescriptorSetsInfoKHR* pBindDescriptorSetsInfo) const;
 virtual void				cmdPushConstants2KHR									(VkCommandBuffer commandBuffer, const VkPushConstantsInfoKHR* pPushConstantsInfo) const;
 virtual void				cmdPushDescriptorSet2KHR								(VkCommandBuffer commandBuffer, const VkPushDescriptorSetInfoKHR* pPushDescriptorSetInfo) const;

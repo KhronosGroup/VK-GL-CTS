@@ -394,6 +394,17 @@ inline VkSurfaceFormatKHR makeSurfaceFormatKHR (VkFormat format, VkColorSpaceKHR
 	return res;
 }
 
+inline VkLayerSettingEXT makeLayerSettingEXT (const char* pLayerName, const char* pSettingName, VkLayerSettingTypeEXT type, uint32_t valueCount, const void* pValues)
+{
+	VkLayerSettingEXT res;
+	res.pLayerName		= pLayerName;
+	res.pSettingName	= pSettingName;
+	res.type			= type;
+	res.valueCount		= valueCount;
+	res.pValues			= pValues;
+	return res;
+}
+
 inline VkConformanceVersion makeConformanceVersion (uint8_t major, uint8_t minor, uint8_t subminor, uint8_t patch)
 {
 	VkConformanceVersion res;

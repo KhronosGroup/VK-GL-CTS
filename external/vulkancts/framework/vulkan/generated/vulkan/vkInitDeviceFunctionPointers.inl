@@ -516,6 +516,7 @@ m_vk.getDeviceAccelerationStructureCompatibilityKHR = (GetDeviceAccelerationStru
 m_vk.getRayTracingShaderGroupStackSizeKHR = (GetRayTracingShaderGroupStackSizeKHRFunc) GET_PROC_ADDR("vkGetRayTracingShaderGroupStackSizeKHR");
 m_vk.cmdSetRayTracingPipelineStackSizeKHR = (CmdSetRayTracingPipelineStackSizeKHRFunc) GET_PROC_ADDR("vkCmdSetRayTracingPipelineStackSizeKHR");
 m_vk.getImageViewHandleNVX = (GetImageViewHandleNVXFunc) GET_PROC_ADDR("vkGetImageViewHandleNVX");
+m_vk.getImageViewHandle64NVX = (GetImageViewHandle64NVXFunc) GET_PROC_ADDR("vkGetImageViewHandle64NVX");
 m_vk.getImageViewAddressNVX = (GetImageViewAddressNVXFunc) GET_PROC_ADDR("vkGetImageViewAddressNVX");
 m_vk.getDeviceGroupSurfacePresentModes2EXT = (GetDeviceGroupSurfacePresentModes2EXTFunc) GET_PROC_ADDR("vkGetDeviceGroupSurfacePresentModes2EXT");
 m_vk.acquireFullScreenExclusiveModeEXT = (AcquireFullScreenExclusiveModeEXTFunc) GET_PROC_ADDR("vkAcquireFullScreenExclusiveModeEXT");

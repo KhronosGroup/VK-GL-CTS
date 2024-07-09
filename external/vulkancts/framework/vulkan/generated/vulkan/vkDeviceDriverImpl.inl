@@ -1565,6 +1565,11 @@ uint32_t DeviceDriver::getImageViewHandleNVX (VkDevice device, const VkImageView
     return m_vk.getImageViewHandleNVX(device, pInfo);
 }
 
+uint64_t DeviceDriver::getImageViewHandle64NVX (VkDevice device, const VkImageViewHandleInfoNVX* pInfo) const
+{
+    return m_vk.getImageViewHandle64NVX(device, pInfo);
+}
+
 VkResult DeviceDriver::getImageViewAddressNVX (VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties) const
 {
     return m_vk.getImageViewAddressNVX(device, imageView, pProperties);
@@ -2619,24 +2624,24 @@ VkResult DeviceDriver::createExecutionGraphPipelinesAMDX (VkDevice device, VkPip
     return m_vk.createExecutionGraphPipelinesAMDX(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
 }
 
-void DeviceDriver::cmdInitializeGraphScratchMemoryAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch) const
+void DeviceDriver::cmdInitializeGraphScratchMemoryAMDX (VkCommandBuffer commandBuffer, VkPipeline executionGraph, VkDeviceAddress scratch, VkDeviceSize scratchSize) const
 {
-    m_vk.cmdInitializeGraphScratchMemoryAMDX(commandBuffer, scratch);
+    m_vk.cmdInitializeGraphScratchMemoryAMDX(commandBuffer, executionGraph, scratch, scratchSize);
 }
 
-void DeviceDriver::cmdDispatchGraphAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const
+void DeviceDriver::cmdDispatchGraphAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo) const
 {
-    m_vk.cmdDispatchGraphAMDX(commandBuffer, scratch, pCountInfo);
+    m_vk.cmdDispatchGraphAMDX(commandBuffer, scratch, scratchSize, pCountInfo);
 }
 
-void DeviceDriver::cmdDispatchGraphIndirectAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const
+void DeviceDriver::cmdDispatchGraphIndirectAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo) const
 {
-    m_vk.cmdDispatchGraphIndirectAMDX(commandBuffer, scratch, pCountInfo);
+    m_vk.cmdDispatchGraphIndirectAMDX(commandBuffer, scratch, scratchSize, pCountInfo);
 }
 
-void DeviceDriver::cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceAddress countInfo) const
+void DeviceDriver::cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, VkDeviceAddress countInfo) const
 {
-    m_vk.cmdDispatchGraphIndirectCountAMDX(commandBuffer, scratch, countInfo);
+    m_vk.cmdDispatchGraphIndirectCountAMDX(commandBuffer, scratch, scratchSize, countInfo);
 }
 
 void DeviceDriver::cmdBindDescriptorSets2KHR (VkCommandBuffer commandBuffer, const VkBindDescriptorSetsInfoKHR* pBindDescriptorSetsInfo) const
