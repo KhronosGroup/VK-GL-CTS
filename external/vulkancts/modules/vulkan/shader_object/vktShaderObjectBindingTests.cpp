@@ -1017,16 +1017,11 @@ tcu::TestStatus ShaderObjectBindingInstance::iterate(void)
                                                                                                      VK_NULL_HANDLE,
                                         bindFrag ? *fragShader : VK_NULL_HANDLE,
                                         bindComp ? *compShader : VK_NULL_HANDLE,
-                                        bindMesh ? *meshShader : VK_NULL_HANDLE,
-                                        bindTask ? *taskShader : VK_NULL_HANDLE,
+                                        (bindMesh && meshShaderFeatures.meshShader) ? *meshShader : VK_NULL_HANDLE,
+                                        (bindTask && meshShaderFeatures.taskShader) ? *taskShader : VK_NULL_HANDLE,
                                     };
-                                    uint32_t count = 6u;
-                                    if (meshShaderFeatures.meshShader)
-                                        ++count;
-                                    if (meshShaderFeatures.taskShader)
-                                        ++count;
                                     vk::beginCommandBuffer(vk, *cmdBuffer);
-                                    vk.cmdBindShadersEXT(*cmdBuffer, count, stages.data(), shaders.data());
+                                    vk.cmdBindShadersEXT(*cmdBuffer, 8u, stages.data(), shaders.data());
                                     vk::endCommandBuffer(vk, *cmdBuffer);
                                     vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
                                 }
