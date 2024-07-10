@@ -64,7 +64,7 @@ private:
     void createSolidTexture(const glw::GLenum, const int, const int, const glw::GLubyte *const);
     bool drawAndVerify(const glw::GLint, const float, const int, const int, const int, const float, const float,
                        const float, const glw::GLenum, const glw::GLenum, const bool);
-    bool doComparison(const int size, const glw::GLubyte *const expectedcolor);
+    bool doComparison(const int size, const float *const expectedcolor);
 
     /* Private members */
     static const glw::GLchar *m_shader_basic_vert;
