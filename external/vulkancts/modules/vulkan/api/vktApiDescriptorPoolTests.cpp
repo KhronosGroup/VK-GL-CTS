@@ -446,7 +446,7 @@ tcu::TestStatus noResetDescriptorPoolTest(Context &context, const ResetDescripto
                                                    context.getPlatformInterface(), instance, instance.getDriver(),
                                                    physicalDevice, &deviceCreateInfo);
 
-        VkDescriptorPool descriptorPool = 0;
+        VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
         VK_CHECK(vkd.createDescriptorPool(*device, &descriptorPoolInfo, DE_NULL, &descriptorPool));
         if (!descriptorPool)
             TCU_THROW(TestError, "create descriptor pool failed");

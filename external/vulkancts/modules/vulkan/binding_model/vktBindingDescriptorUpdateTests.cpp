@@ -349,9 +349,9 @@ struct DestroyedSampler
 vk::VkSampler SamplerlessDescriptorWriteTestInstance::getSamplerHandle(void) const
 {
     if (m_params.pointer == PointerCase::ZERO)
-        return vk::VkSampler{0};
+        return vk::VkSampler{(void *)0};
     if (m_params.pointer == PointerCase::ONE)
-        return vk::VkSampler{1};
+        return vk::VkSampler{(void *)1};
     DestroyedSampler destroyedSampler{m_context};
     return destroyedSampler.sampler;
 }

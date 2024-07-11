@@ -1863,7 +1863,7 @@ public:
         DestroyPipelineFunc destroyPipelineFunc =
             (DestroyPipelineFunc)getDeviceProcAddrFunc(device, "vkDestroyPipeline");
         VkPipelineCache pipelineCache = m_context.getResourceInterface()->getPipelineCache(device);
-        std::vector<VkPipeline> pipelines(pipelineCount, VkPipeline(DE_NULL));
+        std::vector<VkPipeline> pipelines(pipelineCount, VK_NULL_HANDLE);
         uint32_t iterations = m_context.getDeviceVulkanSC10Properties().recyclePipelineMemory ? 1u : 4u;
 
         // if recyclePipelineMemory is set then we are able to create the same pipelines again
@@ -1877,7 +1877,7 @@ public:
                 if (result != VK_SUCCESS)
                 {
                     for (uint32_t j = 0; j < pipelineCount; ++j)
-                        if (pipelines[j].getInternal() != VK_NULL_HANDLE)
+                        if (pipelines[j] != VK_NULL_HANDLE)
                             destroyPipelineFunc(device, pipelines[j], DE_NULL);
                     return;
                 }

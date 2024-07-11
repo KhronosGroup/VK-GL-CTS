@@ -59,6 +59,9 @@ using std::vector;
 #define TCU_FAIL_STR(MSG) TCU_FAIL(string(MSG).c_str())
 #endif
 
+#define INVALID_DISPLAY VkDisplayKHR(reinterpret_cast<void *>(0xABCDEF11))
+#define INVALID_DISPLAY_MODE VkDisplayModeKHR(reinterpret_cast<void *>(0xABCDEF11))
+
 enum DisplayIndexTest
 {
     DISPLAY_TEST_INDEX_START,
@@ -811,7 +814,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
             (vk::VkBool32)(VK_TRUE + 1),         // VkBool32 planeReorderPossible;
             (vk::VkBool32)(VK_TRUE + 1)          // VkBool32 persistentContent;
         };
-        const VkDisplayKHR canaryDisplay = static_cast<VkDisplayKHR>(0xABCDEF11);
+        const VkDisplayKHR canaryDisplay = INVALID_DISPLAY;
         const uint32_t canaryItemCount   = 1;
         std::vector<VkDisplayPropertiesKHR> displaysProps(displayCountRequested + canaryItemCount, invalidDisplayProps);
         uint32_t displayCountRetrieved = displayCountRequested;
@@ -951,7 +954,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
             VK_NULL_HANDLE, // VkDisplayKHR    currentDisplay
             DEUINT32_MAX    // uint32_t        currentStackIndex
         };
-        const VkDisplayKHR canaryDisplay = static_cast<VkDisplayKHR>(0xABCDEF11);
+        const VkDisplayKHR canaryDisplay = INVALID_DISPLAY;
         const uint32_t canaryItemCount   = 1;
         std::vector<VkDisplayPlanePropertiesKHR> planeProps(planeCountRequested + canaryItemCount, invalidPlaneProps);
         uint32_t planeCountRetrieved = planeCountRequested;
@@ -1075,7 +1078,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneSupportedDisplay
         {
             const uint32_t displayCountExpected = std::min(displayCountRequested, displayCountReported);
             const VkDisplayKHR nullDisplay      = VK_NULL_HANDLE;
-            const VkDisplayKHR canaryDisplay    = static_cast<VkDisplayKHR>(0xABCDEF11);
+            const VkDisplayKHR canaryDisplay    = INVALID_DISPLAY;
             const uint32_t canaryItemCount      = 1;
             std::vector<VkDisplayKHR> displaysForPlane(displayCountRequested + canaryItemCount, nullDisplay);
             uint32_t displayCountRetrieved = displayCountRequested;
@@ -1166,7 +1169,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModePropertiesKHR(voi
                                                              {0, 0}, // VkExtent2D                    visibleRegion
                                                              0       // uint32_t                        refreshRate
                                                          }};
-            const VkDisplayModeKHR canaryDisplayMode  = static_cast<VkDisplayModeKHR>(0xABCDEF11);
+            const VkDisplayModeKHR canaryDisplayMode  = INVALID_DISPLAY_MODE;
             const uint32_t canaryItemCount            = 1;
             std::vector<VkDisplayModePropertiesKHR> modesForDisplay(modesCountRequested + canaryItemCount, nullMode);
             uint32_t modesCountRetrieved = modesCountRequested;
@@ -1745,7 +1748,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
             DE_NULL,                    // void*                    pNext
             nonUpdatedDisplayProperties // VkDisplayPropertiesKHR    displayProperties
         };
-        const VkDisplayKHR canaryDisplay = static_cast<VkDisplayKHR>(0xABCDEF11);
+        const VkDisplayKHR canaryDisplay = INVALID_DISPLAY;
         const uint32_t canaryItemCount   = 1;
         std::vector<VkDisplayProperties2KHR> displaysProps2(displayCountRequested + canaryItemCount,
                                                             nonUpdatedDisplayProperties2);
@@ -1879,7 +1882,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
             DE_NULL,                  // void*                        pNext
             nonUpdatedPlaneProperties // VkDisplayPlanePropertiesKHR    displayPlaneProperties
         };
-        const VkDisplayKHR canaryDisplay = static_cast<VkDisplayKHR>(0xABCDEF11);
+        const VkDisplayKHR canaryDisplay = INVALID_DISPLAY;
         const uint32_t canaryItemCount   = 1;
         std::vector<VkDisplayPlaneProperties2KHR> planeProps2(planeCountRequested + canaryItemCount,
                                                               nonUpdatedPlaneProperties2);
@@ -2097,7 +2100,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModeProperties2KHR(vo
                 DE_NULL,                 // void*                        pNext
                 nonUpdatedModeProperties // VkDisplayModePropertiesKHR    displayModeProperties
             };
-            const VkDisplayModeKHR canaryDisplayMode = static_cast<VkDisplayModeKHR>(0xABCDEF11);
+            const VkDisplayModeKHR canaryDisplayMode = INVALID_DISPLAY_MODE;
             const uint32_t canaryItemCount           = 1;
             std::vector<VkDisplayModeProperties2KHR> modesProperties2(modesCountRequested + canaryItemCount,
                                                                       nonUpdatedModeProperties2);

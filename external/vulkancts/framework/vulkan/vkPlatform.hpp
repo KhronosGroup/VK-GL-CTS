@@ -152,8 +152,8 @@ protected:
         m_resourceInterface->getStatMax().VAR_NAME =                                                             \
             de::max(m_resourceInterface->getStatMax().VAR_NAME, m_resourceInterface->getStatCurrent().VAR_NAME); \
     } while (0)
-#define DDSTAT_HANDLE_DESTROY_IF(VAR_VARIABLE, VAR_NAME, VAR_VALUE)                                    \
-    if (VAR_VARIABLE.getInternal() != VK_NULL_HANDLE && m_resourceInterface->isEnabledHandleDestroy()) \
+#define DDSTAT_HANDLE_DESTROY_IF(VAR_VARIABLE, VAR_NAME, VAR_VALUE)                      \
+    if (VAR_VARIABLE != VK_NULL_HANDLE && m_resourceInterface->isEnabledHandleDestroy()) \
     m_resourceInterface->getStatCurrent().VAR_NAME -= (VAR_VALUE)
 #define DDSTAT_HANDLE_DESTROY(VAR_NAME, VAR_VALUE)     \
     if (m_resourceInterface->isEnabledHandleDestroy()) \

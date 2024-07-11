@@ -165,7 +165,8 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkd, VkDevice d
 
     {
         const VkDescriptorImageInfo imageInfo = {
-            0xdeadbeef, // Not required to be valid. Use something invalid and not NULL
+            VkSampler(
+                reinterpret_cast<void *>(0xdeadbeef)), // Not required to be valid. Use something invalid and not NULL
             imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         const VkWriteDescriptorSet descriptorWrite = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,

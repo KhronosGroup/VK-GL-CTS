@@ -63,7 +63,12 @@ public:
     void initApiVersion(const uint32_t version);
     bool isVulkanSC(void) const;
 
-    uint64_t incResourceCounter();
+    template <typename VkObject>
+    VkObject incResourceCounter() const
+    {
+        uint64_t value = ++m_resourceCounter;
+        return VkObject(reinterpret_cast<void *>(value));
+    }
     std::mutex &getStatMutex();
     VkDeviceObjectReservationCreateInfo &getStatCurrent();
     VkDeviceObjectReservationCreateInfo &getStatMax();

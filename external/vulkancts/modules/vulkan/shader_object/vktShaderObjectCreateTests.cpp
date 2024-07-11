@@ -585,7 +585,7 @@ tcu::TestStatus ShaderObjectStageInstance::iterate(void)
         shaderCreateInfos[i].pCode = &binaryData[i][0];
     }
 
-    uint32_t garbage = 1234u;
+    vk::VkShaderEXT garbage{(void *)1234u};
     std::vector<vk::VkShaderEXT> binaryShaders(count, garbage); // Fill with garbage
     result = vk.createShadersEXT(device, count, &shaderCreateInfos[0], DE_NULL, &binaryShaders[0]);
 

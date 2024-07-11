@@ -85,11 +85,6 @@ bool ResourceInterface::isVulkanSC(void) const
     return m_vulkanSC.get();
 }
 
-uint64_t ResourceInterface::incResourceCounter()
-{
-    return ++m_resourceCounter;
-}
-
 std::mutex &ResourceInterface::getStatMutex()
 {
     return m_mutex;
@@ -496,7 +491,7 @@ VkResult ResourceInterfaceStandard::createShaderModule(VkDevice device, const Vk
     {
         if (isVulkanSC())
         {
-            *pShaderModule = VkShaderModule(++m_resourceCounter);
+            *pShaderModule = incResourceCounter<VkShaderModule>();
             registerObjectHash(pShaderModule->getInternal(),
                                calculateShaderModuleHash(*pCreateInfo, getObjectHashes()));
             return VK_SUCCESS;
@@ -516,7 +511,7 @@ VkResult ResourceInterfaceStandard::createShaderModule(VkDevice device, const Vk
     }
 
     // main process: store VkShaderModuleCreateInfo in JSON format. Shaders will be sent later for m_pipelineCache creation ( and sent through file to another process )
-    *pShaderModule = VkShaderModule(++m_resourceCounter);
+    *pShaderModule = incResourceCounter<VkShaderModule>();
     registerObjectHash(pShaderModule->getInternal(), calculateShaderModuleHash(*pCreateInfo, getObjectHashes()));
     m_pipelineInput.shaderModules.insert({*pShaderModule, writeJSON_VkShaderModuleCreateInfo(*pCreateInfo)});
     return VK_SUCCESS;
@@ -1128,7 +1123,7 @@ VkResult ResourceInterfaceVKSC::createShaderModule(VkDevice device, const VkShad
     // - server exists
     // - subprocess asks for creation of VkShaderModule which will be later ignored, because it will receive the whole pipeline from server
     // ( Are there any tests which receive VkShaderModule and do not use it in any pipeline ? )
-    *pShaderModule = VkShaderModule(++m_resourceCounter);
+    *pShaderModule = incResourceCounter<VkShaderModule>();
     registerObjectHash(pShaderModule->getInternal(), calculateShaderModuleHash(*pCreateInfo, getObjectHashes()));
     return VK_SUCCESS;
 }

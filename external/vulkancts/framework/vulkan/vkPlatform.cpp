@@ -238,7 +238,7 @@ void DeviceDriverSC::createDescriptorSetLayoutHandlerStat(VkDevice device,
     m_resourceInterface->getStatMax().maxImmutableSamplersPerDescriptorSetLayout =
         de::max(m_resourceInterface->getStatMax().maxImmutableSamplersPerDescriptorSetLayout, immutableSamplersCount);
 
-    *pSetLayout = VkDescriptorSetLayout(m_resourceInterface->incResourceCounter());
+    *pSetLayout = m_resourceInterface->incResourceCounter<VkDescriptorSetLayout>();
     m_descriptorSetLayouts.insert({*pSetLayout, *pCreateInfo});
     m_resourceInterface->registerObjectHash(
         pSetLayout->getInternal(),
@@ -271,7 +271,7 @@ void DeviceDriverSC::allocateDescriptorSetsHandlerStat(VkDevice device,
     DDSTAT_LOCK();
     DDSTAT_HANDLE_CREATE(descriptorSetRequestCount, pAllocateInfo->descriptorSetCount);
     for (uint32_t i = 0; i < pAllocateInfo->descriptorSetCount; ++i)
-        pDescriptorSets[i] = Handle<HANDLE_TYPE_DESCRIPTOR_SET>(m_resourceInterface->incResourceCounter());
+        pDescriptorSets[i] = m_resourceInterface->incResourceCounter<VkDescriptorSet>();
     for (uint32_t i = 0; i < pAllocateInfo->descriptorSetCount; ++i)
         m_descriptorSetsInPool[pDescriptorSets[i]] = pAllocateInfo->descriptorPool;
 }
@@ -346,7 +346,7 @@ void DeviceDriverSC::createImageViewHandler(VkDevice device, const VkImageViewCr
         m_resourceInterface->getStatMax().maxLayeredImageViewMipLevels =
             de::max(m_resourceInterface->getStatMax().maxLayeredImageViewMipLevels, levelCount);
 
-    *pView = VkImageView(m_resourceInterface->incResourceCounter());
+    *pView = m_resourceInterface->incResourceCounter<VkImageView>();
     m_imageViews.insert({*pView, *pCreateInfo});
 }
 
@@ -393,7 +393,7 @@ void DeviceDriverSC::createQueryPoolHandler(VkDevice device, const VkQueryPoolCr
         break;
     }
     // We don't have to track queryPool resources as we do with image views because they're not removed from memory in Vulkan SC.
-    *pQueryPool = VkQueryPool(m_resourceInterface->incResourceCounter());
+    *pQueryPool = m_resourceInterface->incResourceCounter<VkQueryPool>();
 }
 
 VkResult DeviceDriverSC::createPipelineLayoutHandlerNorm(VkDevice device, const VkPipelineLayoutCreateInfo *pCreateInfo,
@@ -414,7 +414,7 @@ void DeviceDriverSC::createPipelineLayoutHandlerStat(VkDevice device, const VkPi
 {
     DDSTAT_LOCK();
     DDSTAT_HANDLE_CREATE(pipelineLayoutRequestCount, 1);
-    *pPipelineLayout = VkPipelineLayout(m_resourceInterface->incResourceCounter());
+    *pPipelineLayout = m_resourceInterface->incResourceCounter<VkPipelineLayout>();
     m_resourceInterface->registerObjectHash(
         pPipelineLayout->getInternal(),
         calculatePipelineLayoutHash(*pCreateInfo, m_resourceInterface->getObjectHashes()));
@@ -446,7 +446,7 @@ void DeviceDriverSC::createGraphicsPipelinesHandlerStat(VkDevice device, VkPipel
     DDSTAT_HANDLE_CREATE(graphicsPipelineRequestCount, createInfoCount);
     for (uint32_t i = 0; i < createInfoCount; ++i)
     {
-        pPipelines[i] = VkPipeline(m_resourceInterface->incResourceCounter());
+        pPipelines[i] = m_resourceInterface->incResourceCounter<VkPipeline>();
         m_graphicsPipelines.insert({pPipelines[i], pCreateInfos[i]});
     }
 
@@ -479,7 +479,7 @@ void DeviceDriverSC::createComputePipelinesHandlerStat(VkDevice device, VkPipeli
     DDSTAT_HANDLE_CREATE(computePipelineRequestCount, createInfoCount);
     for (uint32_t i = 0; i < createInfoCount; ++i)
     {
-        pPipelines[i] = VkPipeline(m_resourceInterface->incResourceCounter());
+        pPipelines[i] = m_resourceInterface->incResourceCounter<VkPipeline>();
         m_computePipelines.insert({pPipelines[i], pCreateInfos[i]});
     }
 
@@ -533,7 +533,7 @@ void DeviceDriverSC::createFramebufferHandlerStat(VkDevice device, const VkFrame
     checkFramebufferSupport(pCreateInfo);
     DDSTAT_HANDLE_CREATE(framebufferRequestCount, 1);
 
-    *pFramebuffer = Handle<HANDLE_TYPE_FRAMEBUFFER>(m_resourceInterface->incResourceCounter());
+    *pFramebuffer = m_resourceInterface->incResourceCounter<VkFramebuffer>();
 }
 
 VkResult DeviceDriverSC::createRenderPassHandlerNorm(VkDevice device, const VkRenderPassCreateInfo *pCreateInfo,
@@ -571,7 +571,7 @@ void DeviceDriverSC::createRenderPassHandlerStat(VkDevice device, const VkRender
     DDSTAT_HANDLE_CREATE(subpassDescriptionRequestCount, pCreateInfo->subpassCount);
     DDSTAT_HANDLE_CREATE(attachmentDescriptionRequestCount, pCreateInfo->attachmentCount);
 
-    *pRenderPass = VkRenderPass(m_resourceInterface->incResourceCounter());
+    *pRenderPass = m_resourceInterface->incResourceCounter<VkRenderPass>();
     m_renderPasses.insert({*pRenderPass, *pCreateInfo});
     m_resourceInterface->registerObjectHash(
         pRenderPass->getInternal(), calculateRenderPassHash(*pCreateInfo, m_resourceInterface->getObjectHashes()));
@@ -613,7 +613,7 @@ void DeviceDriverSC::createRenderPass2HandlerStat(VkDevice device, const VkRende
     DDSTAT_HANDLE_CREATE(subpassDescriptionRequestCount, pCreateInfo->subpassCount);
     DDSTAT_HANDLE_CREATE(attachmentDescriptionRequestCount, pCreateInfo->attachmentCount);
 
-    *pRenderPass = VkRenderPass(m_resourceInterface->incResourceCounter());
+    *pRenderPass = m_resourceInterface->incResourceCounter<VkRenderPass>();
     m_renderPasses2.insert({*pRenderPass, *pCreateInfo});
     m_resourceInterface->registerObjectHash(
         pRenderPass->getInternal(), calculateRenderPass2Hash(*pCreateInfo, m_resourceInterface->getObjectHashes()));
@@ -662,7 +662,7 @@ void DeviceDriverSC::createSamplerHandlerStat(VkDevice device, const VkSamplerCr
 {
     DDSTAT_LOCK();
     DDSTAT_HANDLE_CREATE(samplerRequestCount, 1);
-    *pSampler = VkSampler(m_resourceInterface->incResourceCounter());
+    *pSampler = m_resourceInterface->incResourceCounter<VkSampler>();
     m_resourceInterface->registerObjectHash(pSampler->getInternal(),
                                             calculateSamplerHash(*pCreateInfo, m_resourceInterface->getObjectHashes()));
     m_resourceInterface->createSampler(device, pCreateInfo, pAllocator, pSampler);
@@ -688,7 +688,7 @@ void DeviceDriverSC::createSamplerYcbcrConversionHandlerStat(VkDevice device,
 {
     DDSTAT_LOCK();
     DDSTAT_HANDLE_CREATE(samplerYcbcrConversionRequestCount, 1);
-    *pYcbcrConversion = VkSamplerYcbcrConversion(m_resourceInterface->incResourceCounter());
+    *pYcbcrConversion = m_resourceInterface->incResourceCounter<VkSamplerYcbcrConversion>();
     m_resourceInterface->registerObjectHash(
         pYcbcrConversion->getInternal(),
         calculateSamplerYcbcrConversionHash(*pCreateInfo, m_resourceInterface->getObjectHashes()));
@@ -777,7 +777,7 @@ void DeviceDriverSC::createCommandPoolHandlerStat(VkDevice device, const VkComma
     else
         DDSTAT_HANDLE_CREATE(commandBufferRequestCount, 1);
 
-    *pCommandPool = Handle<HANDLE_TYPE_COMMAND_POOL>(m_resourceInterface->incResourceCounter());
+    *pCommandPool = m_resourceInterface->incResourceCounter<VkCommandPool>();
     m_resourceInterface->createCommandPool(device, pCreateInfo, pAllocator, pCommandPool);
 }
 
@@ -793,7 +793,7 @@ void DeviceDriverSC::allocateCommandBuffersHandler(VkDevice device, const VkComm
     DDSTAT_LOCK();
     DDSTAT_HANDLE_CREATE(commandBufferRequestCount, pAllocateInfo->commandBufferCount);
     for (uint32_t i = 0; i < pAllocateInfo->commandBufferCount; ++i)
-        pCommandBuffers[i] = (VkCommandBuffer)m_resourceInterface->incResourceCounter();
+        pCommandBuffers[i] = m_resourceInterface->incResourceCounter<VkCommandBuffer>();
     m_resourceInterface->allocateCommandBuffers(device, pAllocateInfo, pCommandBuffers);
 }
 

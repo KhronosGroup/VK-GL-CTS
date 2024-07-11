@@ -935,7 +935,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
         if (pipeline.pipelineContents.find("VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO") != std::string::npos)
         {
             VkGraphicsPipelineCreateInfo gpCI{};
-            gpCI.basePipelineHandle = VkPipeline(0);
+            gpCI.basePipelineHandle = VK_NULL_HANDLE;
             readJSON_VkGraphicsPipelineCreateInfo(jsonReader, pipeline.pipelineContents, gpCI);
 
             // set poolEntrySize for pipeline
@@ -973,7 +973,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                 gpCI.layout = jt->second;
             }
 
-            VkPipeline gPipeline(0u);
+            VkPipeline gPipeline = VK_NULL_HANDLE;
             VK_CHECK(createGraphicsPipelinesFunc(*pcDevice, pipelineCache, 1, &gpCI, DE_NULL, &gPipeline));
             // pipeline was added to cache. We may remove it immediately
             destroyPipelineFunc(*pcDevice, gPipeline, DE_NULL);
@@ -981,7 +981,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
         else if (pipeline.pipelineContents.find("VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO") != std::string::npos)
         {
             VkComputePipelineCreateInfo cpCI{};
-            cpCI.basePipelineHandle = VkPipeline(0);
+            cpCI.basePipelineHandle = VK_NULL_HANDLE;
             readJSON_VkComputePipelineCreateInfo(jsonReader, pipeline.pipelineContents, cpCI);
 
             // set poolEntrySize for pipeline
@@ -1006,7 +1006,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                 cpCI.layout = jt->second;
             }
 
-            VkPipeline cPipeline(0u);
+            VkPipeline cPipeline = VK_NULL_HANDLE;
             VK_CHECK(createComputePipelinesFunc(*pcDevice, pipelineCache, 1, &cpCI, DE_NULL, &cPipeline));
             // pipeline was added to cache. We may remove it immediately
             destroyPipelineFunc(*pcDevice, cPipeline, DE_NULL);

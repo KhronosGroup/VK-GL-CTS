@@ -118,8 +118,9 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
                     const Json::Value &value                = jsonSamplerYcbcrConversions[i][membersNames[0]];
                     uint64_t index;
                     std::istringstream(membersNames[0]) >> index;
-                    input.samplerYcbcrConversions[vk::VkSamplerYcbcrConversion(index)] = std::string(
-                        fileContents.begin() + value.getOffsetStart(), fileContents.begin() + value.getOffsetLimit());
+                    input.samplerYcbcrConversions[vk::VkSamplerYcbcrConversion(reinterpret_cast<void *>(index))] =
+                        std::string(fileContents.begin() + value.getOffsetStart(),
+                                    fileContents.begin() + value.getOffsetLimit());
                 }
             }
 
@@ -132,8 +133,8 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
                     const Json::Value &value                = jsonSamplers[i][membersNames[0]];
                     uint64_t index;
                     std::istringstream(membersNames[0]) >> index;
-                    input.samplers[vk::VkSampler(index)] = std::string(fileContents.begin() + value.getOffsetStart(),
-                                                                       fileContents.begin() + value.getOffsetLimit());
+                    input.samplers[vk::VkSampler(reinterpret_cast<void *>(index))] = std::string(
+                        fileContents.begin() + value.getOffsetStart(), fileContents.begin() + value.getOffsetLimit());
                 }
             }
 
@@ -146,8 +147,9 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
                     const Json::Value &value                = jsonDescriptorSetLayouts[i][membersNames[0]];
                     uint64_t index;
                     std::istringstream(membersNames[0]) >> index;
-                    input.descriptorSetLayouts[vk::VkDescriptorSetLayout(index)] = std::string(
-                        fileContents.begin() + value.getOffsetStart(), fileContents.begin() + value.getOffsetLimit());
+                    input.descriptorSetLayouts[vk::VkDescriptorSetLayout(reinterpret_cast<void *>(index))] =
+                        std::string(fileContents.begin() + value.getOffsetStart(),
+                                    fileContents.begin() + value.getOffsetLimit());
                 }
             }
 
@@ -184,7 +186,7 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
             const Json::Value &jsonPipelineLayout = jsonPipelineState["PipelineLayout"];
             if (!jsonPipelineLayout.isNull() && pipelineLayoutHandle != 0u)
             {
-                input.pipelineLayouts[vk::VkPipelineLayout(pipelineLayoutHandle)] =
+                input.pipelineLayouts[vk::VkPipelineLayout(reinterpret_cast<void *>(pipelineLayoutHandle))] =
                     std::string(fileContents.begin() + jsonPipelineLayout.getOffsetStart(),
                                 fileContents.begin() + jsonPipelineLayout.getOffsetLimit());
             }
@@ -192,7 +194,7 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
             const Json::Value &jsonRenderPass = jsonPipelineState["Renderpass"];
             if (!jsonRenderPass.isNull() && renderPassHandle != 0u)
             {
-                input.renderPasses[vk::VkRenderPass(renderPassHandle)] =
+                input.renderPasses[vk::VkRenderPass(reinterpret_cast<void *>(renderPassHandle))] =
                     std::string(fileContents.begin() + jsonRenderPass.getOffsetStart(),
                                 fileContents.begin() + jsonRenderPass.getOffsetLimit());
             }
@@ -200,7 +202,7 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
             const Json::Value &jsonRenderPass2 = jsonPipelineState["Renderpass2"];
             if (!jsonRenderPass2.isNull() && renderPassHandle != 0u)
             {
-                input.renderPasses[vk::VkRenderPass(renderPassHandle)] =
+                input.renderPasses[vk::VkRenderPass(reinterpret_cast<void *>(renderPassHandle))] =
                     std::string(fileContents.begin() + jsonRenderPass.getOffsetStart(),
                                 fileContents.begin() + jsonRenderPass.getOffsetLimit());
             }
@@ -246,7 +248,7 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
                         reinterpret_cast<uint32_t *>(shaderData.data()) // const uint32_t* pCode;
                     };
 
-                    input.shaderModules[vk::VkShaderModule(it->second)] =
+                    input.shaderModules[vk::VkShaderModule(reinterpret_cast<void *>(it->second))] =
                         vksc_server::json::writeJSON_VkShaderModuleCreateInfo(smCI);
                 }
             }

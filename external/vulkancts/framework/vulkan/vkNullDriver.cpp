@@ -163,7 +163,7 @@ void allocateNonDispHandleArray(Parent parent, VkPipelineCache pipelineCache, ui
     for (uint32_t i = 0; i < createInfoCount; i++)
     {
         Object *const obj = allocateHandle<Object, Object *>(parent, &pCreateInfos[i], pAllocator);
-        pHandles[i]       = Handle((uint64_t)(uintptr_t)obj);
+        pHandles[i]       = Handle(obj);
     }
 }
 
@@ -171,7 +171,7 @@ template <typename Object, typename BaseObject, typename Handle, typename Parent
 Handle allocateNonDispHandle(Parent parent, const CreateInfo *pCreateInfo, const VkAllocationCallbacks *pAllocator)
 {
     Object *const obj = allocateHandle<Object, Object *>(parent, pCreateInfo, pAllocator);
-    return Handle((uint64_t)(uintptr_t) static_cast<BaseObject *>(obj));
+    return Handle(obj);
 }
 
 template <typename Object, typename Handle, typename Parent, typename CreateInfo>
@@ -184,13 +184,13 @@ template <typename Object, typename Handle, typename Parent>
 Handle allocateNonDispHandle(Parent parent, const VkAllocationCallbacks *pAllocator)
 {
     Object *const obj = allocateHandle<Object, Object *>(parent, pAllocator);
-    return Handle((uint64_t)(uintptr_t)obj);
+    return Handle(obj);
 }
 
 template <typename Object, typename Handle>
 void freeNonDispHandle(Handle handle, const VkAllocationCallbacks *pAllocator)
 {
-    freeHandle<Object>(reinterpret_cast<Object *>((uintptr_t)handle.getInternal()), pAllocator);
+    freeHandle<Object>(handle.template as<Object>(), pAllocator);
 }
 
 // Object definitions
@@ -553,9 +553,7 @@ AHardwareBuffer *findOrCreateHwBuffer(const VkMemoryAllocateInfo *pAllocInfo)
         findStructure<VkImportAndroidHardwareBufferInfoANDROID>(pAllocInfo->pNext);
     const VkMemoryDedicatedAllocateInfo *const dedicatedInfo =
         findStructure<VkMemoryDedicatedAllocateInfo>(pAllocInfo->pNext);
-    const Image *const image  = dedicatedInfo && !!dedicatedInfo->image ?
-                                    reinterpret_cast<const Image *>(dedicatedInfo->image.getInternal()) :
-                                    DE_NULL;
+    const Image *const image  = dedicatedInfo && !!dedicatedInfo->image ? dedicatedInfo->image.as<Image>() : DE_NULL;
     AHardwareBuffer *hwbuffer = DE_NULL;
 
     // Import and export aren't mutually exclusive; we can have both simultaneously.
@@ -710,7 +708,7 @@ CommandPool::~CommandPool(void)
 
 VkCommandBuffer CommandPool::allocate(VkCommandBufferLevel level)
 {
-    CommandBuffer *const impl = new CommandBuffer(m_device, VkCommandPool(reinterpret_cast<uintptr_t>(this)), level);
+    CommandBuffer *const impl = new CommandBuffer(m_device, VkCommandPool(this), level);
 
     try
     {
@@ -778,8 +776,7 @@ private:
 
 VkDescriptorSet DescriptorPool::allocate(VkDescriptorSetLayout setLayout)
 {
-    DescriptorSet *const impl =
-        new DescriptorSet(m_device, VkDescriptorPool(reinterpret_cast<uintptr_t>(this)), setLayout);
+    DescriptorSet *const impl = new DescriptorSet(m_device, VkDescriptorPool(this), setLayout);
 
     try
     {
@@ -791,12 +788,12 @@ VkDescriptorSet DescriptorPool::allocate(VkDescriptorSetLayout setLayout)
         throw;
     }
 
-    return VkDescriptorSet(reinterpret_cast<uintptr_t>(impl));
+    return VkDescriptorSet(impl);
 }
 
 void DescriptorPool::free(VkDescriptorSet set)
 {
-    DescriptorSet *const impl = reinterpret_cast<DescriptorSet *>((uintptr_t)set.getInternal());
+    DescriptorSet *const impl = set.as<DescriptorSet>();
 
     DE_ASSERT(m_flags & VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
     DE_UNREF(m_flags);
@@ -1334,7 +1331,7 @@ extern "C"
     VKAPI_ATTR void VKAPI_CALL getBufferMemoryRequirements(VkDevice, VkBuffer bufferHandle,
                                                            VkMemoryRequirements *requirements)
     {
-        const Buffer *buffer = reinterpret_cast<const Buffer *>(bufferHandle.getInternal());
+        const Buffer *buffer = bufferHandle.as<Buffer>();
 
         requirements->memoryTypeBits = 1u;
         requirements->size           = buffer->getSize();
@@ -1387,7 +1384,7 @@ extern "C"
     VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements(VkDevice, VkImage imageHandle,
                                                           VkMemoryRequirements *requirements)
     {
-        const Image *image = reinterpret_cast<const Image *>(imageHandle.getInternal());
+        const Image *image = imageHandle.as<Image>();
 
         requirements->memoryTypeBits = 1u;
         requirements->alignment      = 16u;
@@ -1434,7 +1431,7 @@ extern "C"
     VKAPI_ATTR VkResult VKAPI_CALL mapMemory(VkDevice, VkDeviceMemory memHandle, VkDeviceSize offset, VkDeviceSize size,
                                              VkMemoryMapFlags flags, void **ppData)
     {
-        DeviceMemory *const memory = reinterpret_cast<DeviceMemory *>(memHandle.getInternal());
+        DeviceMemory *const memory = memHandle.as<DeviceMemory>();
 
         DE_UNREF(size);
         DE_UNREF(flags);
@@ -1446,7 +1443,7 @@ extern "C"
 
     VKAPI_ATTR void VKAPI_CALL unmapMemory(VkDevice device, VkDeviceMemory memHandle)
     {
-        DeviceMemory *const memory = reinterpret_cast<DeviceMemory *>(memHandle.getInternal());
+        DeviceMemory *const memory = memHandle.as<DeviceMemory>();
 
         DE_UNREF(device);
 
@@ -1462,7 +1459,7 @@ extern "C"
         DE_UNREF(device);
 
 #if defined(USE_ANDROID_O_HARDWARE_BUFFER)
-        DeviceMemory *const memory = reinterpret_cast<ExternalDeviceMemoryAndroid *>(pInfo->memory.getInternal());
+        DeviceMemory *const memory                       = pInfo->memory.as<ExternalDeviceMemoryAndroid>();
         ExternalDeviceMemoryAndroid *const androidMemory = static_cast<ExternalDeviceMemoryAndroid *>(memory);
 
         AHardwareBuffer *hwbuffer = androidMemory->getHwBuffer();
@@ -1481,8 +1478,7 @@ extern "C"
     VKAPI_ATTR VkResult VKAPI_CALL allocateDescriptorSets(VkDevice, const VkDescriptorSetAllocateInfo *pAllocateInfo,
                                                           VkDescriptorSet *pDescriptorSets)
     {
-        DescriptorPool *const poolImpl =
-            reinterpret_cast<DescriptorPool *>((uintptr_t)pAllocateInfo->descriptorPool.getInternal());
+        DescriptorPool *const poolImpl = pAllocateInfo->descriptorPool.as<DescriptorPool>();
 
         for (uint32_t ndx = 0; ndx < pAllocateInfo->descriptorSetCount; ++ndx)
         {
@@ -1493,14 +1489,14 @@ extern "C"
             catch (const std::bad_alloc &)
             {
                 for (uint32_t freeNdx = 0; freeNdx < ndx; freeNdx++)
-                    delete reinterpret_cast<DescriptorSet *>((uintptr_t)pDescriptorSets[freeNdx].getInternal());
+                    delete pDescriptorSets[freeNdx].as<DescriptorSet>();
 
                 return VK_ERROR_OUT_OF_HOST_MEMORY;
             }
             catch (VkResult res)
             {
                 for (uint32_t freeNdx = 0; freeNdx < ndx; freeNdx++)
-                    delete reinterpret_cast<DescriptorSet *>((uintptr_t)pDescriptorSets[freeNdx].getInternal());
+                    delete pDescriptorSets[freeNdx].as<DescriptorSet>();
 
                 return res;
             }
@@ -1512,7 +1508,7 @@ extern "C"
     VKAPI_ATTR void VKAPI_CALL freeDescriptorSets(VkDevice, VkDescriptorPool descriptorPool, uint32_t count,
                                                   const VkDescriptorSet *pDescriptorSets)
     {
-        DescriptorPool *const poolImpl = reinterpret_cast<DescriptorPool *>((uintptr_t)descriptorPool.getInternal());
+        DescriptorPool *const poolImpl = descriptorPool.as<DescriptorPool>();
 
         for (uint32_t ndx = 0; ndx < count; ++ndx)
             poolImpl->free(pDescriptorSets[ndx]);
@@ -1521,7 +1517,7 @@ extern "C"
     VKAPI_ATTR VkResult VKAPI_CALL resetDescriptorPool(VkDevice, VkDescriptorPool descriptorPool,
                                                        VkDescriptorPoolResetFlags)
     {
-        DescriptorPool *const poolImpl = reinterpret_cast<DescriptorPool *>((uintptr_t)descriptorPool.getInternal());
+        DescriptorPool *const poolImpl = descriptorPool.as<DescriptorPool>();
 
         poolImpl->reset();
 
@@ -1536,8 +1532,7 @@ extern "C"
 
         if (pAllocateInfo && pCommandBuffers)
         {
-            CommandPool *const poolImpl =
-                reinterpret_cast<CommandPool *>((uintptr_t)pAllocateInfo->commandPool.getInternal());
+            CommandPool *const poolImpl = pAllocateInfo->commandPool.as<CommandPool>();
 
             for (uint32_t ndx = 0; ndx < pAllocateInfo->commandBufferCount; ++ndx)
                 pCommandBuffers[ndx] = poolImpl->allocate(pAllocateInfo->level);
@@ -1549,7 +1544,7 @@ extern "C"
     VKAPI_ATTR void VKAPI_CALL freeCommandBuffers(VkDevice device, VkCommandPool commandPool,
                                                   uint32_t commandBufferCount, const VkCommandBuffer *pCommandBuffers)
     {
-        CommandPool *const poolImpl = reinterpret_cast<CommandPool *>((uintptr_t)commandPool.getInternal());
+        CommandPool *const poolImpl = commandPool.as<CommandPool>();
 
         DE_UNREF(device);
 
