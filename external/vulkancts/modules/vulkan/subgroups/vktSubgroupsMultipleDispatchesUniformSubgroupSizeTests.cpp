@@ -150,11 +150,11 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate(void)
             0u,                                             // flags
             shaderStageCreateInfo,                          // stage
             *computePipelineLayout,                         // layout
-            (VkPipeline)0,                                  // basePipelineHandle
+            VK_NULL_HANDLE,                                 // basePipelineHandle
             0u,                                             // basePipelineIndex
         };
 
-        Move<VkPipeline> computePipeline = createComputePipeline(vk, device, (VkPipelineCache)0u, &pipelineCreateInfo);
+        Move<VkPipeline> computePipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
         beginCommandBuffer(vk, *cmdBuffer);
 

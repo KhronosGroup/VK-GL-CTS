@@ -272,8 +272,8 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
         defaultTransform,
         firstSupportedCompositeAlpha(capabilities),
         vk::VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,             // clipped
-        (vk::VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     vk::VkImageCreateFlags imageCreateFlag =
@@ -999,8 +999,8 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, 
         transform,
         firstSupportedCompositeAlpha(capabilities),
         vk::VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,             // clipped
-        (vk::VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     return parameters;

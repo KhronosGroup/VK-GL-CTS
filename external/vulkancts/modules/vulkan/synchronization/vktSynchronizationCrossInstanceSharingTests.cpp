@@ -954,7 +954,7 @@ tcu::TestStatus SharingTestInstance::iterate(void)
             exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
             vk::Move<vk::VkDeviceMemory> memory =
                 allocateExportableMemory(m_vkdA, *m_deviceA, requirements.size, exportedMemoryTypeIndex,
-                                         m_memoryHandleType, m_config.dedicated ? *image : (vk::VkImage)0);
+                                         m_memoryHandleType, m_config.dedicated ? *image : VK_NULL_HANDLE);
 
             VK_CHECK(m_vkdA.bindImageMemory(*m_deviceA, *image, *memory, 0u));
 
@@ -977,7 +977,7 @@ tcu::TestStatus SharingTestInstance::iterate(void)
             exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
             vk::Move<vk::VkDeviceMemory> memory =
                 allocateExportableMemory(m_vkdA, *m_deviceA, requirements.size, exportedMemoryTypeIndex,
-                                         m_memoryHandleType, m_config.dedicated ? *buffer : (vk::VkBuffer)0);
+                                         m_memoryHandleType, m_config.dedicated ? *buffer : VK_NULL_HANDLE);
 
             VK_CHECK(m_vkdA.bindBufferMemory(*m_deviceA, *buffer, *memory, 0u));
 

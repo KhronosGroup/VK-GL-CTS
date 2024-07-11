@@ -1118,7 +1118,7 @@ void MultiViewRenderTestInstance::madeShaderModule(map<VkShaderStageFlagBits, Sh
         DE_NULL,                                             // const void* pNext;
         (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
         (VkShaderStageFlagBits)0,                            // VkShaderStageFlagBits stage;
-        (VkShaderModule)0,                                   // VkShaderModule module;
+        VK_NULL_HANDLE,                                      // VkShaderModule module;
         "main",                                              // const char* pName;
         (const VkSpecializationInfo *)DE_NULL,               // const VkSpecializationInfo* pSpecializationInfo;
     };
@@ -1946,7 +1946,8 @@ void MultiViewAttachmentsTestInstance::beforeRenderPass(void)
 
     m_descriptorSet = vk::allocateDescriptorSet(*m_device, *m_logicalDevice, &allocateInfo);
 
-    const VkDescriptorImageInfo imageInfo = {(VkSampler)0, m_inputAttachment->getImageView(), VK_IMAGE_LAYOUT_GENERAL};
+    const VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, m_inputAttachment->getImageView(),
+                                             VK_IMAGE_LAYOUT_GENERAL};
 
     const VkWriteDescriptorSet write = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, //VkStructureType sType;

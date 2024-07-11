@@ -886,11 +886,11 @@ Move<VkPipeline> AttachmentRateInstance::buildComputePipeline(VkDevice device, c
         0u,                                             // VkPipelineCreateFlags flags;
         stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout,                                 // VkPipelineLayout layout;
-        (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0u,                                             // int32_t basePipelineIndex;
     };
 
-    return createComputePipeline(vk, device, (vk::VkPipelineCache)0u, &createInfo);
+    return createComputePipeline(vk, device, VK_NULL_HANDLE, &createInfo);
 }
 
 VkDescriptorSetAllocateInfo AttachmentRateInstance::makeDescriptorSetAllocInfo(

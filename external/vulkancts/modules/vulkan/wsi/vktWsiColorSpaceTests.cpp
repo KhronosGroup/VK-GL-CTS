@@ -295,8 +295,8 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(Type wsiType, const Instanc
         transform,
         static_cast<VkCompositeAlphaFlagBitsKHR>(alpha),
         VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,         // clipped
-        (VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     return parameters;
@@ -620,7 +620,7 @@ tcu::TestStatus surfaceFormatRenderTest(Context &context, Type wsiType, const In
             {
                 const VkResult acquireResult =
                     vkd.acquireNextImageKHR(device, *swapchain, std::numeric_limits<uint64_t>::max(),
-                                            imageReadySemaphore, (vk::VkFence)0, &imageNdx);
+                                            imageReadySemaphore, VK_NULL_HANDLE, &imageNdx);
 
                 if (acquireResult == VK_SUBOPTIMAL_KHR)
                     context.getTestContext().getLog() << TestLog::Message << "Got " << acquireResult << " at frame "

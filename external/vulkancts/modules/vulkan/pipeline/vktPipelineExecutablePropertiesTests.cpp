@@ -1197,7 +1197,7 @@ void ComputeExecutablePropertiesTestInstance::buildPipeline(uint32_t ndx)
         flags,                                          // VkPipelineCreateFlags flags;
         stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
         *m_pipelineLayout[ndx],                         // VkPipelineLayout layout;
-        (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0u,                                             // int32_t basePipelineIndex;
     };
 

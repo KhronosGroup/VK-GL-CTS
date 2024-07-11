@@ -1157,7 +1157,7 @@ void ShaderTileImageTestInstance::generateComputePipeline()
         0u,                       // flags
         csShaderCreateInfo,       // cs
         *m_computePipelineLayout, // layout
-        (vk::VkPipeline)0,        // basePipelineHandle
+        VK_NULL_HANDLE,           // basePipelineHandle
         0u,                       // basePipelineIndex
     };
 

@@ -642,7 +642,7 @@ struct GenericParameters
 
 void beginSecondaryCommandBuffer(
     const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkQueryPipelineStatisticFlags queryFlags,
-    const VkRenderPass renderPass = (VkRenderPass)0u, const VkFramebuffer framebuffer = (VkFramebuffer)0u,
+    const VkRenderPass renderPass = VK_NULL_HANDLE, const VkFramebuffer framebuffer = VK_NULL_HANDLE,
     const VkCommandBufferUsageFlags bufferUsageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)
 {
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {

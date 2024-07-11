@@ -1006,11 +1006,11 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
             DE_NULL,
-            0u,                // flags
-            shaderCreateInfo,  // cs
-            *pipelineLayout,   // layout
-            (vk::VkPipeline)0, // basePipelineHandle
-            0u,                // basePipelineIndex
+            0u,               // flags
+            shaderCreateInfo, // cs
+            *pipelineLayout,  // layout
+            VK_NULL_HANDLE,   // basePipelineHandle
+            0u,               // basePipelineIndex
         };
         pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
     }
@@ -1050,7 +1050,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
             &group,                                                // pGroups
             0,                                                     // maxRecursionDepth
             *pipelineLayout,                                       // layout
-            (vk::VkPipeline)0,                                     // basePipelineHandle
+            VK_NULL_HANDLE,                                        // basePipelineHandle
             0u,                                                    // basePipelineIndex
         };
 

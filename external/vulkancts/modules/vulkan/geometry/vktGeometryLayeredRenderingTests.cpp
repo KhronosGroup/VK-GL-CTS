@@ -1867,11 +1867,11 @@ tcu::TestStatus testSecondaryCmdBuffer(Context &context, const TestParams params
     // Begin secondary command buffer
     {
         const VkCommandBufferInheritanceInfo commandBufferInheritanceInfo = {
-            VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType                    sType
-            DE_NULL,                                           // const void*                        pNext
-            *renderPass,                                       // VkRenderPass                        renderPass
-            0u,                                                // uint32_t                            subpass
-            params.inheritFramebuffer ? *framebuffer : (VkFramebuffer)0, // VkFramebuffer                    framebuffer
+            VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,         // VkStructureType                    sType
+            DE_NULL,                                                   // const void*                        pNext
+            *renderPass,                                               // VkRenderPass                        renderPass
+            0u,                                                        // uint32_t                            subpass
+            params.inheritFramebuffer ? *framebuffer : VK_NULL_HANDLE, // VkFramebuffer                    framebuffer
             VK_FALSE, // VkBool32                            occlusionQueryEnable
             0u,       // VkQueryControlFlags                queryFlags
             0u        // VkQueryPipelineStatisticFlags    pipelineStatistics

@@ -956,9 +956,9 @@ void addCommandsToBuffer(const DeviceInterface &vk, std::vector<VkCommandBuffer>
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -1210,9 +1210,9 @@ tcu::TestStatus recordSingleSecondaryBufferTest(Context &context)
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -1275,9 +1275,9 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -1443,9 +1443,9 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context &context)
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -1638,9 +1638,9 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context &context)
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -1815,9 +1815,9 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context &cont
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        (VkRenderPass)0u,
+        VK_NULL_HANDLE,
         0u, // subpass
-        (VkFramebuffer)0u,
+        VK_NULL_HANDLE,
         VK_FALSE, // occlusionQueryEnable
         (VkQueryControlFlags)0u,
         (VkQueryPipelineStatisticFlags)0u,
@@ -1869,11 +1869,11 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context &cont
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
         DE_NULL,
-        0u,                // flags
-        shaderCreateInfo,  // cs
-        *pipelineLayout,   // layout
-        (vk::VkPipeline)0, // basePipelineHandle
-        0u,                // basePipelineIndex
+        0u,               // flags
+        shaderCreateInfo, // cs
+        *pipelineLayout,  // layout
+        VK_NULL_HANDLE,   // basePipelineHandle
+        0u,               // basePipelineIndex
     };
 
     const VkBufferMemoryBarrier bufferBarrier = {
@@ -1888,7 +1888,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context &cont
         (VkDeviceSize)VK_WHOLE_SIZE,             // size
     };
 
-    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, (VkPipelineCache)0u, &pipelineCreateInfo));
+    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     // record secondary command buffer
     VK_CHECK(vk.beginCommandBuffer(*secCmdBuf, &secCmdBufBeginInfo));
@@ -2089,9 +2089,9 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTest(Context &context)
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        (VkRenderPass)0u,
+        VK_NULL_HANDLE,
         0u, // subpass
-        (VkFramebuffer)0u,
+        VK_NULL_HANDLE,
         VK_FALSE, // occlusionQueryEnable
         (VkQueryControlFlags)0u,
         (VkQueryPipelineStatisticFlags)0u,
@@ -2143,11 +2143,11 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTest(Context &context)
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
         DE_NULL,
-        0u,                // flags
-        shaderCreateInfo,  // cs
-        *pipelineLayout,   // layout
-        (vk::VkPipeline)0, // basePipelineHandle
-        0u,                // basePipelineIndex
+        0u,               // flags
+        shaderCreateInfo, // cs
+        *pipelineLayout,  // layout
+        VK_NULL_HANDLE,   // basePipelineHandle
+        0u,               // basePipelineIndex
     };
 
     const VkBufferMemoryBarrier bufferBarrier = {
@@ -2162,7 +2162,7 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTest(Context &context)
         (VkDeviceSize)VK_WHOLE_SIZE,             // size
     };
 
-    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, (VkPipelineCache)0u, &pipelineCreateInfo));
+    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     // record secondary command buffer
     VK_CHECK(vk.beginCommandBuffer(*secCmdBuf, &secCmdBufBeginInfo));
@@ -2247,9 +2247,9 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTwiceTest(Context &context)
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        (VkRenderPass)0u,
+        VK_NULL_HANDLE,
         0u, // subpass
-        (VkFramebuffer)0u,
+        VK_NULL_HANDLE,
         VK_FALSE, // occlusionQueryEnable
         (VkQueryControlFlags)0u,
         (VkQueryPipelineStatisticFlags)0u,
@@ -2301,11 +2301,11 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTwiceTest(Context &context)
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
         DE_NULL,
-        0u,                // flags
-        shaderCreateInfo,  // cs
-        *pipelineLayout,   // layout
-        (vk::VkPipeline)0, // basePipelineHandle
-        0u,                // basePipelineIndex
+        0u,               // flags
+        shaderCreateInfo, // cs
+        *pipelineLayout,  // layout
+        VK_NULL_HANDLE,   // basePipelineHandle
+        0u,               // basePipelineIndex
     };
 
     const VkBufferMemoryBarrier bufferBarrier = {
@@ -2320,7 +2320,7 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTwiceTest(Context &context)
         (VkDeviceSize)VK_WHOLE_SIZE,             // size
     };
 
-    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, (VkPipelineCache)0u, &pipelineCreateInfo));
+    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     // record secondary command buffer
     VK_CHECK(vk.beginCommandBuffer(*secCmdBuf, &secCmdBufBeginInfo));
@@ -2423,14 +2423,14 @@ tcu::TestStatus badInheritanceInfoTest(Context &context, BadInheritanceInfoCase 
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
         DE_NULL,
-        0u,                // flags
-        shaderCreateInfo,  // cs
-        *pipelineLayout,   // layout
-        (vk::VkPipeline)0, // basePipelineHandle
-        0u,                // basePipelineIndex
+        0u,               // flags
+        shaderCreateInfo, // cs
+        *pipelineLayout,  // layout
+        VK_NULL_HANDLE,   // basePipelineHandle
+        0u,               // basePipelineIndex
     };
 
-    const Unique<VkPipeline> pipeline(createComputePipeline(vkd, device, (VkPipelineCache)0u, &pipelineCreateInfo));
+    const Unique<VkPipeline> pipeline(createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     // Compute to host barrier to read result.
     const VkBufferMemoryBarrier bufferBarrier = {
@@ -2599,9 +2599,9 @@ tcu::TestStatus simultaneousUseSecondaryBufferTwoPrimaryBuffersTest(Context &con
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -2653,14 +2653,14 @@ tcu::TestStatus simultaneousUseSecondaryBufferTwoPrimaryBuffersTest(Context &con
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
         DE_NULL,
-        0u,                // flags
-        shaderCreateInfo,  // cs
-        *pipelineLayout,   // layout
-        (vk::VkPipeline)0, // basePipelineHandle
-        0u,                // basePipelineIndex
+        0u,               // flags
+        shaderCreateInfo, // cs
+        *pipelineLayout,  // layout
+        VK_NULL_HANDLE,   // basePipelineHandle
+        0u,               // basePipelineIndex
     };
 
-    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, (VkPipelineCache)0u, &pipelineCreateInfo));
+    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     // record secondary command buffer
     VK_CHECK(vk.beginCommandBuffer(*secCmdBuf, &secCmdBufBeginInfo));
@@ -4029,9 +4029,9 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context &context)
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -4231,7 +4231,7 @@ tcu::TestStatus orderBindPipelineTest(Context &context)
         0u,                   // flags
         shaderCreateInfoGood, // cs
         *pipelineLayout,      // layout
-        (vk::VkPipeline)0,    // basePipelineHandle
+        VK_NULL_HANDLE,       // basePipelineHandle
         0u,                   // basePipelineIndex
     };
 
@@ -4241,12 +4241,12 @@ tcu::TestStatus orderBindPipelineTest(Context &context)
         0u,                  // flags
         shaderCreateInfoBad, // cs
         *pipelineLayout,     // descriptorSetLayout.get()
-        (VkPipeline)0,       // basePipelineHandle
+        VK_NULL_HANDLE,      // basePipelineHandle
         0u,                  // basePipelineIndex
     };
 
-    const Unique<VkPipeline> pipelineGood(createComputePipeline(vk, device, (VkPipelineCache)0u, &createInfoGood));
-    const Unique<VkPipeline> pipelineBad(createComputePipeline(vk, device, (VkPipelineCache)0u, &createInfoBad));
+    const Unique<VkPipeline> pipelineGood(createComputePipeline(vk, device, VK_NULL_HANDLE, &createInfoGood));
+    const Unique<VkPipeline> pipelineBad(createComputePipeline(vk, device, VK_NULL_HANDLE, &createInfoBad));
 
     const VkAccessFlags inputBit                 = (VK_ACCESS_UNIFORM_READ_BIT);
     const VkBufferMemoryBarrier bufferBarriers[] = {{

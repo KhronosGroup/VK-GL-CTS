@@ -520,7 +520,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
             0,                                              // int32_t basePipelineIndex;
         };
 
-        computePipeline = vk::createComputePipeline(vkd, device, (VkPipelineCache)0u, &pipelineCreateInfo);
+        computePipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     const Move<VkDescriptorSetLayout> descriptorSetLayout =
@@ -1213,7 +1213,7 @@ TestStatus TraceRaysIndirect2Instance::iterate(void)
             0,                                              // int32_t basePipelineIndex;
         };
 
-        computePipeline = vk::createComputePipeline(vkd, device, (VkPipelineCache)0u, &pipelineCreateInfo);
+        computePipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     const Move<VkDescriptorSetLayout> descriptorSetLayout =

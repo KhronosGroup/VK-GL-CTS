@@ -2524,11 +2524,11 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
             DE_NULL,
-            0u,                // flags
-            shaderCreateInfo,  // cs
-            *pipelineLayout,   // layout
-            (vk::VkPipeline)0, // basePipelineHandle
-            0u,                // basePipelineIndex
+            0u,               // flags
+            shaderCreateInfo, // cs
+            *pipelineLayout,  // layout
+            VK_NULL_HANDLE,   // basePipelineHandle
+            0u,               // basePipelineIndex
         };
         pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
     }
@@ -2565,11 +2565,11 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
             1,                                                     //  uint32_t stageCount;
             &shaderCreateInfo,                                     //  const VkPipelineShaderStageCreateInfo* pStages;
             1,                                                     //  uint32_t groupCount;
-            &group,            //  const VkRayTracingShaderGroupCreateInfoNV* pGroups;
-            0,                 //  uint32_t maxRecursionDepth;
-            *pipelineLayout,   //  VkPipelineLayout layout;
-            (vk::VkPipeline)0, //  VkPipeline basePipelineHandle;
-            0u,                //  int32_t basePipelineIndex;
+            &group,          //  const VkRayTracingShaderGroupCreateInfoNV* pGroups;
+            0,               //  uint32_t maxRecursionDepth;
+            *pipelineLayout, //  VkPipelineLayout layout;
+            VK_NULL_HANDLE,  //  VkPipeline basePipelineHandle;
+            0u,              //  int32_t basePipelineIndex;
         };
 
         pipeline = createRayTracingPipelineNV(vk, device, DE_NULL, &pipelineCreateInfo, NULL);

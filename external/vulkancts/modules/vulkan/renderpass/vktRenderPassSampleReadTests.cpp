@@ -459,7 +459,7 @@ Move<VkDescriptorSet> createSubpassDescriptorSet(const DeviceInterface &vkd, VkD
     const VkDescriptorSetAllocateInfo allocateInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL, pool, 1u,
                                                    &layout};
     Move<VkDescriptorSet> set(allocateDescriptorSet(vkd, device, &allocateInfo));
-    const VkDescriptorImageInfo imageInfo{(VkSampler)0u, imageView, imageReadLayout};
+    const VkDescriptorImageInfo imageInfo{VK_NULL_HANDLE, imageView, imageReadLayout};
     const VkWriteDescriptorSet write{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                                      DE_NULL,
 

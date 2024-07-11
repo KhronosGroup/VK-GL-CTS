@@ -396,12 +396,12 @@ de::MovePtr<vk::Allocation> allocateAndBindObjectMemory(const vk::DeviceInterfac
 
 vk::VkDescriptorImageInfo makeDescriptorImageInfo(vk::VkSampler sampler)
 {
-    return vk::makeDescriptorImageInfo(sampler, (vk::VkImageView)0, (vk::VkImageLayout)0);
+    return vk::makeDescriptorImageInfo(sampler, VK_NULL_HANDLE, (vk::VkImageLayout)0);
 }
 
 vk::VkDescriptorImageInfo makeDescriptorImageInfo(vk::VkImageView imageView, vk::VkImageLayout layout)
 {
-    return vk::makeDescriptorImageInfo((vk::VkSampler)0, imageView, layout);
+    return vk::makeDescriptorImageInfo(VK_NULL_HANDLE, imageView, layout);
 }
 
 void drawQuadrantReferenceResult(const tcu::PixelBufferAccess &dst, const tcu::Vec4 &c1, const tcu::Vec4 &c2,
@@ -990,10 +990,10 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline(vk::VkPipelineL
         pipelineLayout,                                               // layout
         *m_renderPass,                                                // renderPass
         0u,                                                           // subpass
-        (vk::VkPipeline)0,                                            // basePipelineHandle
+        VK_NULL_HANDLE,                                               // basePipelineHandle
         0u,                                                           // basePipelineIndex
     };
-    return createGraphicsPipeline(m_vki, m_device, (vk::VkPipelineCache)0u, &createInfo);
+    return createGraphicsPipeline(m_vki, m_device, VK_NULL_HANDLE, &createInfo);
 }
 
 void SingleCmdRenderInstance::renderToTarget(void)
@@ -2132,13 +2132,13 @@ vk::Move<vk::VkPipeline> ComputePipeline::createPipeline(const vk::DeviceInterfa
     const vk::VkComputePipelineCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
         DE_NULL,
-        0u,                // flags
-        cs,                // cs
-        layout,            // layout
-        (vk::VkPipeline)0, // basePipelineHandle
-        0u,                // basePipelineIndex
+        0u,             // flags
+        cs,             // cs
+        layout,         // layout
+        VK_NULL_HANDLE, // basePipelineHandle
+        0u,             // basePipelineIndex
     };
-    return createComputePipeline(vki, device, (vk::VkPipelineCache)0u, &createInfo);
+    return createComputePipeline(vki, device, VK_NULL_HANDLE, &createInfo);
 }
 
 class ComputeCommand

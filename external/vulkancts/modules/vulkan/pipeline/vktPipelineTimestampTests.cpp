@@ -2333,11 +2333,11 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context &context, const Stage
         0u,                                             // VkPipelineCreateFlags           flags;
         stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
         *m_pipelineLayout,                              // VkPipelineLayout                layout;
-        (VkPipeline)0,                                  // VkPipeline                      basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline                      basePipelineHandle;
         0u,                                             // int32_t                         basePipelineIndex;
     };
 
-    m_computePipelines = createComputePipeline(vk, vkDevice, (VkPipelineCache)0u, &pipelineCreateInfo);
+    m_computePipelines = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 BasicComputeTestInstance::~BasicComputeTestInstance(void)

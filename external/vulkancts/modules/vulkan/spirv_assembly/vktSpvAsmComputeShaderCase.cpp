@@ -366,11 +366,11 @@ Move<VkPipeline> createComputePipeline(const DeviceInterface &vkdi, const VkDevi
         (VkPipelineCreateFlags)0,
         pipelineShaderStageCreateInfo, // cs
         pipelineLayout,                // layout
-        (VkPipeline)0,                 // basePipelineHandle
+        VK_NULL_HANDLE,                // basePipelineHandle
         0u,                            // basePipelineIndex
     };
 
-    return createComputePipeline(vkdi, device, (VkPipelineCache)0u, &pipelineCreateInfo);
+    return createComputePipeline(vkdi, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 } // namespace

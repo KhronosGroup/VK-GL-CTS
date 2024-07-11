@@ -2041,11 +2041,11 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance(Context &contex
             0u,                                             // VkPipelineCreateFlags                       flags;
             stageCreateInfo,                                // VkPipelineShaderStageCreateInfo             stage;
             *m_pipelineLayout,                              // VkPipelineLayout                            layout;
-            (VkPipeline)0, // VkPipeline                                  basePipelineHandle;
-            0u,            // int32_t                                     basePipelineIndex;
+            VK_NULL_HANDLE, // VkPipeline                                  basePipelineHandle;
+            0u,             // int32_t                                     basePipelineIndex;
         };
 
-        m_computePipelines = createComputePipeline(vk, vkDevice, (vk::VkPipelineCache)0u, &createInfo);
+        m_computePipelines = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &createInfo);
     }
 
     // Create command pool
@@ -2570,12 +2570,11 @@ void PushConstantLifetimeTestInstance::init(void)
                 0u,                                             // VkPipelineCreateFlags flags;
                 stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
                 *m_pipelineLayout[0],                           // VkPipelineLayout layout;
-                (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+                VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
                 0u,                                             // int32_t basePipelineIndex;
             };
 
-            m_computePipeline[0] =
-                createComputePipeline(vk, vkDevice, (vk::VkPipelineCache)0u, &computePipelineLayoutParams);
+            m_computePipeline[0] = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &computePipelineLayoutParams);
         }
         if (m_pushConstantRange[1].range.shaderStage & VK_SHADER_STAGE_COMPUTE_BIT)
         {
@@ -2585,12 +2584,11 @@ void PushConstantLifetimeTestInstance::init(void)
                 0u,                                             // VkPipelineCreateFlags flags;
                 stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
                 *m_pipelineLayout[1],                           // VkPipelineLayout layout;
-                (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+                VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
                 0u,                                             // int32_t basePipelineIndex;
             };
 
-            m_computePipeline[1] =
-                createComputePipeline(vk, vkDevice, (vk::VkPipelineCache)0u, &computePipelineLayoutParams);
+            m_computePipeline[1] = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &computePipelineLayoutParams);
         }
     }
 }

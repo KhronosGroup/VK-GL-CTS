@@ -361,7 +361,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases(const InstanceI
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         DE_NULL,
         (VkSwapchainCreateFlagsKHR)0,
-        (VkSurfaceKHR)0,
+        VK_NULL_HANDLE,
         capabilities.minImageCount,
         formats[0].format,
         formats[0].colorSpace,
@@ -376,8 +376,8 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases(const InstanceI
         defaultTransform,
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,         // clipped
-        (VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     switch (dimension)
@@ -970,8 +970,8 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
         transform,
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,         // clipped
-        (VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(devHelper.vkd, *devHelper.device, &swapchainInfo));
@@ -1110,8 +1110,8 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(Type wsiType, const Instanc
         transform,
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,         // clipped
-        (VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     return parameters;
@@ -1280,7 +1280,7 @@ tcu::TestStatus basicRenderTest(Context &context, Type wsiType)
             VK_CHECK(vkd.resetFences(device, 1, &imageReadyFence));
 
             {
-                const VkResult acquireResult = acquireImageWrapper.call(imageReadySemaphore, (VkFence)0, &imageNdx);
+                const VkResult acquireResult = acquireImageWrapper.call(imageReadySemaphore, VK_NULL_HANDLE, &imageNdx);
 
                 if (acquireResult == VK_SUBOPTIMAL_KHR)
                     context.getTestContext().getLog() << TestLog::Message << "Got " << acquireResult << " at frame "
@@ -1721,7 +1721,7 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
                                                                   *swapchain,
                                                                   std::numeric_limits<uint64_t>::max(),
                                                                   imageReadySemaphore,
-                                                                  (VkFence)0,
+                                                                  VK_NULL_HANDLE,
                                                                   (1 << firstDeviceID)};
 
                 const VkResult acquireResult = vkd.acquireNextImage2KHR(*groupDevice, &acquireNextImageInfo, &imageNdx);
@@ -1922,7 +1922,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         VK_PRESENT_MODE_FIFO_KHR,
         VK_FALSE,
-        (VkSwapchainKHR)0};
+        VK_NULL_HANDLE};
 
     const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, *groupDevice, &swapchainInfo));
     uint32_t numImages = 0;
@@ -2078,7 +2078,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
                                                                   *swapchain,
                                                                   std::numeric_limits<uint64_t>::max(),
                                                                   imageReadySemaphore,
-                                                                  (VkFence)0,
+                                                                  VK_NULL_HANDLE,
                                                                   (1 << firstDeviceID)};
 
                 const VkResult acquireResult = vkd.acquireNextImage2KHR(*groupDevice, &acquireNextImageInfo, &imageNdx);
@@ -2442,10 +2442,10 @@ tcu::TestStatus acquireTooManyTest(Context &context, Type wsiType)
     for (uint32_t i = 0; i < numAcquirableImages; ++i)
     {
         VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(
-            *devHelper.device, *swapchain, std::numeric_limits<uint64_t>::max(), (VkSemaphore)0, **fences[i], &unused));
+            *devHelper.device, *swapchain, std::numeric_limits<uint64_t>::max(), VK_NULL_HANDLE, **fences[i], &unused));
     }
 
-    const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, 0, (VkSemaphore)0,
+    const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, 0, VK_NULL_HANDLE,
                                                           **fences[numAcquirableImages], &unused);
 
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_NOT_READY)
@@ -2491,12 +2491,12 @@ tcu::TestStatus acquireTooManyTimeoutTest(Context &context, Type wsiType)
     for (uint32_t i = 0; i < numAcquirableImages; ++i)
     {
         VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(
-            *devHelper.device, *swapchain, std::numeric_limits<uint64_t>::max(), (VkSemaphore)0, **fences[i], &unused));
+            *devHelper.device, *swapchain, std::numeric_limits<uint64_t>::max(), VK_NULL_HANDLE, **fences[i], &unused));
     }
 
     const uint64_t millisecond = 1000000;
     const uint64_t timeout     = 50 * millisecond; // arbitrary realistic non-0 non-infinite timeout
-    const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, timeout, (VkSemaphore)0,
+    const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, timeout, VK_NULL_HANDLE,
                                                           **fences[numAcquirableImages], &unused);
 
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_TIMEOUT)

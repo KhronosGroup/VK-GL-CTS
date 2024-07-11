@@ -859,7 +859,7 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest(Context &context)
         log << TestLog::Message << enabledExtensions[ndx] << TestLog::EndMessage;
 
     {
-        VkDevice device = (VkDevice)0;
+        VkDevice device = VK_NULL_HANDLE;
         const VkResult result =
             createUncheckedDevice(context.getTestContext().getCommandLine().isValidationEnabled(), instanceDriver,
                                   physicalDevice, &deviceCreateInfo, DE_NULL /*pAllocator*/, &device);

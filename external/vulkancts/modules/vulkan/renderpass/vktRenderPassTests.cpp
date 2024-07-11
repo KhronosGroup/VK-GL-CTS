@@ -1524,7 +1524,7 @@ public:
             m_inputAttachmentViews = std::make_pair(*m_depthInputAttachmentView, *m_stencilInputAttachmentView);
         }
         else
-            m_inputAttachmentViews = std::make_pair(*m_attachmentView, (vk::VkImageView)0u);
+            m_inputAttachmentViews = std::make_pair(*m_attachmentView, VK_NULL_HANDLE);
 
         if ((usageFlags & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) == 0)
         {
@@ -2539,7 +2539,7 @@ public:
                             if (inputAttachmentLayout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
                             {
                                 imageInfos[bindingIndex] = {
-                                    (VkSampler)0,
+                                    VK_NULL_HANDLE,
                                     attachmentViews[renderInfo.getInputAttachmentIndex(inputAttachmentNdx)].first,
                                     inputAttachmentLayout};
 #ifndef CTS_USES_VULKANSC
@@ -2567,7 +2567,7 @@ public:
                             if (inputAttachmentLayout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
                             {
                                 imageInfos[bindingIndex] = {
-                                    (VkSampler)0,
+                                    VK_NULL_HANDLE,
                                     attachmentViews[renderInfo.getInputAttachmentIndex(inputAttachmentNdx)].second,
                                     inputAttachmentLayout};
 #ifndef CTS_USES_VULKANSC
@@ -2595,7 +2595,7 @@ public:
                         else
                         {
                             imageInfos[bindingIndex] = {
-                                (VkSampler)0,
+                                VK_NULL_HANDLE,
                                 attachmentViews[renderInfo.getInputAttachmentIndex(inputAttachmentNdx)].first,
                                 inputAttachmentLayout};
 #ifndef CTS_USES_VULKANSC

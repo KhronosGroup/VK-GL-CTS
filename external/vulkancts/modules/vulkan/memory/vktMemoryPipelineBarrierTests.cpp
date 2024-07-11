@@ -5349,7 +5349,7 @@ RenderVertexUniformTexelBuffer::~RenderVertexUniformTexelBuffer(void)
         if (!!m_bufferViews[bufferViewNdx])
         {
             m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], DE_NULL);
-            m_bufferViews[bufferViewNdx] = (vk::VkBufferView)0;
+            m_bufferViews[bufferViewNdx] = VK_NULL_HANDLE;
         }
     }
 }
@@ -5413,8 +5413,8 @@ void RenderVertexUniformTexelBuffer::prepare(PrepareRenderPassContext &context)
         };
 
         m_descriptorPool = vk::createDescriptorPool(vkd, device, &createInfo);
-        m_descriptorSets.resize(descriptorCount, (vk::VkDescriptorSet)0);
-        m_bufferViews.resize(descriptorCount, (vk::VkBufferView)0);
+        m_descriptorSets.resize(descriptorCount, VK_NULL_HANDLE);
+        m_bufferViews.resize(descriptorCount, VK_NULL_HANDLE);
     }
 
     for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
@@ -5696,7 +5696,7 @@ RenderVertexStorageTexelBuffer::~RenderVertexStorageTexelBuffer(void)
         if (!!m_bufferViews[bufferViewNdx])
         {
             m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], DE_NULL);
-            m_bufferViews[bufferViewNdx] = (vk::VkBufferView)0;
+            m_bufferViews[bufferViewNdx] = VK_NULL_HANDLE;
         }
     }
 }
@@ -5760,8 +5760,8 @@ void RenderVertexStorageTexelBuffer::prepare(PrepareRenderPassContext &context)
         };
 
         m_descriptorPool = vk::createDescriptorPool(vkd, device, &createInfo);
-        m_descriptorSets.resize(descriptorCount, (vk::VkDescriptorSet)0);
-        m_bufferViews.resize(descriptorCount, (vk::VkBufferView)0);
+        m_descriptorSets.resize(descriptorCount, VK_NULL_HANDLE);
+        m_bufferViews.resize(descriptorCount, VK_NULL_HANDLE);
     }
 
     for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
@@ -6580,7 +6580,7 @@ RenderFragmentUniformTexelBuffer::~RenderFragmentUniformTexelBuffer(void)
         if (!!m_bufferViews[bufferViewNdx])
         {
             m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], DE_NULL);
-            m_bufferViews[bufferViewNdx] = (vk::VkBufferView)0;
+            m_bufferViews[bufferViewNdx] = VK_NULL_HANDLE;
         }
     }
 }
@@ -6647,8 +6647,8 @@ void RenderFragmentUniformTexelBuffer::prepare(PrepareRenderPassContext &context
         };
 
         m_descriptorPool = vk::createDescriptorPool(vkd, device, &createInfo);
-        m_descriptorSets.resize(descriptorCount, (vk::VkDescriptorSet)0);
-        m_bufferViews.resize(descriptorCount, (vk::VkBufferView)0);
+        m_descriptorSets.resize(descriptorCount, VK_NULL_HANDLE);
+        m_bufferViews.resize(descriptorCount, VK_NULL_HANDLE);
     }
 
     for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)
@@ -6808,7 +6808,7 @@ RenderFragmentStorageTexelBuffer::~RenderFragmentStorageTexelBuffer(void)
         if (!!m_bufferViews[bufferViewNdx])
         {
             m_vkd->destroyBufferView(m_device, m_bufferViews[bufferViewNdx], DE_NULL);
-            m_bufferViews[bufferViewNdx] = (vk::VkBufferView)0;
+            m_bufferViews[bufferViewNdx] = VK_NULL_HANDLE;
         }
     }
 }
@@ -6875,8 +6875,8 @@ void RenderFragmentStorageTexelBuffer::prepare(PrepareRenderPassContext &context
         };
 
         m_descriptorPool = vk::createDescriptorPool(vkd, device, &createInfo);
-        m_descriptorSets.resize(descriptorCount, (vk::VkDescriptorSet)0);
-        m_bufferViews.resize(descriptorCount, (vk::VkBufferView)0);
+        m_descriptorSets.resize(descriptorCount, VK_NULL_HANDLE);
+        m_bufferViews.resize(descriptorCount, VK_NULL_HANDLE);
     }
 
     for (size_t descriptorSetNdx = 0; descriptorSetNdx < m_descriptorSets.size(); descriptorSetNdx++)

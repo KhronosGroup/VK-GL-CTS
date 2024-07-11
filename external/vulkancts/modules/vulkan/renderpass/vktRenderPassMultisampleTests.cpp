@@ -864,8 +864,8 @@ Move<VkDescriptorSet> createSplitDescriptorSet(const DeviceInterface &vkd, VkDev
     Move<VkDescriptorSet> set(allocateDescriptorSet(vkd, device, &allocateInfo));
 
     {
-        const VkDescriptorImageInfo imageInfos[] = {{(VkSampler)0u, primaryImageView, imageReadLayout},
-                                                    {(VkSampler)0u, secondaryImageView, imageReadLayout}};
+        const VkDescriptorImageInfo imageInfos[] = {{VK_NULL_HANDLE, primaryImageView, imageReadLayout},
+                                                    {VK_NULL_HANDLE, secondaryImageView, imageReadLayout}};
         const VkWriteDescriptorSet writes[]      = {
             {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, DE_NULL,
 
@@ -873,7 +873,7 @@ Move<VkDescriptorSet> createSplitDescriptorSet(const DeviceInterface &vkd, VkDev
             {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, DE_NULL,
 
                   *set, 1u, 0u, 1u, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &imageInfos[1], DE_NULL, DE_NULL}};
-        const uint32_t count = secondaryImageView != (VkImageView)0 ? 2u : 1u;
+        const uint32_t count = secondaryImageView != VK_NULL_HANDLE ? 2u : 1u;
 
         vkd.updateDescriptorSets(device, count, writes, 0u, DE_NULL);
     }

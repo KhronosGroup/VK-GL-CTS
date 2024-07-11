@@ -279,8 +279,8 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, 
         transform,
         vk::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         vk::VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,             // clipped
-        (vk::VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     return parameters;
@@ -473,7 +473,7 @@ uint32_t recordAndSubmitFrame(FrameStreamObjects::FrameObjects &frameObjects,
     uint32_t imageNdx = std::numeric_limits<uint32_t>::max();
     const vk::VkResult acquireResult =
         vkd.acquireNextImageKHR(device, swapchain, std::numeric_limits<uint64_t>::max(),
-                                frameObjects.imageAvailableSemaphore, (vk::VkFence)0, &imageNdx);
+                                frameObjects.imageAvailableSemaphore, VK_NULL_HANDLE, &imageNdx);
 
     if (acquireResult == vk::VK_SUBOPTIMAL_KHR)
         testLog << tcu::TestLog::Message << "Got " << acquireResult << " at frame " << frameNumber

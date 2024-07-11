@@ -520,7 +520,7 @@ void createGraphicsPipelines(const DeviceInterface &vkd, const VkDevice device, 
         }
 
         *it = PipelineSp(
-            new Unique<VkPipeline>(createGraphicsPipeline(vkd, device, (VkPipelineCache)0u, &graphicsPipelineCI)));
+            new Unique<VkPipeline>(createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &graphicsPipelineCI)));
     }
 }
 
@@ -547,7 +547,7 @@ void createComputePipelines(const DeviceInterface &vkd, const VkDevice device, V
             0u,                                             // VkPipelineCreateFlags            flags
             shaderStageCreateInfo,                          // VkPipelineShaderStageCreateInfo    stage
             pipelineLayout,                                 // VkPipelineLayout                    layout
-            (vk::VkPipeline)0,                              // VkPipeline                        basePipelineHandle
+            VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
             0u,                                             // int32_t                            basePipelineIndex
         };
 
@@ -563,8 +563,8 @@ void createComputePipelines(const DeviceInterface &vkd, const VkDevice device, V
             computePipelineCI.pNext                 = &pipelineOfflineCreateInfo;
         }
 
-        *it = PipelineSp(
-            new Unique<VkPipeline>(createComputePipeline(vkd, device, (VkPipelineCache)0u, &computePipelineCI)));
+        *it =
+            PipelineSp(new Unique<VkPipeline>(createComputePipeline(vkd, device, VK_NULL_HANDLE, &computePipelineCI)));
     }
 }
 
@@ -866,7 +866,7 @@ public:
 
     void performTest(const DeviceInterface &vkd, VkDevice device) override
     {
-        std::vector<VkDeviceMemory> memoryObjects(6, (VkDeviceMemory)0);
+        std::vector<VkDeviceMemory> memoryObjects(6, VK_NULL_HANDLE);
         for (size_t ndx = 0; ndx < 6; ndx++)
         {
             VkMemoryAllocateInfo alloc = {

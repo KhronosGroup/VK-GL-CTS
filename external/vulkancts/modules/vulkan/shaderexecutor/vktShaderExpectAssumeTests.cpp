@@ -664,7 +664,7 @@ private:
             0u,                 // flags
             csShaderCreateInfo, // cs
             *m_pipelineLayout,  // layout
-            (vk::VkPipeline)0,  // basePipelineHandle
+            VK_NULL_HANDLE,     // basePipelineHandle
             0u,                 // basePipelineIndex
         };
 

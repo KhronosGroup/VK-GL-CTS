@@ -2887,7 +2887,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
             nullptr,                                                // pLibraryInterface
             nullptr,                                                // pDynamicState
             *pipelineLayout,                                        // layout
-            (vk::VkPipeline)0,                                      // basePipelineHandle
+            VK_NULL_HANDLE,                                         // basePipelineHandle
             0u,                                                     // basePipelineIndex
         };
 

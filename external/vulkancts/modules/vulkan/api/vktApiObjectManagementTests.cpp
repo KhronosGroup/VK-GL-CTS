@@ -2047,9 +2047,9 @@ struct GraphicsPipeline
             (const VkPipelineDynamicStateCreateInfo *)DE_NULL,
             *res.layout.object,
             *res.renderPass.object,
-            0u,            // subpass
-            (VkPipeline)0, // basePipelineHandle
-            0,             // basePipelineIndex
+            0u,             // subpass
+            VK_NULL_HANDLE, // basePipelineHandle
+            0,              // basePipelineIndex
         };
 
         const uint32_t numPipelines = static_cast<uint32_t>(pOutHandles->size());
@@ -2145,8 +2145,8 @@ struct ComputePipeline
                 DE_NULL // pSpecializationInfo
             },
             *res.layout.object,
-            (VkPipeline)0, // basePipelineHandle
-            0u,            // basePipelineIndex
+            VK_NULL_HANDLE, // basePipelineHandle
+            0u,             // basePipelineIndex
         };
 
         return createComputePipeline(env.vkd, env.device, *res.pipelineCache.object, &pipelineInfo,
@@ -2170,8 +2170,8 @@ struct ComputePipeline
                 DE_NULL // pSpecializationInfo
             },
             *res.layout.object,
-            (VkPipeline)0, // basePipelineHandle
-            0u,            // basePipelineIndex
+            VK_NULL_HANDLE, // basePipelineHandle
+            0u,             // basePipelineIndex
         };
 
         const uint32_t numPipelines = static_cast<uint32_t>(pOutHandles->size());

@@ -907,11 +907,11 @@ void PushDescriptorBufferComputeTestInstance::init(void)
             0u,                                             // VkPipelineCreateFlags flags;
             stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
             *m_pipelineLayout,                              // VkPipelineLayout layout;
-            (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0u,                                             // int32_t basePipelineIndex;
         };
 
-        m_computePipeline = createComputePipeline(m_vkd, *m_device, (vk::VkPipelineCache)0u, &createInfo);
+        m_computePipeline = createComputePipeline(m_vkd, *m_device, VK_NULL_HANDLE, &createInfo);
     }
 
     // Create command pool
@@ -2320,11 +2320,11 @@ void PushDescriptorImageComputeTestInstance::init(void)
             0u,                                             // VkPipelineCreateFlags flags;
             stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
             *m_pipelineLayout,                              // VkPipelineLayout layout;
-            (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0u,                                             // int32_t basePipelineIndex;
         };
 
-        m_computePipeline = createComputePipeline(m_vkd, *m_device, (vk::VkPipelineCache)0u, &createInfo);
+        m_computePipeline = createComputePipeline(m_vkd, *m_device, VK_NULL_HANDLE, &createInfo);
     }
 
     // Create command pool
@@ -3419,11 +3419,11 @@ void PushDescriptorTexelBufferComputeTestInstance::init(void)
             0u,                                             // VkPipelineCreateFlags flags;
             stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
             *m_pipelineLayout,                              // VkPipelineLayout layout;
-            (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0u,                                             // int32_t basePipelineIndex;
         };
 
-        m_computePipeline = createComputePipeline(m_vkd, *m_device, (vk::VkPipelineCache)0u, &createInfo);
+        m_computePipeline = createComputePipeline(m_vkd, *m_device, VK_NULL_HANDLE, &createInfo);
     }
 
     // Create command pool

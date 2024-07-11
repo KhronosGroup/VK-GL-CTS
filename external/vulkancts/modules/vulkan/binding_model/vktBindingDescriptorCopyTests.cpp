@@ -790,7 +790,7 @@ VkWriteDescriptorSet BufferDescriptor::getDescriptorWrite(void)
     const VkWriteDescriptorSet descriptorWrite = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType                    sType
         DE_NULL,                                // const void*                        pNext
-        (VkDescriptorSet)0u,                    // VkDescriptorSet                    dstSet
+        VK_NULL_HANDLE,                         // VkDescriptorSet                    dstSet
         0u,                                     // uint32_t                            dstBinding
         firstElement,                           // uint32_t                            dstArrayElement
         getNumWrittenElements(),                // uint32_t                            descriptorCount
@@ -867,7 +867,7 @@ VkWriteDescriptorSet InlineUniformBlockDescriptor::getDescriptorWrite(void)
     const VkWriteDescriptorSet descriptorWrite = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType                    sType
         &m_inlineWrite,                         // const void*                        pNext
-        (VkDescriptorSet)0u,                    // VkDescriptorSet                    dstSet
+        VK_NULL_HANDLE,                         // VkDescriptorSet                    dstSet
         0u,                                     // uint32_t                            dstBinding
         m_writeStartByteOffset,                 // uint32_t                            dstArrayElement
         m_bytesToWrite,                         // uint32_t                            descriptorCount
@@ -1272,7 +1272,7 @@ VkWriteDescriptorSet ImageDescriptor::getDescriptorWrite(void)
     const VkWriteDescriptorSet descriptorWrite = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType                    sType
         DE_NULL,                                // const void*                        pNext
-        (VkDescriptorSet)0u,                    // VkDescriptorSet                    dstSet
+        VK_NULL_HANDLE,                         // VkDescriptorSet                    dstSet
         0u,                                     // uint32_t                            dstBinding
         firstElement,                           // uint32_t                            dstArrayElement
         getNumWrittenElements(),                // uint32_t                            descriptorCount
@@ -1496,7 +1496,7 @@ VkWriteDescriptorSet SamplerDescriptor::getDescriptorWrite(void)
     const VkWriteDescriptorSet descriptorWrite = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType                    sType
         DE_NULL,                                // const void*                        pNext
-        (VkDescriptorSet)0u,                    // VkDescriptorSet                    dstSet
+        VK_NULL_HANDLE,                         // VkDescriptorSet                    dstSet
         0u,                                     // uint32_t                            dstBinding
         firstElement,                           // uint32_t                            dstArrayElement
         getNumWrittenElements(),                // uint32_t                            descriptorCount
