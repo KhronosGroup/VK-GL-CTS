@@ -1004,72 +1004,8 @@ VkVideoReferenceSlotInfoKHR makeVideoReferenceSlot(deInt32 slotIndex, const VkVi
 // Vulkan video is not supported on android platform
 // all external libraries, helper functions and test instances has been excluded
 #ifdef DE_BUILD_VIDEO
-void absDiff(const std::vector<deUint8> *src1, const std::vector<deUint8> *src2, std::vector<deUint8> *dst)
-{
-	if (src1->size() != src2->size())
-	{
-		TCU_THROW(InternalError, "Input and output YUVs have different sizes");
-	}
 
-	dst->resize(src1->size());
-
-	for (size_t i = 0; i < src1->size(); i++)
-	{
-		int diff = static_cast<int>((*src1)[i]) - static_cast<int>((*src2)[i]);
-		(*dst)[i] = static_cast<deUint8>(std::abs(diff));
-	}
-}
-
-double calculatePSNR(const std::vector<deUint8> *img1, const std::vector<deUint8> *img2)
-{
-	// First, get the absolute difference
-	std::vector<deUint8> diff;
-	absDiff(img1, img2, &diff);
-
-	// Calculate the mean square error
-	double mse = 0.0;
-	for (const auto &val : diff)
-	{
-		mse += val * val;
-	}
-
-	DE_ASSERT(diff.size() > 0);
-	mse /= static_cast<double>(diff.size());
-	DE_ASSERT(mse != 0);
-	// Use the MSE to calculate the PSNR
-	return 10.0 * log10((255.0 * 255.0) / mse);
-}
-
-class DataProvider
-{
-public:
-	DataProvider(const BufferWithMemory& buffer, VkDeviceSize bufferSize)
-		: m_data(reinterpret_cast<unsigned char*>(buffer.getAllocation().getHostPtr())),
-		  m_size(bufferSize)
-	  {}
-
-	  uint32_t getData(unsigned char *buffer, uint32_t size, int32_t offset) const {
-		if (offset < 0 || static_cast<VkDeviceSize>(offset) >= m_size)
-			return 0;
-
-		uint32_t real_size = std::min(static_cast<uint32_t>(m_size - offset), size);
-
-		deMemcpy(buffer, m_data + offset, real_size);
-
-		return real_size;
-	  }
-
-private:
-	unsigned char*	m_data;
-	VkDeviceSize	m_size;
-};
-
-static int readBuffer(void *opaque, unsigned char *pBuf, int size, int32_t offset)
-{
-	return ((DataProvider *)opaque)->getData(pBuf, size, offset);
-}
-
-static MovePtr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext, const VkVideoCoreProfile *profile, size_t framesToCheck, bool resolutionChange)
+static shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext, const VkVideoCoreProfile *profile, size_t framesToCheck, bool resolutionChange)
 {
 	VkSharedBaseObj<VulkanVideoFrameBuffer> vkVideoFrameBuffer;
 
@@ -1088,7 +1024,7 @@ static MovePtr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext
 	params.outOfOrderDecoding					= false;
 	params.alwaysRecreateDPB					= resolutionChange;
 
-	return MovePtr<VideoBaseDecoder>(new VideoBaseDecoder(std::move(params)));
+	return std::make_shared<VideoBaseDecoder>(std::move(params));
 }
 
 de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImageFromContext(DeviceContext &deviceContext,
@@ -1102,11 +1038,12 @@ de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImageFromContext(DeviceCo
 	const VkExtent2D						 imageExtent{(deUint32)frame->displayWidth, (deUint32)frame->displayHeight};
 	const VkImage							 image						= frame->outputImageView->GetImageResource()->GetImage();
 	const VkFormat							 format						= frame->outputImageView->GetImageResource()->GetImageCreateInfo().format;
+	uint32_t								 imageLayerIndex			= frame->imageLayerIndex;
 
 	MovePtr<vkt::ycbcr::MultiPlaneImageData> multiPlaneImageData(new vkt::ycbcr::MultiPlaneImageData(format, tcu::UVec2(imageExtent.width, imageExtent.height)));
 	const VkQueue							 queueDecode				= getDeviceQueue(videoDeviceDriver, device, queueFamilyIndexDecode, 0u);
 	const VkQueue							 queueTransfer				= getDeviceQueue(videoDeviceDriver, device, queueFamilyIndexTransfer, 0u);
-	const VkImageSubresourceRange			 imageSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
+	const VkImageSubresourceRange			 imageSubresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, imageLayerIndex, 1);
 
 	const VkImageMemoryBarrier2KHR			imageBarrierDecode			= makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
 																									VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
@@ -1205,7 +1142,7 @@ de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImageFromContext(DeviceCo
 
 	VK_CHECK(videoDeviceDriver.waitForFences(device, DE_LENGTH_OF_ARRAY(fences), fences, DE_TRUE, ~0ull));
 
-	vkt::ycbcr::downloadImage(videoDeviceDriver, device, queueFamilyIndexTransfer, deviceContext.allocator(), image, multiPlaneImageData.get(), 0, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	vkt::ycbcr::downloadImage(videoDeviceDriver, device, queueFamilyIndexTransfer, deviceContext.allocator(), image, multiPlaneImageData.get(), 0, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageLayerIndex);
 
 	const VkImageMemoryBarrier2KHR imageBarrierTransfer2 = makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,
 																					VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
@@ -1836,7 +1773,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 	fillBuffer(videoDeviceDriver, videoDevice, encodeBufferAlloc, headersData[0].data(), headersData[0].size(), bitstreamBufferOffset);
 
 	// Move offset to accommodate header data
-	bitstreamBufferOffset = deAlign64(bitstreamBufferOffset + headersData[0].size(), videoCapabilities->minBitstreamBufferSizeAlignment);
+	bitstreamBufferOffset = deAlign64(bitstreamBufferOffset + headersData[0].size(), videoCapabilities->minBitstreamBufferOffsetAlignment);
 
 	const Unique<VkCommandPool> encodeCmdPool(makeCommandPool(videoDeviceDriver, videoDevice, encodeQueueFamilyIndex));
 	const Unique<VkCommandBuffer> firstEncodeCmdBuffer(allocateCommandBuffer(videoDeviceDriver, videoDevice, *encodeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -2188,14 +2125,19 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 	auto decodeProfile = VkVideoCoreProfile(videoCodecDecodeOperation, VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR, VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR, VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR, profileIdc);
 	auto basicDecoder = createBasicDecoder(&deviceContext, &decodeProfile, m_testDefinition->framesToCheck(), resolutionChange);
 
-	const VkExtensionProperties h264DecodeStdExtension	= {VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION};
-	const VkExtensionProperties h265DecodeStdExtension	= {VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION};
+	Demuxer::Params demuxParams = {};
+	demuxParams.data = std::make_unique<BufferedReader>(static_cast<const char*>(encodeBuffer.getAllocation().getHostPtr()), encodeBufferSize);
+	demuxParams.codecOperation = videoCodecDecodeOperation;
+	demuxParams.framing = ElementaryStreamFraming::H26X_BYTE_STREAM;
+	auto demuxer = Demuxer::create(std::move(demuxParams));
+	VkVideoParser parser;
+	// TODO: Check for decoder extension support before attempting validation!
+	createParser(demuxer->codecOperation(), basicDecoder, parser, demuxer->framing());
 
-	const VkExtensionProperties decodeStdExtension		= m_testDefinition->getProfile()->IsH264() ? h264DecodeStdExtension : h265DecodeStdExtension;
-
-	DataProvider provider(encodeBuffer, encodeBufferSize);
-
-	FrameProcessor processor(&readBuffer, &provider, "Alignment:NAL", videoCodecDecodeOperation, &decodeStdExtension, basicDecoder.get(), m_context.getTestContext().getLog(), false);
+	FrameProcessor processor(
+		std::move(demuxer),
+		basicDecoder
+	);
 	std::vector<int> incorrectFrames;
 	std::vector<int> correctFrames;
 
@@ -2211,9 +2153,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 		const string outputFileName = "out_" + std::to_string(NALIdx) + ".yuv";
 		saveYUVfile(out, outputFileName);
 #endif
-		std::vector<deUint8> *inRef = inVector[NALIdx].get();
-
-		double psnr = calculatePSNR(inRef, out.get());
+		double psnr = util::PSNR(*inVector[NALIdx], *out);
 
 		double higherPsnrThreshold		= 30.0;
 		double lowerPsnrThreshold		= 20.0;
@@ -2239,11 +2179,13 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 	}
 	const string passMessage = std::to_string(m_testDefinition->framesToCheck()) + " correctly encoded frames";
 	return tcu::TestStatus::pass(passMessage);
+
 #else
 	DE_UNREF(transferQueue);
 	DE_UNREF(decodeQueue);
 	TCU_THROW(NotSupportedError, "Vulkan video is not supported on android platform");
 #endif
+
 }
 
 class VideoEncodeTestCase : public TestCase

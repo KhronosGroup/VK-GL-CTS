@@ -1817,7 +1817,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 278
+#define VK_HEADER_VERSION 283
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 3, VK_HEADER_VERSION)
@@ -2857,8 +2857,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT = 1000545007,
     VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT = 1000545008,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV = 1000546000,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR = 1000558000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV = 1000555000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV = 1000563000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV = 1000568000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -3423,7 +3424,7 @@ typedef enum VkFormat {
     VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG = 1000054005,
     VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG = 1000054006,
     VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG = 1000054007,
-    VK_FORMAT_R16G16_S10_5_NV = 1000464000,
+    VK_FORMAT_R16G16_SFIXED5_NV = 1000464000,
     VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR = 1000470000,
     VK_FORMAT_A8_UNORM_KHR = 1000470001,
     VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK_EXT = VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK,
@@ -3480,6 +3481,7 @@ typedef enum VkFormat {
     VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT = VK_FORMAT_G16_B16R16_2PLANE_444_UNORM,
     VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT = VK_FORMAT_A4R4G4B4_UNORM_PACK16,
     VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT = VK_FORMAT_A4B4G4R4_UNORM_PACK16,
+    VK_FORMAT_R16G16_S10_5_NV = VK_FORMAT_R16G16_SFIXED5_NV,
     VK_FORMAT_MAX_ENUM = 0x7FFFFFFF
 } VkFormat;
 
@@ -12856,6 +12858,7 @@ typedef VkFlags64 VkPipelineCreateFlagBits2KHR;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_DISABLE_OPTIMIZATION_BIT_KHR = 0x00000001ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_ALLOW_DERIVATIVES_BIT_KHR = 0x00000002ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_DERIVATIVE_BIT_KHR = 0x00000004ULL;
+static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT = 0x400000000ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR = 0x00000008ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_DISPATCH_BASE_BIT_KHR = 0x00000010ULL;
 static const VkPipelineCreateFlagBits2KHR VK_PIPELINE_CREATE_2_DEFER_COMPILE_BIT_NV = 0x00000020ULL;
@@ -12906,12 +12909,8 @@ static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_TRANSFORM_FEEDBACK_BUFF
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT = 0x00001000ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_VIDEO_DECODE_SRC_BIT_KHR = 0x00002000ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_VIDEO_DECODE_DST_BIT_KHR = 0x00004000ULL;
-#ifdef VK_ENABLE_BETA_EXTENSIONS
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_VIDEO_ENCODE_DST_BIT_KHR = 0x00008000ULL;
-#endif
-#ifdef VK_ENABLE_BETA_EXTENSIONS
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_VIDEO_ENCODE_SRC_BIT_KHR = 0x00010000ULL;
-#endif
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR = 0x00020000ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR = 0x00080000ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR = 0x00100000ULL;
@@ -13448,18 +13447,6 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBindDescriptorBufferEmbeddedSamplers2EXT(
     VkCommandBuffer                             commandBuffer,
     const VkBindDescriptorBufferEmbeddedSamplersInfoEXT* pBindDescriptorBufferEmbeddedSamplersInfo);
 #endif
-
-
-// VK_KHR_shader_relaxed_extended_instruction is a preprocessor guard. Do not pass it to API calls.
-#define VK_KHR_shader_relaxed_extended_instruction 1
-#define VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_SPEC_VERSION 1
-#define VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME "VK_KHR_shader_relaxed_extended_instruction"
-typedef struct VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR {
-    VkStructureType    sType;
-    void*              pNext;
-    VkBool32           shaderRelaxedExtendedInstruction;
-} VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR;
-
 
 
 // VK_EXT_debug_report is a preprocessor guard. Do not pass it to API calls.
@@ -20265,7 +20252,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdOpticalFlowExecuteNV(
 
 // VK_EXT_legacy_dithering is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_legacy_dithering 1
-#define VK_EXT_LEGACY_DITHERING_SPEC_VERSION 1
+#define VK_EXT_LEGACY_DITHERING_SPEC_VERSION 2
 #define VK_EXT_LEGACY_DITHERING_EXTENSION_NAME "VK_EXT_legacy_dithering"
 typedef struct VkPhysicalDeviceLegacyDitheringFeaturesEXT {
     VkStructureType    sType;
@@ -20874,6 +20861,18 @@ typedef struct VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV {
 
 
 
+// VK_NV_raw_access_chains is a preprocessor guard. Do not pass it to API calls.
+#define VK_NV_raw_access_chains 1
+#define VK_NV_RAW_ACCESS_CHAINS_SPEC_VERSION 1
+#define VK_NV_RAW_ACCESS_CHAINS_EXTENSION_NAME "VK_NV_raw_access_chains"
+typedef struct VkPhysicalDeviceRawAccessChainsFeaturesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderRawAccessChains;
+} VkPhysicalDeviceRawAccessChainsFeaturesNV;
+
+
+
 // VK_NV_shader_atomic_float16_vector is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_shader_atomic_float16_vector 1
 #define VK_NV_SHADER_ATOMIC_FLOAT16_VECTOR_SPEC_VERSION 1
@@ -20883,6 +20882,18 @@ typedef struct VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV {
     void*              pNext;
     VkBool32           shaderFloat16VectorAtomics;
 } VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV;
+
+
+
+// VK_NV_ray_tracing_validation is a preprocessor guard. Do not pass it to API calls.
+#define VK_NV_ray_tracing_validation 1
+#define VK_NV_RAY_TRACING_VALIDATION_SPEC_VERSION 1
+#define VK_NV_RAY_TRACING_VALIDATION_EXTENSION_NAME "VK_NV_ray_tracing_validation"
+typedef struct VkPhysicalDeviceRayTracingValidationFeaturesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           rayTracingValidation;
+} VkPhysicalDeviceRayTracingValidationFeaturesNV;
 
 
 

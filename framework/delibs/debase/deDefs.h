@@ -383,6 +383,14 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 #	define DE_UNUSED_FUNCTION
 #endif
 
+#if (DE_COMPILER == DE_COMPILER_MSC)
+#	define DE_PACKED(...) __pragma(pack(push, 1)) typedef struct __VA_ARGS__ __pragma(pack(pop))
+#elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
+#	define DE_PACKED(...) typedef struct __attribute__((__packed__)) __VA_ARGS__
+#else
+#	define DE_PACKED
+#endif
+
 DE_INLINE const char* deFatalStr (const char* reason) { DE_ASSERT(0); return reason; }
 
 #ifdef __cplusplus

@@ -1338,7 +1338,7 @@ public:
 #endif
 	}
 
-	~DX11OperationSupport ()
+	virtual ~DX11OperationSupport ()
 	{
 #if (DE_OS == DE_OS_WIN32)
 		cleanup ();

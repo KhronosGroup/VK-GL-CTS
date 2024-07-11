@@ -9474,6 +9474,12 @@ bool MemoryTestInstance::createCommandsAndAllocateMemory (void)
 
 		return nextMemoryType();
 	}
+	else if (memoryProperties.memoryTypes[m_memoryTypeNdx].propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT)
+	{
+		log << TestLog::Message << "Memory type not supported (protected)" << TestLog::EndMessage;
+
+		return nextMemoryType();
+	}
 	else
 	{
 		try

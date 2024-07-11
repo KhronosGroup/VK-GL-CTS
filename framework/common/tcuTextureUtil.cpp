@@ -28,6 +28,7 @@
 #include "deMemory.h"
 
 #include <limits>
+#include <cmath>
 
 namespace tcu
 {
@@ -1277,15 +1278,15 @@ void estimatePixelValueRange (const ConstPixelBufferAccess& access, Vec4& minVal
 					{
 						Vec4 p = access.getPixel(x, y, z);
 
-						minVal[0] = (deFloatIsNaN(p[0]) ? minVal[0] : de::min(minVal[0], p[0]));
-						minVal[1] = (deFloatIsNaN(p[1]) ? minVal[1] : de::min(minVal[1], p[1]));
-						minVal[2] = (deFloatIsNaN(p[2]) ? minVal[2] : de::min(minVal[2], p[2]));
-						minVal[3] = (deFloatIsNaN(p[3]) ? minVal[3] : de::min(minVal[3], p[3]));
+						minVal[0] = (std::isnan(p[0]) ? minVal[0] : de::min(minVal[0], p[0]));
+						minVal[1] = (std::isnan(p[1]) ? minVal[1] : de::min(minVal[1], p[1]));
+						minVal[2] = (std::isnan(p[2]) ? minVal[2] : de::min(minVal[2], p[2]));
+						minVal[3] = (std::isnan(p[3]) ? minVal[3] : de::min(minVal[3], p[3]));
 
-						maxVal[0] = (deFloatIsNaN(p[0]) ? maxVal[0] : de::max(maxVal[0], p[0]));
-						maxVal[1] = (deFloatIsNaN(p[1]) ? maxVal[1] : de::max(maxVal[1], p[1]));
-						maxVal[2] = (deFloatIsNaN(p[2]) ? maxVal[2] : de::max(maxVal[2], p[2]));
-						maxVal[3] = (deFloatIsNaN(p[3]) ? maxVal[3] : de::max(maxVal[3], p[3]));
+						maxVal[0] = (std::isnan(p[0]) ? maxVal[0] : de::max(maxVal[0], p[0]));
+						maxVal[1] = (std::isnan(p[1]) ? maxVal[1] : de::max(maxVal[1], p[1]));
+						maxVal[2] = (std::isnan(p[2]) ? maxVal[2] : de::max(maxVal[2], p[2]));
+						maxVal[3] = (std::isnan(p[3]) ? maxVal[3] : de::max(maxVal[3], p[3]));
 					}
 				}
 			}
@@ -1346,7 +1347,7 @@ deUint32 packRGB999E5 (const tcu::Vec4& color)
 	float	bc		= deFloatClamp(color[2], 0.0f, maxVal);
 	float	maxc	= de::max(rc, de::max(gc, bc));
 	float	log2c	= deFloatLog2(maxc);
-	deInt32	floorc	= deIsInf(log2c) ? std::numeric_limits<deInt32>::min() : deFloorFloatToInt32(log2c);
+	deInt32	floorc	= std::isinf(log2c) ? std::numeric_limits<deInt32>::min() : deFloorFloatToInt32(log2c);
 	int		exps	= de::max(-eBias - 1, floorc) + 1 + eBias;
 	float	e		= deFloatPow(2.0f, (float)(exps-eBias-mBits));
 	int		maxs	= deFloorFloatToInt32(maxc / e + 0.5f);

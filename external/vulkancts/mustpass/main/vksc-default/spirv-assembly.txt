@@ -5331,6 +5331,11 @@ dEQP-VKSC.spirv_assembly.instruction.compute.opquantize.flush_to_zero
 dEQP-VKSC.spirv_assembly.instruction.compute.opquantize.infinities
 dEQP-VKSC.spirv_assembly.instruction.compute.opquantize.propagated_nans
 dEQP-VKSC.spirv_assembly.instruction.compute.opquantize.rounded
+dEQP-VKSC.spirv_assembly.instruction.compute.opquantize_vec4.exact
+dEQP-VKSC.spirv_assembly.instruction.compute.opquantize_vec4.flush_to_zero
+dEQP-VKSC.spirv_assembly.instruction.compute.opquantize_vec4.infinities
+dEQP-VKSC.spirv_assembly.instruction.compute.opquantize_vec4.propagated_nans
+dEQP-VKSC.spirv_assembly.instruction.compute.opquantize_vec4.rounded
 dEQP-VKSC.spirv_assembly.instruction.compute.opsmod.all
 dEQP-VKSC.spirv_assembly.instruction.compute.opsmod.positive
 dEQP-VKSC.spirv_assembly.instruction.compute.opsmod64.all

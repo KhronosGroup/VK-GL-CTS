@@ -59,6 +59,7 @@
 #include "vktApiImageCompressionControlTests.hpp"
 #include "vktApiFrameBoundaryTests.hpp"
 #include "vktApiPhysicalDeviceFormatPropertiesMaint5Tests.hpp"
+#include "vktApiFragmentShaderOutputTests.hpp"
 #endif // CTS_USES_VULKANSC
 
 namespace vkt
@@ -123,6 +124,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createMaintenance6Tests					(testCtx));
 	apiTests->addChild(createFrameBoundaryTests					(testCtx));
 	apiTests->addChild(createMaintenance5Tests					(testCtx));
+	apiTests->addChild(createFragmentShaderOutputTests			(testCtx));
 #endif
 	apiTests->addChild(createExtensionDuplicatesTests			(testCtx));
 }

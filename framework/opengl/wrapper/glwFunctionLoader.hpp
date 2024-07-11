@@ -33,6 +33,8 @@ typedef GLW_APICALL void (GLW_APIENTRY* GenericFuncType) (void);
 class FunctionLoader
 {
 public:
+	virtual ~FunctionLoader () {}
+
 	virtual GenericFuncType		get			(const char* name) const = 0;
 };
 

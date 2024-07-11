@@ -35,7 +35,7 @@ from lxml import etree
 scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
 sys.path.insert(0, scriptPath)
 
-from ctsbuild.common import DEQP_DIR, execute, initializeLogger
+from ctsbuild.common import *
 from khr_util.format import indentLines, writeInlFile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "scripts"))
@@ -3833,7 +3833,13 @@ def writeGetDeviceProcAddr(api, filename):
 def writeConformanceVersions(api, filename):
 	logging.debug("Preparing to generate " + filename)
 	# get list of all vulkan/vulkansc tags from git
-	listOfTags = os.popen("git ls-remote -t vk-gl-cts").read()
+	remote_urls = os.popen("git remote -v").read().split('\n')
+	remote_url = None
+	for line in remote_urls:
+		if "gerrit.khronos.org:29418/vk-gl-cts" in line:
+			remote_url = line.split()[1]
+			break
+	listOfTags = os.popen("git ls-remote -t %s" % (remote_url)).read()
 	if args.api == 'SC':
 		matches = re.findall("vulkansc-cts-(\d).(\d).(\d).(\d)", listOfTags, re.M)
 	else:

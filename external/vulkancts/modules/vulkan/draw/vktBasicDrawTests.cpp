@@ -29,13 +29,13 @@
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include "deDefs.h"
 #include "deRandom.hpp"
 #include "deString.h"
 
 #include "tcuTestCase.hpp"
-#include "tcuRGBA.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuVectorUtil.hpp"
@@ -111,6 +111,8 @@ struct DrawParamsBase
 	DrawParamsBase ()
 	{}
 
+	virtual ~DrawParamsBase () {}
+
 	DrawParamsBase (const vk::VkPrimitiveTopology top, const SharedGroupParams gParams)
 		: topology			(top)
 		, useMaintenance5	(false)
@@ -122,6 +124,8 @@ struct DrawParamsBase
 			gParams->nestedSecondaryCmdBuffer
 		}
 	{}
+
+	virtual void checkSupport (Context&) const {}
 };
 
 struct IndexedParamsBase
@@ -170,9 +174,12 @@ struct DrawIndexedParams : DrawParamsBase, IndexedParamsBase
 struct DrawIndirectParams : DrawParamsBase
 {
 	std::vector<vk::VkDrawIndirectCommand>	commands;
+	bool									multiDraw;
 
-	DrawIndirectParams (const vk::VkPrimitiveTopology top, const SharedGroupParams gParams)
+	DrawIndirectParams (const vk::VkPrimitiveTopology top, const SharedGroupParams gParams, bool multiDraw_)
 		: DrawParamsBase	(top, gParams)
+		, commands			()
+		, multiDraw			(multiDraw_)
 	{}
 
 	void addCommand (const deUint32 vertexC, const deUint32 instanceC, const deUint32 firstV, const deUint32 firstI)
@@ -185,15 +192,24 @@ struct DrawIndirectParams : DrawParamsBase
 
 		commands.push_back(cmd);
 	}
+
+	void checkSupport (Context& context) const override
+	{
+		if (multiDraw && commands.size() > 1)
+			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_DRAW_INDIRECT);
+	}
 };
 
 struct DrawIndexedIndirectParams : DrawParamsBase, IndexedParamsBase
 {
 	std::vector<vk::VkDrawIndexedIndirectCommand>	commands;
+	bool											multiDraw;
 
-	DrawIndexedIndirectParams (const vk::VkPrimitiveTopology top, const SharedGroupParams gParams, const vk::VkIndexType indexT)
+	DrawIndexedIndirectParams (const vk::VkPrimitiveTopology top, const SharedGroupParams gParams, const vk::VkIndexType indexT, bool multiDraw_)
 		: DrawParamsBase	(top, gParams)
 		, IndexedParamsBase	(indexT)
+		, commands			()
+		, multiDraw			(multiDraw_)
 	{}
 
 	void addCommand (const deUint32 indexC, const deUint32 instanceC, const deUint32 firstIdx, const deInt32 vertexO, const deUint32 firstIns)
@@ -206,6 +222,12 @@ struct DrawIndexedIndirectParams : DrawParamsBase, IndexedParamsBase
 		cmd.firstInstance					= firstIns;
 
 		commands.push_back(cmd);
+	}
+
+	void checkSupport (Context& context) const override
+	{
+		if (multiDraw && commands.size() > 1)
+			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_DRAW_INDIRECT);
 	}
 };
 
@@ -220,6 +242,8 @@ public:
 		m_inputs[1].type	= rr::GENERICVECTYPE_FLOAT;
 		m_outputs[0].type	= rr::GENERICVECTYPE_FLOAT;
 	}
+
+	virtual ~PassthruVertShader () {}
 
 	void shadeVertices (const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const
 	{
@@ -247,6 +271,8 @@ public:
 		m_inputs[0].type	= rr::GENERICVECTYPE_FLOAT;
 		m_outputs[0].type	= rr::GENERICVECTYPE_FLOAT;
 	}
+
+	virtual ~PassthruFragShader () {}
 
 	void shadeFragments (rr::FragmentPacket* packets, const int numPackets, const rr::FragmentShadingContext& context) const
 	{
@@ -790,6 +816,9 @@ void DrawTestCase<T>::checkSupport (Context& context) const
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 	}
 #endif // CTS_USES_VULKANSC
+
+	// Parameter-specific support checks.
+	m_data.checkSupport(context);
 }
 
 template<typename T>
@@ -1189,20 +1218,17 @@ void DrawTestInstance<DrawIndirectParams>::generateDrawData (void)
 template<>
 void DrawTestInstance<DrawIndirectParams>::draw(vk::VkCommandBuffer cmdBuffer, vk::VkBuffer indirectBuffer, vk::VkDeviceSize indirectOffset)
 {
-	const vk::VkPhysicalDeviceFeatures features = m_context.getDeviceFeatures();
-
-	// If multiDrawIndirect not supported execute single calls
-	if (m_data.commands.size() > 1 && !(features.multiDrawIndirect))
+	if (m_data.multiDraw)
+	{
+		m_vk.cmdDrawIndirect(cmdBuffer, indirectBuffer, indirectOffset, (deUint32)m_data.commands.size(), sizeof(vk::VkDrawIndirectCommand));
+	}
+	else // Use multiple single draws.
 	{
 		for (deUint32 cmdIdx = 0; cmdIdx < m_data.commands.size(); ++cmdIdx)
 		{
 			const deUint32	offset = (deUint32)(indirectOffset + cmdIdx * sizeof(vk::VkDrawIndirectCommand));
 			m_vk.cmdDrawIndirect(cmdBuffer, indirectBuffer, offset, 1, sizeof(vk::VkDrawIndirectCommand));
 		}
-	}
-	else
-	{
-		m_vk.cmdDrawIndirect(cmdBuffer, indirectBuffer, indirectOffset, (deUint32)m_data.commands.size(), sizeof(vk::VkDrawIndirectCommand));
 	}
 }
 
@@ -1402,20 +1428,17 @@ void DrawTestInstance<DrawIndexedIndirectParams>::generateDrawData (void)
 template<>
 void DrawTestInstance<DrawIndexedIndirectParams>::draw(vk::VkCommandBuffer cmdBuffer, vk::VkBuffer indirectBuffer, vk::VkDeviceSize indirectOffset)
 {
-	const vk::VkPhysicalDeviceFeatures features = m_context.getDeviceFeatures();
-
-	// If multiDrawIndirect not supported execute single calls
-	if (m_data.commands.size() > 1 && !(features.multiDrawIndirect))
+	if (m_data.multiDraw)
+	{
+		m_vk.cmdDrawIndexedIndirect(cmdBuffer, indirectBuffer, indirectOffset, (deUint32)m_data.commands.size(), sizeof(vk::VkDrawIndexedIndirectCommand));
+	}
+	else // Use multiple single draws.
 	{
 		for (deUint32 cmdIdx = 0; cmdIdx < m_data.commands.size(); ++cmdIdx)
 		{
 			const deUint32	offset = (deUint32)(indirectOffset + cmdIdx * sizeof(vk::VkDrawIndexedIndirectCommand));
 			m_vk.cmdDrawIndexedIndirect(cmdBuffer, indirectBuffer, offset, 1, sizeof(vk::VkDrawIndexedIndirectCommand));
 		}
-	}
-	else
-	{
-		m_vk.cmdDrawIndexedIndirect(cmdBuffer, indirectBuffer, indirectOffset, (deUint32)m_data.commands.size(), sizeof(vk::VkDrawIndexedIndirectCommand));
 	}
 }
 
@@ -1686,13 +1709,17 @@ void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseP
 			{
 				deUint32	firstVertex		= rnd.getInt(0, OFFSET_LIMIT);
 
-				DrawIndirectParams	params	= DrawIndirectParams(topology, groupParams);
+				DrawIndirectParams	params	= DrawIndirectParams(topology, groupParams, false);
 
 				params.addCommand(vertexCount, 1, 0, 0);
 				testGroup->addChild(new IndirectCase(testCtx, (name + "_single_command").c_str(), params));
 
 				params.addCommand(vertexCount, 1, firstVertex, 0);
 				testGroup->addChild(new IndirectCase(testCtx, (name + "_multi_command").c_str(), params));
+
+				params.multiDraw = true;
+				testGroup->addChild(new IndirectCase(testCtx, (name + "_multi_command_multi_draw").c_str(), params));
+
 				break;
 			}
 			case DRAW_COMMAND_TYPE_DRAW_INDEXED_INDIRECT:
@@ -1700,12 +1727,17 @@ void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseP
 				deUint32	firstIndex		= rnd.getInt(vertexCount, OFFSET_LIMIT);
 				deUint32	vertexOffset	= rnd.getInt(vertexCount, OFFSET_LIMIT);
 
-				DrawIndexedIndirectParams	params	= DrawIndexedIndirectParams(topology, groupParams, vk::VK_INDEX_TYPE_UINT32);
+				DrawIndexedIndirectParams	params	= DrawIndexedIndirectParams(topology, groupParams, vk::VK_INDEX_TYPE_UINT32, false);
+
 				params.addCommand(vertexCount, 1, 0, 0, 0);
 				testGroup->addChild(new IndexedIndirectCase(testCtx, (name + "_single_command").c_str(), params));
 
 				params.addCommand(vertexCount, 1, firstIndex, vertexOffset, 0);
 				testGroup->addChild(new IndexedIndirectCase(testCtx, (name + "_multi_command").c_str(), params));
+
+				params.multiDraw = true;
+				testGroup->addChild(new IndexedIndirectCase(testCtx, (name + "_multi_command_multi_draw").c_str(), params));
+
 				break;
 			}
 			default:
@@ -1716,10 +1748,12 @@ void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseP
 
 void createDrawTests(tcu::TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 {
+	auto& testCtx = testGroup->getTestContext();
+
 	for (deUint32 drawTypeIndex = 0; drawTypeIndex < DRAW_COMMAND_TYPE_DRAW_LAST; ++drawTypeIndex)
 	{
 		const DrawCommandType			command			(static_cast<DrawCommandType>(drawTypeIndex));
-		de::MovePtr<tcu::TestCaseGroup>	topologyGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), getDrawCommandTypeName(command)));
+		de::MovePtr<tcu::TestCaseGroup>	topologyGroup	(new tcu::TestCaseGroup(testCtx, getDrawCommandTypeName(command)));
 
 		for (deUint32 topologyIdx = 0; topologyIdx != vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST; ++topologyIdx)
 		{
@@ -1741,13 +1775,18 @@ void createDrawTests(tcu::TestCaseGroup* testGroup, const SharedGroupParams grou
 	}
 
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testGroup->getTestContext(), "misc"));
+	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 	if (groupParams->useDynamicRendering == false)
 	{
-		DrawIndexedIndirectParams params(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, groupParams, vk::VK_INDEX_TYPE_UINT32);
-		params.addCommand(4, 1, 0, 0, 0);
-		params.useMaintenance5 = true;
-		miscGroup->addChild(new IndexedIndirectCase(testGroup->getTestContext(), "maintenance5", params));
+		{
+			DrawIndexedIndirectParams params(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, groupParams, vk::VK_INDEX_TYPE_UINT32, false);
+			params.addCommand(4, 1, 0, 0, 0);
+			params.useMaintenance5 = true;
+			miscGroup->addChild(new IndexedIndirectCase(testCtx, "maintenance5", params));
+		}
+		{
+			miscGroup->addChild(cts_amber::createAmberTestCase(testCtx, "flat_b_sat_error", "", "draw/misc", "flat_b_sat_error.amber"));
+		}
 	}
 	testGroup->addChild(miscGroup.release());
 #endif // CTS_USES_VULKANSC

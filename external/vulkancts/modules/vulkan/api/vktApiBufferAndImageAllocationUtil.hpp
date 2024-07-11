@@ -47,6 +47,8 @@ using namespace vk;
 class IBufferAllocator
 {
 public:
+	virtual ~IBufferAllocator () {}
+
 	virtual void						createTestBuffer				(const DeviceInterface&		vk,
 																		 VkDevice					vkDevice,
 																		 deUint32					queueFamilyIndex,
@@ -92,6 +94,8 @@ public:
 class IImageAllocator
 {
 public:
+	virtual ~IImageAllocator () {}
+
 	virtual void						createTestImage					(tcu::IVec2					size,
 																		 VkFormat					format,
 																		 Context&					context,

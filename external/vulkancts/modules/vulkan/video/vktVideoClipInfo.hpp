@@ -25,14 +25,15 @@
  * See the <vulkan_data_dir>/vulkan/video/frame_checksums.py file for
  * instructions on generating the checksums for new tests.
  *--------------------------------------------------------------------*/
-#include "deDefs.hpp"
-#include "vktVideoTestUtils.hpp"
-
 #include <array>
 #include <vector>
 #include <string>
 #include <sstream>
 
+#include "deDefs.hpp"
+#include "vktVideoTestUtils.hpp"
+
+#include "vktDemuxer.hpp"
 
 namespace vkt
 {
@@ -102,35 +103,13 @@ struct ClipInfo
 	ClipName						name;
 	const char*						filename;
 	std::vector<VideoProfileInfo>	sessionProfiles;
-	uint32_t						frameWidth;
-	uint32_t						frameHeight;
-	uint32_t						frameRate;
-	int								totalFrames;
-	uint32_t						framesInGOP;
-	const char**					frameChecksums;
-
-
-	ClipInfo(
-		ClipName						cName,
-		const char*						fName,
-		std::vector<VideoProfileInfo>&&	tSessionProfiles,
-		uint32_t						fFrameWidth = 0,
-		uint32_t						fFameHeight = 0,
-		uint32_t						fFrameRate = 0,
-		int								tFrames = 0,
-		uint32_t						fInGOP = 0,
-		const char**					fChecksums = nullptr
-	) :
-		name(cName),
-		filename(fName),
-		sessionProfiles(std::move(tSessionProfiles)),
-		frameWidth(fFrameWidth),
-		frameHeight(fFameHeight),
-		frameRate(fFrameRate),
-		totalFrames(tFrames),
-		framesInGOP(fInGOP),
-		frameChecksums(fChecksums) {}
-
+	ElementaryStreamFraming			framing { ElementaryStreamFraming::UNKNOWN };
+	uint32_t						frameWidth{ 0 };
+	uint32_t						frameHeight{ 0 };
+	uint32_t						frameRate{ 0 };
+	int								totalFrames{ 0 };
+	uint32_t						framesInGOP{ 0 };
+	const char**					frameChecksums{ nullptr };
 };
 
 const ClipInfo* clipInfo(ClipName c);

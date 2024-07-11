@@ -309,26 +309,31 @@ PACKAGES = [
 		"e7b5f0aa5b1b0eadc63a1c624c0ca7f5af133aa857d6a4271b0ef3d0bdb6868e",
 		"renderdoc"),
 	GitRepo(
-		"https://gitlab.khronos.org/spirv/SPIRV-Tools.git",
-		"git@gitlab.khronos.org:spirv/SPIRV-Tools.git",
-		"e063305c9f466a29d7078b44ce3206e59bc63898",
+		"https://github.com/KhronosGroup/SPIRV-Tools.git",
+		"git@github.com:KhronosGroup/SPIRV-Tools.git",
+		"dd4b663e13c07fea4fbb3f70c1c91c86731099f7",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"d84255296c3d19642515237c8d016bb685bd0bed",
+		"b9b8fd917b195f680a1ce3f3f663c03e1c82579d",
 		"glslang",
 		removeTags = ["main-tot"]),
 	GitRepo(
-		"https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
-		"git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
-		"b8771a117f9ff702a79991937b080dd9881aa91d",
+		"https://github.com/KhronosGroup/SPIRV-Headers.git",
+		"git@github.com:KhronosGroup/SPIRV-Headers.git",
+		"4f7b471f1a66b6d06462cd4ba57628cc0cd087d7",
 		"spirv-headers"),
 	GitRepo(
-		"https://gitlab.khronos.org/vulkan/vulkan.git",
-		"git@gitlab.khronos.org:vulkan/vulkan.git",
-		"2a15001eece471bf90d66173ef39f28fa510f88c",
+		"https://github.com/KhronosGroup/Vulkan-Docs.git",
+		"git@github.com:KhronosGroup/Vulkan-Docs.git",
+		"dedb71a7edc6d5af3f9bfd5e2ef53814de999ef7",
 		"vulkan-docs"),
+	GitRepo(
+		"https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
+		"git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
+		"f589bc456545fbab97caf49380b102b8aafe1f40",
+		"vulkan-validationlayers"),
 	GitRepo(
 		"https://github.com/google/amber.git",
 		"git@github.com:google/amber.git",
@@ -345,13 +350,8 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/Igalia/vk_video_samples.git",
 		"git@github.com:Igalia/vk_video_samples.git",
-		"ce80453dadeea7b1a6409434f3358ef1e46e4ae7",
+		"6821adf11eb4f84a2168264b954c170d03237699",
 		"nvidia-video-samples"),
-	GitRepo(
-		"https://github.com/Igalia/ESExtractor.git",
-		"git@github.com:Igalia/ESExtractor.git",
-		"a1c3c0b239c9540cb410f014e0610016ef51b0d4",
-		"ESExtractor"),
 ]
 
 def parseArgs ():

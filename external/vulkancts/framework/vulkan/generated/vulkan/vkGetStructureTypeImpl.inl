@@ -2698,11 +2698,6 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceExternalMemoryRDMAFe
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
-}
-
 template<> VkStructureType getStructureType<VkVertexInputBindingDescription2EXT> (void)
 {
 	return VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT;
@@ -3381,6 +3376,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentShaderBaryce
 template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingMotionBlurFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MOTION_BLUR_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingValidationFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV;
 }
 
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryMotionTrianglesDataNV> (void)
@@ -4451,5 +4451,10 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMapMemoryPlacedPrope
 template<> VkStructureType getStructureType<VkMemoryMapPlacedInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRawAccessChainsFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV;
 }
 

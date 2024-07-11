@@ -23,28 +23,31 @@
  */
 /*--------------------------------------------------------------------*/
 
+#include <utility>
+#include <memory>
+
+#include "deDefs.h"
+#include "deFilePath.hpp"
+#include "deStringUtil.hpp"
+
+#include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
+
+#include "vkDefs.hpp"
 #include "vktVideoDecodeTests.hpp"
 #include "vktVideoTestUtils.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkObjUtil.hpp"
-
-#include "tcuTestLog.hpp"
-
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
-#include "vkDefs.hpp"
-#include "tcuCommandLine.hpp"
 
 #include "vktVideoClipInfo.hpp"
-#include <deDefs.h>
 
 #ifdef DE_BUILD_VIDEO
-#include "extESExtractor.hpp"
 #include "vktVideoBaseDecodeUtils.hpp"
 #include <VulkanH264Decoder.h>
 #include <VulkanH265Decoder.h>
 #include <VulkanAV1Decoder.h>
-#include <utility>
 #endif
 
 namespace vkt
@@ -52,60 +55,67 @@ namespace vkt
 namespace video
 {
 #ifdef DE_BUILD_VIDEO
-FrameProcessor::FrameProcessor(const char* filename, const char *demuxerOptions,
-				VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties,
-				VideoBaseDecoder* decoder, tcu::TestLog& log, bool av1AnnexB)
-	: m_demuxer(filename, demuxerOptions, log)
-	, m_decoder(decoder)
-{
-	TCU_CHECK_AND_THROW(InternalError, m_demuxer.GetVideoCodec() != ESE_VIDEO_CODEC_UNKNOWN, "Demuxer failed to prepare");
-	createParser(codecOperation, extensionProperties, m_decoder, m_parser, av1AnnexB);
-}
+// Set this to 1 to have the decoded YCbCr frames written to the
+// filesystem in the YV12 format.
+// Check the relevant sections to change the file name and so on...
+static constexpr bool debug_WriteOutFramesToSingleFile = false;
+// Default behaviour is to write all decoded frames to one
+// file. Setting this to 1 will output each frame to its own file.
+static constexpr bool debug_WriteOutFramesToSeparateFiles = false;
+// If true, the dumped frames will contain the results of decoding
+// with filmgrain as expected. When false, `apply_grain` is forced to
+// zero, resulting in dumped frames having no post-processing
+// applied. This is useful for debugging the filmgrain process. Only
+// AV1 has been considered so far.
+static constexpr bool debug_WriteOutFilmGrain = true;
 
-FrameProcessor::FrameProcessor(ese_read_buffer_func readBufferFunc, void* data, const char* demuxerOptions,
-				VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties,
-				VideoBaseDecoder* decoder, tcu::TestLog& log, bool av1AnnexB)
-	: m_demuxer(readBufferFunc, data, demuxerOptions, log)
-	, m_decoder(decoder)
-{
-	TCU_CHECK_AND_THROW(InternalError, m_demuxer.GetVideoCodec() != ESE_VIDEO_CODEC_UNKNOWN, "Demuxer failed to prepare");
-	createParser(codecOperation, extensionProperties, m_decoder, m_parser, av1AnnexB);
-}
+static_assert(!(debug_WriteOutFramesToSingleFile && debug_WriteOutFramesToSeparateFiles));
 
+static constexpr double kFilmgrainPSNRLowerBound = 28.0;
+static constexpr double kFilmgrainPSNRUpperBound = 34.0;
+
+FrameProcessor::FrameProcessor(std::shared_ptr<Demuxer>&& demuxer,
+							   std::shared_ptr<VideoBaseDecoder> decoder)
+	: m_decoder(decoder)
+	, m_demuxer(std::move(demuxer))
+{
+	// TOOD: The parser interface is most unfortunate, it's as close
+	// as inside-out to our needs as you can get. Eventually integrate
+	// it more cleanly into the CTS.
+	createParser(m_demuxer->codecOperation(), m_decoder, m_parser, m_demuxer->framing());
+}
 
 void FrameProcessor::parseNextChunk()
 {
-	deUint8*				pData		   = 0;
-	deInt64					size		   = 0;
-	bool					demuxerSuccess = m_demuxer.Demux(&pData, &size);
+	std::vector<uint8_t> demuxedPacket = m_demuxer->nextPacket();
 
 	VkParserBitstreamPacket pkt;
-	pkt.pByteStream			 = pData; // Ptr to byte stream data decode/display event
-	pkt.nDataLength			 = size; // Data length for this packet
-	pkt.llPTS				 = 0; // Presentation Time Stamp for this packet (clock rate specified at initialization)
-	pkt.bEOS				 = !demuxerSuccess; // true if this is an End-Of-Stream packet (flush everything)
-	pkt.bPTSValid			 = false; // true if llPTS is valid (also used to detect frame boundaries for VC1 SP/MP)
-	pkt.bDiscontinuity		 = false; // true if DecMFT is signalling a discontinuity
-	pkt.bPartialParsing		 = 0; // 0: parse entire packet, 1: parse until next
-	pkt.bEOP				 = false; // true if the packet in pByteStream is exactly one frame
-	pkt.pbSideData			 = nullptr; // Auxiliary encryption information
-	pkt.nSideDataLength		 = 0; // Auxiliary encrypton information length
+	pkt.pByteStream			 = demuxedPacket.data();
+	pkt.nDataLength			 = demuxedPacket.size();
+	pkt.llPTS				 = 0; // Irrelevant for CTS
+	pkt.bEOS				 = demuxedPacket.size() == 0; // true if this is an End-Of-Stream packet (flush everything)
+	pkt.bPTSValid			 = false; // Irrelevant for CTS
+	pkt.bDiscontinuity		 = false; // Irrelevant for CTS
+	pkt.bPartialParsing		 = false; // false: parse entire packet, true: parse until next
+	pkt.bEOP				 = false; // Irrelevant for CTS
+	pkt.pbSideData			 = nullptr; // Irrelevant for CTS
+	pkt.nSideDataLength		 = 0; // Irrelevant for CTS
 
 	size_t	   parsedBytes	 = 0;
 	const bool parserSuccess = m_parser->ParseByteStream(&pkt, &parsedBytes);
-	m_videoStreamHasEnded = !(demuxerSuccess && parserSuccess);
+	m_eos = demuxedPacket.size() == 0 || !parserSuccess;
 }
 
 int FrameProcessor::getNextFrame(DecodedFrame* pFrame)
 {
 	int32_t framesInQueue = m_decoder->GetVideoFrameBuffer()->DequeueDecodedPicture(pFrame);
-	while (!framesInQueue && !m_videoStreamHasEnded)
+	while (!framesInQueue && !m_eos)
 	{
 		parseNextChunk();
 		framesInQueue		= m_decoder->GetVideoFrameBuffer()->DequeueDecodedPicture(pFrame);
 	}
 
-	if (!framesInQueue && !m_videoStreamHasEnded)
+	if (!framesInQueue && !m_eos)
 	{
 		return -1;
 	}
@@ -115,12 +125,21 @@ int FrameProcessor::getNextFrame(DecodedFrame* pFrame)
 
 void FrameProcessor::bufferFrames(int framesToDecode)
 {
-	// This loop is for the out-of-order submissions cases. First the requisite frame information is gathered from the parser<->decoder loop.
-	// Then the command buffers are recorded in a random order w.r.t original coding order. Queue submissions are always in coding order.
-	// NOTE: For this sequence to work, the frame buffer must have enough decode surfaces for the GOP intended for decode, otherwise
-	// picture allocation will fail pretty quickly! See m_numDecodeSurfaces, m_maxDecodeFramesCount
-	// NOTE: When requesting two frames to be buffered, it's only guaranteed in the successful case you will get 2 *or more* frames for decode.
-	// This is due to the inter-frame references, where the second frame, for example, may need further coded frames as dependencies.
+	// This loop is for the out-of-order submissions cases. First the
+	// requisite frame information is gathered from the
+	// parser<->decoder loop.
+	// Then the command buffers are recorded in a random order w.r.t
+	// original coding order. Queue submissions are always in coding
+	// order.
+	// NOTE: For this sequence to work, the frame buffer must have
+	// enough decode surfaces for the GOP intended for decode,
+	// otherwise picture allocation will fail pretty quickly! See
+	// m_numDecodeSurfaces, m_maxDecodeFramesCount
+	// NOTE: When requesting two frames to be buffered, it's only
+	// guaranteed in the successful case you will get 2 *or more*
+	// frames for decode.  This is due to the inter-frame references,
+	// where the second frame, for example, may need further coded
+	// frames as dependencies.
 	DE_ASSERT(m_decoder->m_outOfOrderDecoding);
 	do
 	{
@@ -129,7 +148,7 @@ void FrameProcessor::bufferFrames(int framesToDecode)
 		if (decodedFrames >= framesToDecode)
 			break;
 	}
-	while (!m_videoStreamHasEnded);
+	while (!m_eos);
 	auto& cachedParams = m_decoder->m_cachedDecodeParams;
 	TCU_CHECK_MSG(cachedParams.size() >= framesToDecode, "Unknown decoder failure");
 }
@@ -139,8 +158,6 @@ void FrameProcessor::bufferFrames(int framesToDecode)
 namespace
 {
 using namespace vk;
-using namespace std;
-
 using de::MovePtr;
 
 enum TestType
@@ -199,7 +216,7 @@ enum TestType
 	TEST_TYPE_LAST
 };
 
-const char* getTestName(TestType type)
+static const char* testTypeToStr(TestType type)
 {
 	const char* testName;
 	switch (type)
@@ -431,7 +448,8 @@ struct DecodeTestParam
 	// {TEST_TYPE_AV1_DECODE_ARGON_SEQCHANGE_AFFINE_8, {CLIP_ARGON_SEQCHANGE_AFFINE_8, 4, DecoderOption::AnnexB}},
 
 	// TODO: Frames after the first hit asserts in the parser. First frame decodes correctly.
-	{TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10, {CLIP_ARGON_FILMGRAIN_10, 1, DecoderOption::AnnexB}},
+	// TODO: Filmgrain option not set here, because the first frame doesn't have it enabled.
+	{TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10, {CLIP_ARGON_FILMGRAIN_10, 1, (DecoderOption)(DecoderOption::AnnexB)}},
 
 	// TODO: Did not have sufficient implementations to find out why this is failing.
 	//{TEST_TYPE_AV1_DECODE_ARGON_TEST_787, {CLIP_ARGON_TEST_787, 2, DecoderOption::AnnexB}},
@@ -450,15 +468,16 @@ struct InterleavingDecodeTestParams
 class TestDefinition
 {
 public:
-	static MovePtr<TestDefinition> create(DecodeTestParam params, deUint32 baseSeed)
+	static MovePtr<TestDefinition> create(DecodeTestParam params, deUint32 baseSeed, bool layeredDpb)
 	{
-		return MovePtr<TestDefinition>(new TestDefinition(params, baseSeed));
+		return MovePtr<TestDefinition>(new TestDefinition(params, baseSeed, layeredDpb));
 	}
 
-	TestDefinition(DecodeTestParam params, deUint32 baseSeed)
+	TestDefinition(DecodeTestParam params, deUint32 baseSeed, bool layeredDpb)
 		: m_params(params)
 		, m_info(clipInfo(params.stream.clip))
 		, m_hash(baseSeed)
+		, m_isLayeredDpb(layeredDpb)
 	{
 		for (const auto& profile : m_info->sessionProfiles) {
 			m_profiles.push_back(
@@ -497,16 +516,6 @@ public:
 		return m_info;
 	};
 
-#ifdef DE_BUILD_VIDEO
-	const char* getESEOptions() const
-	{
-		if (m_params.stream.decoderOptions & DecoderOption::AnnexB)
-			return "format:annex-b";
-		else
-			return ""; // demuxer will probe the stream
-	}
-#endif
-
 	VkVideoCodecOperationFlagBitsKHR getCodecOperation(int session) const
 	{
 		return m_profiles[session].GetCodecType();
@@ -517,6 +526,18 @@ public:
 		return &m_profiles[session];
 	}
 
+	const std::string getTestName() const
+	{
+		std::stringstream oss;
+		oss << testTypeToStr(getTestType());
+		if (isLayered())
+			oss << "_layered_dpb";
+		else
+			oss << "_separated_dpb";
+
+		return oss.str();
+	}
+
 	int framesToCheck() const
 	{
 		return m_params.stream.framesToCheck;
@@ -525,6 +546,11 @@ public:
 	bool hasOption(DecoderOption o) const
 	{
 		return (m_params.stream.decoderOptions & o) != 0;
+	}
+
+	bool isLayered() const
+	{
+		return m_isLayeredDpb;
 	}
 
 	int getParamaterUpdateHackRequirement() const
@@ -576,21 +602,25 @@ public:
 	}
 
 private:
-	DecodeTestParam	   m_params;
-	const ClipInfo*	   m_info{};
-	deUint32		   m_hash{};
-	std::vector<VkVideoCoreProfile> m_profiles;
-	// The 1-based count of parameter set updates after which to force a parameter object release.
-	// This is required due to the design of the NVIDIA decode-client API. It sends parameter updates and expects constructed parameter
-	// objects back synchronously, before the next video session is created in a following BeginSequence call.
-	int				   m_pictureParameterUpdateTriggerHack{0}; // Zero is "off"
+	DecodeTestParam						m_params;
+	const ClipInfo*						m_info{};
+	deUint32							m_hash{};
+	bool								m_isLayeredDpb{};
+	std::vector<VkVideoCoreProfile>		m_profiles;
+	// The 1-based count of parameter set updates after which to force
+	// a parameter object release.  This is required due to the design
+	// of the NVIDIA decode-client API. It sends parameter updates and
+	// expects constructed parameter objects back synchronously,
+	// before the next video session is created in a following
+	// BeginSequence call.
+	int									m_pictureParameterUpdateTriggerHack{0}; // Zero is "off"
 };
 
 // Vulkan video is not supported on android platform
 // all external libraries, helper functions and test instances has been excluded
 #ifdef DE_BUILD_VIDEO
 
-static MovePtr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext* devctx, const TestDefinition& test)
+static std::shared_ptr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext* devctx, const TestDefinition& test, bool forceDisableFilmGrain = false)
 {
 	VkSharedBaseObj<VulkanVideoFrameBuffer> vkVideoFrameBuffer;
 	VK_CHECK(VulkanVideoFrameBuffer::Create(devctx,
@@ -603,14 +633,17 @@ static MovePtr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext* devctx
 	params.context							 = devctx;
 	params.framebuffer						 = vkVideoFrameBuffer;
 	params.framesToCheck					 = test.framesToCheck();
+	params.layeredDpb						 = test.isLayered();
 	params.queryDecodeStatus				 = test.hasOption(DecoderOption::UseStatusQueries);
 	params.useInlineQueries					 = test.hasOption(DecoderOption::UseInlineStatusQueries);
 	params.resourcesWithoutProfiles			 = test.hasOption(DecoderOption::ResourcesWithoutProfiles);
 	params.outOfOrderDecoding				 = test.hasOption(DecoderOption::CachedDecoding);
 	params.alwaysRecreateDPB				 = test.hasOption(DecoderOption::RecreateDPBImages);
 	params.intraOnlyDecoding				 = test.hasOption(DecoderOption::IntraOnlyDecoding);
+	params.pictureParameterUpdateTriggerHack = test.getParamaterUpdateHackRequirement();
+	params.forceDisableFilmGrain			 = forceDisableFilmGrain;
 
-	return MovePtr<VideoBaseDecoder>(new VideoBaseDecoder(std::move(params)));
+	return std::make_shared<VideoBaseDecoder>(std::move(params));
 }
 
 struct DownloadedFrame
@@ -738,6 +771,11 @@ DownloadedFrame getDecodedImage(DeviceContext& devctx, VkImageLayout originalLay
 	PlanarFormatDescription planarDescription = getPlanarFormatDescription(format);
 	DE_ASSERT(planarDescription.numPlanes == 2 || planarDescription.numPlanes == 3);
 	const VkImageSubresourceRange imageSubresourceRange		   = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, frame.imageLayerIndex, 1);
+
+	if (videoLoggingEnabled())
+	{
+		tcu::print(";;; getDecodedImage layer=%d arrayLayers=%d\n", frame.imageLayerIndex, frame.outputImageView->GetImageResource()->GetImageCreateInfo().arrayLayers);
+	}
 
 	const Move<VkCommandPool>		cmdDecodePool(makeCommandPool(vkd, device, queueFamilyIndexDecode));
 	const Move<VkCommandBuffer>		cmdDecodeBuffer(allocateCommandBuffer(vkd, device, *cmdDecodePool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -923,7 +961,6 @@ DownloadedFrame getDecodedImage(DeviceContext& devctx, VkImageLayout originalLay
 				{
 					sampleWordsCb16[i] = roru16(wordSamples[2*i], 16 - bitDepth);
 					sampleWordsCr16[i] = roru16(wordSamples[2*i+1], 16 - bitDepth);
-
 				}
 			}
 		}
@@ -1033,8 +1070,7 @@ public:
 	tcu::TestStatus iterate(void);
 
 protected:
-	const TestDefinition*	  m_testDefinition;
-	MovePtr<VideoBaseDecoder> m_decoder{};
+	const TestDefinition*				m_testDefinition;
 	static_assert(sizeof(DeviceContext) < 128, "DeviceContext has grown bigger than expected!");
 	DeviceContext m_deviceContext;
 };
@@ -1046,10 +1082,9 @@ public:
 	tcu::TestStatus iterate(void);
 
 protected:
-	const std::vector<MovePtr<TestDefinition>>& m_testDefinitions;
-	std::vector<MovePtr<VideoBaseDecoder>>		m_decoders{};
+	const std::vector<MovePtr<TestDefinition>>&			m_testDefinitions;
+	DeviceContext										m_deviceContext;
 	static_assert(sizeof(DeviceContext) < 128, "DeviceContext has grown bigger than expected!");
-	DeviceContext m_deviceContext;
 };
 
 InterleavingDecodeTestInstance::InterleavingDecodeTestInstance(Context& context, const std::vector<MovePtr<TestDefinition>>& testDefinitions)
@@ -1073,9 +1108,6 @@ InterleavingDecodeTestInstance::InterleavingDecodeTestInstance(Context& context,
 		getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexDecode(), 0),
 		nullptr,
 		getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexTransfer(), 0));
-
-	for (const auto& test : m_testDefinitions)
-		m_decoders.push_back(decoderFromTestDefinition(&m_deviceContext, *test));
 }
 
 VideoDecodeTestInstance::VideoDecodeTestInstance(Context& context, const TestDefinition* testDefinition)
@@ -1093,76 +1125,164 @@ VideoDecodeTestInstance::VideoDecodeTestInstance(Context& context, const TestDef
 		getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexDecode(), 0),
 		nullptr,
 		getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexTransfer(), 0));
+}
 
-	m_decoder = decoderFromTestDefinition(&m_deviceContext, *m_testDefinition);
+static std::unique_ptr<FrameProcessor> createProcessor(const TestDefinition* td, DeviceContext* dctx, bool forceDisableFilmGrain = false)
+{
+	Demuxer::Params demuxParams = {};
+	demuxParams.data = std::make_unique<BufferedReader>(td->getClipFilename());
+	demuxParams.codecOperation = td->getCodecOperation(0);
+	demuxParams.framing = td->getClipInfo()->framing;
+
+	auto demuxer = Demuxer::create(std::move(demuxParams));
+
+	std::shared_ptr<VideoBaseDecoder> decoder = decoderFromTestDefinition(dctx, *td, forceDisableFilmGrain);
+
+	return std::make_unique<FrameProcessor>(std::move(demuxer), decoder);
 }
 
 tcu::TestStatus VideoDecodeTestInstance::iterate()
 {
-#if FRAME_DUMP_DEBUG
-	static char frameDumpName[128];
-#endif
+	bool filmGrainPresent = m_testDefinition->hasOption(DecoderOption::FilmGrainPresent);
+	std::unique_ptr<FrameProcessor> processor = createProcessor(m_testDefinition, &m_deviceContext);
+	std::unique_ptr<FrameProcessor> processorWithoutFilmGrain;
+	if (filmGrainPresent)
+	{
+		processorWithoutFilmGrain = createProcessor(m_testDefinition, &m_deviceContext, true);
+	}
 
-	FrameProcessor	 processor(m_testDefinition->getClipFilename(), m_testDefinition->getESEOptions(), m_testDefinition->getCodecOperation(0), m_testDefinition->extensionProperties(0), m_decoder.get(), m_context.getTestContext().getLog(), m_testDefinition->hasOption(DecoderOption::AnnexB));
 	std::vector<int> incorrectFrames;
 	std::vector<int> correctFrames;
 
 	if (m_testDefinition->hasOption(DecoderOption::CachedDecoding))
 	{
-		processor.bufferFrames(m_testDefinition->framesToCheck());
-		m_decoder->decodeFramesOutOfOrder();
+		processor->decodeFrameOutOfOrder(m_testDefinition->framesToCheck());
+		if (processorWithoutFilmGrain)
+			processorWithoutFilmGrain->decodeFrameOutOfOrder(m_testDefinition->framesToCheck());
 	}
 
-	bool hasSeparateOutputImages = m_decoder->dpbAndOutputCoincide() && !m_testDefinition->hasOption(DecoderOption::FilmGrainPresent);
+	bool hasSeparateOutputImages = !processor->m_decoder->dpbAndOutputCoincide() || filmGrainPresent;
 
+	std::FILE* debug_OutputFileHandle;
+
+	auto openTemporaryFile = [](const std::string& basename, std::FILE** handle)
+	{
+		DE_ASSERT(handle != nullptr);
+		*handle = std::fopen(basename.c_str(), "wb");
+		DE_ASSERT(*handle != nullptr);
+	};
+
+	if (debug_WriteOutFramesToSingleFile)
+	{
+		openTemporaryFile("output.yuv", &debug_OutputFileHandle);
+	}
+
+	bool throwFilmGrainQualityWarning = false;
 	for (int frameNumber = 0; frameNumber < m_testDefinition->framesToCheck(); frameNumber++)
 	{
 		DecodedFrame  frame;
-		TCU_CHECK_AND_THROW(InternalError, processor.getNextFrame(&frame) > 0, "Expected more frames from the bitstream. Most likely an internal CTS bug, or maybe an invalid bitstream");
-
-		if (videoLoggingEnabled())
+		TCU_CHECK_AND_THROW(InternalError,
+			processor->getNextFrame(&frame) > 0,
+			"Expected more frames from the bitstream. Most likely an internal CTS bug, or maybe an invalid bitstream"
+		);
+		DecodedFrame frameWithoutFilmgGrain;
+		if (processorWithoutFilmGrain)
 		{
-			std::cout << "Frame decoded: picIdx" << static_cast<uint32_t>(frame.pictureIndex) << " "
-					  << frame.displayWidth << "x" << frame.displayHeight << " "
-					  << "decode/display " << frame.decodeOrder << "/" << frame.displayOrder << " "
-					  << "dstImageView " << frame.outputImageView->GetImageView() << std::endl;
+			TCU_CHECK_AND_THROW(InternalError,
+				processorWithoutFilmGrain->getNextFrame(&frameWithoutFilmgGrain) > 0,
+				"Expected more frames from the bitstream. Most likely an internal CTS bug, or maybe an invalid bitstream"
+			);
 		}
 
-#if FRAME_DUMP_DEBUG
-#ifdef _WIN32
-		snprintf(frameDumpName, 128, "output_%d_%dx%d.yuv", decodedframe.displayOrder, decodedframe.displayWidth, decodedframe.displayHeight);
-#else
-		snprintf(frameDumpName, 128, "/tmp/output_%d_%dx%d.yuv", frame.displayOrder, frame.displayWidth, frame.displayHeight);
-#endif
-		FILE* output = fopen(frameDumpName, "wb");
-#endif
+		if (debug_WriteOutFramesToSeparateFiles)
+		{
+			std::stringstream oss;
+			oss << "output" << frame.displayOrder << "_" << frame.displayWidth << "_" << frame.displayHeight << ".yuv";
+			openTemporaryFile(oss.str(), &debug_OutputFileHandle);
+		}
 
-		DownloadedFrame downloadedFrame = getDecodedImage(m_deviceContext, hasSeparateOutputImages ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR : VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR, frame);
+		DownloadedFrame downloadedFrame = getDecodedImage(
+			m_deviceContext,
+			hasSeparateOutputImages ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR : VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
+			frame
+		);
 
-#if FRAME_DUMP_DEBUG
-		fwrite(downloadedFrame.luma.data(), 1, downloadedFrame.luma.size(), output);
-		fwrite(downloadedFrame.cb.data(), 1, downloadedFrame.cb.size(), output);
-		fwrite(downloadedFrame.cr.data(), 1, downloadedFrame.cr.size(), output);
-		fflush(output);
-		fclose(output);
-#endif
+		DownloadedFrame downloadedFrameWithoutFilmGrain;
+		if (processorWithoutFilmGrain)
+		{
+			downloadedFrameWithoutFilmGrain = getDecodedImage(
+				m_deviceContext,
+				!processor->m_decoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR : VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
+				frameWithoutFilmgGrain
+			);
+		}
+
+		if (debug_WriteOutFramesToSingleFile || debug_WriteOutFramesToSeparateFiles)
+		{
+			DownloadedFrame& frameToWriteOut = debug_WriteOutFilmGrain ? downloadedFrame : downloadedFrameWithoutFilmGrain;
+			fwrite(frameToWriteOut.luma.data(), 1, frameToWriteOut.luma.size(), debug_OutputFileHandle);
+			fwrite(frameToWriteOut.cb.data(), 1, frameToWriteOut.cb.size(), debug_OutputFileHandle);
+			fwrite(frameToWriteOut.cr.data(), 1, frameToWriteOut.cr.size(), debug_OutputFileHandle);
+			fflush(debug_OutputFileHandle);
+		}
+
+		if (debug_WriteOutFramesToSeparateFiles)
+		{
+			std::fclose(debug_OutputFileHandle);
+		}
+
 		std::string checksum = checksumForClipFrame(m_testDefinition->getClipInfo(), frameNumber);
 		std::string actualChecksum = downloadedFrame.checksum();
+
+		double psnr = 0.0;
+		if (processorWithoutFilmGrain)
+		{
+			static const double numPlanes = 3.0;
+			util::PSNR(downloadedFrame.luma, downloadedFrameWithoutFilmGrain.luma);
+			psnr += util::PSNR(downloadedFrame.cb, downloadedFrameWithoutFilmGrain.cb);
+			psnr += util::PSNR(downloadedFrame.cr, downloadedFrameWithoutFilmGrain.cr);
+			psnr /= numPlanes;
+		}
+
 		if (actualChecksum == checksum)
 		{
 			correctFrames.push_back(frameNumber);
 		}
 		else
 		{
-			incorrectFrames.push_back(frameNumber);
+			if (processorWithoutFilmGrain)
+			{
+				if (!de::inRange(psnr, kFilmgrainPSNRLowerBound, kFilmgrainPSNRUpperBound))
+				{
+					incorrectFrames.push_back(frameNumber);
+					throwFilmGrainQualityWarning = true;
+				}
+				else
+				{
+					correctFrames.push_back(frameNumber);
+				}
+			}
+			else
+			{
+				incorrectFrames.push_back(frameNumber);
+			}
 		}
 	}
 
+	if (debug_WriteOutFramesToSingleFile)
+	{
+		fclose(debug_OutputFileHandle);
+	}
+
 	if (!correctFrames.empty() && correctFrames.size() == m_testDefinition->framesToCheck())
-		return tcu::TestStatus::pass(de::toString(m_testDefinition->framesToCheck()) + " correctly decoded frames");
+	{
+		std::stringstream oss;
+		oss << m_testDefinition->framesToCheck() << " correctly decoded frames";
+		return tcu::TestStatus::pass(oss.str());
+	}
 	else
 	{
-		stringstream ss;
+		std::stringstream ss;
 		ss << correctFrames.size() << " out of " << m_testDefinition->framesToCheck() << " frames rendered correctly (";
 		if (correctFrames.size() < incorrectFrames.size())
 		{
@@ -1177,28 +1297,23 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
 				ss << i << " ";
 		}
 		ss << "\b)";
+
+		if (throwFilmGrainQualityWarning)
+		{
+			TCU_THROW(QualityWarning, std::string("Potentially non-standard filmgrain synthesis process: ") + ss.str());
+		}
+
 		return tcu::TestStatus::fail(ss.str());
 	}
 }
 
 tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 {
-	DE_ASSERT(m_testDefinitions.size() == m_decoders.size());
-	DE_ASSERT(m_decoders.size() > 1);
-
-	std::vector<MovePtr<FrameProcessor>> processors;
+	std::vector<std::unique_ptr<FrameProcessor>> processors;
 	for (int i = 0; i < m_testDefinitions.size(); i++)
 	{
-		processors.push_back(MovePtr<FrameProcessor>(new FrameProcessor(m_testDefinitions[i]->getClipFilename(), m_testDefinitions[i]->getESEOptions(), m_testDefinitions[i]->getCodecOperation(0), m_testDefinitions[i]->extensionProperties(0), m_decoders[i].get(), m_context.getTestContext().getLog(), m_testDefinitions[i]->hasOption(DecoderOption::AnnexB))));
+		processors.push_back(createProcessor(&*m_testDefinitions[i], &m_deviceContext));
 	}
-
-#if FRAME_DUMP_DEBUG
-#ifdef _WIN32
-	FILE* output = fopen("C:\\output.yuv", "wb");
-#else
-	FILE* output = fopen("/tmp/output.yuv", "wb");
-#endif
-#endif
 
 	// First cache up all the decoded frames from the various decode sessions
 	for (int i = 0; i < m_testDefinitions.size(); i++)
@@ -1209,12 +1324,13 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 		DE_ASSERT(processor->getBufferedDisplayCount() == test->framesToCheck());
 	}
 
-	auto interleaveCacheSize	= m_decoders[0]->m_cachedDecodeParams.size();
-	auto firstStreamDecodeQueue = m_decoders[0]->m_deviceContext->decodeQueue;
+	auto interleaveCacheSize	= processors[0]->m_decoder->m_cachedDecodeParams.size();
+	auto firstStreamDecodeQueue = processors[0]->m_decoder->m_deviceContext->decodeQueue;
 
 	size_t	 totalFrames			= 0;
-	for (auto& decoder : m_decoders)
+	for (auto& processor : processors)
 	{
+		auto& decoder = processor->m_decoder;
 		DE_ASSERT(decoder->m_cachedDecodeParams.size() == interleaveCacheSize);
 		DE_ASSERT(decoder->m_deviceContext->decodeQueue == firstStreamDecodeQueue);
 		totalFrames += decoder->m_cachedDecodeParams.size();
@@ -1225,8 +1341,9 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 	// Interleave command buffer recording
 	for (int i = 0; i < interleaveCacheSize; i++)
 	{
-		for (auto& decoder : m_decoders)
+		for (auto& processor : processors)
 		{
+			auto& decoder = processor->m_decoder;
 			decoder->WaitForFrameFences(decoder->m_cachedDecodeParams[i]);
 			decoder->ApplyPictureParameters(decoder->m_cachedDecodeParams[i]);
 			decoder->RecordCommandBuffer(decoder->m_cachedDecodeParams[i]);
@@ -1236,10 +1353,10 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 	// Interleave submissions
 	for (int i = 0; i < interleaveCacheSize; i++)
 	{
-		for (int decoderIdx = 0; decoderIdx < m_decoders.size(); decoderIdx++)
+		for (int idx = 0; idx < processors.size(); idx++)
 		{
-			auto& decoder = m_decoders[decoderIdx];
-			auto& test	  = m_testDefinitions[decoderIdx];
+			auto& decoder = processors[idx]->m_decoder;
+			auto& test	  = m_testDefinitions[idx];
 			decoder->SubmitQueue(decoder->m_cachedDecodeParams[i]);
 			if (test->hasOption(DecoderOption::UseStatusQueries))
 			{
@@ -1258,9 +1375,8 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 	for (int i = 0; i < m_testDefinitions.size(); i++)
 	{
 		auto& test		= m_testDefinitions[i];
-		auto& decoder	= m_decoders[i];
 		auto& processor = processors[i];
-		bool hasSeparateOutputImages = decoder->dpbAndOutputCoincide() && !test->hasOption(DecoderOption::FilmGrainPresent);
+		bool hasSeparateOutputImages = processor->m_decoder->dpbAndOutputCoincide() && !test->hasOption(DecoderOption::FilmGrainPresent);
 		for (int frameNumber = 0; frameNumber < m_testDefinitions[i]->framesToCheck(); frameNumber++)
 		{
 			DecodedFrame  frame;
@@ -1276,11 +1392,7 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 
 
 			DownloadedFrame downloadedFrame = getDecodedImage(m_deviceContext, hasSeparateOutputImages ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR : VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR, frame);
-#if FRAME_DUMP_DEBUG
-			fwrite(downloadedFrame.luma.data(), 1, downloadedFrame.luma.size(), output);
-			fwrite(downloadedFrame.cb.data(), 1, downloadedFrame.cb.size(), output);
-			fwrite(downloadedFrame.cr.data(), 1, downloadedFrame.cr.size(), output);
-#endif
+
 			std::string expectedChecksum = checksumForClipFrame(test->getClipInfo(), frameNumber);
 			std::string actualChecksum = downloadedFrame.checksum();
 			if (actualChecksum == expectedChecksum)
@@ -1293,10 +1405,6 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 			}
 		}
 	}
-
-#if FRAME_DUMP_DEBUG
-	fclose(output);
-#endif
 
 	bool allTestsPassed	  = true;
 	int	 totalFramesCheck = 0;
@@ -1455,6 +1563,37 @@ void VideoDecodeTestCase::checkSupport(Context& context) const
 		default:
 			TCU_THROW(InternalError, "Unknown TestType");
 	}
+
+	const VkExtensionProperties* extensionProperties = m_testDefinition->extensionProperties(0);
+	switch (m_testDefinition->getCodecOperation(0))
+	{
+		case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
+			if (strcmp(extensionProperties->extensionName, VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME) || extensionProperties->specVersion != VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION)
+			{
+				tcu::die("The requested decoder h.264 Codec STD version is NOT supported. The supported decoder h.264 Codec STD version is version %d of %s\n",
+						 VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION,
+						 VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME);
+			}
+			break;
+		case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
+			if (strcmp(extensionProperties->extensionName, VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME) || extensionProperties->specVersion != VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION)
+			{
+				tcu::die("The requested decoder h.265 Codec STD version is NOT supported. The supported decoder h.265 Codec STD version is version %d of %s\n",
+						 VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION,
+						 VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME);
+			}
+			break;
+		case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
+			if (strcmp(extensionProperties->extensionName, VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME) || extensionProperties->specVersion != VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION)
+			{
+				tcu::die("The requested AV1 Codec STD version is NOT supported. The supported AV1 STD version is version %d of %s\n",
+						 VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION,
+						 VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME);
+			}
+			break;
+		default:
+			TCU_FAIL("Unsupported codec type");
+	}
 }
 
 void InterleavingDecodeTestCase::checkSupport(Context& context) const
@@ -1493,27 +1632,29 @@ tcu::TestCaseGroup* createVideoDecodeTests(tcu::TestContext& testCtx)
 	const deUint32				baseSeed = static_cast<deUint32>(testCtx.getCommandLine().getBaseSeed());
 	MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "decode"));
 
+	for (bool layeredDpb : { true, false })
+	{
 	for (const auto& decodeTest : g_DecodeTests)
 	{
-		auto		defn	 = TestDefinition::create(decodeTest, baseSeed);
-
-		const char* testName = getTestName(defn->getTestType());
-		deUint32	rngSeed	 = baseSeed ^ deStringHash(testName);
+		auto		defn		= TestDefinition::create(decodeTest, baseSeed, layeredDpb);
+		const std::string testName	= defn->getTestName();
+		deUint32	rngSeed		= baseSeed ^ deStringHash(testName.c_str());
 		defn->updateHash(rngSeed);
-		group->addChild(new VideoDecodeTestCase(testCtx, testName, defn));
+		group->addChild(new VideoDecodeTestCase(testCtx, testName.c_str(), defn));
 	}
-
 	for (const auto& interleavingTest : g_InterleavingTests)
 	{
-		const char*							 testName = getTestName(interleavingTest.type);
 		std::vector<MovePtr<TestDefinition>> defns;
 		DecodeTestParam						 streamA{interleavingTest.type, interleavingTest.streamA};
-		defns.push_back(TestDefinition::create(streamA, baseSeed));
-		DecodeTestParam streamB{interleavingTest.type, interleavingTest.streamB};
-		defns.push_back(TestDefinition::create(streamB, baseSeed));
-		group->addChild(new InterleavingDecodeTestCase(testCtx, testName, std::move(defns)));
+		DecodeTestParam						 streamB{interleavingTest.type, interleavingTest.streamB};
+		auto								 defnA = TestDefinition::create(streamA, baseSeed, layeredDpb);
+		auto								 defnB = TestDefinition::create(streamB, baseSeed, layeredDpb);
+		const std::string					 testName = defnA->getTestName();
+		defns.push_back(std::move(defnA));
+		defns.push_back(std::move(defnB));
+		group->addChild(new InterleavingDecodeTestCase(testCtx, testName.c_str(), std::move(defns)));
 	}
-
+	} // layered true / false
 	return group.release();
 }
 

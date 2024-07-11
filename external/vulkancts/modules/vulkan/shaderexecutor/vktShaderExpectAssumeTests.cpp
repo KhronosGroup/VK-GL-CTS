@@ -121,10 +121,8 @@ private:
 	{
 		for (deUint32 i = 0; i < kNumElements; i++)
 		{
-			// when values are wrongly expected, the verification result must not be true.
-			deUint32 verificationResult = m_testParam.wrongExpectation ? 0 : 1;
 			// (gl_GlobalInvocationID.x, verification result)
-			if (outputData[i * 2] != i || outputData[i * 2 + 1] != verificationResult)
+			if (outputData[i * 2] != i || outputData[i * 2 + 1] != 1)
 			{
 				return tcu::TestStatus::fail("Result comparison failed");
 			}
@@ -983,19 +981,21 @@ public:
 		case DataClass::Constant:
 			assert(m_testParam.dataChannelCount == 1);
 
-			params["OPERAND0"] = "kThisIsTrue";
+			params["VARNAME"] = "kThisIsTrue";
 			if (m_testParam.opType == OpType::Expect)
 			{
-				params["OPERAND1"] = "true";
+				params["EXPECTEDVALUE"] = "true";
+				params["WRONGVALUE"] = "false";
 			}
 			break;
 		case DataClass::SpecializationConstant:
 			assert(m_testParam.dataChannelCount == 1);
 
-			params["OPERAND0"] = "scThisIsTrue";
+			params["VARNAME"] = "scThisIsTrue";
 			if (m_testParam.opType == OpType::Expect)
 			{
-				params["OPERAND1"] = "true";
+				params["EXPECTEDVALUE"] = "true";
+				params["WRONGVALUE"] = "false";
 			}
 			break;
 		case DataClass::StorageBuffer:
@@ -1016,34 +1016,44 @@ public:
 				assert(false);
 			}
 
-			params["OPERAND0"] = "inputBuffer[" + indexingOffset + "]";
+			params["VARNAME"] = "inputBuffer[" + indexingOffset + "]";
 
 			if (m_testParam.opType == OpType::Expect)
 			{
 				if (m_testParam.dataType == DataType::Bool)
 				{
-					params["OPERAND1"] = params["DATATYPE"] + "(true)"; // inputBuffer should be same as invocation id
+					params["EXPECTEDVALUE"] = params["DATATYPE"] + "(true)"; // inputBuffer should be same as invocation id
+					params["WRONGVALUE"] = params["DATATYPE"] + "(false)"; // inputBuffer should be same as invocation id
 				}
 				else
 				{
 					// inputBuffer should be same as invocation id + channel
-					params["OPERAND1"] = params["DATATYPE"] + "(" + indexingOffset;
+					params["EXPECTEDVALUE"] = params["DATATYPE"] + "(" + indexingOffset;
 					for (deUint32 channel = 1; channel < m_testParam.dataChannelCount; channel++) // from channel 1
 					{
-						params["OPERAND1"] += ", " + indexingOffset + " + " + std::to_string(channel);
+						params["EXPECTEDVALUE"] += ", " + indexingOffset + " + " + std::to_string(channel);
 					}
-					params["OPERAND1"] += ")";
+					params["EXPECTEDVALUE"] += ")";
+
+					params["WRONGVALUE"] = params["DATATYPE"] + "(" + indexingOffset + "*2 + 3";
+					for (deUint32 channel = 1; channel < m_testParam.dataChannelCount; channel++) // from channel 1
+					{
+						params["WRONGVALUE"] += ", " + indexingOffset + "*2 + 3" + " + " + std::to_string(channel);
+					}
+					params["WRONGVALUE"] += ")";
+
 				}
 			}
 			break;
 		}
 		case DataClass::PushConstant:
 			assert(m_testParam.dataChannelCount == 1);
-			params["OPERAND0"] = "pcThisIsTrue";
+			params["VARNAME"] = "pcThisIsTrue";
 
 			if (m_testParam.opType == OpType::Expect)
 			{
-				params["OPERAND1"] = "true";
+				params["EXPECTEDVALUE"] = "true";
+				params["WRONGVALUE"] = "false";
 			}
 
 			break;
@@ -1051,14 +1061,14 @@ public:
 			assert(false);
 		}
 
-		assert(!params["OPERAND0"].empty());
-		if (params["OPERAND1"].empty())
+		assert(!params["VARNAME"].empty());
+		if (params["EXPECTEDVALUE"].empty())
 		{
-			params["TEST_OPERANDS"] = "(" + params["OPERAND0"] + ")";
+			params["TEST_OPERANDS"] = "(" + params["VARNAME"] + ")";
 		}
 		else
 		{
-			params["TEST_OPERANDS"] = "(" + params["OPERAND0"] + ", " + params["OPERAND1"] + ")";
+			params["TEST_OPERANDS"] = "(" + params["VARNAME"] + ", " + params["EXPECTEDVALUE"] + ")";
 		}
 
 		switch (m_testParam.shaderType)
@@ -1111,6 +1121,9 @@ public:
 
 			if (!featuresStorage8.storageBuffer8BitAccess)
 				TCU_THROW(NotSupportedError, "8-bit storage buffer access not supported");
+
+			if (!featuresStorage8.uniformAndStorageBuffer8BitAccess)
+				TCU_THROW(NotSupportedError, "8-bit Uniform storage buffer access not supported");
 		}
 	}
 
@@ -1151,17 +1164,41 @@ private:
 
 		compShader << "layout(local_size_x = ${TEST_ELEMENT_COUNT}, local_size_y = 1, local_size_z = 1) in;\n"
 				   << "void main()\n"
-				   << "{\n"
-				   << "    ${TEST_OPERATOR} ${TEST_OPERANDS};\n"
-				   << "    outputBuffer[gl_GlobalInvocationID.x].x = gl_GlobalInvocationID.x;\n";
-
-		if (params["OPERAND1"].empty())
+				   << "{\n";
+		if (m_testParam.opType == OpType::Assume)
 		{
-			compShader << "    outputBuffer[gl_GlobalInvocationID.x].y = uint(${OPERAND0});\n";
+			compShader << "    ${TEST_OPERATOR} ${TEST_OPERANDS};\n";
+		}
+		else if (m_testParam.opType == OpType::Expect)
+		{
+			compShader << "    ${DATATYPE} control = ${WRONGVALUE};\n"
+					   << "    if ( ${TEST_OPERATOR}(${VARNAME}, ${EXPECTEDVALUE}) == ${EXPECTEDVALUE} ) {\n"
+					   << "        control = ${EXPECTEDVALUE};\n"
+					   << "    } else {\n"
+					   << "        // set wrong value\n"
+					   << "        control = ${WRONGVALUE};\n"
+					   << "    }\n";
+		}
+		compShader << "    outputBuffer[gl_GlobalInvocationID.x].x = gl_GlobalInvocationID.x;\n";
+
+		if (params["EXPECTEDVALUE"].empty())
+		{
+			compShader << "    outputBuffer[gl_GlobalInvocationID.x].y = uint(${VARNAME});\n";
 		}
 		else
 		{
-			compShader << "    outputBuffer[gl_GlobalInvocationID.x].y = uint(${OPERAND0} == ${OPERAND1});\n";
+			if (m_testParam.opType == OpType::Assume)
+			{
+				compShader << "    outputBuffer[gl_GlobalInvocationID.x].y = uint(${VARNAME} == ${EXPECTEDVALUE});\n";
+			}
+			else if (m_testParam.opType == OpType::Expect)
+			{
+				// when m_testParam.wrongExpectation == true, the value of ${VARNAME} is set to ${EXPECTEDVALUE} + 1
+				if (m_testParam.wrongExpectation)
+					compShader << "    outputBuffer[gl_GlobalInvocationID.x].y = uint(control == ${WRONGVALUE});\n";
+				else
+					compShader << "    outputBuffer[gl_GlobalInvocationID.x].y = uint(control == ${EXPECTEDVALUE});\n";
+			}
 		}
 		compShader << "}\n";
 
@@ -1203,17 +1240,41 @@ private:
 			vertShader << "layout(set = 0, binding = 0, std430) buffer Block1 { ${DATATYPE} inputBuffer[]; };\n";
 		}
 
-		vertShader << "void main() {\n"
-				   << "    ${TEST_OPERATOR} ${TEST_OPERANDS};\n"
-				   << "    gl_Position  = in_position;\n";
-
-		if (params["OPERAND1"].empty())
+		vertShader << "void main() {\n";
+		if (m_testParam.opType == OpType::Assume) {
+			vertShader << "    ${TEST_OPERATOR} ${TEST_OPERANDS};\n";
+		}
+		else if (m_testParam.opType == OpType::Expect)
 		{
-			vertShader << "    value = uint(${OPERAND0});\n";
+			vertShader << "    ${DATATYPE} control = ${WRONGVALUE};\n"
+					   << "    if ( ${TEST_OPERATOR}(${VARNAME}, ${EXPECTEDVALUE}) == ${EXPECTEDVALUE} ) {\n"
+					   << "        control = ${EXPECTEDVALUE};\n"
+					   << "    } else {\n"
+					   << "        // set wrong value\n"
+					   << "        control = ${WRONGVALUE};\n"
+					   << "    }\n";
+		}
+
+		vertShader << "    gl_Position  = in_position;\n";
+
+		if (params["EXPECTEDVALUE"].empty())
+		{
+			vertShader << "    value = uint(${VARNAME});\n";
 		}
 		else
 		{
-			vertShader << "    value = uint(${OPERAND0} == ${OPERAND1});\n";
+			if (m_testParam.opType == OpType::Assume)
+			{
+				vertShader << "    value = uint(${VARNAME} == ${EXPECTEDVALUE});\n";
+			}
+			else if (m_testParam.opType == OpType::Expect)
+			{
+				// when m_testParam.wrongExpectation == true, the value of ${VARNAME} is set to ${EXPECTEDVALUE} + 1
+				if (m_testParam.wrongExpectation)
+					vertShader << "    value = uint(control == ${WRONGVALUE});\n";
+				else
+					vertShader << "    value = uint(control == ${EXPECTEDVALUE});\n";
+			}
 		}
 		vertShader << "}\n";
 
@@ -1282,17 +1343,42 @@ private:
 		}
 
 		fragShader << "void main()\n"
-				   << "{\n"
-				   << "    ${TEST_OPERATOR} ${TEST_OPERANDS};\n"
-				   << "    out_color.r = int(gl_FragCoord.x);\n";
+				   << "{\n";
 
-		if (params["OPERAND1"].empty())
+		if (m_testParam.opType == OpType::Assume)
 		{
-			fragShader << "    out_color.g = uint(${OPERAND0});\n";
+			fragShader << "    ${TEST_OPERATOR} ${TEST_OPERANDS};\n";
+		}
+		else if (m_testParam.opType == OpType::Expect)
+		{
+			fragShader << "    ${DATATYPE} control = ${WRONGVALUE};\n"
+					   << "    if ( ${TEST_OPERATOR}(${VARNAME}, ${EXPECTEDVALUE}) == ${EXPECTEDVALUE} ) {\n"
+					   << "        control = ${EXPECTEDVALUE};\n"
+					   << "    } else {\n"
+					   << "        // set wrong value\n"
+					   << "        control = ${WRONGVALUE};\n"
+					   << "    }\n";
+		}
+		fragShader << "    out_color.r = int(gl_FragCoord.x);\n";
+
+		if (params["EXPECTEDVALUE"].empty())
+		{
+			fragShader << "    out_color.g = uint(${VARNAME});\n";
 		}
 		else
 		{
-			fragShader << "    out_color.g = uint(${OPERAND0} == ${OPERAND1});\n";
+			if (m_testParam.opType == OpType::Assume)
+			{
+				fragShader << "    out_color.g = uint(${VARNAME} == ${EXPECTEDVALUE});\n";
+			}
+			else if (m_testParam.opType == OpType::Expect)
+			{
+				// when m_testParam.wrongExpectation == true, the value of ${VARNAME} is set to ${EXPECTEDVALUE} + 1
+				if (m_testParam.wrongExpectation)
+					fragShader << "    out_color.g = uint(control == ${WRONGVALUE});\n";
+				else
+					fragShader << "    out_color.g = uint(control == ${EXPECTEDVALUE});\n";
+			}
 		}
 		fragShader << "}\n";
 

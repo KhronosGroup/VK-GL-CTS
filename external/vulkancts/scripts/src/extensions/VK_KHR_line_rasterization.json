@@ -8,6 +8,7 @@
 	{
 		"VkPhysicalDeviceLineRasterizationFeaturesKHR":
 		[
+			{ "features": ["rectangularLines", "bresenhamLines", "smoothLines", "stippledRectangularLines", "stippledBresenhamLines", "stippledSmoothLines"],	"requirements": ["VK_EXT_line_rasterization"] },
 			{ "features": ["rectangularLines", "bresenhamLines", "smoothLines", "stippledRectangularLines", "stippledBresenhamLines", "stippledSmoothLines"],	"requirements": ["VK_KHR_line_rasterization"] }
 		]
 	}

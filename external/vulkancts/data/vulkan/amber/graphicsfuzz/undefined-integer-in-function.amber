@@ -119,8 +119,6 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpDecorate %70 RelaxedPrecision
                OpDecorate %73 RelaxedPrecision
                OpDecorate %72 RelaxedPrecision
-               OpDecorate %73 RelaxedPrecision
-               OpDecorate %73 RelaxedPrecision
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1

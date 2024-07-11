@@ -16,6 +16,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_object_refresh",
 	"VK_KHR_performance_query",
 	"VK_KHR_shader_clock",
+	"VK_KHR_shader_relaxed_extended_instruction",
 	"VK_KHR_shader_terminate_invocation",
 	"VK_KHR_shared_presentable_image",
 	"VK_KHR_swapchain",

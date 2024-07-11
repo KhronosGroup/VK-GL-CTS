@@ -107,7 +107,7 @@ public:
 	const std::vector<VertexOutputInfo>&	getOutputs			(void) const	{ return m_outputs;	}
 
 protected:
-											~VertexShader		(void) {} // \note Renderer will not delete any objects passed in.
+	virtual									~VertexShader		(void) {} // \note Renderer will not delete any objects passed in.
 
 	std::vector<VertexInputInfo>			m_inputs;
 	std::vector<VertexOutputInfo>			m_outputs;
@@ -130,7 +130,7 @@ public:
 	virtual void							shadeFragments		(FragmentPacket* packets, const int numPackets, const FragmentShadingContext& context) const = 0; // \note numPackets must be greater than zero.
 
 protected:
-											~FragmentShader		(void) {} // \note Renderer will not delete any objects passed in.
+	virtual									~FragmentShader		(void) {} // \note Renderer will not delete any objects passed in.
 
 	std::vector<FragmentInputInfo>			m_inputs;
 	std::vector<FragmentOutputInfo>			m_outputs;
@@ -188,6 +188,8 @@ public:
 	inline size_t							getNumInvocations	(void) const { return m_numInvocations; }
 
 protected:
+	virtual									~GeometryShader		(void) {}
+
 	const GeometryShaderInputType			m_inputType;
 	const GeometryShaderOutputType			m_outputType;
 	const size_t							m_numVerticesOut;

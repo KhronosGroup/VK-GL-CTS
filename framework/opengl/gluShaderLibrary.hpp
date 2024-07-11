@@ -196,6 +196,7 @@ bool	isCapabilityRequired(CapabilityFlag capabilityFlag, const ShaderCaseSpecifi
 class ShaderCaseFactory
 {
 public:
+	virtual ~ShaderCaseFactory () {}
 	virtual tcu::TestCaseGroup*	createGroup	(const std::string& name, const std::string& description, const std::vector<tcu::TestNode*>& children) = 0;
 	virtual tcu::TestCase*		createCase	(const std::string& name, const std::string& description, const ShaderCaseSpecification& spec) = 0;
 };

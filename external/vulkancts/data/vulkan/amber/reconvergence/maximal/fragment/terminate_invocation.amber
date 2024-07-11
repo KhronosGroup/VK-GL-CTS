@@ -4,143 +4,59 @@ SHADER vertex vert_shader PASSTHROUGH
 
 SHADER fragment frag_shader GLSL TARGET_ENV spv1.6
 #version 450
-#extension GL_KHR_shader_subgroup_quad : require
-#extension GL_KHR_shader_subgroup_vote : require
-#extension GL_KHR_shader_subgroup_ballot : require
-#extension GL_KHR_shader_subgroup_shuffle : require
-#extension GL_KHR_shader_subgroup_arithmetic : require
-#extension GL_EXT_demote_to_helper_invocation : require
+
 #extension GL_EXT_maximal_reconvergence : require
+#extension GL_KHR_shader_subgroup_ballot : require
+#extension GL_EXT_terminate_invocation : require
 
-#define NUM_SUBGROUPS		0
-#define CURRENT_BALLOT		1
-
-#ifndef UINT_MAX
 #define UINT_MAX	0xFFFFFFFF
-#endif
 
-layout(binding = 0) buffer A { uvec4 reference[3]; };
-layout(binding = 1) buffer B { uvec4    result[3]; };
+layout(binding = 0) readonly buffer X { uint fragment; };
+layout(binding = 1)          buffer Y { uint result; };
 layout(location = 0) out vec4 dEQP_FragColor;
 
-void setBit(in out uvec4 ballot, uint bit) { if (bit < gl_SubgroupSize) ballot[bit/32] |= (1u << (bit % 32)); }
 void resetBit(in out uvec4 ballot, uint bit) { if (bit < gl_SubgroupSize) ballot[bit/32] &= (UINT_MAX ^ (1u << (bit % 32))); }
-uint findNonHelperElectInvocation() {
-	uvec4	nonHelperBallot = uvec4(0);
-	if (!gl_HelperInvocation)
-	{
-		nonHelperBallot = subgroupBallot(true);
-	}
-	nonHelperBallot = subgroupOr(nonHelperBallot);
-	return subgroupBallotFindLSB(nonHelperBallot);
-}
-bool subgroupNonHelperElect() { return (gl_SubgroupInvocationID == findNonHelperElectInvocation()); }
+uvec4 ballotResetBit(uvec4 ballot, uint bit) { resetBit(ballot, bit); return ballot; }
+uint findBallotLSB(uvec4 ballot) { return subgroupBallotBitCount(ballot) > 0 ? subgroupBallotFindLSB(ballot) : UINT_MAX; }
 
 void main()
-[[maximal_reconvergence]]
+[[maximally_reconverges]]
 {
-	uvec4	referenceBallot	= subgroupBallot(true);
+	const uint	fragmentID				= uint(gl_FragCoord.y) * 16 + uint(gl_FragCoord.x);
+	const uvec4	terminateSubgroupBallot	= subgroupBallot(fragmentID == fragment);
+	const uint	terminateInvocationID	= findBallotLSB(terminateSubgroupBallot);
+	const bool	terminateSubgroup		= terminateInvocationID < gl_SubgroupSize;
+	const uvec4	referenceBallot			= ballotResetBit(subgroupBallot(true), terminateInvocationID);
 
-	uint tmpSubgroupID;
-	{
-		const uint nonHelperElectID = findNonHelperElectInvocation();
-		if (gl_SubgroupInvocationID == nonHelperElectID)
-		{
-			tmpSubgroupID = atomicAdd(reference[NUM_SUBGROUPS].x, 1);
-			atomicMax(result[NUM_SUBGROUPS].x, (tmpSubgroupID + 1));
-			if (tmpSubgroupID == 0)
-			{
-				reference[NUM_SUBGROUPS].y = UINT_MAX;
-			}
-		}
-		tmpSubgroupID = subgroupShuffle(tmpSubgroupID, nonHelperElectID);
-	}
-	const uint subgroupID = tmpSubgroupID;
 
-	uint terminateCandidateID = gl_SubgroupSize;
-	{
-		uvec4 quadNonHelperBallot = uvec4(0);
-
-		uint meHelper = gl_SubgroupSize;
-		if (!gl_HelperInvocation)
-		{
-			meHelper = gl_SubgroupInvocationID;
-		}
-
-		uint siblingHelper = meHelper;
-		setBit(quadNonHelperBallot, siblingHelper);
-
-		siblingHelper = meHelper;
-		setBit(quadNonHelperBallot, subgroupQuadSwapHorizontal(siblingHelper));
-
-		siblingHelper = meHelper;
-		setBit(quadNonHelperBallot, subgroupQuadSwapDiagonal(siblingHelper));
-
-		siblingHelper = meHelper;
-		setBit(quadNonHelperBallot, subgroupQuadSwapVertical(siblingHelper));
-
-		if (subgroupBallotBitCount(quadNonHelperBallot) > 1)
-		{
-			terminateCandidateID = subgroupBallotFindLSB(quadNonHelperBallot);
-			if (gl_SubgroupInvocationID == terminateCandidateID)
-			{
-				atomicMin(reference[NUM_SUBGROUPS].y, subgroupID);
-			}
-		}
-		terminateCandidateID = subgroupMin(terminateCandidateID);
-		quadNonHelperBallot = subgroupShuffle(quadNonHelperBallot, terminateCandidateID);
-	}
-
-	const uint terminateCandidateSubgroupID = reference[NUM_SUBGROUPS].y;
-
-	uvec4 quadTerminateBallot = uvec4(0);
-
-	resetBit (referenceBallot,     terminateCandidateID);
-	setBit   (quadTerminateBallot, terminateCandidateID);
-
-	referenceBallot		= subgroupAnd(referenceBallot);
-	quadTerminateBallot	= subgroupOr(quadTerminateBallot);
-
-	const uint terminateCandidateBitCount = subgroupBallotBitCount(quadTerminateBallot);
-	if (subgroupID == terminateCandidateSubgroupID && subgroupNonHelperElect())
-	{
-		result[NUM_SUBGROUPS].z = terminateCandidateBitCount;
-	}
-
-	if (subgroupID == terminateCandidateSubgroupID
-		&& subgroupBallotBitExtract(quadTerminateBallot, gl_SubgroupInvocationID))
+	if (terminateSubgroup && (gl_SubgroupInvocationID == terminateInvocationID))
 	{
 		discard;
 	}
 
-	const uvec4 resultBallot = subgroupBallot(true);
+	const uvec4	resultBallot	= subgroupBallot(true);
 
-	if (subgroupID == terminateCandidateSubgroupID && subgroupNonHelperElect())
+	const uvec4 nonHelperBallot = subgroupBallot( ! gl_HelperInvocation );
+	const uint	writeInvocation	= subgroupBallotFindLSB(nonHelperBallot);
+
+	if (terminateSubgroup && (gl_SubgroupInvocationID == writeInvocation))
 	{
-		reference[CURRENT_BALLOT]	= referenceBallot;
-
-		result[CURRENT_BALLOT]	= resultBallot;
-
-		result[NUM_SUBGROUPS].y	= reference[NUM_SUBGROUPS].y;
+		result = (resultBallot == referenceBallot) ? 1 : 0;
 	}
 
 	dEQP_FragColor = vec4(1.0);
 }
 END
 
-BUFFER reference DATA_TYPE R32G32B32A32_UINT DATA
-0 123 1 1
-0xABCD1234 0xBCDE2345 0xCDEF3456 0x12345678
-END
-
-BUFFER    result DATA_TYPE R32G32B32A32_UINT DATA
-0 321 987 1
-0x12345678 0xABCD1234 0xBCDE2345 0xCDEF3456
-END
-
 BUFFER vertices DATA_TYPE R32G32_SFLOAT DATA
-1.0 -1.0    1.0 1.0    -1.0 1.0
+-1.0 3.5    -1.0 -1.0    3.5 -1.0
 END
+
+BUFFER fragments DATA_TYPE R32_UINT DATA
+    136
+END
+
+BUFFER result DATA_TYPE R32_UINT DATA 99 END
 
 BUFFER framebuffer FORMAT R32G32B32A32_SFLOAT
 
@@ -148,19 +64,18 @@ PIPELINE graphics mainPipeline
 	ATTACH vert_shader
 	ATTACH frag_shader
 
-	FRAMEBUFFER_SIZE 8 8
+	FRAMEBUFFER_SIZE 16 16
 
-	BIND BUFFER reference AS storage DESCRIPTOR_SET 0 BINDING 0
-	BIND BUFFER    result AS storage DESCRIPTOR_SET 0 BINDING 1
+    BIND BUFFER fragments AS storage DESCRIPTOR_SET 0 BINDING 0
+	BIND BUFFER result AS storage DESCRIPTOR_SET 0 BINDING 1
 	VERTEX_DATA vertices LOCATION 0
 	BIND BUFFER framebuffer AS color LOCATION 0
 END
 
-
-CLEAR_COLOR mainPipeline 127 127 127 127
+CLEAR_COLOR mainPipeline 0 0 0 0
 CLEAR mainPipeline
 
 RUN mainPipeline DRAW_ARRAY AS TRIANGLE_LIST START_IDX 0 COUNT 3
 
-EXPECT reference EQ_BUFFER result
+EXPECT result IDX 0 EQ 1
 
