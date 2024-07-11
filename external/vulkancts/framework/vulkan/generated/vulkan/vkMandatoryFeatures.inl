@@ -941,6 +941,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderQuadControlFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR;
+	deMemset(&physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR, 0, sizeof(physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_relaxed_extended_instruction") )
+	{
+		physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>();
+		*nextPtr = &physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR;
+		nextPtr  = &physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures physicalDeviceShaderSubgroupExtendedTypesFeatures;
 	deMemset(&physicalDeviceShaderSubgroupExtendedTypesFeatures, 0, sizeof(physicalDeviceShaderSubgroupExtendedTypesFeatures));
 
@@ -2483,6 +2493,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderQuadControlFeaturesKHR.shaderQuadControl == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderQuadControl not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_relaxed_extended_instruction")) )
+	{
+		if ( physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR.shaderRelaxedExtendedInstruction == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderRelaxedExtendedInstruction not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

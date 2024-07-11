@@ -1,0 +1,21 @@
+{
+    "register_extension":
+        {
+            "type": "device",
+            "core": ""
+        },
+    "mandatory_features":
+        {
+            "VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR":
+                [
+                    {
+                        "features": [
+                            "shaderRelaxedExtendedInstruction"
+                        ],
+                        "requirements": [
+                            "VK_KHR_shader_relaxed_extended_instruction"
+                        ]
+                    }
+                ]
+        }
+}

@@ -5597,6 +5597,7 @@ dEQP-VKSC.spirv_assembly.instruction.compute.pointer_parameter.buffer_memory_var
 dEQP-VKSC.spirv_assembly.instruction.compute.pointer_parameter.param_to_global
 dEQP-VKSC.spirv_assembly.instruction.compute.pointer_parameter.param_to_param
 dEQP-VKSC.spirv_assembly.instruction.compute.pointer_parameter.workgroup_memory_variable_pointers
+dEQP-VKSC.spirv_assembly.instruction.compute.relaxed_with_forward_reference.static_method_shader
 dEQP-VKSC.spirv_assembly.instruction.compute.sconvert.i16vec2_to_i32vec2
 dEQP-VKSC.spirv_assembly.instruction.compute.sconvert.i32vec2_to_i16vec2
 dEQP-VKSC.spirv_assembly.instruction.compute.sconvert.int16_to_int32

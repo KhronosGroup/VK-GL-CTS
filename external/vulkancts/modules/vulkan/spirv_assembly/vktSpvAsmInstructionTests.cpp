@@ -82,6 +82,7 @@
 #include "vktSpvAsmVectorShuffleTests.hpp"
 #include "vktSpvAsmFloatControlsExtensionlessTests.hpp"
 #include "vktSpvAsmNonSemanticInfoTests.hpp"
+#include "vktSpvAsmRelaxedWithForwardReferenceTests.hpp"
 #include "vktSpvAsm64bitCompareTests.hpp"
 #include "vktSpvAsmTrinaryMinMaxTests.hpp"
 #include "vktSpvAsmTerminateInvocationTests.hpp"
@@ -21149,6 +21150,7 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     computeTests->addChild(createLocalSizeGroup(testCtx, false));
     computeTests->addChild(createLocalSizeGroup(testCtx, true));
     computeTests->addChild(createNonSemanticInfoGroup(testCtx));
+    computeTests->addChild(createRelaxedWithForwardReferenceGraphicsGroup(testCtx));
     computeTests->addChild(createOpNopGroup(testCtx));
     computeTests->addChild(createOpFUnordGroup(testCtx, TEST_WITHOUT_NAN));
     computeTests->addChild(createOpFUnordGroup(testCtx, TEST_WITH_NAN));
