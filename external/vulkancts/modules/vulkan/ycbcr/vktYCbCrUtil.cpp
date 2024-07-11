@@ -1402,8 +1402,18 @@ tcu::Interval lookupWrapped(const ChannelAccess &access, const tcu::FloatFormat 
                             vk::VkSamplerAddressMode addressModeU, vk::VkSamplerAddressMode addressModeV,
                             const tcu::IVec2 &coord)
 {
-    return access.getChannel(conversionFormat, tcu::IVec3(wrap(addressModeU, coord.x(), access.getSize().x()),
-                                                          wrap(addressModeV, coord.y(), access.getSize().y()), 0));
+    tcu::Interval interval =
+        access.getChannel(conversionFormat, tcu::IVec3(wrap(addressModeU, coord.x(), access.getSize().x()),
+                                                       wrap(addressModeV, coord.y(), access.getSize().y()), 0));
+
+    // Expand range for 10-bit conversions to +/-1.0 ULP
+    if (conversionFormat.getFractionBits() == 10)
+    {
+        interval |= interval.lo() - interval.length() / 2.0;
+        interval |= interval.hi() + interval.length() / 2.0;
+    }
+
+    return interval;
 }
 
 tcu::Interval linearInterpolate(const tcu::FloatFormat &filteringFormat, const tcu::Interval &a, const tcu::Interval &b,

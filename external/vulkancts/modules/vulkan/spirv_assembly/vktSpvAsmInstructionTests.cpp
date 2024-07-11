@@ -11927,6 +11927,8 @@ tcu::TestCaseGroup *createFloat16LogicalSet(tcu::TestContext &testCtx, const boo
             }
 
             features.extFloat16Int8.shaderFloat16 = true;
+            if (specResource.graphicsFeaturesRequired)
+                features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
             finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                                   IVec3(1, 1, 1));
@@ -12048,6 +12050,8 @@ tcu::TestCaseGroup *createFloat16LogicalSet(tcu::TestContext &testCtx, const boo
             }
 
             features.extFloat16Int8.shaderFloat16 = true;
+            if (specResource.graphicsFeaturesRequired)
+                features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
             finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                                   IVec3(1, 1, 1), true);
@@ -12234,6 +12238,8 @@ tcu::TestCaseGroup *createFloat16FuncSet(tcu::TestContext &testCtx)
         extensions.push_back("VK_KHR_shader_float16_int8");
 
         features.extFloat16Int8.shaderFloat16 = true;
+        if (specResource.graphicsFeaturesRequired)
+            features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
         finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                               IVec3(1, 1, 1));
@@ -12465,6 +12471,8 @@ tcu::TestCaseGroup *createFloat16VectorExtractSet(tcu::TestContext &testCtx)
         extensions.push_back("VK_KHR_shader_float16_int8");
 
         features.extFloat16Int8.shaderFloat16 = true;
+        if (specResource.graphicsFeaturesRequired)
+            features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
         finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                               IVec3(1, 1, 1));
@@ -12697,6 +12705,8 @@ tcu::TestCaseGroup *createFloat16VectorInsertSet(tcu::TestContext &testCtx)
         extensions.push_back("VK_KHR_shader_float16_int8");
 
         features.extFloat16Int8.shaderFloat16 = true;
+        if (specResource.graphicsFeaturesRequired)
+            features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
         finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                               IVec3(1, 1, 1));
@@ -13098,6 +13108,8 @@ tcu::TestCaseGroup *createFloat16VectorShuffleSet(tcu::TestContext &testCtx)
                 extensions.push_back("VK_KHR_shader_float16_int8");
 
                 features.extFloat16Int8.shaderFloat16 = true;
+                if (specResource.graphicsFeaturesRequired)
+                    features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
                 finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features,
                                       extensions, IVec3(1, 1, 1));
@@ -13603,6 +13615,8 @@ tcu::TestCaseGroup *createFloat16CompositeConstructSet(tcu::TestContext &testCtx
         extensions.push_back("VK_KHR_shader_float16_int8");
 
         features.extFloat16Int8.shaderFloat16 = true;
+        if (specResource.graphicsFeaturesRequired)
+            features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
         finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                               IVec3(1, 1, 1));
@@ -14420,6 +14434,8 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
         extensions.push_back("VK_KHR_shader_float16_int8");
 
         features.extFloat16Int8.shaderFloat16 = true;
+        if (specResource.graphicsFeaturesRequired)
+            features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
         finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                               IVec3(1, 1, 1));
@@ -18932,6 +18948,8 @@ void createFloat16ArithmeticFuncTest(tcu::TestContext &testCtx, tcu::TestCaseGro
     extensions.push_back("VK_KHR_shader_float16_int8");
 
     features.extFloat16Int8.shaderFloat16 = true;
+    if (specResource.graphicsFeaturesRequired)
+        features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
     finalizeTestsCreation(specResource, fragments, testCtx, testGroup, testName, features, extensions, IVec3(1, 1, 1));
 }
@@ -19244,11 +19262,12 @@ tcu::TestCaseGroup *createFloat32ComparisonGraphicsSet(tcu::TestContext &testCtx
 #ifndef CTS_USES_VULKANSC
     const char *dataDir = "spirv_assembly/instruction/float32/comparison";
 
-    const ShaderStage stages[] = {{"vert", vector<string>(0)},
-                                  {"tesc", vector<string>(1, "Features.tessellationShader")},
-                                  {"tese", vector<string>(1, "Features.tessellationShader")},
-                                  {"geom", vector<string>(1, "Features.geometryShader")},
-                                  {"frag", vector<string>(0)}};
+    const ShaderStage stages[] = {
+        {"vert", vector<string>(1, "Features.vertexPipelineStoresAndAtomics")},
+        {"tesc", vector<string>({"Features.vertexPipelineStoresAndAtomics", "Features.tessellationShader"})},
+        {"tese", vector<string>({"Features.vertexPipelineStoresAndAtomics", "Features.tessellationShader"})},
+        {"geom", vector<string>({"Features.vertexPipelineStoresAndAtomics", "Features.geometryShader"})},
+        {"frag", vector<string>(0)}};
 
     const ComparisonCase amberTests[] = {{"modfstruct", "modf and modfStruct"},
                                          {"frexpstruct", "frexp and frexpStruct"}};
