@@ -31,49 +31,55 @@
 namespace tcu
 {
 
-inline deUint8 getColorMask (const tcu::PixelFormat& format)
+inline uint8_t getColorMask(const tcu::PixelFormat &format)
 {
-	return (deUint8)((format.redBits	? tcu::RGBA::RED_MASK	: 0) |
-					 (format.greenBits	? tcu::RGBA::GREEN_MASK	: 0) |
-					 (format.blueBits	? tcu::RGBA::BLUE_MASK	: 0) |
-					 (format.alphaBits	? tcu::RGBA::ALPHA_MASK	: 0));
+    return (uint8_t)((format.redBits ? tcu::RGBA::RED_MASK : 0) | (format.greenBits ? tcu::RGBA::GREEN_MASK : 0) |
+                     (format.blueBits ? tcu::RGBA::BLUE_MASK : 0) | (format.alphaBits ? tcu::RGBA::ALPHA_MASK : 0));
 }
 
-inline tcu::RGBA toRGBAMasked (const tcu::Vec4& v, deUint8 mask)
+inline tcu::RGBA toRGBAMasked(const tcu::Vec4 &v, uint8_t mask)
 {
-	return tcu::RGBA((mask&tcu::RGBA::RED_MASK)		? tcu::floatToU8(v.x()) : 0,
-					 (mask&tcu::RGBA::GREEN_MASK)	? tcu::floatToU8(v.y()) : 0,
-					 (mask&tcu::RGBA::BLUE_MASK)	? tcu::floatToU8(v.z()) : 0,
-					 (mask&tcu::RGBA::ALPHA_MASK)	? tcu::floatToU8(v.w()) : 0xFF); //!< \note Alpha defaults to full saturation when reading masked format
+    return tcu::RGBA((mask & tcu::RGBA::RED_MASK) ? tcu::floatToU8(v.x()) : 0,
+                     (mask & tcu::RGBA::GREEN_MASK) ? tcu::floatToU8(v.y()) : 0,
+                     (mask & tcu::RGBA::BLUE_MASK) ? tcu::floatToU8(v.z()) : 0,
+                     (mask & tcu::RGBA::ALPHA_MASK) ?
+                         tcu::floatToU8(v.w()) :
+                         0xFF); //!< \note Alpha defaults to full saturation when reading masked format
 }
 
 class SurfaceAccess
 {
 public:
-							SurfaceAccess		(tcu::Surface& surface, const tcu::PixelFormat& colorFmt);
-							SurfaceAccess		(tcu::Surface& surface, const tcu::PixelFormat& colorFmt, int x, int y, int width, int height);
-							SurfaceAccess		(const SurfaceAccess& parent, int x, int y, int width, int height);
+    SurfaceAccess(tcu::Surface &surface, const tcu::PixelFormat &colorFmt);
+    SurfaceAccess(tcu::Surface &surface, const tcu::PixelFormat &colorFmt, int x, int y, int width, int height);
+    SurfaceAccess(const SurfaceAccess &parent, int x, int y, int width, int height);
 
-	int						getWidth			(void) const	{ return m_width;	}
-	int						getHeight			(void) const	{ return m_height;	}
+    int getWidth(void) const
+    {
+        return m_width;
+    }
+    int getHeight(void) const
+    {
+        return m_height;
+    }
 
-	void					setPixel			(const tcu::Vec4& color, int x, int y) const;
+    void setPixel(const tcu::Vec4 &color, int x, int y) const;
 
 private:
-	mutable tcu::Surface*	m_surface;
-	deUint8					m_colorMask;
-	int						m_x;
-	int						m_y;
-	int						m_width;
-	int						m_height;
+    mutable tcu::Surface *m_surface;
+    uint8_t m_colorMask;
+    int m_x;
+    int m_y;
+    int m_width;
+    int m_height;
 };
 
-inline void SurfaceAccess::setPixel (const tcu::Vec4& color, int x, int y) const
+inline void SurfaceAccess::setPixel(const tcu::Vec4 &color, int x, int y) const
 {
-	DE_ASSERT(de::inBounds(x, 0, m_width) && de::inBounds(y, 0, m_height));
-	m_surface->setPixel(m_x+x, m_y+y, toRGBAMasked(color, m_colorMask));
+    DE_ASSERT(de::inBounds(x, 0, m_width) && de::inBounds(y, 0, m_height));
+    m_surface->setPixel(m_x + x, m_y + y, toRGBAMasked(color, m_colorMask));
 }
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUSURFACEACCESS_HPP

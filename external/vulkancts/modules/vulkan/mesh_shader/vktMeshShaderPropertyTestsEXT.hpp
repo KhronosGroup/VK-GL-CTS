@@ -31,8 +31,8 @@ namespace vkt
 {
 namespace MeshShader
 {
-tcu::TestCaseGroup* createMeshShaderPropertyTestsEXT (tcu::TestContext& testCtx);
-} // MeshShader
-} // vkt
+tcu::TestCaseGroup *createMeshShaderPropertyTestsEXT(tcu::TestContext &testCtx);
+} // namespace MeshShader
+} // namespace vkt
 
 #endif // _VKTMESHSHADERPROPERTYTESTSEXT_HPP

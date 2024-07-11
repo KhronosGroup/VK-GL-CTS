@@ -36,18 +36,18 @@ namespace Functional
 class AndroidExtensionPackES31ATests : public TestCaseGroup
 {
 public:
-									AndroidExtensionPackES31ATests	(Context& context);
-									~AndroidExtensionPackES31ATests	(void);
+    AndroidExtensionPackES31ATests(Context &context);
+    ~AndroidExtensionPackES31ATests(void);
 
-	void							init							(void);
+    void init(void);
 
 private:
-									AndroidExtensionPackES31ATests	(const AndroidExtensionPackES31ATests& other);
-	AndroidExtensionPackES31ATests&	operator=						(const AndroidExtensionPackES31ATests& other);
+    AndroidExtensionPackES31ATests(const AndroidExtensionPackES31ATests &other);
+    AndroidExtensionPackES31ATests &operator=(const AndroidExtensionPackES31ATests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FANDROIDEXTENSIONPACKES31ATESTS_HPP

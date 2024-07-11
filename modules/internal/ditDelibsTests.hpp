@@ -32,12 +32,12 @@ namespace dit
 class DelibsTests : public tcu::TestCaseGroup
 {
 public:
-					DelibsTests			(tcu::TestContext& testCtx);
-					~DelibsTests		(void);
+    DelibsTests(tcu::TestContext &testCtx);
+    ~DelibsTests(void);
 
-	void			init				(void);
+    void init(void);
 };
 
-} // dit
+} // namespace dit
 
 #endif // _DITDELIBSTESTS_HPP

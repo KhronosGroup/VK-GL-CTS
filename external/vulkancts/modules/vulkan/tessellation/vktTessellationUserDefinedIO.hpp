@@ -32,9 +32,9 @@ namespace vkt
 namespace tessellation
 {
 
-tcu::TestCaseGroup* createUserDefinedIOTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createUserDefinedIOTests(tcu::TestContext &testCtx);
 
-} // tessellation
-} // vkt
+} // namespace tessellation
+} // namespace vkt
 
 #endif // _VKTTESSELLATIONUSERDEFINEDIO_HPP

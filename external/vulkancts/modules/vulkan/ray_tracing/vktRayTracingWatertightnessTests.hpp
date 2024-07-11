@@ -31,9 +31,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createWatertightnessTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createWatertightnessTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGWATERTIGHTNESSTESTS_HPP

@@ -89,15 +89,15 @@ namespace glcts
 class BlendEquationAdvancedTests : public deqp::TestCaseGroup
 {
 public:
-	BlendEquationAdvancedTests(deqp::Context& context, glu::GLSLVersion glslVersion);
-	~BlendEquationAdvancedTests();
+    BlendEquationAdvancedTests(deqp::Context &context, glu::GLSLVersion glslVersion);
+    ~BlendEquationAdvancedTests();
 
-	void init(void);
+    void init(void);
 
 private:
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _GLCBLENDEQUATIONADVANCEDTESTS_HPP

@@ -29,37 +29,35 @@
 namespace de
 {
 
-DynamicLibrary::DynamicLibrary (const char* fileName)
-	: m_library(nullptr)
+DynamicLibrary::DynamicLibrary(const char *fileName) : m_library(nullptr)
 {
-	m_library = deDynamicLibrary_open(fileName);
-	if (!m_library)
-		throw std::runtime_error(std::string("Failed to open dynamic library: '") + fileName + "'");
+    m_library = deDynamicLibrary_open(fileName);
+    if (!m_library)
+        throw std::runtime_error(std::string("Failed to open dynamic library: '") + fileName + "'");
 }
 
-DynamicLibrary::DynamicLibrary (const char* fileNames[])
-	: m_library(nullptr)
+DynamicLibrary::DynamicLibrary(const char *fileNames[]) : m_library(nullptr)
 {
-	for (size_t i = 0u; fileNames[i] != nullptr; ++i)
-	{
-		m_library = deDynamicLibrary_open(fileNames[i]);
-		if (m_library)
-			break;
-	}
+    for (size_t i = 0u; fileNames[i] != nullptr; ++i)
+    {
+        m_library = deDynamicLibrary_open(fileNames[i]);
+        if (m_library)
+            break;
+    }
 
-	if (!m_library)
-	{
-		std::string nameList;
-		for (size_t i = 0u; fileNames[i] != nullptr; ++i)
-			nameList += (nameList.empty() ? "" : ", ") + std::string(fileNames[i]);
-		const std::string msg = "Failed to open dynamic library: tried " + nameList;
-		throw std::runtime_error(msg);
-	}
+    if (!m_library)
+    {
+        std::string nameList;
+        for (size_t i = 0u; fileNames[i] != nullptr; ++i)
+            nameList += (nameList.empty() ? "" : ", ") + std::string(fileNames[i]);
+        const std::string msg = "Failed to open dynamic library: tried " + nameList;
+        throw std::runtime_error(msg);
+    }
 }
 
-DynamicLibrary::~DynamicLibrary (void)
+DynamicLibrary::~DynamicLibrary(void)
 {
-	deDynamicLibrary_close(m_library);
+    deDynamicLibrary_close(m_library);
 }
 
-} // de
+} // namespace de

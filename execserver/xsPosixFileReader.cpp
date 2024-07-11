@@ -30,92 +30,88 @@ namespace xs
 namespace posix
 {
 
-FileReader::FileReader (int blockSize, int numBlocks)
-	: m_file		(DE_NULL)
-	, m_buf			(blockSize, numBlocks)
-	, m_isRunning	(false)
+FileReader::FileReader(int blockSize, int numBlocks) : m_file(DE_NULL), m_buf(blockSize, numBlocks), m_isRunning(false)
 {
 }
 
-FileReader::~FileReader (void)
+FileReader::~FileReader(void)
 {
 }
 
-void FileReader::start (const char* filename)
+void FileReader::start(const char *filename)
 {
-	DE_ASSERT(!m_isRunning);
+    DE_ASSERT(!m_isRunning);
 
-	m_file = deFile_create(filename, DE_FILEMODE_OPEN|DE_FILEMODE_READ);
-	XS_CHECK(m_file);
+    m_file = deFile_create(filename, DE_FILEMODE_OPEN | DE_FILEMODE_READ);
+    XS_CHECK(m_file);
 
 #if (DE_OS != DE_OS_IOS)
-	// Set to non-blocking mode.
-	if (!deFile_setFlags(m_file, DE_FILE_NONBLOCKING))
-	{
-		deFile_destroy(m_file);
-		m_file = DE_NULL;
-		XS_FAIL("Failed to set non-blocking mode");
-	}
+    // Set to non-blocking mode.
+    if (!deFile_setFlags(m_file, DE_FILE_NONBLOCKING))
+    {
+        deFile_destroy(m_file);
+        m_file = DE_NULL;
+        XS_FAIL("Failed to set non-blocking mode");
+    }
 #endif
 
-	m_isRunning	= true;
+    m_isRunning = true;
 
-	de::Thread::start();
+    de::Thread::start();
 }
 
-void FileReader::run (void)
+void FileReader::run(void)
 {
-	std::vector<deUint8>	tmpBuf		(FILEREADER_TMP_BUFFER_SIZE);
-	deInt64					numRead		= 0;
+    std::vector<uint8_t> tmpBuf(FILEREADER_TMP_BUFFER_SIZE);
+    int64_t numRead = 0;
 
-	while (!m_buf.isCanceled())
-	{
-		deFileResult result = deFile_read(m_file, &tmpBuf[0], (deInt64)tmpBuf.size(), &numRead);
+    while (!m_buf.isCanceled())
+    {
+        deFileResult result = deFile_read(m_file, &tmpBuf[0], (int64_t)tmpBuf.size(), &numRead);
 
-		if (result == DE_FILERESULT_SUCCESS)
-		{
-			// Write to buffer.
-			try
-			{
-				m_buf.write((int)numRead, &tmpBuf[0]);
-				m_buf.flush();
-			}
-			catch (const ThreadedByteBuffer::CanceledException&)
-			{
-				// Canceled.
-				break;
-			}
-		}
-		else if (result == DE_FILERESULT_END_OF_FILE ||
-				 result == DE_FILERESULT_WOULD_BLOCK)
-		{
-			// Wait for more data.
-			deSleep(FILEREADER_IDLE_SLEEP);
-		}
-		else
-			break; // Error.
-	}
+        if (result == DE_FILERESULT_SUCCESS)
+        {
+            // Write to buffer.
+            try
+            {
+                m_buf.write((int)numRead, &tmpBuf[0]);
+                m_buf.flush();
+            }
+            catch (const ThreadedByteBuffer::CanceledException &)
+            {
+                // Canceled.
+                break;
+            }
+        }
+        else if (result == DE_FILERESULT_END_OF_FILE || result == DE_FILERESULT_WOULD_BLOCK)
+        {
+            // Wait for more data.
+            deSleep(FILEREADER_IDLE_SLEEP);
+        }
+        else
+            break; // Error.
+    }
 }
 
-void FileReader::stop (void)
+void FileReader::stop(void)
 {
-	if (!m_isRunning)
-		return; // Nothing to do.
+    if (!m_isRunning)
+        return; // Nothing to do.
 
-	m_buf.cancel();
+    m_buf.cancel();
 
-	// Join thread.
-	join();
+    // Join thread.
+    join();
 
-	// Destroy file.
-	deFile_destroy(m_file);
-	m_file = DE_NULL;
+    // Destroy file.
+    deFile_destroy(m_file);
+    m_file = DE_NULL;
 
-	// Reset buffer.
-	m_buf.clear();
+    // Reset buffer.
+    m_buf.clear();
 
-	m_isRunning = false;
+    m_isRunning = false;
 }
 
-} // posix
-} // xs
+} // namespace posix
+} // namespace xs

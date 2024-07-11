@@ -37,13 +37,13 @@ namespace xml
 class Writer;
 }
 
-void	writeTestLog			(const BatchResult& batchResult, std::ostream& stream);
-void	writeBatchResultToFile	(const BatchResult& batchResult, const char* filename);
+void writeTestLog(const BatchResult &batchResult, std::ostream &stream);
+void writeBatchResultToFile(const BatchResult &batchResult, const char *filename);
 
-void	writeTestResult			(const TestCaseResult& result, xe::xml::Writer& writer);
-void	writeTestResult			(const TestCaseResult& result, std::ostream& stream);
-void	writeTestResultToFile	(const TestCaseResult& result, const char* filename);
+void writeTestResult(const TestCaseResult &result, xe::xml::Writer &writer);
+void writeTestResult(const TestCaseResult &result, std::ostream &stream);
+void writeTestResultToFile(const TestCaseResult &result, const char *filename);
 
-} // xe
+} // namespace xe
 
 #endif // _XETESTLOGWRITER_HPP

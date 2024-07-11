@@ -30,17 +30,17 @@ DE_BEGIN_EXTERN_C
 
 typedef struct deRingbuffer_s deRingbuffer;
 
-deRingbuffer*	deRingbuffer_create		(deInt32 blockSize, deInt32 blockCount);
+deRingbuffer *deRingbuffer_create(int32_t blockSize, int32_t blockCount);
 
 /* Changes state of ringbuffer to stopping which will make all subsequent writes
  * to producer stream fail and notifies consumer with DE_STREAMRESULT_END_OF_STREAM
  * when buffer is empty.
  */
-void			deRingbuffer_stop		(deRingbuffer* ringbuffer);
-void			deRingbuffer_destroy	(deRingbuffer* ringbuffer);
+void deRingbuffer_stop(deRingbuffer *ringbuffer);
+void deRingbuffer_destroy(deRingbuffer *ringbuffer);
 
-void			deProducerStream_init	(deOutStream* stream, deRingbuffer* buffer);
-void			deConsumerStream_init	(deInStream* stream, deRingbuffer* buffer);
+void deProducerStream_init(deOutStream *stream, deRingbuffer *buffer);
+void deConsumerStream_init(deInStream *stream, deRingbuffer *buffer);
 
 DE_END_EXTERN_C
 

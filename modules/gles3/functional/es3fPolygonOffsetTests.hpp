@@ -36,17 +36,17 @@ namespace Functional
 class PolygonOffsetTests : public TestCaseGroup
 {
 public:
-						PolygonOffsetTests		(Context& context);
-	virtual				~PolygonOffsetTests		(void);
-	virtual void		init					(void);
+    PolygonOffsetTests(Context &context);
+    virtual ~PolygonOffsetTests(void);
+    virtual void init(void);
 
 private:
-						PolygonOffsetTests		(const PolygonOffsetTests&);
-	PolygonOffsetTests&	operator=				(const PolygonOffsetTests&);
+    PolygonOffsetTests(const PolygonOffsetTests &);
+    PolygonOffsetTests &operator=(const PolygonOffsetTests &);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FPOLYGONOFFSETTESTS_HPP

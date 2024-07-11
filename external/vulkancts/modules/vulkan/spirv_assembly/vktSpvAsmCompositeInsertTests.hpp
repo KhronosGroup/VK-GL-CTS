@@ -31,10 +31,10 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createCompositeInsertComputeGroup	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createCompositeInsertGraphicsGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createCompositeInsertComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createCompositeInsertGraphicsGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMCOMPOSITEINSERTTESTS_HPP

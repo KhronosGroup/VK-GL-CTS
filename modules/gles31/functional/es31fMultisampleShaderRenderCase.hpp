@@ -31,13 +31,12 @@
 namespace tcu
 {
 class Surface;
-} // tcu
+} // namespace tcu
 
 namespace glu
 {
 class ShaderProgram;
-} // glu
-
+} // namespace glu
 
 namespace deqp
 {
@@ -51,91 +50,92 @@ namespace MultisampleShaderRenderUtil
 class QualityWarning : public tcu::Exception
 {
 public:
-	QualityWarning (const std::string& message);
+    QualityWarning(const std::string &message);
 };
 
 class MultisampleRenderCase : public TestCase
 {
 public:
-	enum RenderTarget
-	{
-		TARGET_DEFAULT = 0,
-		TARGET_TEXTURE,
-		TARGET_RENDERBUFFER,
+    enum RenderTarget
+    {
+        TARGET_DEFAULT = 0,
+        TARGET_TEXTURE,
+        TARGET_RENDERBUFFER,
 
-		TARGET_LAST
-	};
-	enum Flags
-	{
-		FLAG_PER_ITERATION_SHADER				= 1,
-		FLAG_VERIFY_MSAA_TEXTURE_SAMPLE_BUFFERS	= 2, // !< flag set: each sample layer is verified by verifySampleBuffer
-	};
+        TARGET_LAST
+    };
+    enum Flags
+    {
+        FLAG_PER_ITERATION_SHADER               = 1,
+        FLAG_VERIFY_MSAA_TEXTURE_SAMPLE_BUFFERS = 2, // !< flag set: each sample layer is verified by verifySampleBuffer
+    };
 
-						MultisampleRenderCase			(Context& context, const char* name, const char* desc, int numSamples, RenderTarget target, int renderSize, int flags = 0);
-	virtual				~MultisampleRenderCase			(void);
+    MultisampleRenderCase(Context &context, const char *name, const char *desc, int numSamples, RenderTarget target,
+                          int renderSize, int flags = 0);
+    virtual ~MultisampleRenderCase(void);
 
-	virtual void		init							(void);
-	virtual void		deinit							(void);
-	IterateResult		iterate							(void);
+    virtual void init(void);
+    virtual void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	virtual void		preDraw							(void);
-	virtual void		postDraw						(void);
-	virtual void		preTest							(void);
-	virtual void		postTest						(void);
-	virtual std::string	getIterationDescription			(int iteration) const;
+    virtual void preDraw(void);
+    virtual void postDraw(void);
+    virtual void preTest(void);
+    virtual void postTest(void);
+    virtual std::string getIterationDescription(int iteration) const;
 
-	void				drawOneIteration				(void);
-	void				verifyResultImageAndSetResult	(const tcu::Surface& resultImage);
-	void				verifyResultBuffersAndSetResult	(const std::vector<tcu::Surface>& resultBuffers);
-	virtual std::string	genVertexSource					(int numTargetSamples) const;
-	virtual std::string	genFragmentSource				(int numTargetSamples) const = 0;
-	std::string			genMSSamplerSource				(int numTargetSamples) const;
-	std::string			genMSTextureResolverSource		(int numTargetSamples) const;
-	std::string			genMSTextureLayerFetchSource	(int numTargetSamples) const;
-	virtual bool		verifyImage						(const tcu::Surface& resultImage) = 0;
-	virtual bool		verifySampleBuffers				(const std::vector<tcu::Surface>& resultBuffers);
-	virtual void		setupRenderData					(void);
+    void drawOneIteration(void);
+    void verifyResultImageAndSetResult(const tcu::Surface &resultImage);
+    void verifyResultBuffersAndSetResult(const std::vector<tcu::Surface> &resultBuffers);
+    virtual std::string genVertexSource(int numTargetSamples) const;
+    virtual std::string genFragmentSource(int numTargetSamples) const = 0;
+    std::string genMSSamplerSource(int numTargetSamples) const;
+    std::string genMSTextureResolverSource(int numTargetSamples) const;
+    std::string genMSTextureLayerFetchSource(int numTargetSamples) const;
+    virtual bool verifyImage(const tcu::Surface &resultImage) = 0;
+    virtual bool verifySampleBuffers(const std::vector<tcu::Surface> &resultBuffers);
+    virtual void setupRenderData(void);
 
-	glw::GLint			getMaxConformantSampleCount		(glw::GLenum target, glw::GLenum internalFormat);
+    glw::GLint getMaxConformantSampleCount(glw::GLenum target, glw::GLenum internalFormat);
 
 protected:
-	struct Attrib
-	{
-		int offset;
-		int stride;
-	};
+    struct Attrib
+    {
+        int offset;
+        int stride;
+    };
 
-	const int			m_numRequestedSamples;
-	const RenderTarget	m_renderTarget;
-	const int			m_renderSize;
-	const bool			m_perIterationShader;
-	const bool			m_verifyTextureSampleBuffers;
-	deInt32				m_numTargetSamples;
+    const int m_numRequestedSamples;
+    const RenderTarget m_renderTarget;
+    const int m_renderSize;
+    const bool m_perIterationShader;
+    const bool m_verifyTextureSampleBuffers;
+    int32_t m_numTargetSamples;
 
-	deUint32			m_buffer;
-	deUint32			m_resolveBuffer;
-	glu::ShaderProgram*	m_program;
-	deUint32			m_fbo;
-	deUint32			m_fboTexture;
-	glu::ShaderProgram*	m_textureSamplerProgram;
-	deUint32			m_fboRbo;
-	deUint32			m_resolveFbo;
-	deUint32			m_resolveFboTexture;
-	int					m_iteration;
-	int					m_numIterations;
-	deUint32			m_renderMode;
-	deInt32				m_renderCount;
-	deUint32			m_renderVao;
-	deUint32			m_resolveVao;
+    uint32_t m_buffer;
+    uint32_t m_resolveBuffer;
+    glu::ShaderProgram *m_program;
+    uint32_t m_fbo;
+    uint32_t m_fboTexture;
+    glu::ShaderProgram *m_textureSamplerProgram;
+    uint32_t m_fboRbo;
+    uint32_t m_resolveFbo;
+    uint32_t m_resolveFboTexture;
+    int m_iteration;
+    int m_numIterations;
+    uint32_t m_renderMode;
+    int32_t m_renderCount;
+    uint32_t m_renderVao;
+    uint32_t m_resolveVao;
 
-	std::string			m_renderSceneDescription;
-	std::map<std::string, Attrib> m_renderAttribs;
+    std::string m_renderSceneDescription;
+    std::map<std::string, Attrib> m_renderAttribs;
 };
 
-} // MultisampleShaderRenderUtil
-} // Functional
-} // gles31
-} // deqp
+} // namespace MultisampleShaderRenderUtil
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FMULTISAMPLESHADERRENDERCASE_HPP

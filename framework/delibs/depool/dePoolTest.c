@@ -30,13 +30,13 @@
 #include "dePoolHashArray.h"
 #include "dePoolMultiSet.h"
 
-void	dePool_selfTest		(void)
+void dePool_selfTest(void)
 {
-	dePoolArray_selfTest();
-	dePoolHeap_selfTest();
-	dePoolHash_selfTest();
-	dePoolSet_selfTest();
-	dePoolHashSet_selfTest();
-	dePoolHashArray_selfTest();
-	dePoolMultiSet_selfTest();
+    dePoolArray_selfTest();
+    dePoolHeap_selfTest();
+    dePoolHash_selfTest();
+    dePoolSet_selfTest();
+    dePoolHashSet_selfTest();
+    dePoolHashArray_selfTest();
+    dePoolMultiSet_selfTest();
 }

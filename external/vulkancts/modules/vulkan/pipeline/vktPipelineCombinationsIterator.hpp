@@ -38,104 +38,108 @@ template <typename T>
 class CombinationsIterator
 {
 public:
-							CombinationsIterator	(deUint32 numItems, deUint32 combinationSize);
-	virtual					~CombinationsIterator	(void) {}
-	bool					hasNext					(void) const;
-	T						next					(void);
-	void					reset					(void);
+    CombinationsIterator(uint32_t numItems, uint32_t combinationSize);
+    virtual ~CombinationsIterator(void)
+    {
+    }
+    bool hasNext(void) const;
+    T next(void);
+    void reset(void);
 
 protected:
-	virtual T				getCombinationValue		(const std::vector<deUint32>& combination) = 0;
+    virtual T getCombinationValue(const std::vector<uint32_t> &combination) = 0;
 
 private:
-	static deUint32			factorial				(deUint32 x);
-	deUint32				m_numItems;
+    static uint32_t factorial(uint32_t x);
+    uint32_t m_numItems;
 
-	deUint32				m_combinationIndex;
-	deUint32				m_combinationSize;
-	deUint32				m_combinationCount;
+    uint32_t m_combinationIndex;
+    uint32_t m_combinationSize;
+    uint32_t m_combinationCount;
 
-	std::vector<deUint32>	m_combination;
+    std::vector<uint32_t> m_combination;
 };
 
-static deUint32 seriesProduct (deUint32 first, deUint32 last)
+static uint32_t seriesProduct(uint32_t first, uint32_t last)
 {
-	deUint32 result = 1;
+    uint32_t result = 1;
 
-	for (deUint32 i = first; i <= last; i++)
-		result *= i;
+    for (uint32_t i = first; i <= last; i++)
+        result *= i;
 
-	return result;
+    return result;
 }
 
 template <typename T>
-CombinationsIterator<T>::CombinationsIterator (deUint32 numItems, deUint32 combinationSize)
-	: m_numItems		(numItems)
-	, m_combinationSize	(combinationSize)
+CombinationsIterator<T>::CombinationsIterator(uint32_t numItems, uint32_t combinationSize)
+    : m_numItems(numItems)
+    , m_combinationSize(combinationSize)
 {
-	DE_ASSERT(m_combinationSize > 0);
-	DE_ASSERT(m_combinationSize <= m_numItems);
+    DE_ASSERT(m_combinationSize > 0);
+    DE_ASSERT(m_combinationSize <= m_numItems);
 
-	m_combinationCount	= seriesProduct(numItems - combinationSize + 1, numItems) / seriesProduct(1, combinationSize);
+    m_combinationCount = seriesProduct(numItems - combinationSize + 1, numItems) / seriesProduct(1, combinationSize);
 
-	m_combination.resize(m_combinationSize);
-	reset();
+    m_combination.resize(m_combinationSize);
+    reset();
 }
 
 template <typename T>
-bool CombinationsIterator<T>::hasNext (void) const
+bool CombinationsIterator<T>::hasNext(void) const
 {
-	return m_combinationIndex < m_combinationCount;
+    return m_combinationIndex < m_combinationCount;
 }
 
 template <typename T>
-T CombinationsIterator<T>::next (void)
+T CombinationsIterator<T>::next(void)
 {
-	DE_ASSERT(m_combinationIndex < m_combinationCount);
+    DE_ASSERT(m_combinationIndex < m_combinationCount);
 
-	if (m_combinationIndex > 0)
-	{
-		for (int combinationItemNdx = (int)m_combinationSize - 1; combinationItemNdx >= 0; combinationItemNdx--)
-		{
-			if ((m_combination[combinationItemNdx] + 1 < m_numItems) && ((combinationItemNdx == (int)m_combinationSize - 1) || (m_combination[combinationItemNdx + 1] > m_combination[combinationItemNdx] + 1)))
-			{
-				m_combination[combinationItemNdx]++;
+    if (m_combinationIndex > 0)
+    {
+        for (int combinationItemNdx = (int)m_combinationSize - 1; combinationItemNdx >= 0; combinationItemNdx--)
+        {
+            if ((m_combination[combinationItemNdx] + 1 < m_numItems) &&
+                ((combinationItemNdx == (int)m_combinationSize - 1) ||
+                 (m_combination[combinationItemNdx + 1] > m_combination[combinationItemNdx] + 1)))
+            {
+                m_combination[combinationItemNdx]++;
 
-				for (deUint32 resetNdx = combinationItemNdx + 1; resetNdx < m_combinationSize; resetNdx++)
-					m_combination[resetNdx] = m_combination[resetNdx - 1] + 1;
+                for (uint32_t resetNdx = combinationItemNdx + 1; resetNdx < m_combinationSize; resetNdx++)
+                    m_combination[resetNdx] = m_combination[resetNdx - 1] + 1;
 
-				break;
-			}
-		}
-	}
+                break;
+            }
+        }
+    }
 
-	m_combinationIndex++;
+    m_combinationIndex++;
 
-	return getCombinationValue(m_combination);
+    return getCombinationValue(m_combination);
 }
 
 template <typename T>
-void CombinationsIterator<T>::reset (void)
+void CombinationsIterator<T>::reset(void)
 {
-	// Set up first combination
-	for (deUint32 itemNdx = 0; itemNdx < m_combinationSize; itemNdx++)
-		m_combination[itemNdx] = itemNdx;
+    // Set up first combination
+    for (uint32_t itemNdx = 0; itemNdx < m_combinationSize; itemNdx++)
+        m_combination[itemNdx] = itemNdx;
 
-	m_combinationIndex = 0;
+    m_combinationIndex = 0;
 }
 
 template <typename T>
-deUint32 CombinationsIterator<T>::factorial (deUint32 x)
+uint32_t CombinationsIterator<T>::factorial(uint32_t x)
 {
-	deUint32 result = 1;
+    uint32_t result = 1;
 
-	for (deUint32 value = x; value > 1; value--)
-		result *= value;
+    for (uint32_t value = x; value > 1; value--)
+        result *= value;
 
-	return result;
+    return result;
 }
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINECOMBINATIONSITERATOR_HPP

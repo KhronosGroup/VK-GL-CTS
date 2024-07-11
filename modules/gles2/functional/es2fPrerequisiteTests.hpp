@@ -36,17 +36,17 @@ namespace Functional
 class PrerequisiteTests : public TestCaseGroup
 {
 public:
-						PrerequisiteTests		(Context& context);
-	virtual				~PrerequisiteTests		(void);
-	virtual void		init					(void);
+    PrerequisiteTests(Context &context);
+    virtual ~PrerequisiteTests(void);
+    virtual void init(void);
 
 private:
-						PrerequisiteTests		(const PrerequisiteTests&);
-	PrerequisiteTests&	operator=				(const PrerequisiteTests&);
+    PrerequisiteTests(const PrerequisiteTests &);
+    PrerequisiteTests &operator=(const PrerequisiteTests &);
 };
 
-} // Functional
-} // gles
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FPREREQUISITETESTS_HPP

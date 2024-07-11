@@ -31,9 +31,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createRelaxedWithForwardReferenceGraphicsGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createRelaxedWithForwardReferenceGraphicsGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMRELAXEDWITHFORWARDREFERENCETESTS_HPP

@@ -32,9 +32,9 @@ namespace vkt
 namespace texture
 {
 
-tcu::TestCaseGroup*		createTextureShadowTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTextureShadowTests(tcu::TestContext &testCtx);
 
-} // texture
-} // vkt
+} // namespace texture
+} // namespace vkt
 
 #endif // _VKTTEXTURESHADOWTESTS_HPP

@@ -29,16 +29,17 @@ namespace glcts
 {
 
 /** Supported geometry shader output layout qualifiers */
-typedef enum {
-	/* points */
-	SHADER_OUTPUT_TYPE_POINTS,
-	/* lines */
-	SHADER_OUTPUT_TYPE_LINE_STRIP,
-	/* triangles */
-	SHADER_OUTPUT_TYPE_TRIANGLE_STRIP,
+typedef enum
+{
+    /* points */
+    SHADER_OUTPUT_TYPE_POINTS,
+    /* lines */
+    SHADER_OUTPUT_TYPE_LINE_STRIP,
+    /* triangles */
+    SHADER_OUTPUT_TYPE_TRIANGLE_STRIP,
 
-	/* Always last */
-	SHADER_OUTPUT_TYPE_COUNT
+    /* Always last */
+    SHADER_OUTPUT_TYPE_COUNT
 } _shader_output_type;
 
 /** Implements Geometry Shader conformance test group 1.
@@ -51,40 +52,41 @@ typedef enum {
 class GeometryShaderRendering : public TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	GeometryShaderRendering(Context& context, const ExtParameters& extParams, const char* name,
-							const char* description);
+    /* Public methods */
+    GeometryShaderRendering(Context &context, const ExtParameters &extParams, const char *name,
+                            const char *description);
 
-	virtual ~GeometryShaderRendering()
-	{
-	}
+    virtual ~GeometryShaderRendering()
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private type definitions */
-	typedef enum {
-		/* points */
-		SHADER_INPUT_POINTS,
+    /* Private type definitions */
+    typedef enum
+    {
+        /* points */
+        SHADER_INPUT_POINTS,
 
-		/* lines */
-		SHADER_INPUT_LINES,
+        /* lines */
+        SHADER_INPUT_LINES,
 
-		/* lines_with_adjacency */
-		SHADER_INPUT_LINES_WITH_ADJACENCY,
+        /* lines_with_adjacency */
+        SHADER_INPUT_LINES_WITH_ADJACENCY,
 
-		/* triangles */
-		SHADER_INPUT_TRIANGLES,
+        /* triangles */
+        SHADER_INPUT_TRIANGLES,
 
-		/* triangles_with_adjacency */
-		SHADER_INPUT_TRIANGLES_WITH_ADJACENCY,
+        /* triangles_with_adjacency */
+        SHADER_INPUT_TRIANGLES_WITH_ADJACENCY,
 
-		/* Always last */
-		SHADER_INPUT_UNKNOWN
-	} _shader_input;
+        /* Always last */
+        SHADER_INPUT_UNKNOWN
+    } _shader_input;
 
-	/* Private methods */
-	const char* getTestName(_shader_input input, _shader_output_type output_type, glw::GLenum drawcall_mode);
+    /* Private methods */
+    const char *getTestName(_shader_input input, _shader_output_type output_type, glw::GLenum drawcall_mode);
 };
 
 /* Defines an interface that all test case classes must implement.
@@ -98,87 +100,88 @@ private:
 class GeometryShaderRenderingCase : public TestCaseBase
 {
 public:
-	/* Public type definitions */
-	/** Supported draw call types. */
-	typedef enum {
-		/* glDrawArrays() */
-		DRAW_CALL_TYPE_GL_DRAW_ARRAYS,
+    /* Public type definitions */
+    /** Supported draw call types. */
+    typedef enum
+    {
+        /* glDrawArrays() */
+        DRAW_CALL_TYPE_GL_DRAW_ARRAYS,
 
-		/* glDrawArraysInstanced() */
-		DRAW_CALL_TYPE_GL_DRAW_ARRAYS_INSTANCED,
+        /* glDrawArraysInstanced() */
+        DRAW_CALL_TYPE_GL_DRAW_ARRAYS_INSTANCED,
 
-		/* glDrawElements() */
-		DRAW_CALL_TYPE_GL_DRAW_ELEMENTS,
+        /* glDrawElements() */
+        DRAW_CALL_TYPE_GL_DRAW_ELEMENTS,
 
-		/* glDrawElementsInstanced() */
-		DRAW_CALL_TYPE_GL_DRAW_ELEMENTS_INSTANCED,
+        /* glDrawElementsInstanced() */
+        DRAW_CALL_TYPE_GL_DRAW_ELEMENTS_INSTANCED,
 
-		/* glDrawRangeElements() */
-		DRAW_CALL_TYPE_GL_DRAW_RANGE_ELEMENTS
+        /* glDrawRangeElements() */
+        DRAW_CALL_TYPE_GL_DRAW_RANGE_ELEMENTS
 
-	} _draw_call_type;
+    } _draw_call_type;
 
-	/* Public methods */
-	GeometryShaderRenderingCase(Context& Context, const ExtParameters& extParams, const char* name,
-								const char* description);
+    /* Public methods */
+    GeometryShaderRenderingCase(Context &Context, const ExtParameters &extParams, const char *name,
+                                const char *description);
 
-	virtual ~GeometryShaderRenderingCase()
-	{
-	}
+    virtual ~GeometryShaderRenderingCase()
+    {
+    }
 
-	virtual void deinit();
-	void executeTest(_draw_call_type type);
-	virtual IterateResult iterate();
+    virtual void deinit();
+    void executeTest(_draw_call_type type);
+    virtual IterateResult iterate();
 
 protected:
-	/* Protected methods */
-	void				 initTest();
-	virtual unsigned int getAmountOfDrawInstances()				   = 0;
-	virtual unsigned int getAmountOfElementsPerInstance()		   = 0;
-	virtual unsigned int getAmountOfVerticesPerInstance()		   = 0;
-	virtual glw::GLenum  getDrawCallMode()						   = 0;
-	virtual std::string  getFragmentShaderCode()				   = 0;
-	virtual std::string  getGeometryShaderCode()				   = 0;
-	virtual glw::GLuint getRawArraysDataBufferSize(bool instanced) = 0;
-	virtual const void* getRawArraysDataBuffer(bool instanced)	 = 0;
-	virtual void getRenderTargetSize(unsigned int n_instances, unsigned int* out_width, unsigned int* out_height) = 0;
-	virtual glw::GLuint getUnorderedArraysDataBufferSize(bool instanced)   = 0;
-	virtual const void* getUnorderedArraysDataBuffer(bool instanced)	   = 0;
-	virtual glw::GLuint getUnorderedElementsDataBufferSize(bool instanced) = 0;
-	virtual const void* getUnorderedElementsDataBuffer(bool instanced)	 = 0;
-	virtual glw::GLenum  getUnorderedElementsDataType()					   = 0;
-	virtual glw::GLubyte getUnorderedElementsMaxIndex()					   = 0;
-	virtual glw::GLubyte getUnorderedElementsMinIndex()					   = 0;
-	virtual std::string  getVertexShaderCode()							   = 0;
-	virtual void verify(_draw_call_type drawcall_type, unsigned int instance_id, const unsigned char* data) = 0;
+    /* Protected methods */
+    void initTest();
+    virtual unsigned int getAmountOfDrawInstances()                                                               = 0;
+    virtual unsigned int getAmountOfElementsPerInstance()                                                         = 0;
+    virtual unsigned int getAmountOfVerticesPerInstance()                                                         = 0;
+    virtual glw::GLenum getDrawCallMode()                                                                         = 0;
+    virtual std::string getFragmentShaderCode()                                                                   = 0;
+    virtual std::string getGeometryShaderCode()                                                                   = 0;
+    virtual glw::GLuint getRawArraysDataBufferSize(bool instanced)                                                = 0;
+    virtual const void *getRawArraysDataBuffer(bool instanced)                                                    = 0;
+    virtual void getRenderTargetSize(unsigned int n_instances, unsigned int *out_width, unsigned int *out_height) = 0;
+    virtual glw::GLuint getUnorderedArraysDataBufferSize(bool instanced)                                          = 0;
+    virtual const void *getUnorderedArraysDataBuffer(bool instanced)                                              = 0;
+    virtual glw::GLuint getUnorderedElementsDataBufferSize(bool instanced)                                        = 0;
+    virtual const void *getUnorderedElementsDataBuffer(bool instanced)                                            = 0;
+    virtual glw::GLenum getUnorderedElementsDataType()                                                            = 0;
+    virtual glw::GLubyte getUnorderedElementsMaxIndex()                                                           = 0;
+    virtual glw::GLubyte getUnorderedElementsMinIndex()                                                           = 0;
+    virtual std::string getVertexShaderCode()                                                                     = 0;
+    virtual void verify(_draw_call_type drawcall_type, unsigned int instance_id, const unsigned char *data)       = 0;
 
-	virtual void setUniformsBeforeDrawCall(_draw_call_type /*drawcall_type*/)
-	{
-	}
+    virtual void setUniformsBeforeDrawCall(_draw_call_type /*drawcall_type*/)
+    {
+    }
 
-	/* Protected variables */
-	deqp::Context& m_context;
-	glw::GLuint	m_instanced_raw_arrays_bo_id;
-	glw::GLuint	m_instanced_unordered_arrays_bo_id;
-	glw::GLuint	m_instanced_unordered_elements_bo_id;
-	glw::GLuint	m_noninstanced_raw_arrays_bo_id;
-	glw::GLuint	m_noninstanced_unordered_arrays_bo_id;
-	glw::GLuint	m_noninstanced_unordered_elements_bo_id;
-	glw::GLuint	m_fs_id;
-	glw::GLuint	m_gs_id;
-	glw::GLuint	m_po_id;
-	glw::GLuint	m_renderingTargetSize_uniform_location;
-	glw::GLuint	m_singleRenderingTargetSize_uniform_location;
-	glw::GLuint	m_vao_id;
-	glw::GLuint	m_vs_id;
+    /* Protected variables */
+    deqp::Context &m_context;
+    glw::GLuint m_instanced_raw_arrays_bo_id;
+    glw::GLuint m_instanced_unordered_arrays_bo_id;
+    glw::GLuint m_instanced_unordered_elements_bo_id;
+    glw::GLuint m_noninstanced_raw_arrays_bo_id;
+    glw::GLuint m_noninstanced_unordered_arrays_bo_id;
+    glw::GLuint m_noninstanced_unordered_elements_bo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_renderingTargetSize_uniform_location;
+    glw::GLuint m_singleRenderingTargetSize_uniform_location;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_read_fbo_id;
-	glw::GLuint m_to_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_read_fbo_id;
+    glw::GLuint m_to_id;
 
-	glw::GLuint m_instanced_fbo_id;
-	glw::GLuint m_instanced_read_fbo_id;
-	glw::GLuint m_instanced_to_id;
+    glw::GLuint m_instanced_fbo_id;
+    glw::GLuint m_instanced_read_fbo_id;
+    glw::GLuint m_instanced_to_id;
 };
 
 /** Implements Geometry Shader conformance test group 1, 'points' input primitive type case.
@@ -245,40 +248,40 @@ protected:
 class GeometryShaderRenderingPointsCase : public GeometryShaderRenderingCase
 {
 public:
-	/* Public methods */
-	GeometryShaderRenderingPointsCase(Context& context, const ExtParameters& extParams, const char* name,
-									  glw::GLenum drawcall_mode, _shader_output_type output_type);
+    /* Public methods */
+    GeometryShaderRenderingPointsCase(Context &context, const ExtParameters &extParams, const char *name,
+                                      glw::GLenum drawcall_mode, _shader_output_type output_type);
 
-	virtual ~GeometryShaderRenderingPointsCase();
+    virtual ~GeometryShaderRenderingPointsCase();
 
 protected:
-	/* GeometryShaderRenderingCase interface implementation */
-	unsigned int getAmountOfDrawInstances();
-	unsigned int getAmountOfElementsPerInstance();
-	unsigned int getAmountOfVerticesPerInstance();
-	glw::GLenum  getDrawCallMode();
-	std::string  getFragmentShaderCode();
-	std::string  getGeometryShaderCode();
-	glw::GLuint getRawArraysDataBufferSize(bool instanced);
-	const void* getRawArraysDataBuffer(bool instanced);
-	void getRenderTargetSize(unsigned int n_instances, unsigned int* out_width, unsigned int* out_height);
-	glw::GLuint getUnorderedArraysDataBufferSize(bool instanced);
-	const void* getUnorderedArraysDataBuffer(bool instanced);
-	glw::GLuint getUnorderedElementsDataBufferSize(bool instanced);
-	const void* getUnorderedElementsDataBuffer(bool instanced);
-	glw::GLenum  getUnorderedElementsDataType();
-	glw::GLubyte getUnorderedElementsMaxIndex();
-	glw::GLubyte getUnorderedElementsMinIndex();
-	std::string  getVertexShaderCode();
-	void verify(_draw_call_type drawcall_type, unsigned int instance_id, const unsigned char* data);
+    /* GeometryShaderRenderingCase interface implementation */
+    unsigned int getAmountOfDrawInstances();
+    unsigned int getAmountOfElementsPerInstance();
+    unsigned int getAmountOfVerticesPerInstance();
+    glw::GLenum getDrawCallMode();
+    std::string getFragmentShaderCode();
+    std::string getGeometryShaderCode();
+    glw::GLuint getRawArraysDataBufferSize(bool instanced);
+    const void *getRawArraysDataBuffer(bool instanced);
+    void getRenderTargetSize(unsigned int n_instances, unsigned int *out_width, unsigned int *out_height);
+    glw::GLuint getUnorderedArraysDataBufferSize(bool instanced);
+    const void *getUnorderedArraysDataBuffer(bool instanced);
+    glw::GLuint getUnorderedElementsDataBufferSize(bool instanced);
+    const void *getUnorderedElementsDataBuffer(bool instanced);
+    glw::GLenum getUnorderedElementsDataType();
+    glw::GLubyte getUnorderedElementsMaxIndex();
+    glw::GLubyte getUnorderedElementsMinIndex();
+    std::string getVertexShaderCode();
+    void verify(_draw_call_type drawcall_type, unsigned int instance_id, const unsigned char *data);
 
 private:
-	/* Private variables */
-	_shader_output_type m_output_type;
+    /* Private variables */
+    _shader_output_type m_output_type;
 
-	float*		   m_raw_array_data;
-	float*		   m_unordered_array_data;
-	unsigned char* m_unordered_elements_data;
+    float *m_raw_array_data;
+    float *m_unordered_array_data;
+    unsigned char *m_unordered_elements_data;
 };
 
 /** Implements Geometry Shader conformance test group 1, 'lines' and
@@ -339,59 +342,59 @@ private:
 class GeometryShaderRenderingLinesCase : public GeometryShaderRenderingCase
 {
 public:
-	/* Public methods */
-	GeometryShaderRenderingLinesCase(Context& context, const ExtParameters& extParams, const char* name,
-									 bool use_adjacency_data, glw::GLenum drawcall_mode,
-									 _shader_output_type output_type);
+    /* Public methods */
+    GeometryShaderRenderingLinesCase(Context &context, const ExtParameters &extParams, const char *name,
+                                     bool use_adjacency_data, glw::GLenum drawcall_mode,
+                                     _shader_output_type output_type);
 
-	virtual ~GeometryShaderRenderingLinesCase();
+    virtual ~GeometryShaderRenderingLinesCase();
 
 protected:
-	/* GeometryShaderRenderingCase interface implementation */
-	unsigned int getAmountOfDrawInstances();
-	unsigned int getAmountOfElementsPerInstance();
-	unsigned int getAmountOfVerticesPerInstance();
-	glw::GLenum  getDrawCallMode();
-	std::string  getFragmentShaderCode();
-	std::string  getGeometryShaderCode();
-	glw::GLuint getRawArraysDataBufferSize(bool instanced);
-	const void* getRawArraysDataBuffer(bool instanced);
-	void getRenderTargetSize(unsigned int n_instances, unsigned int* out_width, unsigned int* out_height);
-	glw::GLuint getUnorderedArraysDataBufferSize(bool instanced);
-	const void* getUnorderedArraysDataBuffer(bool instanced);
-	glw::GLuint getUnorderedElementsDataBufferSize(bool instanced);
-	const void* getUnorderedElementsDataBuffer(bool instanced);
-	glw::GLenum  getUnorderedElementsDataType();
-	glw::GLubyte getUnorderedElementsMaxIndex();
-	glw::GLubyte getUnorderedElementsMinIndex();
-	std::string  getVertexShaderCode();
-	void setUniformsBeforeDrawCall(_draw_call_type drawcall_type);
-	void verify(_draw_call_type drawcall_type, unsigned int instance_id, const unsigned char* data);
+    /* GeometryShaderRenderingCase interface implementation */
+    unsigned int getAmountOfDrawInstances();
+    unsigned int getAmountOfElementsPerInstance();
+    unsigned int getAmountOfVerticesPerInstance();
+    glw::GLenum getDrawCallMode();
+    std::string getFragmentShaderCode();
+    std::string getGeometryShaderCode();
+    glw::GLuint getRawArraysDataBufferSize(bool instanced);
+    const void *getRawArraysDataBuffer(bool instanced);
+    void getRenderTargetSize(unsigned int n_instances, unsigned int *out_width, unsigned int *out_height);
+    glw::GLuint getUnorderedArraysDataBufferSize(bool instanced);
+    const void *getUnorderedArraysDataBuffer(bool instanced);
+    glw::GLuint getUnorderedElementsDataBufferSize(bool instanced);
+    const void *getUnorderedElementsDataBuffer(bool instanced);
+    glw::GLenum getUnorderedElementsDataType();
+    glw::GLubyte getUnorderedElementsMaxIndex();
+    glw::GLubyte getUnorderedElementsMinIndex();
+    std::string getVertexShaderCode();
+    void setUniformsBeforeDrawCall(_draw_call_type drawcall_type);
+    void verify(_draw_call_type drawcall_type, unsigned int instance_id, const unsigned char *data);
 
 private:
-	/* Private variables */
-	_shader_output_type m_output_type;
+    /* Private variables */
+    _shader_output_type m_output_type;
 
-	glw::GLenum m_drawcall_mode;
-	bool		m_use_adjacency_data;
+    glw::GLenum m_drawcall_mode;
+    bool m_use_adjacency_data;
 
-	float*		 m_raw_array_instanced_data;
-	unsigned int m_raw_array_instanced_data_size;
-	float*		 m_raw_array_noninstanced_data;
-	unsigned int m_raw_array_noninstanced_data_size;
+    float *m_raw_array_instanced_data;
+    unsigned int m_raw_array_instanced_data_size;
+    float *m_raw_array_noninstanced_data;
+    unsigned int m_raw_array_noninstanced_data_size;
 
-	float*		 m_unordered_array_instanced_data;
-	unsigned int m_unordered_array_instanced_data_size;
-	float*		 m_unordered_array_noninstanced_data;
-	unsigned int m_unordered_array_noninstanced_data_size;
+    float *m_unordered_array_instanced_data;
+    unsigned int m_unordered_array_instanced_data_size;
+    float *m_unordered_array_noninstanced_data;
+    unsigned int m_unordered_array_noninstanced_data_size;
 
-	unsigned char* m_unordered_elements_instanced_data;
-	unsigned int   m_unordered_elements_instanced_data_size;
-	unsigned char* m_unordered_elements_noninstanced_data;
-	unsigned int   m_unordered_elements_noninstanced_data_size;
+    unsigned char *m_unordered_elements_instanced_data;
+    unsigned int m_unordered_elements_instanced_data_size;
+    unsigned char *m_unordered_elements_noninstanced_data;
+    unsigned int m_unordered_elements_noninstanced_data_size;
 
-	unsigned char m_unordered_elements_max_index;
-	unsigned char m_unordered_elements_min_index;
+    unsigned char m_unordered_elements_max_index;
+    unsigned char m_unordered_elements_min_index;
 };
 
 /** Implements Geometry Shader conformance test group 1, 'triangles' and
@@ -404,8 +407,8 @@ private:
  *
  *                                 C
  *                                / \
-     *                               /   \
-     *                              B--A--D
+ *                               /   \
+ *                              B--A--D
  *                               \   /
  *                                \_/
  *                                 E
@@ -495,59 +498,59 @@ private:
 class GeometryShaderRenderingTrianglesCase : public GeometryShaderRenderingCase
 {
 public:
-	/* Public methods */
-	GeometryShaderRenderingTrianglesCase(Context& context, const ExtParameters& extParams, const char* name,
-										 bool use_adjacency_data, glw::GLenum drawcall_mode,
-										 _shader_output_type output_type);
+    /* Public methods */
+    GeometryShaderRenderingTrianglesCase(Context &context, const ExtParameters &extParams, const char *name,
+                                         bool use_adjacency_data, glw::GLenum drawcall_mode,
+                                         _shader_output_type output_type);
 
-	virtual ~GeometryShaderRenderingTrianglesCase();
+    virtual ~GeometryShaderRenderingTrianglesCase();
 
 protected:
-	/* GeometryShaderRenderingCase interface implementation */
-	unsigned int getAmountOfDrawInstances();
-	unsigned int getAmountOfElementsPerInstance();
-	unsigned int getAmountOfVerticesPerInstance();
-	glw::GLenum  getDrawCallMode();
-	std::string  getFragmentShaderCode();
-	std::string  getGeometryShaderCode();
-	glw::GLuint getRawArraysDataBufferSize(bool instanced);
-	const void* getRawArraysDataBuffer(bool instanced);
-	void getRenderTargetSize(unsigned int n_instances, unsigned int* out_width, unsigned int* out_height);
-	glw::GLuint getUnorderedArraysDataBufferSize(bool instanced);
-	const void* getUnorderedArraysDataBuffer(bool instanced);
-	glw::GLuint getUnorderedElementsDataBufferSize(bool instanced);
-	const void* getUnorderedElementsDataBuffer(bool instanced);
-	glw::GLenum  getUnorderedElementsDataType();
-	glw::GLubyte getUnorderedElementsMaxIndex();
-	glw::GLubyte getUnorderedElementsMinIndex();
-	std::string  getVertexShaderCode();
-	void setUniformsBeforeDrawCall(_draw_call_type drawcall_type);
-	void verify(_draw_call_type drawcall_type, unsigned int instance_id, const unsigned char* data);
+    /* GeometryShaderRenderingCase interface implementation */
+    unsigned int getAmountOfDrawInstances();
+    unsigned int getAmountOfElementsPerInstance();
+    unsigned int getAmountOfVerticesPerInstance();
+    glw::GLenum getDrawCallMode();
+    std::string getFragmentShaderCode();
+    std::string getGeometryShaderCode();
+    glw::GLuint getRawArraysDataBufferSize(bool instanced);
+    const void *getRawArraysDataBuffer(bool instanced);
+    void getRenderTargetSize(unsigned int n_instances, unsigned int *out_width, unsigned int *out_height);
+    glw::GLuint getUnorderedArraysDataBufferSize(bool instanced);
+    const void *getUnorderedArraysDataBuffer(bool instanced);
+    glw::GLuint getUnorderedElementsDataBufferSize(bool instanced);
+    const void *getUnorderedElementsDataBuffer(bool instanced);
+    glw::GLenum getUnorderedElementsDataType();
+    glw::GLubyte getUnorderedElementsMaxIndex();
+    glw::GLubyte getUnorderedElementsMinIndex();
+    std::string getVertexShaderCode();
+    void setUniformsBeforeDrawCall(_draw_call_type drawcall_type);
+    void verify(_draw_call_type drawcall_type, unsigned int instance_id, const unsigned char *data);
 
 private:
-	/* Private variables */
-	_shader_output_type m_output_type;
+    /* Private variables */
+    _shader_output_type m_output_type;
 
-	glw::GLenum m_drawcall_mode;
-	bool		m_use_adjacency_data;
+    glw::GLenum m_drawcall_mode;
+    bool m_use_adjacency_data;
 
-	float*		 m_raw_array_instanced_data;
-	unsigned int m_raw_array_instanced_data_size;
-	float*		 m_raw_array_noninstanced_data;
-	unsigned int m_raw_array_noninstanced_data_size;
+    float *m_raw_array_instanced_data;
+    unsigned int m_raw_array_instanced_data_size;
+    float *m_raw_array_noninstanced_data;
+    unsigned int m_raw_array_noninstanced_data_size;
 
-	float*		 m_unordered_array_instanced_data;
-	unsigned int m_unordered_array_instanced_data_size;
-	float*		 m_unordered_array_noninstanced_data;
-	unsigned int m_unordered_array_noninstanced_data_size;
+    float *m_unordered_array_instanced_data;
+    unsigned int m_unordered_array_instanced_data_size;
+    float *m_unordered_array_noninstanced_data;
+    unsigned int m_unordered_array_noninstanced_data_size;
 
-	unsigned char* m_unordered_elements_instanced_data;
-	unsigned int   m_unordered_elements_instanced_data_size;
-	unsigned char* m_unordered_elements_noninstanced_data;
-	unsigned int   m_unordered_elements_noninstanced_data_size;
+    unsigned char *m_unordered_elements_instanced_data;
+    unsigned int m_unordered_elements_instanced_data_size;
+    unsigned char *m_unordered_elements_noninstanced_data;
+    unsigned int m_unordered_elements_noninstanced_data_size;
 
-	unsigned char m_unordered_elements_max_index;
-	unsigned char m_unordered_elements_min_index;
+    unsigned char m_unordered_elements_max_index;
+    unsigned char m_unordered_elements_min_index;
 };
 
 } // namespace glcts

@@ -38,22 +38,31 @@ namespace glu
 class CallLogWrapper
 {
 public:
-							CallLogWrapper			(const glw::Functions& gl, tcu::TestLog& log);
-							~CallLogWrapper			(void);
+    CallLogWrapper(const glw::Functions &gl, tcu::TestLog &log);
+    ~CallLogWrapper(void);
 
 // GL API is exposed as member functions
 #include "gluCallLogWrapperApi.inl"
 
-	void					enableLogging			(bool enable)	{ m_enableLog = enable; }
-	bool					isLoggingEnabled		(void)			{ return m_enableLog; }
-	tcu::TestLog&			getLog					(void)			{ return m_log; }
+    void enableLogging(bool enable)
+    {
+        m_enableLog = enable;
+    }
+    bool isLoggingEnabled(void)
+    {
+        return m_enableLog;
+    }
+    tcu::TestLog &getLog(void)
+    {
+        return m_log;
+    }
 
 private:
-	const glw::Functions&	m_gl;
-	tcu::TestLog&			m_log;
-	bool					m_enableLog;
+    const glw::Functions &m_gl;
+    tcu::TestLog &m_log;
+    bool m_enableLog;
 } DE_WARN_UNUSED_TYPE;
 
-} // glu
+} // namespace glu
 
 #endif // _GLUCALLLOGWRAPPER_HPP

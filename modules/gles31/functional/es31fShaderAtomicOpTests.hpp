@@ -35,29 +35,29 @@ namespace Functional
 
 enum AtomicOperandType
 {
-	ATOMIC_OPERAND_BUFFER_VARIABLE = 0,		//!< Variable in SSBO
-	ATOMIC_OPERAND_SHARED_VARIABLE,			//!< Shared variable.
+    ATOMIC_OPERAND_BUFFER_VARIABLE = 0, //!< Variable in SSBO
+    ATOMIC_OPERAND_SHARED_VARIABLE,     //!< Shared variable.
 
-	ATOMIC_OPERAND_TYPE_LAST
+    ATOMIC_OPERAND_TYPE_LAST
 };
 
 class ShaderAtomicOpTests : public TestCaseGroup
 {
 public:
-							ShaderAtomicOpTests		(Context& context, const char* name, AtomicOperandType operandType);
-							~ShaderAtomicOpTests	(void);
+    ShaderAtomicOpTests(Context &context, const char *name, AtomicOperandType operandType);
+    ~ShaderAtomicOpTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							ShaderAtomicOpTests		(const ShaderAtomicOpTests& other);
-	ShaderAtomicOpTests&	operator=				(const ShaderAtomicOpTests& other);
+    ShaderAtomicOpTests(const ShaderAtomicOpTests &other);
+    ShaderAtomicOpTests &operator=(const ShaderAtomicOpTests &other);
 
-	const AtomicOperandType	m_operandType;
+    const AtomicOperandType m_operandType;
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSHADERATOMICOPTESTS_HPP

@@ -41,177 +41,176 @@ namespace opt
 DE_DECLARE_COMMAND_LINE_OPT(GLMajorVersion, int);
 DE_DECLARE_COMMAND_LINE_OPT(GLMinorVersion, int);
 
-} // opt
+} // namespace opt
 
 class GLConfigParser : public tcu::CommandLine
 {
 public:
-					GLConfigParser			(const std::string& argString);
+    GLConfigParser(const std::string &argString);
 
-	bool			hasGLMajorVersion		(void) const;
-	bool			hasGLMinorVersion		(void) const;
-	int				getGLMajorVersion		(void) const;
-	int				getGLMinorVersion		(void) const;
+    bool hasGLMajorVersion(void) const;
+    bool hasGLMinorVersion(void) const;
+    int getGLMajorVersion(void) const;
+    int getGLMinorVersion(void) const;
 
 private:
-	virtual void	registerExtendedOptions	(de::cmdline::Parser& parser);
+    virtual void registerExtendedOptions(de::cmdline::Parser &parser);
 };
 
-GLConfigParser::GLConfigParser (const std::string& argString)
+GLConfigParser::GLConfigParser(const std::string &argString)
 {
-	const std::string execString = "fakebinaryname " + argString; // convert argument list to full command line
+    const std::string execString = "fakebinaryname " + argString; // convert argument list to full command line
 
-	if (!parse(execString))
-	{
-		tcu::print("failed to parse command line");
-		TCU_THROW(Exception, "failed to parse command line");
-	}
+    if (!parse(execString))
+    {
+        tcu::print("failed to parse command line");
+        TCU_THROW(Exception, "failed to parse command line");
+    }
 }
 
-bool GLConfigParser::hasGLMajorVersion (void) const
+bool GLConfigParser::hasGLMajorVersion(void) const
 {
-	return getCommandLine().hasOption<opt::GLMajorVersion>();
+    return getCommandLine().hasOption<opt::GLMajorVersion>();
 }
 
-bool GLConfigParser::hasGLMinorVersion (void) const
+bool GLConfigParser::hasGLMinorVersion(void) const
 {
-	return getCommandLine().hasOption<opt::GLMinorVersion>();
+    return getCommandLine().hasOption<opt::GLMinorVersion>();
 }
 
-int GLConfigParser::getGLMajorVersion (void) const
+int GLConfigParser::getGLMajorVersion(void) const
 {
-	DE_ASSERT(hasGLMajorVersion());
-	return getCommandLine().getOption<opt::GLMajorVersion>();
+    DE_ASSERT(hasGLMajorVersion());
+    return getCommandLine().getOption<opt::GLMajorVersion>();
 }
 
-int GLConfigParser::getGLMinorVersion (void) const
+int GLConfigParser::getGLMinorVersion(void) const
 {
-	DE_ASSERT(hasGLMinorVersion());
-	return getCommandLine().getOption<opt::GLMinorVersion>();
+    DE_ASSERT(hasGLMinorVersion());
+    return getCommandLine().getOption<opt::GLMinorVersion>();
 }
 
-void GLConfigParser::registerExtendedOptions (de::cmdline::Parser& parser)
+void GLConfigParser::registerExtendedOptions(de::cmdline::Parser &parser)
 {
-	using de::cmdline::Option;
+    using de::cmdline::Option;
 
-	parser
-		<< Option<opt::GLMajorVersion>	(DE_NULL, "deqp-gl-major-version", "OpenGL ES Major version")
-		<< Option<opt::GLMinorVersion>	(DE_NULL, "deqp-gl-minor-version", "OpenGL ES Minor version");
+    parser << Option<opt::GLMajorVersion>(DE_NULL, "deqp-gl-major-version", "OpenGL ES Major version")
+           << Option<opt::GLMinorVersion>(DE_NULL, "deqp-gl-minor-version", "OpenGL ES Minor version");
 }
 
-glu::RenderConfig parseRenderConfig (const std::string& argsStr)
+glu::RenderConfig parseRenderConfig(const std::string &argsStr)
 {
-	const GLConfigParser parsedCommandLine (argsStr);
+    const GLConfigParser parsedCommandLine(argsStr);
 
-	if (!parsedCommandLine.hasGLMajorVersion() ||
-		!parsedCommandLine.hasGLMinorVersion())
-	{
-		tcu::print("minor and major version must be supplied");
-		TCU_THROW(Exception, "minor and major version must be supplied");
-	}
-	else
-	{
-		const glu::ContextType	testContextType	(glu::ApiType::es(parsedCommandLine.getGLMajorVersion(), parsedCommandLine.getGLMinorVersion()));
-		glu::RenderConfig		renderConfig	(testContextType);
+    if (!parsedCommandLine.hasGLMajorVersion() || !parsedCommandLine.hasGLMinorVersion())
+    {
+        tcu::print("minor and major version must be supplied");
+        TCU_THROW(Exception, "minor and major version must be supplied");
+    }
+    else
+    {
+        const glu::ContextType testContextType(
+            glu::ApiType::es(parsedCommandLine.getGLMajorVersion(), parsedCommandLine.getGLMinorVersion()));
+        glu::RenderConfig renderConfig(testContextType);
 
-		glu::parseRenderConfig(&renderConfig, parsedCommandLine);
+        glu::parseRenderConfig(&renderConfig, parsedCommandLine);
 
-		return renderConfig;
-	}
+        return renderConfig;
+    }
 }
 
-bool isRenderConfigSupported (const std::string& cmdLineStr)
+bool isRenderConfigSupported(const std::string &cmdLineStr)
 {
-	const glu::RenderConfig		renderConfig	= parseRenderConfig(cmdLineStr);
-	const eglw::DefaultLibrary	egl;
-	const eglw::EGLDisplay		display			= egl.getDisplay(EGL_DEFAULT_DISPLAY);
-	eglw::EGLint				eglMajor		= -1;
-	eglw::EGLint				eglMinor		= -1;
+    const glu::RenderConfig renderConfig = parseRenderConfig(cmdLineStr);
+    const eglw::DefaultLibrary egl;
+    const eglw::EGLDisplay display = egl.getDisplay(EGL_DEFAULT_DISPLAY);
+    eglw::EGLint eglMajor          = -1;
+    eglw::EGLint eglMinor          = -1;
 
-	if (display == EGL_NO_DISPLAY)
-	{
-		tcu::print("could not get default display");
-		TCU_THROW(Exception, "could not get default display");
-	}
+    if (display == EGL_NO_DISPLAY)
+    {
+        tcu::print("could not get default display");
+        TCU_THROW(Exception, "could not get default display");
+    }
 
-	if (egl.initialize(display, &eglMajor, &eglMinor) != EGL_TRUE)
-	{
-		tcu::print("failed to initialize egl");
-		TCU_THROW(Exception, "failed to initialize egl");
-	}
-	tcu::print("EGL initialized, major=%d, minor=%d", eglMajor, eglMinor);
+    if (egl.initialize(display, &eglMajor, &eglMinor) != EGL_TRUE)
+    {
+        tcu::print("failed to initialize egl");
+        TCU_THROW(Exception, "failed to initialize egl");
+    }
+    tcu::print("EGL initialized, major=%d, minor=%d", eglMajor, eglMinor);
 
-	try
-	{
-		// ignoring return value
-		(void)eglu::chooseConfig(egl, display, renderConfig);
-	}
-	catch (const tcu::NotSupportedError&)
-	{
-		tcu::print("No matching config");
-		egl.terminate(display);
-		return false;
-	}
-	catch (...)
-	{
-		egl.terminate(display);
-		throw;
-	}
-	egl.terminate(display);
+    try
+    {
+        // ignoring return value
+        (void)eglu::chooseConfig(egl, display, renderConfig);
+    }
+    catch (const tcu::NotSupportedError &)
+    {
+        tcu::print("No matching config");
+        egl.terminate(display);
+        return false;
+    }
+    catch (...)
+    {
+        egl.terminate(display);
+        throw;
+    }
+    egl.terminate(display);
 
-	return true;
+    return true;
 }
 
-} // anonymous
-
+} // namespace
 
 DE_BEGIN_EXTERN_C
 
-JNIEXPORT jint JNICALL Java_com_drawelements_deqp_platformutil_DeqpPlatformCapabilityQueryInstrumentation_nativeRenderConfigSupportedQuery (JNIEnv* env, jclass, jstring jCmdLine)
+JNIEXPORT jint JNICALL
+Java_com_drawelements_deqp_platformutil_DeqpPlatformCapabilityQueryInstrumentation_nativeRenderConfigSupportedQuery(
+    JNIEnv *env, jclass, jstring jCmdLine)
 {
-	enum
-	{
-		CONFIGQUERYRESULT_SUPPORTED = 0,
-		CONFIGQUERYRESULT_NOT_SUPPORTED = 1,
-		CONFIGQUERYRESULT_GENERIC_ERROR = -1,
-	};
+    enum
+    {
+        CONFIGQUERYRESULT_SUPPORTED     = 0,
+        CONFIGQUERYRESULT_NOT_SUPPORTED = 1,
+        CONFIGQUERYRESULT_GENERIC_ERROR = -1,
+    };
 
-	std::string			cmdLine;
-	const char* const	cmdLineBytes = env->GetStringUTFChars(jCmdLine, DE_NULL);
+    std::string cmdLine;
+    const char *const cmdLineBytes = env->GetStringUTFChars(jCmdLine, DE_NULL);
 
-	if (cmdLineBytes == DE_NULL)
-	{
-		// no command line is not executable
-		tcu::print("no command line supplied");
-		return CONFIGQUERYRESULT_GENERIC_ERROR;
-	}
+    if (cmdLineBytes == DE_NULL)
+    {
+        // no command line is not executable
+        tcu::print("no command line supplied");
+        return CONFIGQUERYRESULT_GENERIC_ERROR;
+    }
 
-	try
-	{
-		// try to copy to local buffer
-		cmdLine = std::string(cmdLineBytes);
-	}
-	catch (const std::bad_alloc&)
-	{
-		env->ReleaseStringUTFChars(jCmdLine, cmdLineBytes);
-		tcu::print("failed to copy cmdLine");
-		return CONFIGQUERYRESULT_GENERIC_ERROR;
-	}
-	env->ReleaseStringUTFChars(jCmdLine, cmdLineBytes);
+    try
+    {
+        // try to copy to local buffer
+        cmdLine = std::string(cmdLineBytes);
+    }
+    catch (const std::bad_alloc &)
+    {
+        env->ReleaseStringUTFChars(jCmdLine, cmdLineBytes);
+        tcu::print("failed to copy cmdLine");
+        return CONFIGQUERYRESULT_GENERIC_ERROR;
+    }
+    env->ReleaseStringUTFChars(jCmdLine, cmdLineBytes);
 
-	try
-	{
-		const bool isSupported = isRenderConfigSupported(cmdLine);
+    try
+    {
+        const bool isSupported = isRenderConfigSupported(cmdLine);
 
-		return (isSupported) ? (CONFIGQUERYRESULT_SUPPORTED)
-		                     : (CONFIGQUERYRESULT_NOT_SUPPORTED);
-	}
-	catch (const std::exception& ex)
-	{
-		// don't bother forwarding the exception to the caller. They cannot do anything with the exception anyway.
-		tcu::print("Error: %s", ex.what());
-		return CONFIGQUERYRESULT_GENERIC_ERROR;
-	}
+        return (isSupported) ? (CONFIGQUERYRESULT_SUPPORTED) : (CONFIGQUERYRESULT_NOT_SUPPORTED);
+    }
+    catch (const std::exception &ex)
+    {
+        // don't bother forwarding the exception to the caller. They cannot do anything with the exception anyway.
+        tcu::print("Error: %s", ex.what());
+        return CONFIGQUERYRESULT_GENERIC_ERROR;
+    }
 }
 
 DE_END_EXTERN_C

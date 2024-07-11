@@ -35,16 +35,16 @@ namespace wgl
 class ContextFactory : public glu::ContextFactory
 {
 public:
-								ContextFactory	(HINSTANCE instance);
-	virtual glu::RenderContext*	createContext	(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine,
-												 const glu::RenderContext* sharedContext) const;
+    ContextFactory(HINSTANCE instance);
+    virtual glu::RenderContext *createContext(const glu::RenderConfig &config, const tcu::CommandLine &cmdLine,
+                                              const glu::RenderContext *sharedContext) const;
 
 private:
-	const HINSTANCE				m_instance;
-	Core						m_wglCore;
+    const HINSTANCE m_instance;
+    Core m_wglCore;
 };
 
-} // wgl
-} // tcu
+} // namespace wgl
+} // namespace tcu
 
 #endif // _TCUWGLCONTEXTFACTORY_HPP

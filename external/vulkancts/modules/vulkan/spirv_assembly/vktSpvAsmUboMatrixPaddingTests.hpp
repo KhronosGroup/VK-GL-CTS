@@ -31,10 +31,10 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createUboMatrixPaddingComputeGroup	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createUboMatrixPaddingGraphicsGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createUboMatrixPaddingComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createUboMatrixPaddingGraphicsGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMUBOMATRIXPADDINGTESTS_HPP

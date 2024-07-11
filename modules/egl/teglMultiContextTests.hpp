@@ -31,9 +31,9 @@ namespace deqp
 namespace egl
 {
 
-TestCaseGroup* createMultiContextTests (EglTestContext& eglTestCtx);
+TestCaseGroup *createMultiContextTests(EglTestContext &eglTestCtx);
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLMULTICONTEXTTESTS_HPP

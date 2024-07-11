@@ -39,100 +39,96 @@ namespace NegativeTestShared
 {
 
 using glw::GLenum;
-using tcu::TestLog;
 using std::string;
+using tcu::TestLog;
 
-ErrorCase::ErrorCase (Context& ctx, const char* name, const char* desc)
-	: TestCase(ctx, name, desc)
+ErrorCase::ErrorCase(Context &ctx, const char *name, const char *desc) : TestCase(ctx, name, desc)
 {
 }
 
-NegativeTestContext::NegativeTestContext (ErrorCase&				host,
-										  glu::RenderContext&		renderCtx,
-										  const glu::ContextInfo&	ctxInfo,
-										  tcu::TestLog&				log,
-										  tcu::ResultCollector&		results,
-										  bool						enableLogging_)
-	: glu::CallLogWrapper	(renderCtx.getFunctions(), log)
-	, m_host				(host)
-	, m_renderCtx			(renderCtx)
-	, m_ctxInfo				(ctxInfo)
-	, m_results				(results)
-	, m_openSections		(0)
+NegativeTestContext::NegativeTestContext(ErrorCase &host, glu::RenderContext &renderCtx,
+                                         const glu::ContextInfo &ctxInfo, tcu::TestLog &log,
+                                         tcu::ResultCollector &results, bool enableLogging_)
+    : glu::CallLogWrapper(renderCtx.getFunctions(), log)
+    , m_host(host)
+    , m_renderCtx(renderCtx)
+    , m_ctxInfo(ctxInfo)
+    , m_results(results)
+    , m_openSections(0)
 {
-	enableLogging(enableLogging_);
+    enableLogging(enableLogging_);
 }
 
-NegativeTestContext::~NegativeTestContext ()
+NegativeTestContext::~NegativeTestContext()
 {
-	while (m_openSections--)
-		getLog() << TestLog::EndSection;
+    while (m_openSections--)
+        getLog() << TestLog::EndSection;
 }
 
-void NegativeTestContext::fail (const string& msg)
+void NegativeTestContext::fail(const string &msg)
 {
-	m_results.addResult(QP_TEST_RESULT_FAIL, msg);
+    m_results.addResult(QP_TEST_RESULT_FAIL, msg);
 }
 
-int NegativeTestContext::getInteger (GLenum pname) const
+int NegativeTestContext::getInteger(GLenum pname) const
 {
-	int retval = 0;
-	m_renderCtx.getFunctions().getIntegerv(pname, &retval);
-	return retval;
+    int retval = 0;
+    m_renderCtx.getFunctions().getIntegerv(pname, &retval);
+    return retval;
 }
 
-void NegativeTestContext::beginSection (const string& desc)
+void NegativeTestContext::beginSection(const string &desc)
 {
-	if (isLoggingEnabled())
-	{
-		getLog() << TestLog::Section("callstream", desc);
-		m_openSections++;
-	}
+    if (isLoggingEnabled())
+    {
+        getLog() << TestLog::Section("callstream", desc);
+        m_openSections++;
+    }
 }
 
-void NegativeTestContext::endSection (void)
+void NegativeTestContext::endSection(void)
 {
-	if (isLoggingEnabled())
-	{
-		DE_ASSERT (m_openSections > 0);
-		getLog() << TestLog::EndSection;
-		m_openSections--;
-	}
+    if (isLoggingEnabled())
+    {
+        DE_ASSERT(m_openSections > 0);
+        getLog() << TestLog::EndSection;
+        m_openSections--;
+    }
 }
 
-void NegativeTestContext::expectError (GLenum error)
+void NegativeTestContext::expectError(GLenum error)
 {
-	m_host.expectError(error, error);
+    m_host.expectError(error, error);
 }
 
-void NegativeTestContext::expectError (GLenum error0, GLenum error1)
+void NegativeTestContext::expectError(GLenum error0, GLenum error1)
 {
-	m_host.expectError(error0, error1);
+    m_host.expectError(error0, error1);
 }
 
-bool NegativeTestContext::isShaderSupported (glu::ShaderType shaderType)
+bool NegativeTestContext::isShaderSupported(glu::ShaderType shaderType)
 {
-	if (contextSupports(getRenderContext().getType(), glu::ApiType::es(3, 2)))
-		return true;
+    if (contextSupports(getRenderContext().getType(), glu::ApiType::es(3, 2)))
+        return true;
 
-	switch (shaderType)
-	{
-		case glu::SHADERTYPE_GEOMETRY:
-			return getContextInfo().isExtensionSupported("GL_EXT_geometry_shader");
-		case glu::SHADERTYPE_TESSELLATION_CONTROL:
-		case glu::SHADERTYPE_TESSELLATION_EVALUATION:
-			return getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader");
-		default:
-			return true;
-	}
+    switch (shaderType)
+    {
+    case glu::SHADERTYPE_GEOMETRY:
+        return getContextInfo().isExtensionSupported("GL_EXT_geometry_shader");
+    case glu::SHADERTYPE_TESSELLATION_CONTROL:
+    case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+        return getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader");
+    default:
+        return true;
+    }
 }
 
-bool NegativeTestContext::isExtensionSupported (std::string extension)
+bool NegativeTestContext::isExtensionSupported(std::string extension)
 {
-	return getContextInfo().isExtensionSupported(extension.c_str());
+    return getContextInfo().isExtensionSupported(extension.c_str());
 }
 
-} // NegativeTestShared
-} // Functional
-} // gles31
-} // deqp
+} // namespace NegativeTestShared
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp

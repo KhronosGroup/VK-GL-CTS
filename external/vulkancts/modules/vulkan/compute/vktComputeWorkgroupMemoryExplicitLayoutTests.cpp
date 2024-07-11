@@ -62,1294 +62,1269 @@ namespace
 
 struct CheckSupportParams
 {
-	bool needsScalar;
-	bool needsInt8;
-	bool needsInt16;
-	bool needsInt64;
-	bool needsFloat16;
-	bool needsFloat64;
-	vk::ComputePipelineConstructionType computePipelineConstructionType;
+    bool needsScalar;
+    bool needsInt8;
+    bool needsInt16;
+    bool needsInt64;
+    bool needsFloat16;
+    bool needsFloat64;
+    vk::ComputePipelineConstructionType computePipelineConstructionType;
 
-	void useType(glu::DataType dt)
-	{
-		using namespace glu;
+    void useType(glu::DataType dt)
+    {
+        using namespace glu;
 
-		needsInt8		|= isDataTypeIntOrIVec8Bit(dt) || isDataTypeUintOrUVec8Bit(dt);
-		needsInt16		|= isDataTypeIntOrIVec16Bit(dt) || isDataTypeUintOrUVec16Bit(dt);
-		needsFloat16	|= isDataTypeFloat16OrVec(dt);
-		needsFloat64	|= isDataTypeDoubleOrDVec(dt);
-	}
+        needsInt8 |= isDataTypeIntOrIVec8Bit(dt) || isDataTypeUintOrUVec8Bit(dt);
+        needsInt16 |= isDataTypeIntOrIVec16Bit(dt) || isDataTypeUintOrUVec16Bit(dt);
+        needsFloat16 |= isDataTypeFloat16OrVec(dt);
+        needsFloat64 |= isDataTypeDoubleOrDVec(dt);
+    }
 };
 
-void checkSupportWithParams(Context& context, const CheckSupportParams& params)
+void checkSupportWithParams(Context &context, const CheckSupportParams &params)
 {
-	context.requireDeviceFunctionality("VK_KHR_workgroup_memory_explicit_layout");
-	context.requireDeviceFunctionality("VK_KHR_spirv_1_4");
-	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.computePipelineConstructionType);
+    context.requireDeviceFunctionality("VK_KHR_workgroup_memory_explicit_layout");
+    context.requireDeviceFunctionality("VK_KHR_spirv_1_4");
+    checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                  params.computePipelineConstructionType);
 
-	VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR layout_features;
-	deMemset(&layout_features, 0, sizeof(layout_features));
-	layout_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR;
-	layout_features.pNext = DE_NULL;
+    VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR layout_features;
+    deMemset(&layout_features, 0, sizeof(layout_features));
+    layout_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR;
+    layout_features.pNext = DE_NULL;
 
-	VkPhysicalDeviceShaderFloat16Int8Features f16_i8_features;
-	deMemset(&f16_i8_features, 0, sizeof(f16_i8_features));
-	f16_i8_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
-	f16_i8_features.pNext = &layout_features;
+    VkPhysicalDeviceShaderFloat16Int8Features f16_i8_features;
+    deMemset(&f16_i8_features, 0, sizeof(f16_i8_features));
+    f16_i8_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
+    f16_i8_features.pNext = &layout_features;
 
-	VkPhysicalDeviceFeatures2 features2;
-	deMemset(&features2, 0, sizeof(features2));
-	features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	features2.pNext = &f16_i8_features;
-	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+    VkPhysicalDeviceFeatures2 features2;
+    deMemset(&features2, 0, sizeof(features2));
+    features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    features2.pNext = &f16_i8_features;
+    context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
-	if (params.needsScalar)
-	{
-		if (layout_features.workgroupMemoryExplicitLayoutScalarBlockLayout != VK_TRUE)
-			TCU_THROW(NotSupportedError, "workgroupMemoryExplicitLayoutScalarBlockLayout not supported");
-	}
+    if (params.needsScalar)
+    {
+        if (layout_features.workgroupMemoryExplicitLayoutScalarBlockLayout != VK_TRUE)
+            TCU_THROW(NotSupportedError, "workgroupMemoryExplicitLayoutScalarBlockLayout not supported");
+    }
 
-	if (params.needsInt8)
-	{
-		if (f16_i8_features.shaderInt8 != VK_TRUE)
-			TCU_THROW(NotSupportedError, "shaderInt8 not supported");
-		if (layout_features.workgroupMemoryExplicitLayout8BitAccess != VK_TRUE)
-			TCU_THROW(NotSupportedError, "workgroupMemoryExplicitLayout8BitAccess not supported");
-	}
+    if (params.needsInt8)
+    {
+        if (f16_i8_features.shaderInt8 != VK_TRUE)
+            TCU_THROW(NotSupportedError, "shaderInt8 not supported");
+        if (layout_features.workgroupMemoryExplicitLayout8BitAccess != VK_TRUE)
+            TCU_THROW(NotSupportedError, "workgroupMemoryExplicitLayout8BitAccess not supported");
+    }
 
-	if (params.needsInt16)
-	{
-		if (features2.features.shaderInt16 != VK_TRUE)
-			TCU_THROW(NotSupportedError, "shaderInt16 not supported");
-		if (layout_features.workgroupMemoryExplicitLayout16BitAccess != VK_TRUE)
-			TCU_THROW(NotSupportedError, "workgroupMemoryExplicitLayout16BitAccess not supported");
-	}
+    if (params.needsInt16)
+    {
+        if (features2.features.shaderInt16 != VK_TRUE)
+            TCU_THROW(NotSupportedError, "shaderInt16 not supported");
+        if (layout_features.workgroupMemoryExplicitLayout16BitAccess != VK_TRUE)
+            TCU_THROW(NotSupportedError, "workgroupMemoryExplicitLayout16BitAccess not supported");
+    }
 
-	if (params.needsInt64)
-	{
-		if (features2.features.shaderInt64 != VK_TRUE)
-			TCU_THROW(NotSupportedError, "shaderInt64 not supported");
-	}
+    if (params.needsInt64)
+    {
+        if (features2.features.shaderInt64 != VK_TRUE)
+            TCU_THROW(NotSupportedError, "shaderInt64 not supported");
+    }
 
-	if (params.needsFloat16)
-	{
-		if (f16_i8_features.shaderFloat16 != VK_TRUE)
-			TCU_THROW(NotSupportedError, "shaderFloat16 not supported");
-		if (layout_features.workgroupMemoryExplicitLayout16BitAccess != VK_TRUE)
-			TCU_THROW(NotSupportedError, "workgroupMemoryExplicitLayout16BitAccess not supported");
-	}
+    if (params.needsFloat16)
+    {
+        if (f16_i8_features.shaderFloat16 != VK_TRUE)
+            TCU_THROW(NotSupportedError, "shaderFloat16 not supported");
+        if (layout_features.workgroupMemoryExplicitLayout16BitAccess != VK_TRUE)
+            TCU_THROW(NotSupportedError, "workgroupMemoryExplicitLayout16BitAccess not supported");
+    }
 
-	if (params.needsFloat64)
-	{
-		if (features2.features.shaderFloat64 != VK_TRUE)
-			TCU_THROW(NotSupportedError, "shaderFloat64 not supported");
-	}
+    if (params.needsFloat64)
+    {
+        if (features2.features.shaderFloat64 != VK_TRUE)
+            TCU_THROW(NotSupportedError, "shaderFloat64 not supported");
+    }
 }
 
-tcu::TestStatus runCompute(Context& context, deUint32 workgroupSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+tcu::TestStatus runCompute(Context &context, uint32_t workgroupSize,
+                           const vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	const DeviceInterface&	vk			= context.getDeviceInterface();
-	const VkDevice			device		= context.getDevice();
-	Allocator&				allocator	= context.getDefaultAllocator();
-	tcu::TestLog&			log			= context.getTestContext().getLog();
+    const DeviceInterface &vk = context.getDeviceInterface();
+    const VkDevice device     = context.getDevice();
+    Allocator &allocator      = context.getDefaultAllocator();
+    tcu::TestLog &log         = context.getTestContext().getLog();
 
-	de::MovePtr<BufferWithMemory> buffer;
-	VkDescriptorBufferInfo bufferDescriptor;
+    de::MovePtr<BufferWithMemory> buffer;
+    VkDescriptorBufferInfo bufferDescriptor;
 
-	VkDeviceSize size = sizeof(deUint32) * workgroupSize;
+    VkDeviceSize size = sizeof(uint32_t) * workgroupSize;
 
-	buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-		vk, device, allocator, makeBufferCreateInfo(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
-		MemoryRequirement::HostVisible | MemoryRequirement::Cached));
-	bufferDescriptor = makeDescriptorBufferInfo(**buffer, 0, size);
+    buffer           = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+        vk, device, allocator,
+        makeBufferCreateInfo(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+        MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+    bufferDescriptor = makeDescriptorBufferInfo(**buffer, 0, size);
 
-	deUint32* ptr = (deUint32*)buffer->getAllocation().getHostPtr();
+    uint32_t *ptr = (uint32_t *)buffer->getAllocation().getHostPtr();
 
-	deMemset(ptr, 0xFF, static_cast<std::size_t>(size));
+    deMemset(ptr, 0xFF, static_cast<std::size_t>(size));
 
-	DescriptorSetLayoutBuilder layoutBuilder;
-	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+    DescriptorSetLayoutBuilder layoutBuilder;
+    layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
 
-	Unique<VkDescriptorSetLayout> descriptorSetLayout(layoutBuilder.build(vk, device));
-	Unique<VkDescriptorPool> descriptorPool(DescriptorPoolBuilder()
-		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u)
-		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
-	Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+    Unique<VkDescriptorSetLayout> descriptorSetLayout(layoutBuilder.build(vk, device));
+    Unique<VkDescriptorPool> descriptorPool(
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+    Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
-	VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
-	flushAlloc(vk, device, buffer->getAllocation());
+    VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+    flushAlloc(vk, device, buffer->getAllocation());
 
-	ComputePipelineWrapper			pipeline(vk, device, computePipelineConstructionType, context.getBinaryCollection().get("comp"));
-	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
-	pipeline.buildPipeline();
+    ComputePipelineWrapper pipeline(vk, device, computePipelineConstructionType,
+                                    context.getBinaryCollection().get("comp"));
+    pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+    pipeline.buildPipeline();
 
-	const VkQueue queue = context.getUniversalQueue();
-	Move<VkCommandPool> cmdPool = createCommandPool(vk, device,
-		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-		context.getUniversalQueueFamilyIndex());
-	Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const VkQueue queue             = context.getUniversalQueue();
+    Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+                                                        context.getUniversalQueueFamilyIndex());
+    Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	DescriptorSetUpdateBuilder setUpdateBuilder;
-	setUpdateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0),
-		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptor);
-	setUpdateBuilder.update(vk, device);
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    setUpdateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0),
+                                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptor);
+    setUpdateBuilder.update(vk, device);
 
-	beginCommandBuffer(vk, *cmdBuffer, 0);
+    beginCommandBuffer(vk, *cmdBuffer, 0);
 
-	vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u, DE_NULL);
-	pipeline.bind(*cmdBuffer);
+    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u, DE_NULL);
+    pipeline.bind(*cmdBuffer);
 
-	vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
+    vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
-	endCommandBuffer(vk, *cmdBuffer);
+    endCommandBuffer(vk, *cmdBuffer);
 
-	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+    submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
-	invalidateAlloc(vk, device, buffer->getAllocation());
-	for (deUint32 i = 0; i < workgroupSize; ++i)
-	{
-		deUint32 expected = i;
-		if (ptr[i] != expected)
-		{
-			log << tcu::TestLog::Message << "failure at index " << i << ": expected " << expected << ", got: " << ptr[i] << tcu::TestLog::EndMessage;
-			return tcu::TestStatus::fail("compute failed");
-		}
-	}
+    invalidateAlloc(vk, device, buffer->getAllocation());
+    for (uint32_t i = 0; i < workgroupSize; ++i)
+    {
+        uint32_t expected = i;
+        if (ptr[i] != expected)
+        {
+            log << tcu::TestLog::Message << "failure at index " << i << ": expected " << expected << ", got: " << ptr[i]
+                << tcu::TestLog::EndMessage;
+            return tcu::TestStatus::fail("compute failed");
+        }
+    }
 
-	return tcu::TestStatus::pass("compute succeeded");
+    return tcu::TestStatus::pass("compute succeeded");
 }
 
 class AliasTest : public vkt::TestCase
 {
 public:
-	enum Requirements
-	{
-		RequirementNone    = 0,
-		RequirementFloat16 = 1 << 0,
-		RequirementFloat64 = 1 << 1,
-		RequirementInt8    = 1 << 2,
-		RequirementInt16   = 1 << 3,
-		RequirementInt64   = 1 << 4,
-	};
+    enum Requirements
+    {
+        RequirementNone    = 0,
+        RequirementFloat16 = 1 << 0,
+        RequirementFloat64 = 1 << 1,
+        RequirementInt8    = 1 << 2,
+        RequirementInt16   = 1 << 3,
+        RequirementInt64   = 1 << 4,
+    };
 
-	enum Flags
-	{
-		FlagNone         = 0,
-		FlagLayoutStd430 = 1 << 0,
-		FlagLayoutStd140 = 1 << 1,
-		FlagLayoutScalar = 1 << 2,
-		FlagFunction     = 1 << 3,
-		FlagBarrier      = 1 << 4,
-	};
+    enum Flags
+    {
+        FlagNone         = 0,
+        FlagLayoutStd430 = 1 << 0,
+        FlagLayoutStd140 = 1 << 1,
+        FlagLayoutScalar = 1 << 2,
+        FlagFunction     = 1 << 3,
+        FlagBarrier      = 1 << 4,
+    };
 
-	enum LayoutFlags
-	{
-		LayoutNone    = 0,
+    enum LayoutFlags
+    {
+        LayoutNone = 0,
 
-		LayoutDefault = 1 << 0,
-		LayoutStd140  = 1 << 1,
-		LayoutStd430  = 1 << 2,
-		LayoutScalar  = 1 << 3,
-		LayoutAll     = LayoutDefault | LayoutStd140 | LayoutStd430 | LayoutScalar,
+        LayoutDefault = 1 << 0,
+        LayoutStd140  = 1 << 1,
+        LayoutStd430  = 1 << 2,
+        LayoutScalar  = 1 << 3,
+        LayoutAll     = LayoutDefault | LayoutStd140 | LayoutStd430 | LayoutScalar,
 
-		LayoutCount   = 4,
-	};
+        LayoutCount = 4,
+    };
 
-	enum Function
-	{
-		FunctionNone = 0,
-		FunctionRead,
-		FunctionWrite,
-		FunctionReadWrite,
-		FunctionCount,
-	};
+    enum Function
+    {
+        FunctionNone = 0,
+        FunctionRead,
+        FunctionWrite,
+        FunctionReadWrite,
+        FunctionCount,
+    };
 
-	enum Synchronization
-	{
-		SynchronizationNone = 0,
-		SynchronizationBarrier,
-		SynchronizationCount,
-	};
+    enum Synchronization
+    {
+        SynchronizationNone = 0,
+        SynchronizationBarrier,
+        SynchronizationCount,
+    };
 
-	struct CaseDef
-	{
-		std::string extraTypes;
+    struct CaseDef
+    {
+        std::string extraTypes;
 
-		std::string writeDesc;
-		std::string	writeType;
-		std::string writeValue;
+        std::string writeDesc;
+        std::string writeType;
+        std::string writeValue;
 
-		std::string readDesc;
-		std::string readType;
-		std::string readValue;
+        std::string readDesc;
+        std::string readType;
+        std::string readValue;
 
-		LayoutFlags layout;
-		Function func;
-		Synchronization sync;
-		Requirements requirements;
+        LayoutFlags layout;
+        Function func;
+        Synchronization sync;
+        Requirements requirements;
 
-		CaseDef (const std::string&	extraTypes_,
-				 const std::string&	writeDesc_,
-				 const std::string&	writeType_,
-				 const std::string&	writeValue_,
-				 const std::string&	readDesc_,
-				 const std::string&	readType_,
-				 const std::string&	readValue_,
-				 LayoutFlags		layout_,
-				 Function			func_,
-				 Synchronization	sync_,
-				 Requirements		requirements_)
-			: extraTypes	(extraTypes_)
-			, writeDesc		(writeDesc_)
-			, writeType		(writeType_)
-			, writeValue	(writeValue_)
-			, readDesc		(readDesc_)
-			, readType		(readType_)
-			, readValue		(readValue_)
-			, layout		(layout_)
-			, func			(func_)
-			, sync			(sync_)
-			, requirements	(requirements_)
-			{}
+        CaseDef(const std::string &extraTypes_, const std::string &writeDesc_, const std::string &writeType_,
+                const std::string &writeValue_, const std::string &readDesc_, const std::string &readType_,
+                const std::string &readValue_, LayoutFlags layout_, Function func_, Synchronization sync_,
+                Requirements requirements_)
+            : extraTypes(extraTypes_)
+            , writeDesc(writeDesc_)
+            , writeType(writeType_)
+            , writeValue(writeValue_)
+            , readDesc(readDesc_)
+            , readType(readType_)
+            , readValue(readValue_)
+            , layout(layout_)
+            , func(func_)
+            , sync(sync_)
+            , requirements(requirements_)
+        {
+        }
 
-		std::string testName() const
-		{
-			std::string name = writeDesc + "_to_" + readDesc;
+        std::string testName() const
+        {
+            std::string name = writeDesc + "_to_" + readDesc;
 
-			// In a valid test case, only one flag will be set.
-			switch (layout)
-			{
-			case LayoutDefault:
-				name += "_default";
-				break;
-			case LayoutStd140:
-				name += "_std140";
-				break;
-			case LayoutStd430:
-				name += "_std430";
-				break;
-			case LayoutScalar:
-				name += "_scalar";
-				break;
-			default:
-				DE_ASSERT(0);
-				break;
-			}
+            // In a valid test case, only one flag will be set.
+            switch (layout)
+            {
+            case LayoutDefault:
+                name += "_default";
+                break;
+            case LayoutStd140:
+                name += "_std140";
+                break;
+            case LayoutStd430:
+                name += "_std430";
+                break;
+            case LayoutScalar:
+                name += "_scalar";
+                break;
+            default:
+                DE_ASSERT(0);
+                break;
+            }
 
-			switch (func)
-			{
-			case FunctionNone:
-				break;
-			case FunctionRead:
-				name += "_func_read";
-				break;
-			case FunctionWrite:
-				name += "_func_write";
-				break;
-			case FunctionReadWrite:
-				name += "_func_read_write";
-				break;
-			default:
-				DE_ASSERT(0);
-				break;
-			}
+            switch (func)
+            {
+            case FunctionNone:
+                break;
+            case FunctionRead:
+                name += "_func_read";
+                break;
+            case FunctionWrite:
+                name += "_func_write";
+                break;
+            case FunctionReadWrite:
+                name += "_func_read_write";
+                break;
+            default:
+                DE_ASSERT(0);
+                break;
+            }
 
-			switch (sync)
-			{
-			case SynchronizationNone:
-				break;
-			case SynchronizationBarrier:
-				name += "_barrier";
-				break;
-			default:
-				DE_ASSERT(0);
-				break;
-			}
+            switch (sync)
+            {
+            case SynchronizationNone:
+                break;
+            case SynchronizationBarrier:
+                name += "_barrier";
+                break;
+            default:
+                DE_ASSERT(0);
+                break;
+            }
 
-			return name;
-		}
-	};
+            return name;
+        }
+    };
 
-	AliasTest(tcu::TestContext& testCtx, const CaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, caseDef.testName())
-		, m_caseDef							(caseDef)
-		, m_computePipelineConstructionType	(computePipelineConstructionType)
-	{
-	}
+    AliasTest(tcu::TestContext &testCtx, const CaseDef &caseDef,
+              const vk::ComputePipelineConstructionType computePipelineConstructionType)
+        : TestCase(testCtx, caseDef.testName())
+        , m_caseDef(caseDef)
+        , m_computePipelineConstructionType(computePipelineConstructionType)
+    {
+    }
 
-	virtual void checkSupport(Context& context) const;
-	void initPrograms(SourceCollections& sourceCollections) const;
+    virtual void checkSupport(Context &context) const;
+    void initPrograms(SourceCollections &sourceCollections) const;
 
-	class Instance : public vkt::TestInstance
-	{
-	public:
-		Instance(Context& context, const CaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-			: TestInstance						(context)
-			, m_caseDef							(caseDef)
-			, m_computePipelineConstructionType	(computePipelineConstructionType)
-		{
-		}
+    class Instance : public vkt::TestInstance
+    {
+    public:
+        Instance(Context &context, const CaseDef &caseDef,
+                 const vk::ComputePipelineConstructionType computePipelineConstructionType)
+            : TestInstance(context)
+            , m_caseDef(caseDef)
+            , m_computePipelineConstructionType(computePipelineConstructionType)
+        {
+        }
 
-		tcu::TestStatus iterate(void)
-		{
-			return runCompute(m_context, 1u, m_computePipelineConstructionType);
-		}
+        tcu::TestStatus iterate(void)
+        {
+            return runCompute(m_context, 1u, m_computePipelineConstructionType);
+        }
 
-	private:
-		CaseDef								m_caseDef;
-		vk::ComputePipelineConstructionType m_computePipelineConstructionType;
-	};
+    private:
+        CaseDef m_caseDef;
+        vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+    };
 
-	TestInstance* createInstance(Context& context) const
-	{
-		return new Instance(context, m_caseDef, m_computePipelineConstructionType);
-	}
+    TestInstance *createInstance(Context &context) const
+    {
+        return new Instance(context, m_caseDef, m_computePipelineConstructionType);
+    }
 
 private:
-	CaseDef								m_caseDef;
-	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+    CaseDef m_caseDef;
+    vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-void AliasTest::checkSupport(Context& context) const
+void AliasTest::checkSupport(Context &context) const
 {
-	CheckSupportParams p;
-	deMemset(&p, 0, sizeof(p));
+    CheckSupportParams p;
+    deMemset(&p, 0, sizeof(p));
 
-	p.needsScalar						= m_caseDef.layout == LayoutScalar;
-	p.needsInt8							= m_caseDef.requirements & RequirementInt8;
-	p.needsInt16						= m_caseDef.requirements & RequirementInt16;
-	p.needsInt64						= m_caseDef.requirements & RequirementInt64;
-	p.needsFloat16						= m_caseDef.requirements & RequirementFloat16;
-	p.needsFloat64						= m_caseDef.requirements & RequirementFloat64;
-	p.computePipelineConstructionType	= m_computePipelineConstructionType;
+    p.needsScalar                     = m_caseDef.layout == LayoutScalar;
+    p.needsInt8                       = m_caseDef.requirements & RequirementInt8;
+    p.needsInt16                      = m_caseDef.requirements & RequirementInt16;
+    p.needsInt64                      = m_caseDef.requirements & RequirementInt64;
+    p.needsFloat16                    = m_caseDef.requirements & RequirementFloat16;
+    p.needsFloat64                    = m_caseDef.requirements & RequirementFloat64;
+    p.computePipelineConstructionType = m_computePipelineConstructionType;
 
-	checkSupportWithParams(context, p);
+    checkSupportWithParams(context, p);
 }
 
-void AliasTest::initPrograms(SourceCollections& sourceCollections) const
+void AliasTest::initPrograms(SourceCollections &sourceCollections) const
 {
-	std::string layout;
-	switch (m_caseDef.layout)
-	{
-	case LayoutStd140:
-		layout = "layout(std140)";
-		break;
-	case LayoutStd430:
-		layout = "layout(std430)";
-		break;
-	case LayoutScalar:
-		layout = "layout(scalar)";
-		break;
-	default:
-		// No layout specified.
-		break;
-	}
+    std::string layout;
+    switch (m_caseDef.layout)
+    {
+    case LayoutStd140:
+        layout = "layout(std140)";
+        break;
+    case LayoutStd430:
+        layout = "layout(std430)";
+        break;
+    case LayoutScalar:
+        layout = "layout(scalar)";
+        break;
+    default:
+        // No layout specified.
+        break;
+    }
 
-	std::ostringstream src;
+    std::ostringstream src;
 
-	src << "#version 450\n";
-	src << "#extension GL_EXT_shared_memory_block : enable\n";
-	src << "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n";
+    src << "#version 450\n";
+    src << "#extension GL_EXT_shared_memory_block : enable\n";
+    src << "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n";
 
-	if (m_caseDef.layout == LayoutScalar)
-		src << "#extension GL_EXT_scalar_block_layout : enable\n";
+    if (m_caseDef.layout == LayoutScalar)
+        src << "#extension GL_EXT_scalar_block_layout : enable\n";
 
-	src << "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
+    src << "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
 
-	if (!m_caseDef.extraTypes.empty())
-		src << m_caseDef.extraTypes << ";\n";
+    if (!m_caseDef.extraTypes.empty())
+        src << m_caseDef.extraTypes << ";\n";
 
-	src << layout << "shared A { " << m_caseDef.writeType << "; } a;\n";
-	src << layout << "shared B { " << m_caseDef.readType << "; } b;\n";
-	src << "layout(set = 0, binding = 0) buffer Result { uint result; };\n";
+    src << layout << "shared A { " << m_caseDef.writeType << "; } a;\n";
+    src << layout << "shared B { " << m_caseDef.readType << "; } b;\n";
+    src << "layout(set = 0, binding = 0) buffer Result { uint result; };\n";
 
-	if (m_caseDef.func == FunctionRead ||
-		m_caseDef.func == FunctionReadWrite)
-	{
-		src << "void read(int index) {\n";
-		src << "  if (b.v == " << m_caseDef.readValue << ")\n";
-		src << "    result = index;\n";
-		src << "}\n";
-	}
+    if (m_caseDef.func == FunctionRead || m_caseDef.func == FunctionReadWrite)
+    {
+        src << "void read(int index) {\n";
+        src << "  if (b.v == " << m_caseDef.readValue << ")\n";
+        src << "    result = index;\n";
+        src << "}\n";
+    }
 
-	if (m_caseDef.func == FunctionWrite ||
-		m_caseDef.func == FunctionReadWrite)
-	{
-		src << "void write(int index) {\n";
-		src << "  if (index == 0)\n";
-		src << "    a.v = " << m_caseDef.writeValue << ";\n";
-		src << "}\n";
-	}
+    if (m_caseDef.func == FunctionWrite || m_caseDef.func == FunctionReadWrite)
+    {
+        src << "void write(int index) {\n";
+        src << "  if (index == 0)\n";
+        src << "    a.v = " << m_caseDef.writeValue << ";\n";
+        src << "}\n";
+    }
 
-	src << "void main() {\n";
-	src << "  int index = int(gl_LocalInvocationIndex);\n";
+    src << "void main() {\n";
+    src << "  int index = int(gl_LocalInvocationIndex);\n";
 
-	if (m_caseDef.func == FunctionWrite)
-		src << "  write(index);\n";
-	else
-		src << "  a.v = " << m_caseDef.writeValue << ";\n";
+    if (m_caseDef.func == FunctionWrite)
+        src << "  write(index);\n";
+    else
+        src << "  a.v = " << m_caseDef.writeValue << ";\n";
 
-	if (m_caseDef.sync == SynchronizationBarrier)
-		src << "  barrier();\n";
+    if (m_caseDef.sync == SynchronizationBarrier)
+        src << "  barrier();\n";
 
-	if (m_caseDef.func == FunctionRead ||
-		m_caseDef.func == FunctionReadWrite)
-	{
-		src << "  read(index);\n";
-	}
-	else
-	{
-		src << "  if (b.v == " << m_caseDef.readValue << ")\n";
-		src << "    result = index;\n";
-	}
-	src << "}\n";
+    if (m_caseDef.func == FunctionRead || m_caseDef.func == FunctionReadWrite)
+    {
+        src << "  read(index);\n";
+    }
+    else
+    {
+        src << "  if (b.v == " << m_caseDef.readValue << ")\n";
+        src << "    result = index;\n";
+    }
+    src << "}\n";
 
-	deUint32 buildFlags =
-		m_caseDef.layout == LayoutScalar ? ShaderBuildOptions::FLAG_ALLOW_WORKGROUP_SCALAR_OFFSETS :
-		                                   ShaderBuildOptions::Flags(0u);
+    uint32_t buildFlags = m_caseDef.layout == LayoutScalar ? ShaderBuildOptions::FLAG_ALLOW_WORKGROUP_SCALAR_OFFSETS :
+                                                             ShaderBuildOptions::Flags(0u);
 
-	sourceCollections.glslSources.add("comp")
-		<< glu::ComputeSource(src.str())
-		<< vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4, buildFlags, true);
+    sourceCollections.glslSources.add("comp")
+        << glu::ComputeSource(src.str())
+        << vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4, buildFlags, true);
 }
 
-std::string makeArray(const std::string& type, const std::vector<deUint64>& values)
+std::string makeArray(const std::string &type, const std::vector<uint64_t> &values)
 {
-	std::ostringstream s;
-	s << type << "[](";
-	for (std::size_t i = 0; i < values.size(); i++)
-	{
-		s << type << "(" << std::to_string(values[i]) << ")";
-		if (i != values.size() - 1)
-			s << ", ";
-	}
-	s << ")";
-	return s.str();
+    std::ostringstream s;
+    s << type << "[](";
+    for (std::size_t i = 0; i < values.size(); i++)
+    {
+        s << type << "(" << std::to_string(values[i]) << ")";
+        if (i != values.size() - 1)
+            s << ", ";
+    }
+    s << ")";
+    return s.str();
 }
 
-std::string makeU8Array(const std::vector<deUint64>& values)
+std::string makeU8Array(const std::vector<uint64_t> &values)
 {
-	return makeArray("uint8_t", values);
+    return makeArray("uint8_t", values);
 }
 
-std::string makeU16Array(const std::vector<deUint64>& values)
+std::string makeU16Array(const std::vector<uint64_t> &values)
 {
-	return makeArray("uint16_t", values);
+    return makeArray("uint16_t", values);
 }
 
-std::string makeU32Array(const std::vector<deUint64>& values)
+std::string makeU32Array(const std::vector<uint64_t> &values)
 {
-	return makeArray("uint32_t", values);
+    return makeArray("uint32_t", values);
 }
 
-void AddAliasTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
+void AddAliasTests(tcu::TestCaseGroup *group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	const int DEFAULT = AliasTest::LayoutDefault;
-	const int STD140 = AliasTest::LayoutStd140;
-	const int STD430 = AliasTest::LayoutStd430;
-	const int SCALAR = AliasTest::LayoutScalar;
-	const int ALL = DEFAULT | STD140 | STD430 | SCALAR;
+    const int DEFAULT = AliasTest::LayoutDefault;
+    const int STD140  = AliasTest::LayoutStd140;
+    const int STD430  = AliasTest::LayoutStd430;
+    const int SCALAR  = AliasTest::LayoutScalar;
+    const int ALL     = DEFAULT | STD140 | STD430 | SCALAR;
 
-	const int FLOAT16 = AliasTest::RequirementFloat16;
-	const int FLOAT64 = AliasTest::RequirementFloat64;
-	const int INT8 = AliasTest::RequirementInt8;
-	const int INT16 = AliasTest::RequirementInt16;
-	const int INT64 = AliasTest::RequirementInt64;
+    const int FLOAT16 = AliasTest::RequirementFloat16;
+    const int FLOAT64 = AliasTest::RequirementFloat64;
+    const int INT8    = AliasTest::RequirementInt8;
+    const int INT16   = AliasTest::RequirementInt16;
+    const int INT64   = AliasTest::RequirementInt64;
 
-#define CASE_EXTRA(L, R, E, D1, T1, V1, D2, T2, V2)						\
-	{ E, D1, T1, V1, D2, T2, V2, AliasTest::LayoutFlags(L), AliasTest::FunctionNone, AliasTest::SynchronizationNone, AliasTest::Requirements(R) }
+#define CASE_EXTRA(L, R, E, D1, T1, V1, D2, T2, V2)                                                                    \
+    {                                                                                                                  \
+        E, D1, T1, V1, D2, T2, V2, AliasTest::LayoutFlags(L), AliasTest::FunctionNone, AliasTest::SynchronizationNone, \
+            AliasTest::Requirements(R)                                                                                 \
+    }
 
-#define CASE_EXTRA_WITH_REVERSE(L, R, E, D1, T1, V1, D2, T2, V2)	\
-	CASE_EXTRA(L, R, E, D1, T1, V1, D2, T2, V2),					\
-	CASE_EXTRA(L, R, E, D2, T2, V2, D1, T1, V1)
+#define CASE_EXTRA_WITH_REVERSE(L, R, E, D1, T1, V1, D2, T2, V2) \
+    CASE_EXTRA(L, R, E, D1, T1, V1, D2, T2, V2), CASE_EXTRA(L, R, E, D2, T2, V2, D1, T1, V1)
 
-#define CASE_WITH_REVERSE(L, R, D1, T1, V1, D2, T2, V2)	CASE_EXTRA_WITH_REVERSE(L, R, "", D1, T1, V1, D2, T2, V2)
-#define CASE(L, R, D1, T1, V1, D2, T2, V2)				CASE_EXTRA(L, R, "", D1, T1, V1, D2, T2, V2)
+#define CASE_WITH_REVERSE(L, R, D1, T1, V1, D2, T2, V2) CASE_EXTRA_WITH_REVERSE(L, R, "", D1, T1, V1, D2, T2, V2)
+#define CASE(L, R, D1, T1, V1, D2, T2, V2) CASE_EXTRA(L, R, "", D1, T1, V1, D2, T2, V2)
 
+    const std::vector<AliasTest::CaseDef> cases{
+        CASE_WITH_REVERSE(ALL, INT8, "i8", "int8_t v", "int8_t(-2)", "u8", "uint8_t v", "uint8_t(0xFE)"),
+        CASE_WITH_REVERSE(ALL, INT16, "i16", "int16_t v", "int16_t(-2)", "u16", "uint16_t v", "uint16_t(0xFFFE)"),
+        CASE_WITH_REVERSE(ALL, 0, "i32", "int32_t v", "int32_t(-2)", "u32", "uint32_t v", "uint32_t(0xFFFFFFFE)"),
+        CASE_WITH_REVERSE(ALL, INT64, "i64", "int64_t v", "int64_t(-2UL)", "u64", "uint64_t v",
+                          "uint64_t(0xFFFFFFFFFFFFFFFEUL)"),
+        CASE_WITH_REVERSE(ALL, FLOAT16 | INT16, "f16", "float16_t v", "float16_t(1.0)", "u16", "uint16_t v",
+                          "uint16_t(0x3C00)"),
+        CASE_WITH_REVERSE(ALL, 0, "f32", "float32_t v", "float32_t(1.0)", "u32", "uint32_t v", "uint32_t(0x3F800000)"),
+        CASE_WITH_REVERSE(ALL, FLOAT64 | INT64, "f64", "float64_t v", "float64_t(1.0)", "u64", "uint64_t v",
+                          "uint64_t(0x3FF0000000000000UL)"),
 
-	const std::vector<AliasTest::CaseDef> cases
-	{
-		CASE_WITH_REVERSE(ALL, INT8,
-			"i8",			"int8_t v",			"int8_t(-2)",
-			"u8",			"uint8_t v",		"uint8_t(0xFE)"),
-		CASE_WITH_REVERSE(ALL, INT16,
-			"i16",			"int16_t v",		"int16_t(-2)",
-			"u16",			"uint16_t v",		"uint16_t(0xFFFE)"),
-		CASE_WITH_REVERSE(ALL, 0,
-			"i32",			"int32_t v",		"int32_t(-2)",
-			"u32",			"uint32_t v",		"uint32_t(0xFFFFFFFE)"),
-		CASE_WITH_REVERSE(ALL, INT64,
-			"i64",			"int64_t v",		"int64_t(-2UL)",
-			"u64",			"uint64_t v",		"uint64_t(0xFFFFFFFFFFFFFFFEUL)"),
-		CASE_WITH_REVERSE(ALL, FLOAT16 | INT16,
-			"f16",			"float16_t v",		"float16_t(1.0)",
-			"u16",			"uint16_t v",		"uint16_t(0x3C00)"),
-		CASE_WITH_REVERSE(ALL, 0,
-			"f32",			"float32_t v",		"float32_t(1.0)",
-			"u32",			"uint32_t v",		"uint32_t(0x3F800000)"),
-		CASE_WITH_REVERSE(ALL, FLOAT64 | INT64,
-			"f64",			"float64_t v",		"float64_t(1.0)",
-			"u64",			"uint64_t v",		"uint64_t(0x3FF0000000000000UL)"),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT16 | INT8, "u16", "uint16_t v", "uint16_t(0x1234)", "u8_array",
+                          "uint8_t v[2]", makeU8Array({0x34, 0x12})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT8, "u32", "uint32_t v", "uint32_t(0x12345678)", "u8_array",
+                          "uint8_t v[4]", makeU8Array({0x78, 0x56, 0x34, 0x12})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT16, "u32", "uint32_t v", "uint32_t(0x12345678)", "u16_array",
+                          "uint16_t v[2]", makeU16Array({0x5678, 0x1234})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64 | INT8, "u64", "uint64_t v",
+                          "uint64_t(0x1234567890ABCDEFUL)", "u8_array", "uint8_t v[8]",
+                          makeU8Array({0xEF, 0xCD, 0xAB, 0x90, 0x78, 0x56, 0x34, 0x12})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64 | INT16, "u64", "uint64_t v",
+                          "uint64_t(0x1234567890ABCDEFUL)", "u16_array", "uint16_t v[4]",
+                          makeU16Array({0xCDEF, 0x90AB, 0x5678, 0x1234})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64, "u64", "uint64_t v", "uint64_t(0x1234567890ABCDEFUL)",
+                          "u32_array", "uint32_t v[2]", makeU32Array({0x90ABCDEF, 0x12345678})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT16 | INT8, "i16", "int16_t v", "int16_t(-2)", "u8_array",
+                          "uint8_t v[2]", makeU8Array({0xFE, 0xFF})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT8, "i32", "int32_t v", "int32_t(-2)", "u8_array",
+                          "uint8_t v[4]", makeU8Array({0xFE, 0xFF, 0xFF, 0xFF})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT16, "i32", "int32_t v", "int32_t(-2)", "u16_array",
+                          "uint16_t v[2]", makeU16Array({0xFFFE, 0xFFFF})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64 | INT8, "i64", "int64_t v", "int64_t(-2UL)", "u8_array",
+                          "uint8_t v[8]", makeU8Array({0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64 | INT16, "i64", "int64_t v", "int64_t(-2UL)", "u16_array",
+                          "uint16_t v[4]", makeU16Array({0xFFFE, 0xFFFF, 0xFFFF, 0xFFFF})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64, "i64", "int64_t v", "int64_t(-2UL)", "u32_array",
+                          "uint32_t v[2]", makeU32Array({0xFFFFFFFE, 0xFFFFFFFF})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, FLOAT16 | INT8, "f16", "float16_t v", "float16_t(1.0)", "u8_array",
+                          "uint8_t v[2]", makeU8Array({0x00, 0x3C})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT8, "f32", "float32_t v", "float32_t(1.0)", "u8_array",
+                          "uint8_t v[4]", makeU8Array({0x00, 0x00, 0x80, 0x3F})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT16, "f32", "float32_t v", "float32_t(1.0)", "u16_array",
+                          "uint16_t v[2]", makeU16Array({0x0000, 0x3F80})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, FLOAT64 | INT8, "f64", "float64_t v", "float64_t(1.0)", "u8_array",
+                          "uint8_t v[8]", makeU8Array({0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x3F})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, FLOAT64 | INT16, "f64", "float64_t v", "float64_t(1.0)",
+                          "u16_array", "uint16_t v[4]", makeU16Array({0x0000, 0x0000, 0x0000, 0x3FF0})),
+        CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, FLOAT64, "f64", "float64_t v", "float64_t(1.0)", "u32_array",
+                          "uint32_t v[2]", makeU32Array({0x00000000, 0x3FF00000})),
 
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT16 | INT8,
-			"u16",			"uint16_t v",		"uint16_t(0x1234)",
-			"u8_array",		"uint8_t v[2]",		makeU8Array({0x34, 0x12})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT8,
-			"u32",			"uint32_t v",		"uint32_t(0x12345678)",
-			"u8_array",		"uint8_t v[4]",		makeU8Array({0x78, 0x56, 0x34, 0x12})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT16,
-			"u32",			"uint32_t v",		"uint32_t(0x12345678)",
-			"u16_array",	"uint16_t v[2]",	makeU16Array({0x5678, 0x1234})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64 | INT8,
-			"u64",			"uint64_t v",		"uint64_t(0x1234567890ABCDEFUL)",
-			"u8_array",		"uint8_t v[8]",		makeU8Array({0xEF, 0xCD, 0xAB, 0x90, 0x78, 0x56, 0x34, 0x12})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64 | INT16,
-			"u64",			"uint64_t v",		"uint64_t(0x1234567890ABCDEFUL)",
-			"u16_array",	"uint16_t v[4]",	makeU16Array({0xCDEF, 0x90AB, 0x5678, 0x1234})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64,
-			"u64",			"uint64_t v",		"uint64_t(0x1234567890ABCDEFUL)",
-			"u32_array",	"uint32_t v[2]",	makeU32Array({0x90ABCDEF, 0x12345678})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT16 | INT8,
-			"i16",			"int16_t v",		"int16_t(-2)",
-			"u8_array",		"uint8_t v[2]",		makeU8Array({0xFE, 0xFF})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT8,
-			 "i32",			"int32_t v",		"int32_t(-2)",
-			 "u8_array",	"uint8_t v[4]",		makeU8Array({0xFE, 0xFF, 0xFF, 0xFF})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT16,
-			 "i32",			"int32_t v",		"int32_t(-2)",
-			 "u16_array",	"uint16_t v[2]",	makeU16Array({0xFFFE, 0xFFFF})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64 | INT8,
-			 "i64",			"int64_t v",		"int64_t(-2UL)",
-			 "u8_array",	"uint8_t v[8]",		makeU8Array({0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64 | INT16,
-			 "i64",			"int64_t v",		"int64_t(-2UL)",
-			 "u16_array",	"uint16_t v[4]",	makeU16Array({0xFFFE, 0xFFFF, 0xFFFF, 0xFFFF})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT64,
-			 "i64",			"int64_t v",		"int64_t(-2UL)",
-			 "u32_array",	"uint32_t v[2]",	makeU32Array({0xFFFFFFFE, 0xFFFFFFFF})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, FLOAT16 | INT8,
-			 "f16",			"float16_t v",		"float16_t(1.0)",
-			 "u8_array",	"uint8_t v[2]",		makeU8Array({0x00, 0x3C})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT8,
-			 "f32",			"float32_t v",		"float32_t(1.0)",
-			 "u8_array",	"uint8_t v[4]",		makeU8Array({0x00, 0x00, 0x80, 0x3F})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, INT16,
-			 "f32",			"float32_t v",		"float32_t(1.0)",
-			 "u16_array",	"uint16_t v[2]",	makeU16Array({0x0000, 0x3F80})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, FLOAT64 | INT8,
-			 "f64",			"float64_t v",		"float64_t(1.0)",
-			 "u8_array",	"uint8_t v[8]",		makeU8Array({0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x3F})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, FLOAT64 | INT16,
-			"f64",			"float64_t v",		"float64_t(1.0)",
-			"u16_array",	"uint16_t v[4]",	makeU16Array({0x0000, 0x0000, 0x0000, 0x3FF0})),
-		CASE_WITH_REVERSE(DEFAULT | STD430 | SCALAR, FLOAT64,
-			 "f64",			"float64_t v",		"float64_t(1.0)",
-			 "u32_array",	"uint32_t v[2]",	makeU32Array({0x00000000, 0x3FF00000})),
+        CASE(DEFAULT | STD430, 0, "vec4_array", "vec4 v[3]",
+             "vec4[](vec4(1, 1, 2, 2), vec4(3, 3, 4, 4), vec4(5, 5, 6, 6))", "vec2_array", "vec2 v[6]",
+             "vec2[](vec2(1), vec2(2), vec2(3), vec2(4), vec2(5), vec2(6))"),
+        CASE(STD140, 0, "vec4_array", "vec4 v[3]",
+             "vec4[](vec4(1, 1, 999, 999), vec4(2, 2, 999, 999), vec4(3, 3, 999, 999))", "vec2_array", "vec2 v[3]",
+             "vec2[](vec2(1), vec2(2), vec2(3))"),
+        CASE(SCALAR, 0, "vec4_array", "vec4 v[3]", "vec4[](vec4(1, 1, 2, 2), vec4(3, 3, 4, 4), vec4(5, 5, 6, 6))",
+             "vec2_array", "vec2 v[6]", "vec2[](vec2(1), vec2(2), vec2(3), vec2(4), vec2(5), vec2(6))"),
 
-		CASE(DEFAULT | STD430, 0,
-			 "vec4_array",	"vec4 v[3]",		"vec4[](vec4(1, 1, 2, 2), vec4(3, 3, 4, 4), vec4(5, 5, 6, 6))",
-			 "vec2_array",	"vec2 v[6]",		"vec2[](vec2(1), vec2(2), vec2(3), vec2(4), vec2(5), vec2(6))"),
-		CASE(STD140, 0,
-			 "vec4_array",   "vec4 v[3]",		"vec4[](vec4(1, 1, 999, 999), vec4(2, 2, 999, 999), vec4(3, 3, 999, 999))",
-			 "vec2_array",	"vec2 v[3]",		"vec2[](vec2(1), vec2(2), vec2(3))"),
-		CASE(SCALAR, 0,
-			 "vec4_array",	"vec4 v[3]",		"vec4[](vec4(1, 1, 2, 2), vec4(3, 3, 4, 4), vec4(5, 5, 6, 6))",
-			 "vec2_array",	"vec2 v[6]",		"vec2[](vec2(1), vec2(2), vec2(3), vec2(4), vec2(5), vec2(6))"),
+        CASE(DEFAULT | STD430, 0, "vec4_array", "vec4 v[3]",
+             "vec4[](vec4(1, 1, 1, 999), vec4(2, 2, 2, 999), vec4(3, 3, 3, 999))", "vec3_array", "vec3 v[3]",
+             "vec3[](vec3(1), vec3(2), vec3(3))"),
+        CASE(STD140, 0, "vec4_array", "vec4 v[3]", "vec4[](vec4(1, 1, 1, 999), vec4(2, 2, 2, 999), vec4(3, 3, 3, 999))",
+             "vec3_array", "vec3 v[3]", "vec3[](vec3(1), vec3(2), vec3(3))"),
+        CASE(SCALAR, 0, "vec4_array", "vec4 v[3]", "vec4[](vec4(1, 1, 1, 2), vec4(2, 2, 3, 3), vec4(3, 4, 4, 4))",
+             "vec3_array", "vec3 v[4]", "vec3[](vec3(1), vec3(2), vec3(3), vec3(4))"),
 
-		CASE(DEFAULT | STD430, 0,
-			 "vec4_array",	"vec4 v[3]",		"vec4[](vec4(1, 1, 1, 999), vec4(2, 2, 2, 999), vec4(3, 3, 3, 999))",
-			 "vec3_array",	"vec3 v[3]",		"vec3[](vec3(1), vec3(2), vec3(3))"),
-		CASE(STD140, 0,
-			 "vec4_array",	"vec4 v[3]",		"vec4[](vec4(1, 1, 1, 999), vec4(2, 2, 2, 999), vec4(3, 3, 3, 999))",
-			 "vec3_array",	"vec3 v[3]",		"vec3[](vec3(1), vec3(2), vec3(3))"),
-		CASE(SCALAR, 0,
-			 "vec4_array",	"vec4 v[3]",		"vec4[](vec4(1, 1, 1, 2), vec4(2, 2, 3, 3), vec4(3, 4, 4, 4))",
-			 "vec3_array",	"vec3 v[4]",		"vec3[](vec3(1), vec3(2), vec3(3), vec3(4))"),
-
-		CASE_EXTRA(DEFAULT | STD430 | SCALAR, INT8,
-			"struct s { int a; int b; }",
-			"u8_array",			"uint8_t v[8]",	makeU8Array({2, 0, 0, 0, 0xFE, 0xFF, 0xFF, 0xFF}),
-			"struct_int_int",	"s v",			"s(2, -2)"),
-		CASE_EXTRA(ALL, 0,
-			"struct s { int a; int b; }",
-			"uvec2",				"uvec2 v",		"uvec2(2, 0xFFFFFFFE)",
-			"struct_int_int",	"s v",			"s(2, -2)"),
-	};
+        CASE_EXTRA(DEFAULT | STD430 | SCALAR, INT8, "struct s { int a; int b; }", "u8_array", "uint8_t v[8]",
+                   makeU8Array({2, 0, 0, 0, 0xFE, 0xFF, 0xFF, 0xFF}), "struct_int_int", "s v", "s(2, -2)"),
+        CASE_EXTRA(ALL, 0, "struct s { int a; int b; }", "uvec2", "uvec2 v", "uvec2(2, 0xFFFFFFFE)", "struct_int_int",
+                   "s v", "s(2, -2)"),
+    };
 
 #undef CASE_EXTRA
 #undef CASE_EXTRA_WITH_REVERSE
 #undef CASE_WITH_REVERSE
 #undef CASE
 
-	for (deUint32 i = 0; i < cases.size(); i++)
-	{
-		for (int syncIndex = 0; syncIndex < AliasTest::SynchronizationCount; syncIndex++)
-		{
-			const AliasTest::Synchronization sync = AliasTest::Synchronization(syncIndex);
+    for (uint32_t i = 0; i < cases.size(); i++)
+    {
+        for (int syncIndex = 0; syncIndex < AliasTest::SynchronizationCount; syncIndex++)
+        {
+            const AliasTest::Synchronization sync = AliasTest::Synchronization(syncIndex);
 
-			for (int funcIndex = 0; funcIndex < AliasTest::FunctionCount; funcIndex++)
-			{
-				const AliasTest::Function func = AliasTest::Function(funcIndex);
+            for (int funcIndex = 0; funcIndex < AliasTest::FunctionCount; funcIndex++)
+            {
+                const AliasTest::Function func = AliasTest::Function(funcIndex);
 
-				for (int layoutIndex = 0; layoutIndex < AliasTest::LayoutCount; layoutIndex++)
-				{
-					const AliasTest::LayoutFlags layout = AliasTest::LayoutFlags(1 << layoutIndex);
+                for (int layoutIndex = 0; layoutIndex < AliasTest::LayoutCount; layoutIndex++)
+                {
+                    const AliasTest::LayoutFlags layout = AliasTest::LayoutFlags(1 << layoutIndex);
 
-					AliasTest::CaseDef c = cases[i];
+                    AliasTest::CaseDef c = cases[i];
 
-					assert(c.writeDesc != c.readDesc);
+                    assert(c.writeDesc != c.readDesc);
 
-					if ((c.layout & layout) == 0)
-						continue;
+                    if ((c.layout & layout) == 0)
+                        continue;
 
-					c.layout = layout;
-					c.func = func;
-					c.sync = sync;
+                    c.layout = layout;
+                    c.func   = func;
+                    c.sync   = sync;
 
-					group->addChild(new AliasTest(group->getTestContext(), c, computePipelineConstructionType));
-				}
-			}
-		}
-	}
+                    group->addChild(new AliasTest(group->getTestContext(), c, computePipelineConstructionType));
+                }
+            }
+        }
+    }
 }
 
 class ZeroTest : public vkt::TestCase
 {
 public:
-	struct CaseDef
-	{
-		glu::DataType zeroElementType;
-		glu::DataType fieldType[2];
-		deUint32 elements;
+    struct CaseDef
+    {
+        glu::DataType zeroElementType;
+        glu::DataType fieldType[2];
+        uint32_t elements;
 
-		std::string testName() const
-		{
-			std::string name = glu::getDataTypeName(zeroElementType);
-			name += "_array_to";
+        std::string testName() const
+        {
+            std::string name = glu::getDataTypeName(zeroElementType);
+            name += "_array_to";
 
-			for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(fieldType); ++i)
-			{
-				if (fieldType[i] == glu::TYPE_INVALID)
-					break;
-				name += "_";
-				name += glu::getDataTypeName(fieldType[i]);
-			}
-			name += "_array_" + de::toString(elements);
-			return name;
-		}
-	};
+            for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(fieldType); ++i)
+            {
+                if (fieldType[i] == glu::TYPE_INVALID)
+                    break;
+                name += "_";
+                name += glu::getDataTypeName(fieldType[i]);
+            }
+            name += "_array_" + de::toString(elements);
+            return name;
+        }
+    };
 
-	ZeroTest(tcu::TestContext& testCtx, const CaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, caseDef.testName())
-		, m_caseDef							(caseDef)
-		, m_computePipelineConstructionType	(computePipelineConstructionType)
-	{
-	}
+    ZeroTest(tcu::TestContext &testCtx, const CaseDef &caseDef,
+             const vk::ComputePipelineConstructionType computePipelineConstructionType)
+        : TestCase(testCtx, caseDef.testName())
+        , m_caseDef(caseDef)
+        , m_computePipelineConstructionType(computePipelineConstructionType)
+    {
+    }
 
-	virtual void checkSupport(Context& context) const;
-	void initPrograms(SourceCollections& sourceCollections) const;
+    virtual void checkSupport(Context &context) const;
+    void initPrograms(SourceCollections &sourceCollections) const;
 
-	class Instance : public vkt::TestInstance
-	{
-	public:
-		Instance(Context& context, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-			: TestInstance						(context)
-			, m_computePipelineConstructionType	(computePipelineConstructionType)
-		{
-		}
+    class Instance : public vkt::TestInstance
+    {
+    public:
+        Instance(Context &context, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+            : TestInstance(context)
+            , m_computePipelineConstructionType(computePipelineConstructionType)
+        {
+        }
 
-		tcu::TestStatus iterate(void)
-		{
-			return runCompute(m_context, 1u, m_computePipelineConstructionType);
-		}
-	private:
-		vk::ComputePipelineConstructionType m_computePipelineConstructionType;
-	};
+        tcu::TestStatus iterate(void)
+        {
+            return runCompute(m_context, 1u, m_computePipelineConstructionType);
+        }
 
-	TestInstance* createInstance(Context& context) const
-	{
-		return new Instance(context, m_computePipelineConstructionType);
-	}
+    private:
+        vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+    };
+
+    TestInstance *createInstance(Context &context) const
+    {
+        return new Instance(context, m_computePipelineConstructionType);
+    }
 
 private:
-	CaseDef								m_caseDef;
-	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+    CaseDef m_caseDef;
+    vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-void ZeroTest::checkSupport(Context& context) const
+void ZeroTest::checkSupport(Context &context) const
 {
-	CheckSupportParams p;
-	deMemset(&p, 0, sizeof(p));
+    CheckSupportParams p;
+    deMemset(&p, 0, sizeof(p));
 
-	DE_ASSERT(!glu::isDataTypeFloat16OrVec(m_caseDef.zeroElementType));
+    DE_ASSERT(!glu::isDataTypeFloat16OrVec(m_caseDef.zeroElementType));
 
-	p.useType(m_caseDef.zeroElementType);
-	p.useType(m_caseDef.fieldType[0]);
-	p.useType(m_caseDef.fieldType[1]);
-	p.computePipelineConstructionType = m_computePipelineConstructionType;
+    p.useType(m_caseDef.zeroElementType);
+    p.useType(m_caseDef.fieldType[0]);
+    p.useType(m_caseDef.fieldType[1]);
+    p.computePipelineConstructionType = m_computePipelineConstructionType;
 
-	checkSupportWithParams(context, p);
+    checkSupportWithParams(context, p);
 }
 
 std::string getDataTypeLiteral(glu::DataType dt, std::string baseValue)
 {
-	using namespace glu;
+    using namespace glu;
 
-	if (isDataTypeVector(dt))
-	{
-		std::string elemValue = getDataTypeLiteral(getDataTypeScalarType(dt), baseValue);
+    if (isDataTypeVector(dt))
+    {
+        std::string elemValue = getDataTypeLiteral(getDataTypeScalarType(dt), baseValue);
 
-		std::ostringstream result;
-		result << getDataTypeName(dt) << "(";
-		for (int i = 0; i < getDataTypeScalarSize(dt); ++i)
-		{
-			if (i > 0)
-				result << ", ";
-			result << elemValue;
-		}
-		result << ")";
-		return result.str();
-	}
-	else if (isDataTypeScalar(dt))
-	{
-		return getDataTypeName(dt) + std::string("(") + baseValue + std::string(")");
-	}
-	else
-	{
-		DE_ASSERT(0);
-		return std::string();
-	}
+        std::ostringstream result;
+        result << getDataTypeName(dt) << "(";
+        for (int i = 0; i < getDataTypeScalarSize(dt); ++i)
+        {
+            if (i > 0)
+                result << ", ";
+            result << elemValue;
+        }
+        result << ")";
+        return result.str();
+    }
+    else if (isDataTypeScalar(dt))
+    {
+        return getDataTypeName(dt) + std::string("(") + baseValue + std::string(")");
+    }
+    else
+    {
+        DE_ASSERT(0);
+        return std::string();
+    }
 }
 
-void ZeroTest::initPrograms(SourceCollections& sourceCollections) const
+void ZeroTest::initPrograms(SourceCollections &sourceCollections) const
 {
-	using namespace glu;
+    using namespace glu;
 
-	std::ostringstream src;
+    std::ostringstream src;
 
-	src << "#version 450\n"
-		<< "#extension GL_EXT_shared_memory_block : enable\n"
-		<< "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n"
-		<< "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
+    src << "#version 450\n"
+        << "#extension GL_EXT_shared_memory_block : enable\n"
+        << "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n"
+        << "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
 
-	// Large enough to cover the largest B block even if just 8-bit elements.
-	// Small enough to fit in the minimum shared memory size limit even if with uvec4.
-	src << "shared A { " << getDataTypeName(m_caseDef.zeroElementType) << " arr[256]; } zero;\n";
+    // Large enough to cover the largest B block even if just 8-bit elements.
+    // Small enough to fit in the minimum shared memory size limit even if with uvec4.
+    src << "shared A { " << getDataTypeName(m_caseDef.zeroElementType) << " arr[256]; } zero;\n";
 
-	src << "struct st {\n"
-		<< "    " << getDataTypeName(m_caseDef.fieldType[0]) << " x;\n";
-	if (m_caseDef.fieldType[1])
-		src << "    " << getDataTypeName(m_caseDef.fieldType[1]) << " y;\n";
-	src << "};\n";
+    src << "struct st {\n"
+        << "    " << getDataTypeName(m_caseDef.fieldType[0]) << " x;\n";
+    if (m_caseDef.fieldType[1])
+        src << "    " << getDataTypeName(m_caseDef.fieldType[1]) << " y;\n";
+    src << "};\n";
 
+    src << "shared B { st arr[4]; };\n"
+        << "layout(set = 0, binding = 0) buffer Result { uint result; };\n"
+        << "void main() {\n"
+        << "for (int i = 0; i < zero.arr.length(); i++) {\n"
+        << "    zero.arr[i] = " << getDataTypeLiteral(m_caseDef.zeroElementType, "1") << ";\n"
+        << "  }\n"
+        << "  for (int i = 0; i < zero.arr.length(); i++) {\n"
+        << "    zero.arr[i] = " << getDataTypeLiteral(m_caseDef.zeroElementType, "0") << ";\n"
+        << "  }\n"
+        << "  result = (\n";
 
-	src << "shared B { st arr[4]; };\n"
-		<< "layout(set = 0, binding = 0) buffer Result { uint result; };\n"
-		<< "void main() {\n"
-		<< "for (int i = 0; i < zero.arr.length(); i++) {\n"
-		<< "    zero.arr[i] = " << getDataTypeLiteral(m_caseDef.zeroElementType, "1") << ";\n"
-		<< "  }\n"
-		<< "  for (int i = 0; i < zero.arr.length(); i++) {\n"
-		<< "    zero.arr[i] = " << getDataTypeLiteral(m_caseDef.zeroElementType, "0") << ";\n"
-		<< "  }\n"
-		<< "  result = (\n";
+    for (uint32_t i = 0; i < 4; i++)
+    {
+        src << "    ";
+        if (i > 0)
+            src << "&& ";
+        src << "(arr[" << de::toString(i) << "].x == " << getDataTypeLiteral(m_caseDef.fieldType[0], "0") << ")\n";
+        if (m_caseDef.fieldType[1])
+            src << "    && (arr[" << de::toString(i) << "].y == " << getDataTypeLiteral(m_caseDef.fieldType[1], "0")
+                << ")\n";
+    }
 
-	for (deUint32 i = 0; i < 4; i++)
-	{
-		src << "    ";
-		if (i > 0)
-			src << "&& ";
-		src << "(arr[" << de::toString(i) << "].x == " << getDataTypeLiteral(m_caseDef.fieldType[0], "0") << ")\n";
-		if (m_caseDef.fieldType[1])
-			src << "    && (arr[" << de::toString(i) << "].y == " << getDataTypeLiteral(m_caseDef.fieldType[1], "0") << ")\n";
-	}
+    src << "  ) ? 0 : 0xFF;\n"
+        << "}\n";
 
-	src << "  ) ? 0 : 0xFF;\n"
-		<< "}\n";
-
-	sourceCollections.glslSources.add("comp")
-		<< ComputeSource(src.str())
-		<< vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
-								  vk::ShaderBuildOptions::Flags(0u), true);
+    sourceCollections.glslSources.add("comp")
+        << ComputeSource(src.str())
+        << vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
+                                  vk::ShaderBuildOptions::Flags(0u), true);
 }
 
 bool isTestedZeroElementType(glu::DataType dt)
 {
-	using namespace glu;
+    using namespace glu;
 
-	// Select only a few interesting types.
-	switch (dt)
-	{
-	case TYPE_UINT:
-	case TYPE_UINT_VEC4:
-	case TYPE_UINT8:
-	case TYPE_UINT8_VEC4:
-	case TYPE_UINT16:
-		return true;
-	default:
-		return false;
-	}
+    // Select only a few interesting types.
+    switch (dt)
+    {
+    case TYPE_UINT:
+    case TYPE_UINT_VEC4:
+    case TYPE_UINT8:
+    case TYPE_UINT8_VEC4:
+    case TYPE_UINT16:
+        return true;
+    default:
+        return false;
+    }
 }
 
 bool isTestedFieldType(glu::DataType dt)
 {
-	using namespace glu;
+    using namespace glu;
 
-	// Select only a few interesting types.
-	switch (dt)
-	{
-	case TYPE_UINT:
-	case TYPE_UINT_VEC3:
-	case TYPE_UINT8:
-	case TYPE_UINT16:
-	case TYPE_FLOAT:
-	case TYPE_FLOAT_VEC4:
-	case TYPE_FLOAT16:
-	case TYPE_DOUBLE:
-	case TYPE_DOUBLE_VEC4:
-	case TYPE_BOOL:
-		return true;
+    // Select only a few interesting types.
+    switch (dt)
+    {
+    case TYPE_UINT:
+    case TYPE_UINT_VEC3:
+    case TYPE_UINT8:
+    case TYPE_UINT16:
+    case TYPE_FLOAT:
+    case TYPE_FLOAT_VEC4:
+    case TYPE_FLOAT16:
+    case TYPE_DOUBLE:
+    case TYPE_DOUBLE_VEC4:
+    case TYPE_BOOL:
+        return true;
 
-	default:
-		return false;
-	}
+    default:
+        return false;
+    }
 }
 
-void AddZeroTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
+void AddZeroTests(tcu::TestCaseGroup *group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	using namespace glu;
+    using namespace glu;
 
-	ZeroTest::CaseDef c;
+    ZeroTest::CaseDef c;
 
-	for (deUint32 i = 0; i < TYPE_LAST; ++i)
-	{
-		c.zeroElementType = DataType(i);
+    for (uint32_t i = 0; i < TYPE_LAST; ++i)
+    {
+        c.zeroElementType = DataType(i);
 
-		if (isTestedZeroElementType(c.zeroElementType))
-		{
-			deUint32 idx[2] = { 0, 0 };
+        if (isTestedZeroElementType(c.zeroElementType))
+        {
+            uint32_t idx[2] = {0, 0};
 
-			while (idx[1] < TYPE_LAST && idx[0] < TYPE_LAST)
-			{
-				c.fieldType[0] = DataType(idx[0]);
-				c.fieldType[1] = DataType(idx[1]);
+            while (idx[1] < TYPE_LAST && idx[0] < TYPE_LAST)
+            {
+                c.fieldType[0] = DataType(idx[0]);
+                c.fieldType[1] = DataType(idx[1]);
 
-				if (isTestedFieldType(c.fieldType[0]) &&
-					(c.fieldType[1] == TYPE_INVALID || isTestedFieldType(c.fieldType[1])))
-				{
-					for (deUint32 elements = 1; elements <= 4; ++elements)
-					{
-						c.elements = elements;
-						group->addChild(new ZeroTest(group->getTestContext(), c, computePipelineConstructionType));
-					}
-				}
+                if (isTestedFieldType(c.fieldType[0]) &&
+                    (c.fieldType[1] == TYPE_INVALID || isTestedFieldType(c.fieldType[1])))
+                {
+                    for (uint32_t elements = 1; elements <= 4; ++elements)
+                    {
+                        c.elements = elements;
+                        group->addChild(new ZeroTest(group->getTestContext(), c, computePipelineConstructionType));
+                    }
+                }
 
-				idx[0]++;
-				if (idx[0] >= TYPE_LAST)
-				{
-					idx[1]++;
-					idx[0] = 0;
-				}
-			}
-		}
-	}
+                idx[0]++;
+                if (idx[0] >= TYPE_LAST)
+                {
+                    idx[1]++;
+                    idx[0] = 0;
+                }
+            }
+        }
+    }
 }
 
 class PaddingTest : public vkt::TestCase
 {
 public:
-	struct CaseDef
-	{
-		std::vector<glu::DataType> types;
-		std::vector<deUint32> offsets;
-		std::vector<std::string> values;
-		deUint32 expected[32];
+    struct CaseDef
+    {
+        std::vector<glu::DataType> types;
+        std::vector<uint32_t> offsets;
+        std::vector<std::string> values;
+        uint32_t expected[32];
 
-		std::string testName() const
-		{
-			DE_ASSERT(types.size() > 0);
-			DE_ASSERT(types.size() == offsets.size());
-			DE_ASSERT(types.size() == values.size());
+        std::string testName() const
+        {
+            DE_ASSERT(types.size() > 0);
+            DE_ASSERT(types.size() == offsets.size());
+            DE_ASSERT(types.size() == values.size());
 
-			std::string name;
-			for (deUint32 i = 0; i < types.size(); ++i)
-			{
-				if (i > 0)
-					name += "_";
-				name += glu::getDataTypeName(types[i]);
-				name += "_" + de::toString(offsets[i]);
-			}
-			return name;
-		}
+            std::string name;
+            for (uint32_t i = 0; i < types.size(); ++i)
+            {
+                if (i > 0)
+                    name += "_";
+                name += glu::getDataTypeName(types[i]);
+                name += "_" + de::toString(offsets[i]);
+            }
+            return name;
+        }
 
-		void add(glu::DataType dt, deUint32 offset, const std::string& v)
-		{
-			types.push_back(dt);
-			offsets.push_back(offset);
-			values.push_back(v);
-		}
+        void add(glu::DataType dt, uint32_t offset, const std::string &v)
+        {
+            types.push_back(dt);
+            offsets.push_back(offset);
+            values.push_back(v);
+        }
 
-		bool needsScalar() const
-		{
-			for (deUint32 i = 0; i < offsets.size(); ++i)
-			{
-				if (offsets[i] % 4 != 0)
-					return true;
-			}
-			return false;
-		}
-	};
+        bool needsScalar() const
+        {
+            for (uint32_t i = 0; i < offsets.size(); ++i)
+            {
+                if (offsets[i] % 4 != 0)
+                    return true;
+            }
+            return false;
+        }
+    };
 
-	PaddingTest(tcu::TestContext& testCtx, const CaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, caseDef.testName())
-		, m_caseDef							(caseDef)
-		, m_computePipelineConstructionType	(computePipelineConstructionType)
-	{
-	}
+    PaddingTest(tcu::TestContext &testCtx, const CaseDef &caseDef,
+                const vk::ComputePipelineConstructionType computePipelineConstructionType)
+        : TestCase(testCtx, caseDef.testName())
+        , m_caseDef(caseDef)
+        , m_computePipelineConstructionType(computePipelineConstructionType)
+    {
+    }
 
-	virtual void checkSupport(Context& context) const;
-	void initPrograms(SourceCollections& sourceCollections) const;
+    virtual void checkSupport(Context &context) const;
+    void initPrograms(SourceCollections &sourceCollections) const;
 
-	class Instance : public vkt::TestInstance
-	{
-	public:
-		Instance(Context& context, const CaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-			: TestInstance						(context)
-			, m_caseDef							(caseDef)
-			, m_computePipelineConstructionType	(computePipelineConstructionType)
-		{
-		}
+    class Instance : public vkt::TestInstance
+    {
+    public:
+        Instance(Context &context, const CaseDef &caseDef,
+                 const vk::ComputePipelineConstructionType computePipelineConstructionType)
+            : TestInstance(context)
+            , m_caseDef(caseDef)
+            , m_computePipelineConstructionType(computePipelineConstructionType)
+        {
+        }
 
-		tcu::TestStatus iterate(void)
-		{
-			return runCompute(m_context, 1u, m_computePipelineConstructionType);
-		}
+        tcu::TestStatus iterate(void)
+        {
+            return runCompute(m_context, 1u, m_computePipelineConstructionType);
+        }
 
-	private:
-		CaseDef								m_caseDef;
-		vk::ComputePipelineConstructionType m_computePipelineConstructionType;
-	};
+    private:
+        CaseDef m_caseDef;
+        vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+    };
 
-	TestInstance* createInstance(Context& context) const
-	{
-		return new Instance(context, m_caseDef, m_computePipelineConstructionType);
-	}
+    TestInstance *createInstance(Context &context) const
+    {
+        return new Instance(context, m_caseDef, m_computePipelineConstructionType);
+    }
 
 private:
-	CaseDef								m_caseDef;
-	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+    CaseDef m_caseDef;
+    vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-void PaddingTest::checkSupport(Context& context) const
+void PaddingTest::checkSupport(Context &context) const
 {
-	CheckSupportParams p;
-	deMemset(&p, 0, sizeof(p));
+    CheckSupportParams p;
+    deMemset(&p, 0, sizeof(p));
 
-	for (deUint32 i = 0; i < m_caseDef.types.size(); ++i)
-		p.useType(m_caseDef.types[i]);
+    for (uint32_t i = 0; i < m_caseDef.types.size(); ++i)
+        p.useType(m_caseDef.types[i]);
 
-	p.needsScalar = m_caseDef.needsScalar();
-	p.computePipelineConstructionType = m_computePipelineConstructionType;
+    p.needsScalar                     = m_caseDef.needsScalar();
+    p.computePipelineConstructionType = m_computePipelineConstructionType;
 
-	checkSupportWithParams(context, p);
+    checkSupportWithParams(context, p);
 }
 
-void PaddingTest::initPrograms(SourceCollections& sourceCollections) const
+void PaddingTest::initPrograms(SourceCollections &sourceCollections) const
 {
-	using namespace glu;
+    using namespace glu;
 
-	std::ostringstream src;
+    std::ostringstream src;
 
-	src << "#version 450\n"
-		<< "#extension GL_EXT_shared_memory_block : enable\n"
-		<< "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n"
-		<< "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
+    src << "#version 450\n"
+        << "#extension GL_EXT_shared_memory_block : enable\n"
+        << "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n"
+        << "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
 
-	src	<< "shared A { uint32_t words[32]; };\n";
+    src << "shared A { uint32_t words[32]; };\n";
 
-	if (m_caseDef.needsScalar())
-	{
-		src << "#extension GL_EXT_scalar_block_layout : enable\n"
-			<< "layout (scalar) ";
-	}
+    if (m_caseDef.needsScalar())
+    {
+        src << "#extension GL_EXT_scalar_block_layout : enable\n"
+            << "layout (scalar) ";
+    }
 
-	src << "shared B {\n";
+    src << "shared B {\n";
 
-	for (deUint32 i = 0; i < m_caseDef.types.size(); ++i)
-	{
-		src << "  layout(offset = " << m_caseDef.offsets[i] << ") "
-			<< glu::getDataTypeName(m_caseDef.types[i]) << " x" << i << ";\n";
-	}
+    for (uint32_t i = 0; i < m_caseDef.types.size(); ++i)
+    {
+        src << "  layout(offset = " << m_caseDef.offsets[i] << ") " << glu::getDataTypeName(m_caseDef.types[i]) << " x"
+            << i << ";\n";
+    }
 
-	src	<< "};\n"
-		<< "layout(set = 0, binding = 0) buffer Result { uint result; };\n";
+    src << "};\n"
+        << "layout(set = 0, binding = 0) buffer Result { uint result; };\n";
 
-	src	<< "void main() {\n"
-		<< "for (int i = 0; i < 32; i++) words[i] = 0;\n";
+    src << "void main() {\n"
+        << "for (int i = 0; i < 32; i++) words[i] = 0;\n";
 
-	for (deUint32 i = 0; i < m_caseDef.values.size(); ++i)
-		src << "x" << i << " = " << m_caseDef.values[i] << ";\n";
+    for (uint32_t i = 0; i < m_caseDef.values.size(); ++i)
+        src << "x" << i << " = " << m_caseDef.values[i] << ";\n";
 
-	src << "result = 32;\n";
-	for (deUint32 i = 0; i < 32; ++i)
-	{
-		src	<< "if (words[" << std::dec << i << "] == 0x"
-			<< std::uppercase << std::hex << m_caseDef.expected[i]
-			<< ") result--;\n";
-	}
+    src << "result = 32;\n";
+    for (uint32_t i = 0; i < 32; ++i)
+    {
+        src << "if (words[" << std::dec << i << "] == 0x" << std::uppercase << std::hex << m_caseDef.expected[i]
+            << ") result--;\n";
+    }
 
-	src << "}\n";
+    src << "}\n";
 
-	sourceCollections.glslSources.add("comp")
-		<< ComputeSource(src.str())
-		<< vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
-								  vk::ShaderBuildOptions::Flags(0u), true);
+    sourceCollections.glslSources.add("comp")
+        << ComputeSource(src.str())
+        << vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
+                                  vk::ShaderBuildOptions::Flags(0u), true);
 }
 
-void AddPaddingTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
+void AddPaddingTests(tcu::TestCaseGroup *group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	using namespace glu;
+    using namespace glu;
 
-	for (deUint32 i = 0; i < 31; ++i)
-	{
-		for (deUint32 j = i + 1; j < 32; j += 4)
-		{
-			PaddingTest::CaseDef c;
-			deMemset(&c, 0, sizeof(c));
+    for (uint32_t i = 0; i < 31; ++i)
+    {
+        for (uint32_t j = i + 1; j < 32; j += 4)
+        {
+            PaddingTest::CaseDef c;
+            deMemset(&c, 0, sizeof(c));
 
-			c.add(TYPE_UINT, 4 * i, "0x1234");
-			c.expected[i] = 0x1234;
+            c.add(TYPE_UINT, 4 * i, "0x1234");
+            c.expected[i] = 0x1234;
 
-			c.add(TYPE_UINT, 4 * j, "0x5678");
-			c.expected[j] = 0x5678;
+            c.add(TYPE_UINT, 4 * j, "0x5678");
+            c.expected[j] = 0x5678;
 
-			group->addChild(new PaddingTest(group->getTestContext(), c, computePipelineConstructionType));
-		}
-	}
+            group->addChild(new PaddingTest(group->getTestContext(), c, computePipelineConstructionType));
+        }
+    }
 
-	for (deUint32 i = 0; i < 127; ++i)
-	{
-		for (deUint32 j = i + 1; j < 32; j += 16)
-		{
-			PaddingTest::CaseDef c;
-			deMemset(&c, 0, sizeof(c));
+    for (uint32_t i = 0; i < 127; ++i)
+    {
+        for (uint32_t j = i + 1; j < 32; j += 16)
+        {
+            PaddingTest::CaseDef c;
+            deMemset(&c, 0, sizeof(c));
 
-			deUint8* expected = reinterpret_cast<deUint8*>(c.expected);
+            uint8_t *expected = reinterpret_cast<uint8_t *>(c.expected);
 
-			c.add(TYPE_UINT8, i, "uint8_t(0xAA)");
-			expected[i] = 0xAA;
+            c.add(TYPE_UINT8, i, "uint8_t(0xAA)");
+            expected[i] = 0xAA;
 
-			c.add(TYPE_UINT8, j, "uint8_t(0xBB)");
-			expected[j] = 0xBB;
+            c.add(TYPE_UINT8, j, "uint8_t(0xBB)");
+            expected[j] = 0xBB;
 
-			group->addChild(new PaddingTest(group->getTestContext(), c, computePipelineConstructionType));
-		}
-	}
+            group->addChild(new PaddingTest(group->getTestContext(), c, computePipelineConstructionType));
+        }
+    }
 }
 
 class SizeTest : public vkt::TestCase
 {
 public:
-	SizeTest(tcu::TestContext& testCtx, deUint32 size, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, de::toString(size))
-		, m_size							(size)
-		, m_computePipelineConstructionType	(computePipelineConstructionType)
-	{
-		DE_ASSERT(size % 8 == 0);
-	}
+    SizeTest(tcu::TestContext &testCtx, uint32_t size,
+             const vk::ComputePipelineConstructionType computePipelineConstructionType)
+        : TestCase(testCtx, de::toString(size))
+        , m_size(size)
+        , m_computePipelineConstructionType(computePipelineConstructionType)
+    {
+        DE_ASSERT(size % 8 == 0);
+    }
 
-	virtual void checkSupport(Context& context) const;
-	void initPrograms(SourceCollections& sourceCollections) const;
+    virtual void checkSupport(Context &context) const;
+    void initPrograms(SourceCollections &sourceCollections) const;
 
-	class Instance : public vkt::TestInstance
-	{
-	public:
-		Instance(Context& context, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-			: TestInstance						(context)
-			, m_computePipelineConstructionType	(computePipelineConstructionType)
-		{
-		}
+    class Instance : public vkt::TestInstance
+    {
+    public:
+        Instance(Context &context, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+            : TestInstance(context)
+            , m_computePipelineConstructionType(computePipelineConstructionType)
+        {
+        }
 
-		tcu::TestStatus iterate(void)
-		{
-			return runCompute(m_context, 1u, m_computePipelineConstructionType);
-		}
-	private:
-		vk::ComputePipelineConstructionType m_computePipelineConstructionType;
-	};
+        tcu::TestStatus iterate(void)
+        {
+            return runCompute(m_context, 1u, m_computePipelineConstructionType);
+        }
 
-	TestInstance* createInstance(Context& context) const
-	{
-		return new Instance(context, m_computePipelineConstructionType);
-	}
+    private:
+        vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+    };
+
+    TestInstance *createInstance(Context &context) const
+    {
+        return new Instance(context, m_computePipelineConstructionType);
+    }
 
 private:
-	deUint32							m_size;
-	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+    uint32_t m_size;
+    vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-void SizeTest::checkSupport(Context& context) const
+void SizeTest::checkSupport(Context &context) const
 {
-	context.requireDeviceFunctionality("VK_KHR_workgroup_memory_explicit_layout");
-	context.requireDeviceFunctionality("VK_KHR_spirv_1_4");
+    context.requireDeviceFunctionality("VK_KHR_workgroup_memory_explicit_layout");
+    context.requireDeviceFunctionality("VK_KHR_spirv_1_4");
 
-	if (context.getDeviceProperties().limits.maxComputeSharedMemorySize < m_size)
-		TCU_THROW(NotSupportedError, "Not enough shared memory supported.");
+    if (context.getDeviceProperties().limits.maxComputeSharedMemorySize < m_size)
+        TCU_THROW(NotSupportedError, "Not enough shared memory supported.");
 
-	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
+    checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                  m_computePipelineConstructionType);
 }
 
-void SizeTest::initPrograms(SourceCollections& sourceCollections) const
+void SizeTest::initPrograms(SourceCollections &sourceCollections) const
 {
-	using namespace glu;
+    using namespace glu;
 
-	std::ostringstream src;
+    std::ostringstream src;
 
-	src << "#version 450\n";
-	src << "#extension GL_EXT_shared_memory_block : enable\n";
-	src << "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n";
-	src << "layout(local_size_x = 8, local_size_y = 1, local_size_z = 1) in;\n";
+    src << "#version 450\n";
+    src << "#extension GL_EXT_shared_memory_block : enable\n";
+    src << "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n";
+    src << "layout(local_size_x = 8, local_size_y = 1, local_size_z = 1) in;\n";
 
-	for (deUint32 i = 0; i < 8; ++i)
-		src << "shared B" << i << " { uint32_t words[" << (m_size / 4) << "]; } b" << i << ";\n";
+    for (uint32_t i = 0; i < 8; ++i)
+        src << "shared B" << i << " { uint32_t words[" << (m_size / 4) << "]; } b" << i << ";\n";
 
-	src << "layout(set = 0, binding = 0) buffer Result { uint result; };\n";
+    src << "layout(set = 0, binding = 0) buffer Result { uint result; };\n";
 
-	src	<< "void main() {\n";
-	src << "  int index = int(gl_LocalInvocationIndex);\n";
-	src << "  int size = " << (m_size / 4) << ";\n";
+    src << "void main() {\n";
+    src << "  int index = int(gl_LocalInvocationIndex);\n";
+    src << "  int size = " << (m_size / 4) << ";\n";
 
-	src << "  if (index == 0) for (int x = 0; x < size; x++) b0.words[x] = 0xFFFF;\n";
-	src << "  barrier();\n";
+    src << "  if (index == 0) for (int x = 0; x < size; x++) b0.words[x] = 0xFFFF;\n";
+    src << "  barrier();\n";
 
-	src << "  for (int x = 0; x < size; x++) {\n";
-	src << "    if (x % 8 != index) continue;\n";
-	for (deUint32 i = 0; i < 8; ++i)
-		src << "    if (index == " << i << ") b" << i << ".words[x] = (x << 3) | " << i << ";\n";
-	src << "  }\n";
+    src << "  for (int x = 0; x < size; x++) {\n";
+    src << "    if (x % 8 != index) continue;\n";
+    for (uint32_t i = 0; i < 8; ++i)
+        src << "    if (index == " << i << ") b" << i << ".words[x] = (x << 3) | " << i << ";\n";
+    src << "  }\n";
 
-	src << "  barrier();\n";
-	src << "  if (index != 0) return;\n";
+    src << "  barrier();\n";
+    src << "  if (index != 0) return;\n";
 
-	src << "  int r = size;\n";
-	src << "  for (int x = 0; x < size; x++) {\n";
-	src << "    int expected = (x << 3) | (x % 8);\n";
-	src << "    if (b0.words[x] == expected) r--;\n";
-	src << "  }\n";
-	src << "  result = r;\n";
-	src << "}\n";
+    src << "  int r = size;\n";
+    src << "  for (int x = 0; x < size; x++) {\n";
+    src << "    int expected = (x << 3) | (x % 8);\n";
+    src << "    if (b0.words[x] == expected) r--;\n";
+    src << "  }\n";
+    src << "  result = r;\n";
+    src << "}\n";
 
-	sourceCollections.glslSources.add("comp")
-		<< ComputeSource(src.str())
-		<< vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
-								  vk::ShaderBuildOptions::Flags(0u), true);
+    sourceCollections.glslSources.add("comp")
+        << ComputeSource(src.str())
+        << vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
+                                  vk::ShaderBuildOptions::Flags(0u), true);
 }
 
-void AddSizeTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType computePipelineConstructionType)
+void AddSizeTests(tcu::TestCaseGroup *group, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	deUint32 sizes[] =
-	{
-		8u,
-		64u,
-		4096u,
+    uint32_t sizes[] = {
+        8u,
+        64u,
+        4096u,
 
-		// Dynamic generation of shaders based on properties reported
-		// by devices is not allowed in the CTS, so let's create a few
-		// variants based on common known maximum sizes.
-		16384u,
-		32768u,
-		49152u,
-		65536u,
-	};
+        // Dynamic generation of shaders based on properties reported
+        // by devices is not allowed in the CTS, so let's create a few
+        // variants based on common known maximum sizes.
+        16384u,
+        32768u,
+        49152u,
+        65536u,
+    };
 
-	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(sizes); ++i)
-		group->addChild(new SizeTest(group->getTestContext(), sizes[i], computePipelineConstructionType));
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(sizes); ++i)
+        group->addChild(new SizeTest(group->getTestContext(), sizes[i], computePipelineConstructionType));
 }
 
-cts_amber::AmberTestCase* CreateAmberTestCase(tcu::TestContext& testCtx,
-											  const char* name,
-											  const std::string& filename,
-											  const std::vector<std::string>& requirements = std::vector<std::string>(),
-											  bool zeroinit = false,
-											  bool shaderObjects = false)
+cts_amber::AmberTestCase *CreateAmberTestCase(tcu::TestContext &testCtx, const char *name, const std::string &filename,
+                                              const std::vector<std::string> &requirements = std::vector<std::string>(),
+                                              bool zeroinit = false, bool shaderObjects = false)
 {
-	vk::SpirVAsmBuildOptions asm_options(VK_MAKE_API_VERSION(0, 1, 1, 0), vk::SPIRV_VERSION_1_4);
-	asm_options.supports_VK_KHR_spirv_1_4 = true;
+    vk::SpirVAsmBuildOptions asm_options(VK_MAKE_API_VERSION(0, 1, 1, 0), vk::SPIRV_VERSION_1_4);
+    asm_options.supports_VK_KHR_spirv_1_4 = true;
 
-	const std::string test_filename = shaderObjects ? "shader_object_" + std::string(filename) : filename;
+    const std::string test_filename = shaderObjects ? "shader_object_" + std::string(filename) : filename;
 
-	cts_amber::AmberTestCase *t = cts_amber::createAmberTestCase(testCtx, name, "compute/workgroup_memory_explicit_layout", test_filename.c_str(), requirements);
-	t->setSpirVAsmBuildOptions(asm_options);
-	t->addRequirement("VK_KHR_workgroup_memory_explicit_layout");
-	t->addRequirement("VK_KHR_spirv_1_4");
-	if (zeroinit)
-	{
-		t->addRequirement("VK_KHR_zero_initialize_workgroup_memory");
-	}
-	if (shaderObjects)
-	{
-		t->addRequirement("VK_EXT_shader_object");
-	}
-	return t;
+    cts_amber::AmberTestCase *t = cts_amber::createAmberTestCase(
+        testCtx, name, "compute/workgroup_memory_explicit_layout", test_filename.c_str(), requirements);
+    t->setSpirVAsmBuildOptions(asm_options);
+    t->addRequirement("VK_KHR_workgroup_memory_explicit_layout");
+    t->addRequirement("VK_KHR_spirv_1_4");
+    if (zeroinit)
+    {
+        t->addRequirement("VK_KHR_zero_initialize_workgroup_memory");
+    }
+    if (shaderObjects)
+    {
+        t->addRequirement("VK_EXT_shader_object");
+    }
+    return t;
 }
 
-void AddCopyMemoryTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType pipelineConstructionType)
+void AddCopyMemoryTests(tcu::TestCaseGroup *group, vk::ComputePipelineConstructionType pipelineConstructionType)
 {
-	tcu::TestContext& testCtx = group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	bool shaderObject = (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV) || (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY);
+    bool shaderObject = (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV) ||
+                        (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY);
 
-	group->addChild(CreateAmberTestCase(testCtx, "basic", "copy_memory_basic.amber", {}, false, shaderObject));
-	group->addChild(CreateAmberTestCase(testCtx, "two_invocations", "copy_memory_two_invocations.amber", {}, false, shaderObject));
-	group->addChild(CreateAmberTestCase(testCtx, "variable_pointers", "copy_memory_variable_pointers.amber",
-										{ "VariablePointerFeatures.variablePointers" }, false, shaderObject));
+    group->addChild(CreateAmberTestCase(testCtx, "basic", "copy_memory_basic.amber", {}, false, shaderObject));
+    group->addChild(
+        CreateAmberTestCase(testCtx, "two_invocations", "copy_memory_two_invocations.amber", {}, false, shaderObject));
+    group->addChild(CreateAmberTestCase(testCtx, "variable_pointers", "copy_memory_variable_pointers.amber",
+                                        {"VariablePointerFeatures.variablePointers"}, false, shaderObject));
 }
 
-void AddZeroInitializeExtensionTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType pipelineConstructionType)
+void AddZeroInitializeExtensionTests(tcu::TestCaseGroup *group,
+                                     vk::ComputePipelineConstructionType pipelineConstructionType)
 {
-	tcu::TestContext& testCtx = group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	bool shaderObject = (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV) || (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY);
+    bool shaderObject = (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV) ||
+                        (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY);
 
-	group->addChild(CreateAmberTestCase(testCtx, "block", "zero_ext_block.amber", std::vector<std::string>(), true, shaderObject));
-	group->addChild(CreateAmberTestCase(testCtx, "other_block", "zero_ext_other_block.amber", std::vector<std::string>(), true, shaderObject));
-	group->addChild(CreateAmberTestCase(testCtx, "block_with_offset", "zero_ext_block_with_offset.amber", std::vector<std::string>(), true, shaderObject));
+    group->addChild(
+        CreateAmberTestCase(testCtx, "block", "zero_ext_block.amber", std::vector<std::string>(), true, shaderObject));
+    group->addChild(CreateAmberTestCase(testCtx, "other_block", "zero_ext_other_block.amber",
+                                        std::vector<std::string>(), true, shaderObject));
+    group->addChild(CreateAmberTestCase(testCtx, "block_with_offset", "zero_ext_block_with_offset.amber",
+                                        std::vector<std::string>(), true, shaderObject));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
+tcu::TestCaseGroup *createWorkgroupMemoryExplicitLayoutTests(
+    tcu::TestContext &testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> tests(new tcu::TestCaseGroup(testCtx, "workgroup_memory_explicit_layout"));
+    de::MovePtr<tcu::TestCaseGroup> tests(new tcu::TestCaseGroup(testCtx, "workgroup_memory_explicit_layout"));
 
-	// Aliasing between different blocks and types
-	tcu::TestCaseGroup* alias = new tcu::TestCaseGroup(testCtx, "alias");
-	AddAliasTests(alias, computePipelineConstructionType);
-	tests->addChild(alias);
+    // Aliasing between different blocks and types
+    tcu::TestCaseGroup *alias = new tcu::TestCaseGroup(testCtx, "alias");
+    AddAliasTests(alias, computePipelineConstructionType);
+    tests->addChild(alias);
 
-	// Manually zero initialize a block and read from another
-	tcu::TestCaseGroup* zero = new tcu::TestCaseGroup(testCtx, "zero");
-	AddZeroTests(zero, computePipelineConstructionType);
-	tests->addChild(zero);
+    // Manually zero initialize a block and read from another
+    tcu::TestCaseGroup *zero = new tcu::TestCaseGroup(testCtx, "zero");
+    AddZeroTests(zero, computePipelineConstructionType);
+    tests->addChild(zero);
 
-	tcu::TestCaseGroup* padding = new tcu::TestCaseGroup(testCtx, "padding");
-	AddPaddingTests(padding, computePipelineConstructionType);
-	tests->addChild(padding);
+    tcu::TestCaseGroup *padding = new tcu::TestCaseGroup(testCtx, "padding");
+    AddPaddingTests(padding, computePipelineConstructionType);
+    tests->addChild(padding);
 
-	tcu::TestCaseGroup* size = new tcu::TestCaseGroup(testCtx, "size");
-	AddSizeTests(size, computePipelineConstructionType);
-	tests->addChild(size);
+    tcu::TestCaseGroup *size = new tcu::TestCaseGroup(testCtx, "size");
+    AddSizeTests(size, computePipelineConstructionType);
+    tests->addChild(size);
 
-	tcu::TestCaseGroup* copy_memory = new tcu::TestCaseGroup(testCtx, "copy_memory");
-	AddCopyMemoryTests(copy_memory, computePipelineConstructionType);
-	tests->addChild(copy_memory);
+    tcu::TestCaseGroup *copy_memory = new tcu::TestCaseGroup(testCtx, "copy_memory");
+    AddCopyMemoryTests(copy_memory, computePipelineConstructionType);
+    tests->addChild(copy_memory);
 
-	tcu::TestCaseGroup* zero_ext = new tcu::TestCaseGroup(testCtx, "zero_ext");
-	AddZeroInitializeExtensionTests(zero_ext, computePipelineConstructionType);
-	tests->addChild(zero_ext);
+    tcu::TestCaseGroup *zero_ext = new tcu::TestCaseGroup(testCtx, "zero_ext");
+    AddZeroInitializeExtensionTests(zero_ext, computePipelineConstructionType);
+    tests->addChild(zero_ext);
 
-	return tests.release();
+    return tests.release();
 }
 
-} // compute
-} // vkt
+} // namespace compute
+} // namespace vkt

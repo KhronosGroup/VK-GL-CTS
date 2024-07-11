@@ -42,82 +42,86 @@ using tcu::RGBA;
 namespace
 {
 
-static ComputeShaderSpec getComputeShaderSpec ()
+static ComputeShaderSpec getComputeShaderSpec()
 {
-  std::vector<float> inoutFloats	(10, 0);
-  std::vector<int> inputInts(10, 0);
+    std::vector<float> inoutFloats(10, 0);
+    std::vector<int> inputInts(10, 0);
 
-  // in one of tests we need to do imageLoad
-  // we don't need any special values in here
+    // in one of tests we need to do imageLoad
+    // we don't need any special values in here
 
-  ComputeShaderSpec spec;
-  spec.spirvVersion = SPIRV_VERSION_1_6;
-  spec.extensions.push_back("VK_KHR_shader_non_semantic_info");
-  spec.numWorkGroups = tcu::IVec3(1, 1, 1);
-  spec.inputs.push_back(BufferSp(new Float32Buffer(inoutFloats)));
-  spec.outputs.push_back(BufferSp(new Float32Buffer(inoutFloats)));
-  return spec;
+    ComputeShaderSpec spec;
+    spec.spirvVersion = SPIRV_VERSION_1_6;
+    spec.extensions.push_back("VK_KHR_shader_non_semantic_info");
+    spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+    spec.inputs.push_back(BufferSp(new Float32Buffer(inoutFloats)));
+    spec.outputs.push_back(BufferSp(new Float32Buffer(inoutFloats)));
+    return spec;
 }
 
 class SpvAsmSpirvRelaxedForwardReferenceBasicInstance : public ComputeShaderSpec, public SpvAsmComputeShaderInstance
 {
-  public:
-    SpvAsmSpirvRelaxedForwardReferenceBasicInstance		(Context& ctx, const std::string& shader);
+public:
+    SpvAsmSpirvRelaxedForwardReferenceBasicInstance(Context &ctx, const std::string &shader);
 
-    tcu::TestStatus			iterate				(void);
+    tcu::TestStatus iterate(void);
 
-  protected:
+protected:
     std::string m_shaderCode;
 };
 
-SpvAsmSpirvRelaxedForwardReferenceBasicInstance::SpvAsmSpirvRelaxedForwardReferenceBasicInstance(Context& ctx, const std::string& shader)
-  : ComputeShaderSpec(getComputeShaderSpec())
+SpvAsmSpirvRelaxedForwardReferenceBasicInstance::SpvAsmSpirvRelaxedForwardReferenceBasicInstance(
+    Context &ctx, const std::string &shader)
+    : ComputeShaderSpec(getComputeShaderSpec())
     , SpvAsmComputeShaderInstance(ctx, *this)
     , m_shaderCode(shader)
 {
 }
 
-tcu::TestStatus SpvAsmSpirvRelaxedForwardReferenceBasicInstance::iterate (void)
+tcu::TestStatus SpvAsmSpirvRelaxedForwardReferenceBasicInstance::iterate(void)
 {
-  return SpvAsmComputeShaderInstance::iterate();
+    return SpvAsmComputeShaderInstance::iterate();
 }
 
 class SpvAsmSpirvRelaxedForwardReferenceBasicCase : public TestCase
 {
-  public:
-    SpvAsmSpirvRelaxedForwardReferenceBasicCase		(tcu::TestContext& testCtx, const char* name, const std::string& shader);
+public:
+    SpvAsmSpirvRelaxedForwardReferenceBasicCase(tcu::TestContext &testCtx, const char *name, const std::string &shader);
 
-    void			checkSupport			(Context& context) const;
-    void			initPrograms			(vk::SourceCollections& programCollection) const;
-    TestInstance*	createInstance			(Context& context) const;
+    void checkSupport(Context &context) const;
+    void initPrograms(vk::SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &context) const;
 
-  protected:
+protected:
     std::string m_shaderSource;
 };
 
-SpvAsmSpirvRelaxedForwardReferenceBasicCase::SpvAsmSpirvRelaxedForwardReferenceBasicCase(tcu::TestContext& testCtx, const char* name, const std::string& shader)
-  : TestCase (testCtx, name)
+SpvAsmSpirvRelaxedForwardReferenceBasicCase::SpvAsmSpirvRelaxedForwardReferenceBasicCase(tcu::TestContext &testCtx,
+                                                                                         const char *name,
+                                                                                         const std::string &shader)
+    : TestCase(testCtx, name)
     , m_shaderSource(shader)
 {
 }
 
-void SpvAsmSpirvRelaxedForwardReferenceBasicCase::checkSupport(Context& context) const
+void SpvAsmSpirvRelaxedForwardReferenceBasicCase::checkSupport(Context &context) const
 {
-  context.requireDeviceFunctionality("VK_KHR_shader_non_semantic_info");
-  context.requireDeviceFunctionality("VK_KHR_shader_relaxed_extended_instruction");
+    context.requireDeviceFunctionality("VK_KHR_shader_non_semantic_info");
+    context.requireDeviceFunctionality("VK_KHR_shader_relaxed_extended_instruction");
 }
 
-void SpvAsmSpirvRelaxedForwardReferenceBasicCase::initPrograms (SourceCollections& programCollection) const
+void SpvAsmSpirvRelaxedForwardReferenceBasicCase::initPrograms(SourceCollections &programCollection) const
 {
-  programCollection.spirvAsmSources.add("compute") << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_6) << m_shaderSource;
+    programCollection.spirvAsmSources.add("compute")
+        << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_6) << m_shaderSource;
 }
 
-TestInstance* SpvAsmSpirvRelaxedForwardReferenceBasicCase::createInstance (Context& context) const
+TestInstance *SpvAsmSpirvRelaxedForwardReferenceBasicCase::createInstance(Context &context) const
 {
-  return new SpvAsmSpirvRelaxedForwardReferenceBasicInstance(context, m_shaderSource);
+    return new SpvAsmSpirvRelaxedForwardReferenceBasicInstance(context, m_shaderSource);
 }
 
-} // anonymous
+} // namespace
 
 /* HLSL Shader, compiled with:
  * `dxc -T cs_6_0 -fspv-target-env=vulkan1.3 -fspv-debug=vulkan-with-source -spirv -Od`
@@ -140,7 +144,7 @@ TestInstance* SpvAsmSpirvRelaxedForwardReferenceBasicCase::createInstance (Conte
  * }
  * ```
  */
-const char* kStaticMethodShader = R"(
+const char *kStaticMethodShader = R"(
            OpCapability Shader
            OpExtension "SPV_KHR_non_semantic_info"
            OpExtension "SPV_KHR_relaxed_extended_instruction"
@@ -273,24 +277,21 @@ OpReturn
 OpFunctionEnd
 )";
 
-tcu::TestCaseGroup* createRelaxedWithForwardReferenceGraphicsGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createRelaxedWithForwardReferenceGraphicsGroup(tcu::TestContext &testCtx)
 {
-  de::MovePtr<tcu::TestCaseGroup>	group		(new tcu::TestCaseGroup(testCtx, "relaxed_with_forward_reference"));
+    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "relaxed_with_forward_reference"));
 
-  struct TestData
-  {
-    const char*	name;
-    std::string	shader;
-  };
-  std::vector<TestData> testList =
-  {
-    { "static_method_shader", kStaticMethodShader }
-  };
+    struct TestData
+    {
+        const char *name;
+        std::string shader;
+    };
+    std::vector<TestData> testList = {{"static_method_shader", kStaticMethodShader}};
 
-  for (const auto& item : testList)
-    group->addChild(new SpvAsmSpirvRelaxedForwardReferenceBasicCase(testCtx, item.name, item.shader));
-  return group.release();
+    for (const auto &item : testList)
+        group->addChild(new SpvAsmSpirvRelaxedForwardReferenceBasicCase(testCtx, item.name, item.shader));
+    return group.release();
 }
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt

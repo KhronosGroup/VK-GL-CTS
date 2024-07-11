@@ -37,11 +37,11 @@ namespace glcts
 /* Represents a specific texture storage configuration */
 struct StorageConfig
 {
-	glw::GLuint m_depth;
-	glw::GLuint m_height;
-	glw::GLuint m_levels;
-	glw::GLuint m_to_id;
-	glw::GLuint m_width;
+    glw::GLuint m_depth;
+    glw::GLuint m_height;
+    glw::GLuint m_levels;
+    glw::GLuint m_to_id;
+    glw::GLuint m_width;
 };
 
 /**  Implementation of the first four paragraphs of Texture Cube Map Array Test 7.
@@ -76,36 +76,36 @@ struct StorageConfig
 class TextureCubeMapArrayGenerateMipMapFilterable : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayGenerateMipMapFilterable(Context& context, const ExtParameters& extParams, const char* name,
-												const char* description, STORAGE_TYPE storageType);
+    /* Public methods */
+    TextureCubeMapArrayGenerateMipMapFilterable(Context &context, const ExtParameters &extParams, const char *name,
+                                                const char *description, STORAGE_TYPE storageType);
 
-	virtual ~TextureCubeMapArrayGenerateMipMapFilterable(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayGenerateMipMapFilterable(void)
+    {
+    }
 
-	void		  deinit(void);
-	void		  init(void);
-	IterateResult iterate(void);
+    void deinit(void);
+    void init(void);
+    IterateResult iterate(void);
 
 private:
-	/* Private method */
-	void generateTestData(int face, unsigned char* data, int width, int height);
-	void initTest();
+    /* Private method */
+    void generateTestData(int face, unsigned char *data, int width, int height);
+    void initTest();
 
-	/* Private constants */
-	static const int		   m_n_colors_per_layer_face = 2;
-	static const int		   m_n_components			 = 4;
-	static const int		   m_n_max_faces			 = 18;
-	static const unsigned char m_layer_face_data[m_n_max_faces][m_n_colors_per_layer_face][m_n_components];
+    /* Private constants */
+    static const int m_n_colors_per_layer_face = 2;
+    static const int m_n_components            = 4;
+    static const int m_n_max_faces             = 18;
+    static const unsigned char m_layer_face_data[m_n_max_faces][m_n_colors_per_layer_face][m_n_components];
 
-	/* Variables for general usage */
-	glw::GLuint				   m_fbo_id;
-	std::vector<StorageConfig> m_storage_configs;
-	STORAGE_TYPE			   m_storage_type;
+    /* Variables for general usage */
+    glw::GLuint m_fbo_id;
+    std::vector<StorageConfig> m_storage_configs;
+    STORAGE_TYPE m_storage_type;
 
-	unsigned char* m_reference_data_ptr;
-	unsigned char* m_rendered_data_ptr;
+    unsigned char *m_reference_data_ptr;
+    unsigned char *m_rendered_data_ptr;
 };
 
 /** Implementats the last paragraph of Texture Cube Map Array Test 7.
@@ -121,28 +121,28 @@ private:
 class TextureCubeMapArrayGenerateMipMapNonFilterable : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayGenerateMipMapNonFilterable(Context& context, const ExtParameters& extParams, const char* name,
-												   const char* description, STORAGE_TYPE storageType);
+    /* Public methods */
+    TextureCubeMapArrayGenerateMipMapNonFilterable(Context &context, const ExtParameters &extParams, const char *name,
+                                                   const char *description, STORAGE_TYPE storageType);
 
-	virtual ~TextureCubeMapArrayGenerateMipMapNonFilterable(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayGenerateMipMapNonFilterable(void)
+    {
+    }
 
-	void		  deinit(void);
-	void		  init(void);
-	void		  initTest(void);
-	IterateResult iterate(void);
+    void deinit(void);
+    void init(void);
+    void initTest(void);
+    IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void generateTestData(int face, unsigned char* data, int size);
+    /* Private methods */
+    void generateTestData(int face, unsigned char *data, int size);
 
-	/* Variables for general usage */
-	std::vector<StorageConfig> m_non_filterable_texture_configs;
-	STORAGE_TYPE			   m_storage_type;
+    /* Variables for general usage */
+    std::vector<StorageConfig> m_non_filterable_texture_configs;
+    STORAGE_TYPE m_storage_type;
 };
 
-} /* glcts */
+} // namespace glcts
 
 #endif // _ESEXTCTEXTURECUBEMAPARRAYGENERATEMIPMAP_HPP

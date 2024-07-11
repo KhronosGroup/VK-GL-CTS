@@ -36,20 +36,19 @@ namespace vkt
 {
 namespace compute
 {
-vk::VkBufferImageCopy			makeBufferImageCopy				(const vk::VkExtent3D						extent,
-																 const deUint32								arraySize);
+vk::VkBufferImageCopy makeBufferImageCopy(const vk::VkExtent3D extent, const uint32_t arraySize);
 
-inline vk::VkExtent3D makeExtent3D (const tcu::IVec3& vec)
+inline vk::VkExtent3D makeExtent3D(const tcu::IVec3 &vec)
 {
-	return vk::makeExtent3D(vec.x(), vec.y(), vec.z());
+    return vk::makeExtent3D(vec.x(), vec.y(), vec.z());
 }
 
-inline vk::VkDeviceSize getImageSizeBytes (const tcu::IVec3& imageSize, const vk::VkFormat format)
+inline vk::VkDeviceSize getImageSizeBytes(const tcu::IVec3 &imageSize, const vk::VkFormat format)
 {
-	return tcu::getPixelSize(vk::mapVkFormat(format)) * imageSize.x() * imageSize.y() * imageSize.z();
+    return tcu::getPixelSize(vk::mapVkFormat(format)) * imageSize.x() * imageSize.y() * imageSize.z();
 }
 
-} // compute
-} // vkt
+} // namespace compute
+} // namespace vkt
 
 #endif // _VKTCOMPUTETESTSUTIL_HPP

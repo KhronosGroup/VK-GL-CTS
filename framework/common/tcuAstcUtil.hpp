@@ -35,46 +35,48 @@ namespace astc
 
 enum BlockTestType
 {
-	BLOCK_TEST_TYPE_VOID_EXTENT_LDR = 0,
-	BLOCK_TEST_TYPE_VOID_EXTENT_HDR,
-	BLOCK_TEST_TYPE_WEIGHT_GRID,
-	BLOCK_TEST_TYPE_WEIGHT_ISE,
-	BLOCK_TEST_TYPE_CEMS,
-	BLOCK_TEST_TYPE_PARTITION_SEED,
-	BLOCK_TEST_TYPE_ENDPOINT_VALUE_LDR,
-	BLOCK_TEST_TYPE_ENDPOINT_VALUE_HDR_NO_15,
-	BLOCK_TEST_TYPE_ENDPOINT_VALUE_HDR_15,
-	BLOCK_TEST_TYPE_ENDPOINT_ISE,
-	BLOCK_TEST_TYPE_CCS,
-	BLOCK_TEST_TYPE_RANDOM,
+    BLOCK_TEST_TYPE_VOID_EXTENT_LDR = 0,
+    BLOCK_TEST_TYPE_VOID_EXTENT_HDR,
+    BLOCK_TEST_TYPE_WEIGHT_GRID,
+    BLOCK_TEST_TYPE_WEIGHT_ISE,
+    BLOCK_TEST_TYPE_CEMS,
+    BLOCK_TEST_TYPE_PARTITION_SEED,
+    BLOCK_TEST_TYPE_ENDPOINT_VALUE_LDR,
+    BLOCK_TEST_TYPE_ENDPOINT_VALUE_HDR_NO_15,
+    BLOCK_TEST_TYPE_ENDPOINT_VALUE_HDR_15,
+    BLOCK_TEST_TYPE_ENDPOINT_ISE,
+    BLOCK_TEST_TYPE_CCS,
+    BLOCK_TEST_TYPE_RANDOM,
 
-	BLOCK_TEST_TYPE_LAST
+    BLOCK_TEST_TYPE_LAST
 };
 
 enum
 {
-	BLOCK_SIZE_BYTES = 128/8,
+    BLOCK_SIZE_BYTES = 128 / 8,
 };
 
-const char*		getBlockTestTypeName			(BlockTestType testType);
-const char*		getBlockTestTypeDescription		(BlockTestType testType);
-bool			isBlockTestTypeHDROnly			(BlockTestType testType);
-Vec4			getBlockTestTypeColorScale		(BlockTestType testType);
-Vec4			getBlockTestTypeColorBias		(BlockTestType testType);
+const char *getBlockTestTypeName(BlockTestType testType);
+const char *getBlockTestTypeDescription(BlockTestType testType);
+bool isBlockTestTypeHDROnly(BlockTestType testType);
+Vec4 getBlockTestTypeColorScale(BlockTestType testType);
+Vec4 getBlockTestTypeColorBias(BlockTestType testType);
 
-void			generateBlockCaseTestData		(std::vector<deUint8>& dst, CompressedTexFormat format, BlockTestType testType);
+void generateBlockCaseTestData(std::vector<uint8_t> &dst, CompressedTexFormat format, BlockTestType testType);
 
-void			generateRandomBlocks			(deUint8* dst, size_t numBlocks, CompressedTexFormat format, deUint32 seed);
-void			generateRandomValidBlocks		(deUint8* dst, size_t numBlocks, CompressedTexFormat format, TexDecompressionParams::AstcMode mode, deUint32 seed);
+void generateRandomBlocks(uint8_t *dst, size_t numBlocks, CompressedTexFormat format, uint32_t seed);
+void generateRandomValidBlocks(uint8_t *dst, size_t numBlocks, CompressedTexFormat format,
+                               TexDecompressionParams::AstcMode mode, uint32_t seed);
 
-void			generateDefaultVoidExtentBlocks	(deUint8* dst, size_t numBlocks);
-void			generateDefaultNormalBlocks		(deUint8* dst, size_t numBlocks, int blockWidth, int blockHeight);
+void generateDefaultVoidExtentBlocks(uint8_t *dst, size_t numBlocks);
+void generateDefaultNormalBlocks(uint8_t *dst, size_t numBlocks, int blockWidth, int blockHeight);
 
-bool			isValidBlock					(const deUint8* data, CompressedTexFormat format, TexDecompressionParams::AstcMode mode);
+bool isValidBlock(const uint8_t *data, CompressedTexFormat format, TexDecompressionParams::AstcMode mode);
 
-void			decompress						(const PixelBufferAccess& dst, const deUint8* data, CompressedTexFormat format, TexDecompressionParams::AstcMode mode);
+void decompress(const PixelBufferAccess &dst, const uint8_t *data, CompressedTexFormat format,
+                TexDecompressionParams::AstcMode mode);
 
-} // astc
-} // tcu
+} // namespace astc
+} // namespace tcu
 
 #endif // _TCUASTCUTIL_HPP

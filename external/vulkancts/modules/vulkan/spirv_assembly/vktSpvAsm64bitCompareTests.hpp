@@ -32,10 +32,10 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	create64bitCompareGraphicsGroup	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	create64bitCompareComputeGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *create64bitCompareGraphicsGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *create64bitCompareComputeGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASM64BITCOMPARETESTS_HPP

@@ -31,12 +31,12 @@ class CommandLine;
 namespace glu
 {
 
-Platform::Platform (void)
+Platform::Platform(void)
 {
 }
 
-Platform::~Platform (void)
+Platform::~Platform(void)
 {
 }
 
-} // glu
+} // namespace glu

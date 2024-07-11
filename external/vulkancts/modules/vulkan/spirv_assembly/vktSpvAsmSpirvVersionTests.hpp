@@ -33,9 +33,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup* createSpivVersionCheckTests(tcu::TestContext& testCtx, const bool compute);
+tcu::TestCaseGroup *createSpivVersionCheckTests(tcu::TestContext &testCtx, const bool compute);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMSPIRVVERSIONTESTS_HPP

@@ -32,9 +32,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup* createMultipleShaderExtendedGroup(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMultipleShaderExtendedGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMMULTIPLESHADERSTESTS_HPP

@@ -30,9 +30,9 @@ namespace tcu
 {
 
 // \todo [2015-02-26 pyry] Remove TestContext requirement
-void writeXmlCaselistsToFiles (TestPackageRoot& root, TestContext& testCtx, const CommandLine& cmdLine);
-void writeTxtCaselistsToFiles (TestPackageRoot& root, TestContext& testCtx, const CommandLine& cmdLine);
+void writeXmlCaselistsToFiles(TestPackageRoot &root, TestContext &testCtx, const CommandLine &cmdLine);
+void writeTxtCaselistsToFiles(TestPackageRoot &root, TestContext &testCtx, const CommandLine &cmdLine);
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUTESTHIERARCHYUTIL_HPP

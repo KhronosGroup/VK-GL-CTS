@@ -39,19 +39,19 @@ namespace glcts
 class TextureBorderClampSamplingTextureGroup : public glcts::TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	TextureBorderClampSamplingTextureGroup(glcts::Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TextureBorderClampSamplingTextureGroup(glcts::Context &context, const ExtParameters &extParams);
 
-	virtual ~TextureBorderClampSamplingTextureGroup(void)
-	{
-	}
+    virtual ~TextureBorderClampSamplingTextureGroup(void)
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	TextureBorderClampSamplingTextureGroup(const TextureBorderClampSamplingTextureGroup& other);
-	TextureBorderClampSamplingTextureGroup& operator=(const TextureBorderClampSamplingTextureGroup& other);
+    /* Private methods */
+    TextureBorderClampSamplingTextureGroup(const TextureBorderClampSamplingTextureGroup &other);
+    TextureBorderClampSamplingTextureGroup &operator=(const TextureBorderClampSamplingTextureGroup &other);
 };
 
 } // namespace glcts

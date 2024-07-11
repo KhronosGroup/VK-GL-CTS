@@ -31,9 +31,9 @@ namespace vkt
 namespace postmortem
 {
 
-tcu::TestCaseGroup*	createDeviceFaultTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDeviceFaultTests(tcu::TestContext &testCtx);
 
-} // postmortem
-} // vkt
+} // namespace postmortem
+} // namespace vkt
 
 #endif // _VKTPOSTMORTEMDEVICEFAULTTESTS_HPP

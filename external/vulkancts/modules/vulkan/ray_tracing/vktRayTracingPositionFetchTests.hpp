@@ -32,9 +32,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup* createPositionFetchTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createPositionFetchTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGPOSITIONFETCHTESTS_HPP

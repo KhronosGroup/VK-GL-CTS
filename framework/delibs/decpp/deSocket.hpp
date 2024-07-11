@@ -35,79 +35,130 @@ namespace de
 class SocketError : public std::runtime_error
 {
 public:
-	SocketError (const std::string& message) : std::runtime_error(message) {}
+    SocketError(const std::string &message) : std::runtime_error(message)
+    {
+    }
 };
 
 class SocketAddress
 {
 public:
-						SocketAddress		(void);
-						~SocketAddress		(void);
+    SocketAddress(void);
+    ~SocketAddress(void);
 
-	void				setHost				(const char* host);
-	void				setPort				(int port);
-	void				setFamily			(deSocketFamily family);
-	void				setType				(deSocketType type);
-	void				setProtocol			(deSocketProtocol protocol);
+    void setHost(const char *host);
+    void setPort(int port);
+    void setFamily(deSocketFamily family);
+    void setType(deSocketType type);
+    void setProtocol(deSocketProtocol protocol);
 
-	const char*			getHost				(void) const				{ return deSocketAddress_getHost(m_address);					}
-	int					getPort				(void) const				{ return deSocketAddress_getPort(m_address);					}
-	deSocketFamily		getFamily			(void) const				{ return deSocketAddress_getFamily(m_address);					}
-	deSocketType		getType				(void) const				{ return deSocketAddress_getType(m_address);					}
-	deSocketProtocol	getProtocol			(void) const				{ return deSocketAddress_getProtocol(m_address);				}
+    const char *getHost(void) const
+    {
+        return deSocketAddress_getHost(m_address);
+    }
+    int getPort(void) const
+    {
+        return deSocketAddress_getPort(m_address);
+    }
+    deSocketFamily getFamily(void) const
+    {
+        return deSocketAddress_getFamily(m_address);
+    }
+    deSocketType getType(void) const
+    {
+        return deSocketAddress_getType(m_address);
+    }
+    deSocketProtocol getProtocol(void) const
+    {
+        return deSocketAddress_getProtocol(m_address);
+    }
 
-	operator deSocketAddress*		()			{ return m_address; }
-	operator const deSocketAddress* () const	{ return m_address; }
+    operator deSocketAddress *()
+    {
+        return m_address;
+    }
+    operator const deSocketAddress *() const
+    {
+        return m_address;
+    }
 
-	deSocketAddress*	getPtr				(void)						{ return m_address; }
-
+    deSocketAddress *getPtr(void)
+    {
+        return m_address;
+    }
 
 private:
-						SocketAddress		(const SocketAddress& other);
-	SocketAddress&		operator=			(const SocketAddress& other);
+    SocketAddress(const SocketAddress &other);
+    SocketAddress &operator=(const SocketAddress &other);
 
-	deSocketAddress*	m_address;
+    deSocketAddress *m_address;
 };
 
 class Socket
 {
 public:
-						Socket				(void);
-						~Socket				(void);
+    Socket(void);
+    ~Socket(void);
 
-	void				setFlags			(deUint32 flags);
+    void setFlags(uint32_t flags);
 
-	deSocketState		getState			(void) const					{ return deSocket_getState(m_socket);				}
-	bool				isConnected			(void) const					{ return getState() == DE_SOCKETSTATE_CONNECTED;	}
+    deSocketState getState(void) const
+    {
+        return deSocket_getState(m_socket);
+    }
+    bool isConnected(void) const
+    {
+        return getState() == DE_SOCKETSTATE_CONNECTED;
+    }
 
-	void				listen				(const SocketAddress& address);
-	Socket*				accept				(SocketAddress& clientAddress)	{ return accept(clientAddress.getPtr());			}
-	Socket*				accept				(void)							{ return accept(DE_NULL);							}
+    void listen(const SocketAddress &address);
+    Socket *accept(SocketAddress &clientAddress)
+    {
+        return accept(clientAddress.getPtr());
+    }
+    Socket *accept(void)
+    {
+        return accept(DE_NULL);
+    }
 
-	void				connect				(const SocketAddress& address);
+    void connect(const SocketAddress &address);
 
-	void				shutdown			(void);
-	void				shutdownSend		(void);
-	void				shutdownReceive		(void);
+    void shutdown(void);
+    void shutdownSend(void);
+    void shutdownReceive(void);
 
-	bool				isSendOpen			(void)							{ return (deSocket_getOpenChannels(m_socket) & DE_SOCKETCHANNEL_SEND	) != 0;	}
-	bool				isReceiveOpen		(void)							{ return (deSocket_getOpenChannels(m_socket) & DE_SOCKETCHANNEL_RECEIVE	) != 0;	}
+    bool isSendOpen(void)
+    {
+        return (deSocket_getOpenChannels(m_socket) & DE_SOCKETCHANNEL_SEND) != 0;
+    }
+    bool isReceiveOpen(void)
+    {
+        return (deSocket_getOpenChannels(m_socket) & DE_SOCKETCHANNEL_RECEIVE) != 0;
+    }
 
-	void				close				(void);
+    void close(void);
 
-	deSocketResult		send				(const void* buf, size_t bufSize, size_t* numSent)	{ return deSocket_send(m_socket, buf, bufSize, numSent);	}
-	deSocketResult		receive				(void* buf, size_t bufSize, size_t* numRecv)		{ return deSocket_receive(m_socket, buf, bufSize, numRecv);	}
+    deSocketResult send(const void *buf, size_t bufSize, size_t *numSent)
+    {
+        return deSocket_send(m_socket, buf, bufSize, numSent);
+    }
+    deSocketResult receive(void *buf, size_t bufSize, size_t *numRecv)
+    {
+        return deSocket_receive(m_socket, buf, bufSize, numRecv);
+    }
 
 private:
-						Socket				(deSocket* socket) : m_socket(socket) {}
-						Socket				(const Socket& other);
-	Socket&				operator=			(const Socket& other);
+    Socket(deSocket *socket) : m_socket(socket)
+    {
+    }
+    Socket(const Socket &other);
+    Socket &operator=(const Socket &other);
 
-	Socket*				accept				(deSocketAddress* clientAddress);
+    Socket *accept(deSocketAddress *clientAddress);
 
-	deSocket*			m_socket;
+    deSocket *m_socket;
 };
 
-} // de
+} // namespace de
 
 #endif // _DESOCKET_HPP

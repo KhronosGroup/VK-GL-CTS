@@ -31,8 +31,8 @@ namespace glu
 class RenderContext;
 class ContextInfo;
 
-void resetState (const RenderContext& renderCtx, const ContextInfo& ctxInfo);
+void resetState(const RenderContext &renderCtx, const ContextInfo &ctxInfo);
 
-} // glu
+} // namespace glu
 
 #endif // _GLUSTATERESET_HPP

@@ -32,9 +32,9 @@ namespace vkt
 namespace DGC
 {
 
-tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx, const std::string& name);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
-} // DGC
-} // vkt
+} // namespace DGC
+} // namespace vkt
 
 #endif // _VKTDGCTESTS_HPP

@@ -28,14 +28,14 @@
 
 typedef struct dePoolStringBuilder_s dePoolStringBuilder;
 
-dePoolStringBuilder*	dePoolStringBuilder_create			(deMemPool* pool);
+dePoolStringBuilder *dePoolStringBuilder_create(deMemPool *pool);
 
-deBool					dePoolStringBuilder_appendString	(dePoolStringBuilder* builder, const char* str);
-deBool					dePoolStringBuilder_appendFormat	(dePoolStringBuilder* builder, const char* format, ...);
+bool dePoolStringBuilder_appendString(dePoolStringBuilder *builder, const char *str);
+bool dePoolStringBuilder_appendFormat(dePoolStringBuilder *builder, const char *format, ...);
 /* \todo [2009-09-05 petri] Other appends? printf style? */
 
-int						dePoolStringBuilder_getLength		(dePoolStringBuilder* builder);
-char*					dePoolStringBuilder_dupToString		(dePoolStringBuilder* builder);
-char*					dePoolStringBuilder_dupToPool		(dePoolStringBuilder* builder, deMemPool* dstPool);
+int dePoolStringBuilder_getLength(dePoolStringBuilder *builder);
+char *dePoolStringBuilder_dupToString(dePoolStringBuilder *builder);
+char *dePoolStringBuilder_dupToPool(dePoolStringBuilder *builder, deMemPool *dstPool);
 
 #endif /* _DEPOOLSTRINGBUILDER_H */

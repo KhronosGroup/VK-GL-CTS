@@ -35,9 +35,10 @@ namespace vkt
 namespace compute
 {
 
-tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType);
+tcu::TestCaseGroup *createWorkgroupMemoryExplicitLayoutTests(
+    tcu::TestContext &testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType);
 
-} // compute
-} // vkt
+} // namespace compute
+} // namespace vkt
 
 #endif // _VKTCOMPUTEWORKGROUPMEMORYEXPLICITLAYOUTTESTS_HPP

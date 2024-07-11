@@ -49,64 +49,59 @@ class ASTCRenderer2D;
 class ASTCBlockCase2D : public TestCase
 {
 public:
-																	ASTCBlockCase2D			(Context&						context,
-																							 const char*					name,
-																							 const char*					description,
-																							 tcu::astc::BlockTestType		testType,
-																							 tcu::CompressedTexFormat		format);
-																	~ASTCBlockCase2D		(void);
+    ASTCBlockCase2D(Context &context, const char *name, const char *description, tcu::astc::BlockTestType testType,
+                    tcu::CompressedTexFormat format);
+    ~ASTCBlockCase2D(void);
 
-	void															init					(void);
-	void															deinit					(void);
-	IterateResult													iterate					(void);
+    void init(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-																	ASTCBlockCase2D			(const ASTCBlockCase2D& other);
-	ASTCBlockCase2D&												operator=				(const ASTCBlockCase2D& other);
+    ASTCBlockCase2D(const ASTCBlockCase2D &other);
+    ASTCBlockCase2D &operator=(const ASTCBlockCase2D &other);
 
-	const tcu::astc::BlockTestType									m_testType;
-	const tcu::CompressedTexFormat									m_format;
-	std::vector<deUint8>											m_blockData;
+    const tcu::astc::BlockTestType m_testType;
+    const tcu::CompressedTexFormat m_format;
+    std::vector<uint8_t> m_blockData;
 
-	int																m_numBlocksTested;
-	int																m_currentIteration;
+    int m_numBlocksTested;
+    int m_currentIteration;
 
-	de::UniquePtr<ASTCDecompressionCaseInternal::ASTCRenderer2D>	m_renderer;
+    de::UniquePtr<ASTCDecompressionCaseInternal::ASTCRenderer2D> m_renderer;
 };
 
 // For a format with block size (W, H), test with texture sizes {(k*W + a, k*H + b) | 0 <= a < W, 0 <= b < H } .
 class ASTCBlockSizeRemainderCase2D : public TestCase
 {
 public:
-																	ASTCBlockSizeRemainderCase2D	(Context&						context,
-																									 const char*					name,
-																									 const char*					description,
-																									 tcu::CompressedTexFormat		format);
-																	~ASTCBlockSizeRemainderCase2D	(void);
+    ASTCBlockSizeRemainderCase2D(Context &context, const char *name, const char *description,
+                                 tcu::CompressedTexFormat format);
+    ~ASTCBlockSizeRemainderCase2D(void);
 
-	void															init							(void);
-	void															deinit							(void);
-	IterateResult													iterate							(void);
+    void init(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 private:
-	enum
-	{
-		MAX_NUM_BLOCKS_X = 5,
-		MAX_NUM_BLOCKS_Y = 5
-	};
+    enum
+    {
+        MAX_NUM_BLOCKS_X = 5,
+        MAX_NUM_BLOCKS_Y = 5
+    };
 
-																	ASTCBlockSizeRemainderCase2D	(const ASTCBlockSizeRemainderCase2D& other);
-	ASTCBlockSizeRemainderCase2D&									operator=						(const ASTCBlockSizeRemainderCase2D& other);
+    ASTCBlockSizeRemainderCase2D(const ASTCBlockSizeRemainderCase2D &other);
+    ASTCBlockSizeRemainderCase2D &operator=(const ASTCBlockSizeRemainderCase2D &other);
 
-	const tcu::CompressedTexFormat									m_format;
+    const tcu::CompressedTexFormat m_format;
 
-	int																m_currentIteration;
+    int m_currentIteration;
 
-	de::UniquePtr<ASTCDecompressionCaseInternal::ASTCRenderer2D>	m_renderer;
+    de::UniquePtr<ASTCDecompressionCaseInternal::ASTCRenderer2D> m_renderer;
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FASTCDECOMPRESSIONCASES_HPP

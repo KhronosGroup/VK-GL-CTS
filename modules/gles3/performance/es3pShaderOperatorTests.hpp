@@ -36,18 +36,18 @@ namespace Performance
 class ShaderOperatorTests : public TestCaseGroup
 {
 public:
-							ShaderOperatorTests		(Context& context);
-							~ShaderOperatorTests	(void);
+    ShaderOperatorTests(Context &context);
+    ~ShaderOperatorTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							ShaderOperatorTests		(const ShaderOperatorTests& other);
-	ShaderOperatorTests&	operator=				(const ShaderOperatorTests& other);
+    ShaderOperatorTests(const ShaderOperatorTests &other);
+    ShaderOperatorTests &operator=(const ShaderOperatorTests &other);
 };
 
-} // Performance
-} // gles2
-} // deqp
+} // namespace Performance
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3PSHADEROPERATORTESTS_HPP

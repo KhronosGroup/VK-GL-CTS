@@ -24,7 +24,6 @@
  * \brief Vertex attribute divisor Tests
  *//*--------------------------------------------------------------------*/
 
-
 #include "vktTestCase.hpp"
 #include "vktDrawGroupParams.hpp"
 
@@ -33,9 +32,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup* createVertexAttributeDivisorTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams);
+tcu::TestCaseGroup *createVertexAttributeDivisorTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWVERTEXATTRIBDIVISORTESTS_HPP

@@ -34,10 +34,10 @@ namespace egl
 class MultiThreadedTests : public TestCaseGroup
 {
 public:
-			MultiThreadedTests	(EglTestContext& eglTestCtx);
-	void	init				(void);
+    MultiThreadedTests(EglTestContext &eglTestCtx);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 #endif // _TEGLMULTITHREADTESTS_HPP

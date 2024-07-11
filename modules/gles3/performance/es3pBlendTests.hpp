@@ -36,18 +36,18 @@ namespace Performance
 class BlendTests : public TestCaseGroup
 {
 public:
-					BlendTests		(Context& context);
-					~BlendTests		(void);
+    BlendTests(Context &context);
+    ~BlendTests(void);
 
-	void			init			(void);
+    void init(void);
 
 private:
-					BlendTests		(const BlendTests& other);
-	BlendTests&		operator=		(const BlendTests& other);
+    BlendTests(const BlendTests &other);
+    BlendTests &operator=(const BlendTests &other);
 };
 
-} // Performance
-} // gles3
-} // deqp
+} // namespace Performance
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3PBLENDTESTS_HPP

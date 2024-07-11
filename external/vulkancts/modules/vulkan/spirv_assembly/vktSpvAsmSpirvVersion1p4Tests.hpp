@@ -32,9 +32,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createSpirvVersion1p4Group (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSpirvVersion1p4Group(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMSPIRVVERSION1P4TESTS_HPP

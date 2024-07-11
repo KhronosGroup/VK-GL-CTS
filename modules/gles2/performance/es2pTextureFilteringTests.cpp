@@ -36,66 +36,62 @@ namespace gles2
 namespace Performance
 {
 
-TextureFilteringTests::TextureFilteringTests (Context& context)
-	: TestCaseGroup(context, "filter", "Texture Filtering Performance Tests")
+TextureFilteringTests::TextureFilteringTests(Context &context)
+    : TestCaseGroup(context, "filter", "Texture Filtering Performance Tests")
 {
 }
 
-TextureFilteringTests::~TextureFilteringTests (void)
+TextureFilteringTests::~TextureFilteringTests(void)
 {
 }
 
-void TextureFilteringTests::init (void)
+void TextureFilteringTests::init(void)
 {
-	static const struct
-	{
-		const char*	name;
-		deUint32	format;
-		deUint32	dataType;
-	} texFormats[] =
-	{
-		{ "rgb565",		GL_RGB,				GL_UNSIGNED_SHORT_5_6_5 },
-		{ "rgba8888",	GL_RGBA,			GL_UNSIGNED_BYTE }
-	};
-	static const struct
-	{
-		const char*	name;
-		deUint32	filter;
-		bool		minify;
-	} cases[] =
-	{
-		{ "nearest",				GL_NEAREST,					true	},
-		{ "nearest",				GL_NEAREST,					false	},
-		{ "linear",					GL_LINEAR,					true	},
-		{ "linear",					GL_LINEAR,					false	},
-		{ "nearest_mipmap_nearest",	GL_NEAREST_MIPMAP_NEAREST,	true	},
-		{ "nearest_mipmap_linear",	GL_NEAREST_MIPMAP_LINEAR,	true	},
-		{ "linear_mipmap_nearest",	GL_LINEAR_MIPMAP_NEAREST,	true	},
-		{ "linear_mipmap_linear",	GL_LINEAR_MIPMAP_LINEAR,	true	}
-	};
+    static const struct
+    {
+        const char *name;
+        uint32_t format;
+        uint32_t dataType;
+    } texFormats[] = {{"rgb565", GL_RGB, GL_UNSIGNED_SHORT_5_6_5}, {"rgba8888", GL_RGBA, GL_UNSIGNED_BYTE}};
+    static const struct
+    {
+        const char *name;
+        uint32_t filter;
+        bool minify;
+    } cases[] = {{"nearest", GL_NEAREST, true},
+                 {"nearest", GL_NEAREST, false},
+                 {"linear", GL_LINEAR, true},
+                 {"linear", GL_LINEAR, false},
+                 {"nearest_mipmap_nearest", GL_NEAREST_MIPMAP_NEAREST, true},
+                 {"nearest_mipmap_linear", GL_NEAREST_MIPMAP_LINEAR, true},
+                 {"linear_mipmap_nearest", GL_LINEAR_MIPMAP_NEAREST, true},
+                 {"linear_mipmap_linear", GL_LINEAR_MIPMAP_LINEAR, true}};
 
-	tcu::Mat3 minTransform	= tcu::translationMatrix(tcu::Vec2(-0.3f, -0.6f)) * tcu::Mat3(tcu::Vec3(1.7f, 2.3f, 1.0f));
-	tcu::Mat3 magTransform	= tcu::translationMatrix(tcu::Vec2( 0.3f,  0.4f)) * tcu::Mat3(tcu::Vec3(0.3f, 0.2f, 1.0f));
+    tcu::Mat3 minTransform = tcu::translationMatrix(tcu::Vec2(-0.3f, -0.6f)) * tcu::Mat3(tcu::Vec3(1.7f, 2.3f, 1.0f));
+    tcu::Mat3 magTransform = tcu::translationMatrix(tcu::Vec2(0.3f, 0.4f)) * tcu::Mat3(tcu::Vec3(0.3f, 0.2f, 1.0f));
 
-	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
-	{
-		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(texFormats); formatNdx++)
-		{
-			deUint32	format		= texFormats[formatNdx].format;
-			deUint32	dataType	= texFormats[formatNdx].dataType;
-			deUint32	minFilter	= cases[caseNdx].filter;
-			deUint32	magFilter	= (minFilter == GL_NEAREST || minFilter == GL_LINEAR) ? minFilter : GL_LINEAR;
-			deUint32	wrapS		= GL_REPEAT;
-			deUint32	wrapT		= GL_REPEAT;
-			int			numTextures	= 1;
-			bool		minify		= cases[caseNdx].minify;
-			string		name		= string(cases[caseNdx].name) + (minify ? "_minify_" : "_magnify_") + texFormats[formatNdx].name;
+    for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
+    {
+        for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(texFormats); formatNdx++)
+        {
+            uint32_t format    = texFormats[formatNdx].format;
+            uint32_t dataType  = texFormats[formatNdx].dataType;
+            uint32_t minFilter = cases[caseNdx].filter;
+            uint32_t magFilter = (minFilter == GL_NEAREST || minFilter == GL_LINEAR) ? minFilter : GL_LINEAR;
+            uint32_t wrapS     = GL_REPEAT;
+            uint32_t wrapT     = GL_REPEAT;
+            int numTextures    = 1;
+            bool minify        = cases[caseNdx].minify;
+            string name =
+                string(cases[caseNdx].name) + (minify ? "_minify_" : "_magnify_") + texFormats[formatNdx].name;
 
-			addChild(new Texture2DRenderCase(m_context, name.c_str(), "", format, dataType, wrapS, wrapT, minFilter, magFilter, minify ? minTransform : magTransform, numTextures, true /* pot */));
-		}
-	}
+            addChild(new Texture2DRenderCase(m_context, name.c_str(), "", format, dataType, wrapS, wrapT, minFilter,
+                                             magFilter, minify ? minTransform : magTransform, numTextures,
+                                             true /* pot */));
+        }
+    }
 }
 
-} // Performance
-} // gles2
-} // deqp
+} // namespace Performance
+} // namespace gles2
+} // namespace deqp
