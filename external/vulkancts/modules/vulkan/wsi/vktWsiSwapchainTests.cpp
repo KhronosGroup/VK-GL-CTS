@@ -465,13 +465,13 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases(const InstanceI
         {
             VkImageFormatProperties imageProps;
 
-            if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, baseParameters.imageFormat, VK_IMAGE_TYPE_2D,
-                                                           VK_IMAGE_TILING_OPTIMAL, flags, (VkImageCreateFlags)0u,
-                                                           &imageProps) != VK_SUCCESS)
-                continue;
-
             if ((flags & ~capabilities.supportedUsageFlags) == 0)
             {
+                if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, baseParameters.imageFormat,
+                                                               VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, flags,
+                                                               (VkImageCreateFlags)0u, &imageProps) != VK_SUCCESS)
+                    continue;
+
                 cases.push_back(baseParameters);
                 cases.back().imageUsage = flags;
             }

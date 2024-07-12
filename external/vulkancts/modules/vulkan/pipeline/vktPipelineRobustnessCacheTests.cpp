@@ -422,6 +422,7 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
         .buildPipeline(*pipelineCache);
 
     vk::VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo = vk::initVulkanStructure();
+    vk::PipelineRobustnessCreateInfoWrapper pipelineRobustnessWrapper(&pipelineRobustnessInfo);
 
     if (m_robustnessBufferBehaviour == ROBUSTNESS)
     {
@@ -455,12 +456,13 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
         .setDefaultMultisampleState()
         .setDefaultDepthStencilState()
         .setDefaultColorBlendState()
+        .setPipelineRobustnessState(pipelineRobustnessWrapper)
         .setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
         .setupPreRasterizationShaderState(viewports, scissors, m_pipelineLayout, *m_renderPass, 0u, vert)
         .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, frag)
         .setupFragmentOutputState(*m_renderPass)
         .setMonolithicPipelineLayout(m_pipelineLayout)
-        .buildPipeline(*pipelineCache, 0, 0, vk::PipelineCreationFeedbackCreateInfoWrapper(), &pipelineRobustnessInfo);
+        .buildPipeline(*pipelineCache, 0, 0, vk::PipelineCreationFeedbackCreateInfoWrapper());
 
     if (m_type == IMAGE)
     {
@@ -579,8 +581,7 @@ private:
 
 void PipelineCacheTestCase::checkSupport(vkt::Context &context) const
 {
-    if (m_robustnessBufferBehaviour == ROBUSTNESS)
-        context.requireDeviceFunctionality("VK_EXT_pipeline_robustness");
+    context.requireDeviceFunctionality("VK_EXT_pipeline_robustness");
     if (m_robustnessBufferBehaviour == ROBUSTNESS_2)
         context.requireDeviceFunctionality("VK_EXT_robustness2");
 

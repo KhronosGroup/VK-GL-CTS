@@ -250,6 +250,8 @@ void DrawTestCase::checkSupport(Context &context) const
 
     if (m_data.groupParams->useDynamicRendering)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 void DrawTestCase::initPrograms(SourceCollections &programCollection) const
