@@ -317,7 +317,7 @@ tcu::TestStatus ProvokingVertexInstance::iterate(void)
     const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
 
     // Pipeline layout.
-    const auto pipelineLayout = makePipelineLayout(vkd, device, DE_NULL, &pcRange);
+    const auto pipelineLayout = makePipelineLayout(vkd, device, VK_NULL_HANDLE, &pcRange);
 
     // Modules.
     const auto &binaries  = m_context.getBinaryCollection();
@@ -358,7 +358,7 @@ tcu::TestStatus ProvokingVertexInstance::iterate(void)
     {
         pvInfo.provokingVertexMode = pvMode;
 
-        pipelines.push_back(makeGraphicsPipeline(vkd, device, pipelineLayout.get(), DE_NULL, meshModule.get(),
+        pipelines.push_back(makeGraphicsPipeline(vkd, device, pipelineLayout.get(), VK_NULL_HANDLE, meshModule.get(),
                                                  fragModule.get(), renderPass.get(), viewports, scissors, 0u,
                                                  &rasterState));
     }

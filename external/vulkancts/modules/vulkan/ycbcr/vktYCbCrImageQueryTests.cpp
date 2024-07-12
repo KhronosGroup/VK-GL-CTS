@@ -175,7 +175,7 @@ Move<VkImageView> createImageView(const DeviceInterface &vkd, VkDevice device, V
 
     const VkImageViewCreateInfo viewInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        (conversion != DE_NULL) ? &samplerConversionInfo : DE_NULL,
+        (conversion != VK_NULL_HANDLE) ? &samplerConversionInfo : DE_NULL,
         (VkImageViewCreateFlags)0,
         image,
         VK_IMAGE_VIEW_TYPE_2D,

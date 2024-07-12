@@ -291,7 +291,7 @@ bool registerShaderModule(const DeviceInterface &vkd, const VkDevice device, Con
     if (fsn.empty())
         return false;
     Move<VkShaderModule> shaderModule = createShaderModule(vkd, device, context.getBinaryCollection().get(fsn), 0);
-    if (*shaderModule == DE_NULL)
+    if (*shaderModule == VK_NULL_HANDLE)
         return false;
     rayTracingPipeline.addShader(shaderStage, shaderModule, groupIndex);
     return true;

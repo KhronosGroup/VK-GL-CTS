@@ -3173,7 +3173,7 @@ tcu::TestStatus TwoCmdBuffersTestInstance::iterate(void)
         vk.resetQueryPool(m_device, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
     }
 
-    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE));
     VK_CHECK(vk.queueWaitIdle(queue));
 
     // Always pass in case no crash occurred.

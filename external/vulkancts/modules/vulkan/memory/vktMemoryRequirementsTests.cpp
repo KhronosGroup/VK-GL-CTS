@@ -2087,7 +2087,7 @@ tcu::TestStatus testMultiplaneImages(Context &context, ImageTestParams params)
                         if (actualCreateFlags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)
                         {
                             std::vector<VkSparseImageMemoryRequirements> sparseRequirements;
-                            if ((*image == DE_NULL) || params.useMaint4)
+                            if ((*image == VK_NULL_HANDLE) || params.useMaint4)
                                 sparseRequirements =
                                     getDeviceImageSparseMemoryRequirements(vk, device, imageInfo, aspect);
                             else

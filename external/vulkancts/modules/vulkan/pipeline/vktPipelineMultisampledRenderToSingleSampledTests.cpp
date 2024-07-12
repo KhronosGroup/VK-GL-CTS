@@ -1240,7 +1240,7 @@ void initResolveImageLayouts(Context &context, const TestParams &params, Working
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,         // VkImageLayout            newLayout
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                    srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                    dstQueueFamilyIndex
-        0,                                                // VkImage                    image
+        VK_NULL_HANDLE,                                   // VkImage                    image
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
                                   1u), // VkImageSubresourceRange    subresourceRange
     };
@@ -1299,7 +1299,7 @@ void preRenderingImageLayoutTransition(Context &context, const TestParams &param
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout              newLayout;
         VK_QUEUE_FAMILY_IGNORED,                  // uint32_t                   srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                  // uint32_t                   dstQueueFamilyIndex;
-        0,                                        // VkImage                    image;
+        VK_NULL_HANDLE,                           // VkImage                    image;
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
                                   1u), // VkImageSubresourceRange    subresourceRange;
     };
@@ -1336,7 +1336,7 @@ void postRenderingResolveImageLayoutTransition(Context &context, const TestParam
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,         // VkImageLayout            newLayout
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                    srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                    dstQueueFamilyIndex
-        0,                                                // VkImage                    image
+        VK_NULL_HANDLE,                                   // VkImage                    image
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
                                   1u), // VkImageSubresourceRange    subresourceRange
     };
@@ -1932,7 +1932,7 @@ void clearImagesBeforeDraw(Context &context, const TestParams &params, WorkingDa
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout              newLayout;
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                   srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                   dstQueueFamilyIndex;
-        0,                                      // VkImage                    image;
+        VK_NULL_HANDLE,                         // VkImage                    image;
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
                                   1u), // VkImageSubresourceRange    subresourceRange;
     };

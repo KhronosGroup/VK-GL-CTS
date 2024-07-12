@@ -249,8 +249,8 @@ tcu::TestStatus DrawWithQuadControlInstanceBase::iterate(void)
     Move<VkFramebuffer> framebuffer =
         makeFramebuffer(vk, device, *renderPass, *colorImageView, m_renderSize.x(), m_renderSize.y());
     Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
-        vk, device, *pipelineLayout, *vertShaderModule, DE_NULL, DE_NULL, DE_NULL, *fragShaderModule, *renderPass,
-        viewports, scissors, m_topology, 0u, 0u, &vertexInputState);
+        vk, device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        *fragShaderModule, *renderPass, viewports, scissors, m_topology, 0u, 0u, &vertexInputState);
 
     Move<VkCommandPool> cmdPool =
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);

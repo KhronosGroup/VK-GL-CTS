@@ -697,7 +697,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
             DE_NULL                               // const VkSemaphore* pSignalSemaphores;
         };
 
-        vk.queueSubmit(queue, 1, &submitInfoReset, DE_NULL);
+        vk.queueSubmit(queue, 1, &submitInfoReset, VK_NULL_HANDLE);
 
         // Trivially wait for reset to complete. This is to ensure the query pool is in reset state before
         // host accesses, so as to not insert any synchronization before capturing the results needed for WAIT_NONE
@@ -720,7 +720,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
 
         if (!hasSeparateResetCmdBuf() && m_testVector.queryResultsMode == RESULTS_MODE_GET_RESET)
             vk.resetQueryPool(m_context.getDevice(), *m_queryPool, 0, NUM_QUERIES_IN_POOL);
-        vk.queueSubmit(queue, 1, &submitInfoRender, DE_NULL);
+        vk.queueSubmit(queue, 1, &submitInfoRender, VK_NULL_HANDLE);
     }
 
     if (m_testVector.queryWait == WAIT_QUEUE)
@@ -746,7 +746,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
             0,                                 // uint32_t signalSemaphoreCount;
             DE_NULL                            // const VkSemaphore* pSignalSemaphores;
         };
-        vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
+        vk.queueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
     }
 
     if (m_testVector.queryResultsMode == RESULTS_MODE_COPY || m_testVector.queryResultsMode == RESULTS_MODE_COPY_RESET)

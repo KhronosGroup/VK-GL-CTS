@@ -149,7 +149,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
     };
 
     const bool useTessellationShaders =
-        (tessellationControlModule != DE_NULL) && (tessellationEvaluationModule != DE_NULL);
+        (tessellationControlModule != VK_NULL_HANDLE) && (tessellationEvaluationModule != VK_NULL_HANDLE);
 
     const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                             sType;
@@ -343,7 +343,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
                                                          VK_FORMAT_UNDEFINED};
 
     // when pipeline is created without render pass we are using dynamic rendering
-    if (renderPass == DE_NULL)
+    if (renderPass == VK_NULL_HANDLE)
         graphicsPipelineInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
@@ -719,10 +719,11 @@ public:
             m_descriptorSetLayout = builder.build(vk, device);
         }
 
-        m_pipelineLayout = makePipelineLayout(vk, device, (shader == FRAGMENT ? m_descriptorSetLayout.get() : DE_NULL));
-        m_pipeline       = makeGraphicsPipeline(vk, device, *m_pipelineLayout, *m_renderPass, *m_vertexModule,
-                                                *m_tessellationControlModule, *m_tessellationEvaluationModule,
-                                                *m_fragmentModule, m_renderSize, m_numViewports, cells);
+        m_pipelineLayout =
+            makePipelineLayout(vk, device, (shader == FRAGMENT ? m_descriptorSetLayout.get() : VK_NULL_HANDLE));
+        m_pipeline  = makeGraphicsPipeline(vk, device, *m_pipelineLayout, *m_renderPass, *m_vertexModule,
+                                           *m_tessellationControlModule, *m_tessellationEvaluationModule,
+                                           *m_fragmentModule, m_renderSize, m_numViewports, cells);
         m_cmdPool   = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
         m_cmdBuffer = allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
         m_secCmdBuffer = allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);

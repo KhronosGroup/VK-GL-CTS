@@ -659,7 +659,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper &
         .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams, DE_NULL, *m_cache,
                                   pipelineCreationFeedbackWrapper[3])
         .setMonolithicPipelineLayout(m_pipelineLayout)
-        .buildPipeline(*m_cache, basePipelineHandle, basePipelineHandle != DE_NULL ? -1 : 0,
+        .buildPipeline(*m_cache, basePipelineHandle, basePipelineHandle != VK_NULL_HANDLE ? -1 : 0,
                        pipelineCreationFeedbackWrapper[4]);
 }
 

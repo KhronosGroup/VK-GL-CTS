@@ -1467,7 +1467,7 @@ tcu::TestStatus WriteSampleTestInstance::iterate(void)
             nullptr,                                                 // const VkSpecializationInfo* pSpecializationInfo;
         },
         pipelineLayout.get(), // layout
-        DE_NULL,              // basePipelineHandle
+        VK_NULL_HANDLE,       // basePipelineHandle
         0,                    // basePipelineIndex
     };
 

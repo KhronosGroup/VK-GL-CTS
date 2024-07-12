@@ -930,7 +930,7 @@ tcu::TestStatus MeshQueryInstance::iterate(void)
     // Pipeline layout.
     const auto pcSize         = static_cast<uint32_t>(sizeof(uint32_t));
     const auto pcRange        = makePushConstantRange(VK_SHADER_STAGE_MESH_BIT_EXT, 0u, pcSize);
-    const auto pipelineLayout = makePipelineLayout(vkd, device, DE_NULL, &pcRange);
+    const auto pipelineLayout = makePipelineLayout(vkd, device, VK_NULL_HANDLE, &pcRange);
 
     // Render pass, framebuffer, viewports, scissors.
     const auto renderPass = makeCustomRenderPass(vkd, device, viewCount, colorFormat);

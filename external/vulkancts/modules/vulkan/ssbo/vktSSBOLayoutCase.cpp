@@ -2392,7 +2392,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
         vk::VkBufferDeviceAddressInfo info = {
             vk::VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType sType;
             DE_NULL,                                          // const void* pNext;
-            0,                                                // VkBuffer            buffer
+            VK_NULL_HANDLE,                                   // VkBuffer            buffer
         };
 
         for (uint32_t i = 0; i < descriptors.size(); ++i)

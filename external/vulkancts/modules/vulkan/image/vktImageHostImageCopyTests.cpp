@@ -713,7 +713,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
             (VkPipelineCreateFlags)0u,                          // flags
             pipelineShaderStageParams,                          // stage
             *pipelineLayout,                                    // layout
-            DE_NULL,                                            // basePipelineHandle
+            VK_NULL_HANDLE,                                     // basePipelineHandle
             0,                                                  // basePipelineIndex
         };
         computePipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);

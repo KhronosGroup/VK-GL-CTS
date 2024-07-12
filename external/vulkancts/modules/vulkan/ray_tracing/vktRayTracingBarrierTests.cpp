@@ -1055,9 +1055,9 @@ void createGraphicsPipelineObjects(const DeviceInterface &vkd, VkDevice device, 
     const std::vector<VkRect2D> scissors(1u, scissor);
 
     // Pipeline.
-    stageData.pipeline =
-        makeGraphicsPipeline(vkd, device, stageData.pipelineLayout.get(), vertShader.get(), DE_NULL, DE_NULL, DE_NULL,
-                             fragShader.get(), stageData.renderPass.get(), viewports, scissors);
+    stageData.pipeline = makeGraphicsPipeline(vkd, device, stageData.pipelineLayout.get(), vertShader.get(),
+                                              VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, fragShader.get(),
+                                              stageData.renderPass.get(), viewports, scissors);
 
     // Framebuffer.
     stageData.framebuffer = makeFramebuffer(vkd, device, stageData.renderPass.get(), 0u, nullptr, kImageDim, kImageDim);

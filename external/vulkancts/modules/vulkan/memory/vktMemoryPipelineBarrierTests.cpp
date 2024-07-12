@@ -504,14 +504,20 @@ struct TestConfig
 vk::Move<vk::VkCommandBuffer> createBeginCommandBuffer(const vk::DeviceInterface &vkd, vk::VkDevice device,
                                                        vk::VkCommandPool pool, vk::VkCommandBufferLevel level)
 {
-    const vk::VkCommandBufferInheritanceInfo inheritInfo = {
-        vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, DE_NULL, 0, 0, 0, VK_FALSE, 0u, 0u};
-    const vk::VkCommandBufferBeginInfo beginInfo = {
+    const vk::VkCommandBufferInheritanceInfo inheritInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+                                                            DE_NULL,
+                                                            VK_NULL_HANDLE,
+                                                            0,
+                                                            VK_NULL_HANDLE,
+                                                            VK_FALSE,
+                                                            0u,
+                                                            0u};
+    const vk::VkCommandBufferBeginInfo beginInfo         = {
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         DE_NULL,
         0u,
         (level == vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY ? &inheritInfo :
-                                                          (const vk::VkCommandBufferInheritanceInfo *)DE_NULL),
+                                                                  (const vk::VkCommandBufferInheritanceInfo *)DE_NULL),
     };
 
     vk::Move<vk::VkCommandBuffer> commandBuffer(allocateCommandBuffer(vkd, device, pool, level));
@@ -2052,7 +2058,7 @@ void SubmitCommandBuffer::execute(ExecuteContext &context)
                                       0,
                                       DE_NULL};
 
-    vkd.queueSubmit(queue, 1, &submit, 0);
+    vkd.queueSubmit(queue, 1, &submit, VK_NULL_HANDLE);
 }
 
 void SubmitCommandBuffer::verify(VerifyContext &context, size_t commandIndex)
@@ -5958,7 +5964,7 @@ void RenderVertexStorageImage::prepare(PrepareRenderPassContext &context)
         }
 
         {
-            const vk::VkDescriptorImageInfo imageInfo = {0, *m_imageView, context.getImageLayout()};
+            const vk::VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, *m_imageView, context.getImageLayout()};
             const vk::VkWriteDescriptorSet write      = {
                 vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, DE_NULL,    *m_descriptorSet, 0u,      0u, 1u,
                 vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,       &imageInfo, DE_NULL,          DE_NULL,
@@ -7109,7 +7115,7 @@ void RenderFragmentStorageImage::prepare(PrepareRenderPassContext &context)
         }
 
         {
-            const vk::VkDescriptorImageInfo imageInfo = {0, *m_imageView, context.getImageLayout()};
+            const vk::VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, *m_imageView, context.getImageLayout()};
             const vk::VkWriteDescriptorSet write      = {
                 vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, DE_NULL,    *m_descriptorSet, 0u,      0u, 1u,
                 vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,       &imageInfo, DE_NULL,          DE_NULL,

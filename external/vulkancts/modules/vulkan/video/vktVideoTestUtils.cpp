@@ -602,7 +602,7 @@ vector<AllocationPtr> getAndBindVideoSessionMemory(const DeviceInterface &vkd, c
 {
     uint32_t videoSessionMemoryRequirementsCount = 0;
 
-    DE_ASSERT(videoSession != DE_NULL);
+    DE_ASSERT(videoSession != VK_NULL_HANDLE);
 
     VK_CHECK(
         vkd.getVideoSessionMemoryRequirementsKHR(device, videoSession, &videoSessionMemoryRequirementsCount, DE_NULL));

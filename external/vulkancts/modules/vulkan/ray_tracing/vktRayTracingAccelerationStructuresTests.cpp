@@ -4526,7 +4526,7 @@ TestStatus CopyBlasInstance::iterate(void)
         vk.cmdPipelineBarrier2(*cmdBuffer, &copyBlasDependency);
     }
     else
-        VK_CHECK(vk.copyAccelerationStructureKHR(device, VkDeferredOperationKHR(0), &copyBlasInfo));
+        VK_CHECK(vk.copyAccelerationStructureKHR(device, VK_NULL_HANDLE, &copyBlasInfo));
 
     tlas->createAndBuild(vk, device, *cmdBuffer, allocator);
 

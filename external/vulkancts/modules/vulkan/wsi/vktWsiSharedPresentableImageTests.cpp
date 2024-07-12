@@ -690,7 +690,7 @@ void SharedPresentableImageTestInstance::initSwapchainResources(void)
     vk::Move<vk::VkSemaphore> semaphore(createSemaphore(m_vkd, *m_device));
     uint32_t imageIndex = 42; // initialize to junk value
 
-    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, *semaphore, 0u, &imageIndex));
+    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, *semaphore, VK_NULL_HANDLE, &imageIndex));
     TCU_CHECK(imageIndex == 0);
 
     // Transition to IMAGE_LAYOUT_SHARED_PRESENT_KHR

@@ -978,7 +978,7 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
             new BufferWithMemory(vk, device, memAlloc, outputBufferInfo, MemoryRequirement::HostVisible));
     }
 
-    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, DE_NULL);
+    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, VK_NULL_HANDLE);
     Move<VkShaderModule> vertShaderModule =
         createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
     Move<VkShaderModule> fragShaderModule =

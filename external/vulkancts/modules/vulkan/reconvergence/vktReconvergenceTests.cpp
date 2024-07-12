@@ -773,11 +773,12 @@ Move<VkPipeline> ReconvergenceTestInstance::createGraphicsPipeline(const VkPipel
         ITESE,
         IGEOM
     };
-    VkShaderModule handles[5] = {DE_NULL}; // { vert, frag, tesc, tese, geom }
+    VkShaderModule handles[5] = {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                 VK_NULL_HANDLE}; // { vert, frag, tesc, tese, geom }
 
     for (uint32_t i = 0; i < (uint32_t)ARRAYSIZE(handles); ++i)
     {
-        handles[i] = (i < (uint32_t)shaders.size()) ? *shaders[i] : DE_NULL;
+        handles[i] = (i < (uint32_t)shaders.size()) ? *shaders[i] : VK_NULL_HANDLE;
     }
 
     return makeGraphicsPipeline(vkd, device, pipelineLayout, handles[IVERT], handles[ITESC], handles[ITESE],

@@ -1045,8 +1045,7 @@ void CommonDescriptorInstance::updateDescriptors(IterateCommonVariables &variabl
         const VkDescriptorImageInfo *pImageInfo   = nullptr;
         const VkBufferView *pTexelBufferView      = nullptr;
 
-        VkDescriptorImageInfo imageInfo = {static_cast<VkSampler>(0), static_cast<VkImageView>(0),
-                                           VK_IMAGE_LAYOUT_GENERAL};
+        VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL};
 
         switch (m_testParams.descriptorType)
         {
@@ -1121,8 +1120,7 @@ void CommonDescriptorInstance::updateUnusedDescriptors(IterateCommonVariables &v
         const VkDescriptorImageInfo *pImageInfo   = DE_NULL;
         const VkBufferView *pTexelBufferView      = DE_NULL;
 
-        VkDescriptorImageInfo imageInfo = {static_cast<VkSampler>(0), static_cast<VkImageView>(0),
-                                           VK_IMAGE_LAYOUT_GENERAL};
+        VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL};
 
         switch (m_testParams.descriptorType)
         {
@@ -3602,7 +3600,7 @@ void SamplerInstance::updateDescriptors(IterateCommonVariables &variables)
 
     // update an image
     {
-        const VkDescriptorImageInfo imageInfo = {static_cast<VkSampler>(0), **variables.descriptorImageViews[0],
+        const VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, **variables.descriptorImageViews[0],
                                                  VK_IMAGE_LAYOUT_GENERAL};
 
         const VkWriteDescriptorSet writeInfo = {
@@ -3751,7 +3749,7 @@ void SampledImageInstance::updateDescriptors(IterateCommonVariables &variables)
 
     // update a sampler
     {
-        const VkDescriptorImageInfo samplerInfo = {**variables.descriptorSamplers[0], static_cast<VkImageView>(0),
+        const VkDescriptorImageInfo samplerInfo = {**variables.descriptorSamplers[0], VK_NULL_HANDLE,
                                                    static_cast<VkImageLayout>(0)};
 
         const VkWriteDescriptorSet writeInfo = {
@@ -4044,9 +4042,8 @@ void StorageImageInstance::updateDescriptors(IterateCommonVariables &variables)
 {
     // update image at last index
     {
-        VkDescriptorImageInfo imageInfo = {static_cast<VkSampler>(0),
-                                           **variables.descriptorImageViews[variables.validDescriptorCount],
-                                           VK_IMAGE_LAYOUT_GENERAL};
+        VkDescriptorImageInfo imageInfo = {
+            VK_NULL_HANDLE, **variables.descriptorImageViews[variables.validDescriptorCount], VK_IMAGE_LAYOUT_GENERAL};
 
         const VkWriteDescriptorSet writeInfo = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // sType

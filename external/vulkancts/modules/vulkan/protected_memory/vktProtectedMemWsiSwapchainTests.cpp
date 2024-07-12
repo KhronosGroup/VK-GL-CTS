@@ -1363,8 +1363,9 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
             VK_CHECK(vkd.resetFences(device, 1, &imageReadyFence));
 
             {
-                const vk::VkResult acquireResult = vkd.acquireNextImageKHR(
-                    device, *swapchain, std::numeric_limits<uint64_t>::max(), imageReadySemaphore, 0, &imageNdx);
+                const vk::VkResult acquireResult =
+                    vkd.acquireNextImageKHR(device, *swapchain, std::numeric_limits<uint64_t>::max(),
+                                            imageReadySemaphore, VK_NULL_HANDLE, &imageNdx);
 
                 if (acquireResult == vk::VK_SUBOPTIMAL_KHR)
                     context.getTestContext().getLog() << tcu::TestLog::Message << "Got " << acquireResult

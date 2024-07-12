@@ -721,7 +721,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
 
             const VkDescriptorBufferInfo bufferInfo = {*controlBuffer, 0u, VK_WHOLE_SIZE};
 
-            const VkDescriptorImageInfo imageInfo = {(VkSampler)DE_NULL, *markerImageView, VK_IMAGE_LAYOUT_GENERAL};
+            const VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, *markerImageView, VK_IMAGE_LAYOUT_GENERAL};
 
             DescriptorSetUpdateBuilder()
                 .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
@@ -844,8 +844,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
 
             const VkDescriptorImageInfo depthImageInfo = {*depthSampler, *depthImageView, VK_IMAGE_LAYOUT_GENERAL};
 
-            const VkDescriptorImageInfo imageInfo = {(VkSampler)DE_NULL, *depthResolveImageView,
-                                                     VK_IMAGE_LAYOUT_GENERAL};
+            const VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, *depthResolveImageView, VK_IMAGE_LAYOUT_GENERAL};
 
             DescriptorSetUpdateBuilder()
                 .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
@@ -1145,7 +1144,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate(void)
 
         descriptorSet = allocateDescriptorSet(vk, device, &descriptorSetAllocInfo);
 
-        const VkDescriptorImageInfo imageInfo = {(VkSampler)DE_NULL, *outputImageView, VK_IMAGE_LAYOUT_GENERAL};
+        const VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, *outputImageView, VK_IMAGE_LAYOUT_GENERAL};
 
         DescriptorSetUpdateBuilder()
             .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),

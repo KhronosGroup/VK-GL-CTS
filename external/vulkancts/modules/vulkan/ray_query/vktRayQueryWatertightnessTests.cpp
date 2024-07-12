@@ -156,7 +156,7 @@ uint32_t getShaderGroupBaseAlignment(const InstanceInterface &vki, const VkPhysi
 
 VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 {
-    VkBuffer result = (buffer.get() == DE_NULL) ? DE_NULL : buffer->get();
+    VkBuffer result = (buffer.get() == DE_NULL) ? VK_NULL_HANDLE : buffer->get();
 
     return result;
 }
@@ -164,7 +164,7 @@ VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 VkStridedDeviceAddressRegionKHR makeStridedDeviceAddressRegion(const DeviceInterface &vkd, const VkDevice device,
                                                                VkBuffer buffer, VkDeviceSize size)
 {
-    const VkDeviceSize sizeFixed = ((buffer == DE_NULL) ? 0ull : size);
+    const VkDeviceSize sizeFixed = ((buffer == VK_NULL_HANDLE) ? 0ull : size);
 
     return makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, buffer, 0), sizeFixed, sizeFixed);
 }

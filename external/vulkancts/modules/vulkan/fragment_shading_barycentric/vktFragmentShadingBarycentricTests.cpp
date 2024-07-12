@@ -1362,9 +1362,9 @@ tcu::TestStatus FragmentShadingBarycentricWeightTestInstance::iterate(void)
     }
 
     std::vector<VkImageMemoryBarrier> initialImageBarriers(
-        2, makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT,
-                                  VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                                  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, DE_NULL, imageSubresourceRange));
+        2, makeImageMemoryBarrier(
+               VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+               VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE, imageSubresourceRange));
 
     for (size_t ndx = 0; ndx < 2; ndx++)
     {

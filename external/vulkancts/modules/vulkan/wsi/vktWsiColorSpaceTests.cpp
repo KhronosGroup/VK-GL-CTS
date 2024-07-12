@@ -488,7 +488,7 @@ tcu::TestStatus colorspaceCompareTest(Context &context, TestParams params)
             {
                 const VkResult acquireResult =
                     vkd.acquireNextImageKHR(device, *swapchain, std::numeric_limits<uint64_t>::max(),
-                                            imageReadySemaphore.get(), DE_NULL, &imageNdx);
+                                            imageReadySemaphore.get(), VK_NULL_HANDLE, &imageNdx);
 
                 if (acquireResult == VK_SUBOPTIMAL_KHR)
                 {
@@ -524,7 +524,7 @@ tcu::TestStatus colorspaceCompareTest(Context &context, TestParams params)
                                                            (VkResult *)DE_NULL};
 
                 renderer.recordFrame(commandBuffer.get(), imageNdx, 0);
-                VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, DE_NULL));
+                VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE));
                 VK_CHECK_WSI(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
             }
 

@@ -720,7 +720,7 @@ tcu::TestStatus querySurfaceFormatsTestSurfaceless(Context &context, Type wsiTyp
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType);
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
-    const VkSurfaceKHR nullSurface                 = 0;
+    const VkSurfaceKHR nullSurface                 = VK_NULL_HANDLE;
     const vector<VkPhysicalDevice> physicalDevices = enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
 
     for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
@@ -961,7 +961,7 @@ tcu::TestStatus querySurfacePresentModes2TestSurfaceless(Context &context, Type 
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType);
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
-    const VkSurfaceKHR nullSurface                 = 0;
+    const VkSurfaceKHR nullSurface                 = VK_NULL_HANDLE;
     const vector<VkPhysicalDevice> physicalDevices = enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
     const std::vector<vk::VkExtensionProperties> deviceExtensions(
         enumerateDeviceExtensionProperties(instHelper.vki, context.getPhysicalDevice(), DE_NULL));
@@ -1046,7 +1046,7 @@ tcu::TestStatus querySurfaceFormats2TestSurfaceless(Context &context, Type wsiTy
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType);
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
-    const VkSurfaceKHR nullSurface                 = 0;
+    const VkSurfaceKHR nullSurface                 = VK_NULL_HANDLE;
     const vector<VkPhysicalDevice> physicalDevices = enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
 
     for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)

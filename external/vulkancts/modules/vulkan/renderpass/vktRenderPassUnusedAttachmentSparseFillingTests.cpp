@@ -536,7 +536,7 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
     }
 
     // Create framebuffer if renderpass handle is valid
-    if (*m_renderPass != DE_NULL)
+    if (*m_renderPass != VK_NULL_HANDLE)
     {
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,           // VkStructureType sType;

@@ -562,9 +562,9 @@ tcu::TestStatus FragSideEffectsInstance::iterate(void)
 
     // Graphics pipeline.
     const auto graphicsPipeline = vk::makeGraphicsPipeline(
-        vkd, device, pipelineLayout.get(), vertModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(),
-        renderPass.get(), 0u, &vertexInputInfo, &inputAssemblyInfo, nullptr, &viewportInfo, &rasterizationInfo,
-        &multisampleInfo, &depthStencilInfo, &colorBlendInfo);
+        vkd, device, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        fragModule.get(), renderPass.get(), 0u, &vertexInputInfo, &inputAssemblyInfo, nullptr, &viewportInfo,
+        &rasterizationInfo, &multisampleInfo, &depthStencilInfo, &colorBlendInfo);
 
     // Command buffer.
     const auto cmdPool = vk::makeCommandPool(vkd, device, queueIndex);

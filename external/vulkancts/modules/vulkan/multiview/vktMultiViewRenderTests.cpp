@@ -1314,7 +1314,7 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline(
     const VkGraphicsPipelineCreateInfo graphicsPipelineParams{
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
 #ifndef CTS_USES_VULKANSC
-        (renderPass == 0) ? &renderingCreateInfo : DE_NULL, // const void* pNext;
+        (renderPass == VK_NULL_HANDLE) ? &renderingCreateInfo : DE_NULL, // const void* pNext;
 #else
         DE_NULL,     // const void* pNext;
 #endif                             // CTS_USES_VULKANSC
@@ -1335,7 +1335,7 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline(
         pipelineLayout,                                    // VkPipelineLayout layout;
         renderPass,                                        // VkRenderPass renderPass;
         subpass,                                           // uint32_t subpass;
-        0u,                                                // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                    // VkPipeline basePipelineHandle;
         0,                                                 // int32_t basePipelineIndex;
     };
 
@@ -4452,7 +4452,7 @@ tcu::TestStatus MultiViewMaskIterationTestInstance::iterate(void)
             VK_NULL_HANDLE, fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u,
             0u, &vertexInputStateCreateInfo, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr,
 #ifndef CTS_USES_VULKANSC
-            (*renderPass == 0) ? &pipelineRenderingCreateInfo : VK_NULL_HANDLE
+            (*renderPass == VK_NULL_HANDLE) ? &pipelineRenderingCreateInfo : VK_NULL_HANDLE
 #else
             VK_NULL_HANDLE
 #endif // CTS_USES_VULKANSC

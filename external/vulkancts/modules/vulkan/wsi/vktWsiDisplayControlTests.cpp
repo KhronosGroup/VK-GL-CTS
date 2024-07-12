@@ -184,7 +184,7 @@ VkDisplayKHR getDisplayAndDisplayPlane(const InstanceInterface &vki, VkPhysicalD
     TCU_FAIL("No intersection between displays and display planes");
 
     // Unreachable.
-    return DE_NULL;
+    return VK_NULL_HANDLE;
 }
 
 VkSurfaceKHR createSurface(const InstanceInterface &vki, VkInstance instance, VkPhysicalDevice physicalDevice,
@@ -240,7 +240,7 @@ VkSurfaceKHR createSurface(const InstanceInterface &vki, VkInstance instance, Vk
     if (result != VK_SUCCESS)
         TCU_FAIL("CreateDisplayPlaneSurfaceKHR failed");
 
-    if (surface == DE_NULL)
+    if (surface == VK_NULL_HANDLE)
         TCU_FAIL("Invalid surface handle returned");
 
     return surface;

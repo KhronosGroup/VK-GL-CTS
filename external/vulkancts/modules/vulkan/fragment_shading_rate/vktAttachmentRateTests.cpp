@@ -640,7 +640,7 @@ Move<VkFramebuffer> AttachmentRateInstance::buildFramebuffer(VkDevice device, co
     }
 
     // create array containing just attachment views
-    std::vector<VkImageView> attachments(attachmentInfo.size(), 0);
+    std::vector<VkImageView> attachments(attachmentInfo.size(), VK_NULL_HANDLE);
     for (uint32_t i = 0; i < (uint32_t)attachmentInfo.size(); ++i)
         attachments[i] = attachmentInfo[i].view;
 
@@ -972,7 +972,7 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer commandBuffer,
     DE_UNREF(srTileHeight);
 #endif // CTS_USES_VULKANSC
 
-    std::vector<VkImageView> attachments(attachmentInfo.size(), 0);
+    std::vector<VkImageView> attachments(attachmentInfo.size(), VK_NULL_HANDLE);
     VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo;
     void *pNext(DE_NULL);
 

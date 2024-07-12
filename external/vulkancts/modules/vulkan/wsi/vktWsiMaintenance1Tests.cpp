@@ -289,8 +289,8 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(VkSurfaceKHR surface, VkSur
         transform,
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         presentMode,
-        VK_FALSE, // clipped
-        DE_NULL,  // oldSwapchain
+        VK_FALSE,       // clipped
+        VK_NULL_HANDLE, // oldSwapchain
     };
 
     return parameters;
@@ -627,7 +627,7 @@ ImageSp bindSingleImageMemory(const DeviceInterface &vkd, const VkDevice device,
     };
 
     VkBindImageMemoryInfo bimInfo = {
-        VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO, &bimSwapchainInfo, **image, DE_NULL, 0u,
+        VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO, &bimSwapchainInfo, **image, VK_NULL_HANDLE, 0u,
     };
 
     VK_CHECK(vkd.bindImageMemory2(device, 1, &bimInfo));
@@ -764,7 +764,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
         {
             uint32_t numImages = 0;
             VK_CHECK(vkd.getSwapchainImagesKHR(device, *swapchains.back(), &numImages, DE_NULL));
-            swapchainImages.push_back(std::vector<VkImage>(numImages, DE_NULL));
+            swapchainImages.push_back(std::vector<VkImage>(numImages, VK_NULL_HANDLE));
 
             // If memory allocation is deferred, bind image memory lazily at acquire time.
             if (testParams.deferMemoryAllocation)
@@ -833,7 +833,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
                 VK_IMAGE_LAYOUT_UNDEFINED,
                 VK_QUEUE_FAMILY_IGNORED,
                 VK_QUEUE_FAMILY_IGNORED,
-                DE_NULL,
+                VK_NULL_HANDLE,
                 range,
             };
 
@@ -842,12 +842,12 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
                 acquireSem.push_back(**acquireSems[i * surfaceCount + j]);
                 presentFence.push_back(**presentFences[i * surfaceCount + j]);
 
-                VK_CHECK(
-                    vkd.acquireNextImageKHR(device, *swapchains[j], foreverNs, acquireSem[j], DE_NULL, &imageIndex[j]));
+                VK_CHECK(vkd.acquireNextImageKHR(device, *swapchains[j], foreverNs, acquireSem[j], VK_NULL_HANDLE,
+                                                 &imageIndex[j]));
 
                 // If memory allocation is deferred and bind image memory is used, lazily bind image memory now if this is the first time the image is acquired.
                 VkImage &acquiredImage = swapchainImages[j][imageIndex[j]];
-                if (acquiredImage == DE_NULL)
+                if (acquiredImage == VK_NULL_HANDLE)
                 {
                     DE_ASSERT(testParams.bindImageMemory && testParams.deferMemoryAllocation);
                     DE_ASSERT(!bimImages[j][imageIndex[j]]);
@@ -904,7 +904,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
                 VK_STRUCTURE_TYPE_SUBMIT_INFO, DE_NULL, surfaceCount, acquireSem.data(), &waitStage, 1u,
                 &**commandBuffers[i],          1u,      presentSem,
             };
-            VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, DE_NULL));
+            VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE));
 
             // Present the frame
             VkSwapchainPresentFenceInfoEXT presentFenceInfo = {
@@ -1621,7 +1621,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
             const VkSemaphore acquireSem = **acquireSems[i];
             uint32_t imageIndex          = 0x12345; // initialize to junk value
 
-            VK_CHECK(vkd.acquireNextImageKHR(device, *swapchain, foreverNs, acquireSem, DE_NULL, &imageIndex));
+            VK_CHECK(vkd.acquireNextImageKHR(device, *swapchain, foreverNs, acquireSem, VK_NULL_HANDLE, &imageIndex));
 
             beginCommandBuffer(vkd, **commandBuffers[i], 0u);
 
@@ -1669,7 +1669,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
                 VK_STRUCTURE_TYPE_SUBMIT_INFO, DE_NULL, 1,           &acquireSem, &waitStage, 1u,
                 &**commandBuffers[i],          1u,      &presentSem,
             };
-            VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, DE_NULL));
+            VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE));
 
             // Present the frame
             const VkSwapchainPresentFenceInfoEXT presentFenceInfo = {
@@ -2046,8 +2046,9 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             const VkSemaphore acquireSem = **acquireSems[i];
             std::vector<uint32_t> acquiredIndices(acquireCount, 0x12345);
 
-            VkResult result = vkd.acquireNextImageKHR(
-                device, *swapchain, foreverNs, presentIndex == 0 ? acquireSem : DE_NULL, DE_NULL, &acquiredIndices[0]);
+            VkResult result =
+                vkd.acquireNextImageKHR(device, *swapchain, foreverNs, presentIndex == 0 ? acquireSem : VK_NULL_HANDLE,
+                                        VK_NULL_HANDLE, &acquiredIndices[0]);
 
             // If out of date, recreate the swapchain and reacquire.
             if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -2067,9 +2068,9 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     TCU_THROW(InternalError,
                               "Unexpected change in number of swapchain images when recreated during window resize");
 
-                result =
-                    vkd.acquireNextImageKHR(device, *swapchain, foreverNs, presentIndex == 0 ? acquireSem : DE_NULL,
-                                            DE_NULL, &acquiredIndices[0]);
+                result = vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
+                                                 presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                                 &acquiredIndices[0]);
             }
 
             VK_CHECK_WSI(result);
@@ -2077,7 +2078,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             for (uint32_t j = 1; j < acquireCount; ++j)
             {
                 VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
-                                                     presentIndex == j ? acquireSem : DE_NULL, DE_NULL,
+                                                     presentIndex == j ? acquireSem : VK_NULL_HANDLE, VK_NULL_HANDLE,
                                                      &acquiredIndices[j]));
             }
 
@@ -2141,7 +2142,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     VK_STRUCTURE_TYPE_SUBMIT_INFO, DE_NULL, 1,           &acquireSem, &waitStage, 1u,
                     &**commandBuffers[i],          1u,      &presentSem,
                 };
-                VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, DE_NULL));
+                VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE));
             }
 
             // If asked to release before present, do so now.

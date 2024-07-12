@@ -2278,7 +2278,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
     const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, numUsedAttachmentImages,
                                                             attachmentImages, renderSize.x(), renderSize.y()));
 
-    const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, DE_NULL));
+    const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, VK_NULL_HANDLE));
 
     // When we are creating a pipeline for runs without early fragment test, we are enabling all the samples for full coverage.
     // Sample mask will be modified in a fragment shader.

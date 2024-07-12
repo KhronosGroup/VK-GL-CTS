@@ -262,7 +262,7 @@ tcu::TestStatus DepthStencilWriteConditionsInstance::iterate(void)
     const Move<VkShaderModule> fragmentModule =
         createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u);
 
-    const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, DE_NULL);
+    const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, VK_NULL_HANDLE);
 
     const VkVertexInputBindingDescription vtxBindingDescription = Vertex::getBindingDescription();
     const auto vtxAttrDescriptions                              = Vertex::getAttributeDescriptions();

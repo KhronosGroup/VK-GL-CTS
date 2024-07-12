@@ -1029,7 +1029,7 @@ PipelineCreateInfo::PipelineCreateInfo(vk::VkPipelineLayout _layout, vk::VkRende
     renderPass         = _renderPass;
     subpass            = _subpass;
     layout             = _layout;
-    basePipelineHandle = DE_NULL;
+    basePipelineHandle = VK_NULL_HANDLE;
     basePipelineIndex  = 0;
     pDynamicState      = DE_NULL;
 }

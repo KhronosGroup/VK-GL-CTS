@@ -1024,7 +1024,7 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, Type wsiType)
 
         VkBindImageMemoryInfo bimInfo = {
             VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO, &bindImageMemorySwapchainInfo[idx], **images[idx],
-            DE_NULL, // If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
+            VK_NULL_HANDLE, // If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
             0u // If swapchain <in VkBindImageMemorySwapchainInfoKHR> is not NULL, the swapchain and imageIndex are used to determine the memory that the image is bound to, instead of memory and memoryOffset.
         };
 
@@ -1198,8 +1198,8 @@ public:
         m_info.pNext      = DE_NULL;
         m_info.swapchain  = swapchain;
         m_info.timeout    = timeout;
-        m_info.semaphore  = DE_NULL;
-        m_info.fence      = DE_NULL;
+        m_info.semaphore  = VK_NULL_HANDLE;
+        m_info.fence      = VK_NULL_HANDLE;
         m_info.deviceMask = deviceMask;
     }
 
@@ -1520,7 +1520,7 @@ tcu::TestStatus multiSwapchainRenderTest(Context &context, MultiSwapchainParams 
 
             {
                 const VkResult acquireResult = acquireImageWrapper[swapchainIndex].call(
-                    frameObjects.imageAvailableSemaphore, (VkFence)DE_NULL, &imageNdx);
+                    frameObjects.imageAvailableSemaphore, VK_NULL_HANDLE, &imageNdx);
                 if (acquireResult == VK_SUBOPTIMAL_KHR)
                     context.getTestContext().getLog() << TestLog::Message << "Got " << acquireResult << " at frame "
                                                       << frameNdx << TestLog::EndMessage;
@@ -1980,7 +1980,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
 
             VkBindImageMemoryInfo bimInfo = {
                 VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO, &bindImageMemorySwapchainInfo[idx], **images[idx],
-                DE_NULL, // If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
+                VK_NULL_HANDLE, // If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
                 0u // If swapchain <in VkBindImageMemorySwapchainInfoKHR> is not NULL, the swapchain and imageIndex are used to determine the memory that the image is bound to, instead of memory and memoryOffset.
             };
             bindImageMemoryInfos[idx] = bimInfo;
@@ -2020,7 +2020,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
 
             VkBindImageMemoryInfo bimInfo = {
                 VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO, &bindImageMemoryDeviceGroupInfo[idx], **imagesSfr[idx],
-                DE_NULL, // If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
+                VK_NULL_HANDLE, // If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
                 0u // If swapchain <in VkBindImageMemorySwapchainInfoKHR> is not NULL, the swapchain and imageIndex are used to determine the memory that the image is bound to, instead of memory and memoryOffset.
             };
             bindImageMemoryInfos[idx] = bimInfo;
@@ -2247,7 +2247,7 @@ tcu::TestStatus resizeSwapchainTest(Context &context, Type wsiType)
                 {
                     const VkResult acquireResult =
                         vkd.acquireNextImageKHR(device, *swapchain, std::numeric_limits<uint64_t>::max(),
-                                                imageReadySemaphore, DE_NULL, &imageNdx);
+                                                imageReadySemaphore, VK_NULL_HANDLE, &imageNdx);
 
                     if (acquireResult == VK_SUBOPTIMAL_KHR)
                         context.getTestContext().getLog() << TestLog::Message << "Got " << acquireResult << " at frame "
@@ -2399,12 +2399,12 @@ tcu::TestStatus destroyOldSwapchainTest(Context &context, Type wsiType)
     // Create the first swapchain.
     VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
-    VkSwapchainKHR swapchain = 0;
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
     VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, DE_NULL, &swapchain));
 
     // Create a new swapchain replacing the old one.
     swapchainInfo.oldSwapchain        = swapchain;
-    VkSwapchainKHR recreatedSwapchain = 0;
+    VkSwapchainKHR recreatedSwapchain = VK_NULL_HANDLE;
     VK_CHECK(devHelper.vkd.createSwapchainKHR(*devHelper.device, &swapchainInfo, DE_NULL, &recreatedSwapchain));
 
     // Destroying the old swapchain should have no effect.

@@ -343,9 +343,10 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate(void)
         createShaderModule(vk, device, m_context.getBinaryCollection().get("frag1"), 0u);
 
     const Move<VkPipelineLayout> pipelineLayout1 = makePipelineLayout(vk, device, 0, DE_NULL, 1, &pushConstantRange);
-    const Move<VkPipeline> graphicsPipeline1     = makeGraphicsPipeline(
-        vk, device, pipelineLayout1.get(), vertexModule1.get(), DE_NULL, DE_NULL, DE_NULL, fragmentModule1.get(),
-        renderPass1.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, DE_NULL);
+    const Move<VkPipeline> graphicsPipeline1 =
+        makeGraphicsPipeline(vk, device, pipelineLayout1.get(), vertexModule1.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, fragmentModule1.get(), renderPass1.get(), viewports, scissors,
+                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, DE_NULL);
 
     Move<VkRenderPass> renderPass2 = makeRenderPass(vk, device, m_format, VK_FORMAT_UNDEFINED,
                                                     VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -374,9 +375,10 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate(void)
         vtxAttrDescriptions.data(),      // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
     };
 
-    const Move<VkPipeline> graphicsPipeline2 = makeGraphicsPipeline(
-        vk, device, pipelineLayout2.get(), vertexModule2.get(), DE_NULL, DE_NULL, DE_NULL, fragmentModule2.get(),
-        renderPass2.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputInfo);
+    const Move<VkPipeline> graphicsPipeline2 =
+        makeGraphicsPipeline(vk, device, pipelineLayout2.get(), vertexModule2.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, fragmentModule2.get(), renderPass2.get(), viewports, scissors,
+                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputInfo);
 
     // The values sampled in the second pipeline will be copied to this buffer.
     const VkBufferCreateInfo resultBufferCreateInfo =

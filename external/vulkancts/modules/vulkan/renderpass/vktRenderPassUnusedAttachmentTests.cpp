@@ -656,7 +656,7 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance(Context &context, con
         m_renderPass = Move<VkRenderPass>();
 
     // Create framebuffer if renderpass handle is valid
-    if (*m_renderPass != DE_NULL)
+    if (*m_renderPass != VK_NULL_HANDLE)
     {
         const VkImageView imageViews[] = {*m_colorAttachmentView, *m_unusedAttachmentView, *m_inputAttachmentView};
 
