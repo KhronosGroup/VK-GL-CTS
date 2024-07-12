@@ -523,7 +523,7 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkFormat format, 
         VK_NULL_HANDLE,       // const VkShaderModule                          tessellationControlShaderModule
         VK_NULL_HANDLE,       // const VkShaderModule                          tessellationEvalShaderModule
         m_config.imageLayers == 1 ?
-            DE_NULL :
+            VK_NULL_HANDLE :
             *geometryShaderModule,           // const VkShaderModule                          geometryShaderModule
         *fragmentShaderModule,               // const VkShaderModule                          fragmentShaderModule
         VK_NULL_HANDLE,                      // const VkRenderPass                            renderPass

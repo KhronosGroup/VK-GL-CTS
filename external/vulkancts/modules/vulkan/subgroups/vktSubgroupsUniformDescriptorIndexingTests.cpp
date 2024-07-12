@@ -179,7 +179,8 @@ tcu::TestStatus UniformDescriptorIndexingTestCaseTestInstance::iterate(void)
         // but dont include samplersCount when combined image sampler case is executed as images and samplers share DescriptorImageInfos
         uint32_t imageInfoCount =
             imagesCount + samplersCount * (m_descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-        m_imageInfos = std::vector<VkDescriptorImageInfo>(imageInfoCount, makeDescriptorImageInfo(0, 0, imageLayout));
+        m_imageInfos = std::vector<VkDescriptorImageInfo>(
+            imageInfoCount, makeDescriptorImageInfo(VK_NULL_HANDLE, VK_NULL_HANDLE, imageLayout));
 
         if (m_descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER)
             setupImages(imagesCount, 3, VK_IMAGE_USAGE_SAMPLED_BIT, samplersCount);
@@ -196,8 +197,8 @@ tcu::TestStatus UniformDescriptorIndexingTestCaseTestInstance::iterate(void)
     if (buffersCount)
     {
         m_buffersWithMemoryVec.resize(buffersCount);
-        m_bufferInfos =
-            std::vector<VkDescriptorBufferInfo>(descriptorCount, makeDescriptorBufferInfo(0, 0, VK_WHOLE_SIZE));
+        m_bufferInfos = std::vector<VkDescriptorBufferInfo>(descriptorCount,
+                                                            makeDescriptorBufferInfo(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE));
 
         if (m_descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
             setupUniformBuffers(descriptorCount, clearColors);
@@ -276,24 +277,24 @@ tcu::TestStatus UniformDescriptorIndexingTestCaseTestInstance::iterate(void)
     const auto renderPass(setupRenderPass(inputsCount));
     const auto framebuffer(makeFramebuffer(vk, device, *renderPass, (uint32_t)m_framebufferImageViews.size(),
                                            m_framebufferImageViews.data(), m_imageSize, m_imageSize));
-    const auto pipeline(makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, 0, 0, 0, *fragModule,
-                                             *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0,
-                                             0, &vertexInputState));
+    const auto pipeline(makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                             VK_NULL_HANDLE, *fragModule, *renderPass, viewports, scissors,
+                                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0, &vertexInputState));
 
     // prepare barriers needed by all test variants
     const auto beforeClearBarrier(makeImageMemoryBarrier(0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-                                                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0,
+                                                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_NULL_HANDLE,
                                                          m_imageSubresourceRange));
-    const auto afterClearBarrier(
-        makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imageLayout, 0, m_imageSubresourceRange));
+    const auto afterClearBarrier(makeImageMemoryBarrier(
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imageLayout, VK_NULL_HANDLE, m_imageSubresourceRange));
     const auto beforeCopyBarrier(makeImageMemoryBarrier(
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outImageWithBuffer.getImage(), m_imageSubresourceRange));
     const auto bufferAccessMask((m_descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) ? VK_ACCESS_UNIFORM_READ_BIT :
                                                                                           VK_ACCESS_SHADER_READ_BIT);
     const auto beforeDrawBarrier(
-        makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, bufferAccessMask, 0, 0, VK_WHOLE_SIZE));
+        makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, bufferAccessMask, VK_NULL_HANDLE, 0, VK_WHOLE_SIZE));
 
     const auto queueFamilyIndex(m_context.getUniversalQueueFamilyIndex());
     const auto cmdPool(

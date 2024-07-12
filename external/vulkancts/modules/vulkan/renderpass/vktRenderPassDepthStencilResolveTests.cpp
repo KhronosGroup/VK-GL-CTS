@@ -765,7 +765,7 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkRenderPass rend
         VK_NULL_HANDLE,       // const VkShaderModule                          tessellationControlShaderModule
         VK_NULL_HANDLE,       // const VkShaderModule                          tessellationEvalShaderModule
         m_config.imageLayers == 1 ?
-            DE_NULL :
+            VK_NULL_HANDLE :
             *geometryShaderModule,           // const VkShaderModule                          geometryShaderModule
         *fragmentShaderModule,               // const VkShaderModule                          fragmentShaderModule
         renderPass,                          // const VkRenderPass                            renderPass
@@ -1556,18 +1556,20 @@ tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
     VkImageView imageViewsRaw[] = {*multisampledImageView, singlesampledImageA.getImageView()};
     const auto renderPassA      = createDepthPass(true, testFormat, imageAspect, depthResolveMode, stencilResolveMode);
     const auto framebufferA     = makeFramebuffer(vk, device, *renderPassA, 2, imageViewsRaw, renderSize, renderSize);
-    const auto pipelineA        = makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, 0, 0, 0, *fragModule,
-                                                       *renderPassA, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-                                                       0, 0, &vertexInputState, 0, &multisampleState, &depthStencilState);
+    const auto pipelineA =
+        makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             *fragModule, *renderPassA, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
+                             &vertexInputState, 0, &multisampleState, &depthStencilState);
 
     // create second renderpass, framebufer and pipeline that will resolve existing aspect (for verification)
     depthStencilState.depthWriteEnable = false;
     imageViewsRaw[1]                   = singlesampledImageB.getImageView();
     const auto renderPassB  = createDepthPass(false, testFormat, imageAspect, stencilResolveMode, depthResolveMode);
     const auto framebufferB = makeFramebuffer(vk, device, *renderPassB, 2, imageViewsRaw, renderSize, renderSize);
-    const auto pipelineB    = makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, 0, 0, 0, *fragModule,
-                                                   *renderPassB, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-                                                   0, 0, &vertexInputState, 0, &multisampleState, &depthStencilState);
+    const auto pipelineB =
+        makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             *fragModule, *renderPassB, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
+                             &vertexInputState, 0, &multisampleState, &depthStencilState);
 
     const auto cmdPool =
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);

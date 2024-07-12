@@ -447,10 +447,10 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     // define few structures that will be modified and reused in multiple places
     VkImageMemoryBarrier colorImageBarrier =
         makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-                               VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR, 0, colorSRR);
+                               VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR, VK_NULL_HANDLE, colorSRR);
     VkImageMemoryBarrier dsImageBarrier =
         makeImageMemoryBarrier(0, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-                               VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR, 0, dsSRR);
+                               VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR, VK_NULL_HANDLE, dsSRR);
     VkRenderingAttachmentInfo depthStencilAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType sType;
         DE_NULL,                                     // const void* pNext;
@@ -680,10 +680,10 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     {
         renderingAttachmentLocationInfo.pColorAttachmentLocations = m_colorAttachmentLocations[pipelineIndex].data();
         writeGraphicsPipelines[pipelineIndex]                     = makeGraphicsPipeline(
-            vk, device, *writePipelineLayout, *vertShaderModule, DE_NULL, DE_NULL, DE_NULL, *writeFragShaderModule,
-            DE_NULL, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0, &vertexInputState, DE_NULL,
-            &multisampleStateCreateInfo, &depthStencilStateCreateInfo, &colorBlendStateCreateInfo,
-            writeDynamicStateCreateInfo, &renderingCreateInfo);
+            vk, device, *writePipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+            *writeFragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
+            &vertexInputState, DE_NULL, &multisampleStateCreateInfo, &depthStencilStateCreateInfo,
+            &colorBlendStateCreateInfo, writeDynamicStateCreateInfo, &renderingCreateInfo);
 
         // writte to depth and stencil only in first pipeline
         depthStencilStateCreateInfo.depthTestEnable   = false;
@@ -710,9 +710,9 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices =
             de::dataOrNull(m_colorAttachmentInputIndices[pipelineIndex]);
         readGraphicsPipelines[pipelineIndex] = makeGraphicsPipeline(
-            vk, device, *readPipelineLayout, *vertShaderModule, DE_NULL, DE_NULL, DE_NULL, *readFragShaderModule,
-            DE_NULL, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 1, 0, &vertexInputState, DE_NULL,
-            DE_NULL, DE_NULL, &colorBlendStateCreateInfo, DE_NULL, &renderingCreateInfo);
+            vk, device, *readPipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+            *readFragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 1, 0,
+            &vertexInputState, DE_NULL, DE_NULL, DE_NULL, &colorBlendStateCreateInfo, DE_NULL, &renderingCreateInfo);
     }
 
     Move<VkCommandPool> commandPool =
@@ -948,7 +948,7 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
     };
     VkImageMemoryBarrier imageMemoryBarrier =
         makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DE_NULL, colorSRR);
+                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_NULL_HANDLE, colorSRR);
     const VkDeviceSize outputBufferSize = (VkDeviceSize)m_renderSize * m_renderSize * tcu::getPixelSize(textureFormat);
     const VkBufferCreateInfo outputBufferInfo =
         makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
@@ -1004,9 +1004,9 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
                                                       VK_FORMAT_UNDEFINED};
 
     Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
-        vk, device, *pipelineLayout, *vertShaderModule, DE_NULL, DE_NULL, DE_NULL, *fragShaderModule, DE_NULL,
-        viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0, &vertexInputState, DE_NULL, DE_NULL, DE_NULL,
-        &colorBlendStateCreateInfo, DE_NULL, &renderingCreateInfo);
+        vk, device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        *fragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
+        &vertexInputState, DE_NULL, DE_NULL, DE_NULL, &colorBlendStateCreateInfo, DE_NULL, &renderingCreateInfo);
 
     VkRenderingInfo renderingInfo{
         VK_STRUCTURE_TYPE_RENDERING_INFO,

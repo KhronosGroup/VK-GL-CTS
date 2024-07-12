@@ -341,7 +341,7 @@ public:
         vk::VkDisplayKHR *display = const_cast<vk::VkDisplayKHR *>(&m_native);
         VK_CHECK_SUPPORTED(vki.getDrmDisplayEXT(physDevice, fd, connectorId, display));
 
-        if (m_native == 0)
+        if (m_native == VK_NULL_HANDLE)
             TCU_THROW(NotSupportedError, "vkGetDrmDisplayEXT did not set display.");
 
         VK_CHECK_SUPPORTED(vki.acquireDrmDisplayEXT(physDevice, fd, m_native));

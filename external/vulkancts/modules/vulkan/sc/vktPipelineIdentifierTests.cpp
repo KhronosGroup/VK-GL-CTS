@@ -338,13 +338,13 @@ tcu::TestStatus testGraphicsPipelineIdentifier(Context &context, TestParams test
     bool isOK       = true;
     for (uint32_t i = 0; i < pipelineCount; ++i)
     {
-        if (expectedNullHandle[i] == 0 && pipelines[i] == DE_NULL)
+        if (expectedNullHandle[i] == 0 && pipelines[i] == VK_NULL_HANDLE)
         {
             context.getTestContext().getLog()
                 << tcu::TestLog::Message << "Pipeline " << i << " should be created" << tcu::TestLog::EndMessage;
             isOK = false;
         }
-        if (expectedNullHandle[i] != 0 && pipelines[i] != DE_NULL)
+        if (expectedNullHandle[i] != 0 && pipelines[i] != VK_NULL_HANDLE)
         {
             context.getTestContext().getLog()
                 << tcu::TestLog::Message << "Pipeline " << i << " should not be created" << tcu::TestLog::EndMessage;
@@ -530,13 +530,13 @@ tcu::TestStatus testComputePipelineIdentifier(Context &context, TestParams testP
     bool isOK = true;
     for (uint32_t i = 0; i < pipelineCount; ++i)
     {
-        if (expectedNullHandle[i] == 0 && pipelines[i] == DE_NULL)
+        if (expectedNullHandle[i] == 0 && pipelines[i] == VK_NULL_HANDLE)
         {
             context.getTestContext().getLog()
                 << tcu::TestLog::Message << "Pipeline " << i << " should be created" << tcu::TestLog::EndMessage;
             isOK = false;
         }
-        if (expectedNullHandle[i] != 0 && pipelines[i] != DE_NULL)
+        if (expectedNullHandle[i] != 0 && pipelines[i] != VK_NULL_HANDLE)
         {
             context.getTestContext().getLog()
                 << tcu::TestLog::Message << "Pipeline " << i << " should not be created" << tcu::TestLog::EndMessage;

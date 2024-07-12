@@ -91,7 +91,7 @@ tcu::TestStatus testComputeDerivativeByHandle(Context &context, bool useMaintena
                                         {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, 0,
                                          VK_SHADER_STAGE_COMPUTE_BIT, shaderModule.get(), "main", DE_NULL},
                                         layout.get(),
-                                        0,
+                                        VK_NULL_HANDLE,
                                         -1};
 
 #ifndef CTS_USES_VULKANSC
@@ -140,7 +140,7 @@ tcu::TestStatus testComputeDerivativeByIndex(Context &context, bool)
                                             {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, 0,
                                              VK_SHADER_STAGE_COMPUTE_BIT, shaderModule.get(), "main", DE_NULL},
                                             layout.get(),
-                                            0,
+                                            VK_NULL_HANDLE,
                                             -1},
                                            {
                                                VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
@@ -149,12 +149,12 @@ tcu::TestStatus testComputeDerivativeByIndex(Context &context, bool)
                                                {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, 0,
                                                 VK_SHADER_STAGE_COMPUTE_BIT, shaderModule.get(), "main", DE_NULL},
                                                layout.get(),
-                                               0,
+                                               VK_NULL_HANDLE,
                                                0,
                                            }};
 
     std::vector<VkPipeline> rawPipelines(2);
-    vk.createComputePipelines(vkDevice, 0, 2, cpci, DE_NULL, rawPipelines.data());
+    vk.createComputePipelines(vkDevice, VK_NULL_HANDLE, 2, cpci, DE_NULL, rawPipelines.data());
 
     for (uint32_t i = 0; i < rawPipelines.size(); i++)
     {

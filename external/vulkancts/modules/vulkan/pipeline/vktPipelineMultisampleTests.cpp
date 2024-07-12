@@ -4192,7 +4192,7 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
 
         m_copySampleDesciptorSet = allocateDescriptorSet(vk, vkDevice, &descriptorSetAllocateInfo);
 
-        const VkDescriptorImageInfo imageInfo{DE_NULL, *m_colorAttachmentView,
+        const VkDescriptorImageInfo imageInfo{VK_NULL_HANDLE, *m_colorAttachmentView,
                                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         const VkWriteDescriptorSet descriptorWrite{
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;

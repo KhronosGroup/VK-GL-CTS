@@ -1586,13 +1586,13 @@ public:
 
     VkBuffer getBuffer(void) const
     {
-        DE_ASSERT(*m_buffer != DE_NULL);
+        DE_ASSERT(*m_buffer != VK_NULL_HANDLE);
         return *m_buffer;
     }
 
     VkDeviceSize getBufferSize(void) const
     {
-        DE_ASSERT(*m_buffer != DE_NULL);
+        DE_ASSERT(*m_buffer != VK_NULL_HANDLE);
         return m_bufferSize;
     }
 
@@ -1604,13 +1604,13 @@ public:
 
     VkBuffer getSecondaryBuffer(void) const
     {
-        DE_ASSERT(*m_secondaryBuffer != DE_NULL);
+        DE_ASSERT(*m_secondaryBuffer != VK_NULL_HANDLE);
         return *m_secondaryBuffer;
     }
 
     VkDeviceSize getSecondaryBufferSize(void) const
     {
-        DE_ASSERT(*m_secondaryBuffer != DE_NULL);
+        DE_ASSERT(*m_secondaryBuffer != VK_NULL_HANDLE);
         return m_secondaryBufferSize;
     }
 
@@ -2475,7 +2475,7 @@ public:
             m_fragmentShaderModule =
                 ShaderWrapper(vk, device, context.getBinaryCollection().get(de::toString(subpassIndex) + "-frag"), 0u);
             m_pipelineLayout = PipelineLayoutWrapper(config.groupParams->pipelineConstructionType, vk, device,
-                                                     (m_descriptorSetLayout ? descriptorSetLayout : DE_NULL));
+                                                     (m_descriptorSetLayout ? descriptorSetLayout : VK_NULL_HANDLE));
             createSubpassPipeline(renderPass);
 
             // Round up the vertex buffer size to honor nonCoherentAtomSize.
@@ -3080,7 +3080,7 @@ protected:
         VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocationInfo     = initVulkanStructure();
         VkRenderingInputAttachmentIndexInfoKHR renderingInputAttachmentIndexInfo = initVulkanStructure();
 
-        if (renderPass == DE_NULL)
+        if (renderPass == VK_NULL_HANDLE)
         {
             findDepthStencilAttachments(m_renderPassInfo.getAttachments(), depthFormat, stencilFormat,
                                         gloabalDepthAttachmentIndex, gloabalStencilAttachmentIndex);
@@ -3119,11 +3119,11 @@ protected:
                                               ShaderWrapper(), ShaderWrapper(), DE_NULL, DE_NULL,
                                               renderingCreateInfoWrapper)
             .setupFragmentShaderState(m_pipelineLayout, renderPass, subpassIndex, m_fragmentShaderModule,
-                                      &depthStencilState, &multisampleState, 0, 0, {},
+                                      &depthStencilState, &multisampleState, 0, VK_NULL_HANDLE, {},
                                       renderingInputAttachmentIndexInfoWrapper)
             .setupFragmentOutputState(renderPass, subpassIndex,
-                                      (m_renderInfo.getOmitBlendState() ? DE_NULL : &blendState), &multisampleState, 0,
-                                      0, renderingAttachmentLocationInfoWrapper)
+                                      (m_renderInfo.getOmitBlendState() ? DE_NULL : &blendState), &multisampleState,
+                                      VK_NULL_HANDLE, 0, renderingAttachmentLocationInfoWrapper)
             .setMonolithicPipelineLayout(m_pipelineLayout)
             .buildPipeline();
     }
@@ -5836,8 +5836,8 @@ tcu::TestStatus renderPassTest(Context &context, TestConfig config)
             inputAttachmentViews.push_back(attachmentResources[attachmentNdx]->getInputAttachmentViews());
         }
 
-        beginCommandBuffer(vk, *initializeImagesCommandBuffer, DE_NULL, 0, DE_NULL, VK_FALSE, (VkQueryControlFlags)0,
-                           (VkQueryPipelineStatisticFlags)0);
+        beginCommandBuffer(vk, *initializeImagesCommandBuffer, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, VK_FALSE,
+                           (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
         pushImageInitializationCommands(vk, *initializeImagesCommandBuffer, renderPassInfo.getAttachments(),
                                         attachmentResources, queueIndex, imageClearValues);
         endCommandBuffer(vk, *initializeImagesCommandBuffer);
@@ -5861,14 +5861,14 @@ tcu::TestStatus renderPassTest(Context &context, TestConfig config)
                     inputAttachmentViews, subpassRenderInfo[subpassNdx], config)));
             }
 
-            beginCommandBuffer(vk, *renderCommandBuffer, DE_NULL, 0, DE_NULL, VK_FALSE, (VkQueryControlFlags)0,
-                               (VkQueryPipelineStatisticFlags)0);
+            beginCommandBuffer(vk, *renderCommandBuffer, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, VK_FALSE,
+                               (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
             pushRenderPassCommands(vk, *renderCommandBuffer, *renderPass, renderPassInfo, attachmentResources,
                                    *framebuffer, subpassRenderers, renderArea, renderPassClearValues, queueIndex,
                                    config, secondaryCmdBufferCompletelyContainsDynamicRenderpass);
             endCommandBuffer(vk, *renderCommandBuffer);
 
-            beginCommandBuffer(vk, *readImagesToBuffersCommandBuffer, DE_NULL, 0, DE_NULL, VK_FALSE,
+            beginCommandBuffer(vk, *readImagesToBuffersCommandBuffer, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, VK_FALSE,
                                (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
             pushReadImagesToBuffers(vk, *readImagesToBuffersCommandBuffer, queueIndex, attachmentResources,
                                     renderPassInfo.getAttachments(), attachmentIsLazy, targetSize);

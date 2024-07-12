@@ -839,7 +839,7 @@ void MultisampleRenderPassTestInstance::submitDynamicRendering(void)
                                       VK_QUEUE_FAMILY_IGNORED,
                                       VK_QUEUE_FAMILY_IGNORED,
 
-                                      DE_NULL,
+                                      VK_NULL_HANDLE,
                                       {VK_IMAGE_ASPECT_COLOR_BIT, m_renderLevel, 1u, 0u, totalLayers()}});
     for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
         singlesampleImageBarriers[dstNdx].image = **m_singlesampleImages[dstNdx];
@@ -858,7 +858,7 @@ void MultisampleRenderPassTestInstance::submitDynamicRendering(void)
                                                                 VK_QUEUE_FAMILY_IGNORED,
                                                                 VK_QUEUE_FAMILY_IGNORED,
 
-                                                                DE_NULL,
+                                                                VK_NULL_HANDLE,
                                                                 {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_layerCount}});
     for (size_t dstNdx = 0; dstNdx < m_multisampleImages.size(); dstNdx++)
         multisampleImageBarriers[dstNdx].image = **m_multisampleImages[dstNdx];
@@ -2146,7 +2146,7 @@ void MaxAttachmenstsRenderPassTestInstance::preRenderCommands(const DeviceInterf
     std::vector<VkImageMemoryBarrier> barriers(
         m_multisampleImages.size() + m_singlesampleImages.size(),
         makeImageMemoryBarrier(VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                               VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 0,
+                               VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_NULL_HANDLE,
                                subresourceRange));
 
     for (size_t i = 0; i < m_multisampleImages.size(); ++i)
@@ -2194,7 +2194,8 @@ void MaxAttachmenstsRenderPassTestInstance::postRenderCommands(const DeviceInter
     std::vector<VkImageMemoryBarrier> imageBarriers(
         m_singlesampleImages.size(),
         makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-                               m_inputImageReadLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 0u, subresourceRange));
+                               m_inputImageReadLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_NULL_HANDLE,
+                               subresourceRange));
 
     for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
         imageBarriers[dstNdx].image = **m_singlesampleImages[dstNdx];
@@ -2211,8 +2212,8 @@ void MaxAttachmenstsRenderPassTestInstance::postRenderCommands(const DeviceInter
 
     // Memory barriers between copies and host access
     std::vector<VkBufferMemoryBarrier> bufferBarriers(
-        m_buffers.size(),
-        makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, 0u, 0u, VK_WHOLE_SIZE));
+        m_buffers.size(), makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, VK_NULL_HANDLE,
+                                                  0u, VK_WHOLE_SIZE));
     for (size_t i = 0u; i < bufferBarriers.size(); ++i)
         bufferBarriers[i].buffer = **m_buffers[i];
 
@@ -2675,7 +2676,7 @@ void MaxAttachmenstsRenderPassTestInstance::createRenderPipeline(GraphicsPipelin
         fragShaderNameBase = "quad-frag-sp1-";
     }
 
-    if (*m_renderPass == DE_NULL)
+    if (*m_renderPass == VK_NULL_HANDLE)
         blendStatesCount = m_attachmentsCount;
 
     std::string fragShaderName = fragShaderNameBase + de::toString(m_attachmentsCount);
@@ -2767,7 +2768,7 @@ void MaxAttachmenstsRenderPassTestInstance::createRenderPipeline(GraphicsPipelin
     renderingInputAttachmentIndexInfo.colorAttachmentCount         = (uint32_t)colorAttachmentLocationsAndInputs.size();
     renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices = colorAttachmentLocationsAndInputs.data();
 
-    if (*m_renderPass == DE_NULL)
+    if (*m_renderPass == VK_NULL_HANDLE)
     {
         renderingCreateInfoWrapper.ptr             = &renderingCreateInfo;
         renderingAttachmentLocationInfoWrapper.ptr = &renderingAttachmentLocationInfo;
@@ -2783,9 +2784,9 @@ void MaxAttachmenstsRenderPassTestInstance::createRenderPipeline(GraphicsPipelin
                                           vertexShaderModule, 0u, ShaderWrapper(), ShaderWrapper(),
                                           geometryShaderModule, DE_NULL, DE_NULL, renderingCreateInfoWrapper)
         .setupFragmentShaderState(pipelineLayout, *m_renderPass, secondSubpass, fragmentShaderModule,
-                                  &depthStencilState, &multisampleState, 0, 0, {},
+                                  &depthStencilState, &multisampleState, 0, VK_NULL_HANDLE, {},
                                   renderingInputAttachmentIndexInfoWrapper)
-        .setupFragmentOutputState(*m_renderPass, secondSubpass, &blendState, &multisampleState, 0, {},
+        .setupFragmentOutputState(*m_renderPass, secondSubpass, &blendState, &multisampleState, VK_NULL_HANDLE, {},
                                   renderingAttachmentLocationInfoWrapper)
         .setMonolithicPipelineLayout(pipelineLayout)
         .buildPipeline();

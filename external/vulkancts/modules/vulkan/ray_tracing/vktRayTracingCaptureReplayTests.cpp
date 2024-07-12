@@ -387,7 +387,7 @@ void TestShaderBindingTablesConfiguration::initShaderBindingTables(de::MovePtr<R
         VkBufferDeviceAddressInfo deviceAddressInfo = {
             VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, //VkStructureType    sType;
             DE_NULL,                                      //const void*        pNext;
-            DE_NULL                                       //VkBuffer           buffer;
+            VK_NULL_HANDLE                                //VkBuffer           buffer;
         };
         deviceAddressInfo.buffer = pipelineData.pipelines[0].raygenShaderBindingTable->get();
         sbtSavedRaygenAddress    = vkd.getBufferOpaqueCaptureAddress(device, &deviceAddressInfo);

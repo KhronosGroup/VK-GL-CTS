@@ -476,7 +476,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance(Context &context, const Cac
         VkPipeline basePipeline =
             (ndx == PIPELINE_CACHE_NDX_DERIVATIVE && m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE].wasBuild()) ?
                 m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE].getPipeline() :
-                DE_NULL;
+                VK_NULL_HANDLE;
 
         preparePipelineWrapper(m_pipeline[ndx], vertShaderModule, tescShaderModule, teseShaderModule, geomShaderModule,
                                fragShaderModule, &m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * ndx],

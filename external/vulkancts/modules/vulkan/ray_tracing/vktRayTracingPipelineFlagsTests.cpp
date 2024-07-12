@@ -440,11 +440,11 @@ public:
         auto appendPipelineLibrary = [this, &pipelineLayout](RayTracingPipeline *pl) -> void
         { m_libraries.emplace_back(makeVkSharedPtr(pl->createPipeline(m_vkd, m_device, pipelineLayout))); };
 
-        DE_ASSERT((VkShaderModule(0) != *m_rgenModule));
-        DE_ASSERT((VkShaderModule(0) != *m_missModule));
-        DE_ASSERT(m_params.ahit() == (VkShaderModule(0) != *m_ahitModule));
-        DE_ASSERT((VkShaderModule(0) != *m_chitModule));
-        DE_ASSERT(checkIsect == (VkShaderModule(0) != *m_isectModule));
+        DE_ASSERT((*m_rgenModule != VK_NULL_HANDLE));
+        DE_ASSERT((*m_missModule != VK_NULL_HANDLE));
+        DE_ASSERT(m_params.ahit() == (*m_ahitModule != VK_NULL_HANDLE));
+        DE_ASSERT((*m_chitModule != VK_NULL_HANDLE));
+        DE_ASSERT(checkIsect == (*m_isectModule != VK_NULL_HANDLE));
 
         // rgen in the main pipeline only
         addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, *m_rgenModule, groupIndex++);

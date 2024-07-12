@@ -8536,7 +8536,7 @@ tcu::TestStatus emptyPipelineLayoutInstance(Context &context)
     pipelineCreateInfo.layout                            = *pipelineLayout;
 
     // make sure there is no crash when pipeline layout is empty
-    auto pipeline = createRayTracingPipelineKHR(vk, device, 0, 0, &pipelineCreateInfo);
+    auto pipeline = createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
     pipeline      = Move<VkPipeline>();
 
     return tcu::TestStatus::pass("Pass");

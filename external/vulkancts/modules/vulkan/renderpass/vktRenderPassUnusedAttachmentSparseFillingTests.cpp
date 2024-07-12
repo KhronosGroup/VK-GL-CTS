@@ -419,7 +419,7 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
             DE_NULL,                                    // const void* pNext;
             0u,                                         // VkImageViewCreateFlags flags;
-            0,                                          // VkImage image;
+            VK_NULL_HANDLE,                             // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
             VK_FORMAT_R8G8B8A8_UNORM,                   // VkFormat format;
             componentMappingRGBA,                       // VkChannelMapping channels;
@@ -632,7 +632,8 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
         deMemset(&colorBlendAttachmentState, 0x00, sizeof(VkPipelineColorBlendAttachmentState));
         colorBlendAttachmentState.colorWriteMask = 0xF;
 
-        uint32_t colorAttachmentsCount = (*m_renderPass == DE_NULL) ? 2u * m_testParams.activeInputAttachmentCount : 1u;
+        uint32_t colorAttachmentsCount =
+            (*m_renderPass == VK_NULL_HANDLE) ? 2u * m_testParams.activeInputAttachmentCount : 1u;
         const std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(colorAttachmentsCount,
                                                                                           colorBlendAttachmentState);
         VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfoDefault = initVulkanStructure();
@@ -664,7 +665,7 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
                                                           VK_FORMAT_UNDEFINED,
                                                           VK_FORMAT_UNDEFINED};
 
-        if (*m_renderPass == DE_NULL)
+        if (*m_renderPass == VK_NULL_HANDLE)
         {
             renderingCreateInfoWrapper.ptr               = &renderingCreateInfo;
             renderingInputAttachmentIndexInfoWrapper.ptr = &renderingInputAttachmentIndexInfo;
@@ -677,9 +678,9 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
             .setupVertexInputState(&vertexInputStateParams)
             .setupPreRasterizationShaderState(viewports, scissors, m_pipelineLayout, *m_renderPass, 0u,
                                               vertexShaderModule, 0u, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(),
-                                              DE_NULL, DE_NULL, renderingCreateInfoWrapper, DE_NULL)
-            .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragmentShaderModule, 0, 0, 0, 0, {},
-                                      renderingInputAttachmentIndexInfoWrapper)
+                                              DE_NULL, DE_NULL, renderingCreateInfoWrapper, VK_NULL_HANDLE)
+            .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragmentShaderModule, 0, 0, 0,
+                                      VK_NULL_HANDLE, {}, renderingInputAttachmentIndexInfoWrapper)
             .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfoDefault)
             .setMonolithicPipelineLayout(m_pipelineLayout)
             .buildPipeline();

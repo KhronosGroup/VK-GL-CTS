@@ -279,9 +279,9 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate(void)
         const vk::VkCommandBufferInheritanceInfo inheritanceInfo = {
             vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
             &conditionalRenderingInheritanceInfo,
-            0u,                                    // renderPass
+            VK_NULL_HANDLE,                        // renderPass
             0u,                                    // subpass
-            0u,                                    // framebuffer
+            VK_NULL_HANDLE,                        // framebuffer
             VK_FALSE,                              // occlusionQueryEnable
             (vk::VkQueryControlFlags)0u,           // queryFlags
             (vk::VkQueryPipelineStatisticFlags)0u, // pipelineStatistics

@@ -854,7 +854,7 @@ tcu::TestStatus testNoAtt(Context &context, const NoAttCaseDef caseDef)
     // Create pipeline
     preparePipelineWrapper(pipeline, pipelineLayout, *renderPass, vertexModule, fragmentModule, renderSize,
                            VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0, 0u, caseDef.multisample);
-    renderPass.createFramebuffer(vk, device, 0, DE_NULL, renderSize.x(), renderSize.y());
+    renderPass.createFramebuffer(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, renderSize.x(), renderSize.y());
 
     // Record command buffer
     beginCommandBuffer(vk, *cmdBuffer);

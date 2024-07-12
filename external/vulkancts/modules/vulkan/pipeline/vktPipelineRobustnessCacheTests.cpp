@@ -462,7 +462,7 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
         .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, frag)
         .setupFragmentOutputState(*m_renderPass)
         .setMonolithicPipelineLayout(m_pipelineLayout)
-        .buildPipeline(*pipelineCache, 0, 0, vk::PipelineCreationFeedbackCreateInfoWrapper());
+        .buildPipeline(*pipelineCache, VK_NULL_HANDLE, 0, vk::PipelineCreationFeedbackCreateInfoWrapper());
 
     if (m_type == IMAGE)
     {

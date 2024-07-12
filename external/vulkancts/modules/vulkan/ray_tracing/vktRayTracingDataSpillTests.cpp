@@ -1981,7 +1981,7 @@ tcu::TestStatus DataSpillTestInstance::iterate(void)
                                                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
             for (size_t i = 0; i < kNumAloneSamplers; ++i)
                 textureSamplerInfos.push_back(
-                    makeDescriptorImageInfo(samplers[i].get(), DE_NULL, VK_IMAGE_LAYOUT_UNDEFINED));
+                    makeDescriptorImageInfo(samplers[i].get(), VK_NULL_HANDLE, VK_IMAGE_LAYOUT_UNDEFINED));
 
             for (size_t i = 0; i < kNumCombined; ++i)
                 combinedSamplerInfos.push_back(makeDescriptorImageInfo(samplers[i + kNumAloneSamplers].get(),

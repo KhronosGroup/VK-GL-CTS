@@ -629,9 +629,9 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory &i
         .setDefaultDepthStencilState()
         .setDefaultColorBlendState()
         .setupVertexInputState(&vertexInputState)
-        .setupPreRasterizationShaderState(viewports, scissors, graphicsPipelineLayout, DE_NULL, 0u, vtxshader)
-        .setupFragmentShaderState(graphicsPipelineLayout, DE_NULL, 0u, frgshader)
-        .setupFragmentOutputState(DE_NULL, 0u, DE_NULL, &multisampling)
+        .setupPreRasterizationShaderState(viewports, scissors, graphicsPipelineLayout, VK_NULL_HANDLE, 0u, vtxshader)
+        .setupFragmentShaderState(graphicsPipelineLayout, VK_NULL_HANDLE, 0u, frgshader)
+        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, DE_NULL, &multisampling)
         .setMonolithicPipelineLayout(graphicsPipelineLayout)
         .buildPipeline();
 

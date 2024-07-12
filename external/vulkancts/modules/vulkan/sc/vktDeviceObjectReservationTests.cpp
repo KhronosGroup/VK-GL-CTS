@@ -1877,7 +1877,7 @@ public:
                 if (result != VK_SUCCESS)
                 {
                     for (uint32_t j = 0; j < pipelineCount; ++j)
-                        if (pipelines[j].getInternal() != DE_NULL)
+                        if (pipelines[j].getInternal() != VK_NULL_HANDLE)
                             destroyPipelineFunc(device, pipelines[j], DE_NULL);
                     return;
                 }
@@ -1886,7 +1886,7 @@ public:
             for (uint32_t i = 0; i < pipelineCount; ++i)
             {
                 destroyPipelineFunc(device, pipelines[i], DE_NULL);
-                pipelines[i] = VkPipeline(DE_NULL);
+                pipelines[i] = VK_NULL_HANDLE;
             }
         }
     }

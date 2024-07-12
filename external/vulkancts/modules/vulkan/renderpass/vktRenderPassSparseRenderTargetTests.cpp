@@ -302,7 +302,7 @@ Move<VkPipeline> createRenderPipeline(const DeviceInterface &vkd, VkDevice devic
                                                          &format,
                                                          VK_FORMAT_UNDEFINED,
                                                          VK_FORMAT_UNDEFINED};
-    if (renderPass == DE_NULL)
+    if (renderPass == VK_NULL_HANDLE)
         pNext = &renderingCreateInfo;
 
     return makeGraphicsPipeline(

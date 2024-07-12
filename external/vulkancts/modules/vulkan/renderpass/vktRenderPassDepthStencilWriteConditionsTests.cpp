@@ -300,9 +300,9 @@ tcu::TestStatus DepthStencilWriteConditionsInstance::iterate(void)
     };
 
     const Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
-        vk, device, pipelineLayout.get(), vertexModule.get(), DE_NULL, DE_NULL, DE_NULL, fragmentModule.get(),
-        renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vtxInputStateCreateInfo,
-        DE_NULL, DE_NULL, &depthStencilCreateInfo, DE_NULL, DE_NULL);
+        vk, device, pipelineLayout.get(), vertexModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        fragmentModule.get(), renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
+        &vtxInputStateCreateInfo, DE_NULL, DE_NULL, &depthStencilCreateInfo, DE_NULL, DE_NULL);
 
     const VkBufferCreateInfo resultBufferCreateInfo =
         makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);

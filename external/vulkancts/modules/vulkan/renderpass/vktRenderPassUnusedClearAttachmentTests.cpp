@@ -982,30 +982,30 @@ void UnusedClearAttachmentTestInstance::createCommandBufferDynamicRendering(cons
     for (size_t i = 0; i < m_colorAttachmentViews.size(); ++i)
     {
         colorAttachments.push_back({
-            VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,              // VkStructureType sType;
-            DE_NULL,                                                      // const void* pNext;
-            (m_testParams.colorUsed[i]) ? *m_colorAttachmentViews[i] : 0, // VkImageView imageView;
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                     // VkImageLayout imageLayout;
-            VK_RESOLVE_MODE_NONE,                                         // VkResolveModeFlagBits resolveMode;
-            VK_NULL_HANDLE,                                               // VkImageView resolveImageView;
-            VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout resolveImageLayout;
-            VK_ATTACHMENT_LOAD_OP_LOAD,                                   // VkAttachmentLoadOp loadOp;
-            VK_ATTACHMENT_STORE_OP_STORE,                                 // VkAttachmentStoreOp storeOp;
-            m_clearColor                                                  // VkClearValue clearValue;
+            VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,                           // VkStructureType sType;
+            DE_NULL,                                                                   // const void* pNext;
+            (m_testParams.colorUsed[i]) ? *m_colorAttachmentViews[i] : VK_NULL_HANDLE, // VkImageView imageView;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                                  // VkImageLayout imageLayout;
+            VK_RESOLVE_MODE_NONE,         // VkResolveModeFlagBits resolveMode;
+            VK_NULL_HANDLE,               // VkImageView resolveImageView;
+            VK_IMAGE_LAYOUT_UNDEFINED,    // VkImageLayout resolveImageLayout;
+            VK_ATTACHMENT_LOAD_OP_LOAD,   // VkAttachmentLoadOp loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE, // VkAttachmentStoreOp storeOp;
+            m_clearColor                  // VkClearValue clearValue;
         });
     }
 
     VkRenderingAttachmentInfoKHR depthAttachment{
-        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,              // VkStructureType sType;
-        DE_NULL,                                                      // const void* pNext;
-        (m_testParams.depthStencilUsed) ? *m_depthAttachmentView : 0, // VkImageView imageView;
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,             // VkImageLayout imageLayout;
-        VK_RESOLVE_MODE_NONE,                                         // VkResolveModeFlagBits resolveMode;
-        VK_NULL_HANDLE,                                               // VkImageView resolveImageView;
-        VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout resolveImageLayout;
-        VK_ATTACHMENT_LOAD_OP_LOAD,                                   // VkAttachmentLoadOp loadOp;
-        VK_ATTACHMENT_STORE_OP_STORE,                                 // VkAttachmentStoreOp storeOp;
-        m_clearColorDepth                                             // VkClearValue clearValue;
+        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,                           // VkStructureType sType;
+        DE_NULL,                                                                   // const void* pNext;
+        (m_testParams.depthStencilUsed) ? *m_depthAttachmentView : VK_NULL_HANDLE, // VkImageView imageView;
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,                          // VkImageLayout imageLayout;
+        VK_RESOLVE_MODE_NONE,                                                      // VkResolveModeFlagBits resolveMode;
+        VK_NULL_HANDLE,                                                            // VkImageView resolveImageView;
+        VK_IMAGE_LAYOUT_UNDEFINED,                                                 // VkImageLayout resolveImageLayout;
+        VK_ATTACHMENT_LOAD_OP_LOAD,                                                // VkAttachmentLoadOp loadOp;
+        VK_ATTACHMENT_STORE_OP_STORE,                                              // VkAttachmentStoreOp storeOp;
+        m_clearColorDepth                                                          // VkClearValue clearValue;
     };
 
     const bool hasDepth = (m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
