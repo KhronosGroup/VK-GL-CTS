@@ -387,6 +387,7 @@ struct ComputeShaderSpec
     SpirvVersion spirvVersion;
     bool coherentMemory;
     bool usesPhysStorageBuffer;
+    const bool graphicsFeaturesRequired;
 
     ComputeShaderSpec(void)
         : entryPoint("main")
@@ -399,6 +400,7 @@ struct ComputeShaderSpec
         , spirvVersion(SPIRV_VERSION_1_0)
         , coherentMemory(false)
         , usesPhysStorageBuffer(false)
+        , graphicsFeaturesRequired(false)
     {
     }
 };

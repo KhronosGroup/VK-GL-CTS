@@ -103,6 +103,7 @@ typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT>
 typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV>
     PipelineRepresentativeFragmentTestCreateInfoWrapper;
 typedef VkPipelineCreateFlags2KHR PipelineCreateFlags2;
+typedef PointerWrapper<VkPipelineRobustnessCreateInfoEXT> PipelineRobustnessCreateInfoWrapper;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
@@ -112,6 +113,7 @@ typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
 typedef uint64_t PipelineCreateFlags2;
+typedef PointerWrapper<void> PipelineRobustnessCreateInfoWrapper;
 #endif
 
 PipelineCreateFlags2 translateCreateFlag(VkPipelineCreateFlags flagToTranslate);
@@ -430,6 +432,9 @@ public:
     GraphicsPipelineWrapper &setRepresentativeFragmentTestState(
         PipelineRepresentativeFragmentTestCreateInfoWrapper representativeFragmentTestState);
 
+    // Specify pipeline robustness state
+    GraphicsPipelineWrapper &setPipelineRobustnessState(PipelineRobustnessCreateInfoWrapper pipelineRobustnessState);
+
     // Specifying how a pipeline is created using VkPipelineCreateFlags2CreateInfoKHR.
     GraphicsPipelineWrapper &setPipelineCreateFlags2(PipelineCreateFlags2 pipelineFlags2);
 
@@ -598,8 +603,7 @@ public:
     void buildPipeline(
         const VkPipelineCache pipelineCache = VK_NULL_HANDLE, const VkPipeline basePipelineHandle = VK_NULL_HANDLE,
         const int32_t basePipelineIndex                            = 0,
-        PipelineCreationFeedbackCreateInfoWrapper creationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
-        void *pNext                                                = DE_NULL);
+        PipelineCreationFeedbackCreateInfoWrapper creationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
     // Create shader objects if used
 #ifndef CTS_USES_VULKANSC
     vk::VkShaderStageFlags getNextStages(vk::VkShaderStageFlagBits shaderStage, bool tessellationShaders,

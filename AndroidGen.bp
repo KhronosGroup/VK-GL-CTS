@@ -553,6 +553,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmPointerParameterTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmPtrAccessChainTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmRawAccessChainTests.cpp",
+        "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmRelaxedWithForwardReferenceTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmSignedIntCompareTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmSignedOpTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmSpirvVersion1p4Tests.cpp",
