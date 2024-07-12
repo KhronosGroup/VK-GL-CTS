@@ -1329,6 +1329,10 @@ void FragmentShadingBarycentricTestCase::checkSupport(Context &context) const
     if ((m_testParams.testSubtype == TEST_SUBTYPE_GEOMETRY_SHADER) ||
         (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER))
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+    if ((m_testParams.testSubtype == TEST_SUBTYPE_MSAA_INTERPOLATE_AT_SAMPLE) ||
+        (m_testParams.testSubtype == TEST_SUBTYPE_MSAA_INTERPOLATE_AT_OFFSET))
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 TestInstance *FragmentShadingBarycentricTestCase::createInstance(Context &context) const
