@@ -1278,6 +1278,10 @@ void FragmentShadingBarycentricTestCase::checkSupport(Context &context) const
             TCU_THROW(NotSupportedError, "shaderFloat64 not supported");
         }
     }
+
+    if ((m_testParams.testSubtype == TEST_SUBTYPE_MSAA_INTERPOLATE_AT_SAMPLE) ||
+        (m_testParams.testSubtype == TEST_SUBTYPE_MSAA_INTERPOLATE_AT_OFFSET))
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 TestInstance *FragmentShadingBarycentricTestCase::createInstance(Context &context) const

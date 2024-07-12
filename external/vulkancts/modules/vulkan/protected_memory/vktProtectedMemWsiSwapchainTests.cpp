@@ -688,23 +688,31 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
 
     case TEST_DIMENSION_IMAGE_USAGE:
     {
-        uint32_t testIndex = 0u;
-        uint32_t testCount = 0u;
-        for (uint32_t flags = 1u; flags <= capabilities.supportedUsageFlags; ++flags)
-        {
-            if ((flags & ~capabilities.supportedUsageFlags) == 0)
-                testCount++;
-        }
+        const vk::InstanceDriver &instanceDriver  = context.getInstanceDriver();
+        const vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+        std::vector<vk::VkSwapchainCreateInfoKHR> cases;
 
         for (uint32_t flags = 1u; flags <= capabilities.supportedUsageFlags; ++flags)
         {
             if ((flags & ~capabilities.supportedUsageFlags) == 0)
             {
-                vk::VkSwapchainCreateInfoKHR createInfo = baseParameters;
-                createInfo.imageUsage                   = flags;
-                testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
+                vk::VkImageFormatProperties imageProps;
+
+                // The Vulkan 1.1.87 spec contains the following VU for VkSwapchainCreateInfoKHR:
+                //
+                //     * imageFormat, imageUsage, imageExtent, and imageArrayLayers must be supported for VK_IMAGE_TYPE_2D
+                //     VK_IMAGE_TILING_OPTIMAL images as reported by vkGetPhysicalDeviceImageFormatProperties.
+                if (instanceDriver.getPhysicalDeviceImageFormatProperties(
+                        physicalDevice, baseParameters.imageFormat, vk::VK_IMAGE_TYPE_2D, vk::VK_IMAGE_TILING_OPTIMAL,
+                        flags, (vk::VkImageCreateFlags)0u, &imageProps) != vk::VK_SUCCESS)
+                    continue;
+
+                cases.push_back(baseParameters);
+                cases.back().imageUsage = flags;
             }
         }
+        for (uint32_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
+            testExecutor(vkd, device, cases[caseNdx], log, caseNdx + 1, (uint32_t)cases.size());
 
         break;
     }
@@ -897,6 +905,29 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
     const NativeObjects native(baseCtx, supportedExtensions, params.wsiType);
     ProtectedContext context(baseCtx, params.wsiType, *native.display, *native.window, instExts, devExts);
     vk::VkSurfaceKHR surface = context.getSurface();
+
+    if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
+    {
+        // Check if swapchain can be created for protected surface
+        const vk::InstanceInterface &vki = context.getInstanceDriver();
+        vk::VkSurfaceCapabilities2KHR extCapabilities;
+        vk::VkSurfaceProtectedCapabilitiesKHR extProtectedCapabilities;
+        const vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
+            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, DE_NULL, surface};
+
+        extProtectedCapabilities.sType             = vk::VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
+        extProtectedCapabilities.pNext             = DE_NULL;
+        extProtectedCapabilities.supportsProtected = false;
+
+        extCapabilities.sType = vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
+        extCapabilities.pNext = &extProtectedCapabilities;
+
+        VK_CHECK(
+            vki.getPhysicalDeviceSurfaceCapabilities2KHR(context.getPhysicalDevice(), &surfaceInfo, &extCapabilities));
+
+        if (extProtectedCapabilities.supportsProtected == false)
+            TCU_THROW(NotSupportedError, "Swapchain creation for Protected VkSurface is not Supported.");
+    }
 
     return executeSwapchainParameterCases(params.wsiType, params.dimension, context, surface,
                                           isExtensionForPresentModeEnabled, swapchainCreateExecutor);
@@ -1260,9 +1291,33 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
     const tcu::UVec2 desiredSize(256, 256);
     const NativeObjects native(baseCtx, supportedExtensions, wsiType, tcu::just(desiredSize));
     ProtectedContext context(baseCtx, wsiType, *native.display, *native.window, instExts, devExts);
-    vk::VkSurfaceKHR surface                         = context.getSurface();
-    const vk::DeviceInterface &vkd                   = context.getDeviceInterface();
-    const vk::VkDevice device                        = context.getDevice();
+    vk::VkSurfaceKHR surface       = context.getSurface();
+    const vk::DeviceInterface &vkd = context.getDeviceInterface();
+    const vk::VkDevice device      = context.getDevice();
+
+    if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
+    {
+        // Check if swapchain can be created for protected surface
+        const vk::InstanceInterface &vki = context.getInstanceDriver();
+        vk::VkSurfaceCapabilities2KHR extCapabilities;
+        vk::VkSurfaceProtectedCapabilitiesKHR extProtectedCapabilities;
+        const vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
+            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, DE_NULL, surface};
+
+        extProtectedCapabilities.sType             = vk::VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
+        extProtectedCapabilities.pNext             = DE_NULL;
+        extProtectedCapabilities.supportsProtected = false;
+
+        extCapabilities.sType = vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
+        extCapabilities.pNext = &extProtectedCapabilities;
+
+        VK_CHECK(
+            vki.getPhysicalDeviceSurfaceCapabilities2KHR(context.getPhysicalDevice(), &surfaceInfo, &extCapabilities));
+
+        if (extProtectedCapabilities.supportsProtected == false)
+            TCU_THROW(NotSupportedError, "Swapchain creation for Protected VkSurface is not Supported.");
+    }
+
     const vk::VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(
         wsiType, context.getInstanceDriver(), context.getPhysicalDevice(), surface, desiredSize, 2);
     const vk::Unique<vk::VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
@@ -1290,29 +1345,6 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
     const std::vector<SemaphoreSp> renderingCompleteSemaphores(createSemaphores(vkd, device, maxQueuedFrames));
     const std::vector<CommandBufferSp> commandBuffers(
         allocateCommandBuffers(vkd, device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY, maxQueuedFrames));
-
-    if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
-    {
-        // Check if swapchain can be created for protected surface
-        const vk::InstanceInterface &vki = context.getInstanceDriver();
-        vk::VkSurfaceCapabilities2KHR extCapabilities;
-        vk::VkSurfaceProtectedCapabilitiesKHR extProtectedCapabilities;
-        const vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
-            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, DE_NULL, surface};
-
-        extProtectedCapabilities.sType             = vk::VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
-        extProtectedCapabilities.pNext             = DE_NULL;
-        extProtectedCapabilities.supportsProtected = false;
-
-        extCapabilities.sType = vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
-        extCapabilities.pNext = &extProtectedCapabilities;
-
-        VK_CHECK(
-            vki.getPhysicalDeviceSurfaceCapabilities2KHR(context.getPhysicalDevice(), &surfaceInfo, &extCapabilities));
-
-        if (extProtectedCapabilities.supportsProtected == false)
-            TCU_THROW(NotSupportedError, "Swapchain creation for Protected VkSurface is not Supported.");
-    }
 
     try
     {

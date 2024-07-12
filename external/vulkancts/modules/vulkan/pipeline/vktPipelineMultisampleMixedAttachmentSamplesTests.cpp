@@ -1703,6 +1703,9 @@ void checkRequirements(Context &context, TestParams params)
                             false /* require standard sample locations */);
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           params.pipelineConstructionType);
+
+    if (params.numColorSamples != VK_SAMPLE_COUNT_1_BIT)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 //! Verify the values of shader builtins
