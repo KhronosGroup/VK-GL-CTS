@@ -92,7 +92,7 @@ public:
     BufferWithMemory(const vk::InstanceInterface &vki, const vk::DeviceInterface &vkd, const vk::VkPhysicalDevice phys,
                      const vk::VkDevice device, vk::Allocator &allocator,
                      const vk::VkBufferCreateInfo &bufferCreateInfo, const vk::MemoryRequirement memoryRequirement,
-                     const vk::VkQueue sparseQueue = vk::VkQueue(0));
+                     const vk::VkQueue sparseQueue = VK_NULL_HANDLE);
 
     const vk::VkBuffer &get(void) const
     {
@@ -132,7 +132,7 @@ class ImageWithMemory : public image::Image
 public:
     ImageWithMemory(const vk::InstanceInterface &vki, const vk::DeviceInterface &vkd, const vk::VkPhysicalDevice phys,
                     const vk::VkDevice device, vk::Allocator &allocator, const vk::VkImageCreateInfo &imageCreateInfo,
-                    const vk::VkQueue sparseQueue                 = vk::VkQueue(0),
+                    const vk::VkQueue sparseQueue                 = VK_NULL_HANDLE,
                     const vk::MemoryRequirement memoryRequirement = vk::MemoryRequirement::Any);
 
     const vk::VkImage &get(void) const

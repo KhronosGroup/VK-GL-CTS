@@ -3827,7 +3827,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
             case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
             {
                 const VkDescriptorImageInfo imgInfo = {
-                    DE_NULL,                       // sampler
+                    VK_NULL_HANDLE,                // sampler
                     **inResourceImageViews.back(), // imageView
                     VK_IMAGE_LAYOUT_GENERAL        // imageLayout
                 };
@@ -3838,7 +3838,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
             {
                 const VkDescriptorImageInfo imgInfo = {
                     **inResourceSamplers.back(), // sampler
-                    DE_NULL,                     // imageView
+                    VK_NULL_HANDLE,              // imageView
                     VK_IMAGE_LAYOUT_GENERAL      // imageLayout
                 };
                 dImageInfos.push_back(imgInfo);

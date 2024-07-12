@@ -2260,7 +2260,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
                         else
                         {
                             imageInfoVec[vecIndex] = makeDescriptorImageInfo(
-                                DE_NULL, storageImageViews[storageImgIndex].get(), VK_IMAGE_LAYOUT_GENERAL);
+                                VK_NULL_HANDLE, storageImageViews[storageImgIndex].get(), VK_IMAGE_LAYOUT_GENERAL);
                         }
                         ++storageImgIndex;
                         break;
@@ -2414,7 +2414,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
                 VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET, // VkDescriptorUpdateTemplateType templateType;
                 descriptorSetLayouts[s].get(),                     // VkDescriptorSetLayout descriptorSetLayout;
                 bindPoint,                                         // VkPipelineBindPoint pipelineBindPoint;
-                0,                                                 // VkPipelineLayout pipelineLayout;
+                VK_NULL_HANDLE,                                    // VkPipelineLayout pipelineLayout;
                 0,                                                 // uint32_t set;
             };
 
@@ -2572,7 +2572,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
             0u,              //  int32_t basePipelineIndex;
         };
 
-        pipeline = createRayTracingPipelineNV(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+        pipeline = createRayTracingPipelineNV(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
 
         const auto allocSize = de::roundUp(static_cast<VkDeviceSize>(shaderGroupHandleSize),
                                            properties.properties.limits.nonCoherentAtomSize);
@@ -2985,7 +2985,8 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
     else if (m_data.stage == STAGE_RAYGEN_NV)
     {
-        vk.cmdTraceRaysNV(*cmdBuffer, **sbtBuffer, 0, DE_NULL, 0, 0, DE_NULL, 0, 0, DE_NULL, 0, 0, DIM, DIM, 1);
+        vk.cmdTraceRaysNV(*cmdBuffer, **sbtBuffer, 0, VK_NULL_HANDLE, 0, 0, VK_NULL_HANDLE, 0, 0, VK_NULL_HANDLE, 0, 0,
+                          DIM, DIM, 1);
     }
     else if (isRayTracingStageKHR(m_data.stage))
     {

@@ -333,7 +333,7 @@ Move<VkSurfaceKHR> createSurface(const InstanceInterface &vki, VkInstance instan
                                  const Display &nativeDisplay, const Window &nativeWindow,
                                  const tcu::CommandLine &cmdLine, const VkAllocationCallbacks *pAllocator)
 {
-    VkSurfaceKHR object = 0;
+    VkSurfaceKHR object = VK_NULL_HANDLE;
     VK_CHECK(createSurface(vki, instance, wsiType, nativeDisplay, nativeWindow, cmdLine, pAllocator, &object));
     return Move<VkSurfaceKHR>(check<VkSurfaceKHR>(object), Deleter<VkSurfaceKHR>(vki, instance, pAllocator));
 }

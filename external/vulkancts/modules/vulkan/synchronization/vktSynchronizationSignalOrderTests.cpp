@@ -731,9 +731,11 @@ public:
             std::vector<VkCommandBufferSubmitInfoKHR> cmdBuffersInfo(iterations.size(),
                                                                      makeCommonCommandBufferSubmitInfo(0u));
             std::vector<VkSemaphoreSubmitInfoKHR> waitSemaphoreSubmitInfos(
-                iterations.size(), makeCommonSemaphoreSubmitInfo(0u, 1u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR));
+                iterations.size(),
+                makeCommonSemaphoreSubmitInfo(VK_NULL_HANDLE, 1u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR));
             std::vector<VkSemaphoreSubmitInfoKHR> signalSemaphoreSubmitInfos(
-                iterations.size(), makeCommonSemaphoreSubmitInfo(0u, 0u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR));
+                iterations.size(),
+                makeCommonSemaphoreSubmitInfo(VK_NULL_HANDLE, 0u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR));
             SynchronizationWrapperPtr synchronizationWrapper =
                 getSynchronizationWrapper(m_type, vkA, isTimelineSemaphore, static_cast<uint32_t>(iterations.size()));
 
@@ -1359,7 +1361,8 @@ public:
             VkSemaphoreSubmitInfoKHR waitSemaphoreSubmitInfo =
                 makeCommonSemaphoreSubmitInfo(semaphoreHandlesA.front(), 1u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR);
             std::vector<VkSemaphoreSubmitInfoKHR> signalSemaphoreSubmitInfo(
-                iterations.size(), makeCommonSemaphoreSubmitInfo(0u, 0u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR));
+                iterations.size(),
+                makeCommonSemaphoreSubmitInfo(VK_NULL_HANDLE, 0u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR));
             std::vector<VkCommandBufferSubmitInfoKHR> commandBufferSubmitInfos(iterations.size(),
                                                                                makeCommonCommandBufferSubmitInfo(0));
             SynchronizationWrapperPtr synchronizationWrapper =
@@ -1377,7 +1380,7 @@ public:
                     isTimelineSemaphore);
             }
 
-            VK_CHECK(synchronizationWrapper->queueSubmit(m_queueA, DE_NULL));
+            VK_CHECK(synchronizationWrapper->queueSubmit(m_queueA, VK_NULL_HANDLE));
         }
 
         // Submit reads, only waiting waiting on the last write

@@ -164,7 +164,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, VkDevice device
                                       const VkGraphicsPipelineCreateInfo *pCreateInfo,
                                       const VkAllocationCallbacks *pAllocator = nullptr)
 {
-    VkPipeline object  = 0;
+    VkPipeline object  = VK_NULL_HANDLE;
     const auto retcode = vk.createGraphicsPipelines(device, pipelineCache, 1u, pCreateInfo, pAllocator, &object);
 
 #ifndef CTS_USES_VULKANSC

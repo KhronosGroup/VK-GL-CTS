@@ -310,7 +310,7 @@ de::MovePtr<vk::Allocation> importAndBindMemory(const vk::DeviceInterface &vkd, 
 
     vk::Move<vk::VkDeviceMemory> memory =
         importMemory(vkd, device, requirements.memoryRequirements, externalType, nativeHandle,
-                     !!dedicatedRequirements.requiresDedicatedAllocation, buffer, DE_NULL);
+                     !!dedicatedRequirements.requiresDedicatedAllocation, buffer, VK_NULL_HANDLE);
     VK_CHECK(vkd.bindBufferMemory(device, buffer, *memory, 0u));
 
     return de::MovePtr<vk::Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
@@ -344,7 +344,7 @@ de::MovePtr<vk::Allocation> importAndBindMemory(const vk::DeviceInterface &vkd, 
 
     vk::Move<vk::VkDeviceMemory> memory =
         importMemory(vkd, device, requirements.memoryRequirements, externalType, nativeHandle,
-                     !!dedicatedRequirements.requiresDedicatedAllocation, DE_NULL, image);
+                     !!dedicatedRequirements.requiresDedicatedAllocation, VK_NULL_HANDLE, image);
     VK_CHECK(vkd.bindImageMemory(device, image, *memory, 0u));
 
     return de::MovePtr<vk::Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
@@ -1612,7 +1612,7 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate(void)
                                                        0u,
                                                        DE_NULL};
 
-            VK_CHECK(m_vkd.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+            VK_CHECK(m_vkd.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE));
         }
 
         dx11Op->copyMemory();
@@ -1649,7 +1649,7 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate(void)
                                                        0u,
                                                        DE_NULL};
 
-            VK_CHECK(m_vkd.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+            VK_CHECK(m_vkd.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE));
         }
 
         VK_CHECK(m_vkd.queueWaitIdle(queue));

@@ -184,7 +184,7 @@ void ComputePipelineWrapper::buildPipeline(void)
         buildPipelineLayout();
         m_pipeline =
             vk::makeComputePipeline(vk, device, *m_pipelineLayout, m_pipelineCreateFlags, m_pipelineCreatePNext,
-                                    *shaderModule, 0u, specializationInfo, 0, m_subgroupSize);
+                                    *shaderModule, 0u, specializationInfo, VK_NULL_HANDLE, m_subgroupSize);
     }
     else
     {

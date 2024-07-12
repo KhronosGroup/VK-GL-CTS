@@ -259,7 +259,7 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate(void)
                 &bufferMemoryBindSemaphore.get() //const VkSemaphore* pSignalSemaphores;
             };
 
-            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, DE_NULL));
+            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, VK_NULL_HANDLE));
         }
 
         // Create input buffer

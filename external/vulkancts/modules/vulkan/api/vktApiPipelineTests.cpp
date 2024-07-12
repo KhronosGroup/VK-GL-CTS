@@ -403,7 +403,7 @@ tcu::TestStatus drawTriangleTest(Context &context, DrawTriangleMode mode)
 
     vk::VkQueue queue = context.getUniversalQueue();
 
-    VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, DE_NULL));
+    VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
     VK_CHECK(vk.queueWaitIdle(queue));
     VK_CHECK(vk.deviceWaitIdle(device));
 
@@ -651,7 +651,7 @@ tcu::TestStatus framebufferCompatibleRenderPassTest(Context &context)
         DE_NULL                        // const VkSemaphore*             pSignalSemaphores;
     };
 
-    VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, DE_NULL));
+    VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
     VK_CHECK(vk.queueWaitIdle(queue));
 
     // Test should always pass
@@ -1688,7 +1688,7 @@ tcu::TestStatus pipelineInvalidPointersUnusedStructsTest(Context &context, VkPip
         DE_NULL                        // const VkSemaphore*             pSignalSemaphores;
     };
 
-    VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, DE_NULL));
+    VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
     VK_CHECK(vk.queueWaitIdle(queue));
 
     // Test should always pass

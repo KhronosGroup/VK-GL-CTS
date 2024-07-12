@@ -280,7 +280,7 @@ struct RefData
     RefData(T object_, Deleter<T> deleter_) : object(object_), deleter(deleter_)
     {
     }
-    RefData(void) : object(0)
+    RefData(void) : object(VK_NULL_HANDLE)
     {
     }
 

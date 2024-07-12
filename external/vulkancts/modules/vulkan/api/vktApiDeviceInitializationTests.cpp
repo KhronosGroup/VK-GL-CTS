@@ -703,7 +703,7 @@ tcu::TestStatus createMultipleDevicesTest(Context &context)
     const PlatformInterface &platformInterface = context.getPlatformInterface();
 
     vector<CustomInstance> instances;
-    vector<VkDevice> devices(numDevices, (VkDevice)DE_NULL);
+    vector<VkDevice> devices(numDevices, VK_NULL_HANDLE);
 
     try
     {
@@ -784,7 +784,7 @@ tcu::TestStatus createMultipleDevicesTest(Context &context)
     {
         for (int deviceNdx = (int)devices.size() - 1; deviceNdx >= 0; deviceNdx--)
         {
-            if (devices[deviceNdx] != (VkDevice)DE_NULL)
+            if (devices[deviceNdx] != VK_NULL_HANDLE)
             {
                 DeviceDriver deviceDriver(platformInterface, instances[deviceNdx], devices[deviceNdx],
                                           context.getUsedApiVersion(), context.getTestContext().getCommandLine());
@@ -797,7 +797,7 @@ tcu::TestStatus createMultipleDevicesTest(Context &context)
 
     for (int deviceNdx = (int)devices.size() - 1; deviceNdx >= 0; deviceNdx--)
     {
-        if (devices[deviceNdx] != (VkDevice)DE_NULL)
+        if (devices[deviceNdx] != VK_NULL_HANDLE)
         {
             DeviceDriver deviceDriver(platformInterface, instances[deviceNdx], devices[deviceNdx],
                                       context.getUsedApiVersion(), context.getTestContext().getCommandLine());
@@ -1598,7 +1598,7 @@ void checkFeatures(const PlatformInterface &vkp, const VkInstance &instance, con
             DE_NULL                                                                        // pEnabledFeatures
         };
 
-        VkDevice device = (VkDevice)DE_NULL;
+        VkDevice device = VK_NULL_HANDLE;
         const VkResult res =
             createUncheckedDevice(false, instanceDriver, physicalDevice, &deviceCreateInfo, DE_NULL, &device);
 
@@ -1608,7 +1608,7 @@ void checkFeatures(const PlatformInterface &vkp, const VkInstance &instance, con
             resultCollector.fail("Not returning VK_ERROR_FEATURE_NOT_PRESENT when creating device with feature " +
                                  de::toString(features[featureNdx].name) + ", which was reported as unsupported.");
         }
-        if (device != (VkDevice)DE_NULL)
+        if (device != VK_NULL_HANDLE)
         {
             DeviceDriver deviceDriver(vkp, instance, device, usedApiVersion, commandLine);
             deviceDriver.destroyDevice(device, DE_NULL);

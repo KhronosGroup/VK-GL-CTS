@@ -213,7 +213,7 @@ tcu::TestStatus SynchronizationImageLayoutTransitionTestInstance::iterate(void)
     const Move<VkShaderModule> fragmentModule =
         createShaderModule(vk, device, m_context.getBinaryCollection().get("frag1"), 0u);
 
-    const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, DE_NULL);
+    const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, VK_NULL_HANDLE);
 
     const VkPipelineColorBlendAttachmentState clrBlendAttachmentState = {
         VK_TRUE,                             // VkBool32                 blendEnable;
@@ -252,9 +252,9 @@ tcu::TestStatus SynchronizationImageLayoutTransitionTestInstance::iterate(void)
     };
 
     const Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
-        vk, device, pipelineLayout.get(), vertexModule.get(), DE_NULL, DE_NULL, DE_NULL, fragmentModule.get(),
-        renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vtxInputStateCreateInfo,
-        DE_NULL, DE_NULL, DE_NULL, &clrBlendStateCreateInfo);
+        vk, device, pipelineLayout.get(), vertexModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        fragmentModule.get(), renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
+        &vtxInputStateCreateInfo, DE_NULL, DE_NULL, DE_NULL, &clrBlendStateCreateInfo);
 
     const VkBufferCreateInfo resultBufferCreateInfo =
         makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);

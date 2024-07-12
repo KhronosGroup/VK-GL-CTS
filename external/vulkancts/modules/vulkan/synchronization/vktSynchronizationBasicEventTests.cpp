@@ -130,7 +130,7 @@ tcu::TestStatus deviceResetSetEventCase(Context &context, TestConfig config)
             DE_NULL                   // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
         );
 
-        VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
+        VK_CHECK(synchronizationWrapper->queueSubmit(queue, VK_NULL_HANDLE));
     }
 
     VK_CHECK(vk.queueWaitIdle(queue));
@@ -155,7 +155,7 @@ tcu::TestStatus deviceResetSetEventCase(Context &context, TestConfig config)
             DE_NULL                   // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
         );
 
-        VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
+        VK_CHECK(synchronizationWrapper->queueSubmit(queue, VK_NULL_HANDLE));
     }
 
     VK_CHECK(vk.queueWaitIdle(queue));
@@ -202,7 +202,7 @@ tcu::TestStatus eventSetResetNoneStage(Context &context, TestConfig)
         DE_NULL                   // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
     );
 
-    VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
+    VK_CHECK(synchronizationWrapper->queueSubmit(queue, VK_NULL_HANDLE));
     VK_CHECK(vk.queueWaitIdle(queue));
     context.resetCommandPoolForVKSC(device, *cmdPool);
 
@@ -223,7 +223,7 @@ tcu::TestStatus eventSetResetNoneStage(Context &context, TestConfig)
             DE_NULL                   // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
         );
 
-        VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
+        VK_CHECK(synchronizationWrapper->queueSubmit(queue, VK_NULL_HANDLE));
     }
 
     VK_CHECK(vk.queueWaitIdle(queue));

@@ -251,7 +251,7 @@ BufferWithMemory::BufferWithMemory(const vk::InstanceInterface &vki, const Devic
 {
     if (m_amISparse)
     {
-        DE_ASSERT(sparseQueue != VkQueue(0));
+        DE_ASSERT(sparseQueue != VK_NULL_HANDLE);
         const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(vki, phys);
         const uint32_t memoryTypeIndex =
             selectMatchingMemoryType(memoryProperties, m_requirements.memoryTypeBits, memoryRequirement);

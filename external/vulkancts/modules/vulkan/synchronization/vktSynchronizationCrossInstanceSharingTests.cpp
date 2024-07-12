@@ -1059,7 +1059,7 @@ tcu::TestStatus SharingTestInstance::iterate(void)
             synchronizationWrapperA->addSubmitInfo(0u, DE_NULL, 1u, &cmdBufferInfos, 1u, &signalSemaphoreSubmitInfo,
                                                    false, isTimelineSemaphore);
 
-            VK_CHECK(synchronizationWrapperA->queueSubmit(queueA, DE_NULL));
+            VK_CHECK(synchronizationWrapperA->queueSubmit(queueA, VK_NULL_HANDLE));
 
             {
                 NativeHandle nativeSemaphoreHandle;
@@ -1080,7 +1080,7 @@ tcu::TestStatus SharingTestInstance::iterate(void)
             synchronizationWrapperB->addSubmitInfo(1u, &waitSemaphoreSubmitInfo, 1u, &cmdBufferInfos, 0u, DE_NULL,
                                                    isTimelineSemaphore);
 
-            VK_CHECK(synchronizationWrapperB->queueSubmit(queueB, DE_NULL));
+            VK_CHECK(synchronizationWrapperB->queueSubmit(queueB, VK_NULL_HANDLE));
         }
 
         VK_CHECK(m_vkdA.queueWaitIdle(queueA));

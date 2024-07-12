@@ -343,7 +343,7 @@ void submitCommands(const DeviceInterface &vk, const VkQueue queue, const VkComm
         pSignalSemaphores,                                  // const VkSemaphore* pSignalSemaphores;
     };
 
-    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE));
 }
 
 void submitCommandsAndWait(const DeviceInterface &vk, const VkDevice device, const VkQueue queue,
@@ -1031,7 +1031,7 @@ VkSparseImageMemoryBind makeSparseImageMemoryBind(const DeviceInterface &vk, con
         memoryType,                             // uint32_t memoryTypeIndex;
     };
 
-    VkDeviceMemory deviceMemory = 0;
+    VkDeviceMemory deviceMemory = VK_NULL_HANDLE;
     VK_CHECK(vk.allocateMemory(device, &allocInfo, DE_NULL, &deviceMemory));
 
     VkSparseImageMemoryBind imageMemoryBind;
@@ -1057,7 +1057,7 @@ VkSparseMemoryBind makeSparseMemoryBind(const DeviceInterface &vk, const VkDevic
         memoryType,                             // uint32_t memoryTypeIndex;
     };
 
-    VkDeviceMemory deviceMemory = 0;
+    VkDeviceMemory deviceMemory = VK_NULL_HANDLE;
     VK_CHECK(vk.allocateMemory(device, &allocInfo, DE_NULL, &deviceMemory));
 
     VkSparseMemoryBind memoryBind;

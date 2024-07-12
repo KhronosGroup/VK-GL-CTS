@@ -1045,7 +1045,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory(const vk::DeviceInterface &vkd,
 
         uint32_t ahbFormat = 0;
         ahbApi->describe(handle.getAndroidHardwareBuffer(), DE_NULL, DE_NULL, DE_NULL, &ahbFormat, DE_NULL, DE_NULL);
-        DE_ASSERT(ahbApi->ahbFormatIsBlob(ahbFormat) || image != 0);
+        DE_ASSERT(ahbApi->ahbFormatIsBlob(ahbFormat) || image != VK_NULL_HANDLE);
 
         vk::VkAndroidHardwareBufferPropertiesANDROID ahbProperties = {
             vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID, DE_NULL, 0u, 0u};

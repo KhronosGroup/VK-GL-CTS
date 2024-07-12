@@ -188,9 +188,9 @@ Move<VkPipeline> FragmentShaderOutputInstance::createGraphicsPipeline(
     colorBlendStateCreateInfo.pAttachments                        = attachments.data();
 
     return makeGraphicsPipeline(m_context.getDeviceInterface(), m_context.getDevice(), layout, vertexModule,
-                                VkShaderModule(0), VkShaderModule(0), VkShaderModule(0), fragmentModule, renderPass,
-                                viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, subpass, 0u, nullptr, nullptr,
-                                nullptr, nullptr, &colorBlendStateCreateInfo);
+                                VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, fragmentModule, renderPass, viewports,
+                                scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, subpass, 0u, nullptr, nullptr, nullptr,
+                                nullptr, &colorBlendStateCreateInfo);
 }
 
 void FragmentShaderOutputInstance::beginColorRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass,

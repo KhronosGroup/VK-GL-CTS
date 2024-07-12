@@ -713,13 +713,13 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
     VkBufferDeviceAddressInfo bufferDeviceAddressInfo = {
         VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType  sType;
         DE_NULL,                                      // const void*  pNext;
-        0,                                            // VkBuffer             buffer
+        VK_NULL_HANDLE,                               // VkBuffer             buffer
     };
 
     VkDeviceMemoryOpaqueCaptureAddressInfo deviceMemoryOpaqueCaptureAddressInfo = {
         VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO, // VkStructureType  sType;
         DE_NULL,                                                     // const void*  pNext;
-        0,                                                           // VkDeviceMemory  memory;
+        VK_NULL_HANDLE,                                              // VkDeviceMemory  memory;
     };
 
     bool multiBuffer          = m_data.bufType != BT_SINGLE;
@@ -1434,13 +1434,13 @@ tcu::TestStatus CaptureReplayTestInstance::iterate(void)
     VkBufferDeviceAddressInfo bufferDeviceAddressInfo = {
         VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType  sType;
         DE_NULL,                                      // const void*  pNext;
-        0,                                            // VkBuffer             buffer
+        VK_NULL_HANDLE,                               // VkBuffer             buffer
     };
 
     VkDeviceMemoryOpaqueCaptureAddressInfo deviceMemoryOpaqueCaptureAddressInfo = {
         VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO, // VkStructureType  sType;
         DE_NULL,                                                     // const void*  pNext;
-        0,                                                           // VkDeviceMemory  memory;
+        VK_NULL_HANDLE,                                              // VkDeviceMemory  memory;
     };
 
     vector<VkBufferSp> buffers(numBuffers);

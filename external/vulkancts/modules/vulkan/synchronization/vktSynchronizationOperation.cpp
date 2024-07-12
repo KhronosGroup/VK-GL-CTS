@@ -5609,8 +5609,8 @@ Resource::Resource(OperationContext &context, const ResourceDescription &desc, c
 
     if (m_type == RESOURCE_TYPE_BUFFER || m_type == RESOURCE_TYPE_INDEX_BUFFER || isIndirectBuffer(m_type))
     {
-        m_bufferData =
-            de::MovePtr<BufferResource>(new BufferResource(DE_NULL, 0u, static_cast<VkDeviceSize>(desc.size.x())));
+        m_bufferData = de::MovePtr<BufferResource>(
+            new BufferResource(VK_NULL_HANDLE, 0u, static_cast<VkDeviceSize>(desc.size.x())));
         VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(m_bufferData->size, usage);
         bufferCreateInfo.sharingMode        = sharingMode;
         if (queueFamilyIndex.size() > 0)
@@ -5624,7 +5624,7 @@ Resource::Resource(OperationContext &context, const ResourceDescription &desc, c
     else if (m_type == RESOURCE_TYPE_IMAGE)
     {
         m_imageData = de::MovePtr<ImageResource>(new ImageResource(
-            DE_NULL, makeExtent3D(desc.size.x(), std::max(1, desc.size.y()), std::max(1, desc.size.z())),
+            VK_NULL_HANDLE, makeExtent3D(desc.size.x(), std::max(1, desc.size.y()), std::max(1, desc.size.z())),
             desc.imageType, desc.imageFormat, makeImageSubresourceRange(desc.imageAspect, 0u, 1u, 0u, 1u),
             makeImageSubresourceLayers(desc.imageAspect, 0u, 0u, 1u), vk::VK_IMAGE_TILING_OPTIMAL));
         VkImageCreateInfo imageInfo =

@@ -393,7 +393,7 @@ tcu::TestStatus ImageSparseRebindInstance::iterate(void)
         std::vector<Move<VkDeviceMemory>> deviceMemories;
         for (uint32_t memoryIdx = 0; memoryIdx < kMemoryObjectCount; memoryIdx++)
         {
-            VkDeviceMemory deviceMemory = 0;
+            VkDeviceMemory deviceMemory = VK_NULL_HANDLE;
             VK_CHECK(deviceInterface.allocateMemory(getDevice(), &allocInfo, DE_NULL, &deviceMemory));
             deviceMemories.push_back(Move<VkDeviceMemory>(
                 check<VkDeviceMemory>(deviceMemory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL)));
@@ -454,7 +454,7 @@ tcu::TestStatus ImageSparseRebindInstance::iterate(void)
             }
 
             // Submit sparse bind commands
-            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, DE_NULL));
+            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, VK_NULL_HANDLE));
 
             const Unique<VkCommandBuffer> commandBuffer(
                 allocateCommandBuffer(deviceInterface, getDevice(), *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -587,7 +587,7 @@ tcu::TestStatus ImageSparseRebindInstance::iterate(void)
             };
 
             // Submit sparse bind commands for execution
-            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, DE_NULL));
+            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, VK_NULL_HANDLE));
         }
 
         // Verify the results

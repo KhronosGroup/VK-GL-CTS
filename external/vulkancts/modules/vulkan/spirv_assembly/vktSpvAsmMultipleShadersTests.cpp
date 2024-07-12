@@ -169,7 +169,7 @@ tcu::TestStatus EntryPointsTest::iterate(void)
         static_cast<VkPipelineCreateFlags>(0u),
         pipelineBShaderStageParams,
         *pipelineLayout,
-        DE_NULL,
+        VK_NULL_HANDLE,
         0,
     };
 

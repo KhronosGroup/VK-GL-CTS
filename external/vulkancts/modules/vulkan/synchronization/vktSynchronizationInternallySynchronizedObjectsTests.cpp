@@ -893,7 +893,7 @@ private:
         computePipelineInfo.pNext              = DE_NULL;
         computePipelineInfo.flags              = (VkPipelineCreateFlags)0;
         computePipelineInfo.layout             = pipelineLayout;
-        computePipelineInfo.basePipelineHandle = DE_NULL;
+        computePipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         computePipelineInfo.basePipelineIndex  = 0;
 
         for (int shaderNdx = 0; shaderNdx < static_cast<int>(m_shadersExecutions.size()); ++shaderNdx)

@@ -125,31 +125,31 @@ GraphicsPipelineBuilder &GraphicsPipelineBuilder::setShader(const DeviceInterfac
     switch (stage)
     {
     case (VK_SHADER_STAGE_VERTEX_BIT):
-        DE_ASSERT(m_vertexShaderModule.get() == DE_NULL);
+        DE_ASSERT(m_vertexShaderModule.get() == VK_NULL_HANDLE);
         m_vertexShaderModule = createShaderModule(vk, device, binary, (VkShaderModuleCreateFlags)0);
         module               = *m_vertexShaderModule;
         break;
 
     case (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT):
-        DE_ASSERT(m_tessControlShaderModule.get() == DE_NULL);
+        DE_ASSERT(m_tessControlShaderModule.get() == VK_NULL_HANDLE);
         m_tessControlShaderModule = createShaderModule(vk, device, binary, (VkShaderModuleCreateFlags)0);
         module                    = *m_tessControlShaderModule;
         break;
 
     case (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT):
-        DE_ASSERT(m_tessEvaluationShaderModule.get() == DE_NULL);
+        DE_ASSERT(m_tessEvaluationShaderModule.get() == VK_NULL_HANDLE);
         m_tessEvaluationShaderModule = createShaderModule(vk, device, binary, (VkShaderModuleCreateFlags)0);
         module                       = *m_tessEvaluationShaderModule;
         break;
 
     case (VK_SHADER_STAGE_GEOMETRY_BIT):
-        DE_ASSERT(m_geometryShaderModule.get() == DE_NULL);
+        DE_ASSERT(m_geometryShaderModule.get() == VK_NULL_HANDLE);
         m_geometryShaderModule = createShaderModule(vk, device, binary, (VkShaderModuleCreateFlags)0);
         module                 = *m_geometryShaderModule;
         break;
 
     case (VK_SHADER_STAGE_FRAGMENT_BIT):
-        DE_ASSERT(m_fragmentShaderModule.get() == DE_NULL);
+        DE_ASSERT(m_fragmentShaderModule.get() == VK_NULL_HANDLE);
         m_fragmentShaderModule = createShaderModule(vk, device, binary, (VkShaderModuleCreateFlags)0);
         module                 = *m_fragmentShaderModule;
         break;

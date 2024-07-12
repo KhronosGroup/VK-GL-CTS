@@ -282,14 +282,14 @@ void CommandBufferRenderPassTestEnvironment::beginSecondaryCommandBuffer(VkComma
                                                                          bool framebufferHint)
 {
     const VkCommandBufferInheritanceInfo commandBufferInheritanceInfo = {
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType                  sType;
-        DE_NULL,                                           // const void*                      pNext;
-        *m_renderPass,                                     // VkRenderPass                     renderPass;
-        0u,                                                // uint32_t                         subpass;
-        (framebufferHint ? *m_frameBuffer : DE_NULL),      // VkFramebuffer                    framebuffer;
-        VK_FALSE,                                          // VkBool32                         occlusionQueryEnable;
-        0u,                                                // VkQueryControlFlags              queryFlags;
-        0u                                                 // VkQueryPipelineStatisticFlags    pipelineStatistics;
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,   // VkStructureType                  sType;
+        DE_NULL,                                             // const void*                      pNext;
+        *m_renderPass,                                       // VkRenderPass                     renderPass;
+        0u,                                                  // uint32_t                         subpass;
+        (framebufferHint ? *m_frameBuffer : VK_NULL_HANDLE), // VkFramebuffer                    framebuffer;
+        VK_FALSE,                                            // VkBool32                         occlusionQueryEnable;
+        0u,                                                  // VkQueryControlFlags              queryFlags;
+        0u                                                   // VkQueryPipelineStatisticFlags    pipelineStatistics;
     };
 
     const VkCommandBufferBeginInfo commandBufferBeginInfo = {
@@ -306,14 +306,14 @@ void CommandBufferRenderPassTestEnvironment::beginNestedCommandBuffer(VkCommandB
                                                                       bool framebufferHint)
 {
     const VkCommandBufferInheritanceInfo commandBufferInheritanceInfo = {
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType                  sType;
-        DE_NULL,                                           // const void*                      pNext;
-        *m_renderPass,                                     // VkRenderPass                     renderPass;
-        0u,                                                // uint32_t                         subpass;
-        (framebufferHint ? *m_frameBuffer : DE_NULL),      // VkFramebuffer                    framebuffer;
-        VK_FALSE,                                          // VkBool32                         occlusionQueryEnable;
-        0u,                                                // VkQueryControlFlags              queryFlags;
-        0u                                                 // VkQueryPipelineStatisticFlags    pipelineStatistics;
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,   // VkStructureType                  sType;
+        DE_NULL,                                             // const void*                      pNext;
+        *m_renderPass,                                       // VkRenderPass                     renderPass;
+        0u,                                                  // uint32_t                         subpass;
+        (framebufferHint ? *m_frameBuffer : VK_NULL_HANDLE), // VkFramebuffer                    framebuffer;
+        VK_FALSE,                                            // VkBool32                         occlusionQueryEnable;
+        0u,                                                  // VkQueryControlFlags              queryFlags;
+        0u                                                   // VkQueryPipelineStatisticFlags    pipelineStatistics;
     };
 
     const VkCommandBufferBeginInfo commandBufferBeginInfo = {
@@ -2764,9 +2764,9 @@ tcu::TestStatus recordBufferQueryPreciseWithFlagTest(Context &context)
     const VkCommandBufferInheritanceInfo secBufferInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        0u,                                // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        0u,                                // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_TRUE,                           // occlusionQueryEnable
         VK_QUERY_CONTROL_PRECISE_BIT,      // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -2853,9 +2853,9 @@ tcu::TestStatus recordBufferQueryImpreciseWithFlagTest(Context &context)
     const VkCommandBufferInheritanceInfo secBufferInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        0u,                                // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        0u,                                // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_TRUE,                           // occlusionQueryEnable
         VK_QUERY_CONTROL_PRECISE_BIT,      // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -2942,9 +2942,9 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context &context)
     const VkCommandBufferInheritanceInfo secBufferInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        0u,                                // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        0u,                                // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_TRUE,                           // occlusionQueryEnable
         0u,                                // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -3535,7 +3535,7 @@ tcu::TestStatus submitBufferNullFence(Context &context)
     // Perform two submissions - one with no fence, the other one with a valid
     // fence Hoping submitting the other buffer will give the first one time to
     // execute
-    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNullFence, DE_NULL));
+    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNullFence, VK_NULL_HANDLE));
     VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNonNullFence, fence.get()));
 
     // Wait for the queue
@@ -3639,8 +3639,8 @@ tcu::TestStatus submitTwoBuffersOneBufferNullWithFence(Context &context)
 
     // Perform two separate queueSubmit calls on the same queue followed
     // by a third call with no submitInfos and with a valid fence
-    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNonNullFirst, DE_NULL));
-    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNonNullSecond, DE_NULL));
+    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNonNullFirst, VK_NULL_HANDLE));
+    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNonNullSecond, VK_NULL_HANDLE));
     VK_CHECK(vk.queueSubmit(queue, 0u, DE_NULL, fence.get()));
 
     // Wait for the queue
@@ -3695,9 +3695,9 @@ tcu::TestStatus executeSecondaryBufferTest(Context &context)
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        DE_NULL,                           // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        DE_NULL,                           // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -3799,9 +3799,9 @@ tcu::TestStatus executeNestedBufferTest(Context &context)
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        DE_NULL,                           // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        DE_NULL,                           // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -3816,9 +3816,9 @@ tcu::TestStatus executeNestedBufferTest(Context &context)
     const VkCommandBufferInheritanceInfo nestedCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        DE_NULL,                           // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        DE_NULL,                           // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -3921,9 +3921,9 @@ tcu::TestStatus executeMultipleLevelsNestedBufferTest(Context &context)
     const VkCommandBufferInheritanceInfo nestedCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
         DE_NULL,
-        DE_NULL,                           // renderPass
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        DE_NULL,                           // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -5108,8 +5108,8 @@ tcu::TestStatus ManyDrawsInstance::iterate(void)
     };
 
     const auto pipeline =
-        makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertModule.get(), DE_NULL, DE_NULL, DE_NULL,
-                             fragModule.get(), renderPass.get(), viewports, scissors,
+        makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, fragModule.get(), renderPass.get(), viewports, scissors,
                              VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &inputState, nullptr, nullptr, &dsState);
 
     // Command pool and buffers.

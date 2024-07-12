@@ -179,7 +179,7 @@ tcu::TestStatus HlslTest::iterate(void)
         static_cast<VkPipelineCreateFlags>(0u),
         pipelineShaderStageParams,
         *pipelineLayout,
-        DE_NULL,
+        VK_NULL_HANDLE,
         0,
     };
     Unique<VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));

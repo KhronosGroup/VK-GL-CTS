@@ -318,7 +318,7 @@ struct DestroyedSampler
 {
     vk::VkSampler sampler;
 
-    DestroyedSampler(Context &context) : sampler{DE_NULL}
+    DestroyedSampler(Context &context) : sampler{VK_NULL_HANDLE}
     {
         const vk::VkSamplerCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
@@ -349,7 +349,7 @@ struct DestroyedSampler
 vk::VkSampler SamplerlessDescriptorWriteTestInstance::getSamplerHandle(void) const
 {
     if (m_params.pointer == PointerCase::ZERO)
-        return vk::VkSampler{DE_NULL};
+        return vk::VkSampler{0};
     if (m_params.pointer == PointerCase::ONE)
         return vk::VkSampler{1};
     DestroyedSampler destroyedSampler{m_context};
@@ -642,8 +642,8 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate(void)
     const std::vector<vk::VkRect2D> scissors(1u, vk::makeRect2D(kFramebufferExtent));
 
     const auto pipeline =
-        vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertexModule.get(), DE_NULL, DE_NULL, DE_NULL,
-                                 fragModule.get(), renderPass.get(), viewports, scissors);
+        vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertexModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                 VK_NULL_HANDLE, fragModule.get(), renderPass.get(), viewports, scissors);
 
     // Command pool and command buffer.
     const auto cmdPool =
@@ -1079,10 +1079,10 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
         {1.0f, 1.0f, 1.0f, 1.0f}    // float                                        blendConstants[4]
     };
 
-    const auto pipeline = vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertexModule.get(), DE_NULL,
-                                                   DE_NULL, DE_NULL, fragModule.get(), renderPass.get(), viewports,
-                                                   scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, DE_NULL,
-                                                   DE_NULL, DE_NULL, DE_NULL, &colorBlendState);
+    const auto pipeline = vk::makeGraphicsPipeline(
+        vkd, device, pipelineLayout.get(), vertexModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        fragModule.get(), renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
+        DE_NULL, DE_NULL, DE_NULL, DE_NULL, &colorBlendState);
 
     // Command pool and command buffer.
     const auto cmdPool =

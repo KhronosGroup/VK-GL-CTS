@@ -448,7 +448,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
             }
 
             // Submit sparse bind commands for execution
-            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, DE_NULL));
+            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, VK_NULL_HANDLE));
         }
 
         uint32_t imageSizeInBytes = 0;

@@ -168,7 +168,7 @@ struct TypeTraits<TYPE_DIRECT_DRM>
 struct DirectDrmDisplayInterface : public DisplayInterface<TYPE_DIRECT_DRM>
 {
 public:
-    DirectDrmDisplayInterface(void) : DisplayInterface(0)
+    DirectDrmDisplayInterface(void) : DisplayInterface(VK_NULL_HANDLE)
     {
     }
     virtual void initializeDisplay(const InstanceInterface &vki, VkInstance instance, const tcu::CommandLine &cmdLine)

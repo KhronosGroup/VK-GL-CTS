@@ -2112,7 +2112,7 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
                 &(descriptorSetLayouts[descriptorSetIdx]->get()) // const VkDescriptorSetLayout*    pSetLayouts
             };
 
-            VkDescriptorSet descriptorSet = 0;
+            VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
             VK_CHECK(vk.allocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet));
             descriptorSets.push_back(descriptorSet);
         }

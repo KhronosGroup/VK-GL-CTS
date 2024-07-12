@@ -119,7 +119,7 @@ static uint32_t getShaderGroupBaseAlignment(const InstanceInterface &vki, const 
 
 static VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 {
-    VkBuffer result = (buffer.get() == DE_NULL) ? DE_NULL : buffer->get();
+    VkBuffer result = (buffer.get() == DE_NULL) ? VK_NULL_HANDLE : buffer->get();
 
     return result;
 }
@@ -127,7 +127,7 @@ static VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 static VkStridedDeviceAddressRegionKHR makeStridedDeviceAddressRegion(const DeviceInterface &vkd, const VkDevice device,
                                                                       VkBuffer buffer, uint32_t stride, uint32_t count)
 {
-    if (buffer == DE_NULL)
+    if (buffer == VK_NULL_HANDLE)
     {
         return makeStridedDeviceAddressRegionKHR(0, 0, 0);
     }
@@ -141,14 +141,14 @@ static VkStridedDeviceAddressRegionKHR makeStridedDeviceAddressRegion(const Devi
 static Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDevice device,
                                                  const VkDescriptorSetLayout descriptorSetLayout0,
                                                  const VkDescriptorSetLayout descriptorSetLayout1,
-                                                 const VkDescriptorSetLayout descriptorSetLayoutOpt = DE_NULL)
+                                                 const VkDescriptorSetLayout descriptorSetLayoutOpt = VK_NULL_HANDLE)
 {
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
 
     descriptorSetLayouts.push_back(descriptorSetLayout0);
     descriptorSetLayouts.push_back(descriptorSetLayout1);
 
-    if (descriptorSetLayoutOpt != DE_NULL)
+    if (descriptorSetLayoutOpt != VK_NULL_HANDLE)
         descriptorSetLayouts.push_back(descriptorSetLayoutOpt);
 
     return makePipelineLayout(vk, device, (uint32_t)descriptorSetLayouts.size(), descriptorSetLayouts.data());
@@ -2210,7 +2210,7 @@ void BindingAcceleratioStructureRayTracingRayTracingTestInstance::initPipeline(v
                                                                     shaderGroupHandleSize, missShaderGroupCount);
     m_hitShaderBindingTableRegion  = makeStridedDeviceAddressRegion(vkd, device, getVkBuffer(m_hitShaderBindingTable),
                                                                     shaderGroupHandleSize, hitShaderGroupCount);
-    m_callableShaderBindingTableRegion = makeStridedDeviceAddressRegion(vkd, device, DE_NULL, 0, 0);
+    m_callableShaderBindingTableRegion = makeStridedDeviceAddressRegion(vkd, device, VK_NULL_HANDLE, 0, 0);
 }
 
 void BindingAcceleratioStructureRayTracingRayTracingTestInstance::fillCommandBuffer(VkCommandBuffer commandBuffer)
