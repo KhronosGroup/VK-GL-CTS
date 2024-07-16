@@ -879,3 +879,4 @@ KHR-GL31.CommonBugs.CommonBug_PerVertexValidation
 KHR-GL31.CommonBugs.CommonBug_ReservedNames
 KHR-GL31.CommonBugs.CommonBug_SparseBuffersWithCopyOps
 KHR-GL31.texture_size_promotion.functional
+KHR-GL31.primitive_restart.restart_mode
