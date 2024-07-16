@@ -1018,6 +1018,7 @@ cc_library_static {
         "external/openglcts/modules/gles2/es2cTestPackage.cpp",
         "external/openglcts/modules/gles2/es2cTexture3DTests.cpp",
         "external/openglcts/modules/gles3/es3cCopyTexImageConversionsTests.cpp",
+        "external/openglcts/modules/gles3/es3cDriverErrorTests.cpp",
         "external/openglcts/modules/gles3/es3cNumberParsingTests.cpp",
         "external/openglcts/modules/gles3/es3cTestPackage.cpp",
         "external/openglcts/modules/gles31/es31cArrayOfArraysTests.cpp",
