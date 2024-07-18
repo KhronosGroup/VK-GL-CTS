@@ -137,7 +137,10 @@ public:
     Half(int value) : Half((float)value)
     {
     }
-    Half(size_t value) : Half((float)value)
+    Half(uint32_t value) : Half((float)value)
+    {
+    }
+    Half(uint64_t value) : Half((float)value)
     {
     }
     Half() : Half(0)
@@ -179,7 +182,10 @@ public:
     F16Vec2(int i) : F16Vec2((float)i)
     {
     }
-    F16Vec2(size_t i) : F16Vec2((float)i)
+    F16Vec2(uint32_t i) : F16Vec2((float)i)
+    {
+    }
+    F16Vec2(uint64_t i) : F16Vec2((float)i)
     {
     }
     F16Vec2(float f) : F16Vec2(f, f)
@@ -211,7 +217,10 @@ public:
     F16Vec4(int i) : F16Vec4((float)i)
     {
     }
-    F16Vec4(size_t i) : F16Vec4((float)i)
+    F16Vec4(uint32_t i) : F16Vec4((float)i)
+    {
+    }
+    F16Vec4(uint64_t i) : F16Vec4((float)i)
     {
     }
     F16Vec4(float f) : F16Vec4(f, f, f, f)
@@ -772,7 +781,7 @@ static T computeBinaryAtomicOperationResult(const AtomicOperation op, const T a,
         return b;
     case ATOMIC_OPERATION_COMPARE_EXCHANGE:
     {
-        constexpr size_t val = (size_t)(sizeof(T) == 8 ? 0xBEFFFFFF18 : 18);
+        constexpr uint64_t val = (uint64_t)(sizeof(T) == 8 ? 0xBEFFFFFF18 : 18);
         return (a == T(val)) ? b : a;
     }
     default:
