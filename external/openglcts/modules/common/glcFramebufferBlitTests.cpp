@@ -331,6 +331,7 @@ void FramebufferBlitMultiToSingleSampledTestCase::init()
     m_defaultProg = setup_shaders(m_default_vert_shader, m_default_frag_shader);
     m_renderProg  = setup_shaders(m_render_vert_shader, m_render_frag_shader);
 
+    m_defaultFBO  = m_context.getRenderContext().getDefaultFramebuffer();
     int bufWidth  = m_context.getRenderTarget().getWidth();
     int bufHeight = m_context.getRenderTarget().getHeight();
 
