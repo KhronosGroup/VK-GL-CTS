@@ -164,6 +164,7 @@ private:
     const VkBool32 m_colorWriteEnables[4];
     VkBool32 m_useMapping;
     VkBool32 m_useStencilInReadFrag;
+    VkBool32 m_useDepthInReadFrag;
     std::vector<uint32_t> m_expectedValues;
 };
 
@@ -184,6 +185,7 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
     , m_colorWriteEnables{0, 1, 0, 1}
     , m_useMapping(true)
     , m_useStencilInReadFrag(true)
+    , m_useDepthInReadFrag(true)
     , m_expectedValues{0}
 {
     const InstanceInterface &vki                = m_context.getInstanceInterface();
@@ -198,22 +200,27 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
             &imageFormatProperties))
         m_dsFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
 
+    // by default all test read from depth attachment and some from stencil
+    // but after promoting DRLR to vk1.4 reading depth/stencil is guarded by property
+    bool readDepthStencil = (context.getUsedApiVersion() < VK_MAKE_API_VERSION(0, 1, 4, 0)) ||
+                            context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments;
+
     // setup test configuration - all test cases use same test instance code but with diferent parameters
     switch (m_testType)
     {
     case TestType::MAX_INPUT_ATTACHMENTS:
     {
-        m_colorAttachmentCount = deMinu32(properties.limits.maxColorAttachments,
-                                          properties.limits.maxPerStageDescriptorInputAttachments - 2u);
+        uint32_t dsAttachmentsCount = 2u * readDepthStencil;
+        m_colorAttachmentCount      = deMinu32(properties.limits.maxColorAttachments,
+                                               properties.limits.maxPerStageDescriptorInputAttachments - dsAttachmentsCount);
 
         // if this assert is trigered then shader for number m_colorAttachmentCount+2 was not prepared;
         // to fix this just add value of m_colorAttachmentCount+2 to the inputAttachmentsPossibleValues array on top of this file
         DE_ASSERT(std::find(std::begin(inputAttachmentsPossibleValues), std::end(inputAttachmentsPossibleValues),
-                            m_colorAttachmentCount + 2) != std::end(inputAttachmentsPossibleValues));
+                            m_colorAttachmentCount + dsAttachmentsCount) != std::end(inputAttachmentsPossibleValues));
 
         m_writeFragName += "_" + std::to_string(m_colorAttachmentCount);
-        m_readFragName +=
-            "_" + std::to_string(m_colorAttachmentCount + 2u); // +2 because depth and stencil are read too
+        m_readFragName += "_" + std::to_string(m_colorAttachmentCount + dsAttachmentsCount);
         m_depthInputAttachmentIndex   = m_colorAttachmentCount;
         m_stencilInputAttachmentIndex = m_colorAttachmentCount + 1;
 
@@ -228,13 +235,13 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
     }
     case TestType::MAX_ATTACHMENTS_REMAPPED_REPEATEDLY:
     {
-        m_colorAttachmentCount = deMinu32(properties.limits.maxColorAttachments,
-                                          properties.limits.maxPerStageDescriptorInputAttachments - 2u);
-        m_inputDrawsCount      = m_colorAttachmentCount / 2u;
-        m_colorAttachmentCount = m_inputDrawsCount * 2u;
-        m_outputDrawsCount     = 3;
-        m_readFragName +=
-            "_" + std::to_string(m_colorAttachmentCount + 2u); // +2 because depth and stencil are read too
+        uint32_t dsAttachmentsCount = 2u * readDepthStencil;
+        m_colorAttachmentCount      = deMinu32(properties.limits.maxColorAttachments,
+                                               properties.limits.maxPerStageDescriptorInputAttachments - dsAttachmentsCount);
+        m_inputDrawsCount           = m_colorAttachmentCount / 2u;
+        m_colorAttachmentCount      = m_inputDrawsCount * 2u;
+        m_outputDrawsCount          = 3;
+        m_readFragName += "_" + std::to_string(m_colorAttachmentCount + dsAttachmentsCount);
         m_depthInputAttachmentIndex   = m_colorAttachmentCount;
         m_stencilInputAttachmentIndex = m_colorAttachmentCount + 1;
 
@@ -339,6 +346,19 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
         break;
     }
 
+    // overwrite some of configuration for vk1.4 when dynamicRenderingLocalReadDepthStencilAttachments
+    // property is not available to allow some test to be executed without depth/stencil attachment
+    if (!readDepthStencil)
+    {
+        if (m_useDepthInReadFrag || m_useStencilInReadFrag)
+            m_readFragName += "_no_ds";
+
+        m_useDepthInReadFrag          = false;
+        m_useStencilInReadFrag        = false;
+        m_depthInputAttachmentIndex   = VK_ATTACHMENT_UNUSED;
+        m_stencilInputAttachmentIndex = VK_ATTACHMENT_UNUSED;
+    }
+
     CalculateExpectedValues();
 }
 
@@ -410,25 +430,25 @@ void BasicLocalReadTestInstance::CalculateExpectedValues()
 
     for (uint32_t outputDraw = 0; outputDraw < m_outputDrawsCount; ++outputDraw)
     {
-        // Depth read is 0.6 and stencil read is 1. Depth read is already enabled, but stencil read depends on test type.
-        const float depthRead      = 0.6f;
+        // Depth read is 0.6 and stencil read is 1. Stencil read depends on test type.
+        const uint32_t depthValue  = static_cast<uint32_t>(0.6f * 1000);
         const uint32_t stencilRead = 1;
 
         if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX)
         {
             // Depth read and stencil read are both enabled
-            m_expectedValues[outputDraw] = static_cast<uint32_t>(depthRead * 1000) + stencilRead * 100;
+            m_expectedValues[outputDraw] = depthValue + stencilRead * 100;
         }
         else if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||
                  (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX))
         {
             // Depth read and stencil read are both enabled
-            m_expectedValues[outputDraw] = static_cast<uint32_t>(depthRead * 1000) + stencilRead;
+            m_expectedValues[outputDraw] = depthValue + stencilRead;
         }
         else
         {
             m_expectedValues[outputDraw] =
-                static_cast<uint32_t>(depthRead * 1000) + ((m_useStencilInReadFrag) ? (stencilRead * 1000) : 0);
+                (m_useDepthInReadFrag * depthValue) + (m_useStencilInReadFrag * stencilRead * 1000);
         }
 
         // each output draw uses all attachments but remaped differently
@@ -1650,6 +1670,15 @@ void LocalReadTestCase::checkSupport(Context &context) const
         if (!context.getExtendedDynamicState3FeaturesEXT().extendedDynamicState3RasterizationSamples)
             TCU_THROW(NotSupportedError, "extendedDynamicState3RasterizationSamples not supported");
     }
+
+    if (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0) &&
+        !context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments)
+    {
+        if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||
+            (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX) ||
+            (m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT))
+            TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadDepthStencilAttachments not supported");
+    }
 }
 
 void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
@@ -1687,17 +1716,18 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
     };
 
     // helper lambda that generates fragment shader that reads from specified number of input attachments
-    auto generateReadFragSource = [](uint32_t inputAttachmentCount, bool useStencil = true)
+    auto generateReadFragSource = [](uint32_t inputAttachmentCount, bool useDepth = true, bool useStencil = true)
     {
-        uint32_t colorInputAttachmentCount = inputAttachmentCount - 1u - useStencil;
+        uint32_t colorInputAttachmentCount = inputAttachmentCount - useDepth - useStencil;
         std::stringstream fragSrc;
         fragSrc << "#version 450\n";
         for (uint32_t i = 0; i < colorInputAttachmentCount; ++i)
             fragSrc << "layout(input_attachment_index=" << i << ", binding=" << i << ") uniform usubpassInput inColor"
                     << i << ";\n";
 
-        fragSrc << "layout(input_attachment_index = " << colorInputAttachmentCount
-                << ", binding = " << colorInputAttachmentCount << ") uniform subpassInput inDepth;\n";
+        if (useDepth)
+            fragSrc << "layout(input_attachment_index = " << colorInputAttachmentCount
+                    << ", binding = " << colorInputAttachmentCount << ") uniform subpassInput inDepth;\n";
         if (useStencil)
             fragSrc << "layout(input_attachment_index = " << colorInputAttachmentCount + 1
                     << ", binding = " << colorInputAttachmentCount + 1 << ") uniform usubpassInput inStencil;\n";
@@ -1709,9 +1739,12 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                    "  uint result = 0;\n";
         for (uint32_t i = 0; i < colorInputAttachmentCount; ++i)
             fragSrc << "  result = result + " << (i + 1) << " * subpassLoad(inColor" << i << ").x; \n";
-        fragSrc << "  result = result + uint(subpassLoad(inDepth).x * 1000);\n"; // 0.6*1000
+
+        if (useDepth)
+            fragSrc << "  result = result + uint(subpassLoad(inDepth).x * 1000);\n"; // 0.6*1000
         if (useStencil)
             fragSrc << "  result = result + uint(subpassLoad(inStencil).x * 1000);\n"; // 1 * 1000
+
         fragSrc << "  const uvec2 i = uvec2(trunc(gl_FragCoord.xy));\n"
                    "  outBuffer.v[i.x+i.y*16] = result;\n"
                    "}\n";
@@ -1739,6 +1772,7 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
     {
         glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(4));
         glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(6));
+        glslSources.add("frag1_no_ds") << glu::FragmentSource(generateReadFragSource(4, false, false));
     }
     else if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX)
     {
@@ -1872,12 +1906,17 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                                                           "OpReturn\n"
                                                           "OpFunctionEnd\n";
     }
-    else if ((m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT) ||
-             (m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE) ||
+    else if (m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT)
+    {
+        glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(4));
+        glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(5, true, false));
+    }
+    else if ((m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE) ||
              (m_testType == TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3))
     {
         glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(4));
-        glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(5, false));
+        glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(5, true, false));
+        glslSources.add("frag1_no_ds") << glu::FragmentSource(generateReadFragSource(4, false, false));
     }
     else if (m_testType == TestType::INPUT_ATTACHMENTS_WITHOUT_MAPPING)
     {
@@ -2079,8 +2118,12 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
         // generate fragment shaders for all posible number of input attachments;
         // during test execution proper shader will be picked
         for (uint32_t inputAttachmentCount : inputAttachmentsPossibleValues)
-            glslSources.add(std::string("frag1_") + std::to_string(inputAttachmentCount))
-                << glu::FragmentSource(generateReadFragSource(inputAttachmentCount));
+        {
+            std::string name = std::string("frag1_") + std::to_string(inputAttachmentCount);
+            glslSources.add(name) << glu::FragmentSource(generateReadFragSource(inputAttachmentCount));
+            glslSources.add(name + "_no_ds")
+                << glu::FragmentSource(generateReadFragSource(inputAttachmentCount, false, false));
+        }
     }
 }
 

@@ -5673,6 +5673,41 @@ tcu::TestStatus renderPassTest(Context &context, TestConfig config)
             findColorAttachments(renderPassInfo, colorAttachmentIndices, colorAttachmentFormats);
             if (colorAttachmentIndices.size() > (size_t)properties.limits.maxColorAttachments)
                 TCU_THROW(NotSupportedError, "Required number of color attachments not supported.");
+
+#ifndef CTS_USES_VULKANSC
+            if (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0))
+            {
+                if (!context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments)
+                {
+                    for (const auto &subpass : renderPassInfo.getSubpasses())
+                    {
+                        for (const auto &input : subpass.getInputAttachments())
+                        {
+                            uint32_t index    = input.getAttachment();
+                            auto &attachment  = renderPassInfo.getAttachments()[index];
+                            const auto format = mapVkFormat(attachment.getFormat());
+                            if (tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order))
+                                TCU_THROW(NotSupportedError,
+                                          "dynamicRenderingLocalReadDepthStencilAttachments not supported");
+                        }
+                    }
+                }
+                if (!context.getDeviceVulkan14Properties().dynamicRenderingLocalReadMultisampledAttachments)
+                {
+                    for (const auto &subpass : renderPassInfo.getSubpasses())
+                    {
+                        for (const auto &input : subpass.getInputAttachments())
+                        {
+                            uint32_t index   = input.getAttachment();
+                            auto &attachment = renderPassInfo.getAttachments()[index];
+                            if (attachment.getSamples() > vk::VK_SAMPLE_COUNT_1_BIT)
+                                TCU_THROW(NotSupportedError,
+                                          "dynamicRenderingLocalReadMultisampledAttachments not supported");
+                        }
+                    }
+                }
+            }
+#endif
         }
     }
 

@@ -2344,6 +2344,20 @@ void checkSupport(Context &context, TestConfig config)
                         config.sampleCount - splitSubpassIndex * MAX_COLOR_ATTACHMENT_COUNT);
 
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
+
+#ifndef CTS_USES_VULKANSC
+        if (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0))
+        {
+            if (!context.getDeviceVulkan14Properties().dynamicRenderingLocalReadMultisampledAttachments)
+                TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadMultisampledAttachments not supported");
+            if (isDepthFormat || isStencilFormat)
+            {
+                if (!context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments)
+                    TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadDepthStencilAttachments not supported");
+            }
+        }
+#endif
+
         if (requiredColorAttachmentCount > properties.limits.maxColorAttachments)
             TCU_THROW(NotSupportedError, "Required number of color attachments not supported.");
     }
