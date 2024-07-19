@@ -172,7 +172,6 @@ void PositionFetchCase::initPrograms(vk::SourceCollections &programCollection) c
        << "#extension GL_EXT_ray_tracing_position_fetch : require\n"
        << "\n"
        << layoutDeclsStr << "\n"
-       << "layout(location=0) rayPayloadEXT int value;\n"
        << "\n"
        << "void main()\n"
        << "{\n"
