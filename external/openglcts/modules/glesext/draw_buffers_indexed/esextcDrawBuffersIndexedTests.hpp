@@ -39,18 +39,18 @@ namespace glcts
 class DrawBuffersIndexedTests : public TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	DrawBuffersIndexedTests(glcts::Context& context, const ExtParameters& extParams);
-	virtual ~DrawBuffersIndexedTests(void)
-	{
-	}
+    /* Public methods */
+    DrawBuffersIndexedTests(glcts::Context &context, const ExtParameters &extParams);
+    virtual ~DrawBuffersIndexedTests(void)
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	DrawBuffersIndexedTests(const DrawBuffersIndexedTests& other);
-	DrawBuffersIndexedTests& operator=(const DrawBuffersIndexedTests& other);
+    /* Private methods */
+    DrawBuffersIndexedTests(const DrawBuffersIndexedTests &other);
+    DrawBuffersIndexedTests &operator=(const DrawBuffersIndexedTests &other);
 };
 
 } // namespace glcts

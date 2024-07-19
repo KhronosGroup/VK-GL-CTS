@@ -32,9 +32,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup* createOpacityMicromapTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createOpacityMicromapTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGOPACITYMICROMAPTESTS_HPP

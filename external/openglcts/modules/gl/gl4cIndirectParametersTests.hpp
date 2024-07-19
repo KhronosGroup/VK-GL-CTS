@@ -41,19 +41,19 @@ namespace gl4cts
 
 typedef struct
 {
-	GLuint count;
-	GLuint instanceCount;
-	GLuint first;
-	GLuint baseInstance;
+    GLuint count;
+    GLuint instanceCount;
+    GLuint first;
+    GLuint baseInstance;
 } DrawArraysIndirectCommand;
 
 typedef struct
 {
-	GLuint count;
-	GLuint instanceCount;
-	GLuint firstIndex;
-	GLuint baseVertex;
-	GLuint baseInstance;
+    GLuint count;
+    GLuint instanceCount;
+    GLuint firstIndex;
+    GLuint baseVertex;
+    GLuint baseInstance;
 } DrawElementsIndirectCommand;
 
 /** Test verifies if operations on new buffer object PARAMETER_BUFFER_ARB works as expected.
@@ -61,15 +61,15 @@ typedef struct
 class ParameterBufferOperationsCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	ParameterBufferOperationsCase(deqp::Context& context);
+    /* Public methods */
+    ParameterBufferOperationsCase(deqp::Context &context);
 
-	virtual void						 init();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void init();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	/* Private members */
+    /* Private methods */
+    /* Private members */
 };
 
 /** Base class for specific vertex array indirect drawing classes.
@@ -77,18 +77,18 @@ private:
 class VertexArrayIndirectDrawingBaseCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	VertexArrayIndirectDrawingBaseCase(deqp::Context& context, const char* name, const char* description);
+    /* Public methods */
+    VertexArrayIndirectDrawingBaseCase(deqp::Context &context, const char *name, const char *description);
 
-	virtual void						 init()   = DE_NULL;
-	virtual void						 deinit() = DE_NULL;
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void init()   = 0;
+    virtual void deinit() = 0;
+    virtual tcu::TestNode::IterateResult iterate();
 
 protected:
-	/* Protected methods */
-	virtual bool draw() = DE_NULL;
-	virtual bool verify();
-	virtual bool verifyErrors() = DE_NULL;
+    /* Protected methods */
+    virtual bool draw() = 0;
+    virtual bool verify();
+    virtual bool verifyErrors() = 0;
 };
 
 /** Test verifies if MultiDrawArraysIndirectCountARB function works properly.
@@ -96,22 +96,22 @@ protected:
 class MultiDrawArraysIndirectCountCase : public VertexArrayIndirectDrawingBaseCase
 {
 public:
-	/* Public methods */
-	MultiDrawArraysIndirectCountCase(deqp::Context& context);
+    /* Public methods */
+    MultiDrawArraysIndirectCountCase(deqp::Context &context);
 
-	virtual void init();
-	virtual void deinit();
+    virtual void init();
+    virtual void deinit();
 
 protected:
-	/* Protected methods */
-	virtual bool draw();
-	virtual bool verifyErrors();
+    /* Protected methods */
+    virtual bool draw();
+    virtual bool verifyErrors();
 
-	/* Protected methods */
-	GLuint m_vao;
-	GLuint m_arrayBuffer;
-	GLuint m_drawIndirectBuffer;
-	GLuint m_parameterBuffer;
+    /* Protected methods */
+    GLuint m_vao;
+    GLuint m_arrayBuffer;
+    GLuint m_drawIndirectBuffer;
+    GLuint m_parameterBuffer;
 };
 
 /** Test verifies if MultiDrawArraysIndirectCountARB function works properly.
@@ -119,39 +119,39 @@ protected:
 class MultiDrawElementsIndirectCountCase : public VertexArrayIndirectDrawingBaseCase
 {
 public:
-	/* Public methods */
-	MultiDrawElementsIndirectCountCase(deqp::Context& context);
+    /* Public methods */
+    MultiDrawElementsIndirectCountCase(deqp::Context &context);
 
-	virtual void init();
-	virtual void deinit();
+    virtual void init();
+    virtual void deinit();
 
 protected:
-	/* Protected methods */
-	virtual bool draw();
-	virtual bool verifyErrors();
+    /* Protected methods */
+    virtual bool draw();
+    virtual bool verifyErrors();
 
-	/* Protected methods */
-	GLuint m_vao;
-	GLuint m_arrayBuffer;
-	GLuint m_elementBuffer;
-	GLuint m_drawIndirectBuffer;
-	GLuint m_parameterBuffer;
+    /* Protected methods */
+    GLuint m_vao;
+    GLuint m_arrayBuffer;
+    GLuint m_elementBuffer;
+    GLuint m_drawIndirectBuffer;
+    GLuint m_parameterBuffer;
 };
 
 /** Test group which encapsulates all sparse buffer conformance tests */
 class IndirectParametersTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	IndirectParametersTests(deqp::Context& context);
+    /* Public methods */
+    IndirectParametersTests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	IndirectParametersTests(const IndirectParametersTests& other);
-	IndirectParametersTests& operator=(const IndirectParametersTests& other);
+    IndirectParametersTests(const IndirectParametersTests &other);
+    IndirectParametersTests &operator=(const IndirectParametersTests &other);
 };
 
-} /* glcts namespace */
+} // namespace gl4cts
 
 #endif // _GL4CINDIRECTPARAMETERSTESTS_HPP

@@ -35,19 +35,19 @@ namespace glcts
 class TextureCubeMapArrayTests : public TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayTests(glcts::Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TextureCubeMapArrayTests(glcts::Context &context, const ExtParameters &extParams);
 
-	virtual ~TextureCubeMapArrayTests(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayTests(void)
+    {
+    }
 
-	void init(void);
+    void init(void);
 
 private:
-	/* Private methods */
-	TextureCubeMapArrayTests(const TextureCubeMapArrayTests& other);
-	TextureCubeMapArrayTests& operator=(const TextureCubeMapArrayTests& other);
+    /* Private methods */
+    TextureCubeMapArrayTests(const TextureCubeMapArrayTests &other);
+    TextureCubeMapArrayTests &operator=(const TextureCubeMapArrayTests &other);
 };
 
 } // namespace glcts

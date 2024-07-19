@@ -34,90 +34,89 @@ namespace glcts
 ///
 /// @param context       Test context
 /// @param extParams   extra parameters
-FragmentShadingRateRenderTarget::FragmentShadingRateRenderTarget(glcts::Context&	  context,
-																 const ExtParameters& extParams)
-	: TestCaseGroupBase(context, extParams, "render_target", "Fragment Shading Rate Attachment Tests")
+FragmentShadingRateRenderTarget::FragmentShadingRateRenderTarget(glcts::Context &context,
+                                                                 const ExtParameters &extParams)
+    : TestCaseGroupBase(context, extParams, "render_target", "Fragment Shading Rate Attachment Tests")
 {
 }
 
 /// Initializes test cases for fragment shading rate tests
 void FragmentShadingRateRenderTarget::init(void)
 {
-	TestNode::init();
+    TestNode::init();
 
-	// Combination or selection list
-	// scissor
-	// multiLayer
-	// multiView
-	// attachmentShadingRate
-	// multiShadingRate
-	// framebufferSize
+    // Combination or selection list
+    // scissor
+    // multiLayer
+    // multiView
+    // attachmentShadingRate
+    // multiShadingRate
+    // framebufferSize
 
-	// Only one of following option can be enabled. scissor multiLayer, multiView.
-	// multiShadingRate can be enabled either cases multiLayer or multiView.
-	// scissor test enable only for the single layer case.
-	// layerCount is 2 for multLayer or multiView is enabled.
+    // Only one of following option can be enabled. scissor multiLayer, multiView.
+    // multiShadingRate can be enabled either cases multiLayer or multiView.
+    // scissor test enable only for the single layer case.
+    // layerCount is 2 for multLayer or multiView is enabled.
 
-	struct TestKindParam
-	{
-		FragmentShadingRateAttachment::TestKind state;
-		std::string								name;
-	};
+    struct TestKindParam
+    {
+        FragmentShadingRateAttachment::TestKind state;
+        std::string name;
+    };
 
-	struct BooleanTestParam
-	{
-		bool		state;
-		std::string name;
-	};
+    struct BooleanTestParam
+    {
+        bool state;
+        std::string name;
+    };
 
-	struct UintTestParam
-	{
-		deUint32	state;
-		std::string name;
-	};
+    struct UintTestParam
+    {
+        uint32_t state;
+        std::string name;
+    };
 
-	const std::vector<TestKindParam> testKindParams{
-		{ FragmentShadingRateAttachment::TestKind::Scissor, "scissor_" },
-		{ FragmentShadingRateAttachment::TestKind::MultiView, "multiview_" },
-	};
+    const std::vector<TestKindParam> testKindParams{
+        {FragmentShadingRateAttachment::TestKind::Scissor, "scissor_"},
+        {FragmentShadingRateAttachment::TestKind::MultiView, "multiview_"},
+    };
 
-	const std::vector<BooleanTestParam> attachmentShadingRateParams{ { false, "api_" }, { true, "attachment_" } };
+    const std::vector<BooleanTestParam> attachmentShadingRateParams{{false, "api_"}, {true, "attachment_"}};
 
-	const std::vector<BooleanTestParam> multiShadingRateParams{ { false, "" }, { true, "multishadingratelayer_" } };
+    const std::vector<BooleanTestParam> multiShadingRateParams{{false, ""}, {true, "multishadingratelayer_"}};
 
-	const std::vector<UintTestParam> sizes{
-		{ 6, "6x6" },
-		{ 37, "37x37" },
-		{ 256, "256x256" },
-	};
+    const std::vector<UintTestParam> sizes{
+        {6, "6x6"},
+        {37, "37x37"},
+        {256, "256x256"},
+    };
 
-	for (const TestKindParam& testKind : testKindParams)
-	{
-		for (const BooleanTestParam& attachmentShadingRate : attachmentShadingRateParams)
-		{
-			for (const BooleanTestParam& multiShadingRate : multiShadingRateParams)
-			{
-				for (const UintTestParam& sz : sizes)
-				{
-					const deUint32 layerCount =
-						(testKind.state == FragmentShadingRateAttachment::TestKind::MultiView) ? 2 : 1;
+    for (const TestKindParam &testKind : testKindParams)
+    {
+        for (const BooleanTestParam &attachmentShadingRate : attachmentShadingRateParams)
+        {
+            for (const BooleanTestParam &multiShadingRate : multiShadingRateParams)
+            {
+                for (const UintTestParam &sz : sizes)
+                {
+                    const uint32_t layerCount =
+                        (testKind.state == FragmentShadingRateAttachment::TestKind::MultiView) ? 2 : 1;
 
-					if (multiShadingRate.state && ((layerCount <= 1) || !attachmentShadingRate.state))
-					{
-						continue;
-					}
+                    if (multiShadingRate.state && ((layerCount <= 1) || !attachmentShadingRate.state))
+                    {
+                        continue;
+                    }
 
-					std::string name = testKind.name + attachmentShadingRate.name + multiShadingRate.name + sz.name;
+                    std::string name = testKind.name + attachmentShadingRate.name + multiShadingRate.name + sz.name;
 
-					FragmentShadingRateAttachment::TestcaseParam testcaseParam = {
-						testKind.state, attachmentShadingRate.state, multiShadingRate.state, sz.state, layerCount
-					};
+                    FragmentShadingRateAttachment::TestcaseParam testcaseParam = {
+                        testKind.state, attachmentShadingRate.state, multiShadingRate.state, sz.state, layerCount};
 
-					addChild(
-						new FragmentShadingRateAttachment(m_context, m_extParams, testcaseParam, name.c_str(), ""));
-				}
-			}
-		}
-	}
+                    addChild(
+                        new FragmentShadingRateAttachment(m_context, m_extParams, testcaseParam, name.c_str(), ""));
+                }
+            }
+        }
+    }
 }
 } // namespace glcts

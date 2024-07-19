@@ -36,170 +36,184 @@ namespace wsi
 class Window
 {
 public:
-	virtual				~Window			(void) {}
+    virtual ~Window(void)
+    {
+    }
 
-	virtual	void		setVisible		(bool visible);
-	virtual void		setForeground	(void);
-	virtual void		resize			(const tcu::UVec2& newSize);
-	virtual	void		setMinimized	(bool minized);
+    virtual void setVisible(bool visible);
+    virtual void setForeground(void);
+    virtual void resize(const tcu::UVec2 &newSize);
+    virtual void setMinimized(bool minized);
 
 protected:
-						Window			(void) {}
+    Window(void)
+    {
+    }
 
 private:
-						Window			(const Window&); // Not allowed
-	Window&				operator=		(const Window&); // Not allowed
+    Window(const Window &);            // Not allowed
+    Window &operator=(const Window &); // Not allowed
 };
 
 class Display
 {
 public:
-	virtual				~Display		(void) {}
+    virtual ~Display(void)
+    {
+    }
 
-	virtual Window*		createWindow	(const tcu::Maybe<tcu::UVec2>& initialSize = tcu::Nothing) const = 0;
+    virtual Window *createWindow(const tcu::Maybe<tcu::UVec2> &initialSize = tcu::Nothing) const = 0;
 
 protected:
-						Display			(void) {}
+    Display(void)
+    {
+    }
 
 private:
-						Display			(const Display&); // Not allowed
-	Display&			operator=		(const Display&); // Not allowed
+    Display(const Display &);            // Not allowed
+    Display &operator=(const Display &); // Not allowed
 };
 
 // WSI implementation-specific APIs
 
-template<int WsiType>
+template <int WsiType>
 struct TypeTraits;
 // {
-//		typedef <NativeDisplayType>	NativeDisplayType;
-//		typedef <NativeWindowType>	NativeWindowType;
+// typedef <NativeDisplayType> NativeDisplayType;
+// typedef <NativeWindowType> NativeWindowType;
 // };
 
-template<int WsiType>
+template <int WsiType>
 struct DisplayInterface : public Display
 {
 public:
-	typedef typename TypeTraits<WsiType>::NativeDisplayType	NativeType;
+    typedef typename TypeTraits<WsiType>::NativeDisplayType NativeType;
 
-	NativeType			getNative			(void) const { return m_native; }
+    NativeType getNative(void) const
+    {
+        return m_native;
+    }
 
 protected:
-						DisplayInterface	(NativeType nativeDisplay)
-							: m_native(nativeDisplay)
-						{}
+    DisplayInterface(NativeType nativeDisplay) : m_native(nativeDisplay)
+    {
+    }
 
-	const NativeType	m_native;
+    const NativeType m_native;
 };
 
-template<int WsiType>
+template <int WsiType>
 struct WindowInterface : public Window
 {
 public:
-	typedef typename TypeTraits<WsiType>::NativeWindowType	NativeType;
+    typedef typename TypeTraits<WsiType>::NativeWindowType NativeType;
 
-	NativeType			getNative			(void) const { return m_native; }
+    NativeType getNative(void) const
+    {
+        return m_native;
+    }
 
 protected:
-						WindowInterface	(NativeType nativeDisplay)
-							: m_native(nativeDisplay)
-						{}
+    WindowInterface(NativeType nativeDisplay) : m_native(nativeDisplay)
+    {
+    }
 
-	const NativeType	m_native;
+    const NativeType m_native;
 };
 
 // VK_KHR_xlib_surface
 
-template<>
+template <>
 struct TypeTraits<TYPE_XLIB>
 {
-	typedef pt::XlibDisplayPtr			NativeDisplayType;
-	typedef pt::XlibWindow				NativeWindowType;
+    typedef pt::XlibDisplayPtr NativeDisplayType;
+    typedef pt::XlibWindow NativeWindowType;
 };
 
-typedef DisplayInterface<TYPE_XLIB>		XlibDisplayInterface;
-typedef WindowInterface<TYPE_XLIB>		XlibWindowInterface;
+typedef DisplayInterface<TYPE_XLIB> XlibDisplayInterface;
+typedef WindowInterface<TYPE_XLIB> XlibWindowInterface;
 
 // VK_KHR_xcb_surface
 
-template<>
+template <>
 struct TypeTraits<TYPE_XCB>
 {
-	typedef pt::XcbConnectionPtr		NativeDisplayType;
-	typedef pt::XcbWindow				NativeWindowType;
+    typedef pt::XcbConnectionPtr NativeDisplayType;
+    typedef pt::XcbWindow NativeWindowType;
 };
 
-typedef DisplayInterface<TYPE_XCB>		XcbDisplayInterface;
-typedef WindowInterface<TYPE_XCB>		XcbWindowInterface;
+typedef DisplayInterface<TYPE_XCB> XcbDisplayInterface;
+typedef WindowInterface<TYPE_XCB> XcbWindowInterface;
 
 // VK_KHR_wayland_surface
 
-template<>
+template <>
 struct TypeTraits<TYPE_WAYLAND>
 {
-	typedef pt::WaylandDisplayPtr		NativeDisplayType;
-	typedef pt::WaylandSurfacePtr		NativeWindowType;
+    typedef pt::WaylandDisplayPtr NativeDisplayType;
+    typedef pt::WaylandSurfacePtr NativeWindowType;
 };
 
-typedef DisplayInterface<TYPE_WAYLAND>	WaylandDisplayInterface;
-typedef WindowInterface<TYPE_WAYLAND>	WaylandWindowInterface;
+typedef DisplayInterface<TYPE_WAYLAND> WaylandDisplayInterface;
+typedef WindowInterface<TYPE_WAYLAND> WaylandWindowInterface;
 
 // VK_EXT_acquire_drm_display
 
-template<>
+template <>
 struct TypeTraits<TYPE_DIRECT_DRM>
 {
-	typedef VkDisplayKHR NativeDisplayType;
+    typedef VkDisplayKHR NativeDisplayType;
 };
 
 struct DirectDrmDisplayInterface : public DisplayInterface<TYPE_DIRECT_DRM>
 {
 public:
-					DirectDrmDisplayInterface	(void)
-						: DisplayInterface(DE_NULL)
-					{}
-	virtual void	initializeDisplay			(const InstanceInterface& vki, VkInstance instance, const tcu::CommandLine& cmdLine)
-	{
-		DE_UNREF(vki);
-		DE_UNREF(instance);
-		DE_UNREF(cmdLine);
-	}
+    DirectDrmDisplayInterface(void) : DisplayInterface(VK_NULL_HANDLE)
+    {
+    }
+    virtual void initializeDisplay(const InstanceInterface &vki, VkInstance instance, const tcu::CommandLine &cmdLine)
+    {
+        DE_UNREF(vki);
+        DE_UNREF(instance);
+        DE_UNREF(cmdLine);
+    }
 };
 
 // VK_KHR_mir_surface
 
 // VK_KHR_android_surface
 
-template<>
+template <>
 struct TypeTraits<TYPE_ANDROID>
 {
-	typedef pt::AndroidNativeWindowPtr	NativeWindowType;
+    typedef pt::AndroidNativeWindowPtr NativeWindowType;
 };
 
-typedef WindowInterface<TYPE_ANDROID>	AndroidWindowInterface;
+typedef WindowInterface<TYPE_ANDROID> AndroidWindowInterface;
 
 // VK_KHR_win32_surface
 
-template<>
+template <>
 struct TypeTraits<TYPE_WIN32>
 {
-	typedef pt::Win32InstanceHandle		NativeDisplayType;
-	typedef pt::Win32WindowHandle		NativeWindowType;
+    typedef pt::Win32InstanceHandle NativeDisplayType;
+    typedef pt::Win32WindowHandle NativeWindowType;
 };
 
-typedef DisplayInterface<TYPE_WIN32>	Win32DisplayInterface;
-typedef WindowInterface<TYPE_WIN32>		Win32WindowInterface;
+typedef DisplayInterface<TYPE_WIN32> Win32DisplayInterface;
+typedef WindowInterface<TYPE_WIN32> Win32WindowInterface;
 
 // VK_EXT_metal_surface
 
-template<>
+template <>
 struct TypeTraits<TYPE_METAL>
 {
-	typedef pt::CAMetalLayer			NativeWindowType;
+    typedef pt::CAMetalLayer NativeWindowType;
 };
 
-typedef WindowInterface<TYPE_METAL>		MetalWindowInterface;
+typedef WindowInterface<TYPE_METAL> MetalWindowInterface;
 
-} // wsi
-} // vk
+} // namespace wsi
+} // namespace vk
 
 #endif // _VKWSIPLATFORM_HPP

@@ -71,16 +71,16 @@ namespace glcts
 class TextureCubeMapArrayImageTextureSizeTests : public glcts::TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayImageTextureSizeTests(glcts::Context& context, const ExtParameters& extParams, const char* name,
-											 const char* description);
+    /* Public methods */
+    TextureCubeMapArrayImageTextureSizeTests(glcts::Context &context, const ExtParameters &extParams, const char *name,
+                                             const char *description);
 
-	virtual ~TextureCubeMapArrayImageTextureSizeTests()
-	{
-	}
+    virtual ~TextureCubeMapArrayImageTextureSizeTests()
+    {
+    }
 
-	virtual void init(void);
-	virtual void deinit(void);
+    virtual void init(void);
+    virtual void deinit(void);
 };
 
 } // namespace glcts

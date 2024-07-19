@@ -22,7 +22,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuTestCase.hpp"
-#include "tcuPlatform.hpp"
 #include "tcuCommandLine.hpp"
 
 #include "deString.h"
@@ -34,153 +33,157 @@ using namespace std;
 
 // TestNode.
 
-inline bool isValidCaseName (const char* name)
+inline bool isValidCaseName(const char *name)
 {
-	for (const char* p = name; *p != '\0'; p++)
-	{
-		if (!isValidTestCaseNameChar(*p))
-			return false;
-	}
-	return true;
+    for (const char *p = name; *p != '\0'; p++)
+    {
+        if (!isValidTestCaseNameChar(*p))
+            return false;
+    }
+    return true;
 }
 
-TestNode::TestNode (TestContext& testCtx, TestNodeType nodeType, const char* name)
-	: m_testCtx		(testCtx)
-	, m_name		(name)
-	, m_nodeType	(nodeType)
+TestNode::TestNode(TestContext &testCtx, TestNodeType nodeType, const char *name)
+    : m_testCtx(testCtx)
+    , m_name(name)
+    , m_nodeType(nodeType)
+    , m_children()
+    , m_duplicateCheck(testCtx.getCommandLine().checkDuplicateCaseNames())
 {
-	DE_ASSERT(isValidCaseName(name));
+    DE_ASSERT(isValidCaseName(name));
 }
 
-TestNode::TestNode (TestContext& testCtx, TestNodeType nodeType, const char* name, const vector<TestNode*>& children)
-	: m_testCtx		(testCtx)
-	, m_name		(name)
-	, m_nodeType	(nodeType)
+TestNode::TestNode(TestContext &testCtx, TestNodeType nodeType, const char *name, const vector<TestNode *> &children)
+    : m_testCtx(testCtx)
+    , m_name(name)
+    , m_nodeType(nodeType)
+    , m_children()
+    , m_duplicateCheck(testCtx.getCommandLine().checkDuplicateCaseNames())
 {
-	DE_ASSERT(isValidCaseName(name));
-	for (int i = 0; i < (int)children.size(); i++)
-		addChild(children[i]);
+    DE_ASSERT(isValidCaseName(name));
+    for (int i = 0; i < (int)children.size(); i++)
+        addChild(children[i]);
 }
 
-TestNode::~TestNode (void)
+TestNode::~TestNode(void)
 {
-	TestNode::deinit();
+    TestNode::deinit();
 }
 
-void TestNode::getChildren (vector<TestNode*>& res) const
+void TestNode::getChildren(vector<TestNode *> &res) const
 {
-	res.clear();
-	for (int i = 0; i < (int)m_children.size(); i++)
-		res.push_back(m_children[i]);
+    res.clear();
+    for (int i = 0; i < (int)m_children.size(); i++)
+        res.push_back(m_children[i]);
 }
 
-void TestNode::addRootChild (const std::string& groupName, const CaseListFilter* caseListFilter, TestCaseGroup* (*createTestGroup)(tcu::TestContext& testCtx, const std::string& name))
+void TestNode::addRootChild(const std::string &groupName, const CaseListFilter *caseListFilter,
+                            TestCaseGroup *(*createTestGroup)(tcu::TestContext &testCtx, const std::string &name))
 {
-	// Skip tests not in case list
-	if (caseListFilter && !caseListFilter->checkTestGroupName((m_name + "." + groupName).c_str()))
-		return;
+    // Skip tests not in case list
+    if (caseListFilter && !caseListFilter->checkTestGroupName((m_name + "." + groupName).c_str()))
+        return;
 
-	return addChild(createTestGroup(m_testCtx, groupName));
+    return addChild(createTestGroup(m_testCtx, groupName));
 }
 
-void TestNode::addChild (TestNode* node)
+void TestNode::addChild(TestNode *node)
 {
-	// Child names must be unique!
-	// \todo [petri] O(n^2) algorithm, but shouldn't really matter..
-#if defined(DE_DEBUG)
-	for (int i = 0; i < (int)m_children.size(); i++)
-	{
-		if (deStringEqual(node->getName(), m_children[i]->getName()))
-			throw tcu::InternalError(std::string("Test case with non-unique name '") + node->getName() + "' added to group '" + getName() + "'.");
-	}
-#endif
+    // Child names must be unique!
+    // \todo [petri] O(n^2) algorithm, but shouldn't really matter..
+    if (m_duplicateCheck)
+    {
+        for (int i = 0; i < (int)m_children.size(); i++)
+        {
+            if (deStringEqual(node->getName(), m_children[i]->getName()))
+                throw tcu::InternalError(std::string("Test case with non-unique name '") + node->getName() +
+                                         "' added to group '" + getName() + "'.");
+        }
+    }
 
-	// children only in group nodes
-	DE_ASSERT(getTestNodeTypeClass(m_nodeType) == NODECLASS_GROUP);
+    // children only in group nodes
+    DE_ASSERT(getTestNodeTypeClass(m_nodeType) == NODECLASS_GROUP);
 
-	// children must have the same class
-	if (!m_children.empty())
-		DE_ASSERT(getTestNodeTypeClass(m_children.front()->getNodeType()) == getTestNodeTypeClass(node->getNodeType()));
+    // children must have the same class
+    if (!m_children.empty())
+        DE_ASSERT(getTestNodeTypeClass(m_children.front()->getNodeType()) == getTestNodeTypeClass(node->getNodeType()));
 
-	m_children.push_back(node);
+    m_children.push_back(node);
 }
 
-void TestNode::init (void)
+void TestNode::init(void)
 {
 }
 
-void TestNode::deinit (void)
+void TestNode::deinit(void)
 {
-	for (int i = 0; i < (int)m_children.size(); i++)
-		delete m_children[i];
-	m_children.clear();
+    for (int i = 0; i < (int)m_children.size(); i++)
+        delete m_children[i];
+    m_children.clear();
 }
 
 // TestCaseGroup
 
-TestCaseGroup::TestCaseGroup (TestContext& testCtx, const char* name)
-	: TestNode(testCtx, NODETYPE_GROUP, name)
+TestCaseGroup::TestCaseGroup(TestContext &testCtx, const char *name) : TestNode(testCtx, NODETYPE_GROUP, name)
 {
 }
 
-TestCaseGroup::TestCaseGroup (TestContext& testCtx, const char* name, const vector<TestNode*>& children)
-	: TestNode(testCtx, NODETYPE_GROUP, name, children)
+TestCaseGroup::TestCaseGroup(TestContext &testCtx, const char *name, const vector<TestNode *> &children)
+    : TestNode(testCtx, NODETYPE_GROUP, name, children)
 {
 }
 
 // Deprecated constructor with an ignored description argument. These shouldn't really be used
 // in new code but are retained to avoid changing every test group construction at once.
-TestCaseGroup::TestCaseGroup (TestContext& testCtx, const char* name, const char* description)
-	: TestCaseGroup(testCtx, name)
+TestCaseGroup::TestCaseGroup(TestContext &testCtx, const char *name, const char *description)
+    : TestCaseGroup(testCtx, name)
 {
-	DE_UNREF(description);
+    DE_UNREF(description);
 }
 
-TestCaseGroup::TestCaseGroup (TestContext& testCtx, const char* name, const char* description, const vector<TestNode*>& children)
-	: TestCaseGroup(testCtx, name, children)
+TestCaseGroup::TestCaseGroup(TestContext &testCtx, const char *name, const char *description,
+                             const vector<TestNode *> &children)
+    : TestCaseGroup(testCtx, name, children)
 {
-	DE_UNREF(description);
+    DE_UNREF(description);
 }
 
-TestCaseGroup::~TestCaseGroup (void)
+TestCaseGroup::~TestCaseGroup(void)
 {
 }
 
-TestCase::IterateResult TestCaseGroup::iterate (void)
+TestCase::IterateResult TestCaseGroup::iterate(void)
 {
-	DE_ASSERT(DE_FALSE); // should never be here!
-	throw InternalError("TestCaseGroup::iterate() called!", "", __FILE__, __LINE__);
+    DE_ASSERT(false); // should never be here!
+    throw InternalError("TestCaseGroup::iterate() called!", "", __FILE__, __LINE__);
 }
 
 // TestCase
 
-TestCase::TestCase (TestContext& testCtx, const char* name)
-	: TestNode(testCtx, NODETYPE_SELF_VALIDATE, name)
+TestCase::TestCase(TestContext &testCtx, const char *name) : TestNode(testCtx, NODETYPE_SELF_VALIDATE, name)
 {
 }
 
-TestCase::TestCase (TestContext& testCtx, TestNodeType nodeType, const char* name)
-	: TestNode(testCtx, nodeType, name)
+TestCase::TestCase(TestContext &testCtx, TestNodeType nodeType, const char *name) : TestNode(testCtx, nodeType, name)
 {
-	DE_ASSERT(isTestNodeTypeExecutable(nodeType));
+    DE_ASSERT(isTestNodeTypeExecutable(nodeType));
 }
 
 // Deprecated constructor with an ignored description argument. These shouldn't really be used
 // in new code but are retained to avoid changing every test case construction at once.
-TestCase::TestCase (TestContext& testCtx, const char* name, const char* description)
-	: TestCase(testCtx, name)
+TestCase::TestCase(TestContext &testCtx, const char *name, const char *description) : TestCase(testCtx, name)
 {
-	DE_UNREF(description);
+    DE_UNREF(description);
 }
 
-TestCase::TestCase (TestContext& testCtx, TestNodeType nodeType, const char* name, const char* description)
-	: TestCase(testCtx, nodeType, name)
+TestCase::TestCase(TestContext &testCtx, TestNodeType nodeType, const char *name, const char *description)
+    : TestCase(testCtx, nodeType, name)
 {
-	DE_UNREF(description);
+    DE_UNREF(description);
 }
 
-TestCase::~TestCase (void)
+TestCase::~TestCase(void)
 {
 }
 
-} // tcu
+} // namespace tcu

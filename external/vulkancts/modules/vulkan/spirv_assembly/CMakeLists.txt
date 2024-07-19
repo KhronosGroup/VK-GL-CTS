@@ -72,6 +72,8 @@ set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmWorkgroupMemoryTests.hpp
 	vktSpvAsmNonSemanticInfoTests.cpp
 	vktSpvAsmNonSemanticInfoTests.hpp
+	vktSpvAsmRelaxedWithForwardReferenceTests.cpp
+	vktSpvAsmRelaxedWithForwardReferenceTests.hpp
 	vktSpvAsmPtrAccessChainTests.cpp
 	vktSpvAsmPtrAccessChainTests.hpp
 	vktSpvAsmVectorShuffleTests.cpp
@@ -82,6 +84,8 @@ set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmTrinaryMinMaxTests.hpp
 	vktSpvAsmPhysicalStorageBufferPointerTests.cpp
 	vktSpvAsmPhysicalStorageBufferPointerTests.hpp
+	vktSpvAsmRawAccessChainTests.cpp
+	vktSpvAsmRawAccessChainTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_SRCS

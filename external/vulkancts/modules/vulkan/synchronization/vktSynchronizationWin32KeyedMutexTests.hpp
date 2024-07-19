@@ -32,9 +32,9 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup* createWin32KeyedMutexTest (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createWin32KeyedMutexTest(tcu::TestContext &testCtx);
 
-} // synchronization
-} // vkt
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONWIN32KEYEDMUTEXTESTS_HPP

@@ -36,18 +36,18 @@ namespace Performance
 class DrawCallBatchingTests : public TestCaseGroup
 {
 public:
-							DrawCallBatchingTests	(Context& context);
-							~DrawCallBatchingTests	(void);
+    DrawCallBatchingTests(Context &context);
+    ~DrawCallBatchingTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							DrawCallBatchingTests	(const DrawCallBatchingTests& other);
-	DrawCallBatchingTests&	operator=				(const DrawCallBatchingTests& other);
+    DrawCallBatchingTests(const DrawCallBatchingTests &other);
+    DrawCallBatchingTests &operator=(const DrawCallBatchingTests &other);
 };
 
-} // Performance
-} // gles2
-} // deqp
+} // namespace Performance
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2PDRAWCALLBATCHINGTESTS_HPP

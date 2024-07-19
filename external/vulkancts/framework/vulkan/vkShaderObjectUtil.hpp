@@ -34,10 +34,13 @@ namespace vk
 {
 
 #ifndef CTS_USES_VULKANSC
-Move<VkShaderEXT> createShader (const DeviceInterface& vk, VkDevice device, const vk::VkShaderCreateInfoEXT& shaderCreateInfo);
-std::vector<std::string> removeUnsupportedShaderObjectExtensions (const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physicalDevice, const std::vector<std::string>& deviceExtensions);
+Move<VkShaderEXT> createShader(const DeviceInterface &vk, VkDevice device,
+                               const vk::VkShaderCreateInfoEXT &shaderCreateInfo);
+std::vector<std::string> removeUnsupportedShaderObjectExtensions(const vk::InstanceInterface &vki,
+                                                                 const vk::VkPhysicalDevice physicalDevice,
+                                                                 const std::vector<std::string> &deviceExtensions);
 #endif
 
-} // vk
+} // namespace vk
 
 #endif // _VKSHADEROBJECTUTIL_HPP

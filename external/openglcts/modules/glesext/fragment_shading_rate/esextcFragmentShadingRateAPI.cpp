@@ -33,22 +33,22 @@ namespace glcts
 ///
 /// @param context       Test context
 /// @param glslVersion   GLSL version
-FragmentShadingRateAPI::FragmentShadingRateAPI(glcts::Context& context, const ExtParameters& extParams)
-	: TestCaseGroupBase(context, extParams, "api", "Fragment Shading Rate")
+FragmentShadingRateAPI::FragmentShadingRateAPI(glcts::Context &context, const ExtParameters &extParams)
+    : TestCaseGroupBase(context, extParams, "api", "Fragment Shading Rate")
 {
 }
 
 /// Initializes test cases for fragment shading rate tests
 void FragmentShadingRateAPI::init(void)
 {
-	// Initialize base class
-	TestCaseGroupBase::init();
+    // Initialize base class
+    TestCaseGroupBase::init();
 
-	// Case 1 - via basic shading rate function
-	addChild(new FragmentShadingRateBasic(m_context, m_extParams, "basic", "Fragment shading rate functional test"));
-	// Case 2 - validation error check
-	addChild(new FragmentShadingRateErrors(m_context, m_extParams, "errors",
-										   "Fragment Shading Rate Validation Error Tests"));
+    // Case 1 - via basic shading rate function
+    addChild(new FragmentShadingRateBasic(m_context, m_extParams, "basic", "Fragment shading rate functional test"));
+    // Case 2 - validation error check
+    addChild(new FragmentShadingRateErrors(m_context, m_extParams, "errors",
+                                           "Fragment Shading Rate Validation Error Tests"));
 }
 
 } // namespace glcts

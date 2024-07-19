@@ -64,844 +64,804 @@ namespace
 {
 using namespace renderpass;
 
-de::MovePtr<Allocation> createBufferMemory (const DeviceInterface&	vk,
-											VkDevice				device,
-											Allocator&				allocator,
-											VkBuffer				buffer)
+de::MovePtr<Allocation> createBufferMemory(const DeviceInterface &vk, VkDevice device, Allocator &allocator,
+                                           VkBuffer buffer)
 {
-	de::MovePtr<Allocation> allocation (allocator.allocate(getBufferMemoryRequirements(vk, device, buffer), MemoryRequirement::HostVisible));
-	VK_CHECK(vk.bindBufferMemory(device, buffer, allocation->getMemory(), allocation->getOffset()));
-	return allocation;
+    de::MovePtr<Allocation> allocation(
+        allocator.allocate(getBufferMemoryRequirements(vk, device, buffer), MemoryRequirement::HostVisible));
+    VK_CHECK(vk.bindBufferMemory(device, buffer, allocation->getMemory(), allocation->getOffset()));
+    return allocation;
 }
 
-Move<VkImage> createSparseImageAndMemory (const DeviceInterface&				vk,
-										  VkDevice								device,
-										  const VkPhysicalDevice				physicalDevice,
-										  const InstanceInterface&				instance,
-										  Allocator&							allocator,
-										  vector<de::SharedPtr<Allocation> >&	allocations,
-										  deUint32								universalQueueFamilyIndex,
-										  VkQueue								sparseQueue,
-										  deUint32								sparseQueueFamilyIndex,
-										  const VkSemaphore&					bindSemaphore,
-										  VkFormat								format,
-										  deUint32								width,
-										  deUint32								height)
+Move<VkImage> createSparseImageAndMemory(const DeviceInterface &vk, VkDevice device,
+                                         const VkPhysicalDevice physicalDevice, const InstanceInterface &instance,
+                                         Allocator &allocator, vector<de::SharedPtr<Allocation>> &allocations,
+                                         uint32_t universalQueueFamilyIndex, VkQueue sparseQueue,
+                                         uint32_t sparseQueueFamilyIndex, const VkSemaphore &bindSemaphore,
+                                         VkFormat format, uint32_t width, uint32_t height)
 {
-	deUint32				queueFamilyIndices[]	= {universalQueueFamilyIndex, sparseQueueFamilyIndex};
-	const VkSharingMode		sharingMode             = universalQueueFamilyIndex != sparseQueueFamilyIndex ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+    uint32_t queueFamilyIndices[] = {universalQueueFamilyIndex, sparseQueueFamilyIndex};
+    const VkSharingMode sharingMode =
+        universalQueueFamilyIndex != sparseQueueFamilyIndex ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 
-	const VkExtent3D		imageExtent				=
-	{
-		width,
-		height,
-		1u
-	};
+    const VkExtent3D imageExtent = {width, height, 1u};
 
-	const VkImageCreateInfo	imageCreateInfo			=
-	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-		DE_NULL,
-		VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,
-		VK_IMAGE_TYPE_2D,
-		format,
-		imageExtent,
-		1u,
-		1u,
-		VK_SAMPLE_COUNT_1_BIT,
-		VK_IMAGE_TILING_OPTIMAL,
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-		sharingMode,
-		sharingMode == VK_SHARING_MODE_CONCURRENT ? 2u : 1u,
-		queueFamilyIndices,
-		VK_IMAGE_LAYOUT_UNDEFINED
-	};
+    const VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                                               DE_NULL,
+                                               VK_IMAGE_CREATE_SPARSE_BINDING_BIT |
+                                                   VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT,
+                                               VK_IMAGE_TYPE_2D,
+                                               format,
+                                               imageExtent,
+                                               1u,
+                                               1u,
+                                               VK_SAMPLE_COUNT_1_BIT,
+                                               VK_IMAGE_TILING_OPTIMAL,
+                                               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                                               sharingMode,
+                                               sharingMode == VK_SHARING_MODE_CONCURRENT ? 2u : 1u,
+                                               queueFamilyIndices,
+                                               VK_IMAGE_LAYOUT_UNDEFINED};
 
-	if (!checkSparseImageFormatSupport(physicalDevice, instance, imageCreateInfo))
-		TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
+    if (!checkSparseImageFormatSupport(physicalDevice, instance, imageCreateInfo))
+        TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
 
-	Move<VkImage> destImage = createImage(vk, device, &imageCreateInfo);
-	allocateAndBindSparseImage(vk, device, physicalDevice, instance, imageCreateInfo, bindSemaphore, sparseQueue, allocator, allocations, mapVkFormat(format), *destImage);
+    Move<VkImage> destImage = createImage(vk, device, &imageCreateInfo);
+    allocateAndBindSparseImage(vk, device, physicalDevice, instance, imageCreateInfo, bindSemaphore, sparseQueue,
+                               allocator, allocations, mapVkFormat(format), *destImage);
 
-	return destImage;
+    return destImage;
 }
 
-Move<VkImageView> createImageView (const DeviceInterface&	vk,
-								   VkDevice					device,
-								   VkImageViewCreateFlags	flags,
-								   VkImage					image,
-								   VkImageViewType			viewType,
-								   VkFormat					format,
-								   VkComponentMapping		components,
-								   VkImageSubresourceRange	subresourceRange)
+Move<VkImageView> createImageView(const DeviceInterface &vk, VkDevice device, VkImageViewCreateFlags flags,
+                                  VkImage image, VkImageViewType viewType, VkFormat format,
+                                  VkComponentMapping components, VkImageSubresourceRange subresourceRange)
 {
-	const VkImageViewCreateInfo pCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		DE_NULL,
-		flags,
-		image,
-		viewType,
-		format,
-		components,
-		subresourceRange,
-	};
+    const VkImageViewCreateInfo pCreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, DE_NULL, flags, image, viewType, format, components, subresourceRange,
+    };
 
-	return createImageView(vk, device, &pCreateInfo);
+    return createImageView(vk, device, &pCreateInfo);
 }
 
-Move<VkImageView> createImageView (const DeviceInterface&	vkd,
-								   VkDevice					device,
-								   VkImage					image,
-								   VkFormat					format,
-								   VkImageAspectFlags		aspect)
+Move<VkImageView> createImageView(const DeviceInterface &vkd, VkDevice device, VkImage image, VkFormat format,
+                                  VkImageAspectFlags aspect)
 {
-	const VkImageSubresourceRange range =
-	{
-		aspect,
-		0u,
-		1u,
-		0u,
-		1u
-	};
+    const VkImageSubresourceRange range = {aspect, 0u, 1u, 0u, 1u};
 
-	return createImageView(vkd, device, 0u, image, VK_IMAGE_VIEW_TYPE_2D, format, makeComponentMappingRGBA(), range);
+    return createImageView(vkd, device, 0u, image, VK_IMAGE_VIEW_TYPE_2D, format, makeComponentMappingRGBA(), range);
 }
 
-Move<VkBuffer> createBuffer (const DeviceInterface&		vkd,
-							 VkDevice					device,
-							 VkFormat					format,
-							 deUint32					width,
-							 deUint32					height)
+Move<VkBuffer> createBuffer(const DeviceInterface &vkd, VkDevice device, VkFormat format, uint32_t width,
+                            uint32_t height)
 {
-	const VkBufferUsageFlags	bufferUsage			(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-	const VkDeviceSize			pixelSize			= mapVkFormat(format).getPixelSize();
-	const VkBufferCreateInfo	createInfo			=
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		DE_NULL,
-		0u,
+    const VkBufferUsageFlags bufferUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const VkDeviceSize pixelSize        = mapVkFormat(format).getPixelSize();
+    const VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                                           DE_NULL,
+                                           0u,
 
-		width * height * pixelSize,
-		bufferUsage,
+                                           width * height * pixelSize,
+                                           bufferUsage,
 
-		VK_SHARING_MODE_EXCLUSIVE,
-		0u,
-		DE_NULL
-	};
+                                           VK_SHARING_MODE_EXCLUSIVE,
+                                           0u,
+                                           DE_NULL};
 
-	return createBuffer(vkd, device, &createInfo);
+    return createBuffer(vkd, device, &createInfo);
 }
 
-template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
-Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
-									 VkDevice				device,
-									 VkFormat				dstFormat)
+template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep,
+          typename RenderPassCreateInfo>
+Move<VkRenderPass> createRenderPass(const DeviceInterface &vkd, VkDevice device, VkFormat dstFormat)
 {
-	const AttachmentRef		dstAttachmentRef		//  VkAttachmentReference										||  VkAttachmentReference2KHR
-	(
-													//																||  VkStructureType						sType;
-		DE_NULL,									//																||  const void*							pNext;
-		0u,											//  deUint32						attachment;					||  deUint32							attachment;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//  VkImageLayout					layout;						||  VkImageLayout						layout;
-		0u											//																||  VkImageAspectFlags					aspectMask;
-	);
-	const AttachmentDesc	dstAttachment			//  VkAttachmentDescription										||  VkAttachmentDescription2KHR
-	(
-													//																||  VkStructureType						sType;
-		DE_NULL,									//																||  const void*							pNext;
-		0u,											//  VkAttachmentDescriptionFlags	flags;						||  VkAttachmentDescriptionFlags		flags;
-		dstFormat,									//  VkFormat						format;						||  VkFormat							format;
-		VK_SAMPLE_COUNT_1_BIT,						//  VkSampleCountFlagBits			samples;					||  VkSampleCountFlagBits				samples;
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			//  VkAttachmentLoadOp				loadOp;						||  VkAttachmentLoadOp					loadOp;
-		VK_ATTACHMENT_STORE_OP_STORE,				//  VkAttachmentStoreOp				storeOp;					||  VkAttachmentStoreOp					storeOp;
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			//  VkAttachmentLoadOp				stencilLoadOp;				||  VkAttachmentLoadOp					stencilLoadOp;
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,			//  VkAttachmentStoreOp				stencilStoreOp;				||  VkAttachmentStoreOp					stencilStoreOp;
-		VK_IMAGE_LAYOUT_UNDEFINED,					//  VkImageLayout					initialLayout;				||  VkImageLayout						initialLayout;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	//  VkImageLayout					finalLayout;				||  VkImageLayout						finalLayout;
-	);
-	const SubpassDesc			subpass				//  VkSubpassDescription										||  VkSubpassDescription2KHR
-	(
-													//																||  VkStructureType						sType;
-		DE_NULL,									//																||  const void*							pNext;
-		(VkSubpassDescriptionFlags)0,				//  VkSubpassDescriptionFlags		flags;						||  VkSubpassDescriptionFlags			flags;
-		VK_PIPELINE_BIND_POINT_GRAPHICS,			//  VkPipelineBindPoint				pipelineBindPoint;			||  VkPipelineBindPoint					pipelineBindPoint;
-		0u,											//																||  deUint32							viewMask;
-		0u,											//  deUint32						inputAttachmentCount;		||  deUint32							inputAttachmentCount;
-		DE_NULL,									//  const VkAttachmentReference*	pInputAttachments;			||  const VkAttachmentReference2KHR*	pInputAttachments;
-		1u,											//  deUint32						colorAttachmentCount;		||  deUint32							colorAttachmentCount;
-		&dstAttachmentRef,							//  const VkAttachmentReference*	pColorAttachments;			||  const VkAttachmentReference2KHR*	pColorAttachments;
-		DE_NULL,									//  const VkAttachmentReference*	pResolveAttachments;		||  const VkAttachmentReference2KHR*	pResolveAttachments;
-		DE_NULL,									//  const VkAttachmentReference*	pDepthStencilAttachment;	||  const VkAttachmentReference2KHR*	pDepthStencilAttachment;
-		0u,											//  deUint32						preserveAttachmentCount;	||  deUint32							preserveAttachmentCount;
-		DE_NULL										//  const deUint32*					pPreserveAttachments;		||  const deUint32*						pPreserveAttachments;
-	);
-	const RenderPassCreateInfo	renderPassCreator	//  VkRenderPassCreateInfo										||  VkRenderPassCreateInfo2KHR
-	(
-													//  VkStructureType					sType;						||  VkStructureType						sType;
-		DE_NULL,									//  const void*						pNext;						||  const void*							pNext;
-		(VkRenderPassCreateFlags)0u,				//  VkRenderPassCreateFlags			flags;						||  VkRenderPassCreateFlags				flags;
-		1u,											//  deUint32						attachmentCount;			||  deUint32							attachmentCount;
-		&dstAttachment,								//  const VkAttachmentDescription*	pAttachments;				||  const VkAttachmentDescription2KHR*	pAttachments;
-		1u,											//  deUint32						subpassCount;				||  deUint32							subpassCount;
-		&subpass,									//  const VkSubpassDescription*		pSubpasses;					||  const VkSubpassDescription2KHR*		pSubpasses;
-		0u,											//  deUint32						dependencyCount;			||  deUint32							dependencyCount;
-		DE_NULL,									//  const VkSubpassDependency*		pDependencies;				||  const VkSubpassDependency2KHR*		pDependencies;
-		0u,											//																||  deUint32							correlatedViewMaskCount;
-		DE_NULL										//																||  const deUint32*						pCorrelatedViewMasks;
-	);
+    const AttachmentRef
+        dstAttachmentRef //  VkAttachmentReference                                        ||  VkAttachmentReference2KHR
+        (
+            //  ||  VkStructureType sType;
+            DE_NULL,                                  //   ||  const void* pNext;
+            0u,                                       //  uint32_t attachment; ||  uint32_t attachment;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //  VkImageLayout layout; ||  VkImageLayout layout;
+            0u                                        // ||  VkImageAspectFlags aspectMask;
+        );
+    const AttachmentDesc
+        dstAttachment //  VkAttachmentDescription                                        ||  VkAttachmentDescription2KHR
+        (
+            //  ||  VkStructureType sType;
+            DE_NULL,               //   ||  const void* pNext;
+            0u,                    //  VkAttachmentDescriptionFlags flags; ||  VkAttachmentDescriptionFlags flags;
+            dstFormat,             //  VkFormat format; ||  VkFormat format;
+            VK_SAMPLE_COUNT_1_BIT, //  VkSampleCountFlagBits samples; ||  VkSampleCountFlagBits samples;
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE, //  VkAttachmentLoadOp loadOp; ||  VkAttachmentLoadOp loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE,    //  VkAttachmentStoreOp storeOp; ||  VkAttachmentStoreOp storeOp;
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE, //  VkAttachmentLoadOp stencilLoadOp; ||  VkAttachmentLoadOp stencilLoadOp;
+            VK_ATTACHMENT_STORE_OP_DONT_CARE, //  VkAttachmentStoreOp stencilStoreOp; ||  VkAttachmentStoreOp stencilStoreOp;
+            VK_IMAGE_LAYOUT_UNDEFINED,        //  VkImageLayout initialLayout; ||  VkImageLayout initialLayout;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL //  VkImageLayout finalLayout; ||  VkImageLayout finalLayout;
+        );
+    const SubpassDesc
+        subpass //  VkSubpassDescription                                        ||  VkSubpassDescription2KHR
+        (
+            //  ||  VkStructureType sType;
+            DE_NULL,                      //   ||  const void* pNext;
+            (VkSubpassDescriptionFlags)0, //  VkSubpassDescriptionFlags flags; ||  VkSubpassDescriptionFlags flags;
+            VK_PIPELINE_BIND_POINT_GRAPHICS, //  VkPipelineBindPoint pipelineBindPoint; ||  VkPipelineBindPoint pipelineBindPoint;
+            0u,                              //   ||  uint32_t viewMask;
+            0u,                              //  uint32_t inputAttachmentCount; ||  uint32_t inputAttachmentCount;
+            DE_NULL, //  const VkAttachmentReference* pInputAttachments; ||  const VkAttachmentReference2KHR* pInputAttachments;
+            1u, //  uint32_t colorAttachmentCount; ||  uint32_t colorAttachmentCount;
+            &dstAttachmentRef, //  const VkAttachmentReference* pColorAttachments; ||  const VkAttachmentReference2KHR* pColorAttachments;
+            DE_NULL, //  const VkAttachmentReference* pResolveAttachments; ||  const VkAttachmentReference2KHR* pResolveAttachments;
+            DE_NULL, //  const VkAttachmentReference* pDepthStencilAttachment; ||  const VkAttachmentReference2KHR* pDepthStencilAttachment;
+            0u,     //  uint32_t preserveAttachmentCount; ||  uint32_t preserveAttachmentCount;
+            DE_NULL //  const uint32_t* pPreserveAttachments; ||  const uint32_t* pPreserveAttachments;
+        );
+    const RenderPassCreateInfo
+        renderPassCreator //  VkRenderPassCreateInfo                                        ||  VkRenderPassCreateInfo2KHR
+        (
+            //  VkStructureType sType; ||  VkStructureType sType;
+            DE_NULL,                     //  const void* pNext; ||  const void* pNext;
+            (VkRenderPassCreateFlags)0u, //  VkRenderPassCreateFlags flags; ||  VkRenderPassCreateFlags flags;
+            1u,                          //  uint32_t attachmentCount; ||  uint32_t attachmentCount;
+            &dstAttachment, //  const VkAttachmentDescription* pAttachments; ||  const VkAttachmentDescription2KHR* pAttachments;
+            1u,             //  uint32_t subpassCount; ||  uint32_t subpassCount;
+            &subpass, //  const VkSubpassDescription* pSubpasses; ||  const VkSubpassDescription2KHR* pSubpasses;
+            0u,       //  uint32_t dependencyCount; ||  uint32_t dependencyCount;
+            DE_NULL,  //  const VkSubpassDependency* pDependencies; ||  const VkSubpassDependency2KHR* pDependencies;
+            0u,       //   ||  uint32_t correlatedViewMaskCount;
+            DE_NULL   //  ||  const uint32_t* pCorrelatedViewMasks;
+        );
 
-	return renderPassCreator.createRenderPass(vkd, device);
+    return renderPassCreator.createRenderPass(vkd, device);
 }
 
-Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
-									 VkDevice				device,
-									 VkFormat				dstFormat,
-									 const RenderingType	renderingType)
+Move<VkRenderPass> createRenderPass(const DeviceInterface &vkd, VkDevice device, VkFormat dstFormat,
+                                    const RenderingType renderingType)
 {
-	switch (renderingType)
-	{
-		case RENDERING_TYPE_RENDERPASS_LEGACY:
-			return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vkd, device, dstFormat);
-		case RENDERING_TYPE_RENDERPASS2:
-			return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vkd, device, dstFormat);
-		case RENDERING_TYPE_DYNAMIC_RENDERING:
-			return Move<VkRenderPass>();
-		default:
-			TCU_THROW(InternalError, "Impossible");
-	}
+    switch (renderingType)
+    {
+    case RENDERING_TYPE_RENDERPASS_LEGACY:
+        return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1,
+                                RenderPassCreateInfo1>(vkd, device, dstFormat);
+    case RENDERING_TYPE_RENDERPASS2:
+        return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2,
+                                RenderPassCreateInfo2>(vkd, device, dstFormat);
+    case RENDERING_TYPE_DYNAMIC_RENDERING:
+        return Move<VkRenderPass>();
+    default:
+        TCU_THROW(InternalError, "Impossible");
+    }
 }
 
-Move<VkFramebuffer> createFramebuffer (const DeviceInterface&	vkd,
-									   VkDevice					device,
-									   VkRenderPass				renderPass,
-									   VkImageView				dstImageView,
-									   deUint32					width,
-									   deUint32					height)
+Move<VkFramebuffer> createFramebuffer(const DeviceInterface &vkd, VkDevice device, VkRenderPass renderPass,
+                                      VkImageView dstImageView, uint32_t width, uint32_t height)
 {
-	// when RenderPass was not created then we are testing dynamic rendering
-	// and we can't create framebuffer without valid RenderPass object
-	if (!renderPass)
-		return Move<VkFramebuffer>();
+    // when RenderPass was not created then we are testing dynamic rendering
+    // and we can't create framebuffer without valid RenderPass object
+    if (!renderPass)
+        return Move<VkFramebuffer>();
 
-	const VkFramebufferCreateInfo createInfo =
-	{
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-		DE_NULL,
-		0u,
+    const VkFramebufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                                                DE_NULL,
+                                                0u,
 
-		renderPass,
-		1u,
-		&dstImageView,
+                                                renderPass,
+                                                1u,
+                                                &dstImageView,
 
-		width,
-		height,
-		1u
-	};
+                                                width,
+                                                height,
+                                                1u};
 
-	return createFramebuffer(vkd, device, &createInfo);
+    return createFramebuffer(vkd, device, &createInfo);
 }
 
-Move<VkPipelineLayout> createRenderPipelineLayout (const DeviceInterface&	vkd,
-												   VkDevice					device)
+Move<VkPipelineLayout> createRenderPipelineLayout(const DeviceInterface &vkd, VkDevice device)
 {
-	const VkPipelineLayoutCreateInfo createInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineLayoutCreateFlags)0,
+    const VkPipelineLayoutCreateInfo createInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+                                                   DE_NULL,
+                                                   (vk::VkPipelineLayoutCreateFlags)0,
 
-		0u,
-		DE_NULL,
+                                                   0u,
+                                                   DE_NULL,
 
-		0u,
-		DE_NULL
-	};
+                                                   0u,
+                                                   DE_NULL};
 
-	return createPipelineLayout(vkd, device, &createInfo);
+    return createPipelineLayout(vkd, device, &createInfo);
 }
 
-Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
-									   VkDevice											device,
-									   VkRenderPass										renderPass,
-									   VkFormat											format,
-									   VkPipelineLayout									pipelineLayout,
-									   const BinaryCollection&							binaryCollection,
-									   deUint32											width,
-									   deUint32											height)
+Move<VkPipeline> createRenderPipeline(const DeviceInterface &vkd, VkDevice device, VkRenderPass renderPass,
+                                      VkFormat format, VkPipelineLayout pipelineLayout,
+                                      const BinaryCollection &binaryCollection, uint32_t width, uint32_t height)
 {
-	const Unique<VkShaderModule>					vertexShaderModule				(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
-	const Unique<VkShaderModule>					fragmentShaderModule			(createShaderModule(vkd, device, binaryCollection.get("quad-frag"), 0u));
+    const Unique<VkShaderModule> vertexShaderModule(
+        createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
+    const Unique<VkShaderModule> fragmentShaderModule(
+        createShaderModule(vkd, device, binaryCollection.get("quad-frag"), 0u));
 
-	const VkPipelineVertexInputStateCreateInfo		vertexInputState				=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineVertexInputStateCreateFlags)0u,
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = {
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        DE_NULL,
+        (VkPipelineVertexInputStateCreateFlags)0u,
 
-		0u,
-		DE_NULL,
+        0u,
+        DE_NULL,
 
-		0u,
-		DE_NULL
-	};
+        0u,
+        DE_NULL};
 
-	const std::vector<VkViewport>					viewports						(1, makeViewport(tcu::UVec2(width, height)));
-	const std::vector<VkRect2D>						scissors						(1, makeRect2D(tcu::UVec2(width, height)));
+    const std::vector<VkViewport> viewports(1, makeViewport(tcu::UVec2(width, height)));
+    const std::vector<VkRect2D> scissors(1, makeRect2D(tcu::UVec2(width, height)));
 
-	VkPipelineRenderingCreateInfoKHR* pNext = DE_NULL;
-	VkPipelineRenderingCreateInfoKHR renderingCreateInfo
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-		0u,
-		DE_NULL,
-		1u,
-		&format,
-		VK_FORMAT_UNDEFINED,
-		VK_FORMAT_UNDEFINED
-	};
-	if (renderPass == DE_NULL)
-		pNext = &renderingCreateInfo;
+    VkPipelineRenderingCreateInfoKHR *pNext = DE_NULL;
+    VkPipelineRenderingCreateInfoKHR renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+                                                         0u,
+                                                         DE_NULL,
+                                                         1u,
+                                                         &format,
+                                                         VK_FORMAT_UNDEFINED,
+                                                         VK_FORMAT_UNDEFINED};
+    if (renderPass == VK_NULL_HANDLE)
+        pNext = &renderingCreateInfo;
 
-	return makeGraphicsPipeline(vkd,									// const DeviceInterface&                        vk
-								device,									// const VkDevice                                device
-								pipelineLayout,							// const VkPipelineLayout                        pipelineLayout
-								*vertexShaderModule,					// const VkShaderModule                          vertexShaderModule
-								DE_NULL,								// const VkShaderModule                          tessellationControlShaderModule
-								DE_NULL,								// const VkShaderModule                          tessellationEvalShaderModule
-								DE_NULL,								// const VkShaderModule                          geometryShaderModule
-								*fragmentShaderModule,					// const VkShaderModule                          fragmentShaderModule
-								renderPass,								// const VkRenderPass                            renderPass
-								viewports,								// const std::vector<VkViewport>&                viewports
-								scissors,								// const std::vector<VkRect2D>&                  scissors
-								VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
-								0u,										// const deUint32                                subpass
-								0u,										// const deUint32                                patchControlPoints
-								&vertexInputState,						// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-								DE_NULL,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-								DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-								DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-								DE_NULL,								// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
-								DE_NULL,								// const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
-								pNext);									// const void*                                   pNext
+    return makeGraphicsPipeline(
+        vkd,                   // const DeviceInterface&                        vk
+        device,                // const VkDevice                                device
+        pipelineLayout,        // const VkPipelineLayout                        pipelineLayout
+        *vertexShaderModule,   // const VkShaderModule                          vertexShaderModule
+        VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
+        VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
+        VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
+        *fragmentShaderModule, // const VkShaderModule                          fragmentShaderModule
+        renderPass,            // const VkRenderPass                            renderPass
+        viewports,             // const std::vector<VkViewport>&                viewports
+        scissors,              // const std::vector<VkRect2D>&                  scissors
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // const VkPrimitiveTopology                     topology
+        0u,                                  // const uint32_t                                subpass
+        0u,                                  // const uint32_t                                patchControlPoints
+        &vertexInputState,                   // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+        DE_NULL, // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+        DE_NULL, // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+        DE_NULL, // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+        DE_NULL, // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+        DE_NULL, // const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
+        pNext);  // const void*                                   pNext
 }
 
-void beginSecondaryCmdBuffer(const DeviceInterface& vkd, VkCommandBuffer cmdBuffer, VkFormat colorFormat, VkRenderingFlagsKHR renderingFlags = 0u)
+void beginSecondaryCmdBuffer(const DeviceInterface &vkd, VkCommandBuffer cmdBuffer, VkFormat colorFormat,
+                             VkRenderingFlagsKHR renderingFlags = 0u)
 {
-	VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
-		DE_NULL,																// const void*						pNext;
-		renderingFlags,															// VkRenderingFlagsKHR				flags;
-		0u,																		// uint32_t							viewMask;
-		1u,																		// uint32_t							colorAttachmentCount;
-		&colorFormat,															// const VkFormat*					pColorAttachmentFormats;
-		VK_FORMAT_UNDEFINED,													// VkFormat							depthAttachmentFormat;
-		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
-		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
-	};
-	const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
+    VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
+        DE_NULL,                                                         // const void* pNext;
+        renderingFlags,                                                  // VkRenderingFlagsKHR flags;
+        0u,                                                              // uint32_t viewMask;
+        1u,                                                              // uint32_t colorAttachmentCount;
+        &colorFormat,                                                    // const VkFormat* pColorAttachmentFormats;
+        VK_FORMAT_UNDEFINED,                                             // VkFormat depthAttachmentFormat;
+        VK_FORMAT_UNDEFINED,                                             // VkFormat stencilAttachmentFormat;
+        VK_SAMPLE_COUNT_1_BIT,                                           // VkSampleCountFlagBits rasterizationSamples;
+    };
+    const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
 
-	VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	if (renderingFlags == 0u)
-		usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+    VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    if (renderingFlags == 0u)
+        usageFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 
-	const VkCommandBufferBeginInfo commandBufBeginParams
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType					sType;
-		DE_NULL,																// const void*						pNext;
-		usageFlags,																// VkCommandBufferUsageFlags		flags;
-		&bufferInheritanceInfo
-	};
+    const VkCommandBufferBeginInfo commandBufBeginParams{
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
+        DE_NULL,                                     // const void* pNext;
+        usageFlags,                                  // VkCommandBufferUsageFlags flags;
+        &bufferInheritanceInfo};
 
-	vkd.beginCommandBuffer(cmdBuffer, &commandBufBeginParams);
+    vkd.beginCommandBuffer(cmdBuffer, &commandBufBeginParams);
 }
 
 struct TestConfig
 {
-				TestConfig		(VkFormat					format_,
-								 const SharedGroupParams	groupParams_)
-		: format			(format_)
-		, groupParams		(groupParams_)
-	{
-	}
+    TestConfig(VkFormat format_, const SharedGroupParams groupParams_) : format(format_), groupParams(groupParams_)
+    {
+    }
 
-	VkFormat				format;
-	const SharedGroupParams	groupParams;
+    VkFormat format;
+    const SharedGroupParams groupParams;
 };
 
 class SparseRenderTargetTestInstance : public TestInstance
 {
 public:
-											SparseRenderTargetTestInstance	(Context& context, TestConfig testConfig);
-											~SparseRenderTargetTestInstance	(void);
+    SparseRenderTargetTestInstance(Context &context, TestConfig testConfig);
+    ~SparseRenderTargetTestInstance(void);
 
-	tcu::TestStatus							iterate							(void);
+    tcu::TestStatus iterate(void);
 
-	template<typename RenderpassSubpass>
-	tcu::TestStatus							iterateInternal					(void);
-	tcu::TestStatus							iterateInternalDynamicRendering	(void);
+    template <typename RenderpassSubpass>
+    tcu::TestStatus iterateInternal(void);
+    tcu::TestStatus iterateInternalDynamicRendering(void);
 
-	tcu::TestStatus							verify							(void);
+    tcu::TestStatus verify(void);
 
 private:
-	const SharedGroupParams					m_groupParams;
+    const SharedGroupParams m_groupParams;
 
-	const deUint32							m_width;
-	const deUint32							m_height;
-	const VkFormat							m_format;
+    const uint32_t m_width;
+    const uint32_t m_height;
+    const VkFormat m_format;
 
-	vector<de::SharedPtr<Allocation> >		m_allocations;
+    vector<de::SharedPtr<Allocation>> m_allocations;
 
-	const Unique<VkSemaphore>				m_bindSemaphore;
+    const Unique<VkSemaphore> m_bindSemaphore;
 
-	const Unique<VkImage>					m_dstImage;
-	const Unique<VkImageView>				m_dstImageView;
+    const Unique<VkImage> m_dstImage;
+    const Unique<VkImageView> m_dstImageView;
 
-	const Unique<VkBuffer>					m_dstBuffer;
-	const de::UniquePtr<Allocation>			m_dstBufferMemory;
+    const Unique<VkBuffer> m_dstBuffer;
+    const de::UniquePtr<Allocation> m_dstBufferMemory;
 
-	const Unique<VkRenderPass>				m_renderPass;
-	const Unique<VkFramebuffer>				m_framebuffer;
+    const Unique<VkRenderPass> m_renderPass;
+    const Unique<VkFramebuffer> m_framebuffer;
 
-	const Unique<VkPipelineLayout>			m_renderPipelineLayout;
-	const Unique<VkPipeline>				m_renderPipeline;
+    const Unique<VkPipelineLayout> m_renderPipelineLayout;
+    const Unique<VkPipeline> m_renderPipeline;
 
-	const Unique<VkCommandPool>				m_commandPool;
-	tcu::ResultCollector					m_resultCollector;
+    const Unique<VkCommandPool> m_commandPool;
+    tcu::ResultCollector m_resultCollector;
 };
 
-SparseRenderTargetTestInstance::SparseRenderTargetTestInstance (Context& context, TestConfig testConfig)
-	: TestInstance				(context)
-	, m_groupParams				(testConfig.groupParams)
-	, m_width					(32u)
-	, m_height					(32u)
-	, m_format					(testConfig.format)
-	, m_bindSemaphore			(createSemaphore(context.getDeviceInterface(), context.getDevice()))
-	, m_dstImage				(createSparseImageAndMemory(context.getDeviceInterface(), context.getDevice(), context.getPhysicalDevice(), context.getInstanceInterface(), context.getDefaultAllocator(), m_allocations, context.getUniversalQueueFamilyIndex(), context.getSparseQueue(), context.getSparseQueueFamilyIndex(), *m_bindSemaphore, m_format, m_width, m_height))
-	, m_dstImageView			(createImageView(context.getDeviceInterface(), context.getDevice(), *m_dstImage, m_format, VK_IMAGE_ASPECT_COLOR_BIT))
-	, m_dstBuffer				(createBuffer(context.getDeviceInterface(), context.getDevice(), m_format, m_width, m_height))
-	, m_dstBufferMemory			(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_dstBuffer))
-	, m_renderPass				(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_format, testConfig.groupParams->renderingType))
-	, m_framebuffer				(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_dstImageView, m_width, m_height))
-	, m_renderPipelineLayout	(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
-	, m_renderPipeline			(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass, testConfig.format, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height))
-	, m_commandPool				(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
+SparseRenderTargetTestInstance::SparseRenderTargetTestInstance(Context &context, TestConfig testConfig)
+    : TestInstance(context)
+    , m_groupParams(testConfig.groupParams)
+    , m_width(32u)
+    , m_height(32u)
+    , m_format(testConfig.format)
+    , m_bindSemaphore(createSemaphore(context.getDeviceInterface(), context.getDevice()))
+    , m_dstImage(createSparseImageAndMemory(
+          context.getDeviceInterface(), context.getDevice(), context.getPhysicalDevice(),
+          context.getInstanceInterface(), context.getDefaultAllocator(), m_allocations,
+          context.getUniversalQueueFamilyIndex(), context.getSparseQueue(), context.getSparseQueueFamilyIndex(),
+          *m_bindSemaphore, m_format, m_width, m_height))
+    , m_dstImageView(createImageView(context.getDeviceInterface(), context.getDevice(), *m_dstImage, m_format,
+                                     VK_IMAGE_ASPECT_COLOR_BIT))
+    , m_dstBuffer(createBuffer(context.getDeviceInterface(), context.getDevice(), m_format, m_width, m_height))
+    , m_dstBufferMemory(createBufferMemory(context.getDeviceInterface(), context.getDevice(),
+                                           context.getDefaultAllocator(), *m_dstBuffer))
+    , m_renderPass(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_format,
+                                    testConfig.groupParams->renderingType))
+    , m_framebuffer(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_dstImageView,
+                                      m_width, m_height))
+    , m_renderPipelineLayout(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
+    , m_renderPipeline(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass,
+                                            testConfig.format, *m_renderPipelineLayout, context.getBinaryCollection(),
+                                            m_width, m_height))
+    , m_commandPool(createCommandPool(context.getDeviceInterface(), context.getDevice(),
+                                      VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
 {
 }
 
-SparseRenderTargetTestInstance::~SparseRenderTargetTestInstance (void)
+SparseRenderTargetTestInstance::~SparseRenderTargetTestInstance(void)
 {
 }
 
-tcu::TestStatus SparseRenderTargetTestInstance::iterate (void)
+tcu::TestStatus SparseRenderTargetTestInstance::iterate(void)
 {
-	switch (m_groupParams->renderingType)
-	{
-		case RENDERING_TYPE_RENDERPASS_LEGACY:
-			return iterateInternal<RenderpassSubpass1>();
-		case RENDERING_TYPE_RENDERPASS2:
-			return iterateInternal<RenderpassSubpass2>();
-		case RENDERING_TYPE_DYNAMIC_RENDERING:
-			return iterateInternalDynamicRendering();
-		default:
-			TCU_THROW(InternalError, "Impossible");
-	}
+    switch (m_groupParams->renderingType)
+    {
+    case RENDERING_TYPE_RENDERPASS_LEGACY:
+        return iterateInternal<RenderpassSubpass1>();
+    case RENDERING_TYPE_RENDERPASS2:
+        return iterateInternal<RenderpassSubpass2>();
+    case RENDERING_TYPE_DYNAMIC_RENDERING:
+        return iterateInternalDynamicRendering();
+    default:
+        TCU_THROW(InternalError, "Impossible");
+    }
 }
 
-template<typename RenderpassSubpass>
-tcu::TestStatus SparseRenderTargetTestInstance::iterateInternal (void)
+template <typename RenderpassSubpass>
+tcu::TestStatus SparseRenderTargetTestInstance::iterateInternal(void)
 {
-	const DeviceInterface&			vkd				(m_context.getDeviceInterface());
-	const Unique<VkCommandBuffer>	commandBuffer	(allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const VkRect2D					renderArea		= makeRect2D(m_width, m_height);
+    const DeviceInterface &vkd(m_context.getDeviceInterface());
+    const Unique<VkCommandBuffer> commandBuffer(
+        allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+    const VkRect2D renderArea = makeRect2D(m_width, m_height);
 
-	beginCommandBuffer(vkd, *commandBuffer);
+    beginCommandBuffer(vkd, *commandBuffer);
 
-	const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
-	const VkRenderPassBeginInfo beginInfo
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		DE_NULL,
-		*m_renderPass,
-		*m_framebuffer,
-		renderArea,
-		0u,
-		DE_NULL
-	};
-	RenderpassSubpass::cmdBeginRenderPass(vkd, *commandBuffer, &beginInfo, &subpassBeginInfo);
+    const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
+    const VkRenderPassBeginInfo beginInfo{
+        VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, DE_NULL, *m_renderPass, *m_framebuffer, renderArea, 0u, DE_NULL};
+    RenderpassSubpass::cmdBeginRenderPass(vkd, *commandBuffer, &beginInfo, &subpassBeginInfo);
 
-	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
-	vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
+    vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
+    vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
 
-	const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);
-	RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
+    const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);
+    RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
-	copyImageToBuffer(vkd, *commandBuffer, *m_dstImage, *m_dstBuffer, tcu::IVec2(m_width, m_height));
+    copyImageToBuffer(vkd, *commandBuffer, *m_dstImage, *m_dstBuffer, tcu::IVec2(m_width, m_height));
 
-	endCommandBuffer(vkd, *commandBuffer);
+    endCommandBuffer(vkd, *commandBuffer);
 
-	const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
-	submitCommandsAndWait(vkd, m_context.getDevice(), m_context.getUniversalQueue(), *commandBuffer, false, 1u, 1u, &m_bindSemaphore.get(), stageBits);
+    const VkPipelineStageFlags stageBits[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
+    submitCommandsAndWait(vkd, m_context.getDevice(), m_context.getUniversalQueue(), *commandBuffer, false, 1u, 1u,
+                          &m_bindSemaphore.get(), stageBits);
 
-	return verify();
+    return verify();
 }
 
 tcu::TestStatus SparseRenderTargetTestInstance::iterateInternalDynamicRendering(void)
 {
-	const DeviceInterface&			vkd				(m_context.getDeviceInterface());
-	const Unique<VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	Move<VkCommandBuffer>			secCmdBuffer;
-	const VkRect2D					renderArea		= makeRect2D(m_width, m_height);
-	const VkClearValue				clearValue		= makeClearValueColor({ 0.0f, 0.0f, 0.0f, 1.0f });
-	const VkImageMemoryBarrier		barrier
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-		DE_NULL,
+    const DeviceInterface &vkd(m_context.getDeviceInterface());
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+    Move<VkCommandBuffer> secCmdBuffer;
+    const VkRect2D renderArea     = makeRect2D(m_width, m_height);
+    const VkClearValue clearValue = makeClearValueColor({0.0f, 0.0f, 0.0f, 1.0f});
+    const VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                       DE_NULL,
 
-		0,
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                       0,
+                                       VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                       VK_IMAGE_LAYOUT_UNDEFINED,
+                                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 
-		VK_QUEUE_FAMILY_IGNORED,
-		VK_QUEUE_FAMILY_IGNORED,
+                                       VK_QUEUE_FAMILY_IGNORED,
+                                       VK_QUEUE_FAMILY_IGNORED,
 
-		*m_dstImage,
-		{
-			VK_IMAGE_ASPECT_COLOR_BIT,
-			0u,
-			1u,
-			0u,
-			1u
-		}
-	};
+                                       *m_dstImage,
+                                       {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
 
-	if (m_groupParams->useSecondaryCmdBuffer)
-	{
-		secCmdBuffer = allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+    if (m_groupParams->useSecondaryCmdBuffer)
+    {
+        secCmdBuffer =
+            allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
-		// record secondary command buffer
-		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-		{
-			beginSecondaryCmdBuffer(vkd, *secCmdBuffer, m_format, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
-			beginRendering(vkd, *secCmdBuffer, *m_dstImageView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-		}
-		else
-			beginSecondaryCmdBuffer(vkd, *secCmdBuffer, m_format);
+        // record secondary command buffer
+        if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+        {
+            beginSecondaryCmdBuffer(vkd, *secCmdBuffer, m_format,
+                                    vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+            beginRendering(vkd, *secCmdBuffer, *m_dstImageView, renderArea, clearValue,
+                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+        }
+        else
+            beginSecondaryCmdBuffer(vkd, *secCmdBuffer, m_format);
 
-		vkd.cmdBindPipeline(*secCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
-		vkd.cmdDraw(*secCmdBuffer, 6u, 1u, 0u, 0u);
+        vkd.cmdBindPipeline(*secCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
+        vkd.cmdDraw(*secCmdBuffer, 6u, 1u, 0u, 0u);
 
-		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-			vkd.cmdEndRendering(*secCmdBuffer);
+        if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+            vkd.cmdEndRendering(*secCmdBuffer);
 
-		endCommandBuffer(vkd, *secCmdBuffer);
+        endCommandBuffer(vkd, *secCmdBuffer);
 
-		// record primary command buffer
-		beginCommandBuffer(vkd, *cmdBuffer, 0u);
-		vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+        // record primary command buffer
+        beginCommandBuffer(vkd, *cmdBuffer, 0u);
+        vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                               &barrier);
 
-		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-			beginRendering(vkd, *cmdBuffer, *m_dstImageView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+        if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+            beginRendering(vkd, *cmdBuffer, *m_dstImageView, renderArea, clearValue,
+                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                           VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-		vkd.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
+        vkd.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
 
-		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-			vkd.cmdEndRendering(*cmdBuffer);
-	}
-	else
-	{
-		beginCommandBuffer(vkd, *cmdBuffer);
+        if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+            vkd.cmdEndRendering(*cmdBuffer);
+    }
+    else
+    {
+        beginCommandBuffer(vkd, *cmdBuffer);
 
-		vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+        vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                               &barrier);
 
-		beginRendering(vkd, *cmdBuffer, *m_dstImageView, renderArea, clearValue, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+        beginRendering(vkd, *cmdBuffer, *m_dstImageView, renderArea, clearValue,
+                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
 
-		vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
-		vkd.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
+        vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
+        vkd.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
 
-		vkd.cmdEndRendering(*cmdBuffer);
-	}
+        vkd.cmdEndRendering(*cmdBuffer);
+    }
 
-	copyImageToBuffer(vkd, *cmdBuffer, *m_dstImage, *m_dstBuffer, tcu::IVec2(m_width, m_height));
+    copyImageToBuffer(vkd, *cmdBuffer, *m_dstImage, *m_dstBuffer, tcu::IVec2(m_width, m_height));
 
-	endCommandBuffer(vkd, *cmdBuffer);
+    endCommandBuffer(vkd, *cmdBuffer);
 
-	const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
-	submitCommandsAndWait(vkd, m_context.getDevice(), m_context.getUniversalQueue(), *cmdBuffer, false, 1u, 1u, &m_bindSemaphore.get(), stageBits);
+    const VkPipelineStageFlags stageBits[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
+    submitCommandsAndWait(vkd, m_context.getDevice(), m_context.getUniversalQueue(), *cmdBuffer, false, 1u, 1u,
+                          &m_bindSemaphore.get(), stageBits);
 
-	return verify();
+    return verify();
 }
 
 tcu::TestStatus SparseRenderTargetTestInstance::verify(void)
 {
-	const tcu::TextureFormat			format			(mapVkFormat(m_format));
-	const void* const					ptr				(m_dstBufferMemory->getHostPtr());
-	const tcu::ConstPixelBufferAccess	access			(format, m_width, m_height, 1, ptr);
-	tcu::TextureLevel					reference		(format, m_width, m_height);
-	const tcu::TextureChannelClass		channelClass	(tcu::getTextureChannelClass(format.type));
+    const tcu::TextureFormat format(mapVkFormat(m_format));
+    const void *const ptr(m_dstBufferMemory->getHostPtr());
+    const tcu::ConstPixelBufferAccess access(format, m_width, m_height, 1, ptr);
+    tcu::TextureLevel reference(format, m_width, m_height);
+    const tcu::TextureChannelClass channelClass(tcu::getTextureChannelClass(format.type));
 
-	switch (channelClass)
-	{
-	case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
-	{
-		const UVec4	bits(tcu::getTextureFormatBitDepth(format).cast<deUint32>());
-		const UVec4	color(1u << (bits.x() - 1), 1u << (bits.y() - 2), 1u << (bits.z() - 3), 0xffffffff);
+    switch (channelClass)
+    {
+    case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+    {
+        const UVec4 bits(tcu::getTextureFormatBitDepth(format).cast<uint32_t>());
+        const UVec4 color(1u << (bits.x() - 1), 1u << (bits.y() - 2), 1u << (bits.z() - 3), 0xffffffff);
 
-		for (deUint32 y = 0; y < m_height; y++)
-			for (deUint32 x = 0; x < m_width; x++)
-				reference.getAccess().setPixel(color, x, y);
+        for (uint32_t y = 0; y < m_height; y++)
+            for (uint32_t x = 0; x < m_width; x++)
+                reference.getAccess().setPixel(color, x, y);
 
-		if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access, UVec4(0u), tcu::COMPARE_LOG_ON_ERROR))
-			m_resultCollector.fail("Compare failed.");
-	}
-	break;
+        if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access,
+                                      UVec4(0u), tcu::COMPARE_LOG_ON_ERROR))
+            m_resultCollector.fail("Compare failed.");
+    }
+    break;
 
-	case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
-	{
-		const UVec4	bits(tcu::getTextureFormatBitDepth(format).cast<deUint32>());
-		const UVec4	color(1u << (bits.x() - 2), 1u << (bits.y() - 3), 1u << (bits.z() - 4), 0xffffffff);
+    case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+    {
+        const UVec4 bits(tcu::getTextureFormatBitDepth(format).cast<uint32_t>());
+        const UVec4 color(1u << (bits.x() - 2), 1u << (bits.y() - 3), 1u << (bits.z() - 4), 0xffffffff);
 
-		for (deUint32 y = 0; y < m_height; y++)
-			for (deUint32 x = 0; x < m_width; x++)
-				reference.getAccess().setPixel(color, x, y);
+        for (uint32_t y = 0; y < m_height; y++)
+            for (uint32_t x = 0; x < m_width; x++)
+                reference.getAccess().setPixel(color, x, y);
 
-		if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access, UVec4(0u), tcu::COMPARE_LOG_ON_ERROR))
-			m_resultCollector.fail("Compare failed.");
-	}
-	break;
+        if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access,
+                                      UVec4(0u), tcu::COMPARE_LOG_ON_ERROR))
+            m_resultCollector.fail("Compare failed.");
+    }
+    break;
 
-	case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
-	case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
-	{
-		const tcu::TextureFormatInfo	info(tcu::getTextureFormatInfo(format));
-		const Vec4						maxValue(info.valueMax);
-		const Vec4						color(maxValue.x() / 2.0f, maxValue.y() / 4.0f, maxValue.z() / 8.0f, maxValue.w());
+    case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+    case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+    {
+        const tcu::TextureFormatInfo info(tcu::getTextureFormatInfo(format));
+        const Vec4 maxValue(info.valueMax);
+        const Vec4 color(maxValue.x() / 2.0f, maxValue.y() / 4.0f, maxValue.z() / 8.0f, maxValue.w());
 
-		for (deUint32 y = 0; y < m_height; y++)
-			for (deUint32 x = 0; x < m_width; x++)
-			{
-				if (tcu::isSRGB(format))
-					reference.getAccess().setPixel(tcu::linearToSRGB(color), x, y);
-				else
-					reference.getAccess().setPixel(color, x, y);
-			}
+        for (uint32_t y = 0; y < m_height; y++)
+            for (uint32_t x = 0; x < m_width; x++)
+            {
+                if (tcu::isSRGB(format))
+                    reference.getAccess().setPixel(tcu::linearToSRGB(color), x, y);
+                else
+                    reference.getAccess().setPixel(color, x, y);
+            }
 
-		{
-			// Allow error of 4 times the minimum presentable difference
-			const Vec4 threshold(4.0f * 1.0f / ((UVec4(1u) << tcu::getTextureFormatMantissaBitDepth(format).cast<deUint32>()) - 1u).cast<float>());
+        {
+            // Allow error of 4 times the minimum presentable difference
+            const Vec4 threshold(
+                4.0f * 1.0f /
+                ((UVec4(1u) << tcu::getTextureFormatMantissaBitDepth(format).cast<uint32_t>()) - 1u).cast<float>());
 
-			if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access, threshold, tcu::COMPARE_LOG_ON_ERROR))
-				m_resultCollector.fail("Compare failed.");
-		}
-	}
-	break;
+            if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access,
+                                            threshold, tcu::COMPARE_LOG_ON_ERROR))
+                m_resultCollector.fail("Compare failed.");
+        }
+    }
+    break;
 
-	case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
-	{
-		const Vec4 color(0.5f, 0.25f, 0.125f, 1.0f);
+    case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+    {
+        const Vec4 color(0.5f, 0.25f, 0.125f, 1.0f);
 
-		for (deUint32 y = 0; y < m_height; y++)
-			for (deUint32 x = 0; x < m_width; x++)
-			{
-				if (tcu::isSRGB(format))
-					reference.getAccess().setPixel(tcu::linearToSRGB(color), x, y);
-				else
-					reference.getAccess().setPixel(color, x, y);
-			}
+        for (uint32_t y = 0; y < m_height; y++)
+            for (uint32_t x = 0; x < m_width; x++)
+            {
+                if (tcu::isSRGB(format))
+                    reference.getAccess().setPixel(tcu::linearToSRGB(color), x, y);
+                else
+                    reference.getAccess().setPixel(color, x, y);
+            }
 
-		{
-			// Convert target format ulps to float ulps and allow 64ulp differences
-			const UVec4 threshold(64u * (UVec4(1u) << (UVec4(23) - tcu::getTextureFormatMantissaBitDepth(format).cast<deUint32>())));
+        {
+            // Convert target format ulps to float ulps and allow 64ulp differences
+            const UVec4 threshold(
+                64u * (UVec4(1u) << (UVec4(23) - tcu::getTextureFormatMantissaBitDepth(format).cast<uint32_t>())));
 
-			if (!tcu::floatUlpThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(), access, threshold, tcu::COMPARE_LOG_ON_ERROR))
-				m_resultCollector.fail("Compare failed.");
-		}
-	}
-	break;
+            if (!tcu::floatUlpThresholdCompare(m_context.getTestContext().getLog(), "", "", reference.getAccess(),
+                                               access, threshold, tcu::COMPARE_LOG_ON_ERROR))
+                m_resultCollector.fail("Compare failed.");
+        }
+    }
+    break;
 
-	default:
-		DE_FATAL("Unknown channel class");
-	}
+    default:
+        DE_FATAL("Unknown channel class");
+    }
 
-	return tcu::TestStatus(m_resultCollector.getResult(), m_resultCollector.getMessage());
+    return tcu::TestStatus(m_resultCollector.getResult(), m_resultCollector.getMessage());
 }
 
 struct Programs
 {
-	void init (vk::SourceCollections& dst, TestConfig testConfig) const
-	{
-		std::ostringstream				fragmentShader;
-		const VkFormat					format			(testConfig.format);
-		const tcu::TextureFormat		texFormat		(mapVkFormat(format));
-		const UVec4						bits			(tcu::getTextureFormatBitDepth(texFormat).cast<deUint32>());
-		const tcu::TextureChannelClass	channelClass	(tcu::getTextureChannelClass(texFormat.type));
+    void init(vk::SourceCollections &dst, TestConfig testConfig) const
+    {
+        std::ostringstream fragmentShader;
+        const VkFormat format(testConfig.format);
+        const tcu::TextureFormat texFormat(mapVkFormat(format));
+        const UVec4 bits(tcu::getTextureFormatBitDepth(texFormat).cast<uint32_t>());
+        const tcu::TextureChannelClass channelClass(tcu::getTextureChannelClass(texFormat.type));
 
-		dst.glslSources.add("quad-vert") << glu::VertexSource(
-			"#version 450\n"
-			"out gl_PerVertex {\n"
-			"\tvec4 gl_Position;\n"
-			"};\n"
-			"highp float;\n"
-			"void main (void)\n"
-			"{\n"
-			"    gl_Position = vec4(((gl_VertexIndex + 2) / 3) % 2 == 0 ? -1.0 : 1.0,\n"
-			"                       ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 1.0, 0.0, 1.0);\n"
-			"}\n");
+        dst.glslSources.add("quad-vert") << glu::VertexSource(
+            "#version 450\n"
+            "out gl_PerVertex {\n"
+            "\tvec4 gl_Position;\n"
+            "};\n"
+            "highp float;\n"
+            "void main (void)\n"
+            "{\n"
+            "    gl_Position = vec4(((gl_VertexIndex + 2) / 3) % 2 == 0 ? -1.0 : 1.0,\n"
+            "                       ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 1.0, 0.0, 1.0);\n"
+            "}\n");
 
-		switch (channelClass)
-		{
-			case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
-			{
-				fragmentShader <<
-					"#version 450\n"
-					"layout(location = 0) out highp uvec4 o_color;\n"
-					"void main (void)\n"
-					"{\n"
-					"    o_color = uvec4(" << de::toString(1u << (bits.x()-1)) << ", " << de::toString(1u << (bits.y()-2)) << ", " << de::toString(1u << (bits.z()-3)) << ", 0xffffffff);"
-					"}\n";
-			}
-			break;
+        switch (channelClass)
+        {
+        case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+        {
+            fragmentShader << "#version 450\n"
+                              "layout(location = 0) out highp uvec4 o_color;\n"
+                              "void main (void)\n"
+                              "{\n"
+                              "    o_color = uvec4("
+                           << de::toString(1u << (bits.x() - 1)) << ", " << de::toString(1u << (bits.y() - 2)) << ", "
+                           << de::toString(1u << (bits.z() - 3))
+                           << ", 0xffffffff);"
+                              "}\n";
+        }
+        break;
 
-			case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
-			{
-				fragmentShader <<
-					"#version 450\n"
-					"layout(location = 0) out highp ivec4 o_color;\n"
-					"void main (void)\n"
-					"{\n"
-					"    o_color = ivec4(" << de::toString(1u << (bits.x()-2)) << ", " << de::toString(1u << (bits.y()-3)) << ", " << de::toString(1u << (bits.z()-4)) << ", 0xffffffff);"
-					"}\n";
-			}
-			break;
+        case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+        {
+            fragmentShader << "#version 450\n"
+                              "layout(location = 0) out highp ivec4 o_color;\n"
+                              "void main (void)\n"
+                              "{\n"
+                              "    o_color = ivec4("
+                           << de::toString(1u << (bits.x() - 2)) << ", " << de::toString(1u << (bits.y() - 3)) << ", "
+                           << de::toString(1u << (bits.z() - 4))
+                           << ", 0xffffffff);"
+                              "}\n";
+        }
+        break;
 
-			default:
-			{
-				fragmentShader <<
-					"#version 450\n"
-					"layout(location = 0) out highp vec4 o_color;\n"
-					"void main (void)\n"
-					"{\n"
-					"    o_color = vec4(0.5, 0.25, 0.125, 1.0);\n"
-					"}\n";
-			}
-			break;
-		}
+        default:
+        {
+            fragmentShader << "#version 450\n"
+                              "layout(location = 0) out highp vec4 o_color;\n"
+                              "void main (void)\n"
+                              "{\n"
+                              "    o_color = vec4(0.5, 0.25, 0.125, 1.0);\n"
+                              "}\n";
+        }
+        break;
+        }
 
-		dst.glslSources.add("quad-frag") << glu::FragmentSource(fragmentShader.str());
-	}
+        dst.glslSources.add("quad-frag") << glu::FragmentSource(fragmentShader.str());
+    }
 };
 
-std::string formatToName (VkFormat format)
+std::string formatToName(VkFormat format)
 {
-	const std::string	formatStr	= de::toString(format);
-	const std::string	prefix		= "VK_FORMAT_";
+    const std::string formatStr = de::toString(format);
+    const std::string prefix    = "VK_FORMAT_";
 
-	DE_ASSERT(formatStr.substr(0, prefix.length()) == prefix);
+    DE_ASSERT(formatStr.substr(0, prefix.length()) == prefix);
 
-	return de::toLower(formatStr.substr(prefix.length()));
+    return de::toLower(formatStr.substr(prefix.length()));
 }
 
-template<class TestConfigType>
-void checkSupport(Context& context, TestConfigType config)
+template <class TestConfigType>
+void checkSupport(Context &context, TestConfigType config)
 {
 #ifndef CTS_USES_VULKANSC
-	if (config.format == VK_FORMAT_A8_UNORM_KHR)
-		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+    if (config.format == VK_FORMAT_A8_UNORM_KHR)
+        context.requireDeviceFunctionality("VK_KHR_maintenance5");
 #endif // CTS_USES_VULKANSC
 
-	if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
-		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+    if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+        context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
-	if (config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+    if (config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+        context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
-	const auto& vki = context.getInstanceInterface();
-	const auto& physicalDevice = context.getPhysicalDevice();
-	VkImageFormatProperties formatProperties;
-	const auto result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, config.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
-	if (result == VK_ERROR_FORMAT_NOT_SUPPORTED) {
-		TCU_THROW(NotSupportedError, "Image format not supported");
-	}
+    const auto &vki            = context.getInstanceInterface();
+    const auto &physicalDevice = context.getPhysicalDevice();
+    VkImageFormatProperties formatProperties;
+    const auto result = vki.getPhysicalDeviceImageFormatProperties(
+        physicalDevice, config.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
+    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+    {
+        TCU_THROW(NotSupportedError, "Image format not supported");
+    }
 }
 
-void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
+void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
 {
-	static const VkFormat	formats[]	=
-	{
-		VK_FORMAT_R5G6B5_UNORM_PACK16,
-		VK_FORMAT_R8_UNORM,
-		VK_FORMAT_R8_SNORM,
-		VK_FORMAT_R8_UINT,
-		VK_FORMAT_R8_SINT,
+    static const VkFormat formats[] = {VK_FORMAT_R5G6B5_UNORM_PACK16,
+                                       VK_FORMAT_R8_UNORM,
+                                       VK_FORMAT_R8_SNORM,
+                                       VK_FORMAT_R8_UINT,
+                                       VK_FORMAT_R8_SINT,
 #ifndef CTS_USES_VULKANSC
-		VK_FORMAT_A8_UNORM_KHR,
+                                       VK_FORMAT_A8_UNORM_KHR,
 #endif // CTS_USES_VULKANSC
-		VK_FORMAT_R8G8_UNORM,
-		VK_FORMAT_R8G8_SNORM,
-		VK_FORMAT_R8G8_UINT,
-		VK_FORMAT_R8G8_SINT,
-		VK_FORMAT_R8G8B8A8_UNORM,
-		VK_FORMAT_R8G8B8A8_SNORM,
-		VK_FORMAT_R8G8B8A8_UINT,
-		VK_FORMAT_R8G8B8A8_SINT,
-		VK_FORMAT_R8G8B8A8_SRGB,
-		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
-		VK_FORMAT_A8B8G8R8_UINT_PACK32,
-		VK_FORMAT_A8B8G8R8_SINT_PACK32,
-		VK_FORMAT_A8B8G8R8_SRGB_PACK32,
-		VK_FORMAT_B8G8R8A8_UNORM,
-		VK_FORMAT_B8G8R8A8_SRGB,
-		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-		VK_FORMAT_A2B10G10R10_UINT_PACK32,
-		VK_FORMAT_R16_UNORM,
-		VK_FORMAT_R16_SNORM,
-		VK_FORMAT_R16_UINT,
-		VK_FORMAT_R16_SINT,
-		VK_FORMAT_R16_SFLOAT,
-		VK_FORMAT_R16G16_UNORM,
-		VK_FORMAT_R16G16_SNORM,
-		VK_FORMAT_R16G16_UINT,
-		VK_FORMAT_R16G16_SINT,
-		VK_FORMAT_R16G16_SFLOAT,
-		VK_FORMAT_R16G16B16A16_UNORM,
-		VK_FORMAT_R16G16B16A16_SNORM,
-		VK_FORMAT_R16G16B16A16_UINT,
-		VK_FORMAT_R16G16B16A16_SINT,
-		VK_FORMAT_R16G16B16A16_SFLOAT,
-		VK_FORMAT_R32_UINT,
-		VK_FORMAT_R32_SINT,
-		VK_FORMAT_R32_SFLOAT,
-		VK_FORMAT_R32G32_UINT,
-		VK_FORMAT_R32G32_SINT,
-		VK_FORMAT_R32G32_SFLOAT,
-		VK_FORMAT_R32G32B32A32_UINT,
-		VK_FORMAT_R32G32B32A32_SINT,
-		VK_FORMAT_R32G32B32A32_SFLOAT,
-		VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16
-	};
+                                       VK_FORMAT_R8G8_UNORM,
+                                       VK_FORMAT_R8G8_SNORM,
+                                       VK_FORMAT_R8G8_UINT,
+                                       VK_FORMAT_R8G8_SINT,
+                                       VK_FORMAT_R8G8B8A8_UNORM,
+                                       VK_FORMAT_R8G8B8A8_SNORM,
+                                       VK_FORMAT_R8G8B8A8_UINT,
+                                       VK_FORMAT_R8G8B8A8_SINT,
+                                       VK_FORMAT_R8G8B8A8_SRGB,
+                                       VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+                                       VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+                                       VK_FORMAT_A8B8G8R8_UINT_PACK32,
+                                       VK_FORMAT_A8B8G8R8_SINT_PACK32,
+                                       VK_FORMAT_A8B8G8R8_SRGB_PACK32,
+                                       VK_FORMAT_B8G8R8A8_UNORM,
+                                       VK_FORMAT_B8G8R8A8_SRGB,
+                                       VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+                                       VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+                                       VK_FORMAT_A2B10G10R10_UINT_PACK32,
+                                       VK_FORMAT_R16_UNORM,
+                                       VK_FORMAT_R16_SNORM,
+                                       VK_FORMAT_R16_UINT,
+                                       VK_FORMAT_R16_SINT,
+                                       VK_FORMAT_R16_SFLOAT,
+                                       VK_FORMAT_R16G16_UNORM,
+                                       VK_FORMAT_R16G16_SNORM,
+                                       VK_FORMAT_R16G16_UINT,
+                                       VK_FORMAT_R16G16_SINT,
+                                       VK_FORMAT_R16G16_SFLOAT,
+                                       VK_FORMAT_R16G16B16A16_UNORM,
+                                       VK_FORMAT_R16G16B16A16_SNORM,
+                                       VK_FORMAT_R16G16B16A16_UINT,
+                                       VK_FORMAT_R16G16B16A16_SINT,
+                                       VK_FORMAT_R16G16B16A16_SFLOAT,
+                                       VK_FORMAT_R32_UINT,
+                                       VK_FORMAT_R32_SINT,
+                                       VK_FORMAT_R32_SFLOAT,
+                                       VK_FORMAT_R32G32_UINT,
+                                       VK_FORMAT_R32G32_SINT,
+                                       VK_FORMAT_R32G32_SFLOAT,
+                                       VK_FORMAT_R32G32B32A32_UINT,
+                                       VK_FORMAT_R32G32B32A32_SINT,
+                                       VK_FORMAT_R32G32B32A32_SFLOAT,
+                                       VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16};
 
-	tcu::TestContext&		testCtx		(group->getTestContext());
+    tcu::TestContext &testCtx(group->getTestContext());
 
-	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
-	{
-		const VkFormat		format		(formats[formatNdx]);
-		const TestConfig	testConfig	(format, groupParams);
-		string				testName	(formatToName(format));
+    for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+    {
+        const VkFormat format(formats[formatNdx]);
+        const TestConfig testConfig(format, groupParams);
+        string testName(formatToName(format));
 
-		group->addChild(new InstanceFactory1WithSupport<SparseRenderTargetTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
-	}
+        group->addChild(new InstanceFactory1WithSupport<SparseRenderTargetTestInstance, TestConfig,
+                                                        FunctionSupport1<TestConfig>, Programs>(
+            testCtx, testName.c_str(), testConfig,
+            typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
+    }
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createRenderPassSparseRenderTargetTests (tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams)
+tcu::TestCaseGroup *createRenderPassSparseRenderTargetTests(tcu::TestContext &testCtx,
+                                                            const renderpass::SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "sparserendertarget", initTests, groupParams);
+    return createTestGroup(testCtx, "sparserendertarget", initTests, groupParams);
 }
 
-} // vkt
+} // namespace vkt

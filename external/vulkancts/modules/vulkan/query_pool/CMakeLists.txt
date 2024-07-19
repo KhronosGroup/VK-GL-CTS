@@ -20,6 +20,8 @@ set(DEQP_VK_VKSC_QUERY_POOL_SRCS
 set(DEQP_VK_QUERY_POOL_SRCS
 	vktQueryPoolPerformanceTests.hpp
 	vktQueryPoolPerformanceTests.cpp
+	vktQueryMaintenance7Tests.hpp
+	vktQueryMaintenance7Tests.cpp
 	)
 
 PCH(DEQP_VK_QUERY_POOL_SRCS ../pch.cpp)

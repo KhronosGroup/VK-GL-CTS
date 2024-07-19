@@ -34,54 +34,57 @@
 namespace deqp
 {
 
-Context::Context(tcu::TestContext& testCtx, glu::ContextType contextType)
-	: m_testCtx(testCtx), m_renderCtx(DE_NULL), m_contextInfo(DE_NULL)
+Context::Context(tcu::TestContext &testCtx, glu::ContextType contextType)
+    : m_testCtx(testCtx)
+    , m_renderCtx(DE_NULL)
+    , m_contextInfo(DE_NULL)
 {
-	createRenderContext(contextType);
+    createRenderContext(contextType);
 }
 
 Context::~Context(void)
 {
-	destroyRenderContext();
+    destroyRenderContext();
 }
 
-void Context::createRenderContext(glu::ContextType& contextType, glu::ContextFlags ctxFlags)
+void Context::createRenderContext(glu::ContextType &contextType, glu::ContextFlags ctxFlags)
 {
-	DE_ASSERT(!m_renderCtx && !m_contextInfo);
+    DE_ASSERT(!m_renderCtx && !m_contextInfo);
 
-	try
-	{
-		glu::RenderConfig renderCfg(glu::ContextType(contextType.getAPI(), contextType.getFlags() | ctxFlags));
-		if (m_testCtx.getCommandLine().isTerminateOnDeviceLostEnabled()) {
-			renderCfg.resetNotificationStrategy = glu::RESET_NOTIFICATION_STRATEGY_LOSE_CONTEXT_ON_RESET;
-		}
+    try
+    {
+        glu::RenderConfig renderCfg(glu::ContextType(contextType.getAPI(), contextType.getFlags() | ctxFlags));
+        if (m_testCtx.getCommandLine().isTerminateOnDeviceLostEnabled())
+        {
+            renderCfg.resetNotificationStrategy = glu::RESET_NOTIFICATION_STRATEGY_LOSE_CONTEXT_ON_RESET;
+        }
 
-		glu::parseRenderConfig(&renderCfg, m_testCtx.getCommandLine());
+        glu::parseRenderConfig(&renderCfg, m_testCtx.getCommandLine());
 
-		m_renderCtx   = glu::createRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), renderCfg);
-		m_contextInfo = glu::ContextInfo::create(*m_renderCtx);
+        m_renderCtx   = glu::createRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), renderCfg);
+        m_contextInfo = glu::ContextInfo::create(*m_renderCtx);
 
-		glw::setCurrentThreadFunctions(&m_renderCtx->getFunctions());
-	}
-	catch (...)
-	{
-		destroyRenderContext();
-		throw;
-	}
+        glw::setCurrentThreadFunctions(&m_renderCtx->getFunctions());
+    }
+    catch (...)
+    {
+        destroyRenderContext();
+        throw;
+    }
 }
 
 void Context::destroyRenderContext(void)
 {
-	delete m_contextInfo;
-	delete m_renderCtx;
+    delete m_contextInfo;
+    delete m_renderCtx;
 
-	m_contextInfo = DE_NULL;
-	m_renderCtx   = DE_NULL;
+    m_contextInfo = DE_NULL;
+    m_renderCtx   = DE_NULL;
 }
 
-const tcu::RenderTarget& Context::getRenderTarget(void) const
+const tcu::RenderTarget &Context::getRenderTarget(void) const
 {
-	return m_renderCtx->getRenderTarget();
+    return m_renderCtx->getRenderTarget();
 }
 
-} // deqp
+} // namespace deqp

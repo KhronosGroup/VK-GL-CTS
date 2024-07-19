@@ -22,8 +22,8 @@
  * \file
  * \brief EGL Enumeration Values
  * \note Do not include this anywhere where you'd like to include native
- *		 EGL headers or otherwise preprocessor will be rather unhappy about
- *		 duplicate declarations.
+ *         EGL headers or otherwise preprocessor will be rather unhappy about
+ *         duplicate declarations.
  *//*--------------------------------------------------------------------*/
 
 #include "deDefs.hpp"
@@ -35,6 +35,6 @@ namespace eglw
 
 #include "eglwEnums.inl"
 
-} // eglw
+} // namespace eglw
 
 #endif // _EGLWENUMS_HPP

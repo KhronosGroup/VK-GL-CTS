@@ -24,7 +24,7 @@
 #include "teglGLES1RenderUtil.hpp"
 
 #if defined(DEQP_SUPPORT_GLES1)
-#	include <GLES/gl.h>
+#include <GLES/gl.h>
 #endif
 
 using std::vector;
@@ -38,49 +38,50 @@ namespace gles1
 
 #if defined(DEQP_SUPPORT_GLES1)
 
-void clear (int x, int y, int width, int height, const tcu::Vec4& color)
+void clear(int x, int y, int width, int height, const tcu::Vec4 &color)
 {
-	glEnable(GL_SCISSOR_TEST);
-	glScissor(x, y, width, height);
-	glClearColor(color.x(), color.y(), color.z(), color.w());
-	glClear(GL_COLOR_BUFFER_BIT);
-	glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_DITHER);
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(x, y, width, height);
+    glClearColor(color.x(), color.y(), color.z(), color.w());
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_SCISSOR_TEST);
 }
 
-void readPixels (tcu::Surface& dst, int x, int y, int width, int height)
+void readPixels(tcu::Surface &dst, int x, int y, int width, int height)
 {
-	dst.setSize(width, height);
-	glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, dst.getAccess().getDataPtr());
+    dst.setSize(width, height);
+    glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, dst.getAccess().getDataPtr());
 }
 
-void finish (void)
+void finish(void)
 {
-	glFinish();
+    glFinish();
 }
 
 #else // DEQP_SUPPORT_GLES1
 
-void clear (int x, int y, int width, int height, const tcu::Vec4& color)
+void clear(int x, int y, int width, int height, const tcu::Vec4 &color)
 {
-	DE_UNREF(x && y && width && height);
-	DE_UNREF(color);
-	TCU_THROW(NotSupportedError, "OpenGL ES 1.x is not supported");
+    DE_UNREF(x && y && width && height);
+    DE_UNREF(color);
+    TCU_THROW(NotSupportedError, "OpenGL ES 1.x is not supported");
 }
 
-void readPixels (tcu::Surface& dst, int x, int y, int width, int height)
+void readPixels(tcu::Surface &dst, int x, int y, int width, int height)
 {
-	DE_UNREF(x && y && width && height);
-	DE_UNREF(dst);
-	TCU_THROW(NotSupportedError, "OpenGL ES 1.x is not supported");
+    DE_UNREF(x && y && width && height);
+    DE_UNREF(dst);
+    TCU_THROW(NotSupportedError, "OpenGL ES 1.x is not supported");
 }
 
-void finish (void)
+void finish(void)
 {
-	TCU_THROW(NotSupportedError, "OpenGL ES 1.x is not supported");
+    TCU_THROW(NotSupportedError, "OpenGL ES 1.x is not supported");
 }
 
 #endif // DEQP_SUPPORT_GLES1
 
-} // gles1
-} // egl
-} // deqp
+} // namespace gles1
+} // namespace egl
+} // namespace deqp

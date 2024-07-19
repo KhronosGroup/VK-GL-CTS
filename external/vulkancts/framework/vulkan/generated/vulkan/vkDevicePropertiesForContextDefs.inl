@@ -78,6 +78,7 @@ const vk::VkPhysicalDeviceMaintenance5PropertiesKHR&				Context::getMaintenance5
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				Context::getShaderObjectPropertiesEXT				(void) const { return m_device->getShaderObjectPropertiesEXT();					}
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	Context::getRayTracingInvocationReorderProperties	(void) const { return m_device->getRayTracingInvocationReorderProperties();		}
 const vk::VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&	Context::getExtendedSparseAddressSpacePropertiesNV	(void) const { return m_device->getExtendedSparseAddressSpacePropertiesNV();	}
+const vk::VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&		Context::getLegacyVertexAttributesPropertiesEXT		(void) const { return m_device->getLegacyVertexAttributesPropertiesEXT();		}
 const vk::VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			Context::getShaderCoreBuiltinsPropertiesARM			(void) const { return m_device->getShaderCoreBuiltinsPropertiesARM();			}
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesKHR&			Context::getCooperativeMatrixProperties				(void) const { return m_device->getCooperativeMatrixProperties();				}
 const vk::VkPhysicalDeviceImageProcessing2PropertiesQCOM&			Context::getImageProcessing2PropertiesQCOM			(void) const { return m_device->getImageProcessing2PropertiesQCOM();			}
@@ -85,5 +86,7 @@ const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&		Context::getVert
 const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&				Context::getLayeredDriverPropertiesMSFT				(void) const { return m_device->getLayeredDriverPropertiesMSFT();				}
 const vk::VkPhysicalDeviceLineRasterizationPropertiesKHR&			Context::getLineRasterizationProperties				(void) const { return m_device->getLineRasterizationProperties();				}
 const vk::VkPhysicalDeviceMaintenance6PropertiesKHR&				Context::getMaintenance6Properties					(void) const { return m_device->getMaintenance6Properties();					}
+const vk::VkPhysicalDeviceMaintenance7PropertiesKHR&				Context::getMaintenance7Properties					(void) const { return m_device->getMaintenance7Properties();					}
+const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&		Context::getImageAlignmentControlPropertiesMESA		(void) const { return m_device->getImageAlignmentControlPropertiesMESA();		}
 const vk::VkPhysicalDeviceSubgroupProperties&						Context::getSubgroupProperties						(void) const { return m_device->getSubgroupProperties();						}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				Context::getProtectedMemoryProperties				(void) const { return m_device->getProtectedMemoryProperties();					}

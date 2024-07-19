@@ -33,15 +33,15 @@ namespace glcts
 class VertexAttribBindingTests : public glcts::TestCaseGroup
 {
 public:
-	VertexAttribBindingTests(glcts::Context& context);
-	~VertexAttribBindingTests(void);
+    VertexAttribBindingTests(glcts::Context &context);
+    ~VertexAttribBindingTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	VertexAttribBindingTests(const VertexAttribBindingTests& other);
-	VertexAttribBindingTests& operator=(const VertexAttribBindingTests& other);
+    VertexAttribBindingTests(const VertexAttribBindingTests &other);
+    VertexAttribBindingTests &operator=(const VertexAttribBindingTests &other);
 };
-}
+} // namespace glcts
 
 #endif // _ES31CVERTEXATTRIBBINDINGTESTS_HPP

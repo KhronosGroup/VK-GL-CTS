@@ -36,18 +36,18 @@ namespace Functional
 class BooleanStateQueryTests : public TestCaseGroup
 {
 public:
-							BooleanStateQueryTests	(Context& context);
-							~BooleanStateQueryTests	(void);
+    BooleanStateQueryTests(Context &context);
+    ~BooleanStateQueryTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							BooleanStateQueryTests	(const BooleanStateQueryTests& other);
-	BooleanStateQueryTests&	operator=				(const BooleanStateQueryTests& other);
+    BooleanStateQueryTests(const BooleanStateQueryTests &other);
+    BooleanStateQueryTests &operator=(const BooleanStateQueryTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FBOOLEANSTATEQUERYTESTS_HPP

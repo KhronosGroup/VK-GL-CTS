@@ -34,29 +34,30 @@ namespace xe
 class LocalTcpIpLink : public CommLink
 {
 public:
-								LocalTcpIpLink			(void);
-								~LocalTcpIpLink			(void);
+    LocalTcpIpLink(void);
+    ~LocalTcpIpLink(void);
 
-	// LocalTcpIpLink -specific API
-	void						start					(const char* execServerPath, const char* workDir, int port);
-	void						stop					(void);
+    // LocalTcpIpLink -specific API
+    void start(const char *execServerPath, const char *workDir, int port);
+    void stop(void);
 
-	// CommLink API
-	void						reset					(void);
+    // CommLink API
+    void reset(void);
 
-	CommLinkState				getState				(void) const;
-	CommLinkState				getState				(std::string& error) const;
+    CommLinkState getState(void) const;
+    CommLinkState getState(std::string &error) const;
 
-	void						setCallbacks			(StateChangedFunc stateChangedCallback, LogDataFunc testLogDataCallback, LogDataFunc infoLogDataCallback, void* userPtr);
+    void setCallbacks(StateChangedFunc stateChangedCallback, LogDataFunc testLogDataCallback,
+                      LogDataFunc infoLogDataCallback, void *userPtr);
 
-	void						startTestProcess		(const char* name, const char* params, const char* workingDir, const char* caseList);
-	void						stopTestProcess			(void);
+    void startTestProcess(const char *name, const char *params, const char *workingDir, const char *caseList);
+    void stopTestProcess(void);
 
 private:
-	TcpIpLink					m_link;
-	deProcess*					m_process;
+    TcpIpLink m_link;
+    deProcess *m_process;
 };
 
-} // xe
+} // namespace xe
 
 #endif // _XELOCALTCPIPLINK_HPP

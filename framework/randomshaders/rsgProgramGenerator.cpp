@@ -30,73 +30,71 @@ using std::vector;
 namespace rsg
 {
 
-ProgramGenerator::ProgramGenerator (void)
+ProgramGenerator::ProgramGenerator(void)
 {
 }
 
-ProgramGenerator::~ProgramGenerator (void)
+ProgramGenerator::~ProgramGenerator(void)
 {
 }
 
-void ProgramGenerator::generate (
-	const ProgramParameters&	programParams,
-	Shader&						vertexShader,
-	Shader&						fragmentShader)
+void ProgramGenerator::generate(const ProgramParameters &programParams, Shader &vertexShader, Shader &fragmentShader)
 {
-	// Random number generator
-	de::Random rnd(programParams.seed);
+    // Random number generator
+    de::Random rnd(programParams.seed);
 
-	GeneratorState state(programParams, rnd);
+    GeneratorState state(programParams, rnd);
 
-	// Fragment shader
-	{
-		ShaderGenerator			shaderGen(state);
-		vector<ShaderInput*>	emptyOutputs; // \note [pyry] gl_FragColor is added in ShaderGenerator
-		shaderGen.generate(programParams.fragmentParameters, fragmentShader, emptyOutputs);
-	}
+    // Fragment shader
+    {
+        ShaderGenerator shaderGen(state);
+        vector<ShaderInput *> emptyOutputs; // \note [pyry] gl_FragColor is added in ShaderGenerator
+        shaderGen.generate(programParams.fragmentParameters, fragmentShader, emptyOutputs);
+    }
 
-	// Vertex shader
-	{
-		ShaderGenerator shaderGen(state);
+    // Vertex shader
+    {
+        ShaderGenerator shaderGen(state);
 
-		// Initialize outputs from fragment shader inputs
-		const vector<ShaderInput*>& fragmentInputs = fragmentShader.getInputs(); // \note gl_Position and dEQP_Position are handled in ShaderGenerator
+        // Initialize outputs from fragment shader inputs
+        const vector<ShaderInput *> &fragmentInputs =
+            fragmentShader.getInputs(); // \note gl_Position and dEQP_Position are handled in ShaderGenerator
 
-		shaderGen.generate(programParams.vertexParameters, vertexShader, fragmentInputs);
-	}
+        shaderGen.generate(programParams.vertexParameters, vertexShader, fragmentInputs);
+    }
 
-	// Allocate samplers \todo [pyry] Randomize allocation.
-	{
-		const vector<ShaderInput*>&		vertexUniforms		= vertexShader.getUniforms();
-		const vector<ShaderInput*>&		fragmentUniforms	= fragmentShader.getUniforms();
-		vector<ShaderInput*>			unifiedSamplers;
-		int								curSamplerNdx	= 0;
+    // Allocate samplers \todo [pyry] Randomize allocation.
+    {
+        const vector<ShaderInput *> &vertexUniforms   = vertexShader.getUniforms();
+        const vector<ShaderInput *> &fragmentUniforms = fragmentShader.getUniforms();
+        vector<ShaderInput *> unifiedSamplers;
+        int curSamplerNdx = 0;
 
-		// Build unified sampler list.
-		for (vector<ShaderInput*>::const_iterator i = vertexUniforms.begin(); i != vertexUniforms.end(); i++)
-		{
-			if ((*i)->getVariable()->getType().isSampler())
-				unifiedSamplers.push_back(*i);
-		}
+        // Build unified sampler list.
+        for (vector<ShaderInput *>::const_iterator i = vertexUniforms.begin(); i != vertexUniforms.end(); i++)
+        {
+            if ((*i)->getVariable()->getType().isSampler())
+                unifiedSamplers.push_back(*i);
+        }
 
-		for (vector<ShaderInput*>::const_iterator i = fragmentUniforms.begin(); i != fragmentUniforms.end(); i++)
-		{
-			if ((*i)->getVariable()->getType().isSampler())
-				unifiedSamplers.push_back(*i);
-		}
+        for (vector<ShaderInput *>::const_iterator i = fragmentUniforms.begin(); i != fragmentUniforms.end(); i++)
+        {
+            if ((*i)->getVariable()->getType().isSampler())
+                unifiedSamplers.push_back(*i);
+        }
 
-		// Assign sampler indices.
-		for (vector<ShaderInput*>::const_iterator i = unifiedSamplers.begin(); i != unifiedSamplers.end(); i++)
-		{
-			ShaderInput* input = *i;
-			if (input->getVariable()->getType().isSampler())
-			{
-				input->getValueRange().getMin() = curSamplerNdx;
-				input->getValueRange().getMax() = curSamplerNdx;
-				curSamplerNdx += 1;
-			}
-		}
-	}
+        // Assign sampler indices.
+        for (vector<ShaderInput *>::const_iterator i = unifiedSamplers.begin(); i != unifiedSamplers.end(); i++)
+        {
+            ShaderInput *input = *i;
+            if (input->getVariable()->getType().isSampler())
+            {
+                input->getValueRange().getMin() = curSamplerNdx;
+                input->getValueRange().getMax() = curSamplerNdx;
+                curSamplerNdx += 1;
+            }
+        }
+    }
 }
 
-} // rsg
+} // namespace rsg

@@ -55,6 +55,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktDynamicRenderingUnusedAttachmentsTests.hpp
 	vktDynamicRenderingDepthStencilResolveTests.cpp
 	vktDynamicRenderingDepthStencilResolveTests.hpp
+	vktRenderPassNestedCommandBuffersTests.cpp
+	vktRenderPassNestedCommandBuffersTests.hpp
 	)
 
 PCH(DEQP_VK_RENDER_PASS_SRCS ../pch.cpp)

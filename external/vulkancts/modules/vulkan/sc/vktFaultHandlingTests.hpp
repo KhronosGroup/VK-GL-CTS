@@ -31,9 +31,9 @@ namespace vkt
 namespace sc
 {
 
-tcu::TestCaseGroup*	createFaultHandlingTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createFaultHandlingTests(tcu::TestContext &testCtx);
 
-} // sc
-} // vkt
+} // namespace sc
+} // namespace vkt
 
 #endif // _VKTFAULTHANDLINGTESTS_HPP

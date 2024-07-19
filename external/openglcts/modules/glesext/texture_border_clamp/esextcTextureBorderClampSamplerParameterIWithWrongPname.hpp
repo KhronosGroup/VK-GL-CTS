@@ -59,38 +59,38 @@ namespace glcts
 class TextureBorderClampSamplerParameterIWithWrongPnameTest : public TextureBorderClampBase
 {
 public:
-	/* Public functions */
-	TextureBorderClampSamplerParameterIWithWrongPnameTest(Context& context, const ExtParameters& extParams,
-														  const char* name, const char* description);
+    /* Public functions */
+    TextureBorderClampSamplerParameterIWithWrongPnameTest(Context &context, const ExtParameters &extParams,
+                                                          const char *name, const char *description);
 
-	virtual ~TextureBorderClampSamplerParameterIWithWrongPnameTest()
-	{
-	}
+    virtual ~TextureBorderClampSamplerParameterIWithWrongPnameTest()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private functions */
-	void initTest(void);
+    /* Private functions */
+    void initTest(void);
 
-	void VerifyGLGetSamplerParameterIiv(glw::GLuint sampler_id, glw::GLenum pname, glw::GLenum expected_error);
+    void VerifyGLGetSamplerParameterIiv(glw::GLuint sampler_id, glw::GLenum pname, glw::GLenum expected_error);
 
-	void VerifyGLGetSamplerParameterIuiv(glw::GLuint sampler_id, glw::GLenum pname, glw::GLenum expected_error);
+    void VerifyGLGetSamplerParameterIuiv(glw::GLuint sampler_id, glw::GLenum pname, glw::GLenum expected_error);
 
-	void VerifyGLSamplerParameterIiv(glw::GLuint sampler_id, glw::GLenum pname, glw::GLenum expected_error);
+    void VerifyGLSamplerParameterIiv(glw::GLuint sampler_id, glw::GLenum pname, glw::GLenum expected_error);
 
-	void VerifyGLSamplerParameterIuiv(glw::GLuint sampler_id, glw::GLenum pname, glw::GLenum expected_error);
+    void VerifyGLSamplerParameterIuiv(glw::GLuint sampler_id, glw::GLenum pname, glw::GLenum expected_error);
 
-	/* Private variables */
-	glw::GLuint	m_sampler_id;
-	glw::GLboolean m_test_passed;
+    /* Private variables */
+    glw::GLuint m_sampler_id;
+    glw::GLboolean m_test_passed;
 
-	std::vector<glw::GLenum> m_pnames_list;
+    std::vector<glw::GLenum> m_pnames_list;
 
-	/* Private static constants */
-	static const glw::GLuint m_buffer_size;
-	static const glw::GLuint m_texture_unit_index;
+    /* Private static constants */
+    static const glw::GLuint m_buffer_size;
+    static const glw::GLuint m_texture_unit_index;
 };
 
 } // namespace glcts

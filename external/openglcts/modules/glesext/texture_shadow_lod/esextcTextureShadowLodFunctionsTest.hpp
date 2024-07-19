@@ -38,14 +38,14 @@ namespace Functional
 class TextureShadowLodTest : public TestCaseGroup
 {
 public:
-	TextureShadowLodTest(Context& context);
-	virtual ~TextureShadowLodTest(void);
+    TextureShadowLodTest(Context &context);
+    virtual ~TextureShadowLodTest(void);
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	TextureShadowLodTest(const TextureShadowLodTest&);			  // not allowed!
-	TextureShadowLodTest& operator=(const TextureShadowLodTest&); // not allowed!
+    TextureShadowLodTest(const TextureShadowLodTest &);            // not allowed!
+    TextureShadowLodTest &operator=(const TextureShadowLodTest &); // not allowed!
 };
 
 } // namespace Functional

@@ -31,9 +31,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-	tcu::TestCaseGroup* createUntypedPointersTestGroup(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createUntypedPointersTestGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMUNTYPEDPOINTERSTESTS_HPP

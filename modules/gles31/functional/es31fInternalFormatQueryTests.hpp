@@ -36,18 +36,18 @@ namespace Functional
 class InternalFormatQueryTests : public TestCaseGroup
 {
 public:
-								InternalFormatQueryTests	(Context& context);
-								~InternalFormatQueryTests	(void);
+    InternalFormatQueryTests(Context &context);
+    ~InternalFormatQueryTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								InternalFormatQueryTests	(const InternalFormatQueryTests& other);
-	InternalFormatQueryTests&	operator=					(const InternalFormatQueryTests& other);
+    InternalFormatQueryTests(const InternalFormatQueryTests &other);
+    InternalFormatQueryTests &operator=(const InternalFormatQueryTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FINTERNALFORMATQUERYTESTS_HPP

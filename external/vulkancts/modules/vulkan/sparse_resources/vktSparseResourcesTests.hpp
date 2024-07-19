@@ -31,9 +31,9 @@ namespace vkt
 namespace sparse
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
-} // sparse
-} // vkt
+} // namespace sparse
+} // namespace vkt
 
 #endif // _VKTSPARSERESOURCESTESTS_HPP

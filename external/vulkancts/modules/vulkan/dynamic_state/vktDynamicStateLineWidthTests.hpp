@@ -37,17 +37,17 @@ namespace DynamicState
 class DynamicStateLWTests : public tcu::TestCaseGroup
 {
 public:
-							DynamicStateLWTests		(tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
-							DynamicStateLWTests		(const DynamicStateLWTests&) = delete;
-							~DynamicStateLWTests	(void) = default;
-	void					init					(void);
-	DynamicStateLWTests&	operator=				(const DynamicStateLWTests&) = delete;
+    DynamicStateLWTests(tcu::TestContext &testCtx, vk::PipelineConstructionType pipelineConstructionType);
+    DynamicStateLWTests(const DynamicStateLWTests &) = delete;
+    ~DynamicStateLWTests(void)                       = default;
+    void init(void);
+    DynamicStateLWTests &operator=(const DynamicStateLWTests &) = delete;
 
 private:
-	vk::PipelineConstructionType	m_pipelineConstructionType;
+    vk::PipelineConstructionType m_pipelineConstructionType;
 };
 
-} // DynamicState
-} // vkt
+} // namespace DynamicState
+} // namespace vkt
 
 #endif // _VKTDYNAMICSTATELINEWIDTHTESTS_HPP

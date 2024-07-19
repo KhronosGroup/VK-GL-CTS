@@ -32,9 +32,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup*		createTests			(tcu::TestContext& testCtx, const std::string& name);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINETESTS_HPP

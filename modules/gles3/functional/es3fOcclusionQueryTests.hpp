@@ -36,18 +36,18 @@ namespace Functional
 class OcclusionQueryTests : public TestCaseGroup
 {
 public:
-							OcclusionQueryTests		(Context& context);
-							~OcclusionQueryTests	(void);
+    OcclusionQueryTests(Context &context);
+    ~OcclusionQueryTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							OcclusionQueryTests		(const OcclusionQueryTests& other);
-	OcclusionQueryTests&	operator=				(const OcclusionQueryTests& other);
+    OcclusionQueryTests(const OcclusionQueryTests &other);
+    OcclusionQueryTests &operator=(const OcclusionQueryTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FOCCLUSIONQUERYTESTS_HPP

@@ -16,7 +16,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 
 	VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
 	const InstanceInterface&			vki					= context.getInstanceInterface();
-	const vector<VkExtensionProperties>	deviceExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const vector<VkExtensionProperties>	deviceExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 	const uint32_t						usedApiVersion		= context.getUsedApiVersion();
 
 	tcu::TestLog& log = context.getTestContext().getLog();
@@ -135,6 +135,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR physicalDeviceGlobalPriorityQueryFeaturesKHR;
+	deMemset(&physicalDeviceGlobalPriorityQueryFeaturesKHR, 0, sizeof(physicalDeviceGlobalPriorityQueryFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_global_priority") )
+	{
+		physicalDeviceGlobalPriorityQueryFeaturesKHR.sType = getStructureType<VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR>();
+		*nextPtr = &physicalDeviceGlobalPriorityQueryFeaturesKHR;
+		nextPtr  = &physicalDeviceGlobalPriorityQueryFeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceHostQueryResetFeatures physicalDeviceHostQueryResetFeatures;
 	deMemset(&physicalDeviceHostQueryResetFeatures, 0, sizeof(physicalDeviceHostQueryResetFeatures));
 
@@ -153,40 +163,20 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceImagelessFramebufferFeatures.pNext;
 	}
 
-	vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT physicalDeviceIndexTypeUint8FeaturesEXT;
-	deMemset(&physicalDeviceIndexTypeUint8FeaturesEXT, 0, sizeof(physicalDeviceIndexTypeUint8FeaturesEXT));
-
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_index_type_uint8") )
-	{
-		physicalDeviceIndexTypeUint8FeaturesEXT.sType = getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesEXT>();
-		*nextPtr = &physicalDeviceIndexTypeUint8FeaturesEXT;
-		nextPtr  = &physicalDeviceIndexTypeUint8FeaturesEXT.pNext;
-	}
-
 	vk::VkPhysicalDeviceIndexTypeUint8FeaturesKHR physicalDeviceIndexTypeUint8FeaturesKHR;
 	deMemset(&physicalDeviceIndexTypeUint8FeaturesKHR, 0, sizeof(physicalDeviceIndexTypeUint8FeaturesKHR));
 
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_index_type_uint8") )
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_index_type_uint8") || canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_index_type_uint8") )
 	{
 		physicalDeviceIndexTypeUint8FeaturesKHR.sType = getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesKHR>();
 		*nextPtr = &physicalDeviceIndexTypeUint8FeaturesKHR;
 		nextPtr  = &physicalDeviceIndexTypeUint8FeaturesKHR.pNext;
 	}
 
-	vk::VkPhysicalDeviceLineRasterizationFeaturesEXT physicalDeviceLineRasterizationFeaturesEXT;
-	deMemset(&physicalDeviceLineRasterizationFeaturesEXT, 0, sizeof(physicalDeviceLineRasterizationFeaturesEXT));
-
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_line_rasterization") )
-	{
-		physicalDeviceLineRasterizationFeaturesEXT.sType = getStructureType<VkPhysicalDeviceLineRasterizationFeaturesEXT>();
-		*nextPtr = &physicalDeviceLineRasterizationFeaturesEXT;
-		nextPtr  = &physicalDeviceLineRasterizationFeaturesEXT.pNext;
-	}
-
 	vk::VkPhysicalDeviceLineRasterizationFeaturesKHR physicalDeviceLineRasterizationFeaturesKHR;
 	deMemset(&physicalDeviceLineRasterizationFeaturesKHR, 0, sizeof(physicalDeviceLineRasterizationFeaturesKHR));
 
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_line_rasterization") )
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_line_rasterization") || canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_line_rasterization") )
 	{
 		physicalDeviceLineRasterizationFeaturesKHR.sType = getStructureType<VkPhysicalDeviceLineRasterizationFeaturesKHR>();
 		*nextPtr = &physicalDeviceLineRasterizationFeaturesKHR;
@@ -388,7 +378,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR physicalDeviceVertexAttributeDivisorFeaturesKHR;
 	deMemset(&physicalDeviceVertexAttributeDivisorFeaturesKHR, 0, sizeof(physicalDeviceVertexAttributeDivisorFeaturesKHR));
 
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_vertex_attribute_divisor") )
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_vertex_attribute_divisor") )
 	{
 		physicalDeviceVertexAttributeDivisorFeaturesKHR.sType = getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR>();
 		*nextPtr = &physicalDeviceVertexAttributeDivisorFeaturesKHR;
@@ -858,24 +848,6 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_index_type_uint8")) )
-	{
-		if ( physicalDeviceIndexTypeUint8FeaturesEXT.indexTypeUint8 == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature indexTypeUint8 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_line_rasterization")) )
-	{
-		if ( ( physicalDeviceLineRasterizationFeaturesEXT.rectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.bresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.smoothLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.stippledRectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.stippledBresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesEXT.stippledSmoothLines == VK_FALSE ) )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature rectangularLines or bresenhamLines or smoothLines or stippledRectangularLines or stippledBresenhamLines or stippledSmoothLines not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceMeshShaderFeaturesEXT.primitiveFragmentShadingRateMeshShader )
 	{
@@ -1049,6 +1021,24 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_global_priority_query")) )
+	{
+		if ( physicalDeviceGlobalPriorityQueryFeaturesKHR.globalPriorityQuery == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature globalPriorityQuery not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_global_priority")) )
+	{
+		if ( physicalDeviceGlobalPriorityQueryFeaturesKHR.globalPriorityQuery == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature globalPriorityQuery not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_imageless_framebuffer")) )
 	{
 		if ( physicalDeviceImagelessFramebufferFeatures.imagelessFramebuffer == VK_FALSE )
@@ -1058,11 +1048,29 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_index_type_uint8")) )
+	{
+		if ( physicalDeviceIndexTypeUint8FeaturesKHR.indexTypeUint8 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature indexTypeUint8 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_index_type_uint8")) )
 	{
 		if ( physicalDeviceIndexTypeUint8FeaturesKHR.indexTypeUint8 == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature indexTypeUint8 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_line_rasterization")) )
+	{
+		if ( ( physicalDeviceLineRasterizationFeaturesKHR.rectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.bresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.smoothLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.stippledRectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.stippledBresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.stippledSmoothLines == VK_FALSE ) )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature rectangularLines or bresenhamLines or smoothLines or stippledRectangularLines or stippledBresenhamLines or stippledSmoothLines not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -1191,6 +1199,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceVariablePointersFeatures.variablePointersStorageBuffer == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature variablePointersStorageBuffer not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_vertex_attribute_divisor")) )
+	{
+		if ( physicalDeviceVertexAttributeDivisorFeaturesKHR.vertexAttributeInstanceRateDivisor == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature vertexAttributeInstanceRateDivisor not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -1984,6 +2001,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if (!(isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_framebuffer_mixed_samples")) || isCoreDeviceExtension(usedApiVersion, "VK_NV_framebuffer_mixed_samples")))
 		{
 			log << tcu::TestLog::Message << "Mandatory extension VK_NV_framebuffer_mixed_samples not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( physicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline )
+	{
+		if (!(isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_pipeline_library")) || isCoreDeviceExtension(usedApiVersion, "VK_KHR_pipeline_library")))
+		{
+			log << tcu::TestLog::Message << "Mandatory extension VK_KHR_pipeline_library not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

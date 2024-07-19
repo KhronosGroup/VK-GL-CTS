@@ -84,14 +84,14 @@ void CallLogWrapper::glBindBufferRange (glw::GLenum target, glw::GLuint index, g
 void CallLogWrapper::glBindBuffersBase (glw::GLenum target, glw::GLuint first, glw::GLsizei count, const glw::GLuint *buffers)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glBindBuffersBase(" << toHex(target) << ", " << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(buffers))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glBindBuffersBase(" << toHex(target) << ", " << first << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(buffers))) << ");" << TestLog::EndMessage;
 	m_gl.bindBuffersBase(target, first, count, buffers);
 }
 
 void CallLogWrapper::glBindBuffersRange (glw::GLenum target, glw::GLuint first, glw::GLsizei count, const glw::GLuint *buffers, const glw::GLintptr *offsets, const glw::GLsizeiptr *sizes)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glBindBuffersRange(" << toHex(target) << ", " << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(buffers))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(offsets))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(sizes))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glBindBuffersRange(" << toHex(target) << ", " << first << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(buffers))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(offsets))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(sizes))) << ");" << TestLog::EndMessage;
 	m_gl.bindBuffersRange(target, first, count, buffers, offsets, sizes);
 }
 
@@ -126,7 +126,7 @@ void CallLogWrapper::glBindImageTexture (glw::GLuint unit, glw::GLuint texture, 
 void CallLogWrapper::glBindImageTextures (glw::GLuint first, glw::GLsizei count, const glw::GLuint *textures)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glBindImageTextures(" << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(textures))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glBindImageTextures(" << first << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(textures))) << ");" << TestLog::EndMessage;
 	m_gl.bindImageTextures(first, count, textures);
 }
 
@@ -161,7 +161,7 @@ void CallLogWrapper::glBindSampler (glw::GLuint unit, glw::GLuint sampler)
 void CallLogWrapper::glBindSamplers (glw::GLuint first, glw::GLsizei count, const glw::GLuint *samplers)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glBindSamplers(" << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(samplers))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glBindSamplers(" << first << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(samplers))) << ");" << TestLog::EndMessage;
 	m_gl.bindSamplers(first, count, samplers);
 }
 
@@ -182,7 +182,7 @@ void CallLogWrapper::glBindTextureUnit (glw::GLuint unit, glw::GLuint texture)
 void CallLogWrapper::glBindTextures (glw::GLuint first, glw::GLsizei count, const glw::GLuint *textures)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glBindTextures(" << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(textures))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glBindTextures(" << first << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(textures))) << ");" << TestLog::EndMessage;
 	m_gl.bindTextures(first, count, textures);
 }
 
@@ -210,7 +210,7 @@ void CallLogWrapper::glBindVertexBuffer (glw::GLuint bindingindex, glw::GLuint b
 void CallLogWrapper::glBindVertexBuffers (glw::GLuint first, glw::GLsizei count, const glw::GLuint *buffers, const glw::GLintptr *offsets, const glw::GLsizei *strides)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glBindVertexBuffers(" << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(buffers))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(offsets))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(strides))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glBindVertexBuffers(" << first << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(buffers))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(offsets))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(strides))) << ");" << TestLog::EndMessage;
 	m_gl.bindVertexBuffers(first, count, buffers, offsets, strides);
 }
 
@@ -394,21 +394,21 @@ void CallLogWrapper::glClearBufferfi (glw::GLenum buffer, glw::GLint drawbuffer,
 void CallLogWrapper::glClearBufferfv (glw::GLenum buffer, glw::GLint drawbuffer, const glw::GLfloat *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glClearBufferfv(" << getBufferStr(buffer) << ", " << drawbuffer << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glClearBufferfv(" << getBufferStr(buffer) << ", " << drawbuffer << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.clearBufferfv(buffer, drawbuffer, value);
 }
 
 void CallLogWrapper::glClearBufferiv (glw::GLenum buffer, glw::GLint drawbuffer, const glw::GLint *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glClearBufferiv(" << getBufferStr(buffer) << ", " << drawbuffer << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glClearBufferiv(" << getBufferStr(buffer) << ", " << drawbuffer << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.clearBufferiv(buffer, drawbuffer, value);
 }
 
 void CallLogWrapper::glClearBufferuiv (glw::GLenum buffer, glw::GLint drawbuffer, const glw::GLuint *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glClearBufferuiv(" << getBufferStr(buffer) << ", " << drawbuffer << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glClearBufferuiv(" << getBufferStr(buffer) << ", " << drawbuffer << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.clearBufferuiv(buffer, drawbuffer, value);
 }
 
@@ -471,21 +471,21 @@ void CallLogWrapper::glClearNamedFramebufferfi (glw::GLuint framebuffer, glw::GL
 void CallLogWrapper::glClearNamedFramebufferfv (glw::GLuint framebuffer, glw::GLenum buffer, glw::GLint drawbuffer, const glw::GLfloat *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glClearNamedFramebufferfv(" << framebuffer << ", " << toHex(buffer) << ", " << drawbuffer << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glClearNamedFramebufferfv(" << framebuffer << ", " << toHex(buffer) << ", " << drawbuffer << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.clearNamedFramebufferfv(framebuffer, buffer, drawbuffer, value);
 }
 
 void CallLogWrapper::glClearNamedFramebufferiv (glw::GLuint framebuffer, glw::GLenum buffer, glw::GLint drawbuffer, const glw::GLint *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glClearNamedFramebufferiv(" << framebuffer << ", " << toHex(buffer) << ", " << drawbuffer << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glClearNamedFramebufferiv(" << framebuffer << ", " << toHex(buffer) << ", " << drawbuffer << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.clearNamedFramebufferiv(framebuffer, buffer, drawbuffer, value);
 }
 
 void CallLogWrapper::glClearNamedFramebufferuiv (glw::GLuint framebuffer, glw::GLenum buffer, glw::GLint drawbuffer, const glw::GLuint *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glClearNamedFramebufferuiv(" << framebuffer << ", " << toHex(buffer) << ", " << drawbuffer << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glClearNamedFramebufferuiv(" << framebuffer << ", " << toHex(buffer) << ", " << drawbuffer << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.clearNamedFramebufferuiv(framebuffer, buffer, drawbuffer, value);
 }
 
@@ -873,14 +873,14 @@ void CallLogWrapper::glCopyTextureSubImage3DEXT (glw::GLuint texture, glw::GLenu
 void CallLogWrapper::glCreateBuffers (glw::GLsizei n, glw::GLuint *buffers)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCreateBuffers(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(buffers))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCreateBuffers(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(buffers))) << ");" << TestLog::EndMessage;
 	m_gl.createBuffers(n, buffers);
 }
 
 void CallLogWrapper::glCreateFramebuffers (glw::GLsizei n, glw::GLuint *framebuffers)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCreateFramebuffers(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(framebuffers))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCreateFramebuffers(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(framebuffers))) << ");" << TestLog::EndMessage;
 	m_gl.createFramebuffers(n, framebuffers);
 }
 
@@ -897,28 +897,28 @@ glw::GLuint CallLogWrapper::glCreateProgram (void)
 void CallLogWrapper::glCreateProgramPipelines (glw::GLsizei n, glw::GLuint *pipelines)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCreateProgramPipelines(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(pipelines))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCreateProgramPipelines(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(pipelines))) << ");" << TestLog::EndMessage;
 	m_gl.createProgramPipelines(n, pipelines);
 }
 
 void CallLogWrapper::glCreateQueries (glw::GLenum target, glw::GLsizei n, glw::GLuint *ids)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCreateQueries(" << toHex(target) << ", " << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(ids))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCreateQueries(" << toHex(target) << ", " << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(ids))) << ");" << TestLog::EndMessage;
 	m_gl.createQueries(target, n, ids);
 }
 
 void CallLogWrapper::glCreateRenderbuffers (glw::GLsizei n, glw::GLuint *renderbuffers)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCreateRenderbuffers(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(renderbuffers))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCreateRenderbuffers(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(renderbuffers))) << ");" << TestLog::EndMessage;
 	m_gl.createRenderbuffers(n, renderbuffers);
 }
 
 void CallLogWrapper::glCreateSamplers (glw::GLsizei n, glw::GLuint *samplers)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCreateSamplers(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(samplers))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCreateSamplers(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(samplers))) << ");" << TestLog::EndMessage;
 	m_gl.createSamplers(n, samplers);
 }
 
@@ -935,7 +935,7 @@ glw::GLuint CallLogWrapper::glCreateShader (glw::GLenum type)
 glw::GLuint CallLogWrapper::glCreateShaderProgramv (glw::GLenum type, glw::GLsizei count, const glw::GLchar *const*strings)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCreateShaderProgramv(" << toHex(type) << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(strings))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCreateShaderProgramv(" << toHex(type) << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(strings))) << ");" << TestLog::EndMessage;
 	glw::GLuint returnValue = m_gl.createShaderProgramv(type, count, strings);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// " << returnValue << " returned" << TestLog::EndMessage;
@@ -945,21 +945,21 @@ glw::GLuint CallLogWrapper::glCreateShaderProgramv (glw::GLenum type, glw::GLsiz
 void CallLogWrapper::glCreateTextures (glw::GLenum target, glw::GLsizei n, glw::GLuint *textures)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCreateTextures(" << toHex(target) << ", " << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(textures))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCreateTextures(" << toHex(target) << ", " << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(textures))) << ");" << TestLog::EndMessage;
 	m_gl.createTextures(target, n, textures);
 }
 
 void CallLogWrapper::glCreateTransformFeedbacks (glw::GLsizei n, glw::GLuint *ids)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCreateTransformFeedbacks(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(ids))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCreateTransformFeedbacks(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(ids))) << ");" << TestLog::EndMessage;
 	m_gl.createTransformFeedbacks(n, ids);
 }
 
 void CallLogWrapper::glCreateVertexArrays (glw::GLsizei n, glw::GLuint *arrays)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glCreateVertexArrays(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(arrays))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glCreateVertexArrays(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(arrays))) << ");" << TestLog::EndMessage;
 	m_gl.createVertexArrays(n, arrays);
 }
 
@@ -973,7 +973,7 @@ void CallLogWrapper::glCullFace (glw::GLenum mode)
 void CallLogWrapper::glDebugMessageCallback (glw::GLDEBUGPROC callback, const void *userParam)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glDebugMessageCallback(" << toHex(reinterpret_cast<deUintptr>(callback)) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(userParam))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glDebugMessageCallback(" << toHex(reinterpret_cast<uintptr_t>(callback)) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(userParam))) << ");" << TestLog::EndMessage;
 	m_gl.debugMessageCallback(callback, userParam);
 }
 
@@ -1036,7 +1036,7 @@ void CallLogWrapper::glDeleteRenderbuffers (glw::GLsizei n, const glw::GLuint *r
 void CallLogWrapper::glDeleteSamplers (glw::GLsizei count, const glw::GLuint *samplers)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glDeleteSamplers(" << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(samplers))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glDeleteSamplers(" << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(samplers))) << ");" << TestLog::EndMessage;
 	m_gl.deleteSamplers(count, samplers);
 }
 
@@ -1064,7 +1064,7 @@ void CallLogWrapper::glDeleteTextures (glw::GLsizei n, const glw::GLuint *textur
 void CallLogWrapper::glDeleteTransformFeedbacks (glw::GLsizei n, const glw::GLuint *ids)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glDeleteTransformFeedbacks(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(ids))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glDeleteTransformFeedbacks(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(ids))) << ");" << TestLog::EndMessage;
 	m_gl.deleteTransformFeedbacks(n, ids);
 }
 
@@ -1106,14 +1106,14 @@ void CallLogWrapper::glDepthRange (glw::GLdouble n, glw::GLdouble f)
 void CallLogWrapper::glDepthRangeArrayfvOES (glw::GLuint first, glw::GLsizei count, const glw::GLfloat *v)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glDepthRangeArrayfvOES(" << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glDepthRangeArrayfvOES(" << first << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
 	m_gl.depthRangeArrayfvOES(first, count, v);
 }
 
 void CallLogWrapper::glDepthRangeArrayv (glw::GLuint first, glw::GLsizei count, const glw::GLdouble *v)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glDepthRangeArrayv(" << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glDepthRangeArrayv(" << first << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
 	m_gl.depthRangeArrayv(first, count, v);
 }
 
@@ -1501,7 +1501,7 @@ void CallLogWrapper::glFramebufferDrawBufferEXT (glw::GLuint framebuffer, glw::G
 void CallLogWrapper::glFramebufferDrawBuffersEXT (glw::GLuint framebuffer, glw::GLsizei n, const glw::GLenum *bufs)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glFramebufferDrawBuffersEXT(" << framebuffer << ", " << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(bufs))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glFramebufferDrawBuffersEXT(" << framebuffer << ", " << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(bufs))) << ");" << TestLog::EndMessage;
 	m_gl.framebufferDrawBuffersEXT(framebuffer, n, bufs);
 }
 
@@ -1606,7 +1606,7 @@ void CallLogWrapper::glFrontFace (glw::GLenum mode)
 void CallLogWrapper::glGenBuffers (glw::GLsizei n, glw::GLuint *buffers)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGenBuffers(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(buffers))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGenBuffers(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(buffers))) << ");" << TestLog::EndMessage;
 	m_gl.genBuffers(n, buffers);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// buffers = " << getPointerStr(buffers, n) << TestLog::EndMessage;
@@ -1615,7 +1615,7 @@ void CallLogWrapper::glGenBuffers (glw::GLsizei n, glw::GLuint *buffers)
 void CallLogWrapper::glGenFramebuffers (glw::GLsizei n, glw::GLuint *framebuffers)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGenFramebuffers(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(framebuffers))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGenFramebuffers(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(framebuffers))) << ");" << TestLog::EndMessage;
 	m_gl.genFramebuffers(n, framebuffers);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// framebuffers = " << getPointerStr(framebuffers, n) << TestLog::EndMessage;
@@ -1624,7 +1624,7 @@ void CallLogWrapper::glGenFramebuffers (glw::GLsizei n, glw::GLuint *framebuffer
 void CallLogWrapper::glGenProgramPipelines (glw::GLsizei n, glw::GLuint *pipelines)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGenProgramPipelines(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(pipelines))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGenProgramPipelines(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(pipelines))) << ");" << TestLog::EndMessage;
 	m_gl.genProgramPipelines(n, pipelines);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// pipelines = " << getPointerStr(pipelines, n) << TestLog::EndMessage;
@@ -1633,7 +1633,7 @@ void CallLogWrapper::glGenProgramPipelines (glw::GLsizei n, glw::GLuint *pipelin
 void CallLogWrapper::glGenQueries (glw::GLsizei n, glw::GLuint *ids)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGenQueries(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(ids))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGenQueries(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(ids))) << ");" << TestLog::EndMessage;
 	m_gl.genQueries(n, ids);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// ids = " << getPointerStr(ids, n) << TestLog::EndMessage;
@@ -1642,7 +1642,7 @@ void CallLogWrapper::glGenQueries (glw::GLsizei n, glw::GLuint *ids)
 void CallLogWrapper::glGenRenderbuffers (glw::GLsizei n, glw::GLuint *renderbuffers)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGenRenderbuffers(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(renderbuffers))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGenRenderbuffers(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(renderbuffers))) << ");" << TestLog::EndMessage;
 	m_gl.genRenderbuffers(n, renderbuffers);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// renderbuffers = " << getPointerStr(renderbuffers, n) << TestLog::EndMessage;
@@ -1651,14 +1651,14 @@ void CallLogWrapper::glGenRenderbuffers (glw::GLsizei n, glw::GLuint *renderbuff
 void CallLogWrapper::glGenSamplers (glw::GLsizei count, glw::GLuint *samplers)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGenSamplers(" << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(samplers))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGenSamplers(" << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(samplers))) << ");" << TestLog::EndMessage;
 	m_gl.genSamplers(count, samplers);
 }
 
 void CallLogWrapper::glGenTextures (glw::GLsizei n, glw::GLuint *textures)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGenTextures(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(textures))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGenTextures(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(textures))) << ");" << TestLog::EndMessage;
 	m_gl.genTextures(n, textures);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// textures = " << getPointerStr(textures, n) << TestLog::EndMessage;
@@ -1667,7 +1667,7 @@ void CallLogWrapper::glGenTextures (glw::GLsizei n, glw::GLuint *textures)
 void CallLogWrapper::glGenTransformFeedbacks (glw::GLsizei n, glw::GLuint *ids)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGenTransformFeedbacks(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(ids))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGenTransformFeedbacks(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(ids))) << ");" << TestLog::EndMessage;
 	m_gl.genTransformFeedbacks(n, ids);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// ids = " << getPointerStr(ids, n) << TestLog::EndMessage;
@@ -1676,7 +1676,7 @@ void CallLogWrapper::glGenTransformFeedbacks (glw::GLsizei n, glw::GLuint *ids)
 void CallLogWrapper::glGenVertexArrays (glw::GLsizei n, glw::GLuint *arrays)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGenVertexArrays(" << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(arrays))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGenVertexArrays(" << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(arrays))) << ");" << TestLog::EndMessage;
 	m_gl.genVertexArrays(n, arrays);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// arrays = " << getPointerStr(arrays, n) << TestLog::EndMessage;
@@ -1713,42 +1713,42 @@ void CallLogWrapper::glGenerateTextureMipmapEXT (glw::GLuint texture, glw::GLenu
 void CallLogWrapper::glGetActiveAtomicCounterBufferiv (glw::GLuint program, glw::GLuint bufferIndex, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetActiveAtomicCounterBufferiv(" << program << ", " << bufferIndex << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetActiveAtomicCounterBufferiv(" << program << ", " << bufferIndex << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getActiveAtomicCounterBufferiv(program, bufferIndex, pname, params);
 }
 
 void CallLogWrapper::glGetActiveAttrib (glw::GLuint program, glw::GLuint index, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLint *size, glw::GLenum *type, glw::GLchar *name)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetActiveAttrib(" << program << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(size))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(type))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetActiveAttrib(" << program << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(size))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(type))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
 	m_gl.getActiveAttrib(program, index, bufSize, length, size, type, name);
 }
 
 void CallLogWrapper::glGetActiveSubroutineName (glw::GLuint program, glw::GLenum shadertype, glw::GLuint index, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *name)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetActiveSubroutineName(" << program << ", " << toHex(shadertype) << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetActiveSubroutineName(" << program << ", " << toHex(shadertype) << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
 	m_gl.getActiveSubroutineName(program, shadertype, index, bufSize, length, name);
 }
 
 void CallLogWrapper::glGetActiveSubroutineUniformName (glw::GLuint program, glw::GLenum shadertype, glw::GLuint index, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *name)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetActiveSubroutineUniformName(" << program << ", " << toHex(shadertype) << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetActiveSubroutineUniformName(" << program << ", " << toHex(shadertype) << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
 	m_gl.getActiveSubroutineUniformName(program, shadertype, index, bufSize, length, name);
 }
 
 void CallLogWrapper::glGetActiveSubroutineUniformiv (glw::GLuint program, glw::GLenum shadertype, glw::GLuint index, glw::GLenum pname, glw::GLint *values)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetActiveSubroutineUniformiv(" << program << ", " << toHex(shadertype) << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(values))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetActiveSubroutineUniformiv(" << program << ", " << toHex(shadertype) << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(values))) << ");" << TestLog::EndMessage;
 	m_gl.getActiveSubroutineUniformiv(program, shadertype, index, pname, values);
 }
 
 void CallLogWrapper::glGetActiveUniform (glw::GLuint program, glw::GLuint index, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLint *size, glw::GLenum *type, glw::GLchar *name)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetActiveUniform(" << program << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(size))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(type))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetActiveUniform(" << program << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(size))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(type))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
 	m_gl.getActiveUniform(program, index, bufSize, length, size, type, name);
 	if (m_enableLog)
 	{
@@ -1762,28 +1762,28 @@ void CallLogWrapper::glGetActiveUniform (glw::GLuint program, glw::GLuint index,
 void CallLogWrapper::glGetActiveUniformBlockName (glw::GLuint program, glw::GLuint uniformBlockIndex, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *uniformBlockName)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetActiveUniformBlockName(" << program << ", " << uniformBlockIndex << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(uniformBlockName))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetActiveUniformBlockName(" << program << ", " << uniformBlockIndex << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(uniformBlockName))) << ");" << TestLog::EndMessage;
 	m_gl.getActiveUniformBlockName(program, uniformBlockIndex, bufSize, length, uniformBlockName);
 }
 
 void CallLogWrapper::glGetActiveUniformBlockiv (glw::GLuint program, glw::GLuint uniformBlockIndex, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetActiveUniformBlockiv(" << program << ", " << uniformBlockIndex << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetActiveUniformBlockiv(" << program << ", " << uniformBlockIndex << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getActiveUniformBlockiv(program, uniformBlockIndex, pname, params);
 }
 
 void CallLogWrapper::glGetActiveUniformName (glw::GLuint program, glw::GLuint uniformIndex, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *uniformName)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetActiveUniformName(" << program << ", " << uniformIndex << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(uniformName))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetActiveUniformName(" << program << ", " << uniformIndex << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(uniformName))) << ");" << TestLog::EndMessage;
 	m_gl.getActiveUniformName(program, uniformIndex, bufSize, length, uniformName);
 }
 
 void CallLogWrapper::glGetActiveUniformsiv (glw::GLuint program, glw::GLsizei uniformCount, const glw::GLuint *uniformIndices, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetActiveUniformsiv(" << program << ", " << uniformCount << ", " << getPointerStr(uniformIndices, uniformCount) << ", " << getUniformParamStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetActiveUniformsiv(" << program << ", " << uniformCount << ", " << getPointerStr(uniformIndices, uniformCount) << ", " << getUniformParamStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getActiveUniformsiv(program, uniformCount, uniformIndices, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, uniformCount) << TestLog::EndMessage;
@@ -1792,7 +1792,7 @@ void CallLogWrapper::glGetActiveUniformsiv (glw::GLuint program, glw::GLsizei un
 void CallLogWrapper::glGetAttachedShaders (glw::GLuint program, glw::GLsizei maxCount, glw::GLsizei *count, glw::GLuint *shaders)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetAttachedShaders(" << program << ", " << maxCount << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(count))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(shaders))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetAttachedShaders(" << program << ", " << maxCount << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(count))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(shaders))) << ");" << TestLog::EndMessage;
 	m_gl.getAttachedShaders(program, maxCount, count, shaders);
 }
 
@@ -1809,7 +1809,7 @@ glw::GLint CallLogWrapper::glGetAttribLocation (glw::GLuint program, const glw::
 void CallLogWrapper::glGetBooleani_v (glw::GLenum target, glw::GLuint index, glw::GLboolean *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetBooleani_v(" << getGettableIndexedStateStr(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetBooleani_v(" << getGettableIndexedStateStr(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
 	m_gl.getBooleani_v(target, index, data);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// data = " << getBooleanPointerStr(data, getIndexedQueryNumArgsOut(target)) << TestLog::EndMessage;
@@ -1818,7 +1818,7 @@ void CallLogWrapper::glGetBooleani_v (glw::GLenum target, glw::GLuint index, glw
 void CallLogWrapper::glGetBooleanv (glw::GLenum pname, glw::GLboolean *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetBooleanv(" << getGettableStateStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetBooleanv(" << getGettableStateStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
 	m_gl.getBooleanv(pname, data);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// data = " << getBooleanPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -1827,21 +1827,21 @@ void CallLogWrapper::glGetBooleanv (glw::GLenum pname, glw::GLboolean *data)
 void CallLogWrapper::glGetBufferParameteri64v (glw::GLenum target, glw::GLenum pname, glw::GLint64 *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetBufferParameteri64v(" << getBufferTargetStr(target) << ", " << getBufferQueryStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetBufferParameteri64v(" << getBufferTargetStr(target) << ", " << getBufferQueryStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getBufferParameteri64v(target, pname, params);
 }
 
 void CallLogWrapper::glGetBufferParameteriv (glw::GLenum target, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetBufferParameteriv(" << getBufferTargetStr(target) << ", " << getBufferQueryStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetBufferParameteriv(" << getBufferTargetStr(target) << ", " << getBufferQueryStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getBufferParameteriv(target, pname, params);
 }
 
 void CallLogWrapper::glGetBufferPointerv (glw::GLenum target, glw::GLenum pname, void **params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetBufferPointerv(" << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetBufferPointerv(" << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getBufferPointerv(target, pname, params);
 }
 
@@ -1890,7 +1890,7 @@ void CallLogWrapper::glGetCompressedTextureSubImage (glw::GLuint texture, glw::G
 glw::GLuint CallLogWrapper::glGetDebugMessageLog (glw::GLuint count, glw::GLsizei bufSize, glw::GLenum *sources, glw::GLenum *types, glw::GLuint *ids, glw::GLenum *severities, glw::GLsizei *lengths, glw::GLchar *messageLog)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetDebugMessageLog(" << count << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(sources))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(types))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(ids))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(severities))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(lengths))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(messageLog))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetDebugMessageLog(" << count << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(sources))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(types))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(ids))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(severities))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(lengths))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(messageLog))) << ");" << TestLog::EndMessage;
 	glw::GLuint returnValue = m_gl.getDebugMessageLog(count, bufSize, sources, types, ids, severities, lengths, messageLog);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// " << returnValue << " returned" << TestLog::EndMessage;
@@ -1900,14 +1900,14 @@ glw::GLuint CallLogWrapper::glGetDebugMessageLog (glw::GLuint count, glw::GLsize
 void CallLogWrapper::glGetDoublei_v (glw::GLenum target, glw::GLuint index, glw::GLdouble *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetDoublei_v(" << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetDoublei_v(" << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
 	m_gl.getDoublei_v(target, index, data);
 }
 
 void CallLogWrapper::glGetDoublev (glw::GLenum pname, glw::GLdouble *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetDoublev(" << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetDoublev(" << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
 	m_gl.getDoublev(pname, data);
 }
 
@@ -1924,14 +1924,14 @@ glw::GLenum CallLogWrapper::glGetError (void)
 void CallLogWrapper::glGetFloati_v (glw::GLenum target, glw::GLuint index, glw::GLfloat *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetFloati_v(" << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetFloati_v(" << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
 	m_gl.getFloati_v(target, index, data);
 }
 
 void CallLogWrapper::glGetFloatv (glw::GLenum pname, glw::GLfloat *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetFloatv(" << getGettableStateStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetFloatv(" << getGettableStateStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
 	m_gl.getFloatv(pname, data);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// data = " << getPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -1960,14 +1960,14 @@ glw::GLint CallLogWrapper::glGetFragDataLocation (glw::GLuint program, const glw
 void CallLogWrapper::glGetFragmentShadingRatesEXT (glw::GLsizei samples, glw::GLsizei maxCount, glw::GLsizei *count, glw::GLenum *shadingRates)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetFragmentShadingRatesEXT(" << samples << ", " << maxCount << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(count))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(shadingRates))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetFragmentShadingRatesEXT(" << samples << ", " << maxCount << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(count))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(shadingRates))) << ");" << TestLog::EndMessage;
 	m_gl.getFragmentShadingRatesEXT(samples, maxCount, count, shadingRates);
 }
 
 void CallLogWrapper::glGetFramebufferAttachmentParameteriv (glw::GLenum target, glw::GLenum attachment, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetFramebufferAttachmentParameteriv(" << getFramebufferTargetStr(target) << ", " << getFramebufferAttachmentStr(attachment) << ", " << getFramebufferAttachmentParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetFramebufferAttachmentParameteriv(" << getFramebufferTargetStr(target) << ", " << getFramebufferAttachmentStr(attachment) << ", " << getFramebufferAttachmentParameterStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getFramebufferAttachmentParameteriv(target, attachment, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getFramebufferAttachmentParameterValueStr(pname, params) << TestLog::EndMessage;
@@ -1976,7 +1976,7 @@ void CallLogWrapper::glGetFramebufferAttachmentParameteriv (glw::GLenum target, 
 void CallLogWrapper::glGetFramebufferParameteriv (glw::GLenum target, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetFramebufferParameteriv(" << getFramebufferTargetStr(target) << ", " << getFramebufferParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetFramebufferParameteriv(" << getFramebufferTargetStr(target) << ", " << getFramebufferParameterStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getFramebufferParameteriv(target, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
@@ -1985,7 +1985,7 @@ void CallLogWrapper::glGetFramebufferParameteriv (glw::GLenum target, glw::GLenu
 void CallLogWrapper::glGetFramebufferParameterivEXT (glw::GLuint framebuffer, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetFramebufferParameterivEXT(" << framebuffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetFramebufferParameterivEXT(" << framebuffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getFramebufferParameterivEXT(framebuffer, pname, params);
 }
 
@@ -2002,7 +2002,7 @@ glw::GLenum CallLogWrapper::glGetGraphicsResetStatus (void)
 void CallLogWrapper::glGetInteger64i_v (glw::GLenum target, glw::GLuint index, glw::GLint64 *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetInteger64i_v(" << getGettableIndexedStateStr(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetInteger64i_v(" << getGettableIndexedStateStr(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
 	m_gl.getInteger64i_v(target, index, data);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// data = " << getPointerStr(data, getIndexedQueryNumArgsOut(target)) << TestLog::EndMessage;
@@ -2011,7 +2011,7 @@ void CallLogWrapper::glGetInteger64i_v (glw::GLenum target, glw::GLuint index, g
 void CallLogWrapper::glGetInteger64v (glw::GLenum pname, glw::GLint64 *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetInteger64v(" << getGettableStateStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetInteger64v(" << getGettableStateStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
 	m_gl.getInteger64v(pname, data);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// data = " << getPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2020,7 +2020,7 @@ void CallLogWrapper::glGetInteger64v (glw::GLenum pname, glw::GLint64 *data)
 void CallLogWrapper::glGetIntegeri_v (glw::GLenum target, glw::GLuint index, glw::GLint *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetIntegeri_v(" << getGettableIndexedStateStr(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetIntegeri_v(" << getGettableIndexedStateStr(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
 	m_gl.getIntegeri_v(target, index, data);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// data = " << getPointerStr(data, getIndexedQueryNumArgsOut(target)) << TestLog::EndMessage;
@@ -2029,7 +2029,7 @@ void CallLogWrapper::glGetIntegeri_v (glw::GLenum target, glw::GLuint index, glw
 void CallLogWrapper::glGetIntegerv (glw::GLenum pname, glw::GLint *data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetIntegerv(" << getGettableStateStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetIntegerv(" << getGettableStateStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
 	m_gl.getIntegerv(pname, data);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// data = " << getPointerStr(data, getBasicQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2038,21 +2038,21 @@ void CallLogWrapper::glGetIntegerv (glw::GLenum pname, glw::GLint *data)
 void CallLogWrapper::glGetInternalformatSampleivNV (glw::GLenum target, glw::GLenum internalformat, glw::GLsizei samples, glw::GLenum pname, glw::GLsizei count, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetInternalformatSampleivNV(" << toHex(target) << ", " << toHex(internalformat) << ", " << samples << ", " << toHex(pname) << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetInternalformatSampleivNV(" << toHex(target) << ", " << toHex(internalformat) << ", " << samples << ", " << toHex(pname) << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getInternalformatSampleivNV(target, internalformat, samples, pname, count, params);
 }
 
 void CallLogWrapper::glGetInternalformati64v (glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei count, glw::GLint64 *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetInternalformati64v(" << toHex(target) << ", " << toHex(internalformat) << ", " << toHex(pname) << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetInternalformati64v(" << toHex(target) << ", " << toHex(internalformat) << ", " << toHex(pname) << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getInternalformati64v(target, internalformat, pname, count, params);
 }
 
 void CallLogWrapper::glGetInternalformativ (glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei count, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetInternalformativ(" << getInternalFormatTargetStr(target) << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << getInternalFormatParameterStr(pname) << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetInternalformativ(" << getInternalFormatTargetStr(target) << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << getInternalFormatParameterStr(pname) << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getInternalformativ(target, internalformat, pname, count, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, count) << TestLog::EndMessage;
@@ -2061,35 +2061,35 @@ void CallLogWrapper::glGetInternalformativ (glw::GLenum target, glw::GLenum inte
 void CallLogWrapper::glGetMultiTexEnvfvEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetMultiTexEnvfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetMultiTexEnvfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getMultiTexEnvfvEXT(texunit, target, pname, params);
 }
 
 void CallLogWrapper::glGetMultiTexEnvivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetMultiTexEnvivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetMultiTexEnvivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getMultiTexEnvivEXT(texunit, target, pname, params);
 }
 
 void CallLogWrapper::glGetMultiTexGendvEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, glw::GLdouble *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetMultiTexGendvEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetMultiTexGendvEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getMultiTexGendvEXT(texunit, coord, pname, params);
 }
 
 void CallLogWrapper::glGetMultiTexGenfvEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetMultiTexGenfvEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetMultiTexGenfvEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getMultiTexGenfvEXT(texunit, coord, pname, params);
 }
 
 void CallLogWrapper::glGetMultiTexGenivEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetMultiTexGenivEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetMultiTexGenivEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getMultiTexGenivEXT(texunit, coord, pname, params);
 }
 
@@ -2103,49 +2103,49 @@ void CallLogWrapper::glGetMultiTexImageEXT (glw::GLenum texunit, glw::GLenum tar
 void CallLogWrapper::glGetMultiTexLevelParameterfvEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLenum pname, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetMultiTexLevelParameterfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetMultiTexLevelParameterfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getMultiTexLevelParameterfvEXT(texunit, target, level, pname, params);
 }
 
 void CallLogWrapper::glGetMultiTexLevelParameterivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetMultiTexLevelParameterivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetMultiTexLevelParameterivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getMultiTexLevelParameterivEXT(texunit, target, level, pname, params);
 }
 
 void CallLogWrapper::glGetMultiTexParameterIivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetMultiTexParameterIivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetMultiTexParameterIivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getMultiTexParameterIivEXT(texunit, target, pname, params);
 }
 
 void CallLogWrapper::glGetMultiTexParameterIuivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetMultiTexParameterIuivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetMultiTexParameterIuivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getMultiTexParameterIuivEXT(texunit, target, pname, params);
 }
 
 void CallLogWrapper::glGetMultiTexParameterfvEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetMultiTexParameterfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetMultiTexParameterfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getMultiTexParameterfvEXT(texunit, target, pname, params);
 }
 
 void CallLogWrapper::glGetMultiTexParameterivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetMultiTexParameterivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetMultiTexParameterivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getMultiTexParameterivEXT(texunit, target, pname, params);
 }
 
 void CallLogWrapper::glGetMultisamplefv (glw::GLenum pname, glw::GLuint index, glw::GLfloat *val)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetMultisamplefv(" << getMultisampleParameterStr(pname) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(val))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetMultisamplefv(" << getMultisampleParameterStr(pname) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(val))) << ");" << TestLog::EndMessage;
 	m_gl.getMultisamplefv(pname, index, val);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// val = " << getPointerStr(val, 2) << TestLog::EndMessage;
@@ -2154,35 +2154,35 @@ void CallLogWrapper::glGetMultisamplefv (glw::GLenum pname, glw::GLuint index, g
 void CallLogWrapper::glGetNamedBufferParameteri64v (glw::GLuint buffer, glw::GLenum pname, glw::GLint64 *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedBufferParameteri64v(" << buffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedBufferParameteri64v(" << buffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedBufferParameteri64v(buffer, pname, params);
 }
 
 void CallLogWrapper::glGetNamedBufferParameteriv (glw::GLuint buffer, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedBufferParameteriv(" << buffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedBufferParameteriv(" << buffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedBufferParameteriv(buffer, pname, params);
 }
 
 void CallLogWrapper::glGetNamedBufferParameterivEXT (glw::GLuint buffer, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedBufferParameterivEXT(" << buffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedBufferParameterivEXT(" << buffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedBufferParameterivEXT(buffer, pname, params);
 }
 
 void CallLogWrapper::glGetNamedBufferPointerv (glw::GLuint buffer, glw::GLenum pname, void **params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedBufferPointerv(" << buffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedBufferPointerv(" << buffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedBufferPointerv(buffer, pname, params);
 }
 
 void CallLogWrapper::glGetNamedBufferPointervEXT (glw::GLuint buffer, glw::GLenum pname, void **params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedBufferPointervEXT(" << buffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedBufferPointervEXT(" << buffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedBufferPointervEXT(buffer, pname, params);
 }
 
@@ -2203,56 +2203,56 @@ void CallLogWrapper::glGetNamedBufferSubDataEXT (glw::GLuint buffer, glw::GLintp
 void CallLogWrapper::glGetNamedFramebufferAttachmentParameteriv (glw::GLuint framebuffer, glw::GLenum attachment, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedFramebufferAttachmentParameteriv(" << framebuffer << ", " << toHex(attachment) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedFramebufferAttachmentParameteriv(" << framebuffer << ", " << toHex(attachment) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedFramebufferAttachmentParameteriv(framebuffer, attachment, pname, params);
 }
 
 void CallLogWrapper::glGetNamedFramebufferAttachmentParameterivEXT (glw::GLuint framebuffer, glw::GLenum attachment, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedFramebufferAttachmentParameterivEXT(" << framebuffer << ", " << toHex(attachment) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedFramebufferAttachmentParameterivEXT(" << framebuffer << ", " << toHex(attachment) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedFramebufferAttachmentParameterivEXT(framebuffer, attachment, pname, params);
 }
 
 void CallLogWrapper::glGetNamedFramebufferParameteriv (glw::GLuint framebuffer, glw::GLenum pname, glw::GLint *param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedFramebufferParameteriv(" << framebuffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedFramebufferParameteriv(" << framebuffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedFramebufferParameteriv(framebuffer, pname, param);
 }
 
 void CallLogWrapper::glGetNamedFramebufferParameterivEXT (glw::GLuint framebuffer, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedFramebufferParameterivEXT(" << framebuffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedFramebufferParameterivEXT(" << framebuffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedFramebufferParameterivEXT(framebuffer, pname, params);
 }
 
 void CallLogWrapper::glGetNamedProgramLocalParameterIivEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedProgramLocalParameterIivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedProgramLocalParameterIivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedProgramLocalParameterIivEXT(program, target, index, params);
 }
 
 void CallLogWrapper::glGetNamedProgramLocalParameterIuivEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedProgramLocalParameterIuivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedProgramLocalParameterIuivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedProgramLocalParameterIuivEXT(program, target, index, params);
 }
 
 void CallLogWrapper::glGetNamedProgramLocalParameterdvEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLdouble *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedProgramLocalParameterdvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedProgramLocalParameterdvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedProgramLocalParameterdvEXT(program, target, index, params);
 }
 
 void CallLogWrapper::glGetNamedProgramLocalParameterfvEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedProgramLocalParameterfvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedProgramLocalParameterfvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedProgramLocalParameterfvEXT(program, target, index, params);
 }
 
@@ -2266,56 +2266,56 @@ void CallLogWrapper::glGetNamedProgramStringEXT (glw::GLuint program, glw::GLenu
 void CallLogWrapper::glGetNamedProgramivEXT (glw::GLuint program, glw::GLenum target, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedProgramivEXT(" << program << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedProgramivEXT(" << program << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedProgramivEXT(program, target, pname, params);
 }
 
 void CallLogWrapper::glGetNamedRenderbufferParameteriv (glw::GLuint renderbuffer, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedRenderbufferParameteriv(" << renderbuffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedRenderbufferParameteriv(" << renderbuffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedRenderbufferParameteriv(renderbuffer, pname, params);
 }
 
 void CallLogWrapper::glGetNamedRenderbufferParameterivEXT (glw::GLuint renderbuffer, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetNamedRenderbufferParameterivEXT(" << renderbuffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetNamedRenderbufferParameterivEXT(" << renderbuffer << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getNamedRenderbufferParameterivEXT(renderbuffer, pname, params);
 }
 
 void CallLogWrapper::glGetObjectLabel (glw::GLenum identifier, glw::GLuint name, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *label)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetObjectLabel(" << toHex(identifier) << ", " << name << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(label))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetObjectLabel(" << toHex(identifier) << ", " << name << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(label))) << ");" << TestLog::EndMessage;
 	m_gl.getObjectLabel(identifier, name, bufSize, length, label);
 }
 
 void CallLogWrapper::glGetObjectPtrLabel (const void *ptr, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *label)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetObjectPtrLabel(" << ptr << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(label))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetObjectPtrLabel(" << ptr << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(label))) << ");" << TestLog::EndMessage;
 	m_gl.getObjectPtrLabel(ptr, bufSize, length, label);
 }
 
 void CallLogWrapper::glGetPointerIndexedvEXT (glw::GLenum target, glw::GLuint index, void **data)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetPointerIndexedvEXT(" << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetPointerIndexedvEXT(" << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(data))) << ");" << TestLog::EndMessage;
 	m_gl.getPointerIndexedvEXT(target, index, data);
 }
 
 void CallLogWrapper::glGetPointeri_vEXT (glw::GLenum pname, glw::GLuint index, void **params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetPointeri_vEXT(" << toHex(pname) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetPointeri_vEXT(" << toHex(pname) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getPointeri_vEXT(pname, index, params);
 }
 
 void CallLogWrapper::glGetPointerv (glw::GLenum pname, void **params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetPointerv(" << getPointerStateStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetPointerv(" << getPointerStateStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getPointerv(pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
@@ -2324,14 +2324,14 @@ void CallLogWrapper::glGetPointerv (glw::GLenum pname, void **params)
 void CallLogWrapper::glGetProgramBinary (glw::GLuint program, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLenum *binaryFormat, void *binary)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetProgramBinary(" << program << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(binaryFormat))) << ", " << binary << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetProgramBinary(" << program << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(binaryFormat))) << ", " << binary << ");" << TestLog::EndMessage;
 	m_gl.getProgramBinary(program, bufSize, length, binaryFormat, binary);
 }
 
 void CallLogWrapper::glGetProgramInfoLog (glw::GLuint program, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *infoLog)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetProgramInfoLog(" << program << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(infoLog))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetProgramInfoLog(" << program << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(infoLog))) << ");" << TestLog::EndMessage;
 	m_gl.getProgramInfoLog(program, bufSize, length, infoLog);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// length = " << getPointerStr(length, 1) << TestLog::EndMessage;
@@ -2340,14 +2340,14 @@ void CallLogWrapper::glGetProgramInfoLog (glw::GLuint program, glw::GLsizei bufS
 void CallLogWrapper::glGetProgramInterfaceiv (glw::GLuint program, glw::GLenum programInterface, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetProgramInterfaceiv(" << program << ", " << toHex(programInterface) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetProgramInterfaceiv(" << program << ", " << toHex(programInterface) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getProgramInterfaceiv(program, programInterface, pname, params);
 }
 
 void CallLogWrapper::glGetProgramPipelineInfoLog (glw::GLuint pipeline, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *infoLog)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetProgramPipelineInfoLog(" << pipeline << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(infoLog))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetProgramPipelineInfoLog(" << pipeline << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(infoLog))) << ");" << TestLog::EndMessage;
 	m_gl.getProgramPipelineInfoLog(pipeline, bufSize, length, infoLog);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// length = " << getPointerStr(length, 1) << TestLog::EndMessage;
@@ -2356,7 +2356,7 @@ void CallLogWrapper::glGetProgramPipelineInfoLog (glw::GLuint pipeline, glw::GLs
 void CallLogWrapper::glGetProgramPipelineiv (glw::GLuint pipeline, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetProgramPipelineiv(" << pipeline << ", " << getPipelineParamStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetProgramPipelineiv(" << pipeline << ", " << getPipelineParamStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getProgramPipelineiv(pipeline, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
@@ -2395,33 +2395,33 @@ glw::GLint CallLogWrapper::glGetProgramResourceLocationIndex (glw::GLuint progra
 void CallLogWrapper::glGetProgramResourceName (glw::GLuint program, glw::GLenum programInterface, glw::GLuint index, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *name)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetProgramResourceName(" << program << ", " << toHex(programInterface) << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetProgramResourceName(" << program << ", " << toHex(programInterface) << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
 	m_gl.getProgramResourceName(program, programInterface, index, bufSize, length, name);
 }
 
 void CallLogWrapper::glGetProgramResourceiv (glw::GLuint program, glw::GLenum programInterface, glw::GLuint index, glw::GLsizei propCount, const glw::GLenum *props, glw::GLsizei count, glw::GLsizei *length, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetProgramResourceiv(" << program << ", " << getProgramInterfaceStr(programInterface) << ", " << index << ", " << propCount << ", " << getEnumPointerStr(props, propCount, getProgramResourcePropertyName) << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetProgramResourceiv(" << program << ", " << getProgramInterfaceStr(programInterface) << ", " << index << ", " << propCount << ", " << getEnumPointerStr(props, propCount, getProgramResourcePropertyName) << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getProgramResourceiv(program, programInterface, index, propCount, props, count, length, params);
 	if (m_enableLog)
 	{
 		m_log << TestLog::Message << "// length = " << getPointerStr(length, 1) << TestLog::EndMessage;
-		m_log << TestLog::Message << "// params = " << getPointerStr(params, ((length == DE_NULL) ? (count) : ((count < *length) ? (count) : (*length)))) << TestLog::EndMessage;
+		m_log << TestLog::Message << "// params = " << getPointerStr(params, ((length == nullptr) ? (count) : ((count < *length) ? (count) : (*length)))) << TestLog::EndMessage;
 	}
 }
 
 void CallLogWrapper::glGetProgramStageiv (glw::GLuint program, glw::GLenum shadertype, glw::GLenum pname, glw::GLint *values)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetProgramStageiv(" << program << ", " << toHex(shadertype) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(values))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetProgramStageiv(" << program << ", " << toHex(shadertype) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(values))) << ");" << TestLog::EndMessage;
 	m_gl.getProgramStageiv(program, shadertype, pname, values);
 }
 
 void CallLogWrapper::glGetProgramiv (glw::GLuint program, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetProgramiv(" << program << ", " << getProgramParamStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetProgramiv(" << program << ", " << getProgramParamStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getProgramiv(program, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getProgramQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2458,14 +2458,14 @@ void CallLogWrapper::glGetQueryBufferObjectuiv (glw::GLuint id, glw::GLuint buff
 void CallLogWrapper::glGetQueryIndexediv (glw::GLenum target, glw::GLuint index, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetQueryIndexediv(" << toHex(target) << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetQueryIndexediv(" << toHex(target) << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getQueryIndexediv(target, index, pname, params);
 }
 
 void CallLogWrapper::glGetQueryObjecti64v (glw::GLuint id, glw::GLenum pname, glw::GLint64 *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetQueryObjecti64v(" << id << ", " << getQueryObjectParamStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetQueryObjecti64v(" << id << ", " << getQueryObjectParamStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getQueryObjecti64v(id, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
@@ -2474,7 +2474,7 @@ void CallLogWrapper::glGetQueryObjecti64v (glw::GLuint id, glw::GLenum pname, gl
 void CallLogWrapper::glGetQueryObjectiv (glw::GLuint id, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetQueryObjectiv(" << id << ", " << getQueryObjectParamStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetQueryObjectiv(" << id << ", " << getQueryObjectParamStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getQueryObjectiv(id, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
@@ -2483,7 +2483,7 @@ void CallLogWrapper::glGetQueryObjectiv (glw::GLuint id, glw::GLenum pname, glw:
 void CallLogWrapper::glGetQueryObjectui64v (glw::GLuint id, glw::GLenum pname, glw::GLuint64 *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetQueryObjectui64v(" << id << ", " << getQueryObjectParamStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetQueryObjectui64v(" << id << ", " << getQueryObjectParamStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getQueryObjectui64v(id, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
@@ -2492,7 +2492,7 @@ void CallLogWrapper::glGetQueryObjectui64v (glw::GLuint id, glw::GLenum pname, g
 void CallLogWrapper::glGetQueryObjectuiv (glw::GLuint id, glw::GLenum pname, glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetQueryObjectuiv(" << id << ", " << getQueryObjectParamStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetQueryObjectuiv(" << id << ", " << getQueryObjectParamStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getQueryObjectuiv(id, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
@@ -2501,7 +2501,7 @@ void CallLogWrapper::glGetQueryObjectuiv (glw::GLuint id, glw::GLenum pname, glw
 void CallLogWrapper::glGetQueryiv (glw::GLenum target, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetQueryiv(" << getQueryTargetStr(target) << ", " << getQueryParamStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetQueryiv(" << getQueryTargetStr(target) << ", " << getQueryParamStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getQueryiv(target, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
@@ -2510,14 +2510,14 @@ void CallLogWrapper::glGetQueryiv (glw::GLenum target, glw::GLenum pname, glw::G
 void CallLogWrapper::glGetRenderbufferParameteriv (glw::GLenum target, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetRenderbufferParameteriv(" << getFramebufferTargetStr(target) << ", " << getRenderbufferParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetRenderbufferParameteriv(" << getFramebufferTargetStr(target) << ", " << getRenderbufferParameterStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getRenderbufferParameteriv(target, pname, params);
 }
 
 void CallLogWrapper::glGetSamplerParameterIiv (glw::GLuint sampler, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetSamplerParameterIiv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetSamplerParameterIiv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getSamplerParameterIiv(sampler, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getTextureParamQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2526,7 +2526,7 @@ void CallLogWrapper::glGetSamplerParameterIiv (glw::GLuint sampler, glw::GLenum 
 void CallLogWrapper::glGetSamplerParameterIuiv (glw::GLuint sampler, glw::GLenum pname, glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetSamplerParameterIuiv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetSamplerParameterIuiv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getSamplerParameterIuiv(sampler, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getTextureParamQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2535,7 +2535,7 @@ void CallLogWrapper::glGetSamplerParameterIuiv (glw::GLuint sampler, glw::GLenum
 void CallLogWrapper::glGetSamplerParameterfv (glw::GLuint sampler, glw::GLenum pname, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetSamplerParameterfv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetSamplerParameterfv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getSamplerParameterfv(sampler, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getTextureParamQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2544,7 +2544,7 @@ void CallLogWrapper::glGetSamplerParameterfv (glw::GLuint sampler, glw::GLenum p
 void CallLogWrapper::glGetSamplerParameteriv (glw::GLuint sampler, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetSamplerParameteriv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetSamplerParameteriv(" << sampler << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getSamplerParameteriv(sampler, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getTextureParamQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2553,7 +2553,7 @@ void CallLogWrapper::glGetSamplerParameteriv (glw::GLuint sampler, glw::GLenum p
 void CallLogWrapper::glGetShaderInfoLog (glw::GLuint shader, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *infoLog)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetShaderInfoLog(" << shader << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(infoLog))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetShaderInfoLog(" << shader << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(infoLog))) << ");" << TestLog::EndMessage;
 	m_gl.getShaderInfoLog(shader, bufSize, length, infoLog);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// length = " << getPointerStr(length, 1) << TestLog::EndMessage;
@@ -2562,21 +2562,21 @@ void CallLogWrapper::glGetShaderInfoLog (glw::GLuint shader, glw::GLsizei bufSiz
 void CallLogWrapper::glGetShaderPrecisionFormat (glw::GLenum shadertype, glw::GLenum precisiontype, glw::GLint *range, glw::GLint *precision)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetShaderPrecisionFormat(" << getShaderTypeStr(shadertype) << ", " << getPrecisionFormatTypeStr(precisiontype) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(range))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(precision))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetShaderPrecisionFormat(" << getShaderTypeStr(shadertype) << ", " << getPrecisionFormatTypeStr(precisiontype) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(range))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(precision))) << ");" << TestLog::EndMessage;
 	m_gl.getShaderPrecisionFormat(shadertype, precisiontype, range, precision);
 }
 
 void CallLogWrapper::glGetShaderSource (glw::GLuint shader, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *source)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetShaderSource(" << shader << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(source))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetShaderSource(" << shader << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(source))) << ");" << TestLog::EndMessage;
 	m_gl.getShaderSource(shader, bufSize, length, source);
 }
 
 void CallLogWrapper::glGetShaderiv (glw::GLuint shader, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetShaderiv(" << shader << ", " << getShaderParamStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetShaderiv(" << shader << ", " << getShaderParamStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getShaderiv(shader, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
@@ -2625,7 +2625,7 @@ glw::GLint CallLogWrapper::glGetSubroutineUniformLocation (glw::GLuint program, 
 void CallLogWrapper::glGetSynciv (glw::GLsync sync, glw::GLenum pname, glw::GLsizei count, glw::GLsizei *length, glw::GLint *values)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetSynciv(" << sync << ", " << toHex(pname) << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(values))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetSynciv(" << sync << ", " << toHex(pname) << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(values))) << ");" << TestLog::EndMessage;
 	m_gl.getSynciv(sync, pname, count, length, values);
 }
 
@@ -2639,7 +2639,7 @@ void CallLogWrapper::glGetTexImage (glw::GLenum target, glw::GLint level, glw::G
 void CallLogWrapper::glGetTexLevelParameterfv (glw::GLenum target, glw::GLint level, glw::GLenum pname, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTexLevelParameterfv(" << getTextureTargetStr(target) << ", " << level << ", " << getTextureLevelParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTexLevelParameterfv(" << getTextureTargetStr(target) << ", " << level << ", " << getTextureLevelParameterStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTexLevelParameterfv(target, level, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
@@ -2648,7 +2648,7 @@ void CallLogWrapper::glGetTexLevelParameterfv (glw::GLenum target, glw::GLint le
 void CallLogWrapper::glGetTexLevelParameteriv (glw::GLenum target, glw::GLint level, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTexLevelParameteriv(" << getTextureTargetStr(target) << ", " << level << ", " << getTextureLevelParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTexLevelParameteriv(" << getTextureTargetStr(target) << ", " << level << ", " << getTextureLevelParameterStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTexLevelParameteriv(target, level, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, 1) << TestLog::EndMessage;
@@ -2657,7 +2657,7 @@ void CallLogWrapper::glGetTexLevelParameteriv (glw::GLenum target, glw::GLint le
 void CallLogWrapper::glGetTexParameterIiv (glw::GLenum target, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTexParameterIiv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTexParameterIiv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTexParameterIiv(target, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getTextureParamQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2666,7 +2666,7 @@ void CallLogWrapper::glGetTexParameterIiv (glw::GLenum target, glw::GLenum pname
 void CallLogWrapper::glGetTexParameterIuiv (glw::GLenum target, glw::GLenum pname, glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTexParameterIuiv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTexParameterIuiv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTexParameterIuiv(target, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getTextureParamQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2675,7 +2675,7 @@ void CallLogWrapper::glGetTexParameterIuiv (glw::GLenum target, glw::GLenum pnam
 void CallLogWrapper::glGetTexParameterfv (glw::GLenum target, glw::GLenum pname, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTexParameterfv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTexParameterfv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTexParameterfv(target, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getTextureParamQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2684,7 +2684,7 @@ void CallLogWrapper::glGetTexParameterfv (glw::GLenum target, glw::GLenum pname,
 void CallLogWrapper::glGetTexParameteriv (glw::GLenum target, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTexParameteriv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTexParameteriv(" << getTextureTargetStr(target) << ", " << getTextureParameterStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTexParameteriv(target, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getTextureParamQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2707,84 +2707,84 @@ void CallLogWrapper::glGetTextureImageEXT (glw::GLuint texture, glw::GLenum targ
 void CallLogWrapper::glGetTextureLevelParameterfv (glw::GLuint texture, glw::GLint level, glw::GLenum pname, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTextureLevelParameterfv(" << texture << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTextureLevelParameterfv(" << texture << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTextureLevelParameterfv(texture, level, pname, params);
 }
 
 void CallLogWrapper::glGetTextureLevelParameterfvEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum pname, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTextureLevelParameterfvEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTextureLevelParameterfvEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTextureLevelParameterfvEXT(texture, target, level, pname, params);
 }
 
 void CallLogWrapper::glGetTextureLevelParameteriv (glw::GLuint texture, glw::GLint level, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTextureLevelParameteriv(" << texture << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTextureLevelParameteriv(" << texture << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTextureLevelParameteriv(texture, level, pname, params);
 }
 
 void CallLogWrapper::glGetTextureLevelParameterivEXT (glw::GLuint texture, glw::GLenum target, glw::GLint level, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTextureLevelParameterivEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTextureLevelParameterivEXT(" << texture << ", " << toHex(target) << ", " << level << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTextureLevelParameterivEXT(texture, target, level, pname, params);
 }
 
 void CallLogWrapper::glGetTextureParameterIiv (glw::GLuint texture, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTextureParameterIiv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTextureParameterIiv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTextureParameterIiv(texture, pname, params);
 }
 
 void CallLogWrapper::glGetTextureParameterIivEXT (glw::GLuint texture, glw::GLenum target, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTextureParameterIivEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTextureParameterIivEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTextureParameterIivEXT(texture, target, pname, params);
 }
 
 void CallLogWrapper::glGetTextureParameterIuiv (glw::GLuint texture, glw::GLenum pname, glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTextureParameterIuiv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTextureParameterIuiv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTextureParameterIuiv(texture, pname, params);
 }
 
 void CallLogWrapper::glGetTextureParameterIuivEXT (glw::GLuint texture, glw::GLenum target, glw::GLenum pname, glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTextureParameterIuivEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTextureParameterIuivEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTextureParameterIuivEXT(texture, target, pname, params);
 }
 
 void CallLogWrapper::glGetTextureParameterfv (glw::GLuint texture, glw::GLenum pname, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTextureParameterfv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTextureParameterfv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTextureParameterfv(texture, pname, params);
 }
 
 void CallLogWrapper::glGetTextureParameterfvEXT (glw::GLuint texture, glw::GLenum target, glw::GLenum pname, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTextureParameterfvEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTextureParameterfvEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTextureParameterfvEXT(texture, target, pname, params);
 }
 
 void CallLogWrapper::glGetTextureParameteriv (glw::GLuint texture, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTextureParameteriv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTextureParameteriv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTextureParameteriv(texture, pname, params);
 }
 
 void CallLogWrapper::glGetTextureParameterivEXT (glw::GLuint texture, glw::GLenum target, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTextureParameterivEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTextureParameterivEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getTextureParameterivEXT(texture, target, pname, params);
 }
 
@@ -2798,28 +2798,28 @@ void CallLogWrapper::glGetTextureSubImage (glw::GLuint texture, glw::GLint level
 void CallLogWrapper::glGetTransformFeedbackVarying (glw::GLuint program, glw::GLuint index, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLsizei *size, glw::GLenum *type, glw::GLchar *name)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTransformFeedbackVarying(" << program << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(size))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(type))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTransformFeedbackVarying(" << program << ", " << index << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(size))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(type))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(name))) << ");" << TestLog::EndMessage;
 	m_gl.getTransformFeedbackVarying(program, index, bufSize, length, size, type, name);
 }
 
 void CallLogWrapper::glGetTransformFeedbacki64_v (glw::GLuint xfb, glw::GLenum pname, glw::GLuint index, glw::GLint64 *param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTransformFeedbacki64_v(" << xfb << ", " << toHex(pname) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTransformFeedbacki64_v(" << xfb << ", " << toHex(pname) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
 	m_gl.getTransformFeedbacki64_v(xfb, pname, index, param);
 }
 
 void CallLogWrapper::glGetTransformFeedbacki_v (glw::GLuint xfb, glw::GLenum pname, glw::GLuint index, glw::GLint *param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTransformFeedbacki_v(" << xfb << ", " << toHex(pname) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTransformFeedbacki_v(" << xfb << ", " << toHex(pname) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
 	m_gl.getTransformFeedbacki_v(xfb, pname, index, param);
 }
 
 void CallLogWrapper::glGetTransformFeedbackiv (glw::GLuint xfb, glw::GLenum pname, glw::GLint *param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetTransformFeedbackiv(" << xfb << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetTransformFeedbackiv(" << xfb << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
 	m_gl.getTransformFeedbackiv(xfb, pname, param);
 }
 
@@ -2836,7 +2836,7 @@ glw::GLuint CallLogWrapper::glGetUniformBlockIndex (glw::GLuint program, const g
 void CallLogWrapper::glGetUniformIndices (glw::GLuint program, glw::GLsizei uniformCount, const glw::GLchar *const*uniformNames, glw::GLuint *uniformIndices)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetUniformIndices(" << program << ", " << uniformCount << ", " << getPointerStr(uniformNames, uniformCount) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(uniformIndices))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetUniformIndices(" << program << ", " << uniformCount << ", " << getPointerStr(uniformNames, uniformCount) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(uniformIndices))) << ");" << TestLog::EndMessage;
 	m_gl.getUniformIndices(program, uniformCount, uniformNames, uniformIndices);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// uniformIndices = " << getPointerStr(uniformIndices, uniformCount) << TestLog::EndMessage;
@@ -2855,91 +2855,91 @@ glw::GLint CallLogWrapper::glGetUniformLocation (glw::GLuint program, const glw:
 void CallLogWrapper::glGetUniformSubroutineuiv (glw::GLenum shadertype, glw::GLint location, glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetUniformSubroutineuiv(" << toHex(shadertype) << ", " << location << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetUniformSubroutineuiv(" << toHex(shadertype) << ", " << location << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getUniformSubroutineuiv(shadertype, location, params);
 }
 
 void CallLogWrapper::glGetUniformdv (glw::GLuint program, glw::GLint location, glw::GLdouble *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetUniformdv(" << program << ", " << location << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetUniformdv(" << program << ", " << location << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getUniformdv(program, location, params);
 }
 
 void CallLogWrapper::glGetUniformfv (glw::GLuint program, glw::GLint location, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetUniformfv(" << program << ", " << location << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetUniformfv(" << program << ", " << location << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getUniformfv(program, location, params);
 }
 
 void CallLogWrapper::glGetUniformiv (glw::GLuint program, glw::GLint location, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetUniformiv(" << program << ", " << location << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetUniformiv(" << program << ", " << location << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getUniformiv(program, location, params);
 }
 
 void CallLogWrapper::glGetUniformuiv (glw::GLuint program, glw::GLint location, glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetUniformuiv(" << program << ", " << location << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetUniformuiv(" << program << ", " << location << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getUniformuiv(program, location, params);
 }
 
 void CallLogWrapper::glGetVertexArrayIndexed64iv (glw::GLuint vaobj, glw::GLuint index, glw::GLenum pname, glw::GLint64 *param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexArrayIndexed64iv(" << vaobj << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexArrayIndexed64iv(" << vaobj << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexArrayIndexed64iv(vaobj, index, pname, param);
 }
 
 void CallLogWrapper::glGetVertexArrayIndexediv (glw::GLuint vaobj, glw::GLuint index, glw::GLenum pname, glw::GLint *param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexArrayIndexediv(" << vaobj << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexArrayIndexediv(" << vaobj << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexArrayIndexediv(vaobj, index, pname, param);
 }
 
 void CallLogWrapper::glGetVertexArrayIntegeri_vEXT (glw::GLuint vaobj, glw::GLuint index, glw::GLenum pname, glw::GLint *param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexArrayIntegeri_vEXT(" << vaobj << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexArrayIntegeri_vEXT(" << vaobj << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexArrayIntegeri_vEXT(vaobj, index, pname, param);
 }
 
 void CallLogWrapper::glGetVertexArrayIntegervEXT (glw::GLuint vaobj, glw::GLenum pname, glw::GLint *param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexArrayIntegervEXT(" << vaobj << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexArrayIntegervEXT(" << vaobj << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexArrayIntegervEXT(vaobj, pname, param);
 }
 
 void CallLogWrapper::glGetVertexArrayPointeri_vEXT (glw::GLuint vaobj, glw::GLuint index, glw::GLenum pname, void **param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexArrayPointeri_vEXT(" << vaobj << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexArrayPointeri_vEXT(" << vaobj << ", " << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexArrayPointeri_vEXT(vaobj, index, pname, param);
 }
 
 void CallLogWrapper::glGetVertexArrayPointervEXT (glw::GLuint vaobj, glw::GLenum pname, void **param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexArrayPointervEXT(" << vaobj << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexArrayPointervEXT(" << vaobj << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexArrayPointervEXT(vaobj, pname, param);
 }
 
 void CallLogWrapper::glGetVertexArrayiv (glw::GLuint vaobj, glw::GLenum pname, glw::GLint *param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexArrayiv(" << vaobj << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexArrayiv(" << vaobj << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexArrayiv(vaobj, pname, param);
 }
 
 void CallLogWrapper::glGetVertexAttribIiv (glw::GLuint index, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexAttribIiv(" << index << ", " << getVertexAttribParameterNameStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexAttribIiv(" << index << ", " << getVertexAttribParameterNameStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexAttribIiv(index, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getAttributeQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2948,7 +2948,7 @@ void CallLogWrapper::glGetVertexAttribIiv (glw::GLuint index, glw::GLenum pname,
 void CallLogWrapper::glGetVertexAttribIuiv (glw::GLuint index, glw::GLenum pname, glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexAttribIuiv(" << index << ", " << getVertexAttribParameterNameStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexAttribIuiv(" << index << ", " << getVertexAttribParameterNameStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexAttribIuiv(index, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getAttributeQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2957,28 +2957,28 @@ void CallLogWrapper::glGetVertexAttribIuiv (glw::GLuint index, glw::GLenum pname
 void CallLogWrapper::glGetVertexAttribLdv (glw::GLuint index, glw::GLenum pname, glw::GLdouble *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexAttribLdv(" << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexAttribLdv(" << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexAttribLdv(index, pname, params);
 }
 
 void CallLogWrapper::glGetVertexAttribPointerv (glw::GLuint index, glw::GLenum pname, void **pointer)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexAttribPointerv(" << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(pointer))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexAttribPointerv(" << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(pointer))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexAttribPointerv(index, pname, pointer);
 }
 
 void CallLogWrapper::glGetVertexAttribdv (glw::GLuint index, glw::GLenum pname, glw::GLdouble *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexAttribdv(" << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexAttribdv(" << index << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexAttribdv(index, pname, params);
 }
 
 void CallLogWrapper::glGetVertexAttribfv (glw::GLuint index, glw::GLenum pname, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexAttribfv(" << index << ", " << getVertexAttribParameterNameStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexAttribfv(" << index << ", " << getVertexAttribParameterNameStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexAttribfv(index, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getAttributeQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -2987,7 +2987,7 @@ void CallLogWrapper::glGetVertexAttribfv (glw::GLuint index, glw::GLenum pname, 
 void CallLogWrapper::glGetVertexAttribiv (glw::GLuint index, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetVertexAttribiv(" << index << ", " << getVertexAttribParameterNameStr(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetVertexAttribiv(" << index << ", " << getVertexAttribParameterNameStr(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getVertexAttribiv(index, pname, params);
 	if (m_enableLog)
 		m_log << TestLog::Message << "// params = " << getPointerStr(params, getAttributeQueryNumArgsOut(pname)) << TestLog::EndMessage;
@@ -3010,28 +3010,28 @@ void CallLogWrapper::glGetnTexImage (glw::GLenum target, glw::GLint level, glw::
 void CallLogWrapper::glGetnUniformdv (glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLdouble *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetnUniformdv(" << program << ", " << location << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetnUniformdv(" << program << ", " << location << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getnUniformdv(program, location, bufSize, params);
 }
 
 void CallLogWrapper::glGetnUniformfv (glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetnUniformfv(" << program << ", " << location << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetnUniformfv(" << program << ", " << location << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getnUniformfv(program, location, bufSize, params);
 }
 
 void CallLogWrapper::glGetnUniformiv (glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetnUniformiv(" << program << ", " << location << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetnUniformiv(" << program << ", " << location << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getnUniformiv(program, location, bufSize, params);
 }
 
 void CallLogWrapper::glGetnUniformuiv (glw::GLuint program, glw::GLint location, glw::GLsizei bufSize, glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glGetnUniformuiv(" << program << ", " << location << ", " << bufSize << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glGetnUniformuiv(" << program << ", " << location << ", " << bufSize << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.getnUniformuiv(program, location, bufSize, params);
 }
 
@@ -3073,14 +3073,14 @@ void CallLogWrapper::glInvalidateFramebuffer (glw::GLenum target, glw::GLsizei n
 void CallLogWrapper::glInvalidateNamedFramebufferData (glw::GLuint framebuffer, glw::GLsizei numAttachments, const glw::GLenum *attachments)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glInvalidateNamedFramebufferData(" << framebuffer << ", " << numAttachments << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(attachments))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glInvalidateNamedFramebufferData(" << framebuffer << ", " << numAttachments << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(attachments))) << ");" << TestLog::EndMessage;
 	m_gl.invalidateNamedFramebufferData(framebuffer, numAttachments, attachments);
 }
 
 void CallLogWrapper::glInvalidateNamedFramebufferSubData (glw::GLuint framebuffer, glw::GLsizei numAttachments, const glw::GLenum *attachments, glw::GLint x, glw::GLint y, glw::GLsizei width, glw::GLsizei height)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glInvalidateNamedFramebufferSubData(" << framebuffer << ", " << numAttachments << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(attachments))) << ", " << x << ", " << y << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glInvalidateNamedFramebufferSubData(" << framebuffer << ", " << numAttachments << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(attachments))) << ", " << x << ", " << y << ", " << width << ", " << height << ");" << TestLog::EndMessage;
 	m_gl.invalidateNamedFramebufferSubData(framebuffer, numAttachments, attachments, x, y, width, height);
 }
 
@@ -3343,56 +3343,56 @@ void CallLogWrapper::glMatrixLoadIdentityEXT (glw::GLenum mode)
 void CallLogWrapper::glMatrixLoadTransposedEXT (glw::GLenum mode, const glw::GLdouble *m)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMatrixLoadTransposedEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMatrixLoadTransposedEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
 	m_gl.matrixLoadTransposedEXT(mode, m);
 }
 
 void CallLogWrapper::glMatrixLoadTransposefEXT (glw::GLenum mode, const glw::GLfloat *m)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMatrixLoadTransposefEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMatrixLoadTransposefEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
 	m_gl.matrixLoadTransposefEXT(mode, m);
 }
 
 void CallLogWrapper::glMatrixLoaddEXT (glw::GLenum mode, const glw::GLdouble *m)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMatrixLoaddEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMatrixLoaddEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
 	m_gl.matrixLoaddEXT(mode, m);
 }
 
 void CallLogWrapper::glMatrixLoadfEXT (glw::GLenum mode, const glw::GLfloat *m)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMatrixLoadfEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMatrixLoadfEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
 	m_gl.matrixLoadfEXT(mode, m);
 }
 
 void CallLogWrapper::glMatrixMultTransposedEXT (glw::GLenum mode, const glw::GLdouble *m)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMatrixMultTransposedEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMatrixMultTransposedEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
 	m_gl.matrixMultTransposedEXT(mode, m);
 }
 
 void CallLogWrapper::glMatrixMultTransposefEXT (glw::GLenum mode, const glw::GLfloat *m)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMatrixMultTransposefEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMatrixMultTransposefEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
 	m_gl.matrixMultTransposefEXT(mode, m);
 }
 
 void CallLogWrapper::glMatrixMultdEXT (glw::GLenum mode, const glw::GLdouble *m)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMatrixMultdEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMatrixMultdEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
 	m_gl.matrixMultdEXT(mode, m);
 }
 
 void CallLogWrapper::glMatrixMultfEXT (glw::GLenum mode, const glw::GLfloat *m)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMatrixMultfEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMatrixMultfEXT(" << toHex(mode) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(m))) << ");" << TestLog::EndMessage;
 	m_gl.matrixMultfEXT(mode, m);
 }
 
@@ -3490,7 +3490,7 @@ void CallLogWrapper::glMinSampleShading (glw::GLfloat value)
 void CallLogWrapper::glMultiDrawArrays (glw::GLenum mode, const glw::GLint *first, const glw::GLsizei *count, glw::GLsizei drawcount)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiDrawArrays(" << getPrimitiveTypeStr(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(first))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(count))) << ", " << drawcount << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMultiDrawArrays(" << getPrimitiveTypeStr(mode) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(first))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(count))) << ", " << drawcount << ");" << TestLog::EndMessage;
 	m_gl.multiDrawArrays(mode, first, count, drawcount);
 }
 
@@ -3511,14 +3511,14 @@ void CallLogWrapper::glMultiDrawArraysIndirectCount (glw::GLenum mode, const voi
 void CallLogWrapper::glMultiDrawElements (glw::GLenum mode, const glw::GLsizei *count, glw::GLenum type, const void *const*indices, glw::GLsizei drawcount)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiDrawElements(" << getPrimitiveTypeStr(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(count))) << ", " << getTypeStr(type) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(indices))) << ", " << drawcount << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMultiDrawElements(" << getPrimitiveTypeStr(mode) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(count))) << ", " << getTypeStr(type) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(indices))) << ", " << drawcount << ");" << TestLog::EndMessage;
 	m_gl.multiDrawElements(mode, count, type, indices, drawcount);
 }
 
 void CallLogWrapper::glMultiDrawElementsBaseVertex (glw::GLenum mode, const glw::GLsizei *count, glw::GLenum type, const void *const*indices, glw::GLsizei drawcount, const glw::GLint *basevertex)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiDrawElementsBaseVertex(" << getPrimitiveTypeStr(mode) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(count))) << ", " << getTypeStr(type) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(indices))) << ", " << drawcount << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(basevertex))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMultiDrawElementsBaseVertex(" << getPrimitiveTypeStr(mode) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(count))) << ", " << getTypeStr(type) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(indices))) << ", " << drawcount << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(basevertex))) << ");" << TestLog::EndMessage;
 	m_gl.multiDrawElementsBaseVertex(mode, count, type, indices, drawcount, basevertex);
 }
 
@@ -3560,7 +3560,7 @@ void CallLogWrapper::glMultiTexEnvfEXT (glw::GLenum texunit, glw::GLenum target,
 void CallLogWrapper::glMultiTexEnvfvEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, const glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiTexEnvfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMultiTexEnvfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.multiTexEnvfvEXT(texunit, target, pname, params);
 }
 
@@ -3574,7 +3574,7 @@ void CallLogWrapper::glMultiTexEnviEXT (glw::GLenum texunit, glw::GLenum target,
 void CallLogWrapper::glMultiTexEnvivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, const glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiTexEnvivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMultiTexEnvivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.multiTexEnvivEXT(texunit, target, pname, params);
 }
 
@@ -3588,7 +3588,7 @@ void CallLogWrapper::glMultiTexGendEXT (glw::GLenum texunit, glw::GLenum coord, 
 void CallLogWrapper::glMultiTexGendvEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, const glw::GLdouble *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiTexGendvEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMultiTexGendvEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.multiTexGendvEXT(texunit, coord, pname, params);
 }
 
@@ -3602,7 +3602,7 @@ void CallLogWrapper::glMultiTexGenfEXT (glw::GLenum texunit, glw::GLenum coord, 
 void CallLogWrapper::glMultiTexGenfvEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, const glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiTexGenfvEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMultiTexGenfvEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.multiTexGenfvEXT(texunit, coord, pname, params);
 }
 
@@ -3616,7 +3616,7 @@ void CallLogWrapper::glMultiTexGeniEXT (glw::GLenum texunit, glw::GLenum coord, 
 void CallLogWrapper::glMultiTexGenivEXT (glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, const glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiTexGenivEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMultiTexGenivEXT(" << toHex(texunit) << ", " << toHex(coord) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.multiTexGenivEXT(texunit, coord, pname, params);
 }
 
@@ -3644,14 +3644,14 @@ void CallLogWrapper::glMultiTexImage3DEXT (glw::GLenum texunit, glw::GLenum targ
 void CallLogWrapper::glMultiTexParameterIivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, const glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiTexParameterIivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMultiTexParameterIivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.multiTexParameterIivEXT(texunit, target, pname, params);
 }
 
 void CallLogWrapper::glMultiTexParameterIuivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, const glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiTexParameterIuivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMultiTexParameterIuivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.multiTexParameterIuivEXT(texunit, target, pname, params);
 }
 
@@ -3665,7 +3665,7 @@ void CallLogWrapper::glMultiTexParameterfEXT (glw::GLenum texunit, glw::GLenum t
 void CallLogWrapper::glMultiTexParameterfvEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, const glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiTexParameterfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMultiTexParameterfvEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.multiTexParameterfvEXT(texunit, target, pname, params);
 }
 
@@ -3679,7 +3679,7 @@ void CallLogWrapper::glMultiTexParameteriEXT (glw::GLenum texunit, glw::GLenum t
 void CallLogWrapper::glMultiTexParameterivEXT (glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, const glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMultiTexParameterivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMultiTexParameterivEXT(" << toHex(texunit) << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.multiTexParameterivEXT(texunit, target, pname, params);
 }
 
@@ -3749,35 +3749,35 @@ void CallLogWrapper::glMulticastCopyImageSubDataNV (glw::GLuint srcGpu, glw::GLb
 void CallLogWrapper::glMulticastFramebufferSampleLocationsfvNV (glw::GLuint gpu, glw::GLuint framebuffer, glw::GLuint start, glw::GLsizei count, const glw::GLfloat *v)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMulticastFramebufferSampleLocationsfvNV(" << gpu << ", " << framebuffer << ", " << start << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMulticastFramebufferSampleLocationsfvNV(" << gpu << ", " << framebuffer << ", " << start << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
 	m_gl.multicastFramebufferSampleLocationsfvNV(gpu, framebuffer, start, count, v);
 }
 
 void CallLogWrapper::glMulticastGetQueryObjecti64vNV (glw::GLuint gpu, glw::GLuint id, glw::GLenum pname, glw::GLint64 *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMulticastGetQueryObjecti64vNV(" << gpu << ", " << id << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMulticastGetQueryObjecti64vNV(" << gpu << ", " << id << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.multicastGetQueryObjecti64vNV(gpu, id, pname, params);
 }
 
 void CallLogWrapper::glMulticastGetQueryObjectivNV (glw::GLuint gpu, glw::GLuint id, glw::GLenum pname, glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMulticastGetQueryObjectivNV(" << gpu << ", " << id << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMulticastGetQueryObjectivNV(" << gpu << ", " << id << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.multicastGetQueryObjectivNV(gpu, id, pname, params);
 }
 
 void CallLogWrapper::glMulticastGetQueryObjectui64vNV (glw::GLuint gpu, glw::GLuint id, glw::GLenum pname, glw::GLuint64 *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMulticastGetQueryObjectui64vNV(" << gpu << ", " << id << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMulticastGetQueryObjectui64vNV(" << gpu << ", " << id << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.multicastGetQueryObjectui64vNV(gpu, id, pname, params);
 }
 
 void CallLogWrapper::glMulticastGetQueryObjectuivNV (glw::GLuint gpu, glw::GLuint id, glw::GLenum pname, glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glMulticastGetQueryObjectuivNV(" << gpu << ", " << id << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glMulticastGetQueryObjectuivNV(" << gpu << ", " << id << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.multicastGetQueryObjectuivNV(gpu, id, pname, params);
 }
 
@@ -3847,7 +3847,7 @@ void CallLogWrapper::glNamedFramebufferDrawBuffer (glw::GLuint framebuffer, glw:
 void CallLogWrapper::glNamedFramebufferDrawBuffers (glw::GLuint framebuffer, glw::GLsizei n, const glw::GLenum *bufs)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glNamedFramebufferDrawBuffers(" << framebuffer << ", " << n << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(bufs))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glNamedFramebufferDrawBuffers(" << framebuffer << ", " << n << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(bufs))) << ");" << TestLog::EndMessage;
 	m_gl.namedFramebufferDrawBuffers(framebuffer, n, bufs);
 }
 
@@ -3952,7 +3952,7 @@ void CallLogWrapper::glNamedProgramLocalParameter4dEXT (glw::GLuint program, glw
 void CallLogWrapper::glNamedProgramLocalParameter4dvEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, const glw::GLdouble *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glNamedProgramLocalParameter4dvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glNamedProgramLocalParameter4dvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.namedProgramLocalParameter4dvEXT(program, target, index, params);
 }
 
@@ -3966,7 +3966,7 @@ void CallLogWrapper::glNamedProgramLocalParameter4fEXT (glw::GLuint program, glw
 void CallLogWrapper::glNamedProgramLocalParameter4fvEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, const glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glNamedProgramLocalParameter4fvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glNamedProgramLocalParameter4fvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.namedProgramLocalParameter4fvEXT(program, target, index, params);
 }
 
@@ -3980,7 +3980,7 @@ void CallLogWrapper::glNamedProgramLocalParameterI4iEXT (glw::GLuint program, gl
 void CallLogWrapper::glNamedProgramLocalParameterI4ivEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, const glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glNamedProgramLocalParameterI4ivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glNamedProgramLocalParameterI4ivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.namedProgramLocalParameterI4ivEXT(program, target, index, params);
 }
 
@@ -3994,28 +3994,28 @@ void CallLogWrapper::glNamedProgramLocalParameterI4uiEXT (glw::GLuint program, g
 void CallLogWrapper::glNamedProgramLocalParameterI4uivEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, const glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glNamedProgramLocalParameterI4uivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glNamedProgramLocalParameterI4uivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.namedProgramLocalParameterI4uivEXT(program, target, index, params);
 }
 
 void CallLogWrapper::glNamedProgramLocalParameters4fvEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLsizei count, const glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glNamedProgramLocalParameters4fvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glNamedProgramLocalParameters4fvEXT(" << program << ", " << toHex(target) << ", " << index << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.namedProgramLocalParameters4fvEXT(program, target, index, count, params);
 }
 
 void CallLogWrapper::glNamedProgramLocalParametersI4ivEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLsizei count, const glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glNamedProgramLocalParametersI4ivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glNamedProgramLocalParametersI4ivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.namedProgramLocalParametersI4ivEXT(program, target, index, count, params);
 }
 
 void CallLogWrapper::glNamedProgramLocalParametersI4uivEXT (glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLsizei count, const glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glNamedProgramLocalParametersI4uivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glNamedProgramLocalParametersI4uivEXT(" << program << ", " << toHex(target) << ", " << index << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.namedProgramLocalParametersI4uivEXT(program, target, index, count, params);
 }
 
@@ -4078,7 +4078,7 @@ void CallLogWrapper::glObjectPtrLabel (const void *ptr, glw::GLsizei length, con
 void CallLogWrapper::glPatchParameterfv (glw::GLenum pname, const glw::GLfloat *values)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glPatchParameterfv(" << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(values))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glPatchParameterfv(" << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(values))) << ");" << TestLog::EndMessage;
 	m_gl.patchParameterfv(pname, values);
 }
 
@@ -4120,7 +4120,7 @@ void CallLogWrapper::glPointParameterf (glw::GLenum pname, glw::GLfloat param)
 void CallLogWrapper::glPointParameterfv (glw::GLenum pname, const glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glPointParameterfv(" << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glPointParameterfv(" << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.pointParameterfv(pname, params);
 }
 
@@ -4134,7 +4134,7 @@ void CallLogWrapper::glPointParameteri (glw::GLenum pname, glw::GLint param)
 void CallLogWrapper::glPointParameteriv (glw::GLenum pname, const glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glPointParameteriv(" << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glPointParameteriv(" << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.pointParameteriv(pname, params);
 }
 
@@ -4225,14 +4225,14 @@ void CallLogWrapper::glProgramUniform1dEXT (glw::GLuint program, glw::GLint loca
 void CallLogWrapper::glProgramUniform1dv (glw::GLuint program, glw::GLint location, glw::GLsizei count, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniform1dv(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniform1dv(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniform1dv(program, location, count, value);
 }
 
 void CallLogWrapper::glProgramUniform1dvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei count, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniform1dvEXT(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniform1dvEXT(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniform1dvEXT(program, location, count, value);
 }
 
@@ -4295,14 +4295,14 @@ void CallLogWrapper::glProgramUniform2dEXT (glw::GLuint program, glw::GLint loca
 void CallLogWrapper::glProgramUniform2dv (glw::GLuint program, glw::GLint location, glw::GLsizei count, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniform2dv(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniform2dv(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniform2dv(program, location, count, value);
 }
 
 void CallLogWrapper::glProgramUniform2dvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei count, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniform2dvEXT(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniform2dvEXT(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniform2dvEXT(program, location, count, value);
 }
 
@@ -4365,14 +4365,14 @@ void CallLogWrapper::glProgramUniform3dEXT (glw::GLuint program, glw::GLint loca
 void CallLogWrapper::glProgramUniform3dv (glw::GLuint program, glw::GLint location, glw::GLsizei count, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniform3dv(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniform3dv(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniform3dv(program, location, count, value);
 }
 
 void CallLogWrapper::glProgramUniform3dvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei count, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniform3dvEXT(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniform3dvEXT(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniform3dvEXT(program, location, count, value);
 }
 
@@ -4435,14 +4435,14 @@ void CallLogWrapper::glProgramUniform4dEXT (glw::GLuint program, glw::GLint loca
 void CallLogWrapper::glProgramUniform4dv (glw::GLuint program, glw::GLint location, glw::GLsizei count, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniform4dv(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniform4dv(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniform4dv(program, location, count, value);
 }
 
 void CallLogWrapper::glProgramUniform4dvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei count, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniform4dvEXT(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniform4dvEXT(" << program << ", " << location << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniform4dvEXT(program, location, count, value);
 }
 
@@ -4491,14 +4491,14 @@ void CallLogWrapper::glProgramUniform4uiv (glw::GLuint program, glw::GLint locat
 void CallLogWrapper::glProgramUniformMatrix2dv (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix2dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix2dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix2dv(program, location, count, transpose, value);
 }
 
 void CallLogWrapper::glProgramUniformMatrix2dvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix2dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix2dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix2dvEXT(program, location, count, transpose, value);
 }
 
@@ -4512,14 +4512,14 @@ void CallLogWrapper::glProgramUniformMatrix2fv (glw::GLuint program, glw::GLint 
 void CallLogWrapper::glProgramUniformMatrix2x3dv (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix2x3dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix2x3dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix2x3dv(program, location, count, transpose, value);
 }
 
 void CallLogWrapper::glProgramUniformMatrix2x3dvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix2x3dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix2x3dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix2x3dvEXT(program, location, count, transpose, value);
 }
 
@@ -4533,14 +4533,14 @@ void CallLogWrapper::glProgramUniformMatrix2x3fv (glw::GLuint program, glw::GLin
 void CallLogWrapper::glProgramUniformMatrix2x4dv (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix2x4dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix2x4dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix2x4dv(program, location, count, transpose, value);
 }
 
 void CallLogWrapper::glProgramUniformMatrix2x4dvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix2x4dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix2x4dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix2x4dvEXT(program, location, count, transpose, value);
 }
 
@@ -4554,14 +4554,14 @@ void CallLogWrapper::glProgramUniformMatrix2x4fv (glw::GLuint program, glw::GLin
 void CallLogWrapper::glProgramUniformMatrix3dv (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix3dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix3dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix3dv(program, location, count, transpose, value);
 }
 
 void CallLogWrapper::glProgramUniformMatrix3dvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix3dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix3dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix3dvEXT(program, location, count, transpose, value);
 }
 
@@ -4575,14 +4575,14 @@ void CallLogWrapper::glProgramUniformMatrix3fv (glw::GLuint program, glw::GLint 
 void CallLogWrapper::glProgramUniformMatrix3x2dv (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix3x2dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix3x2dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix3x2dv(program, location, count, transpose, value);
 }
 
 void CallLogWrapper::glProgramUniformMatrix3x2dvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix3x2dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix3x2dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix3x2dvEXT(program, location, count, transpose, value);
 }
 
@@ -4596,14 +4596,14 @@ void CallLogWrapper::glProgramUniformMatrix3x2fv (glw::GLuint program, glw::GLin
 void CallLogWrapper::glProgramUniformMatrix3x4dv (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix3x4dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix3x4dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix3x4dv(program, location, count, transpose, value);
 }
 
 void CallLogWrapper::glProgramUniformMatrix3x4dvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix3x4dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix3x4dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix3x4dvEXT(program, location, count, transpose, value);
 }
 
@@ -4617,14 +4617,14 @@ void CallLogWrapper::glProgramUniformMatrix3x4fv (glw::GLuint program, glw::GLin
 void CallLogWrapper::glProgramUniformMatrix4dv (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix4dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix4dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix4dv(program, location, count, transpose, value);
 }
 
 void CallLogWrapper::glProgramUniformMatrix4dvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix4dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix4dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix4dvEXT(program, location, count, transpose, value);
 }
 
@@ -4638,14 +4638,14 @@ void CallLogWrapper::glProgramUniformMatrix4fv (glw::GLuint program, glw::GLint 
 void CallLogWrapper::glProgramUniformMatrix4x2dv (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix4x2dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix4x2dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix4x2dv(program, location, count, transpose, value);
 }
 
 void CallLogWrapper::glProgramUniformMatrix4x2dvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix4x2dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix4x2dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix4x2dvEXT(program, location, count, transpose, value);
 }
 
@@ -4659,14 +4659,14 @@ void CallLogWrapper::glProgramUniformMatrix4x2fv (glw::GLuint program, glw::GLin
 void CallLogWrapper::glProgramUniformMatrix4x3dv (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix4x3dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix4x3dv(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix4x3dv(program, location, count, transpose, value);
 }
 
 void CallLogWrapper::glProgramUniformMatrix4x3dvEXT (glw::GLuint program, glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glProgramUniformMatrix4x3dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glProgramUniformMatrix4x3dvEXT(" << program << ", " << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.programUniformMatrix4x3dvEXT(program, location, count, transpose, value);
 }
 
@@ -4841,7 +4841,7 @@ void CallLogWrapper::glScissor (glw::GLint x, glw::GLint y, glw::GLsizei width, 
 void CallLogWrapper::glScissorArrayv (glw::GLuint first, glw::GLsizei count, const glw::GLint *v)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glScissorArrayv(" << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glScissorArrayv(" << first << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
 	m_gl.scissorArrayv(first, count, v);
 }
 
@@ -4855,21 +4855,21 @@ void CallLogWrapper::glScissorIndexed (glw::GLuint index, glw::GLint left, glw::
 void CallLogWrapper::glScissorIndexedv (glw::GLuint index, const glw::GLint *v)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glScissorIndexedv(" << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glScissorIndexedv(" << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
 	m_gl.scissorIndexedv(index, v);
 }
 
 void CallLogWrapper::glShaderBinary (glw::GLsizei count, const glw::GLuint *shaders, glw::GLenum binaryFormat, const void *binary, glw::GLsizei length)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glShaderBinary(" << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(shaders))) << ", " << toHex(binaryFormat) << ", " << binary << ", " << length << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glShaderBinary(" << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(shaders))) << ", " << toHex(binaryFormat) << ", " << binary << ", " << length << ");" << TestLog::EndMessage;
 	m_gl.shaderBinary(count, shaders, binaryFormat, binary, length);
 }
 
 void CallLogWrapper::glShaderSource (glw::GLuint shader, glw::GLsizei count, const glw::GLchar *const*string, const glw::GLint *length)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glShaderSource(" << shader << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(string))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(length))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glShaderSource(" << shader << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(string))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(length))) << ");" << TestLog::EndMessage;
 	m_gl.shaderSource(shader, count, string, length);
 }
 
@@ -4897,7 +4897,7 @@ void CallLogWrapper::glShadingRateCombinerOpsEXT (glw::GLenum combinerOp0, glw::
 void CallLogWrapper::glSpecializeShader (glw::GLuint shader, const glw::GLchar *pEntryPoint, glw::GLuint numSpecializationConstants, const glw::GLuint *pConstantIndex, const glw::GLuint *pConstantValue)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glSpecializeShader(" << shader << ", " << getStringStr(pEntryPoint) << ", " << numSpecializationConstants << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(pConstantIndex))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(pConstantValue))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glSpecializeShader(" << shader << ", " << getStringStr(pEntryPoint) << ", " << numSpecializationConstants << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(pConstantIndex))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(pConstantValue))) << ");" << TestLog::EndMessage;
 	m_gl.specializeShader(shader, pEntryPoint, numSpecializationConstants, pConstantIndex, pConstantValue);
 }
 
@@ -5177,28 +5177,28 @@ void CallLogWrapper::glTexturePageCommitmentEXT (glw::GLuint texture, glw::GLint
 void CallLogWrapper::glTextureParameterIiv (glw::GLuint texture, glw::GLenum pname, const glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTextureParameterIiv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTextureParameterIiv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.textureParameterIiv(texture, pname, params);
 }
 
 void CallLogWrapper::glTextureParameterIivEXT (glw::GLuint texture, glw::GLenum target, glw::GLenum pname, const glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTextureParameterIivEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTextureParameterIivEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.textureParameterIivEXT(texture, target, pname, params);
 }
 
 void CallLogWrapper::glTextureParameterIuiv (glw::GLuint texture, glw::GLenum pname, const glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTextureParameterIuiv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTextureParameterIuiv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.textureParameterIuiv(texture, pname, params);
 }
 
 void CallLogWrapper::glTextureParameterIuivEXT (glw::GLuint texture, glw::GLenum target, glw::GLenum pname, const glw::GLuint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTextureParameterIuivEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTextureParameterIuivEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.textureParameterIuivEXT(texture, target, pname, params);
 }
 
@@ -5219,14 +5219,14 @@ void CallLogWrapper::glTextureParameterfEXT (glw::GLuint texture, glw::GLenum ta
 void CallLogWrapper::glTextureParameterfv (glw::GLuint texture, glw::GLenum pname, const glw::GLfloat *param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTextureParameterfv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTextureParameterfv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
 	m_gl.textureParameterfv(texture, pname, param);
 }
 
 void CallLogWrapper::glTextureParameterfvEXT (glw::GLuint texture, glw::GLenum target, glw::GLenum pname, const glw::GLfloat *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTextureParameterfvEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTextureParameterfvEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.textureParameterfvEXT(texture, target, pname, params);
 }
 
@@ -5247,14 +5247,14 @@ void CallLogWrapper::glTextureParameteriEXT (glw::GLuint texture, glw::GLenum ta
 void CallLogWrapper::glTextureParameteriv (glw::GLuint texture, glw::GLenum pname, const glw::GLint *param)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTextureParameteriv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTextureParameteriv(" << texture << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(param))) << ");" << TestLog::EndMessage;
 	m_gl.textureParameteriv(texture, pname, param);
 }
 
 void CallLogWrapper::glTextureParameterivEXT (glw::GLuint texture, glw::GLenum target, glw::GLenum pname, const glw::GLint *params)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTextureParameterivEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTextureParameterivEXT(" << texture << ", " << toHex(target) << ", " << toHex(pname) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(params))) << ");" << TestLog::EndMessage;
 	m_gl.textureParameterivEXT(texture, target, pname, params);
 }
 
@@ -5401,7 +5401,7 @@ void CallLogWrapper::glTransformFeedbackBufferRange (glw::GLuint xfb, glw::GLuin
 void CallLogWrapper::glTransformFeedbackVaryings (glw::GLuint program, glw::GLsizei count, const glw::GLchar *const*varyings, glw::GLenum bufferMode)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glTransformFeedbackVaryings(" << program << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(varyings))) << ", " << toHex(bufferMode) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glTransformFeedbackVaryings(" << program << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(varyings))) << ", " << toHex(bufferMode) << ");" << TestLog::EndMessage;
 	m_gl.transformFeedbackVaryings(program, count, varyings, bufferMode);
 }
 
@@ -5415,7 +5415,7 @@ void CallLogWrapper::glUniform1d (glw::GLint location, glw::GLdouble x)
 void CallLogWrapper::glUniform1dv (glw::GLint location, glw::GLsizei count, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniform1dv(" << location << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniform1dv(" << location << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.uniform1dv(location, count, value);
 }
 
@@ -5471,7 +5471,7 @@ void CallLogWrapper::glUniform2d (glw::GLint location, glw::GLdouble x, glw::GLd
 void CallLogWrapper::glUniform2dv (glw::GLint location, glw::GLsizei count, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniform2dv(" << location << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniform2dv(" << location << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.uniform2dv(location, count, value);
 }
 
@@ -5527,7 +5527,7 @@ void CallLogWrapper::glUniform3d (glw::GLint location, glw::GLdouble x, glw::GLd
 void CallLogWrapper::glUniform3dv (glw::GLint location, glw::GLsizei count, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniform3dv(" << location << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniform3dv(" << location << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.uniform3dv(location, count, value);
 }
 
@@ -5583,7 +5583,7 @@ void CallLogWrapper::glUniform4d (glw::GLint location, glw::GLdouble x, glw::GLd
 void CallLogWrapper::glUniform4dv (glw::GLint location, glw::GLsizei count, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniform4dv(" << location << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniform4dv(" << location << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.uniform4dv(location, count, value);
 }
 
@@ -5639,7 +5639,7 @@ void CallLogWrapper::glUniformBlockBinding (glw::GLuint program, glw::GLuint uni
 void CallLogWrapper::glUniformMatrix2dv (glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniformMatrix2dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniformMatrix2dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.uniformMatrix2dv(location, count, transpose, value);
 }
 
@@ -5653,7 +5653,7 @@ void CallLogWrapper::glUniformMatrix2fv (glw::GLint location, glw::GLsizei count
 void CallLogWrapper::glUniformMatrix2x3dv (glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniformMatrix2x3dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniformMatrix2x3dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.uniformMatrix2x3dv(location, count, transpose, value);
 }
 
@@ -5667,7 +5667,7 @@ void CallLogWrapper::glUniformMatrix2x3fv (glw::GLint location, glw::GLsizei cou
 void CallLogWrapper::glUniformMatrix2x4dv (glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniformMatrix2x4dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniformMatrix2x4dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.uniformMatrix2x4dv(location, count, transpose, value);
 }
 
@@ -5681,7 +5681,7 @@ void CallLogWrapper::glUniformMatrix2x4fv (glw::GLint location, glw::GLsizei cou
 void CallLogWrapper::glUniformMatrix3dv (glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniformMatrix3dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniformMatrix3dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.uniformMatrix3dv(location, count, transpose, value);
 }
 
@@ -5695,7 +5695,7 @@ void CallLogWrapper::glUniformMatrix3fv (glw::GLint location, glw::GLsizei count
 void CallLogWrapper::glUniformMatrix3x2dv (glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniformMatrix3x2dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniformMatrix3x2dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.uniformMatrix3x2dv(location, count, transpose, value);
 }
 
@@ -5709,7 +5709,7 @@ void CallLogWrapper::glUniformMatrix3x2fv (glw::GLint location, glw::GLsizei cou
 void CallLogWrapper::glUniformMatrix3x4dv (glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniformMatrix3x4dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniformMatrix3x4dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.uniformMatrix3x4dv(location, count, transpose, value);
 }
 
@@ -5723,7 +5723,7 @@ void CallLogWrapper::glUniformMatrix3x4fv (glw::GLint location, glw::GLsizei cou
 void CallLogWrapper::glUniformMatrix4dv (glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniformMatrix4dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniformMatrix4dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.uniformMatrix4dv(location, count, transpose, value);
 }
 
@@ -5737,7 +5737,7 @@ void CallLogWrapper::glUniformMatrix4fv (glw::GLint location, glw::GLsizei count
 void CallLogWrapper::glUniformMatrix4x2dv (glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniformMatrix4x2dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniformMatrix4x2dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.uniformMatrix4x2dv(location, count, transpose, value);
 }
 
@@ -5751,7 +5751,7 @@ void CallLogWrapper::glUniformMatrix4x2fv (glw::GLint location, glw::GLsizei cou
 void CallLogWrapper::glUniformMatrix4x3dv (glw::GLint location, glw::GLsizei count, glw::GLboolean transpose, const glw::GLdouble *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniformMatrix4x3dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniformMatrix4x3dv(" << location << ", " << count << ", " << getBooleanStr(transpose) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.uniformMatrix4x3dv(location, count, transpose, value);
 }
 
@@ -5765,7 +5765,7 @@ void CallLogWrapper::glUniformMatrix4x3fv (glw::GLint location, glw::GLsizei cou
 void CallLogWrapper::glUniformSubroutinesuiv (glw::GLenum shadertype, glw::GLsizei count, const glw::GLuint *indices)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glUniformSubroutinesuiv(" << toHex(shadertype) << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(indices))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glUniformSubroutinesuiv(" << toHex(shadertype) << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(indices))) << ");" << TestLog::EndMessage;
 	m_gl.uniformSubroutinesuiv(shadertype, count, indices);
 }
 
@@ -6005,7 +6005,7 @@ void CallLogWrapper::glVertexArrayVertexBuffer (glw::GLuint vaobj, glw::GLuint b
 void CallLogWrapper::glVertexArrayVertexBuffers (glw::GLuint vaobj, glw::GLuint first, glw::GLsizei count, const glw::GLuint *buffers, const glw::GLintptr *offsets, const glw::GLsizei *strides)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glVertexArrayVertexBuffers(" << vaobj << ", " << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(buffers))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(offsets))) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(strides))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glVertexArrayVertexBuffers(" << vaobj << ", " << first << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(buffers))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(offsets))) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(strides))) << ");" << TestLog::EndMessage;
 	m_gl.vertexArrayVertexBuffers(vaobj, first, count, buffers, offsets, strides);
 }
 
@@ -6453,7 +6453,7 @@ void CallLogWrapper::glVertexAttribL1d (glw::GLuint index, glw::GLdouble x)
 void CallLogWrapper::glVertexAttribL1dv (glw::GLuint index, const glw::GLdouble *v)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glVertexAttribL1dv(" << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glVertexAttribL1dv(" << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
 	m_gl.vertexAttribL1dv(index, v);
 }
 
@@ -6467,7 +6467,7 @@ void CallLogWrapper::glVertexAttribL2d (glw::GLuint index, glw::GLdouble x, glw:
 void CallLogWrapper::glVertexAttribL2dv (glw::GLuint index, const glw::GLdouble *v)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glVertexAttribL2dv(" << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glVertexAttribL2dv(" << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
 	m_gl.vertexAttribL2dv(index, v);
 }
 
@@ -6481,7 +6481,7 @@ void CallLogWrapper::glVertexAttribL3d (glw::GLuint index, glw::GLdouble x, glw:
 void CallLogWrapper::glVertexAttribL3dv (glw::GLuint index, const glw::GLdouble *v)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glVertexAttribL3dv(" << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glVertexAttribL3dv(" << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
 	m_gl.vertexAttribL3dv(index, v);
 }
 
@@ -6495,7 +6495,7 @@ void CallLogWrapper::glVertexAttribL4d (glw::GLuint index, glw::GLdouble x, glw:
 void CallLogWrapper::glVertexAttribL4dv (glw::GLuint index, const glw::GLdouble *v)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glVertexAttribL4dv(" << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glVertexAttribL4dv(" << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
 	m_gl.vertexAttribL4dv(index, v);
 }
 
@@ -6523,7 +6523,7 @@ void CallLogWrapper::glVertexAttribP1ui (glw::GLuint index, glw::GLenum type, gl
 void CallLogWrapper::glVertexAttribP1uiv (glw::GLuint index, glw::GLenum type, glw::GLboolean normalized, const glw::GLuint *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glVertexAttribP1uiv(" << index << ", " << toHex(type) << ", " << getBooleanStr(normalized) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glVertexAttribP1uiv(" << index << ", " << toHex(type) << ", " << getBooleanStr(normalized) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.vertexAttribP1uiv(index, type, normalized, value);
 }
 
@@ -6537,7 +6537,7 @@ void CallLogWrapper::glVertexAttribP2ui (glw::GLuint index, glw::GLenum type, gl
 void CallLogWrapper::glVertexAttribP2uiv (glw::GLuint index, glw::GLenum type, glw::GLboolean normalized, const glw::GLuint *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glVertexAttribP2uiv(" << index << ", " << toHex(type) << ", " << getBooleanStr(normalized) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glVertexAttribP2uiv(" << index << ", " << toHex(type) << ", " << getBooleanStr(normalized) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.vertexAttribP2uiv(index, type, normalized, value);
 }
 
@@ -6551,7 +6551,7 @@ void CallLogWrapper::glVertexAttribP3ui (glw::GLuint index, glw::GLenum type, gl
 void CallLogWrapper::glVertexAttribP3uiv (glw::GLuint index, glw::GLenum type, glw::GLboolean normalized, const glw::GLuint *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glVertexAttribP3uiv(" << index << ", " << toHex(type) << ", " << getBooleanStr(normalized) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glVertexAttribP3uiv(" << index << ", " << toHex(type) << ", " << getBooleanStr(normalized) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.vertexAttribP3uiv(index, type, normalized, value);
 }
 
@@ -6565,7 +6565,7 @@ void CallLogWrapper::glVertexAttribP4ui (glw::GLuint index, glw::GLenum type, gl
 void CallLogWrapper::glVertexAttribP4uiv (glw::GLuint index, glw::GLenum type, glw::GLboolean normalized, const glw::GLuint *value)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glVertexAttribP4uiv(" << index << ", " << toHex(type) << ", " << getBooleanStr(normalized) << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glVertexAttribP4uiv(" << index << ", " << toHex(type) << ", " << getBooleanStr(normalized) << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(value))) << ");" << TestLog::EndMessage;
 	m_gl.vertexAttribP4uiv(index, type, normalized, value);
 }
 
@@ -6593,7 +6593,7 @@ void CallLogWrapper::glViewport (glw::GLint x, glw::GLint y, glw::GLsizei width,
 void CallLogWrapper::glViewportArrayv (glw::GLuint first, glw::GLsizei count, const glw::GLfloat *v)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glViewportArrayv(" << first << ", " << count << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glViewportArrayv(" << first << ", " << count << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
 	m_gl.viewportArrayv(first, count, v);
 }
 
@@ -6607,7 +6607,7 @@ void CallLogWrapper::glViewportIndexedf (glw::GLuint index, glw::GLfloat x, glw:
 void CallLogWrapper::glViewportIndexedfv (glw::GLuint index, const glw::GLfloat *v)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glViewportIndexedfv(" << index << ", " << toHex(reinterpret_cast<deUintptr>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
+		m_log << TestLog::Message << "glViewportIndexedfv(" << index << ", " << toHex(reinterpret_cast<uintptr_t>(static_cast<const void*>(v))) << ");" << TestLog::EndMessage;
 	m_gl.viewportIndexedfv(index, v);
 }
 

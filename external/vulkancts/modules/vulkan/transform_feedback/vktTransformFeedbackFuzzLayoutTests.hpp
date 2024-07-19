@@ -33,9 +33,9 @@ namespace vkt
 namespace TransformFeedback
 {
 
-tcu::TestCaseGroup*		createTransformFeedbackFuzzLayoutTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTransformFeedbackFuzzLayoutTests(tcu::TestContext &testCtx);
 
-} // TransformFeedback
-} // vkt
+} // namespace TransformFeedback
+} // namespace vkt
 
 #endif // _VKTTRANSFORMFEEDBACKFUZZLAYOUTTESTS_HPP

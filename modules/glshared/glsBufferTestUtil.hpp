@@ -40,7 +40,7 @@ namespace glu
 {
 class RenderContext;
 class ShaderProgram;
-}
+} // namespace glu
 
 namespace deqp
 {
@@ -51,32 +51,32 @@ namespace BufferTestUtil
 
 // Helper functions.
 
-void			fillWithRandomBytes		(deUint8* ptr, int numBytes, deUint32 seed);
-bool			compareByteArrays		(tcu::TestLog& log, const deUint8* resPtr, const deUint8* refPtr, int numBytes);
-const char*		getBufferTargetName		(deUint32 target);
-const char*		getUsageHintName		(deUint32 hint);
+void fillWithRandomBytes(uint8_t *ptr, int numBytes, uint32_t seed);
+bool compareByteArrays(tcu::TestLog &log, const uint8_t *resPtr, const uint8_t *refPtr, int numBytes);
+const char *getBufferTargetName(uint32_t target);
+const char *getUsageHintName(uint32_t hint);
 
 // Base class for buffer cases.
 
 class BufferCase : public tcu::TestCase, public glu::CallLogWrapper
 {
 public:
-							BufferCase							(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description);
-	virtual					~BufferCase							(void);
+    BufferCase(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const char *name, const char *description);
+    virtual ~BufferCase(void);
 
-	void					init								(void);
-	void					deinit								(void);
+    void init(void);
+    void deinit(void);
 
-	deUint32				genBuffer							(void);
-	void					deleteBuffer						(deUint32 buffer);
-	void					checkError							(void);
+    uint32_t genBuffer(void);
+    void deleteBuffer(uint32_t buffer);
+    void checkError(void);
 
 protected:
-	glu::RenderContext&		m_renderCtx;
+    glu::RenderContext &m_renderCtx;
 
 private:
-	// Resource handles for cleanup in case of unexpected iterate() termination.
-	std::set<deUint32>		m_allocatedBuffers;
+    // Resource handles for cleanup in case of unexpected iterate() termination.
+    std::set<uint32_t> m_allocatedBuffers;
 };
 
 // Reference buffer.
@@ -84,204 +84,272 @@ private:
 class ReferenceBuffer
 {
 public:
-							ReferenceBuffer			(void) {}
-							~ReferenceBuffer		(void) {}
+    ReferenceBuffer(void)
+    {
+    }
+    ~ReferenceBuffer(void)
+    {
+    }
 
-	void					setSize					(int numBytes);
-	void					setData					(int numBytes, const deUint8* bytes);
-	void					setSubData				(int offset, int numBytes, const deUint8* bytes);
+    void setSize(int numBytes);
+    void setData(int numBytes, const uint8_t *bytes);
+    void setSubData(int offset, int numBytes, const uint8_t *bytes);
 
-	deUint8*				getPtr					(int offset = 0)		{ return &m_data[offset]; }
-	const deUint8*			getPtr					(int offset = 0) const	{ return &m_data[offset]; }
+    uint8_t *getPtr(int offset = 0)
+    {
+        return &m_data[offset];
+    }
+    const uint8_t *getPtr(int offset = 0) const
+    {
+        return &m_data[offset];
+    }
 
 private:
-	std::vector<deUint8>	m_data;
+    std::vector<uint8_t> m_data;
 };
 
 // Buffer writer system.
 
 enum WriteType
 {
-	WRITE_BUFFER_SUB_DATA = 0,
-	WRITE_BUFFER_WRITE_MAP,
-	WRITE_TRANSFORM_FEEDBACK,
-	WRITE_PIXEL_PACK,
+    WRITE_BUFFER_SUB_DATA = 0,
+    WRITE_BUFFER_WRITE_MAP,
+    WRITE_TRANSFORM_FEEDBACK,
+    WRITE_PIXEL_PACK,
 
-	WRITE_LAST
+    WRITE_LAST
 };
 
-const char*	getWriteTypeDescription	(WriteType type);
+const char *getWriteTypeDescription(WriteType type);
 
 class BufferWriterBase : protected glu::CallLogWrapper
 {
 public:
-							BufferWriterBase		(glu::RenderContext& renderCtx, tcu::TestLog& log);
-	virtual					~BufferWriterBase		(void) {}
+    BufferWriterBase(glu::RenderContext &renderCtx, tcu::TestLog &log);
+    virtual ~BufferWriterBase(void)
+    {
+    }
 
-	virtual int				getMinSize				(void) const = DE_NULL;
-	virtual int				getAlignment			(void) const = DE_NULL;
-	virtual void			write					(deUint32 buffer, int offset, int numBytes, const deUint8* bytes) = DE_NULL;
-	virtual void			write					(deUint32 buffer, int offset, int numBytes, const deUint8* bytes, deUint32 targetHint);
+    virtual int getMinSize(void) const                                                  = 0;
+    virtual int getAlignment(void) const                                                = 0;
+    virtual void write(uint32_t buffer, int offset, int numBytes, const uint8_t *bytes) = 0;
+    virtual void write(uint32_t buffer, int offset, int numBytes, const uint8_t *bytes, uint32_t targetHint);
 
 protected:
-	glu::RenderContext&		m_renderCtx;
+    glu::RenderContext &m_renderCtx;
 
 private:
-							BufferWriterBase		(const BufferWriterBase& other);
-	BufferWriterBase&		operator=				(const BufferWriterBase& other);
+    BufferWriterBase(const BufferWriterBase &other);
+    BufferWriterBase &operator=(const BufferWriterBase &other);
 };
 
 class BufferWriter
 {
 public:
-							BufferWriter			(glu::RenderContext& renderCtx, tcu::TestLog& log, WriteType writeType);
-							~BufferWriter			(void);
+    BufferWriter(glu::RenderContext &renderCtx, tcu::TestLog &log, WriteType writeType);
+    ~BufferWriter(void);
 
-	int						getMinSize				(void) const { return m_writer->getMinSize();	}
-	int						getAlignment			(void) const { return m_writer->getAlignment();	}
-	void					write					(deUint32 buffer, int offset, int numBytes, const deUint8* bytes);
-	void					write					(deUint32 buffer, int offset, int numBytes, const deUint8* bytes, deUint32 targetHint);
+    int getMinSize(void) const
+    {
+        return m_writer->getMinSize();
+    }
+    int getAlignment(void) const
+    {
+        return m_writer->getAlignment();
+    }
+    void write(uint32_t buffer, int offset, int numBytes, const uint8_t *bytes);
+    void write(uint32_t buffer, int offset, int numBytes, const uint8_t *bytes, uint32_t targetHint);
 
 private:
-							BufferWriter			(const BufferWriter& other);
-	BufferWriter&			operator=				(const BufferWriter& other);
+    BufferWriter(const BufferWriter &other);
+    BufferWriter &operator=(const BufferWriter &other);
 
-	BufferWriterBase*		m_writer;
+    BufferWriterBase *m_writer;
 };
 
 class BufferSubDataWriter : public BufferWriterBase
 {
 public:
-						BufferSubDataWriter			(glu::RenderContext& renderCtx, tcu::TestLog& log) : BufferWriterBase(renderCtx, log) {}
-						~BufferSubDataWriter		(void) {}
+    BufferSubDataWriter(glu::RenderContext &renderCtx, tcu::TestLog &log) : BufferWriterBase(renderCtx, log)
+    {
+    }
+    ~BufferSubDataWriter(void)
+    {
+    }
 
-	int					getMinSize					(void) const { return 1; }
-	int					getAlignment				(void) const { return 1; }
-	virtual void		write						(deUint32 buffer, int offset, int numBytes, const deUint8* bytes);
-	virtual void		write						(deUint32 buffer, int offset, int numBytes, const deUint8* bytes, deUint32 target);
+    int getMinSize(void) const
+    {
+        return 1;
+    }
+    int getAlignment(void) const
+    {
+        return 1;
+    }
+    virtual void write(uint32_t buffer, int offset, int numBytes, const uint8_t *bytes);
+    virtual void write(uint32_t buffer, int offset, int numBytes, const uint8_t *bytes, uint32_t target);
 };
 
 class BufferWriteMapWriter : public BufferWriterBase
 {
 public:
-						BufferWriteMapWriter		(glu::RenderContext& renderCtx, tcu::TestLog& log) : BufferWriterBase(renderCtx, log) {}
-						~BufferWriteMapWriter		(void) {}
+    BufferWriteMapWriter(glu::RenderContext &renderCtx, tcu::TestLog &log) : BufferWriterBase(renderCtx, log)
+    {
+    }
+    ~BufferWriteMapWriter(void)
+    {
+    }
 
-	int					getMinSize					(void) const { return 1; }
-	int					getAlignment				(void) const { return 1; }
-	virtual void		write						(deUint32 buffer, int offset, int numBytes, const deUint8* bytes);
-	virtual void		write						(deUint32 buffer, int offset, int numBytes, const deUint8* bytes, deUint32 target);
+    int getMinSize(void) const
+    {
+        return 1;
+    }
+    int getAlignment(void) const
+    {
+        return 1;
+    }
+    virtual void write(uint32_t buffer, int offset, int numBytes, const uint8_t *bytes);
+    virtual void write(uint32_t buffer, int offset, int numBytes, const uint8_t *bytes, uint32_t target);
 };
 
 // Buffer verifier system.
 
 enum VerifyType
 {
-	VERIFY_AS_VERTEX_ARRAY	= 0,
-	VERIFY_AS_INDEX_ARRAY,
-	VERIFY_AS_UNIFORM_BUFFER,
-	VERIFY_AS_PIXEL_UNPACK_BUFFER,
-	VERIFY_BUFFER_READ_MAP,
+    VERIFY_AS_VERTEX_ARRAY = 0,
+    VERIFY_AS_INDEX_ARRAY,
+    VERIFY_AS_UNIFORM_BUFFER,
+    VERIFY_AS_PIXEL_UNPACK_BUFFER,
+    VERIFY_BUFFER_READ_MAP,
 
-	VERIFY_LAST
+    VERIFY_LAST
 };
 
-const char* getVerifyTypeDescription (VerifyType type);
+const char *getVerifyTypeDescription(VerifyType type);
 
 class BufferVerifierBase : public glu::CallLogWrapper
 {
 public:
-							BufferVerifierBase		(glu::RenderContext& renderCtx, tcu::TestLog& log);
-	virtual					~BufferVerifierBase		(void) {}
+    BufferVerifierBase(glu::RenderContext &renderCtx, tcu::TestLog &log);
+    virtual ~BufferVerifierBase(void)
+    {
+    }
 
-	virtual int				getMinSize				(void) const = DE_NULL;
-	virtual int				getAlignment			(void) const = DE_NULL;
-	virtual bool			verify					(deUint32 buffer, const deUint8* reference, int offset, int numBytes) = DE_NULL;
-	virtual bool			verify					(deUint32 buffer, const deUint8* reference, int offset, int numBytes, deUint32 targetHint);
+    virtual int getMinSize(void) const                                                       = 0;
+    virtual int getAlignment(void) const                                                     = 0;
+    virtual bool verify(uint32_t buffer, const uint8_t *reference, int offset, int numBytes) = 0;
+    virtual bool verify(uint32_t buffer, const uint8_t *reference, int offset, int numBytes, uint32_t targetHint);
 
 protected:
-	glu::RenderContext&		m_renderCtx;
-	tcu::TestLog&			m_log;
+    glu::RenderContext &m_renderCtx;
+    tcu::TestLog &m_log;
 
 private:
-							BufferVerifierBase		(const BufferVerifierBase& other);
-	BufferVerifierBase&		operator=				(const BufferVerifierBase& other);
+    BufferVerifierBase(const BufferVerifierBase &other);
+    BufferVerifierBase &operator=(const BufferVerifierBase &other);
 };
 
 class BufferVerifier
 {
 public:
-							BufferVerifier			(glu::RenderContext& renderCtx, tcu::TestLog& log, VerifyType verifyType);
-							~BufferVerifier			(void);
+    BufferVerifier(glu::RenderContext &renderCtx, tcu::TestLog &log, VerifyType verifyType);
+    ~BufferVerifier(void);
 
-	int						getMinSize				(void) const { return m_verifier->getMinSize();		}
-	int						getAlignment			(void) const { return m_verifier->getAlignment();	}
+    int getMinSize(void) const
+    {
+        return m_verifier->getMinSize();
+    }
+    int getAlignment(void) const
+    {
+        return m_verifier->getAlignment();
+    }
 
-	// \note Offset is applied to reference pointer as well.
-	bool					verify					(deUint32 buffer, const deUint8* reference, int offset, int numBytes);
-	bool					verify					(deUint32 buffer, const deUint8* reference, int offset, int numBytes, deUint32 targetHint);
+    // \note Offset is applied to reference pointer as well.
+    bool verify(uint32_t buffer, const uint8_t *reference, int offset, int numBytes);
+    bool verify(uint32_t buffer, const uint8_t *reference, int offset, int numBytes, uint32_t targetHint);
 
 private:
-							BufferVerifier			(const BufferVerifier& other);
-	BufferVerifier&			operator=				(const BufferVerifier& other);
+    BufferVerifier(const BufferVerifier &other);
+    BufferVerifier &operator=(const BufferVerifier &other);
 
-	BufferVerifierBase*		m_verifier;
+    BufferVerifierBase *m_verifier;
 };
 
 class BufferMapVerifier : public BufferVerifierBase
 {
 public:
-						BufferMapVerifier		(glu::RenderContext& renderCtx, tcu::TestLog& log) : BufferVerifierBase(renderCtx, log) {}
-						~BufferMapVerifier		(void) {}
+    BufferMapVerifier(glu::RenderContext &renderCtx, tcu::TestLog &log) : BufferVerifierBase(renderCtx, log)
+    {
+    }
+    ~BufferMapVerifier(void)
+    {
+    }
 
-	int					getMinSize				(void) const { return 1; }
-	int					getAlignment			(void) const { return 1; }
-	bool				verify					(deUint32 buffer, const deUint8* reference, int offset, int numBytes);
-	bool				verify					(deUint32 buffer, const deUint8* reference, int offset, int numBytes, deUint32 target);
+    int getMinSize(void) const
+    {
+        return 1;
+    }
+    int getAlignment(void) const
+    {
+        return 1;
+    }
+    bool verify(uint32_t buffer, const uint8_t *reference, int offset, int numBytes);
+    bool verify(uint32_t buffer, const uint8_t *reference, int offset, int numBytes, uint32_t target);
 };
 
 class VertexArrayVerifier : public BufferVerifierBase
 {
 public:
-						VertexArrayVerifier		(glu::RenderContext& renderCtx, tcu::TestLog& log);
-						~VertexArrayVerifier	(void);
+    VertexArrayVerifier(glu::RenderContext &renderCtx, tcu::TestLog &log);
+    ~VertexArrayVerifier(void);
 
-	int					getMinSize				(void) const { return 3*4; }
-	int					getAlignment			(void) const { return 1; }
-	bool				verify					(deUint32 buffer, const deUint8* reference, int offset, int numBytes);
+    int getMinSize(void) const
+    {
+        return 3 * 4;
+    }
+    int getAlignment(void) const
+    {
+        return 1;
+    }
+    bool verify(uint32_t buffer, const uint8_t *reference, int offset, int numBytes);
 
 private:
-	glu::ShaderProgram*	m_program;
-	deUint32			m_posLoc;
-	deUint32			m_byteVecLoc;
+    glu::ShaderProgram *m_program;
+    uint32_t m_posLoc;
+    uint32_t m_byteVecLoc;
 
-	deUint32			m_vao;
-	deUint32			m_positionBuf;
-	deUint32			m_indexBuf;
+    uint32_t m_vao;
+    uint32_t m_positionBuf;
+    uint32_t m_indexBuf;
 };
 
 class IndexArrayVerifier : public BufferVerifierBase
 {
 public:
-						IndexArrayVerifier		(glu::RenderContext& renderCtx, tcu::TestLog& log);
-						~IndexArrayVerifier		(void);
+    IndexArrayVerifier(glu::RenderContext &renderCtx, tcu::TestLog &log);
+    ~IndexArrayVerifier(void);
 
-	int					getMinSize				(void) const { return 2; }
-	int					getAlignment			(void) const { return 1; }
-	bool				verify					(deUint32 buffer, const deUint8* reference, int offset, int numBytes);
+    int getMinSize(void) const
+    {
+        return 2;
+    }
+    int getAlignment(void) const
+    {
+        return 1;
+    }
+    bool verify(uint32_t buffer, const uint8_t *reference, int offset, int numBytes);
 
 private:
-	glu::ShaderProgram*	m_program;
-	deUint32			m_posLoc;
-	deUint32			m_colorLoc;
+    glu::ShaderProgram *m_program;
+    uint32_t m_posLoc;
+    uint32_t m_colorLoc;
 
-	deUint32			m_vao;
-	deUint32			m_positionBuf;
-	deUint32			m_colorBuf;
+    uint32_t m_vao;
+    uint32_t m_positionBuf;
+    uint32_t m_colorBuf;
 };
 
-} // BufferTestUtil
-} // gls
-} // deqp
+} // namespace BufferTestUtil
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSBUFFERTESTUTIL_HPP

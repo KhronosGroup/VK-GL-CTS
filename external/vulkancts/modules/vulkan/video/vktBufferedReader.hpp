@@ -22,6 +22,10 @@
  */
 #include <fstream>
 #include <vector>
+#include <memory>
+#include <sstream>
+
+#include "deFilePath.hpp"
 
 #include "tcuDefs.hpp"
 
@@ -33,48 +37,69 @@ namespace video
 class BufferedReader
 {
 public:
-	BufferedReader(std::istream& in)
-		: m_istream(in)
-	{
-		if (!m_istream.good())
-		{
-			throw tcu::ResourceError(std::string("failed to open input"));
-		}
-	}
+    // Open and read from filename
+    BufferedReader(const std::string &filename)
+        : m_istream(std::make_unique<std::ifstream>(resourceRelativePath(filename).getPath(), std::ios_base::binary))
+    {
+        if (!m_istream->good())
+        {
+            throw tcu::ResourceError(std::string("failed to open input"));
+        }
+    }
 
-	void read(std::vector<uint8_t>& buffer)
-	{
-		m_istream.read(reinterpret_cast<char *>(buffer.data()), buffer.size());
-	}
+    // Read from in-memory stream.
+    BufferedReader(const char *bytes, size_t length)
+    {
+        std::string asString(bytes, length);
+        m_istream.reset(new std::istringstream(asString, std::ios::binary));
+    }
 
-	void read(uint8_t* out, size_t n)
-	{
-		m_istream.read(reinterpret_cast<char *>(out), n);
-	}
+    void read(std::vector<uint8_t> &buffer)
+    {
+        m_istream->read(reinterpret_cast<char *>(buffer.data()), buffer.size());
+    }
 
-	void readChecked(uint8_t* out, size_t n, const char* msg)
-	{
-		read(out, n);
-		if (isError())
-			TCU_THROW(InternalError, msg);
-	}
+    void read(uint8_t *out, size_t n)
+    {
+        m_istream->read(reinterpret_cast<char *>(out), n);
+    }
 
-	uint8_t readByteChecked(const char* msg)
-	{
-		uint8_t v{};
-		read(&v, 1);
-		if (isEof())
-			return 0;
-		if (isError())
-			TCU_THROW(InternalError, msg);
-		return v;
-	}
+    void readChecked(uint8_t *out, size_t n, const char *msg)
+    {
+        read(out, n);
+        if (isError())
+            TCU_THROW(InternalError, msg);
+    }
 
-	bool isError() const { return m_istream.bad() || m_istream.fail(); }
-	bool isEof() const { return m_istream.eof(); }
+    uint8_t readByteChecked(const char *msg)
+    {
+        uint8_t v{};
+        read(&v, 1);
+        if (isEof())
+            return 0;
+        if (isError())
+            TCU_THROW(InternalError, msg);
+        return v;
+    }
+
+    bool isError() const
+    {
+        return m_istream->bad() || m_istream->fail();
+    }
+    bool isEof() const
+    {
+        return m_istream->eof();
+    }
 
 private:
-	std::istream&					m_istream;
+    const de::FilePath resourceRelativePath(const std::string filename) const
+    {
+        std::vector<std::string> resourcePathComponents = {"vulkan", "video", filename};
+        de::FilePath resourcePath                       = de::FilePath::join(resourcePathComponents);
+        return resourcePath;
+    }
+
+    std::unique_ptr<std::istream> m_istream;
 };
 
 } // namespace video

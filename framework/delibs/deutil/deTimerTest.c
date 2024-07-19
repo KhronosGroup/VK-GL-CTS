@@ -29,52 +29,52 @@
 
 #include <stdio.h>
 
-static void timerCallback (void* arg)
+static void timerCallback(void *arg)
 {
-	volatile int* numCalls = (volatile int*)arg;
-	++(*numCalls);
+    volatile int *numCalls = (volatile int *)arg;
+    ++(*numCalls);
 }
 
-void deTimer_selfTest (void)
+void deTimer_selfTest(void)
 {
-	const int		numIters				= 25;
-	const int		minInterval				= 1;
-	const int		maxInterval				= 100;
-	const int		intervalSleepMultiplier	= 5;
-	int				iter;
-	deRandom		rnd;
-	deTimer*		timer					= DE_NULL;
-	volatile int	numCalls				= 0;
+    const int numIters                = 25;
+    const int minInterval             = 1;
+    const int maxInterval             = 100;
+    const int intervalSleepMultiplier = 5;
+    int iter;
+    deRandom rnd;
+    deTimer *timer        = NULL;
+    volatile int numCalls = 0;
 
-	deRandom_init(&rnd, 6789);
+    deRandom_init(&rnd, 6789);
 
-	timer = deTimer_create(timerCallback, (void*)&numCalls);
-	DE_TEST_ASSERT(timer);
+    timer = deTimer_create(timerCallback, (void *)&numCalls);
+    DE_TEST_ASSERT(timer);
 
-	for (iter = 0; iter < numIters; iter++)
-	{
-		deBool	isSingle		= deRandom_getFloat(&rnd) < 0.25f;
-		int		interval		= minInterval + (int)(deRandom_getUint32(&rnd) % (deUint32)(maxInterval-minInterval+1));
-		int		expectedCalls	= isSingle ? 1 : intervalSleepMultiplier;
-		deBool	scheduleOk		= DE_FALSE;
+    for (iter = 0; iter < numIters; iter++)
+    {
+        bool isSingle     = deRandom_getFloat(&rnd) < 0.25f;
+        int interval      = minInterval + (int)(deRandom_getUint32(&rnd) % (uint32_t)(maxInterval - minInterval + 1));
+        int expectedCalls = isSingle ? 1 : intervalSleepMultiplier;
+        bool scheduleOk   = false;
 
-		printf("Iter %d / %d: %d ms %s timer\n", iter+1, numIters, interval, (isSingle ? "single" : "interval"));
-		numCalls = 0;
+        printf("Iter %d / %d: %d ms %s timer\n", iter + 1, numIters, interval, (isSingle ? "single" : "interval"));
+        numCalls = 0;
 
-		if (isSingle)
-			scheduleOk = deTimer_scheduleSingle(timer, interval);
-		else
-			scheduleOk = deTimer_scheduleInterval(timer, interval);
+        if (isSingle)
+            scheduleOk = deTimer_scheduleSingle(timer, interval);
+        else
+            scheduleOk = deTimer_scheduleInterval(timer, interval);
 
-		DE_TEST_ASSERT(scheduleOk);
+        DE_TEST_ASSERT(scheduleOk);
 
-		deSleep((deUint32)(interval*intervalSleepMultiplier));
-		deTimer_disable(timer);
-		deSleep((deUint32)interval);
+        deSleep((uint32_t)(interval * intervalSleepMultiplier));
+        deTimer_disable(timer);
+        deSleep((uint32_t)interval);
 
-		printf("  timer fired %d times, expected %d\n", numCalls, expectedCalls);
-		DE_TEST_ASSERT(!isSingle || numCalls == 1);
-	}
+        printf("  timer fired %d times, expected %d\n", numCalls, expectedCalls);
+        DE_TEST_ASSERT(!isSingle || numCalls == 1);
+    }
 
-	deTimer_destroy(timer);
+    deTimer_destroy(timer);
 }

@@ -30,31 +30,31 @@
 
 namespace glc
 {
-typedef std::map<std::string, std::vector<std::string> > SpirVMapping;
+typedef std::map<std::string, std::vector<std::string>> SpirVMapping;
 
 namespace spirvUtils
 {
 
 enum SpirvVersion
 {
-	SPIRV_VERSION_1_0	= 0,	//!< SPIR-V 1.0
-	SPIRV_VERSION_1_1	= 1,	//!< SPIR-V 1.1
-	SPIRV_VERSION_1_2	= 2,	//!< SPIR-V 1.2
-	SPIRV_VERSION_1_3	= 3,	//!< SPIR-V 1.3
+    SPIRV_VERSION_1_0 = 0, //!< SPIR-V 1.0
+    SPIRV_VERSION_1_1 = 1, //!< SPIR-V 1.1
+    SPIRV_VERSION_1_2 = 2, //!< SPIR-V 1.2
+    SPIRV_VERSION_1_3 = 3, //!< SPIR-V 1.3
 
-	SPIRV_VERSION_LAST
+    SPIRV_VERSION_LAST
 };
 
-void checkGlSpirvSupported(deqp::Context& m_context);
+void checkGlSpirvSupported(deqp::Context &m_context);
 
-glu::ShaderBinary makeSpirV(tcu::TestLog& log, glu::ShaderSource source, SpirvVersion version = SPIRV_VERSION_1_0);
+glu::ShaderBinary makeSpirV(tcu::TestLog &log, glu::ShaderSource source, SpirvVersion version = SPIRV_VERSION_1_0);
 
-void spirvAssemble(glu::ShaderBinaryDataType& dst, const std::string& src);
-void spirvDisassemble(std::string& dst, const glu::ShaderBinaryDataType& src);
-bool spirvValidate(glu::ShaderBinaryDataType& dst, bool throwOnError);
+void spirvAssemble(glu::ShaderBinaryDataType &dst, const std::string &src);
+void spirvDisassemble(std::string &dst, const glu::ShaderBinaryDataType &src);
+bool spirvValidate(glu::ShaderBinaryDataType &dst, bool throwOnError);
 
-bool verifyMappings(std::string glslSource, std::string spirVSource, SpirVMapping& mappings, bool anyOf);
-}
-}
+bool verifyMappings(std::string glslSource, std::string spirVSource, SpirVMapping &mappings, bool anyOf);
+} // namespace spirvUtils
+} // namespace glc
 
 #endif // _GLCSPIRVUTILS_HPP

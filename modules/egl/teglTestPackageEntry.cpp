@@ -25,9 +25,9 @@
 
 // Register package to test executor.
 
-static tcu::TestPackage* createTestPackage (tcu::TestContext& testCtx)
+static tcu::TestPackage *createTestPackage(tcu::TestContext &testCtx)
 {
-	return new deqp::egl::TestPackage(testCtx);
+    return new deqp::egl::TestPackage(testCtx);
 }
 
 tcu::TestPackageDescriptor g_eglPackageDescriptor("dEQP-EGL", createTestPackage);

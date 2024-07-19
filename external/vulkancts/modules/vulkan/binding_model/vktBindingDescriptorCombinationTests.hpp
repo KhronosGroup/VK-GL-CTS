@@ -31,8 +31,8 @@
 namespace vkt::BindingModel
 {
 
-tcu::TestCaseGroup*	createDescriptorCombinationTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDescriptorCombinationTests(tcu::TestContext &testCtx);
 
-} // vkt::BindingModel
+} // namespace vkt::BindingModel
 
 #endif // _VKTBINDINGDESCRIPTORCOMBINATIONTESTS_HPP

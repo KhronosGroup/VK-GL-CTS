@@ -155,6 +155,7 @@ const vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT&						getLegacyDitheringFea
 const vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT&				getPipelineProtectedAccessFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID&				getExternalFormatResolveFeaturesANDROID				(void) const;
 const vk::VkPhysicalDeviceMaintenance5FeaturesKHR&							getMaintenance5Features								(void) const;
+const vk::VkPhysicalDeviceAntiLagFeaturesAMD&								getAntiLagFeaturesAMD								(void) const;
 const vk::VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR&				getRayTracingPositionFetchFeatures					(void) const;
 const vk::VkPhysicalDeviceShaderObjectFeaturesEXT&							getShaderObjectFeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&						getTilePropertiesFeaturesQCOM						(void) const;
@@ -163,6 +164,7 @@ const vk::VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM&			getMultiviewP
 const vk::VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV&			getRayTracingInvocationReorderFeatures				(void) const;
 const vk::VkPhysicalDeviceExtendedSparseAddressSpaceFeaturesNV&				getExtendedSparseAddressSpaceFeaturesNV				(void) const;
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					getMutableDescriptorTypeFeaturesEXT					(void) const;
+const vk::VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT&				getLegacyVertexAttributesFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM&					getShaderCoreBuiltinsFeaturesARM					(void) const;
 const vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT&			getPipelineLibraryGroupHandlesFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT&		getDynamicRenderingUnusedAttachmentsFeaturesEXT		(void) const;
@@ -184,7 +186,11 @@ const vk::VkPhysicalDeviceShaderExpectAssumeFeaturesKHR&					getShaderExpectAssu
 const vk::VkPhysicalDeviceMaintenance6FeaturesKHR&							getMaintenance6Features								(void) const;
 const vk::VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV&			getDescriptorPoolOverallocationFeaturesNV			(void) const;
 const vk::VkPhysicalDeviceRawAccessChainsFeaturesNV&						getRawAccessChainsFeaturesNV						(void) const;
+const vk::VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR&		getShaderRelaxedExtendedInstructionFeatures			(void) const;
+const vk::VkPhysicalDeviceMaintenance7FeaturesKHR&							getMaintenance7Features								(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&				getShaderAtomicFloat16VectorFeaturesNV				(void) const;
+const vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT&			getShaderReplicatedCompositesFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceRayTracingValidationFeaturesNV&					getRayTracingValidationFeaturesNV					(void) const;
+const vk::VkPhysicalDeviceImageAlignmentControlFeaturesMESA&				getImageAlignmentControlFeaturesMESA				(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;

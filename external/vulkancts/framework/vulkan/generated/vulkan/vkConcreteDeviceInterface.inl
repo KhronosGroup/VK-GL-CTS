@@ -323,6 +323,7 @@ virtual VkResult			getDeferredOperationResultKHR							(VkDevice device, VkDefer
 virtual VkResult			deferredOperationJoinKHR								(VkDevice device, VkDeferredOperationKHR operation) const;
 virtual void				getPipelineIndirectMemoryRequirementsNV					(VkDevice device, const VkComputePipelineCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements) const;
 virtual VkDeviceAddress		getPipelineIndirectDeviceAddressNV						(VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo) const;
+virtual void				antiLagUpdateAMD										(VkDevice device, const VkAntiLagDataAMD* pData) const;
 virtual void				cmdSetCullMode											(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const;
 virtual void				cmdSetFrontFace											(VkCommandBuffer commandBuffer, VkFrontFace frontFace) const;
 virtual void				cmdSetPrimitiveTopology									(VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) const;
@@ -502,4 +503,4 @@ virtual void				setLatencyMarkerNV										(VkDevice device, VkSwapchainKHR swa
 virtual void				getLatencyTimingsNV										(VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const;
 virtual void				queueNotifyOutOfBandNV									(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const;
 virtual void				cmdSetRenderingAttachmentLocationsKHR					(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo) const;
-virtual void				cmdSetRenderingInputAttachmentIndicesKHR				(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo) const;
+virtual void				cmdSetRenderingInputAttachmentIndicesKHR				(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pInputAttachmentIndexInfo) const;

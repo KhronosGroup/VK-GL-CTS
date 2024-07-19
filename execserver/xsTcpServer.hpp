@@ -38,47 +38,49 @@ class ConnectionHandler;
 class TcpServer
 {
 public:
-									TcpServer				(deSocketFamily family, int port);
-	virtual							~TcpServer				(void);
+    TcpServer(deSocketFamily family, int port);
+    virtual ~TcpServer(void);
 
-	virtual ConnectionHandler*		createHandler			(de::Socket* socket, const de::SocketAddress& clientAddress) = DE_NULL;
+    virtual ConnectionHandler *createHandler(de::Socket *socket, const de::SocketAddress &clientAddress) = 0;
 
-	virtual void					runServer				(void);
-	void							stopServer				(void);
+    virtual void runServer(void);
+    void stopServer(void);
 
-	virtual void					connectionDone			(ConnectionHandler* handler);
+    virtual void connectionDone(ConnectionHandler *handler);
 
 protected:
-	de::Socket						m_socket;
+    de::Socket m_socket;
 
 private:
-									TcpServer				(const TcpServer& other);
-	TcpServer&						operator=				(const TcpServer& other);
+    TcpServer(const TcpServer &other);
+    TcpServer &operator=(const TcpServer &other);
 
-	void							addLiveConnection		(ConnectionHandler* handler);
-	void							deleteDoneConnections	(void);
+    void addLiveConnection(ConnectionHandler *handler);
+    void deleteDoneConnections(void);
 
-	de::Mutex						m_connectionListLock;
-	std::vector<ConnectionHandler*>	m_liveConnections;
-	std::vector<ConnectionHandler*>	m_doneConnections;
+    de::Mutex m_connectionListLock;
+    std::vector<ConnectionHandler *> m_liveConnections;
+    std::vector<ConnectionHandler *> m_doneConnections;
 };
 
 class ConnectionHandler : public de::Thread
 {
 public:
-						ConnectionHandler		(TcpServer* server, de::Socket* socket) : m_server(server), m_socket(socket) {}
-	virtual				~ConnectionHandler		(void);
+    ConnectionHandler(TcpServer *server, de::Socket *socket) : m_server(server), m_socket(socket)
+    {
+    }
+    virtual ~ConnectionHandler(void);
 
-	void				run						(void);
+    void run(void);
 
 protected:
-	virtual void		handle					(void) = DE_NULL;
+    virtual void handle(void) = 0;
 
 protected:
-	TcpServer*			m_server;
-	de::Socket*			m_socket;
+    TcpServer *m_server;
+    de::Socket *m_socket;
 };
 
-} // xs
+} // namespace xs
 
 #endif // _XSTCPSERVER_HPP

@@ -67,30 +67,30 @@ namespace glcts
 class TextureBufferErrors : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureBufferErrors(Context& context, const ExtParameters& extParams, const char* name, const char* description);
+    /* Public methods */
+    TextureBufferErrors(Context &context, const ExtParameters &extParams, const char *name, const char *description);
 
-	virtual ~TextureBufferErrors()
-	{
-	}
+    virtual ~TextureBufferErrors()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void		   initTest(void);
-	glw::GLboolean verifyError(const glw::GLenum expected_error, const char* description);
+    /* Private methods */
+    void initTest(void);
+    glw::GLboolean verifyError(const glw::GLenum expected_error, const char *description);
 
-	typedef std::vector<glw::GLenum> TargetsVector;
+    typedef std::vector<glw::GLenum> TargetsVector;
 
-	/* Private variables */
-	glw::GLuint   m_bo_id;			 /* Buffer  Object */
-	glw::GLuint   m_tex_id;			 /* Texture Buffer Object Texture ID */
-	TargetsVector m_texture_targets; /* Texture Targets */
+    /* Private variables */
+    glw::GLuint m_bo_id;             /* Buffer  Object */
+    glw::GLuint m_tex_id;            /* Texture Buffer Object Texture ID */
+    TargetsVector m_texture_targets; /* Texture Targets */
 
-	/* Private static constants */
-	static const glw::GLint m_bo_size; /* Buffer object size */
+    /* Private static constants */
+    static const glw::GLint m_bo_size; /* Buffer object size */
 };
 
 } // namespace glcts

@@ -37,221 +37,159 @@ using namespace vk;
 class AttachmentDescription1 : public vk::VkAttachmentDescription
 {
 public:
-	AttachmentDescription1	(const void*					pNext,
-							 VkAttachmentDescriptionFlags	flags,
-							 VkFormat						format,
-							 VkSampleCountFlagBits			samples,
-							 VkAttachmentLoadOp				loadOp,
-							 VkAttachmentStoreOp			storeOp,
-							 VkAttachmentLoadOp				stencilLoadOp,
-							 VkAttachmentStoreOp			stencilStoreOp,
-							 VkImageLayout					initialLayout,
-							 VkImageLayout					finalLayout);
+    AttachmentDescription1(const void *pNext, VkAttachmentDescriptionFlags flags, VkFormat format,
+                           VkSampleCountFlagBits samples, VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp,
+                           VkAttachmentLoadOp stencilLoadOp, VkAttachmentStoreOp stencilStoreOp,
+                           VkImageLayout initialLayout, VkImageLayout finalLayout);
 };
 
 class AttachmentDescription2 : public vk::VkAttachmentDescription2
 {
 public:
-	AttachmentDescription2	(const void*					pNext,
-							 VkAttachmentDescriptionFlags	flags,
-							 VkFormat						format,
-							 VkSampleCountFlagBits			samples,
-							 VkAttachmentLoadOp				loadOp,
-							 VkAttachmentStoreOp			storeOp,
-							 VkAttachmentLoadOp				stencilLoadOp,
-							 VkAttachmentStoreOp			stencilStoreOp,
-							 VkImageLayout					initialLayout,
-							 VkImageLayout					finalLayout);
+    AttachmentDescription2(const void *pNext, VkAttachmentDescriptionFlags flags, VkFormat format,
+                           VkSampleCountFlagBits samples, VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp,
+                           VkAttachmentLoadOp stencilLoadOp, VkAttachmentStoreOp stencilStoreOp,
+                           VkImageLayout initialLayout, VkImageLayout finalLayout);
 };
 
 class AttachmentReference1 : public vk::VkAttachmentReference
 {
 public:
-	AttachmentReference1	(const void*		pNext,
-							 deUint32			attachment,
-							 VkImageLayout		layout,
-							 VkImageAspectFlags	aspectMask);
+    AttachmentReference1(const void *pNext, uint32_t attachment, VkImageLayout layout, VkImageAspectFlags aspectMask);
 };
 
 class AttachmentReference2 : public vk::VkAttachmentReference2
 {
 public:
-	AttachmentReference2	(const void*		pNext,
-							 deUint32			attachment,
-							 VkImageLayout		layout,
-							 VkImageAspectFlags	aspectMask);
+    AttachmentReference2(const void *pNext, uint32_t attachment, VkImageLayout layout, VkImageAspectFlags aspectMask);
 };
 
 class SubpassDescription1 : public vk::VkSubpassDescription
 {
 public:
-	SubpassDescription1	(const void*						pNext,
-						 VkSubpassDescriptionFlags			flags,
-						 VkPipelineBindPoint				pipelineBindPoint,
-						 deUint32							viewMask,
-						 deUint32							inputAttachmentCount,
-						 const VkAttachmentReference*		pInputAttachments,
-						 deUint32							colorAttachmentCount,
-						 const VkAttachmentReference*		pColorAttachments,
-						 const VkAttachmentReference*		pResolveAttachments,
-						 const VkAttachmentReference*		pDepthStencilAttachment,
-						 deUint32							preserveAttachmentCount,
-						 const deUint32*					pPreserveAttachments);
+    SubpassDescription1(const void *pNext, VkSubpassDescriptionFlags flags, VkPipelineBindPoint pipelineBindPoint,
+                        uint32_t viewMask, uint32_t inputAttachmentCount,
+                        const VkAttachmentReference *pInputAttachments, uint32_t colorAttachmentCount,
+                        const VkAttachmentReference *pColorAttachments,
+                        const VkAttachmentReference *pResolveAttachments,
+                        const VkAttachmentReference *pDepthStencilAttachment, uint32_t preserveAttachmentCount,
+                        const uint32_t *pPreserveAttachments);
 };
 
 class SubpassDescription2 : public vk::VkSubpassDescription2
 {
 public:
-	SubpassDescription2	(const void*						pNext,
-						 VkSubpassDescriptionFlags			flags,
-						 VkPipelineBindPoint				pipelineBindPoint,
-						 deUint32							viewMask,
-						 deUint32							inputAttachmentCount,
-						 const VkAttachmentReference2*		pInputAttachments,
-						 deUint32							colorAttachmentCount,
-						 const VkAttachmentReference2*		pColorAttachments,
-						 const VkAttachmentReference2*		pResolveAttachments,
-						 const VkAttachmentReference2*		pDepthStencilAttachment,
-						 deUint32							preserveAttachmentCount,
-						 const deUint32*					pPreserveAttachments);
+    SubpassDescription2(const void *pNext, VkSubpassDescriptionFlags flags, VkPipelineBindPoint pipelineBindPoint,
+                        uint32_t viewMask, uint32_t inputAttachmentCount,
+                        const VkAttachmentReference2 *pInputAttachments, uint32_t colorAttachmentCount,
+                        const VkAttachmentReference2 *pColorAttachments,
+                        const VkAttachmentReference2 *pResolveAttachments,
+                        const VkAttachmentReference2 *pDepthStencilAttachment, uint32_t preserveAttachmentCount,
+                        const uint32_t *pPreserveAttachments);
 };
 
 class SubpassDependency1 : public vk::VkSubpassDependency
 {
 public:
-	SubpassDependency1	(const void*			pNext,
-						 deUint32				srcSubpass,
-						 deUint32				dstSubpass,
-						 VkPipelineStageFlags	srcStageMask,
-						 VkPipelineStageFlags	dstStageMask,
-						 VkAccessFlags			srcAccessMask,
-						 VkAccessFlags			dstAccessMask,
-						 VkDependencyFlags		dependencyFlags,
-						 deInt32				viewOffset);
+    SubpassDependency1(const void *pNext, uint32_t srcSubpass, uint32_t dstSubpass, VkPipelineStageFlags srcStageMask,
+                       VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
+                       VkDependencyFlags dependencyFlags, int32_t viewOffset);
 };
 
 class SubpassDependency2 : public vk::VkSubpassDependency2
 {
 public:
-	SubpassDependency2	(const void*			pNext,
-						 deUint32				srcSubpass,
-						 deUint32				dstSubpass,
-						 VkPipelineStageFlags	srcStageMask,
-						 VkPipelineStageFlags	dstStageMask,
-						 VkAccessFlags			srcAccessMask,
-						 VkAccessFlags			dstAccessMask,
-						 VkDependencyFlags		dependencyFlags,
-						 deInt32				viewOffset);
+    SubpassDependency2(const void *pNext, uint32_t srcSubpass, uint32_t dstSubpass, VkPipelineStageFlags srcStageMask,
+                       VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
+                       VkDependencyFlags dependencyFlags, int32_t viewOffset);
 };
 
 class RenderPassCreateInfo1 : public VkRenderPassCreateInfo
 {
 public:
-							RenderPassCreateInfo1	(const void*						pNext,
-													 VkRenderPassCreateFlags			flags,
-													 deUint32							attachmentCount,
-													 const VkAttachmentDescription*		pAttachments,
-													 deUint32							subpassCount,
-													 const VkSubpassDescription*		pSubpasses,
-													 deUint32							dependencyCount,
-													 const VkSubpassDependency*			pDependencies,
-													 deUint32							correlatedViewMaskCount,
-													 const deUint32*					pCorrelatedViewMasks);
+    RenderPassCreateInfo1(const void *pNext, VkRenderPassCreateFlags flags, uint32_t attachmentCount,
+                          const VkAttachmentDescription *pAttachments, uint32_t subpassCount,
+                          const VkSubpassDescription *pSubpasses, uint32_t dependencyCount,
+                          const VkSubpassDependency *pDependencies, uint32_t correlatedViewMaskCount,
+                          const uint32_t *pCorrelatedViewMasks);
 
-	Move<VkRenderPass>		createRenderPass		(const DeviceInterface& vk,
-													 VkDevice device) const;
+    Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice device) const;
 };
 
 class RenderPassCreateInfo2 : public VkRenderPassCreateInfo2
 {
 public:
-							RenderPassCreateInfo2	(const void*						pNext,
-													 VkRenderPassCreateFlags			flags,
-													 deUint32							attachmentCount,
-													 const VkAttachmentDescription2*	pAttachments,
-													 deUint32							subpassCount,
-													 const VkSubpassDescription2*		pSubpasses,
-													 deUint32							dependencyCount,
-													 const VkSubpassDependency2*		pDependencies,
-													 deUint32							correlatedViewMaskCount,
-													 const deUint32*					pCorrelatedViewMasks);
+    RenderPassCreateInfo2(const void *pNext, VkRenderPassCreateFlags flags, uint32_t attachmentCount,
+                          const VkAttachmentDescription2 *pAttachments, uint32_t subpassCount,
+                          const VkSubpassDescription2 *pSubpasses, uint32_t dependencyCount,
+                          const VkSubpassDependency2 *pDependencies, uint32_t correlatedViewMaskCount,
+                          const uint32_t *pCorrelatedViewMasks);
 
-	Move<VkRenderPass>		createRenderPass		(const DeviceInterface& vk,
-													 VkDevice device) const;
+    Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice device) const;
 };
 
 class SubpassBeginInfo1
 {
 public:
-						SubpassBeginInfo1	(const void*		pNext,
-											 VkSubpassContents	contents);
+    SubpassBeginInfo1(const void *pNext, VkSubpassContents contents);
 
-	VkSubpassContents	contents;
+    VkSubpassContents contents;
 };
 
 class SubpassBeginInfo2 : public VkSubpassBeginInfo
 {
 public:
-						SubpassBeginInfo2	(const void*		pNext,
-											 VkSubpassContents	contents);
+    SubpassBeginInfo2(const void *pNext, VkSubpassContents contents);
 };
 
 class SubpassEndInfo1
 {
 public:
-						SubpassEndInfo1	(const void*	pNext);
+    SubpassEndInfo1(const void *pNext);
 };
 
 class SubpassEndInfo2 : public VkSubpassEndInfo
 {
 public:
-						SubpassEndInfo2	(const void*	pNext);
+    SubpassEndInfo2(const void *pNext);
 };
 
 class RenderpassSubpass1
 {
 public:
-	typedef SubpassBeginInfo1		SubpassBeginInfo;
-	typedef SubpassEndInfo1			SubpassEndInfo;
+    typedef SubpassBeginInfo1 SubpassBeginInfo;
+    typedef SubpassEndInfo1 SubpassEndInfo;
 
-	static void	cmdBeginRenderPass	(const DeviceInterface&			vk,
-									 VkCommandBuffer				cmdBuffer,
-									 const VkRenderPassBeginInfo*	pRenderPassBegin,
-									 const SubpassBeginInfo*		pSubpassBeginInfo);
+    static void cmdBeginRenderPass(const DeviceInterface &vk, VkCommandBuffer cmdBuffer,
+                                   const VkRenderPassBeginInfo *pRenderPassBegin,
+                                   const SubpassBeginInfo *pSubpassBeginInfo);
 
-	static void	cmdNextSubpass		(const DeviceInterface&			vk,
-									 VkCommandBuffer				cmdBuffer,
-									 const SubpassBeginInfo*		pSubpassBeginInfo,
-									 const SubpassEndInfo*			pSubpassEndInfo);
+    static void cmdNextSubpass(const DeviceInterface &vk, VkCommandBuffer cmdBuffer,
+                               const SubpassBeginInfo *pSubpassBeginInfo, const SubpassEndInfo *pSubpassEndInfo);
 
-	static void	cmdEndRenderPass	(const DeviceInterface&			vk,
-									 VkCommandBuffer				cmdBuffer,
-									 const SubpassEndInfo*			pSubpassEndInfo);
+    static void cmdEndRenderPass(const DeviceInterface &vk, VkCommandBuffer cmdBuffer,
+                                 const SubpassEndInfo *pSubpassEndInfo);
 };
 
 class RenderpassSubpass2
 {
 public:
-	typedef SubpassBeginInfo2		SubpassBeginInfo;
-	typedef SubpassEndInfo2			SubpassEndInfo;
+    typedef SubpassBeginInfo2 SubpassBeginInfo;
+    typedef SubpassEndInfo2 SubpassEndInfo;
 
-	static void	cmdBeginRenderPass	(const DeviceInterface&			vk,
-									 VkCommandBuffer				cmdBuffer,
-									 const VkRenderPassBeginInfo*	pRenderPassBegin,
-									 const SubpassBeginInfo*		pSubpassBeginInfo);
+    static void cmdBeginRenderPass(const DeviceInterface &vk, VkCommandBuffer cmdBuffer,
+                                   const VkRenderPassBeginInfo *pRenderPassBegin,
+                                   const SubpassBeginInfo *pSubpassBeginInfo);
 
-	static void	cmdNextSubpass		(const DeviceInterface&			vk,
-									 VkCommandBuffer				cmdBuffer,
-									 const SubpassBeginInfo*		pSubpassBeginInfo,
-									 const SubpassEndInfo*			pSubpassEndInfo);
+    static void cmdNextSubpass(const DeviceInterface &vk, VkCommandBuffer cmdBuffer,
+                               const SubpassBeginInfo *pSubpassBeginInfo, const SubpassEndInfo *pSubpassEndInfo);
 
-	static void	cmdEndRenderPass	(const DeviceInterface&			vk,
-									 VkCommandBuffer				cmdBuffer,
-									 const SubpassEndInfo*			pSubpassEndInfo);
+    static void cmdEndRenderPass(const DeviceInterface &vk, VkCommandBuffer cmdBuffer,
+                                 const SubpassEndInfo *pSubpassEndInfo);
 };
 
-} // renderpass
+} // namespace MultiView
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTMULTIVIEWRENDERPASSUTIL_HPP

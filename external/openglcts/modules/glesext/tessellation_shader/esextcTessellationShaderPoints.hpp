@@ -37,18 +37,18 @@ namespace glcts
 class TessellationShaderPointsTests : public glcts::TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	TessellationShaderPointsTests(glcts::Context& context, const ExtParameters& extParams);
-	virtual ~TessellationShaderPointsTests(void)
-	{
-	}
+    /* Public methods */
+    TessellationShaderPointsTests(glcts::Context &context, const ExtParameters &extParams);
+    virtual ~TessellationShaderPointsTests(void)
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	TessellationShaderPointsTests(const TessellationShaderPointsTests& other);
-	TessellationShaderPointsTests& operator=(const TessellationShaderPointsTests& other);
+    /* Private methods */
+    TessellationShaderPointsTests(const TessellationShaderPointsTests &other);
+    TessellationShaderPointsTests &operator=(const TessellationShaderPointsTests &other);
 };
 
 /** Implementation of Test Case 39
@@ -76,69 +76,69 @@ private:
 class TessellationShaderPointsgl_PointSize : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderPointsgl_PointSize(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderPointsgl_PointSize(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderPointsgl_PointSize(void)
-	{
-	}
+    virtual ~TessellationShaderPointsgl_PointSize(void)
+    {
+    }
 
-	virtual void		  deinit();
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit();
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private type definitions */
-	typedef struct _test_descriptor
-	{
-		const char* fs_body;
-		const char* gs_body;
-		const char* tes_body;
-		const char* tcs_body;
-		const char* vs_body;
+    /* Private type definitions */
+    typedef struct _test_descriptor
+    {
+        const char *fs_body;
+        const char *gs_body;
+        const char *tes_body;
+        const char *tcs_body;
+        const char *vs_body;
 
-		glw::GLint fs_id;
-		glw::GLint gs_id;
-		glw::GLint tes_id;
-		glw::GLint tcs_id;
-		glw::GLint vs_id;
+        glw::GLint fs_id;
+        glw::GLint gs_id;
+        glw::GLint tes_id;
+        glw::GLint tcs_id;
+        glw::GLint vs_id;
 
-		glw::GLint draw_call_count;
-		glw::GLint po_id;
+        glw::GLint draw_call_count;
+        glw::GLint po_id;
 
-		_test_descriptor()
-		{
-			fs_body  = NULL;
-			gs_body  = NULL;
-			tes_body = NULL;
-			tcs_body = NULL;
-			vs_body  = NULL;
+        _test_descriptor()
+        {
+            fs_body  = NULL;
+            gs_body  = NULL;
+            tes_body = NULL;
+            tcs_body = NULL;
+            vs_body  = NULL;
 
-			fs_id  = 0;
-			gs_id  = 0;
-			tes_id = 0;
-			tcs_id = 0;
-			vs_id  = 0;
+            fs_id  = 0;
+            gs_id  = 0;
+            tes_id = 0;
+            tcs_id = 0;
+            vs_id  = 0;
 
-			draw_call_count = 0;
-			po_id			= 0;
-		}
-	} _test_descriptor;
+            draw_call_count = 0;
+            po_id           = 0;
+        }
+    } _test_descriptor;
 
-	typedef std::vector<_test_descriptor> _tests;
-	typedef _tests::iterator			  _tests_iterator;
+    typedef std::vector<_test_descriptor> _tests;
+    typedef _tests::iterator _tests_iterator;
 
-	/* Private methods */
+    /* Private methods */
 
-	/* Private variables */
-	_tests m_tests;
+    /* Private variables */
+    _tests m_tests;
 
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_to_id;
-	glw::GLuint m_vao_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_to_id;
+    glw::GLuint m_vao_id;
 
-	static const unsigned int m_rt_height;
-	static const unsigned int m_rt_width;
+    static const unsigned int m_rt_height;
+    static const unsigned int m_rt_width;
 };
 
 /** Implementation of Test Case 27
@@ -176,45 +176,45 @@ private:
 class TessellationShaderPointsVerification : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderPointsVerification(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderPointsVerification(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderPointsVerification(void)
-	{
-	}
+    virtual ~TessellationShaderPointsVerification(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private declarations */
-	typedef struct _run
-	{
-		float								inner[2];
-		float								outer[4];
-		_tessellation_primitive_mode		primitive_mode;
-		_tessellation_shader_vertex_spacing vertex_spacing;
+    /* Private declarations */
+    typedef struct _run
+    {
+        float inner[2];
+        float outer[4];
+        _tessellation_primitive_mode primitive_mode;
+        _tessellation_shader_vertex_spacing vertex_spacing;
 
-		_run()
-		{
-			memset(inner, 0, sizeof(inner));
-			memset(outer, 0, sizeof(outer));
+        _run()
+        {
+            memset(inner, 0, sizeof(inner));
+            memset(outer, 0, sizeof(outer));
 
-			primitive_mode = TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
-			vertex_spacing = TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
-		}
-	} _run;
+            primitive_mode = TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;
+            vertex_spacing = TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
+        }
+    } _run;
 
-	/* Private methods */
-	void verifyCorrectAmountOfDuplicateVertices(const _run& run, const void* run_data, unsigned int run_n_vertices);
+    /* Private methods */
+    void verifyCorrectAmountOfDuplicateVertices(const _run &run, const void *run_data, unsigned int run_n_vertices);
 
-	void verifyCorrectAmountOfVertices(const _run& run, const void* run_data, unsigned int run_n_vertices);
+    void verifyCorrectAmountOfVertices(const _run &run, const void *run_data, unsigned int run_n_vertices);
 
-	/* Private variables */
-	std::vector<_run>		 m_runs;
-	TessellationShaderUtils* m_utils;
-	glw::GLuint				 m_vao_id;
+    /* Private variables */
+    std::vector<_run> m_runs;
+    TessellationShaderUtils *m_utils;
+    glw::GLuint m_vao_id;
 };
 
 } // namespace glcts

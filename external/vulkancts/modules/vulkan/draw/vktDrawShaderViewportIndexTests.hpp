@@ -33,9 +33,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*		createShaderViewportIndexTests	(tcu::TestContext& testCtx, const SharedGroupParams groupParams);
+tcu::TestCaseGroup *createShaderViewportIndexTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWSHADERVIEWPORTINDEXTESTS_HPP

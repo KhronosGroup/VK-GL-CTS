@@ -33,10 +33,10 @@ namespace glcts
 class ShaderMacroTests : public TestCaseGroup
 {
 public:
-	ShaderMacroTests(deqp::Context& context);
-	~ShaderMacroTests();
+    ShaderMacroTests(deqp::Context &context);
+    ~ShaderMacroTests();
 
-	void init(void);
+    void init(void);
 };
 
 } // namespace glcts

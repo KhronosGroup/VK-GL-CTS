@@ -37,24 +37,27 @@ extern "C"
 class Functions
 {
 public:
-	// Function definitions:
-	// eglInitializeFunc	initialize;
+    // Function definitions:
+    // eglInitializeFunc initialize;
 #include "eglwFunctions.inl"
 
-	Functions (void);
+    Functions(void);
 };
 
-typedef EGLW_APICALL void (EGLW_APIENTRY* GenericFuncType) (void);
+typedef EGLW_APICALL void(EGLW_APIENTRY *GenericFuncType)(void);
 
 class FunctionLoader
 {
 public:
-	virtual GenericFuncType		get		(const char* name) const = 0;
+    virtual ~FunctionLoader()
+    {
+    }
+    virtual GenericFuncType get(const char *name) const = 0;
 };
 
-void	initCore		(Functions* dst, const FunctionLoader* loader);
-void	initExtensions	(Functions* dst, const FunctionLoader* loader);
+void initCore(Functions *dst, const FunctionLoader *loader);
+void initExtensions(Functions *dst, const FunctionLoader *loader);
 
-} // eglw
+} // namespace eglw
 
 #endif // _EGLWFUNCTIONS_HPP

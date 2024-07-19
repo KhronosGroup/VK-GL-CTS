@@ -43,248 +43,255 @@ using tcu::Vec4;
 namespace
 {
 
-void addComputeUboMatrixPaddingTest (tcu::TestCaseGroup* group)
+void addComputeUboMatrixPaddingTest(tcu::TestCaseGroup *group)
 {
-	tcu::TestContext&	testCtx			= group->getTestContext();
-	de::Random			rnd				(deStringHash(group->getName()));
-	const int			numElements		= 128;
+    tcu::TestContext &testCtx = group->getTestContext();
+    de::Random rnd(deStringHash(group->getName()));
+    const int numElements = 128;
 
-	// Read input UBO containing and array of mat2x2 using no padding inside matrix. Output
-	// into output buffer containing floats. The input and output buffer data should match.
-	const string		shaderSource	=
-		"                       OpCapability Shader\n"
-		"                  %1 = OpExtInstImport \"GLSL.std.450\"\n"
-		"                       OpMemoryModel Logical GLSL450\n"
-		"                       OpEntryPoint GLCompute %main \"main\" %id\n"
-		"                       OpExecutionMode %main LocalSize 1 1 1\n"
-		"                       OpSource GLSL 430\n"
-		"                       OpDecorate %id BuiltIn GlobalInvocationId\n"
-		"                       OpDecorate %_arr_v4 ArrayStride 16\n"
-		"                       OpMemberDecorate %Output 0 Offset 0\n"
-		"                       OpDecorate %Output BufferBlock\n"
-		"                       OpDecorate %dataOutput DescriptorSet 0\n"
-		"                       OpDecorate %dataOutput Binding 1\n"
-		"                       OpDecorate %_arr_mat2v2 ArrayStride 16\n"
-		"                       OpMemberDecorate %Input 0 ColMajor\n"
-		"                       OpMemberDecorate %Input 0 Offset 0\n"
-		"                       OpMemberDecorate %Input 0 MatrixStride 8\n"
-		"                       OpDecorate %Input Block\n"
-		"                       OpDecorate %dataInput DescriptorSet 0\n"
-		"                       OpDecorate %dataInput Binding 0\n"
-		"               %void = OpTypeVoid\n"
-		"                  %3 = OpTypeFunction %void\n"
-		"                %u32 = OpTypeInt 32 0\n"
-		" %_ptr_Function_uint = OpTypePointer Function %u32\n"
-		"             %v3uint = OpTypeVector %u32 3\n"
-		"  %_ptr_Input_v3uint = OpTypePointer Input %v3uint\n"
-		"                 %id = OpVariable %_ptr_Input_v3uint Input\n"
-		"                %i32 = OpTypeInt 32 1\n"
-		"              %int_0 = OpConstant %i32 0\n"
-		"              %int_1 = OpConstant %i32 1\n"
-		"             %uint_0 = OpConstant %u32 0\n"
-		"             %uint_1 = OpConstant %u32 1\n"
-		"             %uint_2 = OpConstant %u32 2\n"
-		"             %uint_3 = OpConstant %u32 3\n"
-		"    %_ptr_Input_uint = OpTypePointer Input %u32\n"
-		"                %f32 = OpTypeFloat 32\n"
-		"            %v4float = OpTypeVector %f32 4\n"
-		"           %uint_128 = OpConstant %u32 128\n"
-		"            %_arr_v4 = OpTypeArray %v4float %uint_128\n"
-		"             %Output = OpTypeStruct %_arr_v4\n"
-		"%_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
-		"         %dataOutput = OpVariable %_ptr_Uniform_Output Uniform\n"
-		"            %v2float = OpTypeVector %f32 2\n"
-		"        %mat2v2float = OpTypeMatrix %v2float 2\n"
-		"        %_arr_mat2v2 = OpTypeArray %mat2v2float %uint_128\n"
-		"              %Input = OpTypeStruct %_arr_mat2v2\n"
-		" %_ptr_Uniform_Input = OpTypePointer Uniform %Input\n"
-		"          %dataInput = OpVariable %_ptr_Uniform_Input Uniform\n"
-		" %_ptr_Uniform_float = OpTypePointer Uniform %f32\n"
-		"               %main = OpFunction %void None %3\n"
-		"                  %5 = OpLabel\n"
-		"                  %i = OpVariable %_ptr_Function_uint Function\n"
-		"                 %14 = OpAccessChain %_ptr_Input_uint %id %uint_0\n"
-		"                 %15 = OpLoad %u32 %14\n"
-		"                       OpStore %i %15\n"
-		"                %idx = OpLoad %u32 %i\n"
-		"                 %34 = OpAccessChain %_ptr_Uniform_float %dataInput %int_0 %idx %int_0 %uint_0\n"
-		"                 %35 = OpLoad %f32 %34\n"
-		"                 %36 = OpAccessChain %_ptr_Uniform_float %dataOutput %int_0 %idx %uint_0\n"
-		"                       OpStore %36 %35\n"
-		"                 %40 = OpAccessChain %_ptr_Uniform_float %dataInput %int_0 %idx %int_0 %uint_1\n"
-		"                 %41 = OpLoad %f32 %40\n"
-		"                 %42 = OpAccessChain %_ptr_Uniform_float %dataOutput %int_0 %idx %uint_1\n"
-		"                       OpStore %42 %41\n"
-		"                 %46 = OpAccessChain %_ptr_Uniform_float %dataInput %int_0 %idx %int_1 %uint_0\n"
-		"                 %47 = OpLoad %f32 %46\n"
-		"                 %49 = OpAccessChain %_ptr_Uniform_float %dataOutput %int_0 %idx %uint_2\n"
-		"                       OpStore %49 %47\n"
-		"                 %52 = OpAccessChain %_ptr_Uniform_float %dataInput %int_0 %idx %int_1 %uint_1\n"
-		"                 %53 = OpLoad %f32 %52\n"
-		"                 %55 = OpAccessChain %_ptr_Uniform_float %dataOutput %int_0 %idx %uint_3\n"
-		"                       OpStore %55 %53\n"
-		"                       OpReturn\n"
-		"                       OpFunctionEnd\n";
+    // Read input UBO containing and array of mat2x2. Output into output buffer containing floats.
+    // The input and output buffer data should match.
+    const string shaderSource =
+        "                       OpCapability Shader\n"
+        "                  %1 = OpExtInstImport \"GLSL.std.450\"\n"
+        "                       OpMemoryModel Logical GLSL450\n"
+        "                       OpEntryPoint GLCompute %main \"main\" %id\n"
+        "                       OpExecutionMode %main LocalSize 1 1 1\n"
+        "                       OpSource GLSL 430\n"
+        "                       OpDecorate %id BuiltIn GlobalInvocationId\n"
+        "                       OpDecorate %_arr_v4 ArrayStride 16\n"
+        "                       OpMemberDecorate %Output 0 Offset 0\n"
+        "                       OpDecorate %Output BufferBlock\n"
+        "                       OpDecorate %dataOutput DescriptorSet 0\n"
+        "                       OpDecorate %dataOutput Binding 1\n"
+        "                       OpDecorate %_arr_mat2v2 ArrayStride 32\n"
+        "                       OpMemberDecorate %Input 0 ColMajor\n"
+        "                       OpMemberDecorate %Input 0 Offset 0\n"
+        "                       OpMemberDecorate %Input 0 MatrixStride 16\n"
+        "                       OpDecorate %Input Block\n"
+        "                       OpDecorate %dataInput DescriptorSet 0\n"
+        "                       OpDecorate %dataInput Binding 0\n"
+        "               %void = OpTypeVoid\n"
+        "                  %3 = OpTypeFunction %void\n"
+        "                %u32 = OpTypeInt 32 0\n"
+        " %_ptr_Function_uint = OpTypePointer Function %u32\n"
+        "             %v3uint = OpTypeVector %u32 3\n"
+        "  %_ptr_Input_v3uint = OpTypePointer Input %v3uint\n"
+        "                 %id = OpVariable %_ptr_Input_v3uint Input\n"
+        "                %i32 = OpTypeInt 32 1\n"
+        "              %int_0 = OpConstant %i32 0\n"
+        "              %int_1 = OpConstant %i32 1\n"
+        "             %uint_0 = OpConstant %u32 0\n"
+        "             %uint_1 = OpConstant %u32 1\n"
+        "             %uint_2 = OpConstant %u32 2\n"
+        "             %uint_3 = OpConstant %u32 3\n"
+        "    %_ptr_Input_uint = OpTypePointer Input %u32\n"
+        "                %f32 = OpTypeFloat 32\n"
+        "            %v4float = OpTypeVector %f32 4\n"
+        "           %uint_128 = OpConstant %u32 128\n"
+        "            %_arr_v4 = OpTypeArray %v4float %uint_128\n"
+        "             %Output = OpTypeStruct %_arr_v4\n"
+        "%_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
+        "         %dataOutput = OpVariable %_ptr_Uniform_Output Uniform\n"
+        "            %v2float = OpTypeVector %f32 2\n"
+        "        %mat2v2float = OpTypeMatrix %v2float 2\n"
+        "        %_arr_mat2v2 = OpTypeArray %mat2v2float %uint_128\n"
+        "              %Input = OpTypeStruct %_arr_mat2v2\n"
+        " %_ptr_Uniform_Input = OpTypePointer Uniform %Input\n"
+        "          %dataInput = OpVariable %_ptr_Uniform_Input Uniform\n"
+        " %_ptr_Uniform_float = OpTypePointer Uniform %f32\n"
+        "               %main = OpFunction %void None %3\n"
+        "                  %5 = OpLabel\n"
+        "                  %i = OpVariable %_ptr_Function_uint Function\n"
+        "                 %14 = OpAccessChain %_ptr_Input_uint %id %uint_0\n"
+        "                 %15 = OpLoad %u32 %14\n"
+        "                       OpStore %i %15\n"
+        "                %idx = OpLoad %u32 %i\n"
+        "                 %34 = OpAccessChain %_ptr_Uniform_float %dataInput %int_0 %idx %int_0 %uint_0\n"
+        "                 %35 = OpLoad %f32 %34\n"
+        "                 %36 = OpAccessChain %_ptr_Uniform_float %dataOutput %int_0 %idx %uint_0\n"
+        "                       OpStore %36 %35\n"
+        "                 %40 = OpAccessChain %_ptr_Uniform_float %dataInput %int_0 %idx %int_0 %uint_1\n"
+        "                 %41 = OpLoad %f32 %40\n"
+        "                 %42 = OpAccessChain %_ptr_Uniform_float %dataOutput %int_0 %idx %uint_1\n"
+        "                       OpStore %42 %41\n"
+        "                 %46 = OpAccessChain %_ptr_Uniform_float %dataInput %int_0 %idx %int_1 %uint_0\n"
+        "                 %47 = OpLoad %f32 %46\n"
+        "                 %49 = OpAccessChain %_ptr_Uniform_float %dataOutput %int_0 %idx %uint_2\n"
+        "                       OpStore %49 %47\n"
+        "                 %52 = OpAccessChain %_ptr_Uniform_float %dataInput %int_0 %idx %int_1 %uint_1\n"
+        "                 %53 = OpLoad %f32 %52\n"
+        "                 %55 = OpAccessChain %_ptr_Uniform_float %dataOutput %int_0 %idx %uint_3\n"
+        "                       OpStore %55 %53\n"
+        "                       OpReturn\n"
+        "                       OpFunctionEnd\n";
 
-	vector<tcu::Vec4>		inputData;
-	ComputeShaderSpec		spec;
+    vector<tcu::Vec4> inputData(numElements * 2u);
+    vector<tcu::Vec4> outputData(numElements);
+    for (uint32_t numIdx = 0; numIdx < numElements; ++numIdx)
+    {
+        auto v                     = tcu::randomVec4(rnd);
+        outputData[numIdx]         = v;
+        inputData[2u * numIdx]     = tcu::Vec4(v.x(), v.y(), 0.0f, 0.0f);
+        inputData[2u * numIdx + 1] = tcu::Vec4(v.z(), v.w(), 0.0f, 0.0f);
+    }
 
-	inputData.reserve(numElements);
-	for (deUint32 numIdx = 0; numIdx < numElements; ++numIdx)
-		inputData.push_back(tcu::randomVec4(rnd));
+    ComputeShaderSpec spec;
+    spec.assembly      = shaderSource;
+    spec.numWorkGroups = IVec3(numElements, 1, 1);
 
-	spec.assembly			= shaderSource;
-	spec.numWorkGroups		= IVec3(numElements, 1, 1);
+    spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
+    spec.outputs.push_back(Resource(BufferSp(new Vec4Buffer(outputData))));
 
-	spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
-	// Shader is expected to pass the input data by treating the input vec4 as mat2x2
-	spec.outputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData))));
-
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "mat2x2", spec));
+    group->addChild(new SpvAsmComputeShaderCase(testCtx, "mat2x2", spec));
 }
 
-void addGraphicsUboMatrixPaddingTest (tcu::TestCaseGroup* group)
+void addGraphicsUboMatrixPaddingTest(tcu::TestCaseGroup *group)
 {
-	de::Random					rnd					(deStringHash(group->getName()));
-	map<string, string>			fragments;
-	const deUint32				numDataPoints		= 128;
-	RGBA						defaultColors[4];
-	GraphicsResources			resources;
+    de::Random rnd(deStringHash(group->getName()));
+    map<string, string> fragments;
+    const uint32_t numDataPoints = 128;
+    RGBA defaultColors[4];
+    GraphicsResources resources;
 
-	SpecConstants				noSpecConstants;
-	PushConstants				noPushConstants;
-	GraphicsInterfaces			noInterfaces;
-	std::vector<std::string>	noExtensions;
-	VulkanFeatures				vulkanFeatures = VulkanFeatures();
+    SpecConstants noSpecConstants;
+    PushConstants noPushConstants;
+    GraphicsInterfaces noInterfaces;
+    std::vector<std::string> noExtensions;
+    VulkanFeatures vulkanFeatures = VulkanFeatures();
 
-	vector<tcu::Vec4> inputData(numDataPoints);
-	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
-		inputData[numIdx] = tcu::randomVec4(rnd);
+    vector<tcu::Vec4> inputData(numDataPoints * 2u);
+    vector<tcu::Vec4> outputData(numDataPoints);
+    for (uint32_t numIdx = 0; numIdx < numDataPoints; ++numIdx)
+    {
+        auto v                      = tcu::randomVec4(rnd);
+        outputData[numIdx]          = v;
+        inputData[2u * numIdx]      = tcu::Vec4(v.x(), v.y(), 0.0f, 0.0f);
+        inputData[2u * numIdx + 1u] = tcu::Vec4(v.z(), v.w(), 0.0f, 0.0f);
+    }
 
-	resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
-	// Shader is expected to pass the input data by treating the input vec4 as mat2x2
-	resources.outputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+    resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
+    resources.outputs.push_back(Resource(BufferSp(new Vec4Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-	getDefaultColors(defaultColors);
+    getDefaultColors(defaultColors);
 
-	fragments["pre_main"]	=
-		"             %uint_128 = OpConstant %u32 128\n"
-		"    %_arr_v4f_uint_128 = OpTypeArray %v4f32 %uint_128\n"
-		"               %Output = OpTypeStruct %_arr_v4f_uint_128\n"
-		"  %_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
-		"           %dataOutput = OpVariable %_ptr_Uniform_Output Uniform\n"
-		"              %mat2v2f = OpTypeMatrix %v2f32 2\n"
-		"%_arr_mat2v2f_uint_128 = OpTypeArray %mat2v2f %uint_128\n"
-		"                %Input = OpTypeStruct %_arr_mat2v2f_uint_128\n"
-		"   %_ptr_Uniform_Input = OpTypePointer Uniform %Input\n"
-		"            %dataInput = OpVariable %_ptr_Uniform_Input Uniform\n"
-		"       %_ptr_Uniform_f = OpTypePointer Uniform %f32\n"
-		"            %c_i32_128 = OpConstant %i32 128\n";
+    fragments["pre_main"] = "             %uint_128 = OpConstant %u32 128\n"
+                            "    %_arr_v4f_uint_128 = OpTypeArray %v4f32 %uint_128\n"
+                            "               %Output = OpTypeStruct %_arr_v4f_uint_128\n"
+                            "  %_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
+                            "           %dataOutput = OpVariable %_ptr_Uniform_Output Uniform\n"
+                            "              %mat2v2f = OpTypeMatrix %v2f32 2\n"
+                            "%_arr_mat2v2f_uint_128 = OpTypeArray %mat2v2f %uint_128\n"
+                            "                %Input = OpTypeStruct %_arr_mat2v2f_uint_128\n"
+                            "   %_ptr_Uniform_Input = OpTypePointer Uniform %Input\n"
+                            "            %dataInput = OpVariable %_ptr_Uniform_Input Uniform\n"
+                            "       %_ptr_Uniform_f = OpTypePointer Uniform %f32\n"
+                            "            %c_i32_128 = OpConstant %i32 128\n";
 
-	fragments["decoration"]	=
-		"                         OpDecorate %_arr_v4f_uint_128 ArrayStride 16\n"
-		"                         OpMemberDecorate %Output 0 Offset 0\n"
-		"                         OpDecorate %Output BufferBlock\n"
-		"                         OpDecorate %dataOutput DescriptorSet 0\n"
-		"                         OpDecorate %dataOutput Binding 1\n"
-		"                         OpDecorate %_arr_mat2v2f_uint_128 ArrayStride 16\n"
-		"                         OpMemberDecorate %Input 0 ColMajor\n"
-		"                         OpMemberDecorate %Input 0 Offset 0\n"
-		"                         OpMemberDecorate %Input 0 MatrixStride 8\n"
-		"                         OpDecorate %Input Block\n"
-		"                         OpDecorate %dataInput DescriptorSet 0\n"
-		"                         OpDecorate %dataInput Binding 0\n";
+    fragments["decoration"] = "                         OpDecorate %_arr_v4f_uint_128 ArrayStride 16\n"
+                              "                         OpMemberDecorate %Output 0 Offset 0\n"
+                              "                         OpDecorate %Output BufferBlock\n"
+                              "                         OpDecorate %dataOutput DescriptorSet 0\n"
+                              "                         OpDecorate %dataOutput Binding 1\n"
+                              "                         OpDecorate %_arr_mat2v2f_uint_128 ArrayStride 32\n"
+                              "                         OpMemberDecorate %Input 0 ColMajor\n"
+                              "                         OpMemberDecorate %Input 0 Offset 0\n"
+                              "                         OpMemberDecorate %Input 0 MatrixStride 16\n"
+                              "                         OpDecorate %Input Block\n"
+                              "                         OpDecorate %dataInput DescriptorSet 0\n"
+                              "                         OpDecorate %dataInput Binding 0\n";
 
-	// Read input UBO containing and array of mat2x2 using no padding inside matrix. Output
-	// into output buffer containing floats. The input and output buffer data should match.
-	// The whole array is handled inside a for loop.
-	fragments["testfun"]	=
-		"            %test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
-		"                %param = OpFunctionParameter %v4f32\n"
+    // Read input UBO containing and array of mat2x2. Output into output buffer containing floats.
+    // The input and output buffer data should match. The whole array is handled inside a for loop.
+    fragments["testfun"] =
+        "            %test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
+        "                %param = OpFunctionParameter %v4f32\n"
 
-		"                %entry = OpLabel\n"
-		"                    %i = OpVariable %fp_i32 Function\n"
-		"                         OpStore %i %c_i32_0\n"
-		"                         OpBranch %loop\n"
+        "                %entry = OpLabel\n"
+        "                    %i = OpVariable %fp_i32 Function\n"
+        "                         OpStore %i %c_i32_0\n"
+        "                         OpBranch %loop\n"
 
-		"                 %loop = OpLabel\n"
-		"                   %15 = OpLoad %i32 %i\n"
-		"                   %lt = OpSLessThan %bool %15 %c_i32_128\n"
-		"                         OpLoopMerge %merge %inc None\n"
-		"                         OpBranchConditional %lt %write %merge\n"
+        "                 %loop = OpLabel\n"
+        "                   %15 = OpLoad %i32 %i\n"
+        "                   %lt = OpSLessThan %bool %15 %c_i32_128\n"
+        "                         OpLoopMerge %merge %inc None\n"
+        "                         OpBranchConditional %lt %write %merge\n"
 
-		"                %write = OpLabel\n"
-		"                   %30 = OpLoad %i32 %i\n"
-		"                   %34 = OpAccessChain %_ptr_Uniform_f %dataInput %c_i32_0 %30 %c_i32_0 %c_u32_0\n"
-		"                   %35 = OpLoad %f32 %34\n"
-		"                   %36 = OpAccessChain %_ptr_Uniform_f %dataOutput %c_i32_0 %30 %c_u32_0\n"
-		"                         OpStore %36 %35\n"
-		"                   %40 = OpAccessChain %_ptr_Uniform_f %dataInput %c_i32_0 %30 %c_i32_0 %c_u32_1\n"
-		"                   %41 = OpLoad %f32 %40\n"
-		"                   %42 = OpAccessChain %_ptr_Uniform_f %dataOutput %c_i32_0 %30 %c_u32_1\n"
-		"                         OpStore %42 %41\n"
-		"                   %46 = OpAccessChain %_ptr_Uniform_f %dataInput %c_i32_0 %30 %c_i32_1 %c_u32_0\n"
-		"                   %47 = OpLoad %f32 %46\n"
-		"                   %49 = OpAccessChain %_ptr_Uniform_f %dataOutput %c_i32_0 %30 %c_u32_2\n"
-		"                         OpStore %49 %47\n"
-		"                   %52 = OpAccessChain %_ptr_Uniform_f %dataInput %c_i32_0 %30 %c_i32_1 %c_u32_1\n"
-		"                   %53 = OpLoad %f32 %52\n"
-		"                   %55 = OpAccessChain %_ptr_Uniform_f %dataOutput %c_i32_0 %30 %c_u32_3\n"
-		"                         OpStore %55 %53\n"
-		"                         OpBranch %inc\n"
+        "                %write = OpLabel\n"
+        "                   %30 = OpLoad %i32 %i\n"
+        "                   %34 = OpAccessChain %_ptr_Uniform_f %dataInput %c_i32_0 %30 %c_i32_0 %c_u32_0\n"
+        "                   %35 = OpLoad %f32 %34\n"
+        "                   %36 = OpAccessChain %_ptr_Uniform_f %dataOutput %c_i32_0 %30 %c_u32_0\n"
+        "                         OpStore %36 %35\n"
+        "                   %40 = OpAccessChain %_ptr_Uniform_f %dataInput %c_i32_0 %30 %c_i32_0 %c_u32_1\n"
+        "                   %41 = OpLoad %f32 %40\n"
+        "                   %42 = OpAccessChain %_ptr_Uniform_f %dataOutput %c_i32_0 %30 %c_u32_1\n"
+        "                         OpStore %42 %41\n"
+        "                   %46 = OpAccessChain %_ptr_Uniform_f %dataInput %c_i32_0 %30 %c_i32_1 %c_u32_0\n"
+        "                   %47 = OpLoad %f32 %46\n"
+        "                   %49 = OpAccessChain %_ptr_Uniform_f %dataOutput %c_i32_0 %30 %c_u32_2\n"
+        "                         OpStore %49 %47\n"
+        "                   %52 = OpAccessChain %_ptr_Uniform_f %dataInput %c_i32_0 %30 %c_i32_1 %c_u32_1\n"
+        "                   %53 = OpLoad %f32 %52\n"
+        "                   %55 = OpAccessChain %_ptr_Uniform_f %dataOutput %c_i32_0 %30 %c_u32_3\n"
+        "                         OpStore %55 %53\n"
+        "                         OpBranch %inc\n"
 
-		"                  %inc = OpLabel\n"
-		"                   %37 = OpLoad %i32 %i\n"
-		"                   %39 = OpIAdd %i32 %37 %c_i32_1\n"
-		"                         OpStore %i %39\n"
-		"                         OpBranch %loop\n"
+        "                  %inc = OpLabel\n"
+        "                   %37 = OpLoad %i32 %i\n"
+        "                   %39 = OpIAdd %i32 %37 %c_i32_1\n"
+        "                         OpStore %i %39\n"
+        "                         OpBranch %loop\n"
 
-		"                %merge = OpLabel\n"
-		"                         OpReturnValue %param\n"
+        "                %merge = OpLabel\n"
+        "                         OpReturnValue %param\n"
 
-		"                         OpFunctionEnd\n";
+        "                         OpFunctionEnd\n";
 
-	resources.inputs.back().setDescriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    resources.inputs.back().setDescriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 
-	vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
-	vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_FALSE;
-	createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, "mat2x2_vert", defaultColors, defaultColors, fragments, noSpecConstants,
-					   noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
+    vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = true;
+    vulkanFeatures.coreFeatures.fragmentStoresAndAtomics       = false;
+    createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, "mat2x2_vert", defaultColors, defaultColors, fragments,
+                       noSpecConstants, noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
-	createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "mat2x2_tessc", defaultColors, defaultColors, fragments, noSpecConstants,
-					   noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
+    createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "mat2x2_tessc", defaultColors, defaultColors,
+                       fragments, noSpecConstants, noPushConstants, resources, noInterfaces, noExtensions,
+                       vulkanFeatures, group);
 
-	createTestForStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "mat2x2_tesse", defaultColors, defaultColors, fragments, noSpecConstants,
-					   noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
+    createTestForStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "mat2x2_tesse", defaultColors, defaultColors,
+                       fragments, noSpecConstants, noPushConstants, resources, noInterfaces, noExtensions,
+                       vulkanFeatures, group);
 
-	createTestForStage(VK_SHADER_STAGE_GEOMETRY_BIT, "mat2x2_geom", defaultColors, defaultColors, fragments, noSpecConstants,
-					   noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
+    createTestForStage(VK_SHADER_STAGE_GEOMETRY_BIT, "mat2x2_geom", defaultColors, defaultColors, fragments,
+                       noSpecConstants, noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
-	vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
-	vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_TRUE;
-	createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, "mat2x2_frag", defaultColors, defaultColors, fragments, noSpecConstants,
-					   noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
+    vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = false;
+    vulkanFeatures.coreFeatures.fragmentStoresAndAtomics       = true;
+    createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, "mat2x2_frag", defaultColors, defaultColors, fragments,
+                       noSpecConstants, noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createUboMatrixPaddingComputeGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createUboMatrixPaddingComputeGroup(tcu::TestContext &testCtx)
 {
-	// Compute tests for UBO struct member packing.
-	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "ubo_padding"));
-	addComputeUboMatrixPaddingTest(group.get());
+    // Compute tests for UBO struct member packing.
+    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ubo_padding"));
+    addComputeUboMatrixPaddingTest(group.get());
 
-	return group.release();
+    return group.release();
 }
 
-tcu::TestCaseGroup* createUboMatrixPaddingGraphicsGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createUboMatrixPaddingGraphicsGroup(tcu::TestContext &testCtx)
 {
-	// Graphics tests for UBO struct member packing.
-	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "ubo_padding"));
-	addGraphicsUboMatrixPaddingTest(group.get());
+    // Graphics tests for UBO struct member packing.
+    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ubo_padding"));
+    addGraphicsUboMatrixPaddingTest(group.get());
 
-	return group.release();
+    return group.release();
 }
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt

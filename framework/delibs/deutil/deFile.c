@@ -24,7 +24,8 @@
 #include "deFile.h"
 #include "deMemory.h"
 
-#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_SYMBIAN) || (DE_OS == DE_OS_QNX) || (DE_OS == DE_OS_FUCHSIA)
+#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS) || (DE_OS == DE_OS_ANDROID) || \
+    (DE_OS == DE_OS_SYMBIAN) || (DE_OS == DE_OS_QNX) || (DE_OS == DE_OS_FUCHSIA)
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -34,174 +35,177 @@
 
 struct deFile_s
 {
-	int fd;
+    int fd;
 };
 
-deBool deFileExists (const char* filename)
+bool deFileExists(const char *filename)
 {
-	struct stat st;
-	int result = stat(filename, &st);
-	return result == 0;
+    struct stat st;
+    int result = stat(filename, &st);
+    return result == 0;
 }
 
-deBool deDeleteFile (const char* filename)
+bool deDeleteFile(const char *filename)
 {
-	return unlink(filename) == 0;
+    return unlink(filename) == 0;
 }
 
-deFile* deFile_createFromHandle (deUintptr handle)
+deFile *deFile_createFromHandle(uintptr_t handle)
 {
-	int		fd		= (int)handle;
-	deFile* file	= (deFile*)deCalloc(sizeof(deFile));
-	if (!file)
-	{
-		close(fd);
-		return file;
-	}
+    int fd       = (int)handle;
+    deFile *file = (deFile *)deCalloc(sizeof(deFile));
+    if (!file)
+    {
+        close(fd);
+        return file;
+    }
 
-	file->fd = fd;
-	return file;
+    file->fd = fd;
+    return file;
 }
 
-static int mapOpenMode (deFileMode mode)
+static int mapOpenMode(deFileMode mode)
 {
-	int flag = 0;
+    int flag = 0;
 
-	/* Read, write or read and write access is required. */
-	DE_ASSERT((mode & DE_FILEMODE_READ) != 0 || ((mode & DE_FILEMODE_WRITE) != 0));
+    /* Read, write or read and write access is required. */
+    DE_ASSERT((mode & DE_FILEMODE_READ) != 0 || ((mode & DE_FILEMODE_WRITE) != 0));
 
-	/* Create, open or create and open mode is required. */
-	DE_ASSERT((mode & DE_FILEMODE_OPEN) != 0 || ((mode & DE_FILEMODE_CREATE) != 0));
+    /* Create, open or create and open mode is required. */
+    DE_ASSERT((mode & DE_FILEMODE_OPEN) != 0 || ((mode & DE_FILEMODE_CREATE) != 0));
 
-	/* Require write when using create. */
-	DE_ASSERT(!(mode & DE_FILEMODE_CREATE) || (mode & DE_FILEMODE_WRITE));
+    /* Require write when using create. */
+    DE_ASSERT(!(mode & DE_FILEMODE_CREATE) || (mode & DE_FILEMODE_WRITE));
 
-	/* Require write and open when using truncate */
-	DE_ASSERT(!(mode & DE_FILEMODE_TRUNCATE) || ((mode & DE_FILEMODE_WRITE) && (mode & DE_FILEMODE_OPEN)));
+    /* Require write and open when using truncate */
+    DE_ASSERT(!(mode & DE_FILEMODE_TRUNCATE) || ((mode & DE_FILEMODE_WRITE) && (mode & DE_FILEMODE_OPEN)));
 
-	if (mode & DE_FILEMODE_READ)
-		flag |= O_RDONLY;
+    if (mode & DE_FILEMODE_READ)
+        flag |= O_RDONLY;
 
-	if (mode & DE_FILEMODE_WRITE)
-		flag |= O_WRONLY;
+    if (mode & DE_FILEMODE_WRITE)
+        flag |= O_WRONLY;
 
-	if (mode & DE_FILEMODE_TRUNCATE)
-		flag |= O_TRUNC;
+    if (mode & DE_FILEMODE_TRUNCATE)
+        flag |= O_TRUNC;
 
-	if (mode & DE_FILEMODE_CREATE)
-		flag |= O_CREAT;
+    if (mode & DE_FILEMODE_CREATE)
+        flag |= O_CREAT;
 
-	if (!(mode & DE_FILEMODE_OPEN))
-		flag |= O_EXCL;
+    if (!(mode & DE_FILEMODE_OPEN))
+        flag |= O_EXCL;
 
-	return flag;
+    return flag;
 }
 
-deFile* deFile_create (const char* filename, deUint32 mode)
+deFile *deFile_create(const char *filename, uint32_t mode)
 {
-	int fd = open(filename, mapOpenMode(mode), 0777);
-	if (fd >= 0)
-		return deFile_createFromHandle((deUintptr)fd);
-	else
-		return DE_NULL;
+    int fd = open(filename, mapOpenMode(mode), 0777);
+    if (fd >= 0)
+        return deFile_createFromHandle((uintptr_t)fd);
+    else
+        return NULL;
 }
 
-void deFile_destroy (deFile* file)
+void deFile_destroy(deFile *file)
 {
-	close(file->fd);
-	deFree(file);
+    close(file->fd);
+    deFree(file);
 }
 
-deBool deFile_setFlags (deFile* file, deUint32 flags)
+bool deFile_setFlags(deFile *file, uint32_t flags)
 {
-	/* Non-blocking. */
-	{
-		int oldFlags = fcntl(file->fd, F_GETFL, 0);
-		int newFlags = (flags & DE_FILE_NONBLOCKING) ? (oldFlags | O_NONBLOCK) : (oldFlags & ~O_NONBLOCK);
-		if (fcntl(file->fd, F_SETFL, newFlags) != 0)
-			return DE_FALSE;
-	}
+    /* Non-blocking. */
+    {
+        int oldFlags = fcntl(file->fd, F_GETFL, 0);
+        int newFlags = (flags & DE_FILE_NONBLOCKING) ? (oldFlags | O_NONBLOCK) : (oldFlags & ~O_NONBLOCK);
+        if (fcntl(file->fd, F_SETFL, newFlags) != 0)
+            return false;
+    }
 
-	/* Close on exec. */
-	{
-		int oldFlags = fcntl(file->fd, F_GETFD, 0);
-		int newFlags = (flags & DE_FILE_CLOSE_ON_EXEC) ? (oldFlags | FD_CLOEXEC) : (oldFlags & ~FD_CLOEXEC);
-		if (fcntl(file->fd, F_SETFD, newFlags) != 0)
-			return DE_FALSE;
-	}
+    /* Close on exec. */
+    {
+        int oldFlags = fcntl(file->fd, F_GETFD, 0);
+        int newFlags = (flags & DE_FILE_CLOSE_ON_EXEC) ? (oldFlags | FD_CLOEXEC) : (oldFlags & ~FD_CLOEXEC);
+        if (fcntl(file->fd, F_SETFD, newFlags) != 0)
+            return false;
+    }
 
-	return DE_TRUE;
+    return true;
 }
 
-static int mapSeekPosition (deFilePosition position)
+static int mapSeekPosition(deFilePosition position)
 {
-	switch (position)
-	{
-		case DE_FILEPOSITION_BEGIN:		return SEEK_SET;
-		case DE_FILEPOSITION_END:		return SEEK_END;
-		case DE_FILEPOSITION_CURRENT:	return SEEK_CUR;
-		default:
-			DE_ASSERT(DE_FALSE);
-			return 0;
-	}
+    switch (position)
+    {
+    case DE_FILEPOSITION_BEGIN:
+        return SEEK_SET;
+    case DE_FILEPOSITION_END:
+        return SEEK_END;
+    case DE_FILEPOSITION_CURRENT:
+        return SEEK_CUR;
+    default:
+        DE_ASSERT(false);
+        return 0;
+    }
 }
 
-deBool deFile_seek (deFile* file, deFilePosition base, deInt64 offset)
+bool deFile_seek(deFile *file, deFilePosition base, int64_t offset)
 {
-	return lseek(file->fd, (off_t)offset, mapSeekPosition(base)) >= 0;
+    return lseek(file->fd, (off_t)offset, mapSeekPosition(base)) >= 0;
 }
 
-deInt64 deFile_getPosition (const deFile* file)
+int64_t deFile_getPosition(const deFile *file)
 {
-	return lseek(file->fd, 0, SEEK_CUR);
+    return lseek(file->fd, 0, SEEK_CUR);
 }
 
-deInt64 deFile_getSize (const deFile* file)
+int64_t deFile_getSize(const deFile *file)
 {
-	deInt64 size	= 0;
-	deInt64 curPos	= lseek(file->fd, 0, SEEK_CUR);
+    int64_t size   = 0;
+    int64_t curPos = lseek(file->fd, 0, SEEK_CUR);
 
-	if (curPos < 0)
-		return -1;
+    if (curPos < 0)
+        return -1;
 
-	size = lseek(file->fd, 0, SEEK_END);
+    size = lseek(file->fd, 0, SEEK_END);
 
-	if (size < 0)
-		return -1;
+    if (size < 0)
+        return -1;
 
-	lseek(file->fd, (off_t)curPos, SEEK_SET);
+    lseek(file->fd, (off_t)curPos, SEEK_SET);
 
-	return size;
+    return size;
 }
 
-static deFileResult mapReadWriteResult (deInt64 numBytes)
+static deFileResult mapReadWriteResult(int64_t numBytes)
 {
-	if (numBytes > 0)
-		return DE_FILERESULT_SUCCESS;
-	else if (numBytes == 0)
-		return DE_FILERESULT_END_OF_FILE;
-	else
-		return errno == EAGAIN ? DE_FILERESULT_WOULD_BLOCK : DE_FILERESULT_ERROR;
+    if (numBytes > 0)
+        return DE_FILERESULT_SUCCESS;
+    else if (numBytes == 0)
+        return DE_FILERESULT_END_OF_FILE;
+    else
+        return errno == EAGAIN ? DE_FILERESULT_WOULD_BLOCK : DE_FILERESULT_ERROR;
 }
 
-deFileResult deFile_read (deFile* file, void* buf, deInt64 bufSize, deInt64* numReadPtr)
+deFileResult deFile_read(deFile *file, void *buf, int64_t bufSize, int64_t *numReadPtr)
 {
-	deInt64 numRead = read(file->fd, buf, (size_t)bufSize);
+    int64_t numRead = read(file->fd, buf, (size_t)bufSize);
 
-	if (numReadPtr)
-		*numReadPtr = numRead;
+    if (numReadPtr)
+        *numReadPtr = numRead;
 
-	return mapReadWriteResult(numRead);
+    return mapReadWriteResult(numRead);
 }
 
-deFileResult deFile_write (deFile* file, const void* buf, deInt64 bufSize, deInt64* numWrittenPtr)
+deFileResult deFile_write(deFile *file, const void *buf, int64_t bufSize, int64_t *numWrittenPtr)
 {
-	deInt64 numWritten = write(file->fd, buf, (size_t)bufSize);
+    int64_t numWritten = write(file->fd, buf, (size_t)bufSize);
 
-	if (numWrittenPtr)
-		*numWrittenPtr = numWritten;
+    if (numWrittenPtr)
+        *numWrittenPtr = numWritten;
 
-	return mapReadWriteResult(numWritten);
+    return mapReadWriteResult(numWritten);
 }
 
 #elif (DE_OS == DE_OS_WIN32)
@@ -212,190 +216,197 @@ deFileResult deFile_write (deFile* file, const void* buf, deInt64 bufSize, deInt
 
 struct deFile_s
 {
-	HANDLE handle;
+    HANDLE handle;
 };
 
-deBool deFileExists (const char* filename)
+bool deFileExists(const char *filename)
 {
-	return GetFileAttributes(filename) != INVALID_FILE_ATTRIBUTES;
+    return GetFileAttributes(filename) != INVALID_FILE_ATTRIBUTES;
 }
 
-deBool deDeleteFile (const char* filename)
+bool deDeleteFile(const char *filename)
 {
-	return DeleteFile(filename) == TRUE;
+    return DeleteFile(filename) == TRUE;
 }
 
-deFile* deFile_createFromHandle (deUintptr handle)
+deFile *deFile_createFromHandle(uintptr_t handle)
 {
-	deFile* file = (deFile*)deCalloc(sizeof(deFile));
-	if (!file)
-	{
-		CloseHandle((HANDLE)handle);
-		return file;
-	}
+    deFile *file = (deFile *)deCalloc(sizeof(deFile));
+    if (!file)
+    {
+        CloseHandle((HANDLE)handle);
+        return file;
+    }
 
-	file->handle = (HANDLE)handle;
-	return file;
+    file->handle = (HANDLE)handle;
+    return file;
 }
 
-deFile* deFile_create (const char* filename, deUint32 mode)
+deFile *deFile_create(const char *filename, uint32_t mode)
 {
-	DWORD	access		= 0;
-	DWORD	create		= OPEN_EXISTING;
-	HANDLE	handle		= DE_NULL;
+    DWORD access  = 0;
+    DWORD create  = OPEN_EXISTING;
+    HANDLE handle = NULL;
 
-	/* Read, write or read and write access is required. */
-	DE_ASSERT((mode & DE_FILEMODE_READ) != 0 || ((mode & DE_FILEMODE_WRITE) != 0));
+    /* Read, write or read and write access is required. */
+    DE_ASSERT((mode & DE_FILEMODE_READ) != 0 || ((mode & DE_FILEMODE_WRITE) != 0));
 
-	/* Create, open or create and open mode is required. */
-	DE_ASSERT((mode & DE_FILEMODE_OPEN) != 0 || ((mode & DE_FILEMODE_CREATE) != 0));
+    /* Create, open or create and open mode is required. */
+    DE_ASSERT((mode & DE_FILEMODE_OPEN) != 0 || ((mode & DE_FILEMODE_CREATE) != 0));
 
-	/* Require write when using create. */
-	DE_ASSERT(!(mode & DE_FILEMODE_CREATE) || (mode & DE_FILEMODE_WRITE));
+    /* Require write when using create. */
+    DE_ASSERT(!(mode & DE_FILEMODE_CREATE) || (mode & DE_FILEMODE_WRITE));
 
-	/* Require write and open when using truncate */
-	DE_ASSERT(!(mode & DE_FILEMODE_TRUNCATE) || ((mode & DE_FILEMODE_WRITE) && (mode & DE_FILEMODE_OPEN)));
+    /* Require write and open when using truncate */
+    DE_ASSERT(!(mode & DE_FILEMODE_TRUNCATE) || ((mode & DE_FILEMODE_WRITE) && (mode & DE_FILEMODE_OPEN)));
 
+    if (mode & DE_FILEMODE_READ)
+        access |= GENERIC_READ;
 
-	if (mode & DE_FILEMODE_READ)
-		access |= GENERIC_READ;
+    if (mode & DE_FILEMODE_WRITE)
+        access |= GENERIC_WRITE;
 
-	if (mode & DE_FILEMODE_WRITE)
-		access |= GENERIC_WRITE;
+    if ((mode & DE_FILEMODE_TRUNCATE))
+    {
+        if ((mode & DE_FILEMODE_CREATE) && (mode & DE_FILEMODE_OPEN))
+            create = CREATE_ALWAYS;
+        else if (mode & DE_FILEMODE_OPEN)
+            create = TRUNCATE_EXISTING;
+        else
+            DE_ASSERT(false);
+    }
+    else
+    {
+        if ((mode & DE_FILEMODE_CREATE) && (mode & DE_FILEMODE_OPEN))
+            create = OPEN_ALWAYS;
+        else if (mode & DE_FILEMODE_CREATE)
+            create = CREATE_NEW;
+        else if (mode & DE_FILEMODE_OPEN)
+            create = OPEN_EXISTING;
+        else
+            DE_ASSERT(false);
+    }
 
-	if ((mode & DE_FILEMODE_TRUNCATE))
-	{
-		if ((mode & DE_FILEMODE_CREATE) && (mode & DE_FILEMODE_OPEN))
-			create = CREATE_ALWAYS;
-		else if (mode & DE_FILEMODE_OPEN)
-			create = TRUNCATE_EXISTING;
-		else
-			DE_ASSERT(DE_FALSE);
-	}
-	else
-	{
-		if ((mode & DE_FILEMODE_CREATE) && (mode & DE_FILEMODE_OPEN))
-			create = OPEN_ALWAYS;
-		else if (mode & DE_FILEMODE_CREATE)
-			create = CREATE_NEW;
-		else if (mode & DE_FILEMODE_OPEN)
-			create = OPEN_EXISTING;
-		else
-			DE_ASSERT(DE_FALSE);
-	}
+    handle = CreateFile(filename, access, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, create,
+                        FILE_ATTRIBUTE_NORMAL, NULL);
+    if (handle == INVALID_HANDLE_VALUE)
+        return NULL;
 
-	handle = CreateFile(filename, access, FILE_SHARE_DELETE|FILE_SHARE_READ|FILE_SHARE_WRITE, DE_NULL, create, FILE_ATTRIBUTE_NORMAL, DE_NULL);
-	if (handle == INVALID_HANDLE_VALUE)
-		return DE_NULL;
-
-	return deFile_createFromHandle((deUintptr)handle);
+    return deFile_createFromHandle((uintptr_t)handle);
 }
 
-void deFile_destroy (deFile* file)
+void deFile_destroy(deFile *file)
 {
-	CloseHandle(file->handle);
-	deFree(file);
+    CloseHandle(file->handle);
+    deFree(file);
 }
 
-deBool deFile_setFlags (deFile* file, deUint32 flags)
+bool deFile_setFlags(deFile *file, uint32_t flags)
 {
-	/* Non-blocking. */
-	if (flags & DE_FILE_NONBLOCKING)
-		return DE_FALSE; /* Not supported. */
+    /* Non-blocking. */
+    if (flags & DE_FILE_NONBLOCKING)
+        return false; /* Not supported. */
 
-	/* Close on exec. */
-	if (!SetHandleInformation(file->handle, HANDLE_FLAG_INHERIT, (flags & DE_FILE_CLOSE_ON_EXEC) ? HANDLE_FLAG_INHERIT : 0))
-		return DE_FALSE;
+    /* Close on exec. */
+    if (!SetHandleInformation(file->handle, HANDLE_FLAG_INHERIT,
+                              (flags & DE_FILE_CLOSE_ON_EXEC) ? HANDLE_FLAG_INHERIT : 0))
+        return false;
 
-	return DE_TRUE;
+    return true;
 }
 
-deBool deFile_seek (deFile* file, deFilePosition base, deInt64 offset)
+bool deFile_seek(deFile *file, deFilePosition base, int64_t offset)
 {
-	DWORD	method		= 0;
-	LONG	lowBits		= (LONG)(offset & 0xFFFFFFFFll);
-	LONG	highBits	= (LONG)((offset >> 32) & 0xFFFFFFFFll);
+    DWORD method  = 0;
+    LONG lowBits  = (LONG)(offset & 0xFFFFFFFFll);
+    LONG highBits = (LONG)((offset >> 32) & 0xFFFFFFFFll);
 
-	switch (base)
-	{
-		case DE_FILEPOSITION_BEGIN:		method = FILE_BEGIN;	break;
-		case DE_FILEPOSITION_END:		method = FILE_END;		break;
-		case DE_FILEPOSITION_CURRENT:	method = FILE_CURRENT;	break;
-		default:
-			DE_ASSERT(DE_FALSE);
-			return DE_FALSE;
-	}
+    switch (base)
+    {
+    case DE_FILEPOSITION_BEGIN:
+        method = FILE_BEGIN;
+        break;
+    case DE_FILEPOSITION_END:
+        method = FILE_END;
+        break;
+    case DE_FILEPOSITION_CURRENT:
+        method = FILE_CURRENT;
+        break;
+    default:
+        DE_ASSERT(false);
+        return false;
+    }
 
-	return SetFilePointer(file->handle, lowBits, &highBits, method) != INVALID_SET_FILE_POINTER;
+    return SetFilePointer(file->handle, lowBits, &highBits, method) != INVALID_SET_FILE_POINTER;
 }
 
-deInt64 deFile_getPosition (const deFile* file)
+int64_t deFile_getPosition(const deFile *file)
 {
-	LONG	highBits	= 0;
-	LONG	lowBits		= SetFilePointer(file->handle, 0, &highBits, FILE_CURRENT);
+    LONG highBits = 0;
+    LONG lowBits  = SetFilePointer(file->handle, 0, &highBits, FILE_CURRENT);
 
-	return (deInt64)(((deUint64)highBits << 32) | (deUint64)lowBits);
+    return (int64_t)(((uint64_t)highBits << 32) | (uint64_t)lowBits);
 }
 
-deInt64 deFile_getSize (const deFile* file)
+int64_t deFile_getSize(const deFile *file)
 {
-	DWORD	highBits	= 0;
-	DWORD	lowBits		= GetFileSize(file->handle, &highBits);
+    DWORD highBits = 0;
+    DWORD lowBits  = GetFileSize(file->handle, &highBits);
 
-	return (deInt64)(((deUint64)highBits << 32) | (deUint64)lowBits);
+    return (int64_t)(((uint64_t)highBits << 32) | (uint64_t)lowBits);
 }
 
-static deFileResult mapReadWriteResult (BOOL retVal, DWORD numBytes)
+static deFileResult mapReadWriteResult(BOOL retVal, DWORD numBytes)
 {
-	if (retVal && numBytes > 0)
-		return DE_FILERESULT_SUCCESS;
-	else if (retVal && numBytes == 0)
-		return DE_FILERESULT_END_OF_FILE;
-	else
-	{
-		DWORD error = GetLastError();
+    if (retVal && numBytes > 0)
+        return DE_FILERESULT_SUCCESS;
+    else if (retVal && numBytes == 0)
+        return DE_FILERESULT_END_OF_FILE;
+    else
+    {
+        DWORD error = GetLastError();
 
-		if (error == ERROR_HANDLE_EOF)
-			return DE_FILERESULT_END_OF_FILE;
-		else
-			return DE_FILERESULT_ERROR;
-	}
+        if (error == ERROR_HANDLE_EOF)
+            return DE_FILERESULT_END_OF_FILE;
+        else
+            return DE_FILERESULT_ERROR;
+    }
 }
 
-deFileResult deFile_read (deFile* file, void* buf, deInt64 bufSize, deInt64* numReadPtr)
+deFileResult deFile_read(deFile *file, void *buf, int64_t bufSize, int64_t *numReadPtr)
 {
-	DWORD	bufSize32	= (DWORD)bufSize;
-	DWORD	numRead32	= 0;
-	BOOL	result;
+    DWORD bufSize32 = (DWORD)bufSize;
+    DWORD numRead32 = 0;
+    BOOL result;
 
-	/* \todo [2011-10-03 pyry] 64-bit IO. */
-	DE_ASSERT((deInt64)bufSize32 == bufSize);
+    /* \todo [2011-10-03 pyry] 64-bit IO. */
+    DE_ASSERT((int64_t)bufSize32 == bufSize);
 
-	result = ReadFile(file->handle, buf, bufSize32, &numRead32, DE_NULL);
+    result = ReadFile(file->handle, buf, bufSize32, &numRead32, NULL);
 
-	if (numReadPtr)
-		*numReadPtr = (deInt64)numRead32;
+    if (numReadPtr)
+        *numReadPtr = (int64_t)numRead32;
 
-	return mapReadWriteResult(result, numRead32);
+    return mapReadWriteResult(result, numRead32);
 }
 
-deFileResult deFile_write (deFile* file, const void* buf, deInt64 bufSize, deInt64* numWrittenPtr)
+deFileResult deFile_write(deFile *file, const void *buf, int64_t bufSize, int64_t *numWrittenPtr)
 {
-	DWORD	bufSize32		= (DWORD)bufSize;
-	DWORD	numWritten32	= 0;
-	BOOL	result;
+    DWORD bufSize32    = (DWORD)bufSize;
+    DWORD numWritten32 = 0;
+    BOOL result;
 
-	/* \todo [2011-10-03 pyry] 64-bit IO. */
-	DE_ASSERT((deInt64)bufSize32 == bufSize);
+    /* \todo [2011-10-03 pyry] 64-bit IO. */
+    DE_ASSERT((int64_t)bufSize32 == bufSize);
 
-	result = WriteFile(file->handle, buf, bufSize32, &numWritten32, DE_NULL);
+    result = WriteFile(file->handle, buf, bufSize32, &numWritten32, NULL);
 
-	if (numWrittenPtr)
-		*numWrittenPtr = (deInt64)numWritten32;
+    if (numWrittenPtr)
+        *numWrittenPtr = (int64_t)numWritten32;
 
-	return mapReadWriteResult(result, numWritten32);
+    return mapReadWriteResult(result, numWritten32);
 }
 
 #else
-#	error Implement deFile for your OS.
+#error Implement deFile for your OS.
 #endif

@@ -90,28 +90,28 @@ namespace glcts
 class GPUShader5SSBOArrayIndexing : public TestCaseBase
 {
 public:
-	/* Public functions */
-	GPUShader5SSBOArrayIndexing(Context& context, const ExtParameters& extParams, const char* name,
-								const char* description);
+    /* Public functions */
+    GPUShader5SSBOArrayIndexing(Context &context, const ExtParameters &extParams, const char *name,
+                                const char *description);
 
-	virtual ~GPUShader5SSBOArrayIndexing()
-	{
-	}
+    virtual ~GPUShader5SSBOArrayIndexing()
+    {
+    }
 
-	virtual IterateResult iterate(void);
-	virtual void		  deinit(void);
+    virtual IterateResult iterate(void);
+    virtual void deinit(void);
 
 private:
-	/* Private variables */
-	static const char*		 m_compute_shader_code;
-	static const glw::GLuint m_n_arrays;
+    /* Private variables */
+    static const char *m_compute_shader_code;
+    static const glw::GLuint m_n_arrays;
 
-	glw::GLuint  m_compute_shader_id;
-	glw::GLuint  m_program_id;
-	glw::GLuint* m_ssbo_buffer_ids;
+    glw::GLuint m_compute_shader_id;
+    glw::GLuint m_program_id;
+    glw::GLuint *m_ssbo_buffer_ids;
 
-	/* Private functions */
-	void initTest(void);
+    /* Private functions */
+    void initTest(void);
 };
 
 } // namespace glcts

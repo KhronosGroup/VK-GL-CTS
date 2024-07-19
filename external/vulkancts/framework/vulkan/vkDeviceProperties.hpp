@@ -37,163 +37,192 @@ namespace vk
 // Structure describing vulkan property structure
 struct PropertyDesc
 {
-	VkStructureType		sType;
-	const char*			name;
-	const deUint32		specVersion;
-	const deUint32		typeId;
+    VkStructureType sType;
+    const char *name;
+    const uint32_t specVersion;
+    const uint32_t typeId;
 };
 
 // Structure containg all property blobs - this simplifies generated code
 struct AllPropertiesBlobs
 {
-	VkPhysicalDeviceVulkan11Properties& vk11;
-	VkPhysicalDeviceVulkan12Properties& vk12;
+    VkPhysicalDeviceVulkan11Properties &vk11;
+    VkPhysicalDeviceVulkan12Properties &vk12;
 #ifndef CTS_USES_VULKANSC
-	VkPhysicalDeviceVulkan13Properties& vk13;
+    VkPhysicalDeviceVulkan13Properties &vk13;
 #endif // CTS_USES_VULKANSC
-	// add blobs from future vulkan versions here
+    // add blobs from future vulkan versions here
 };
 
 // Base class for all PropertyStructWrapper specialization
 struct PropertyStructWrapperBase
 {
-	virtual					~PropertyStructWrapperBase	(void) {}
-	virtual void			initializePropertyFromBlob	(const AllPropertiesBlobs& allPropertiesBlobs) = 0;
-	virtual deUint32		getPropertyTypeId			(void) const = 0;
-	virtual PropertyDesc	getPropertyDesc				(void) const = 0;
-	virtual void**			getPropertyTypeNext			(void) = 0;
-	virtual void*			getPropertyTypeRaw			(void) = 0;
+    virtual ~PropertyStructWrapperBase(void)
+    {
+    }
+    virtual void initializePropertyFromBlob(const AllPropertiesBlobs &allPropertiesBlobs) = 0;
+    virtual uint32_t getPropertyTypeId(void) const                                        = 0;
+    virtual PropertyDesc getPropertyDesc(void) const                                      = 0;
+    virtual void **getPropertyTypeNext(void)                                              = 0;
+    virtual void *getPropertyTypeRaw(void)                                                = 0;
 };
 
-using PropertyStructWrapperCreator	= PropertyStructWrapperBase* (*) (void);
+using PropertyStructWrapperCreator = PropertyStructWrapperBase *(*)(void);
 struct PropertyStructCreationData
 {
-	PropertyStructWrapperCreator creatorFunction;
-	const char*					 name;
-	deUint32					 specVersion;
+    PropertyStructWrapperCreator creatorFunction;
+    const char *name;
+    uint32_t specVersion;
 };
 
-template<class PropertyType> class PropertyStructWrapper;
-template<class PropertyType> PropertyDesc makePropertyDesc (void);
+template <class PropertyType>
+class PropertyStructWrapper;
+template <class PropertyType>
+PropertyDesc makePropertyDesc(void);
 
-template<class PropertyType>
-PropertyStructWrapperBase* createPropertyStructWrapper (void)
+template <class PropertyType>
+PropertyStructWrapperBase *createPropertyStructWrapper(void)
 {
-	return new PropertyStructWrapper<PropertyType>(makePropertyDesc<PropertyType>());
+    return new PropertyStructWrapper<PropertyType>(makePropertyDesc<PropertyType>());
 }
 
-template<class PropertyType>
-void initPropertyFromBlob(PropertyType& propertyType, const AllPropertiesBlobs& allPropertiesBlobs);
+template <class PropertyType>
+void initPropertyFromBlob(PropertyType &propertyType, const AllPropertiesBlobs &allPropertiesBlobs);
 
-template<class PropertyType>
-void initPropertyFromBlobWrapper(PropertyType& propertyType, const AllPropertiesBlobs& allPropertiesBlobs)
+template <class PropertyType>
+void initPropertyFromBlobWrapper(PropertyType &propertyType, const AllPropertiesBlobs &allPropertiesBlobs)
 {
-	initPropertyFromBlob<PropertyType>(propertyType, allPropertiesBlobs);
+    initPropertyFromBlob<PropertyType>(propertyType, allPropertiesBlobs);
 }
 
 class DeviceProperties
 {
 public:
-												DeviceProperties				(const InstanceInterface&			vki,
-																				 const deUint32						apiVersion,
-																				 const VkPhysicalDevice				physicalDevice,
-																				 const std::vector<std::string>&	instanceExtensions,
-																				 const std::vector<std::string>&	deviceExtensions);
+    DeviceProperties(const InstanceInterface &vki, const uint32_t apiVersion, const VkPhysicalDevice physicalDevice,
+                     const std::vector<std::string> &instanceExtensions,
+                     const std::vector<std::string> &deviceExtensions);
 
-												~DeviceProperties				(void);
+    ~DeviceProperties(void);
 
-	template<class PropertyType>
-	const PropertyType&							getPropertyType				(void) const;
+    template <class PropertyType>
+    const PropertyType &getPropertyType(void) const;
 
-	const VkPhysicalDeviceProperties2&			getCoreProperties2			(void) const { return m_coreProperties2; }
-	const VkPhysicalDeviceVulkan11Properties&	getVulkan11Properties		(void) const { return m_vulkan11Properties; }
-	const VkPhysicalDeviceVulkan12Properties&	getVulkan12Properties		(void) const { return m_vulkan12Properties; }
+    const VkPhysicalDeviceProperties2 &getCoreProperties2(void) const
+    {
+        return m_coreProperties2;
+    }
+    const VkPhysicalDeviceVulkan11Properties &getVulkan11Properties(void) const
+    {
+        return m_vulkan11Properties;
+    }
+    const VkPhysicalDeviceVulkan12Properties &getVulkan12Properties(void) const
+    {
+        return m_vulkan12Properties;
+    }
 #ifndef CTS_USES_VULKANSC
-	const VkPhysicalDeviceVulkan13Properties&	getVulkan13Properties		(void) const { return m_vulkan13Properties; }
+    const VkPhysicalDeviceVulkan13Properties &getVulkan13Properties(void) const
+    {
+        return m_vulkan13Properties;
+    }
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
-	const VkPhysicalDeviceVulkanSC10Properties&	getVulkanSC10Properties		(void) const { return m_vulkanSC10Properties; }
+    const VkPhysicalDeviceVulkanSC10Properties &getVulkanSC10Properties(void) const
+    {
+        return m_vulkanSC10Properties;
+    }
 #endif // CTS_USES_VULKANSC
 
-	bool										contains					(const std::string& property, bool throwIfNotExists = false) const;
+    bool contains(const std::string &property, bool throwIfNotExists = false) const;
 
-	bool										isDevicePropertyInitialized	(VkStructureType sType) const;
-
-private:
-
-	static void									addToChainStructWrapper(void*** chainPNextPtr, PropertyStructWrapperBase* structWrapper);
+    bool isDevicePropertyInitialized(VkStructureType sType) const;
 
 private:
+    static void addToChainStructWrapper(void ***chainPNextPtr, PropertyStructWrapperBase *structWrapper);
 
-	VkPhysicalDeviceProperties2						m_coreProperties2;
-	mutable std::vector<PropertyStructWrapperBase*>	m_properties;
-	VkPhysicalDeviceVulkan11Properties				m_vulkan11Properties;
-	VkPhysicalDeviceVulkan12Properties				m_vulkan12Properties;
+private:
+    VkPhysicalDeviceProperties2 m_coreProperties2;
+    mutable std::vector<PropertyStructWrapperBase *> m_properties;
+    VkPhysicalDeviceVulkan11Properties m_vulkan11Properties;
+    VkPhysicalDeviceVulkan12Properties m_vulkan12Properties;
 #ifndef CTS_USES_VULKANSC
-	VkPhysicalDeviceVulkan13Properties				m_vulkan13Properties;
+    VkPhysicalDeviceVulkan13Properties m_vulkan13Properties;
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
-	VkPhysicalDeviceVulkanSC10Properties			m_vulkanSC10Properties;
+    VkPhysicalDeviceVulkanSC10Properties m_vulkanSC10Properties;
 #endif // CTS_USES_VULKANSC
 };
 
-template<class PropertyType>
-const PropertyType&	DeviceProperties::getPropertyType(void) const
+template <class PropertyType>
+const PropertyType &DeviceProperties::getPropertyType(void) const
 {
-	typedef PropertyStructWrapper<PropertyType>* PropertyWrapperPtr;
+    typedef PropertyStructWrapper<PropertyType> *PropertyWrapperPtr;
 
-	const PropertyDesc		propDesc	= makePropertyDesc<PropertyType>();
-	const VkStructureType	sType		= propDesc.sType;
+    const PropertyDesc propDesc = makePropertyDesc<PropertyType>();
+    const VkStructureType sType = propDesc.sType;
 
-	// try to find property by sType
-	for (auto property : m_properties)
-	{
-		if (sType == property->getPropertyDesc().sType)
-			return static_cast<PropertyWrapperPtr>(property)->getPropertyTypeRef();
-	}
+    // try to find property by sType
+    for (auto property : m_properties)
+    {
+        if (sType == property->getPropertyDesc().sType)
+            return static_cast<PropertyWrapperPtr>(property)->getPropertyTypeRef();
+    }
 
-	// try to find property by id that was assigned by gen_framework script
-	const deUint32 propertyId = propDesc.typeId;
-	for (auto property : m_properties)
-	{
-		if (propertyId == property->getPropertyTypeId())
-			return static_cast<PropertyWrapperPtr>(property)->getPropertyTypeRef();
-	}
+    // try to find property by id that was assigned by gen_framework script
+    const uint32_t propertyId = propDesc.typeId;
+    for (auto property : m_properties)
+    {
+        if (propertyId == property->getPropertyTypeId())
+            return static_cast<PropertyWrapperPtr>(property)->getPropertyTypeRef();
+    }
 
-	// if initialized property structure was not found create empty one and return it
-	m_properties.push_back(vk::createPropertyStructWrapper<PropertyType>());
-	return static_cast<PropertyWrapperPtr>(m_properties.back())->getPropertyTypeRef();
+    // if initialized property structure was not found create empty one and return it
+    m_properties.push_back(vk::createPropertyStructWrapper<PropertyType>());
+    return static_cast<PropertyWrapperPtr>(m_properties.back())->getPropertyTypeRef();
 }
 
-template<class PropertyType>
+template <class PropertyType>
 class PropertyStructWrapper : public PropertyStructWrapperBase
 {
 public:
-	PropertyStructWrapper (const PropertyDesc& propertyDesc)
-		: m_propertyDesc(propertyDesc)
-	{
-		deMemset(&m_propertyType, 0, sizeof(m_propertyType));
-		m_propertyType.sType = propertyDesc.sType;
-	}
+    PropertyStructWrapper(const PropertyDesc &propertyDesc) : m_propertyDesc(propertyDesc)
+    {
+        deMemset(&m_propertyType, 0, sizeof(m_propertyType));
+        m_propertyType.sType = propertyDesc.sType;
+    }
 
-	void initializePropertyFromBlob (const AllPropertiesBlobs& allPropertiesBlobs)
-	{
-		initPropertyFromBlobWrapper(m_propertyType, allPropertiesBlobs);
-	}
+    void initializePropertyFromBlob(const AllPropertiesBlobs &allPropertiesBlobs)
+    {
+        initPropertyFromBlobWrapper(m_propertyType, allPropertiesBlobs);
+    }
 
-	deUint32		getPropertyTypeId	(void) const	{ return m_propertyDesc.typeId;	}
-	PropertyDesc	getPropertyDesc		(void) const	{ return m_propertyDesc;			}
-	void**			getPropertyTypeNext	(void)			{ return &m_propertyType.pNext;	}
-	void*			getPropertyTypeRaw	(void)			{ return &m_propertyType;		}
-	PropertyType&	getPropertyTypeRef	(void)			{ return m_propertyType;			}
+    uint32_t getPropertyTypeId(void) const
+    {
+        return m_propertyDesc.typeId;
+    }
+    PropertyDesc getPropertyDesc(void) const
+    {
+        return m_propertyDesc;
+    }
+    void **getPropertyTypeNext(void)
+    {
+        return &m_propertyType.pNext;
+    }
+    void *getPropertyTypeRaw(void)
+    {
+        return &m_propertyType;
+    }
+    PropertyType &getPropertyTypeRef(void)
+    {
+        return m_propertyType;
+    }
 
 public:
-	// metadata about property structure
-	const PropertyDesc	m_propertyDesc;
+    // metadata about property structure
+    const PropertyDesc m_propertyDesc;
 
-	// actual vulkan property structure
-	PropertyType			m_propertyType;
+    // actual vulkan property structure
+    PropertyType m_propertyType;
 };
-} // vk
+} // namespace vk
 
 #endif // _VKDEVICEPROPERTIES_HPP

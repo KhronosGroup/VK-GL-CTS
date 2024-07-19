@@ -32,9 +32,9 @@ namespace vkt
 namespace sr
 {
 
-tcu::TestCaseGroup*	createMatrixTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMatrixTests(tcu::TestContext &testCtx);
 
-} // sr
-} // vkt
+} // namespace sr
+} // namespace vkt
 
 #endif // _VKTSHADERRENDERMATRIXTESTS_HPP

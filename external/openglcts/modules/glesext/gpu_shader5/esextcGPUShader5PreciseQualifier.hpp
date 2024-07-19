@@ -134,45 +134,46 @@ namespace glcts
  *    different values for positions and weights.
  */
 
-union WeightedSum {
-	float		 floatv;
-	unsigned int intv;
+union WeightedSum
+{
+    float floatv;
+    unsigned int intv;
 };
 
 class GPUShader5PreciseQualifier : public TestCaseBase
 {
 public:
-	/* Public variables */
-	GPUShader5PreciseQualifier(Context& context, const ExtParameters& extParams, const char* name,
-							   const char* description);
+    /* Public variables */
+    GPUShader5PreciseQualifier(Context &context, const ExtParameters &extParams, const char *name,
+                               const char *description);
 
-	virtual ~GPUShader5PreciseQualifier()
-	{
-	}
+    virtual ~GPUShader5PreciseQualifier()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private variables */
-	static const char*		 m_fragment_shader_code;
-	static const char*		 m_vertex_shader_code;
-	static const glw::GLuint m_n_components;
-	static const glw::GLuint m_n_iterations;
-	static const glw::GLint  m_position_range;
+    /* Private variables */
+    static const char *m_fragment_shader_code;
+    static const char *m_vertex_shader_code;
+    static const glw::GLuint m_n_components;
+    static const glw::GLuint m_n_iterations;
+    static const glw::GLint m_position_range;
 
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_program_id;
-	glw::GLuint m_tf_buffer_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vertex_shader_id;
-	glw::GLuint m_vertex_positions_buffer_id;
-	glw::GLuint m_vertex_weights_buffer_id;
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_program_id;
+    glw::GLuint m_tf_buffer_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vertex_shader_id;
+    glw::GLuint m_vertex_positions_buffer_id;
+    glw::GLuint m_vertex_weights_buffer_id;
 
-	/* Private functions */
-	void drawAndGetFeedbackResult(const glw::GLfloat* vertex_data_positions, const glw::GLfloat* vertex_data_weights,
-								  WeightedSum* feedback_result);
-	void initTest(void);
+    /* Private functions */
+    void drawAndGetFeedbackResult(const glw::GLfloat *vertex_data_positions, const glw::GLfloat *vertex_data_weights,
+                                  WeightedSum *feedback_result);
+    void initTest(void);
 };
 
 } // namespace glcts

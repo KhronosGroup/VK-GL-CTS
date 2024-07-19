@@ -53,15 +53,15 @@ namespace es31compatibility
 class Tests : public deqp::TestCaseGroup
 {
 public:
-	/* Public member functions. */
-	Tests(deqp::Context& context);
+    /* Public member functions. */
+    Tests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	/* Private member functions. */
-	Tests(const Tests& other);
-	Tests& operator=(const Tests& other);
+    /* Private member functions. */
+    Tests(const Tests &other);
+    Tests &operator=(const Tests &other);
 };
 
 /* Tests class */
@@ -78,25 +78,25 @@ private:
 class ShaderCompilationCompatibilityTests : public deqp::TestCase
 {
 public:
-	/* Public member functions. */
-	ShaderCompilationCompatibilityTests(deqp::Context& context);
+    /* Public member functions. */
+    ShaderCompilationCompatibilityTests(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	ShaderCompilationCompatibilityTests(const ShaderCompilationCompatibilityTests& other);
-	ShaderCompilationCompatibilityTests& operator=(const ShaderCompilationCompatibilityTests& other);
+    /* Private member functions */
+    ShaderCompilationCompatibilityTests(const ShaderCompilationCompatibilityTests &other);
+    ShaderCompilationCompatibilityTests &operator=(const ShaderCompilationCompatibilityTests &other);
 
-	/* Static member constants. */
-	static const struct TestShader
-	{
-		glw::GLenum		   type;
-		const glw::GLchar* type_name;
-		const glw::GLchar* source;
-	} s_shaders[]; //!< Test cases shaders.
+    /* Static member constants. */
+    static const struct TestShader
+    {
+        glw::GLenum type;
+        const glw::GLchar *type_name;
+        const glw::GLchar *source;
+    } s_shaders[]; //!< Test cases shaders.
 
-	static const glw::GLsizei s_shaders_count; //!< Test cases shaders count.
+    static const glw::GLsizei s_shaders_count; //!< Test cases shaders count.
 };
 
 /* ShaderCompilationCompatibilityTests */
@@ -110,38 +110,38 @@ private:
 class ShaderFunctionalCompatibilityTest : public deqp::TestCase
 {
 public:
-	/* Public member functions. */
-	ShaderFunctionalCompatibilityTest(deqp::Context& context);
+    /* Public member functions. */
+    ShaderFunctionalCompatibilityTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member variables. */
-	glw::GLuint m_po_id;  //!< Program object name.
-	glw::GLuint m_fbo_id; //!< Framebuffer object name.
-	glw::GLuint m_rbo_id; //!< Renderbuffer object name.
-	glw::GLuint m_vao_id; //!< Vertex Array Object name.
+    /* Private member variables. */
+    glw::GLuint m_po_id;  //!< Program object name.
+    glw::GLuint m_fbo_id; //!< Framebuffer object name.
+    glw::GLuint m_rbo_id; //!< Renderbuffer object name.
+    glw::GLuint m_vao_id; //!< Vertex Array Object name.
 
-	/* Static member constants. */
-	static const glw::GLchar* s_shader_version;		  //!< Shader version string.
-	static const glw::GLchar* s_vertex_shader_body;   //!< Vertex shader body template.
-	static const glw::GLchar* s_fragment_shader_body; //!< Fragment shader body template.
-	static const struct Shader
-	{
-		const glw::GLchar* vertex[3];
-		const glw::GLchar* fragment[3];
-	} s_shaders[];							   //!< Template parameter cases.
-	static const glw::GLsizei s_shaders_count; //!< Number of template parameter cases.
+    /* Static member constants. */
+    static const glw::GLchar *s_shader_version;       //!< Shader version string.
+    static const glw::GLchar *s_vertex_shader_body;   //!< Vertex shader body template.
+    static const glw::GLchar *s_fragment_shader_body; //!< Fragment shader body template.
+    static const struct Shader
+    {
+        const glw::GLchar *vertex[3];
+        const glw::GLchar *fragment[3];
+    } s_shaders[];                             //!< Template parameter cases.
+    static const glw::GLsizei s_shaders_count; //!< Number of template parameter cases.
 
-	/* Private member functions */
-	ShaderFunctionalCompatibilityTest(const ShaderFunctionalCompatibilityTest& other);
-	ShaderFunctionalCompatibilityTest& operator=(const ShaderFunctionalCompatibilityTest& other);
+    /* Private member functions */
+    ShaderFunctionalCompatibilityTest(const ShaderFunctionalCompatibilityTest &other);
+    ShaderFunctionalCompatibilityTest &operator=(const ShaderFunctionalCompatibilityTest &other);
 
-	bool createProgram(const struct Shader shader_source);
-	void createFramebufferAndVertexArrayObject();
-	bool test();
-	void cleanProgram();
-	void cleanFramebufferAndVertexArrayObject();
+    bool createProgram(const struct Shader shader_source);
+    void createFramebufferAndVertexArrayObject();
+    bool test();
+    void cleanProgram();
+    void cleanFramebufferAndVertexArrayObject();
 };
 
 /* ShaderFunctionalCompatibilityTests */
@@ -156,21 +156,21 @@ private:
 class SampleVariablesTests : public deqp::TestCaseGroup
 {
 public:
-	SampleVariablesTests(deqp::Context& context, glu::GLSLVersion glslVersion);
-	~SampleVariablesTests();
+    SampleVariablesTests(deqp::Context &context, glu::GLSLVersion glslVersion);
+    ~SampleVariablesTests();
 
-	void init();
+    void init();
 
 private:
-	SampleVariablesTests(const SampleVariablesTests& other);
-	SampleVariablesTests& operator=(const SampleVariablesTests& other);
+    SampleVariablesTests(const SampleVariablesTests &other);
+    SampleVariablesTests &operator=(const SampleVariablesTests &other);
 
-	enum
-	{
-		SAMPLE_MASKS = 8
-	};
+    enum
+    {
+        SAMPLE_MASKS = 8
+    };
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
 /* SampleVariablesTests class */
@@ -192,14 +192,14 @@ private:
 class ShaderImageLoadStoreTests : public deqp::TestCaseGroup
 {
 public:
-	ShaderImageLoadStoreTests(deqp::Context& context);
-	~ShaderImageLoadStoreTests(void);
+    ShaderImageLoadStoreTests(deqp::Context &context);
+    ~ShaderImageLoadStoreTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ShaderImageLoadStoreTests(const ShaderImageLoadStoreTests& other);
-	ShaderImageLoadStoreTests& operator=(const ShaderImageLoadStoreTests& other);
+    ShaderImageLoadStoreTests(const ShaderImageLoadStoreTests &other);
+    ShaderImageLoadStoreTests &operator=(const ShaderImageLoadStoreTests &other);
 };
 
 /* ShaderImageLoadStoreTests class */
@@ -215,18 +215,18 @@ private:
 class ShaderStorageBufferObjectTests : public deqp::TestCaseGroup
 {
 public:
-	ShaderStorageBufferObjectTests(deqp::Context& context);
-	~ShaderStorageBufferObjectTests(void);
+    ShaderStorageBufferObjectTests(deqp::Context &context);
+    ~ShaderStorageBufferObjectTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ShaderStorageBufferObjectTests(const ShaderStorageBufferObjectTests& other);
-	ShaderStorageBufferObjectTests& operator=(const ShaderStorageBufferObjectTests& other);
+    ShaderStorageBufferObjectTests(const ShaderStorageBufferObjectTests &other);
+    ShaderStorageBufferObjectTests &operator=(const ShaderStorageBufferObjectTests &other);
 };
 
 /* ShaderStorageBufferObjectTests class */
-} /* es31compatibility namespace */
-} /* gl4cts namespace */
+} // namespace es31compatibility
+} // namespace gl4cts
 
 #endif // _GL4CES31COMPATIBILITYTESTS_HPP

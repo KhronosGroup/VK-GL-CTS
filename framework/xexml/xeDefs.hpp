@@ -34,20 +34,34 @@ namespace xe
 class Error : public std::runtime_error
 {
 public:
-	Error (const std::string& message) : std::runtime_error(message) {}
-	Error (const char* message, const char* expr, const char* file, int line);
+    Error(const std::string &message) : std::runtime_error(message)
+    {
+    }
+    Error(const char *message, const char *expr, const char *file, int line);
 };
 
 class ParseError : public Error
 {
 public:
-	ParseError (const std::string& message) : Error(message) {}
+    ParseError(const std::string &message) : Error(message)
+    {
+    }
 };
 
-} // xe
+} // namespace xe
 
-#define XE_FAIL(MSG)			throw xe::Error(MSG, "", __FILE__, __LINE__)
-#define XE_CHECK(X)				do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) throw xe::Error(NULL, #X, __FILE__, __LINE__); } while(deGetFalse())
-#define XE_CHECK_MSG(X, MSG)	do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) throw xe::Error(MSG, #X, __FILE__, __LINE__); } while(deGetFalse())
+#define XE_FAIL(MSG) throw xe::Error(MSG, "", __FILE__, __LINE__)
+#define XE_CHECK(X)                                        \
+    do                                                     \
+    {                                                      \
+        if ((!false && (X)) ? false : true)                \
+            throw xe::Error(NULL, #X, __FILE__, __LINE__); \
+    } while (false)
+#define XE_CHECK_MSG(X, MSG)                              \
+    do                                                    \
+    {                                                     \
+        if ((!false && (X)) ? false : true)               \
+            throw xe::Error(MSG, #X, __FILE__, __LINE__); \
+    } while (false)
 
 #endif // _XEDEFS_HPP

@@ -42,67 +42,67 @@ namespace deqp
 class GLWrapper : public glu::CallLogWrapper
 {
 public:
-	virtual ~GLWrapper()
-	{
-	}
+    virtual ~GLWrapper()
+    {
+    }
 
-	GLWrapper();
-	Context& m_context;
+    GLWrapper();
+    Context &m_context;
 };
 
 class SubcaseBase : public GLWrapper
 {
 public:
-	typedef de::SharedPtr<SubcaseBase> SubcaseBasePtr;
-	SubcaseBase();
-	virtual ~SubcaseBase();
-	virtual long Run() = 0;
-	virtual long Setup();
-	virtual long Cleanup();
+    typedef de::SharedPtr<SubcaseBase> SubcaseBasePtr;
+    SubcaseBase();
+    virtual ~SubcaseBase();
+    virtual long Run() = 0;
+    virtual long Setup();
+    virtual long Cleanup();
 
-	virtual std::string Title()		   = 0;
-	virtual std::string Purpose()	  = 0;
-	virtual std::string Method()	   = 0;
-	virtual std::string PassCriteria() = 0;
-	std::string			VertexShader();
-	std::string			VertexShader2();
+    virtual std::string Title()        = 0;
+    virtual std::string Purpose()      = 0;
+    virtual std::string Method()       = 0;
+    virtual std::string PassCriteria() = 0;
+    std::string VertexShader();
+    std::string VertexShader2();
 
-	std::string TessControlShader();
-	std::string TessControlShader2();
+    std::string TessControlShader();
+    std::string TessControlShader2();
 
-	std::string TessEvalShader();
-	std::string TessEvalShader2();
+    std::string TessEvalShader();
+    std::string TessEvalShader2();
 
-	std::string GeometryShader();
-	std::string GeometryShader2();
+    std::string GeometryShader();
+    std::string GeometryShader2();
 
-	std::string FragmentShader();
-	std::string FragmentShader2();
-	void		Documentation();
-	void OutputNotSupported(std::string message);
+    std::string FragmentShader();
+    std::string FragmentShader2();
+    void Documentation();
+    void OutputNotSupported(std::string message);
 };
 
 class TestSubcase : public TestCase
 {
 public:
-	TestSubcase(Context& context, const char* name, SubcaseBase::SubcaseBasePtr (*factoryFunc)());
-	virtual ~TestSubcase(void);
+    TestSubcase(Context &context, const char *name, SubcaseBase::SubcaseBasePtr (*factoryFunc)());
+    virtual ~TestSubcase(void);
 
-	IterateResult iterate(void);
+    IterateResult iterate(void);
 
-	template <class Type>
-	static SubcaseBase::SubcaseBasePtr Create()
-	{
-		return SubcaseBase::SubcaseBasePtr(new Type());
-	}
+    template <class Type>
+    static SubcaseBase::SubcaseBasePtr Create()
+    {
+        return SubcaseBase::SubcaseBasePtr(new Type());
+    }
 
 private:
-	TestSubcase(const TestSubcase& other);
-	TestSubcase& operator=(const TestSubcase& other);
-	void init(void);
-	void deinit(void);
-	SubcaseBase::SubcaseBasePtr (*m_factoryFunc)();
-	int m_iterationCount;
+    TestSubcase(const TestSubcase &other);
+    TestSubcase &operator=(const TestSubcase &other);
+    void init(void);
+    void deinit(void);
+    SubcaseBase::SubcaseBasePtr (*m_factoryFunc)();
+    int m_iterationCount;
 };
 
 } // namespace deqp

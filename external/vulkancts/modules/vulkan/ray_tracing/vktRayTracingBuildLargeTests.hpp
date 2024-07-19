@@ -31,9 +31,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createBuildLargeShaderSetTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBuildLargeShaderSetTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGBUILDLARGETESTS_HPP

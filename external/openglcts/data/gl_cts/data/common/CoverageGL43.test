@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!-- Coverage test for OpenGL 4.3 tokens and entry points -->
+
+<!-- Test is incomplete -->
+
+<test mode="gl" pattern="coverage">
+    <funcs>
+        <func>
+            <name>glInvalidateFramebuffer</name>
+        </func>
+        <func>
+            <name>glInvalidateSubFramebuffer</name>
+        </func>
+    </funcs>
+</test>

@@ -36,18 +36,18 @@ namespace Functional
 class SSBOArrayLengthTests : public TestCaseGroup
 {
 public:
-							SSBOArrayLengthTests	(Context& context);
-							~SSBOArrayLengthTests	(void);
+    SSBOArrayLengthTests(Context &context);
+    ~SSBOArrayLengthTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							SSBOArrayLengthTests	(const SSBOArrayLengthTests& other);
-	SSBOArrayLengthTests&	operator=				(const SSBOArrayLengthTests& other);
+    SSBOArrayLengthTests(const SSBOArrayLengthTests &other);
+    SSBOArrayLengthTests &operator=(const SSBOArrayLengthTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSSBOARRAYLENGTHTESTS_HPP

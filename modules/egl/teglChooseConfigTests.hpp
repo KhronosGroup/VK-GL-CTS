@@ -34,13 +34,13 @@ namespace egl
 class ChooseConfigTests : public TestCaseGroup
 {
 public:
-							ChooseConfigTests			(EglTestContext& eglTestCtx);
-	virtual					~ChooseConfigTests			(void);
+    ChooseConfigTests(EglTestContext &eglTestCtx);
+    virtual ~ChooseConfigTests(void);
 
-	void					init						(void);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLCHOOSECONFIGTESTS_HPP

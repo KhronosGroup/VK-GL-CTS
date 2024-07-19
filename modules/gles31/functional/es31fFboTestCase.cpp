@@ -43,354 +43,370 @@ namespace gles31
 namespace Functional
 {
 
-using tcu::TestLog;
 using std::string;
+using tcu::TestLog;
 
-FboTestCase::FboTestCase (Context& context, const char* name, const char* description, bool useScreenSizedViewport)
-	: TestCase			(context, name, description)
-	, m_viewportWidth	(useScreenSizedViewport ? context.getRenderTarget().getWidth() : 128)
-	, m_viewportHeight	(useScreenSizedViewport ? context.getRenderTarget().getHeight() : 128)
+FboTestCase::FboTestCase(Context &context, const char *name, const char *description, bool useScreenSizedViewport)
+    : TestCase(context, name, description)
+    , m_viewportWidth(useScreenSizedViewport ? context.getRenderTarget().getWidth() : 128)
+    , m_viewportHeight(useScreenSizedViewport ? context.getRenderTarget().getHeight() : 128)
 {
 }
 
-FboTestCase::~FboTestCase (void)
+FboTestCase::~FboTestCase(void)
 {
 }
 
-FboTestCase::IterateResult FboTestCase::iterate (void)
+FboTestCase::IterateResult FboTestCase::iterate(void)
 {
-	glu::RenderContext&			renderCtx		= TestCase::m_context.getRenderContext();
-	const tcu::RenderTarget&	renderTarget	= renderCtx.getRenderTarget();
-	TestLog&					log				= m_testCtx.getLog();
+    glu::RenderContext &renderCtx         = TestCase::m_context.getRenderContext();
+    const tcu::RenderTarget &renderTarget = renderCtx.getRenderTarget();
+    TestLog &log                          = m_testCtx.getLog();
 
-	// Viewport.
-	de::Random					rnd				(deStringHash(getName()));
-	int							width			= deMin32(renderTarget.getWidth(),	m_viewportWidth);
-	int							height			= deMin32(renderTarget.getHeight(),	m_viewportHeight);
-	int							x				= rnd.getInt(0, renderTarget.getWidth()		- width);
-	int							y				= rnd.getInt(0, renderTarget.getHeight()	- height);
+    // Viewport.
+    de::Random rnd(deStringHash(getName()));
+    int width  = deMin32(renderTarget.getWidth(), m_viewportWidth);
+    int height = deMin32(renderTarget.getHeight(), m_viewportHeight);
+    int x      = rnd.getInt(0, renderTarget.getWidth() - width);
+    int y      = rnd.getInt(0, renderTarget.getHeight() - height);
 
-	// Surface format and storage is choosen by render().
-	tcu::Surface				reference;
-	tcu::Surface				result;
+    // Surface format and storage is choosen by render().
+    tcu::Surface reference;
+    tcu::Surface result;
 
-	// Call preCheck() that can throw exception if some requirement is not met.
-	preCheck();
+    // Call preCheck() that can throw exception if some requirement is not met.
+    preCheck();
 
-	log << TestLog::Message << "Rendering with GL driver" << TestLog::EndMessage;
+    log << TestLog::Message << "Rendering with GL driver" << TestLog::EndMessage;
 
-	// Render using GLES3.1
-	try
-	{
-		sglr::GLContext context(renderCtx, log, 0, tcu::IVec4(x, y, width, height));
-		setContext(&context);
-		render(result);
+    // Render using GLES3.1
+    try
+    {
+        sglr::GLContext context(renderCtx, log, 0, tcu::IVec4(x, y, width, height));
+        setContext(&context);
+        render(result);
 
-		// Check error.
-		deUint32 err = glGetError();
-		if (err != GL_NO_ERROR)
-			throw glu::Error(err, glu::getErrorStr(err).toString().c_str(), DE_NULL, __FILE__, __LINE__);
+        // Check error.
+        uint32_t err = glGetError();
+        if (err != GL_NO_ERROR)
+            throw glu::Error(err, glu::getErrorStr(err).toString().c_str(), DE_NULL, __FILE__, __LINE__);
 
-		setContext(DE_NULL);
-	}
-	catch (const FboTestUtil::FboIncompleteException& e)
-	{
-		if (e.getReason() == GL_FRAMEBUFFER_UNSUPPORTED)
-		{
-			log << e;
-			m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
-			return STOP;
-		}
-		else
-			throw;
-	}
+        setContext(DE_NULL);
+    }
+    catch (const FboTestUtil::FboIncompleteException &e)
+    {
+        if (e.getReason() == GL_FRAMEBUFFER_UNSUPPORTED)
+        {
+            log << e;
+            m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
+            return STOP;
+        }
+        else
+            throw;
+    }
 
-	log << TestLog::Message << "Rendering reference image" << TestLog::EndMessage;
+    log << TestLog::Message << "Rendering reference image" << TestLog::EndMessage;
 
-	// Render reference.
-	{
-		sglr::ReferenceContextBuffers	buffers	(tcu::PixelFormat(8,8,8,renderTarget.getPixelFormat().alphaBits?8:0), renderTarget.getDepthBits(), renderTarget.getStencilBits(), width, height);
-		sglr::ReferenceContext			context	(sglr::ReferenceContextLimits(renderCtx), buffers.getColorbuffer(), buffers.getDepthbuffer(), buffers.getStencilbuffer());
+    // Render reference.
+    {
+        sglr::ReferenceContextBuffers buffers(
+            tcu::PixelFormat(8, 8, 8, renderTarget.getPixelFormat().alphaBits ? 8 : 0), renderTarget.getDepthBits(),
+            renderTarget.getStencilBits(), width, height);
+        sglr::ReferenceContext context(sglr::ReferenceContextLimits(renderCtx), buffers.getColorbuffer(),
+                                       buffers.getDepthbuffer(), buffers.getStencilbuffer());
 
-		setContext(&context);
-		render(reference);
-		setContext(DE_NULL);
-	}
+        setContext(&context);
+        render(reference);
+        setContext(DE_NULL);
+    }
 
-	bool isOk = compare(reference, result);
-	m_testCtx.setTestResult(isOk ? QP_TEST_RESULT_PASS	: QP_TEST_RESULT_FAIL,
-							isOk ? "Pass"				: "Image comparison failed");
-	return STOP;
+    bool isOk = compare(reference, result);
+    m_testCtx.setTestResult(isOk ? QP_TEST_RESULT_PASS : QP_TEST_RESULT_FAIL,
+                            isOk ? "Pass" : "Image comparison failed");
+    return STOP;
 }
 
-bool FboTestCase::compare (const tcu::Surface& reference, const tcu::Surface& result)
+bool FboTestCase::compare(const tcu::Surface &reference, const tcu::Surface &result)
 {
-	return tcu::fuzzyCompare(m_testCtx.getLog(), "Result", "Image comparison result", reference, result, 0.05f, tcu::COMPARE_LOG_RESULT);
+    return tcu::fuzzyCompare(m_testCtx.getLog(), "Result", "Image comparison result", reference, result, 0.05f,
+                             tcu::COMPARE_LOG_RESULT);
 }
 
-void FboTestCase::readPixels (tcu::Surface& dst, int x, int y, int width, int height, const tcu::TextureFormat& format, const tcu::Vec4& scale, const tcu::Vec4& bias)
+void FboTestCase::readPixels(tcu::Surface &dst, int x, int y, int width, int height, const tcu::TextureFormat &format,
+                             const tcu::Vec4 &scale, const tcu::Vec4 &bias)
 {
-	FboTestUtil::readPixels(*getCurrentContext(), dst, x, y, width, height, format, scale, bias);
+    FboTestUtil::readPixels(*getCurrentContext(), dst, x, y, width, height, format, scale, bias);
 }
 
-void FboTestCase::readPixels (tcu::Surface& dst, int x, int y, int width, int height)
+void FboTestCase::readPixels(tcu::Surface &dst, int x, int y, int width, int height)
 {
-	getCurrentContext()->readPixels(dst, x, y, width, height);
+    getCurrentContext()->readPixels(dst, x, y, width, height);
 }
 
-void FboTestCase::checkFramebufferStatus (deUint32 target)
+void FboTestCase::checkFramebufferStatus(uint32_t target)
 {
-	deUint32 status = glCheckFramebufferStatus(target);
-	if (status != GL_FRAMEBUFFER_COMPLETE)
-		throw FboTestUtil::FboIncompleteException(status, __FILE__, __LINE__);
+    uint32_t status = glCheckFramebufferStatus(target);
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+        throw FboTestUtil::FboIncompleteException(status, __FILE__, __LINE__);
 }
 
-void FboTestCase::checkError (void)
+void FboTestCase::checkError(void)
 {
-	deUint32 err = glGetError();
-	if (err != GL_NO_ERROR)
-		throw glu::Error((int)err, (string("Got ") + glu::getErrorStr(err).toString()).c_str(), DE_NULL, __FILE__, __LINE__);
+    uint32_t err = glGetError();
+    if (err != GL_NO_ERROR)
+        throw glu::Error((int)err, (string("Got ") + glu::getErrorStr(err).toString()).c_str(), DE_NULL, __FILE__,
+                         __LINE__);
 }
 
-static bool isRequiredFormat (deUint32 format, glu::RenderContext& renderContext)
+static bool isRequiredFormat(uint32_t format, glu::RenderContext &renderContext)
 {
-	const bool supportsES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
-	const bool supportsGL45 = glu::contextSupports(renderContext.getType(), glu::ApiType::core(4, 5));
-	switch (format)
-	{
-		// Color-renderable formats
-		case GL_RGBA32I:
-		case GL_RGBA32UI:
-		case GL_RGBA16I:
-		case GL_RGBA16UI:
-		case GL_RGBA8:
-		case GL_RGBA8I:
-		case GL_RGBA8UI:
-		case GL_SRGB8_ALPHA8:
-		case GL_RGB10_A2:
-		case GL_RGB10_A2UI:
-		case GL_RGBA4:
-		case GL_RGB5_A1:
-		case GL_RGB8:
-		case GL_RGB565:
-		case GL_RG32I:
-		case GL_RG32UI:
-		case GL_RG16I:
-		case GL_RG16UI:
-		case GL_RG8:
-		case GL_RG8I:
-		case GL_RG8UI:
-		case GL_R32I:
-		case GL_R32UI:
-		case GL_R16I:
-		case GL_R16UI:
-		case GL_R8:
-		case GL_R8I:
-		case GL_R8UI:
-			return true;
+    const bool supportsES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+    const bool supportsGL45 = glu::contextSupports(renderContext.getType(), glu::ApiType::core(4, 5));
+    switch (format)
+    {
+    // Color-renderable formats
+    case GL_RGBA32I:
+    case GL_RGBA32UI:
+    case GL_RGBA16I:
+    case GL_RGBA16UI:
+    case GL_RGBA8:
+    case GL_RGBA8I:
+    case GL_RGBA8UI:
+    case GL_SRGB8_ALPHA8:
+    case GL_RGB10_A2:
+    case GL_RGB10_A2UI:
+    case GL_RGBA4:
+    case GL_RGB5_A1:
+    case GL_RGB8:
+    case GL_RGB565:
+    case GL_RG32I:
+    case GL_RG32UI:
+    case GL_RG16I:
+    case GL_RG16UI:
+    case GL_RG8:
+    case GL_RG8I:
+    case GL_RG8UI:
+    case GL_R32I:
+    case GL_R32UI:
+    case GL_R16I:
+    case GL_R16UI:
+    case GL_R8:
+    case GL_R8I:
+    case GL_R8UI:
+        return true;
 
-		// Depth formats
-		case GL_DEPTH_COMPONENT32F:
-		case GL_DEPTH_COMPONENT24:
-		case GL_DEPTH_COMPONENT16:
-			return true;
+    // Depth formats
+    case GL_DEPTH_COMPONENT32F:
+    case GL_DEPTH_COMPONENT24:
+    case GL_DEPTH_COMPONENT16:
+        return true;
 
-		// Depth+stencil formats
-		case GL_DEPTH32F_STENCIL8:
-		case GL_DEPTH24_STENCIL8:
-			return true;
+    // Depth+stencil formats
+    case GL_DEPTH32F_STENCIL8:
+    case GL_DEPTH24_STENCIL8:
+        return true;
 
-		// Stencil formats
-		case GL_STENCIL_INDEX8:
-			return true;
+    // Stencil formats
+    case GL_STENCIL_INDEX8:
+        return true;
 
-		// Float format
-		case GL_RGBA32F:
-		case GL_R11F_G11F_B10F:
-		case GL_RG32F:
-		case GL_R32F:
-		case GL_RGBA16F:
-		case GL_RG16F:
-		case GL_R16F:
-			return supportsES32 || supportsGL45;
-		case GL_RGB16F:
-			return supportsGL45;
+    // Float format
+    case GL_RGBA32F:
+    case GL_R11F_G11F_B10F:
+    case GL_RG32F:
+    case GL_R32F:
+    case GL_RGBA16F:
+    case GL_RG16F:
+    case GL_R16F:
+        return supportsES32 || supportsGL45;
+    case GL_R16:
+    case GL_RG16:
+    case GL_RGBA16:
+    case GL_RGB16F:
+        return supportsGL45;
 
-		default:
-			return false;
-	}
+    default:
+        return false;
+    }
 }
 
-static std::vector<std::string> getEnablingExtensions (deUint32 format, glu::RenderContext& renderContext)
+static std::vector<std::string> getEnablingExtensions(uint32_t format, glu::RenderContext &renderContext)
 {
-	const bool					supportsES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
-	std::vector<std::string>	out;
+    const bool supportsES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+    const bool supportsGL45 = glu::contextSupports(renderContext.getType(), glu::ApiType::core(4, 5));
+    std::vector<std::string> out;
 
-	DE_ASSERT(!isRequiredFormat(format, renderContext));
+    DE_ASSERT(!isRequiredFormat(format, renderContext));
+    if (supportsGL45)
+        return out;
 
-	switch (format)
-	{
-		case GL_RGB16F:
-			out.push_back("GL_EXT_color_buffer_half_float");
-			break;
+    switch (format)
+    {
+    case GL_RGB16F:
+        out.push_back("GL_EXT_color_buffer_half_float");
+        break;
 
-		case GL_RGB32F:
-			out.push_back("GL_EXT_color_buffer_float");
-			break;
+    case GL_RGB32F:
+        out.push_back("GL_EXT_color_buffer_float");
+        break;
 
-		case GL_RGBA16F:
-		case GL_RG16F:
-		case GL_R16F:
-			if (!supportsES32)
-				out.push_back("GL_EXT_color_buffer_half_float");
-			break;
+    case GL_RGBA16F:
+    case GL_RG16F:
+    case GL_R16F:
+        if (!supportsES32)
+            out.push_back("GL_EXT_color_buffer_half_float");
+        break;
 
-		case GL_RGBA32F:
-		case GL_R11F_G11F_B10F:
-		case GL_RG32F:
-		case GL_R32F:
-			if (!supportsES32)
-				out.push_back("GL_EXT_color_buffer_float");
-			break;
+    case GL_RGBA32F:
+    case GL_R11F_G11F_B10F:
+    case GL_RG32F:
+    case GL_R32F:
+        if (!supportsES32)
+            out.push_back("GL_EXT_color_buffer_float");
+        break;
 
-		case GL_R16:
-		case GL_RG16:
-		case GL_RGBA16:
-			out.push_back("GL_EXT_texture_norm16");
-			break;
+    case GL_R16:
+    case GL_RG16:
+    case GL_RGBA16:
+        out.push_back("GL_EXT_texture_norm16");
+        break;
 
-		default:
-			break;
-	}
+    default:
+        break;
+    }
 
-	return out;
+    return out;
 }
 
-static bool isAnyExtensionSupported (Context& context, const std::vector<std::string>& requiredExts)
+static bool isAnyExtensionSupported(Context &context, const std::vector<std::string> &requiredExts)
 {
-	for (std::vector<std::string>::const_iterator iter = requiredExts.begin(); iter != requiredExts.end(); iter++)
-	{
-		const std::string& extension = *iter;
+    for (std::vector<std::string>::const_iterator iter = requiredExts.begin(); iter != requiredExts.end(); iter++)
+    {
+        const std::string &extension = *iter;
 
-		if (context.getContextInfo().isExtensionSupported(extension.c_str()))
-			return true;
-	}
+        if (context.getContextInfo().isExtensionSupported(extension.c_str()))
+            return true;
+    }
 
-	return false;
+    return false;
 }
 
-void FboTestCase::checkFormatSupport (deUint32 sizedFormat)
+void FboTestCase::checkFormatSupport(uint32_t sizedFormat)
 {
-	const bool						isCoreFormat	= isRequiredFormat(sizedFormat, m_context.getRenderContext());
-	const std::vector<std::string>	requiredExts	= (!isCoreFormat) ? getEnablingExtensions(sizedFormat, m_context.getRenderContext()) : std::vector<std::string>();
+    const bool isCoreFormat = isRequiredFormat(sizedFormat, m_context.getRenderContext());
+    const std::vector<std::string> requiredExts =
+        (!isCoreFormat) ? getEnablingExtensions(sizedFormat, m_context.getRenderContext()) : std::vector<std::string>();
 
-	// Check that we don't try to use invalid formats.
-	DE_ASSERT(isCoreFormat || !requiredExts.empty());
+    // Check that we don't try to use invalid formats.
+    DE_ASSERT(isCoreFormat || !requiredExts.empty());
 
-	if (!requiredExts.empty() && !isAnyExtensionSupported(m_context, requiredExts))
-		throw tcu::NotSupportedError("Format not supported");
+    if (!requiredExts.empty() && !isAnyExtensionSupported(m_context, requiredExts))
+        throw tcu::NotSupportedError("Format not supported");
 }
 
-static int getMinimumSampleCount (deUint32 format)
+static int getMinimumSampleCount(uint32_t format)
 {
-	switch (format)
-	{
-		// Core formats
-		case GL_RGBA32I:
-		case GL_RGBA32UI:
-		case GL_RGBA16I:
-		case GL_RGBA16UI:
-		case GL_RGBA8:
-		case GL_RGBA8I:
-		case GL_RGBA8UI:
-		case GL_SRGB8_ALPHA8:
-		case GL_RGB10_A2:
-		case GL_RGB10_A2UI:
-		case GL_RGBA4:
-		case GL_RGB5_A1:
-		case GL_RGB8:
-		case GL_RGB565:
-		case GL_RG32I:
-		case GL_RG32UI:
-		case GL_RG16I:
-		case GL_RG16UI:
-		case GL_RG8:
-		case GL_RG8I:
-		case GL_RG8UI:
-		case GL_R32I:
-		case GL_R32UI:
-		case GL_R16I:
-		case GL_R16UI:
-		case GL_R8:
-		case GL_R8I:
-		case GL_R8UI:
-		case GL_DEPTH_COMPONENT32F:
-		case GL_DEPTH_COMPONENT24:
-		case GL_DEPTH_COMPONENT16:
-		case GL_DEPTH32F_STENCIL8:
-		case GL_DEPTH24_STENCIL8:
-		case GL_STENCIL_INDEX8:
-			return 4;
+    switch (format)
+    {
+    // Core formats
+    case GL_RGBA32I:
+    case GL_RGBA32UI:
+    case GL_RGBA16I:
+    case GL_RGBA16UI:
+    case GL_RGBA8:
+    case GL_RGBA8I:
+    case GL_RGBA8UI:
+    case GL_SRGB8_ALPHA8:
+    case GL_RGB10_A2:
+    case GL_RGB10_A2UI:
+    case GL_RGBA4:
+    case GL_RGB5_A1:
+    case GL_RGB8:
+    case GL_RGB565:
+    case GL_RG32I:
+    case GL_RG32UI:
+    case GL_RG16I:
+    case GL_RG16UI:
+    case GL_RG8:
+    case GL_RG8I:
+    case GL_RG8UI:
+    case GL_R32I:
+    case GL_R32UI:
+    case GL_R16I:
+    case GL_R16UI:
+    case GL_R8:
+    case GL_R8I:
+    case GL_R8UI:
+    case GL_DEPTH_COMPONENT32F:
+    case GL_DEPTH_COMPONENT24:
+    case GL_DEPTH_COMPONENT16:
+    case GL_DEPTH32F_STENCIL8:
+    case GL_DEPTH24_STENCIL8:
+    case GL_STENCIL_INDEX8:
+        return 4;
 
-		// GL_EXT_color_buffer_float
-		case GL_R11F_G11F_B10F:
-		case GL_RG16F:
-		case GL_R16F:
-			return 4;
+    // GL_EXT_color_buffer_float
+    case GL_R11F_G11F_B10F:
+    case GL_RG16F:
+    case GL_R16F:
+        return 4;
 
-		case GL_RGBA32F:
-		case GL_RGBA16F:
-		case GL_RG32F:
-		case GL_R32F:
-			return 0;
+    case GL_RGBA32F:
+    case GL_RGBA16F:
+    case GL_RG32F:
+    case GL_R32F:
+        return 0;
 
-		// GL_EXT_color_buffer_half_float
-		case GL_RGB16F:
-			return 0;
+    // GL_EXT_color_buffer_half_float
+    case GL_RGB16F:
+        return 0;
 
-		default:
-			DE_FATAL("Unknown format");
-			return 0;
-	}
+    default:
+        DE_FATAL("Unknown format");
+        return 0;
+    }
 }
 
-static std::vector<int> querySampleCounts (const glw::Functions& gl, deUint32 format)
+static std::vector<int> querySampleCounts(const glw::Functions &gl, uint32_t format)
 {
-	int					numSampleCounts		= 0;
-	std::vector<int>	sampleCounts;
+    int numSampleCounts = 0;
+    std::vector<int> sampleCounts;
 
-	gl.getInternalformativ(GL_RENDERBUFFER, format, GL_NUM_SAMPLE_COUNTS, 1, &numSampleCounts);
+    gl.getInternalformativ(GL_RENDERBUFFER, format, GL_NUM_SAMPLE_COUNTS, 1, &numSampleCounts);
 
-	if (numSampleCounts > 0)
-	{
-		sampleCounts.resize(numSampleCounts);
-		gl.getInternalformativ(GL_RENDERBUFFER, format, GL_SAMPLES, (glw::GLsizei)sampleCounts.size(), &sampleCounts[0]);
-	}
+    if (numSampleCounts > 0)
+    {
+        sampleCounts.resize(numSampleCounts);
+        gl.getInternalformativ(GL_RENDERBUFFER, format, GL_SAMPLES, (glw::GLsizei)sampleCounts.size(),
+                               &sampleCounts[0]);
+    }
 
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to query sample counts for format");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to query sample counts for format");
 
-	return sampleCounts;
+    return sampleCounts;
 }
 
-void FboTestCase::checkSampleCount (deUint32 sizedFormat, int numSamples)
+void FboTestCase::checkSampleCount(uint32_t sizedFormat, int numSamples)
 {
-	const int minSampleCount = getMinimumSampleCount(sizedFormat);
+    const int minSampleCount = getMinimumSampleCount(sizedFormat);
 
-	if (numSamples > minSampleCount)
-	{
-		// Exceeds spec-mandated minimum - need to check.
-		const std::vector<int> supportedSampleCounts = querySampleCounts(m_context.getRenderContext().getFunctions(), sizedFormat);
+    if (numSamples > minSampleCount)
+    {
+        // Exceeds spec-mandated minimum - need to check.
+        const std::vector<int> supportedSampleCounts =
+            querySampleCounts(m_context.getRenderContext().getFunctions(), sizedFormat);
 
-		if (std::find(supportedSampleCounts.begin(), supportedSampleCounts.end(), numSamples) == supportedSampleCounts.end())
-			throw tcu::NotSupportedError("Sample count not supported");
-	}
+        if (std::find(supportedSampleCounts.begin(), supportedSampleCounts.end(), numSamples) ==
+            supportedSampleCounts.end())
+            throw tcu::NotSupportedError("Sample count not supported");
+    }
 }
 
-void FboTestCase::clearColorBuffer (const tcu::TextureFormat& format, const tcu::Vec4& value)
+void FboTestCase::clearColorBuffer(const tcu::TextureFormat &format, const tcu::Vec4 &value)
 {
-	FboTestUtil::clearColorBuffer(*getCurrentContext(), format, value);
+    FboTestUtil::clearColorBuffer(*getCurrentContext(), format, value);
 }
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp

@@ -47,35 +47,40 @@ namespace gl4cts
 
 struct TextureState
 {
-	GLint			   width;
-	GLint			   height;
-	GLint			   depth;
-	GLint			   levels;
-	GLint			   samples;
-	tcu::TextureFormat format;
+    GLint width;
+    GLint height;
+    GLint depth;
+    GLint levels;
+    GLint samples;
+    tcu::TextureFormat format;
 
-	GLint minDepth;
+    GLint minDepth;
 
-	GLint pageSizeX;
-	GLint pageSizeY;
-	GLint pageSizeZ;
+    GLint pageSizeX;
+    GLint pageSizeY;
+    GLint pageSizeZ;
 };
 
 class SparseTextureUtils
 {
 public:
-	static bool verifyQueryError(std::stringstream& log, const char* funcName, GLint target, GLint pname, GLint error,
-								 GLint expectedError);
+    static bool verifyQueryError(std::stringstream &log, const char *funcName, GLint target, GLint pname, GLint error,
+                                 GLint expectedError);
 
-	static bool verifyError(std::stringstream& log, const char* funcName, GLint error, GLint expectedError);
+    static bool verifyError(std::stringstream &log, const char *funcName, GLint error, GLint expectedError);
 
-	static GLint getTargetDepth(GLint target);
+    static GLint getTargetDepth(GLint target);
 
-	static void getTexturePageSizes(const Functions& gl, GLint target, GLint format, GLint& pageSizeX, GLint& pageSizeY,
-									GLint& pageSizeZ);
+    static void getTexturePageSizes(const Functions &gl, GLint target, GLint format, GLint &pageSizeX, GLint &pageSizeY,
+                                    GLint &pageSizeZ);
 
-	static void getTextureLevelSize(GLint target, TextureState& state, GLint level, GLint& width, GLint& height,
-									GLint& depth);
+    static void getTextureLevelSize(GLint target, TextureState &state, GLint level, GLint &width, GLint &height,
+                                    GLint &depth);
+    static std::string getTextureTargetString(GLint target);
+    static std::string getTextureFormatString(GLint format);
+
+private:
+    static void removeGLPrefixAndLowerCase(std::string &name);
 };
 
 /** Represents texture static helper
@@ -83,27 +88,27 @@ public:
 class Texture
 {
 public:
-	/* Public static routines */
-	/* Functionality */
-	static void Bind(const Functions& gl, GLuint id, GLenum target);
+    /* Public static routines */
+    /* Functionality */
+    static void Bind(const Functions &gl, GLuint id, GLenum target);
 
-	static void Generate(const Functions& gl, GLuint& out_id);
+    static void Generate(const Functions &gl, GLuint &out_id);
 
-	static void Delete(const Functions& gl, GLuint& id);
+    static void Delete(const Functions &gl, GLuint &id);
 
-	static void Storage(const Functions& gl, GLenum target, GLsizei levels, GLenum internal_format, GLuint width,
-						GLuint height, GLuint depth);
+    static void Storage(const Functions &gl, GLenum target, GLsizei levels, GLenum internal_format, GLuint width,
+                        GLuint height, GLuint depth);
 
-	static void GetData(const Functions& gl, GLint level, GLenum target, GLenum format, GLenum type, GLvoid* out_data);
+    static void GetData(const Functions &gl, GLint level, GLenum target, GLenum format, GLenum type, GLvoid *out_data);
 
-	static void SubImage(const Functions& gl, GLenum target, GLint level, GLint x, GLint y, GLint z, GLsizei width,
-						 GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid* pixels);
+    static void SubImage(const Functions &gl, GLenum target, GLint level, GLint x, GLint y, GLint z, GLsizei width,
+                         GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels);
 
-	/* Public fields */
-	GLuint m_id;
+    /* Public fields */
+    GLuint m_id;
 
-	/* Public constants */
-	static const GLuint m_invalid_id;
+    /* Public constants */
+    static const GLuint m_invalid_id;
 };
 
 /** Test verifies TexParameter{if}{v}, TexParameterI{u}v, GetTexParameter{if}v
@@ -116,25 +121,25 @@ public:
 class TextureParameterQueriesTestCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TextureParameterQueriesTestCase(deqp::Context& context);
+    /* Public methods */
+    TextureParameterQueriesTestCase(deqp::Context &context, const char *name, const char *description,
+                                    GLint supportedTarget, GLint notSupportedTarget);
 
-	void						 init();
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private members */
-	std::stringstream mLog;
+    /* Private members */
+    std::stringstream mLog;
 
-	std::vector<GLint> mSupportedTargets;
-	std::vector<GLint> mNotSupportedTargets;
+    GLint mSupportedTarget;
+    GLint mNotSupportedTarget;
 
-	/* Private methods */
-	bool testTextureSparseARB(const Functions& gl, GLint target, GLint expectedError = GL_NO_ERROR);
-	bool testVirtualPageSizeIndexARB(const Functions& gl, GLint target, GLint expectedError = GL_NO_ERROR);
-	bool testNumSparseLevelsARB(const Functions& gl, GLint target);
+    /* Private methods */
+    bool testTextureSparseARB(const Functions &gl, GLint target, GLint expectedError = GL_NO_ERROR);
+    bool testVirtualPageSizeIndexARB(const Functions &gl, GLint target, GLint expectedError = GL_NO_ERROR);
+    bool testNumSparseLevelsARB(const Functions &gl, GLint target);
 
-	bool checkGetTexParameter(const Functions& gl, GLint target, GLint pname, GLint expected);
+    bool checkGetTexParameter(const Functions &gl, GLint target, GLint pname, GLint expected);
 };
 
 /** Test verifies GetInternalformativ query for formats from Table 8.12 and <pname>:
@@ -146,20 +151,20 @@ private:
 class InternalFormatQueriesTestCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	InternalFormatQueriesTestCase(deqp::Context& context);
+    /* Public methods */
+    InternalFormatQueriesTestCase(deqp::Context &context, const char *name, const char *description, GLint target,
+                                  GLint format);
 
-	void						 init();
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	std::stringstream mLog;
+    /* Private methods */
+    std::stringstream mLog;
 
-	std::vector<GLint> mSupportedTargets;
-	std::vector<GLint> mSupportedInternalFormats;
+    GLint mTarget;
+    GLint mFormat;
 
-	/* Private members */
+    /* Private members */
 };
 
 /** Test verifies GetIntegerv, GetFloatv, GetDoublev, GetInteger64v,
@@ -172,15 +177,15 @@ private:
 class SimpleQueriesTestCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SimpleQueriesTestCase(deqp::Context& context);
+    /* Public methods */
+    SimpleQueriesTestCase(deqp::Context &context);
 
-	tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	/* Private members */
-	void testSipmleQueries(const Functions& gl, GLint pname);
+    /* Private methods */
+    /* Private members */
+    void testSipmleQueries(const Functions &gl, GLint pname);
 };
 
 /** Test verifies glTexStorage* functionality added by ARB_sparse_texture extension
@@ -188,71 +193,69 @@ private:
 class SparseTextureAllocationTestCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SparseTextureAllocationTestCase(deqp::Context& context);
+    /* Public methods */
+    SparseTextureAllocationTestCase(deqp::Context &context, const char *name, const char *description, GLint target,
+                                    GLint fullArrayTarget, GLint format);
 
-	SparseTextureAllocationTestCase(deqp::Context& context, const char* name, const char* description);
-
-	virtual void						 init();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 protected:
-	/* Protected methods */
-	std::stringstream mLog;
+    /* Protected methods */
+    std::stringstream mLog;
 
-	std::vector<GLint> mSupportedTargets;
-	std::vector<GLint> mFullArrayTargets;
-	std::vector<GLint> mSupportedInternalFormats;
+    GLint mTarget;
+    GLint mFullArrayTarget;
+    GLint mFormat;
 
-	/* Protected members */
-	bool positiveTesting(const Functions& gl, GLint target, GLint format);
-	bool verifyTexParameterErrors(const Functions& gl, GLint target, GLint format);
-	bool verifyTexStorageVirtualPageSizeIndexError(const Functions& gl, GLint target, GLint format);
-	bool verifyTexStorageFullArrayCubeMipmapsError(const Functions& gl, GLint target, GLint format);
-	bool verifyTexStorageInvalidValueErrors(const Functions& gl, GLint target, GLint format);
+    /* Protected members */
+    bool positiveTesting(const Functions &gl, GLint target, GLint format);
+    bool verifyTexParameterErrors(const Functions &gl, GLint target, GLint format);
+    bool verifyTexStorageVirtualPageSizeIndexError(const Functions &gl, GLint target, GLint format);
+    bool verifyTexStorageFullArrayCubeMipmapsError(const Functions &gl, GLint target, GLint format);
+    bool verifyTexStorageInvalidValueErrors(const Functions &gl, GLint target, GLint format);
 };
 
 /** Test verifies glTexPageCommitmentARB functionality added by ARB_sparse_texture extension
  **/
+
 class SparseTextureCommitmentTestCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	SparseTextureCommitmentTestCase(deqp::Context& context);
+    /* Public methods */
 
-	SparseTextureCommitmentTestCase(deqp::Context& context, const char* name, const char* description);
+    SparseTextureCommitmentTestCase(deqp::Context &context, const char *name, const char *description, GLint target,
+                                    GLint format);
 
-	virtual void						 init();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 protected:
-	/* Protected members */
-	std::stringstream mLog;
+    /* Protected members */
+    std::stringstream mLog;
 
-	std::vector<GLint> mSupportedTargets;
-	std::vector<GLint> mSupportedInternalFormats;
+    GLint mTarget;
+    GLint mFormat;
 
-	TextureState mState;
+    TextureState mState;
 
-	/* Protected methods */
-	virtual void texPageCommitment(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level,
-								   GLint xOffset, GLint yOffset, GLint zOffset, GLint width, GLint height, GLint depth,
-								   GLboolean committ);
+    /* Protected methods */
+    virtual void texPageCommitment(const Functions &gl, GLint target, GLint format, GLuint &texture, GLint level,
+                                   GLint xOffset, GLint yOffset, GLint zOffset, GLint width, GLint height, GLint depth,
+                                   GLboolean committ);
 
-	virtual bool caseAllowed(GLint target, GLint format);
+    virtual bool caseAllowed(GLint target, GLint format);
 
-	virtual bool prepareTexture(const Functions& gl, GLint target, GLint format, GLuint& texture);
-	virtual bool sparseAllocateTexture(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint levels);
-	virtual bool allocateTexture(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint levels);
-	virtual bool writeDataToTexture(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level);
-	virtual bool verifyTextureData(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level);
-	virtual bool commitTexturePage(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level);
+    virtual bool prepareTexture(const Functions &gl, GLint target, GLint format, GLuint &texture);
+    virtual bool sparseAllocateTexture(const Functions &gl, GLint target, GLint format, GLuint &texture, GLint levels);
+    virtual bool allocateTexture(const Functions &gl, GLint target, GLint format, GLuint &texture, GLint levels);
+    virtual bool writeDataToTexture(const Functions &gl, GLint target, GLint format, GLuint &texture, GLint level);
+    virtual bool verifyTextureData(const Functions &gl, GLint target, GLint format, GLuint &texture, GLint level);
+    virtual bool commitTexturePage(const Functions &gl, GLint target, GLint format, GLuint &texture, GLint level);
 
-	virtual bool isInPageSizesRange(GLint target, GLint level);
-	virtual bool isPageSizesMultiplication(GLint target, GLint level);
+    virtual bool isInPageSizesRange(GLint target, GLint level);
+    virtual bool isPageSizesMultiplication(GLint target, GLint level);
 
-	virtual bool verifyInvalidOperationErrors(const Functions& gl, GLint target, GLint format, GLuint& texture);
-	virtual bool verifyInvalidValueErrors(const Functions& gl, GLint target, GLint format, GLuint& texture);
+    virtual bool verifyInvalidOperationErrors(const Functions &gl, GLint target, GLint format, GLuint &texture);
+    virtual bool verifyInvalidValueErrors(const Functions &gl, GLint target, GLint format, GLuint &texture);
 };
 
 /** Test verifies glTexturePageCommitmentEXT functionality added by ARB_sparse_texture extension
@@ -260,32 +263,39 @@ protected:
 class SparseDSATextureCommitmentTestCase : public SparseTextureCommitmentTestCase
 {
 public:
-	/* Public methods */
-	SparseDSATextureCommitmentTestCase(deqp::Context& context);
+    /* Public methods */
+    SparseDSATextureCommitmentTestCase(deqp::Context &context, const char *name, const char *description, GLint target,
+                                       GLint format);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	virtual void texPageCommitment(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level,
-								   GLint xOffset, GLint yOffset, GLint zOffset, GLint width, GLint height, GLint depth,
-								   GLboolean committ);
+    /* Private methods */
+    virtual void texPageCommitment(const Functions &gl, GLint target, GLint format, GLuint &texture, GLint level,
+                                   GLint xOffset, GLint yOffset, GLint zOffset, GLint width, GLint height, GLint depth,
+                                   GLboolean committ);
 };
 
 /** Test group which encapsulates all sparse texture conformance tests */
 class SparseTextureTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	SparseTextureTests(deqp::Context& context);
+    /* Public methods */
+    SparseTextureTests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	SparseTextureTests(const SparseTextureTests& other);
-	SparseTextureTests& operator=(const SparseTextureTests& other);
+    SparseTextureTests(const SparseTextureTests &other);
+    SparseTextureTests &operator=(const SparseTextureTests &other);
+
+    void addTextureParameterQueriesTestCase();
+    void addInternalFormatQueriesTestCase();
+    void addSparseTextureAllocationTestCase();
+    void addSparseTextureCommitmentTestCase();
+    void addSparseDSATextureCommitmentTestCase();
 };
 
-} /* glcts namespace */
+} // namespace gl4cts
 
 #endif // _GL4CSPARSETEXTURETESTS_HPP

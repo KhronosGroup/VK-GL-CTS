@@ -55,27 +55,27 @@ namespace glcts
 class TextureCubeMapArrayTex3DValidation : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayTex3DValidation(Context& context, const ExtParameters& extParams, const char* name,
-									   const char* description);
+    /* Public methods */
+    TextureCubeMapArrayTex3DValidation(Context &context, const ExtParameters &extParams, const char *name,
+                                       const char *description);
 
-	virtual ~TextureCubeMapArrayTex3DValidation(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayTex3DValidation(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	bool checkError(glw::GLint expectedError, const char* message);
-	void createTexture(void);
-	void deleteTexture(void);
+    /* Private methods */
+    bool checkError(glw::GLint expectedError, const char *message);
+    void createTexture(void);
+    void deleteTexture(void);
 
-	/* Private variables */
-	glw::GLuint m_to_id;
+    /* Private variables */
+    glw::GLuint m_to_id;
 };
 
-} /* glcts */
+} // namespace glcts
 
 #endif // _ESEXTCTEXTURECUBEMAPARRAYTEX3DVALIDATION_HPP

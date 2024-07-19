@@ -34,100 +34,128 @@ namespace tcu
 class AbstractFactory
 {
 public:
-								AbstractFactory				(void);
-	virtual						~AbstractFactory			(void);
+    AbstractFactory(void);
+    virtual ~AbstractFactory(void);
 
-	virtual const char*			getName						(void) const = 0;
+    virtual const char *getName(void) const = 0;
 };
 
 class GenericFactoryRegistry
 {
 public:
-								GenericFactoryRegistry		(void);
-								~GenericFactoryRegistry		(void);
+    GenericFactoryRegistry(void);
+    ~GenericFactoryRegistry(void);
 
-	size_t						size						(void) const	{ return m_factories.size();	}
-	bool						empty						(void) const	{ return m_factories.empty();	}
+    size_t size(void) const
+    {
+        return m_factories.size();
+    }
+    bool empty(void) const
+    {
+        return m_factories.empty();
+    }
 
-	void						registerFactory				(AbstractFactory* factory);
+    void registerFactory(AbstractFactory *factory);
 
-	AbstractFactory*			getFactoryByName			(const std::string& name);
-	const AbstractFactory*		getFactoryByName			(const std::string& name) const;
+    AbstractFactory *getFactoryByName(const std::string &name);
+    const AbstractFactory *getFactoryByName(const std::string &name) const;
 
-	AbstractFactory*			getFactoryByIndex			(size_t index);
-	const AbstractFactory*		getFactoryByIndex			(size_t index) const;
+    AbstractFactory *getFactoryByIndex(size_t index);
+    const AbstractFactory *getFactoryByIndex(size_t index) const;
 
 private:
-								GenericFactoryRegistry		(const GenericFactoryRegistry&);
-	GenericFactoryRegistry&		operator=					(const GenericFactoryRegistry&);
+    GenericFactoryRegistry(const GenericFactoryRegistry &);
+    GenericFactoryRegistry &operator=(const GenericFactoryRegistry &);
 
-	std::vector<AbstractFactory*>							m_factories;
+    std::vector<AbstractFactory *> m_factories;
 };
 
 class FactoryBase : public AbstractFactory
 {
 public:
-								FactoryBase					(const std::string& name, const std::string& description);
-								~FactoryBase				(void);
+    FactoryBase(const std::string &name, const std::string &description);
+    ~FactoryBase(void);
 
-	const char*					getName						(void) const;
-	const char*					getDescription				(void) const;
+    const char *getName(void) const;
+    const char *getDescription(void) const;
 
 private:
-	const std::string			m_name;
-	const std::string			m_description;
+    const std::string m_name;
+    const std::string m_description;
 };
 
-template<class Factory>
+template <class Factory>
 class FactoryRegistry
 {
 public:
-								FactoryRegistry		(void) {}
-								~FactoryRegistry	(void) {}
+    FactoryRegistry(void)
+    {
+    }
+    ~FactoryRegistry(void)
+    {
+    }
 
-	bool						empty				(void) const		{ return m_registry.empty();	}
-	size_t						size				(void) const		{ return m_registry.size();		}
-	size_t						getFactoryCount		(void) const		{ return m_registry.size();		}
+    bool empty(void) const
+    {
+        return m_registry.empty();
+    }
+    size_t size(void) const
+    {
+        return m_registry.size();
+    }
+    size_t getFactoryCount(void) const
+    {
+        return m_registry.size();
+    }
 
-	void						registerFactory		(Factory* factory)	{ m_registry.registerFactory(factory);	}
+    void registerFactory(Factory *factory)
+    {
+        m_registry.registerFactory(factory);
+    }
 
-	Factory*					getFactoryByName	(const std::string& name);
-	const Factory*				getFactoryByName	(const std::string& name) const;
+    Factory *getFactoryByName(const std::string &name);
+    const Factory *getFactoryByName(const std::string &name) const;
 
-	Factory*					getFactoryByIndex	(size_t index);
-	const Factory*				getFactoryByIndex	(size_t index) const;
+    Factory *getFactoryByIndex(size_t index);
+    const Factory *getFactoryByIndex(size_t index) const;
 
-	Factory*					getDefaultFactory	(void)				{ return getFactoryByIndex(0);	}
-	const Factory*				getDefaultFactory	(void) const		{ return getFactoryByIndex(0);	}
+    Factory *getDefaultFactory(void)
+    {
+        return getFactoryByIndex(0);
+    }
+    const Factory *getDefaultFactory(void) const
+    {
+        return getFactoryByIndex(0);
+    }
 
 private:
-	GenericFactoryRegistry		m_registry;
+    GenericFactoryRegistry m_registry;
 };
 
-template<class Factory>
-inline Factory* FactoryRegistry<Factory>::getFactoryByName (const std::string& name)
+template <class Factory>
+inline Factory *FactoryRegistry<Factory>::getFactoryByName(const std::string &name)
 {
-	return static_cast<Factory*>(m_registry.getFactoryByName(name));
+    return static_cast<Factory *>(m_registry.getFactoryByName(name));
 }
 
-template<class Factory>
-inline const Factory* FactoryRegistry<Factory>::getFactoryByName (const std::string& name) const
+template <class Factory>
+inline const Factory *FactoryRegistry<Factory>::getFactoryByName(const std::string &name) const
 {
-	return static_cast<const Factory*>(m_registry.getFactoryByName(name));
+    return static_cast<const Factory *>(m_registry.getFactoryByName(name));
 }
 
-template<class Factory>
-inline Factory* FactoryRegistry<Factory>::getFactoryByIndex (size_t index)
+template <class Factory>
+inline Factory *FactoryRegistry<Factory>::getFactoryByIndex(size_t index)
 {
-	return static_cast<Factory*>(m_registry.getFactoryByIndex(index));
+    return static_cast<Factory *>(m_registry.getFactoryByIndex(index));
 }
 
-template<class Factory>
-inline const Factory* FactoryRegistry<Factory>::getFactoryByIndex (size_t index) const
+template <class Factory>
+inline const Factory *FactoryRegistry<Factory>::getFactoryByIndex(size_t index) const
 {
-	return static_cast<const Factory*>(m_registry.getFactoryByIndex(index));
+    return static_cast<const Factory *>(m_registry.getFactoryByIndex(index));
 }
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUFACTORYREGISTRY_HPP

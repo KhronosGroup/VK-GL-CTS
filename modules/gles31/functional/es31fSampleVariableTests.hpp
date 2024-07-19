@@ -36,18 +36,18 @@ namespace Functional
 class SampleVariableTests : public TestCaseGroup
 {
 public:
-							SampleVariableTests		(Context& context);
-							~SampleVariableTests	(void);
+    SampleVariableTests(Context &context);
+    ~SampleVariableTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							SampleVariableTests		(const SampleVariableTests& other);
-	SampleVariableTests&	operator=				(const SampleVariableTests& other);
+    SampleVariableTests(const SampleVariableTests &other);
+    SampleVariableTests &operator=(const SampleVariableTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSAMPLEVARIABLETESTS_HPP

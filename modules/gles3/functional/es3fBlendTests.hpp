@@ -36,18 +36,18 @@ namespace Functional
 class BlendTests : public TestCaseGroup
 {
 public:
-					BlendTests			(Context& context);
-					~BlendTests			(void);
+    BlendTests(Context &context);
+    ~BlendTests(void);
 
-	void			init				(void);
+    void init(void);
 
 private:
-					BlendTests			(const BlendTests& other);
-	BlendTests&		operator=			(const BlendTests& other);
+    BlendTests(const BlendTests &other);
+    BlendTests &operator=(const BlendTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FBLENDTESTS_HPP

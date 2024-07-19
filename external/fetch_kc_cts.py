@@ -32,22 +32,22 @@ sys.path.insert(0, scriptPath)
 
 from ctsbuild.common import *
 
-EXTERNAL_DIR	= os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
-SHA1 = "d09db1b0ce4b91d468c32f233e9833897f6029a5"
+EXTERNAL_DIR = os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
+SHA1 = "05025a1aa6707063b1f4a72acd02cb56c7311413"
 
 PACKAGES = [
-	GitRepo(
-		"https://gitlab.khronos.org/opengl/kc-cts.git",
-		"git@gitlab.khronos.org:opengl/kc-cts.git",
-		SHA1,
-		"kc-cts"),
+    GitRepo(
+        "https://gitlab.khronos.org/opengl/kc-cts.git",
+        "git@gitlab.khronos.org:opengl/kc-cts.git",
+        SHA1,
+        "kc-cts"),
 ]
 
 if __name__ == "__main__":
-	args = parseArgs()
+    args = parseArgs()
 
-	for pkg in PACKAGES:
-		if args.clean:
-			pkg.clean()
-		else:
-			pkg.update(args.protocol)
+    for pkg in PACKAGES:
+        if args.clean:
+            pkg.clean()
+        else:
+            pkg.update(args.protocol)

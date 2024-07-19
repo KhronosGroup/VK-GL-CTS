@@ -30,31 +30,31 @@
 namespace glcts
 {
 
-void getDefaultConfigList(tcu::Platform& platform, glu::ApiType type, ConfigList& configList)
+void getDefaultConfigList(tcu::Platform &platform, glu::ApiType type, ConfigList &configList)
 {
-	try
-	{
-		getConfigListEGL(platform, type, configList);
-	}
-	catch (const std::exception& e)
-	{
-		qpPrintf("No EGL configs enumerated: %s\n", e.what());
-	}
+    try
+    {
+        getConfigListEGL(platform, type, configList);
+    }
+    catch (const std::exception &e)
+    {
+        qpPrintf("No EGL configs enumerated: %s\n", e.what());
+    }
 
-	try
-	{
-		getConfigListWGL(platform, type, configList);
-	}
-	catch (const std::exception& e)
-	{
-		qpPrintf("No WGL configs enumerated: %s\n", e.what());
-	}
+    try
+    {
+        getConfigListWGL(platform, type, configList);
+    }
+    catch (const std::exception &e)
+    {
+        qpPrintf("No WGL configs enumerated: %s\n", e.what());
+    }
 
-	if (configList.configs.empty())
-	{
-		qpPrintf("Warning: No configs enumerated, adding only default config!\n");
-		configList.configs.push_back(Config(CONFIGTYPE_DEFAULT, 0, SURFACETYPE_WINDOW));
-	}
+    if (configList.configs.empty())
+    {
+        qpPrintf("Warning: No configs enumerated, adding only default config!\n");
+        configList.configs.push_back(Config(CONFIGTYPE_DEFAULT, 0, SURFACETYPE_WINDOW));
+    }
 }
 
-} // glcts
+} // namespace glcts

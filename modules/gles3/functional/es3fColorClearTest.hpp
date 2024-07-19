@@ -38,18 +38,18 @@ struct ClearTestCaseInfo;
 class ColorClearTest : public TestCaseGroup
 {
 public:
-							ColorClearTest			(Context& context);
-	virtual					~ColorClearTest			(void);
+    ColorClearTest(Context &context);
+    virtual ~ColorClearTest(void);
 
-	virtual void			init					(void);
+    virtual void init(void);
 
 private:
-							ColorClearTest			(const ColorClearTest&);		// not allowed!
-	ColorClearTest&			operator=				(const ColorClearTest&);		// not allowed!
+    ColorClearTest(const ColorClearTest &);            // not allowed!
+    ColorClearTest &operator=(const ColorClearTest &); // not allowed!
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FCOLORCLEARTEST_HPP

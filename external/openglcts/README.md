@@ -513,6 +513,12 @@ Waivers can be specified by supplying a `waivers` string extra. See the followin
 **NOTE**: Supplying a `summary` = `"true"` string extra will result in the `cts-run-summary.xml` file
 being written out but no tests will be executed.
 
+For GLES 3.2 conformance test, the conformance run configurations can be
+generated and written to a customized file, by specifying the file name through
+`khronosCTSTestParamFileName` argument. Example:
+
+	am start -n org.khronos.gl_cts/org.khronos.cts.ES32GetTestParamActivity -e khronosCTSTestParamFileName "/sdcard/cts-test-params.xml"
+
 Individual tests can be launched as well by targeting
 `org.khronos.gl_cts/android.app.NativeActivity` activity. Command line
 arguments must be supplied in a `cmdLine` string extra. See following example:
@@ -675,6 +681,10 @@ Full list of parameters for the `glcts` binary:
   --deqp-log-compact=[enable|disable]
     Enable or disable the compact version of the log
     default: 'disable'
+
+  --deqp-duplicate-case-name-check=[enable|disable]
+    Check for duplicate case names when creating test hierarchy
+    default: 'enable' in Debug mode, 'disable' in Release mode
 
   --deqp-renderdoc=[enable|disable]
     Enable RenderDoc frame markers
