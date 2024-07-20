@@ -716,10 +716,10 @@ PipelineCreateInfo::TessellationState::TessellationState(uint32_t _patchControlP
 }
 
 PipelineCreateInfo::ViewportState::ViewportState(uint32_t _viewportCount, std::vector<vk::VkViewport> _viewports,
-                                                 std::vector<vk::VkRect2D> _scissors)
+                                                 std::vector<vk::VkRect2D> _scissors, const void *_pNext)
 {
     sType         = vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    pNext         = DE_NULL;
+    pNext         = _pNext;
     flags         = 0u;
     viewportCount = _viewportCount;
     scissorCount  = _viewportCount;

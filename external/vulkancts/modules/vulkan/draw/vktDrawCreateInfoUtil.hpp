@@ -290,7 +290,7 @@ public:
     {
     public:
         ViewportState(uint32_t viewportCount, std::vector<vk::VkViewport> viewports = std::vector<vk::VkViewport>(0),
-                      std::vector<vk::VkRect2D> scissors = std::vector<vk::VkRect2D>(0));
+                      std::vector<vk::VkRect2D> scissors = std::vector<vk::VkRect2D>(0), const void *pNext = DE_NULL);
 
         ViewportState(const ViewportState &other);
         ViewportState &operator=(const ViewportState &other);
