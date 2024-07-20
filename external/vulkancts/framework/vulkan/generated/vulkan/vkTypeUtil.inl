@@ -861,6 +861,14 @@ inline VkDecompressMemoryRegionNV makeDecompressMemoryRegionNV (VkDeviceAddress 
 	return res;
 }
 
+inline VkDepthClampRangeEXT makeDepthClampRangeEXT (float minDepthClamp, float maxDepthClamp)
+{
+	VkDepthClampRangeEXT res;
+	res.minDepthClamp	= minDepthClamp;
+	res.maxDepthClamp	= maxDepthClamp;
+	return res;
+}
+
 inline StdVideoEncodeH264WeightTableFlags makeStdVideoEncodeH264WeightTableFlags (uint32_t luma_weight_l0_flag, uint32_t chroma_weight_l0_flag, uint32_t luma_weight_l1_flag, uint32_t chroma_weight_l1_flag)
 {
 	StdVideoEncodeH264WeightTableFlags res;

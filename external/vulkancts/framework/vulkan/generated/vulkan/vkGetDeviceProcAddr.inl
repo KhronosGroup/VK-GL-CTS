@@ -159,7 +159,6 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetSemaphoreFdKHR",
 		"vkCmdPushDescriptorSetKHR",
 		"vkCmdPushDescriptorSetWithTemplateKHR",
-		"vkCmdPushDescriptorSetWithTemplateKHR",
 		"vkCmdBeginConditionalRenderingEXT",
 		"vkCmdEndConditionalRenderingEXT",
 		"vkCreateDescriptorUpdateTemplateKHR",
@@ -316,7 +315,6 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetPhysicalDeviceSurfacePresentModes2EXT",
 		"vkAcquireFullScreenExclusiveModeEXT",
 		"vkReleaseFullScreenExclusiveModeEXT",
-		"vkGetDeviceGroupSurfacePresentModes2EXT",
 		"vkGetDeviceGroupSurfacePresentModes2EXT",
 		"vkCreateHeadlessSurfaceEXT",
 		"vkGetBufferDeviceAddressKHR",
@@ -505,6 +503,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetRenderingAreaGranularityKHR",
 		"vkGetDeviceImageSubresourceLayoutKHR",
 		"vkGetImageSubresourceLayout2KHR",
+		"vkAntiLagUpdateAMD",
 		"vkCreateShadersEXT",
 		"vkDestroyShaderEXT",
 		"vkGetShaderBinaryDataEXT",
@@ -558,6 +557,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdSetShadingRateImageEnableNV",
 		"vkCmdSetRepresentativeFragmentTestEnableNV",
 		"vkCmdSetCoverageReductionModeNV",
+		"vkCmdSetDepthClampRangeEXT",
 		"vkGetFramebufferTilePropertiesQCOM",
 		"vkGetDynamicRenderingTilePropertiesQCOM",
 		"vkSetLatencySleepModeNV",
@@ -577,6 +577,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdPushDescriptorSetWithTemplate2KHR",
 		"vkCmdSetDescriptorBufferOffsets2EXT",
 		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
+		"vkCmdSetDepthClampRangeEXT",
     };
 
     bool fail = false;

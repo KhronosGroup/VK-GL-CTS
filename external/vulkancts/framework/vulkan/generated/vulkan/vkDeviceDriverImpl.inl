@@ -1671,6 +1671,11 @@ VkDeviceAddress DeviceDriver::getPipelineIndirectDeviceAddressNV (VkDevice devic
     return m_vk.getPipelineIndirectDeviceAddressNV(device, pInfo);
 }
 
+void DeviceDriver::antiLagUpdateAMD (VkDevice device, const VkAntiLagDataAMD* pData) const
+{
+    m_vk.antiLagUpdateAMD(device, pData);
+}
+
 void DeviceDriver::cmdSetCullMode (VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
@@ -2629,4 +2634,10 @@ void DeviceDriver::cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer com
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetRenderingInputAttachmentIndicesKHR(commandBuffer, pInputAttachmentIndexInfo);
+}
+
+void DeviceDriver::cmdSetDepthClampRangeEXT (VkCommandBuffer commandBuffer, VkDepthClampModeEXT depthClampMode, const VkDepthClampRangeEXT* pDepthClampRange) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDepthClampRangeEXT(commandBuffer, depthClampMode, pDepthClampRange);
 }
