@@ -266,8 +266,9 @@ glu::ContextType attribListToContextType(EGLenum api, const EGLint *attribList)
             iter += 2;
             break;
 
-        default:
-            DE_ASSERT(false);
+        default: // Ignore any others
+            iter += 2;
+            break;
         }
     }
 
@@ -361,8 +362,10 @@ void CreateContextExtCase::logAttribList(void)
             iter++;
             break;
 
-        default:
-            DE_ASSERT(false);
+        default: 
+            m_testCtx.getLog() << TestLog::Message << "Unexpected EGL attrib found in logAttribList of value: " << *iter << TestLog::EndMessage;
+            iter += 2;
+            break;
         }
     }
 
@@ -430,7 +433,8 @@ void CreateContextExtCase::checkRequiredExtensions(void)
                 break;
 
             default:
-                DE_ASSERT(false);
+                m_testCtx.getLog() << TestLog::Message << "Unexpected EGL attrib found during checkRequiredExtensions of value: " << *iter << TestLog::EndMessage;
+                iter += 2;
             }
         }
     }
@@ -736,7 +740,7 @@ bool CreateContextExtCase::validateCurrentContext(const glw::Functions &gl)
             break;
 
         default:
-            DE_ASSERT(false);
+            isOk = false;
         }
     }
 
