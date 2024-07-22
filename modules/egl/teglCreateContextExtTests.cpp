@@ -435,6 +435,7 @@ void CreateContextExtCase::checkRequiredExtensions(void)
             default:
                 m_testCtx.getLog() << TestLog::Message << "Unexpected EGL attrib found during checkRequiredExtensions of value: " << *iter << TestLog::EndMessage;
                 iter += 2;
+                break;
             }
         }
     }
