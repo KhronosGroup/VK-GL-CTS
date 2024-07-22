@@ -9127,6 +9127,7 @@ dEQP-VK.pipeline.fast_linked_library.depth.format.d32_sfloat.host_visible.local_
 dEQP-VK.pipeline.fast_linked_library.depth.format.d32_sfloat_s8_uint.host_visible.local_memory_depth_buffer
 dEQP-VK.pipeline.fast_linked_library.depth.format.d32_sfloat_s8_uint_separate_layouts.host_visible.local_memory_depth_buffer
 dEQP-VK.pipeline.fast_linked_library.depth.format.x8_d24_unorm_pack32.host_visible.local_memory_depth_buffer
+dEQP-VK.pipeline.fast_linked_library.depth.no_depth_attachment.depth_bound_test
 dEQP-VK.pipeline.fast_linked_library.depth.nocolor.format.d16_unorm.host_visible.local_memory_depth_buffer
 dEQP-VK.pipeline.fast_linked_library.depth.nocolor.format.d16_unorm_s8_uint.host_visible.local_memory_depth_buffer
 dEQP-VK.pipeline.fast_linked_library.depth.nocolor.format.d16_unorm_s8_uint_separate_layouts.host_visible.local_memory_depth_buffer
