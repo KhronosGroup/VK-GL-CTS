@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSynchronizationOperation.hpp"
+#include "synchronization/vktSynchronizationUtil.hpp"
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -2432,7 +2433,8 @@ public:
         , m_shaderPrefix(std::string(m_mode == ACCESS_MODE_READ ? "read_" : "write_") +
                          (m_bufferType == BUFFER_TYPE_UNIFORM ?
                               "ubo_" :
-                              (m_bufferType == BUFFER_TYPE_UNIFORM_TEXEL ? "ubo_texel_" : "ssbo_")))
+                              (m_bufferType == BUFFER_TYPE_UNIFORM_TEXEL ? "ubo_texel_" : "ssbo_")) +
+                         getResourceName(m_resourceDesc) + "_")
         , m_dispatchCall(dispatchCall)
     {
         DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_BUFFER);
@@ -2563,7 +2565,8 @@ public:
         , m_resourceDesc(resourceDesc)
         , m_mode(mode)
         , m_stage(stage)
-        , m_shaderPrefix(m_mode == ACCESS_MODE_READ ? "read_image_" : "write_image_")
+        , m_shaderPrefix((m_mode == ACCESS_MODE_READ ? "read_image_" : "write_image_") +
+                         getResourceName(m_resourceDesc) + "_")
         , m_dispatchCall(dispatchCall)
     {
         DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_IMAGE);
@@ -2780,7 +2783,8 @@ public:
         , m_bufferType(bufferType)
         , m_stage(stage)
         , m_shaderPrefix(std::string("copy_") + getShaderStageName(stage) +
-                         (m_bufferType == BUFFER_TYPE_UNIFORM ? "_ubo_" : "_ssbo_"))
+                         (m_bufferType == BUFFER_TYPE_UNIFORM ? "_ubo_" : "_ssbo_") + getResourceName(m_resourceDesc) +
+                         "_")
         , m_dispatchCall(dispatchCall)
     {
         DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_BUFFER);
@@ -3034,7 +3038,8 @@ public:
         : OperationSupport(specializedAccess)
         , m_resourceDesc(resourceDesc)
         , m_stage(stage)
-        , m_shaderPrefix(std::string("copy_image_") + getShaderStageName(stage) + "_")
+        , m_shaderPrefix(std::string("copy_image_") + getShaderStageName(stage) + "_" +
+                         getResourceName(m_resourceDesc) + "_")
         , m_dispatchCall(dispatchCall)
     {
         DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_IMAGE);

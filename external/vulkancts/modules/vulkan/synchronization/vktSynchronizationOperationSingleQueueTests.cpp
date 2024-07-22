@@ -22,6 +22,8 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSynchronizationOperationSingleQueueTests.hpp"
+#include "deSTLUtil.hpp"
+#include "deSharedPtr.hpp"
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -41,6 +43,8 @@
 #include "vktSynchronizationOperation.hpp"
 #include "vktSynchronizationOperationTestData.hpp"
 #include "vktSynchronizationOperationResources.hpp"
+#include <cstdint>
+#include <string>
 
 namespace vkt
 {
@@ -160,6 +164,189 @@ public:
             }
         }
 
+        return tcu::TestStatus::pass("OK");
+    }
+};
+
+class EventsTestInstance : public TestInstance
+{
+public:
+    EventsTestInstance(Context &context, SynchronizationType type, const ResourceDescription &resourceDesc1,
+                       const ResourceDescription &resourceDesc2, const OperationSupport &writeOp1,
+                       const OperationSupport &readOp1, const OperationSupport &writeOp2,
+                       const OperationSupport &readOp2, PipelineCacheData &pipelineCacheData)
+        : TestInstance(context)
+        , m_type(type)
+        , m_opContext(context, type, pipelineCacheData)
+        , m_opContext2(context, type, pipelineCacheData)
+        , m_hasNop(false)
+        , m_isFirstEventNop(m_hasNop)
+    {
+        const de::SharedPtr<Resource> res1(new Resource(
+            m_opContext, resourceDesc1, writeOp1.getOutResourceUsageFlags() | readOp1.getInResourceUsageFlags()));
+        const de::SharedPtr<Operation> wOp1(writeOp1.build(m_opContext, *res1).release());
+        const de::SharedPtr<Operation> rOp1(readOp1.build(m_opContext, *res1).release());
+        const de::SharedPtr<Resource> res2(new Resource(
+            m_opContext2, resourceDesc2, writeOp2.getOutResourceUsageFlags() | readOp2.getInResourceUsageFlags()));
+        const de::SharedPtr<Operation> wOp2(writeOp2.build(m_opContext2, *res2).release());
+        const de::SharedPtr<Operation> rOp2(readOp2.build(m_opContext2, *res2).release());
+        m_resources.push_back(res1);
+        m_writeOps.push_back(wOp1);
+        m_readOps.push_back(rOp1);
+        m_resources.push_back(res2);
+        m_writeOps.push_back(wOp2);
+        m_readOps.push_back(rOp2);
+    }
+
+    EventsTestInstance(Context &context, SynchronizationType type, const bool isFirstEventNop,
+                       const ResourceDescription &resourceDesc1, const OperationSupport &writeOp1,
+                       const OperationSupport &readOp1, PipelineCacheData &pipelineCacheData)
+        : TestInstance(context)
+        , m_type(type)
+        , m_opContext(context, type, pipelineCacheData)
+        , m_opContext2(context, type, pipelineCacheData)
+        , m_hasNop(true)
+        , m_isFirstEventNop(isFirstEventNop)
+    {
+        const de::SharedPtr<Resource> res1(new Resource(
+            m_opContext, resourceDesc1, writeOp1.getOutResourceUsageFlags() | readOp1.getInResourceUsageFlags()));
+        const de::SharedPtr<Operation> wOp1(writeOp1.build(m_opContext, *res1).release());
+        const de::SharedPtr<Operation> rOp1(readOp1.build(m_opContext, *res1).release());
+        m_resources.push_back(res1);
+        m_writeOps.push_back(wOp1);
+        m_readOps.push_back(rOp1);
+    }
+
+protected:
+    const SynchronizationType m_type;
+    OperationContext m_opContext;
+    OperationContext m_opContext2;
+    const bool m_hasNop;
+    const bool m_isFirstEventNop;
+    std::vector<de::SharedPtr<Operation>> m_writeOps;
+    std::vector<de::SharedPtr<Operation>> m_readOps;
+    std::vector<de::SharedPtr<Resource>> m_resources;
+
+    tcu::TestStatus iterate(void)
+    {
+        const DeviceInterface &vk       = m_context.getDeviceInterface();
+        const VkDevice device           = m_context.getDevice();
+        const VkQueue queue             = m_context.getUniversalQueue();
+        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        const uint32_t numEvents        = 2u; // set 2 events, wait on 2 events
+        const Unique<VkCommandPool> cmdPool(
+            createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+        const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+
+        SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(m_type, vk, false);
+
+        std::vector<Move<VkEvent>> events;
+        std::vector<VkEvent> eventHandles;
+        std::vector<VkDependencyInfoKHR> dependencyInfos;
+        dependencyInfos.resize(numEvents);
+        VkDependencyInfoKHR nullDependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, nullptr, true);
+
+        std::vector<VkImageMemoryBarrier2KHR> imgBarriers;
+        imgBarriers.resize(numEvents);
+        std::vector<VkBufferMemoryBarrier2KHR> buffBarriers;
+        buffBarriers.resize(numEvents);
+
+        beginCommandBuffer(vk, *cmdBuffer);
+
+        uint32_t skipEventIdx = (m_isFirstEventNop ? 0u : 1u);
+
+        uint32_t opsIdx = 0;
+        for (uint32_t eventIdx = 0; eventIdx < numEvents; eventIdx++)
+        {
+            events.push_back(createEvent(vk, device));
+
+            if (m_hasNop && skipEventIdx == eventIdx) // add an empty event and dependency
+            {
+                dependencyInfos[eventIdx] = nullDependencyInfo;
+            }
+            else
+            {
+                const de::SharedPtr<Operation> writeOp = m_writeOps[opsIdx];
+                const de::SharedPtr<Operation> readOp  = m_readOps[opsIdx];
+                const de::SharedPtr<Resource> resource = m_resources[opsIdx];
+
+                const SyncInfo writeSync = writeOp->getOutSyncInfo();
+                const SyncInfo readSync  = readOp->getInSyncInfo();
+
+                writeOp->recordCommands(*cmdBuffer);
+
+                if (m_resources[opsIdx]->getType() == RESOURCE_TYPE_IMAGE)
+                {
+                    imgBarriers[opsIdx] = makeImageMemoryBarrier2(
+                        writeSync.stageMask,                    // VkPipelineStageFlags2KHR            srcStageMask
+                        writeSync.accessMask,                   // VkAccessFlags2KHR                srcAccessMask
+                        readSync.stageMask,                     // VkPipelineStageFlags2KHR            dstStageMask
+                        readSync.accessMask,                    // VkAccessFlags2KHR                dstAccessMask
+                        writeSync.imageLayout,                  // VkImageLayout                    oldLayout
+                        readSync.imageLayout,                   // VkImageLayout                    newLayout
+                        m_resources[opsIdx]->getImage().handle, // VkImage                            image
+                        m_resources[opsIdx]
+                            ->getImage()
+                            .subresourceRange // VkImageSubresourceRange            subresourceRange
+                    );
+                    dependencyInfos[eventIdx] = makeCommonDependencyInfo(nullptr, nullptr, &imgBarriers[opsIdx], true);
+                }
+                else
+                {
+                    buffBarriers[opsIdx] = makeBufferMemoryBarrier2(
+                        writeSync.stageMask,                     // VkPipelineStageFlags2KHR            srcStageMask
+                        writeSync.accessMask,                    // VkAccessFlags2KHR                srcAccessMask
+                        readSync.stageMask,                      // VkPipelineStageFlags2KHR            dstStageMask
+                        readSync.accessMask,                     // VkAccessFlags2KHR                dstAccessMask
+                        m_resources[opsIdx]->getBuffer().handle, // VkBuffer                            buffer
+                        m_resources[opsIdx]->getBuffer().offset, // VkDeviceSize                        offset
+                        m_resources[opsIdx]->getBuffer().size    // VkDeviceSize                        size
+                    );
+                    dependencyInfos[eventIdx] = makeCommonDependencyInfo(nullptr, &buffBarriers[opsIdx], nullptr, true);
+                }
+
+                opsIdx++;
+            }
+            synchronizationWrapper->cmdSetEvent(*cmdBuffer, *(events.back()), &dependencyInfos[eventIdx]);
+            eventHandles.push_back(*(events.back()));
+        }
+
+        synchronizationWrapper->cmdWaitEvents(*cmdBuffer, numEvents, de::dataOrNull(eventHandles),
+                                              de::dataOrNull(dependencyInfos));
+
+        const uint32_t opsCount = opsIdx;
+        for (uint32_t idx = 0; idx < opsCount; idx++)
+        {
+            const de::SharedPtr<Operation> readOp = m_readOps[idx];
+            readOp->recordCommands(*cmdBuffer);
+        }
+
+        endCommandBuffer(vk, *cmdBuffer);
+        submitCommandsAndWait(synchronizationWrapper, vk, device, queue, *cmdBuffer);
+
+        for (uint32_t idx = 0; idx < opsCount; idx++)
+        {
+            const de::SharedPtr<Operation> writeOp = m_writeOps[idx];
+            const de::SharedPtr<Operation> readOp  = m_readOps[idx];
+            const de::SharedPtr<Resource> resource = m_resources[idx];
+
+            const Data expected = writeOp->getData();
+            const Data actual   = readOp->getData();
+
+            if (isIndirectBuffer(resource->getType()))
+            {
+                const uint32_t expectedValue = reinterpret_cast<const uint32_t *>(expected.data)[0];
+                const uint32_t actualValue   = reinterpret_cast<const uint32_t *>(actual.data)[0];
+
+                if (actualValue < expectedValue)
+                    return tcu::TestStatus::fail("Counter value is smaller than expected");
+            }
+            else
+            {
+                if (0 != deMemCmp(expected.data, actual.data, expected.size))
+                    return tcu::TestStatus::fail("Memory contents don't match");
+            }
+        }
         return tcu::TestStatus::pass("OK");
     }
 };
@@ -709,12 +896,249 @@ private:
     PipelineCacheData &m_pipelineCacheData;
 };
 
+class SyncEventsTestCase : public TestCase
+{
+public:
+    SyncEventsTestCase(tcu::TestContext &testCtx, const std::string &name, SynchronizationType type,
+                       const ResourceDescription resourceDesc1, const OperationName writeOp1,
+                       const OperationName readOp1, const ResourceDescription resourceDesc2,
+                       const OperationName writeOp2, const OperationName readOp2, PipelineCacheData &pipelineCacheData)
+        : TestCase(testCtx, name)
+        , m_type(type)
+        , m_hasNop(false)
+        , m_isFirstEventNop(m_hasNop)
+        , m_resourceDesc1(resourceDesc1)
+        , m_resourceDesc2(resourceDesc2)
+        , m_writeOp1(makeOperationSupport(writeOp1, resourceDesc1, false).release())
+        , m_readOp1(makeOperationSupport(readOp1, resourceDesc1, false).release())
+        , m_writeOp2(makeOperationSupport(writeOp2, resourceDesc2, false).release())
+        , m_readOp2(makeOperationSupport(readOp2, resourceDesc2, false).release())
+        , m_pipelineCacheData(pipelineCacheData)
+    {
+    }
+
+    SyncEventsTestCase(tcu::TestContext &testCtx, const std::string &name, SynchronizationType type,
+                       bool isFirstEventNop, const ResourceDescription resourceDesc, const OperationName writeOp,
+                       const OperationName readOp, PipelineCacheData &pipelineCacheData)
+        : TestCase(testCtx, name)
+        , m_type(type)
+        , m_hasNop(true)
+        , m_isFirstEventNop(isFirstEventNop)
+        , m_resourceDesc1(resourceDesc)
+        , m_resourceDesc2()
+        , m_writeOp1(makeOperationSupport(writeOp, resourceDesc, false).release())
+        , m_readOp1(makeOperationSupport(readOp, resourceDesc, false).release())
+        , m_writeOp2(nullptr)
+        , m_readOp2(nullptr)
+        , m_pipelineCacheData(pipelineCacheData)
+    {
+    }
+
+    void initPrograms(SourceCollections &programCollection) const
+    {
+        m_writeOp1->initPrograms(programCollection);
+        m_readOp1->initPrograms(programCollection);
+
+        if (!m_hasNop)
+        {
+            m_writeOp2->initPrograms(programCollection);
+            m_readOp2->initPrograms(programCollection);
+        }
+    }
+
+    void checkSupport(Context &context) const
+    {
+        if (m_type == SynchronizationType::SYNCHRONIZATION2)
+            context.requireDeviceFunctionality("VK_KHR_synchronization2");
+
+#ifndef CTS_USES_VULKANSC
+        if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+            !context.getPortabilitySubsetFeatures().events)
+        {
+            TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
+        }
+#endif // CTS_USES_VULKANSC
+
+        if (m_resourceDesc1.type == RESOURCE_TYPE_IMAGE)
+        {
+            VkImageFormatProperties imageFormatProperties;
+            const uint32_t usage = m_writeOp1->getOutResourceUsageFlags() | m_readOp1->getInResourceUsageFlags();
+            const InstanceInterface &instance     = context.getInstanceInterface();
+            const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+            const VkResult formatResult           = instance.getPhysicalDeviceImageFormatProperties(
+                physicalDevice, m_resourceDesc1.imageFormat, m_resourceDesc1.imageType, VK_IMAGE_TILING_OPTIMAL, usage,
+                (VkImageCreateFlags)0, &imageFormatProperties);
+
+            if (formatResult != VK_SUCCESS)
+                TCU_THROW(NotSupportedError, "Image format is not supported");
+
+            if ((imageFormatProperties.sampleCounts & m_resourceDesc1.imageSamples) != m_resourceDesc1.imageSamples)
+                TCU_THROW(NotSupportedError, "Requested sample count is not supported");
+        }
+
+        if (!m_hasNop && m_resourceDesc2.type == RESOURCE_TYPE_IMAGE)
+        {
+            VkImageFormatProperties imageFormatProperties;
+            const uint32_t usage = m_writeOp2->getOutResourceUsageFlags() | m_readOp2->getInResourceUsageFlags();
+            const InstanceInterface &instance     = context.getInstanceInterface();
+            const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+            const VkResult formatResult           = instance.getPhysicalDeviceImageFormatProperties(
+                physicalDevice, m_resourceDesc2.imageFormat, m_resourceDesc2.imageType, VK_IMAGE_TILING_OPTIMAL, usage,
+                (VkImageCreateFlags)0, &imageFormatProperties);
+
+            if (formatResult != VK_SUCCESS)
+                TCU_THROW(NotSupportedError, "Image format is not supported");
+
+            if ((imageFormatProperties.sampleCounts & m_resourceDesc2.imageSamples) != m_resourceDesc2.imageSamples)
+                TCU_THROW(NotSupportedError, "Requested sample count is not supported");
+        }
+    }
+
+    TestInstance *createInstance(Context &context) const
+    {
+        if (m_hasNop)
+            return new EventsTestInstance(context, m_type, m_isFirstEventNop, m_resourceDesc1, *m_writeOp1, *m_readOp1,
+                                          m_pipelineCacheData);
+        else
+            return new EventsTestInstance(context, m_type, m_resourceDesc1, m_resourceDesc2, *m_writeOp1, *m_readOp1,
+                                          *m_writeOp2, *m_readOp2, m_pipelineCacheData);
+    }
+
+private:
+    const SynchronizationType m_type;
+    const bool m_hasNop;
+    const bool m_isFirstEventNop;
+    const ResourceDescription m_resourceDesc1;
+    const ResourceDescription m_resourceDesc2;
+    const de::SharedPtr<OperationSupport> m_writeOp1;
+    const de::SharedPtr<OperationSupport> m_readOp1;
+    const de::SharedPtr<OperationSupport> m_writeOp2;
+    const de::SharedPtr<OperationSupport> m_readOp2;
+    PipelineCacheData &m_pipelineCacheData;
+};
+
 struct TestData
 {
     SynchronizationType type;
     PipelineCacheData *pipelineCacheData;
 };
 
+struct TestCombo
+{
+    const OperationName writeOpName;
+    const OperationName readOpName;
+    const ResourceDescription &resource;
+    const std::string resourceName;
+};
+
+// Tests for waiting on two events
+// Each event consists of a write and read operation
+// Order of events:
+//  execute first write operation, set event 1 , execute second write operation, set event 2
+//  wait on event 1 and 2
+//  after wait, execute first read operation, second read operation
+void createMultipleEventsTests(tcu::TestCaseGroup *group, TestData data)
+{
+    if (data.type == SynchronizationType::SYNCHRONIZATION2)
+    {
+        tcu::TestContext &testCtx = group->getTestContext();
+
+        de::MovePtr<tcu::TestCaseGroup> multiEventsGroup(new tcu::TestCaseGroup(testCtx, "multi_events"));
+
+        static const OperationName e_writeOps[] = {
+            OPERATION_NAME_WRITE_FILL_BUFFER,
+            OPERATION_NAME_WRITE_COPY_BUFFER_TO_IMAGE,
+            OPERATION_NAME_WRITE_BLIT_IMAGE,
+            OPERATION_NAME_WRITE_SSBO_VERTEX,
+        };
+
+        static const OperationName e_readOps[] = {
+            OPERATION_NAME_READ_COPY_BUFFER_TO_IMAGE,
+            OPERATION_NAME_READ_BLIT_IMAGE,
+            OPERATION_NAME_READ_UBO_FRAGMENT,
+            OPERATION_NAME_READ_SSBO_VERTEX,
+        };
+
+        static const ResourceDescription e_resources[] = {
+            {RESOURCE_TYPE_BUFFER, tcu::IVec4(0x4000, 0, 0, 0), vk::VK_IMAGE_TYPE_LAST, vk::VK_FORMAT_UNDEFINED,
+             (vk::VkImageAspectFlags)0, vk::VK_SAMPLE_COUNT_1_BIT}, // 16 KiB (min max UBO range)
+            {RESOURCE_TYPE_BUFFER, tcu::IVec4(0x40000, 0, 0, 0), vk::VK_IMAGE_TYPE_LAST, vk::VK_FORMAT_UNDEFINED,
+             (vk::VkImageAspectFlags)0, vk::VK_SAMPLE_COUNT_1_BIT}, // 256 KiB
+            {RESOURCE_TYPE_IMAGE, tcu::IVec4(128, 128, 0, 0), vk::VK_IMAGE_TYPE_2D, vk::VK_FORMAT_R8G8B8A8_UNORM,
+             vk::VK_IMAGE_ASPECT_COLOR_BIT, vk::VK_SAMPLE_COUNT_1_BIT},
+            {RESOURCE_TYPE_IMAGE, tcu::IVec4(128, 128, 0, 0), vk::VK_IMAGE_TYPE_2D, vk::VK_FORMAT_R32G32B32A32_SFLOAT,
+             vk::VK_IMAGE_ASPECT_COLOR_BIT, vk::VK_SAMPLE_COUNT_1_BIT},
+            {RESOURCE_TYPE_IMAGE, tcu::IVec4(64, 64, 8, 0), vk::VK_IMAGE_TYPE_3D, vk::VK_FORMAT_R32_SFLOAT,
+             vk::VK_IMAGE_ASPECT_COLOR_BIT, vk::VK_SAMPLE_COUNT_1_BIT},
+        };
+
+        std::vector<TestCombo> opSets;
+
+        // Create valid combinations of write/read operation pairs
+        for (int writeOpNdx = 0; writeOpNdx < DE_LENGTH_OF_ARRAY(e_writeOps); ++writeOpNdx)
+            for (int readOpNdx = 0; readOpNdx < DE_LENGTH_OF_ARRAY(e_readOps); ++readOpNdx)
+            {
+                const OperationName writeOpName = e_writeOps[writeOpNdx];
+                const OperationName readOpName  = e_readOps[readOpNdx];
+
+                for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(e_resources); ++resourceNdx)
+                {
+                    const ResourceDescription &resource = e_resources[resourceNdx];
+                    std::string resourceName            = getResourceName(resource);
+
+                    if (isResourceSupported(writeOpName, resource) && isResourceSupported(readOpName, resource))
+                    {
+                        const TestCombo opSet = {writeOpName, readOpName, resource, resourceName};
+                        opSets.push_back(opSet);
+                    }
+                }
+            }
+
+        // Using the above combinations, create tests with two events, each having a write/read operation pair
+        for (uint32_t firstEvtIdx = 0; firstEvtIdx < opSets.size(); firstEvtIdx++)
+        {
+            const TestCombo *firstEvent = &opSets[firstEvtIdx];
+            const std::string firstEventName =
+                getOperationName(firstEvent->writeOpName) + "_" + getOperationName(firstEvent->readOpName);
+
+            for (uint32_t secondEvtIdx = 0; secondEvtIdx < opSets.size(); secondEvtIdx++)
+            {
+                const TestCombo *secondEvent = &opSets[secondEvtIdx];
+                const std::string secondEventName =
+                    getOperationName(secondEvent->writeOpName) + "_" + getOperationName(secondEvent->readOpName);
+                const std::string testName = firstEventName + "__" + secondEventName + "_res_" +
+                                             firstEvent->resourceName + "_" + secondEvent->resourceName;
+
+                multiEventsGroup->addChild(new SyncEventsTestCase(
+                    testCtx, testName, data.type, firstEvent->resource, firstEvent->writeOpName, firstEvent->readOpName,
+                    secondEvent->resource, secondEvent->writeOpName, secondEvent->readOpName, *data.pipelineCacheData));
+            }
+        }
+
+        // Create tests where one of the events does not depend on any work
+        // The no-op event will do no work and will have no dependency
+        for (uint32_t evtIdx = 0; evtIdx < opSets.size(); evtIdx++)
+        {
+            const TestCombo *evt      = &opSets[evtIdx];
+            const std::string evtName = getOperationName(evt->writeOpName) + "_" + getOperationName(evt->readOpName);
+
+            for (const auto &isFirstEventNop : {true, false})
+            {
+                const std::string firstEvtName = (isFirstEventNop ? "nop" : evtName);
+                const std::string secEvtName   = (isFirstEventNop ? evtName : "nop");
+                const std::string firstResName = (isFirstEventNop ? "none" : evt->resourceName);
+                const std::string secResName   = (isFirstEventNop ? evt->resourceName : "none");
+                const std::string testName =
+                    firstEvtName + "__" + secEvtName + "_res_" + firstResName + "_" + secResName;
+
+                multiEventsGroup->addChild(new SyncEventsTestCase(testCtx, testName, data.type, isFirstEventNop,
+                                                                  evt->resource, evt->writeOpName, evt->readOpName,
+                                                                  *data.pipelineCacheData));
+            }
+        }
+        group->addChild(multiEventsGroup.release());
+    }
+}
 void createTests(tcu::TestCaseGroup *group, TestData data)
 {
     tcu::TestContext &testCtx = group->getTestContext();
@@ -796,6 +1220,8 @@ void createTests(tcu::TestCaseGroup *group, TestData data)
 
         group->addChild(synchGroup.release());
     }
+
+    createMultipleEventsTests(group, data);
 }
 
 } // namespace
