@@ -1044,17 +1044,17 @@ Move<vk::VkPipeline> createPipeline(Context &context, const vector<Value> &input
                                     tcu::UVec2 renderSize, uint32_t size)
 {
     const vk::VkShaderModule vertShader =
-        program.hasShader(glu::SHADERTYPE_VERTEX) ? program.getShader(glu::SHADERTYPE_VERTEX) : DE_NULL;
+        program.hasShader(glu::SHADERTYPE_VERTEX) ? program.getShader(glu::SHADERTYPE_VERTEX) : VK_NULL_HANDLE;
     const vk::VkShaderModule tessControlShader = program.hasShader(glu::SHADERTYPE_TESSELLATION_CONTROL) ?
                                                      program.getShader(glu::SHADERTYPE_TESSELLATION_CONTROL) :
-                                                     DE_NULL;
+                                                     VK_NULL_HANDLE;
     const vk::VkShaderModule tessEvalShader    = program.hasShader(glu::SHADERTYPE_TESSELLATION_EVALUATION) ?
                                                      program.getShader(glu::SHADERTYPE_TESSELLATION_EVALUATION) :
-                                                     DE_NULL;
+                                                     VK_NULL_HANDLE;
     const vk::VkShaderModule geomShader =
-        program.hasShader(glu::SHADERTYPE_GEOMETRY) ? program.getShader(glu::SHADERTYPE_GEOMETRY) : DE_NULL;
+        program.hasShader(glu::SHADERTYPE_GEOMETRY) ? program.getShader(glu::SHADERTYPE_GEOMETRY) : VK_NULL_HANDLE;
     const vk::VkShaderModule fragShader =
-        program.hasShader(glu::SHADERTYPE_FRAGMENT) ? program.getShader(glu::SHADERTYPE_FRAGMENT) : DE_NULL;
+        program.hasShader(glu::SHADERTYPE_FRAGMENT) ? program.getShader(glu::SHADERTYPE_FRAGMENT) : VK_NULL_HANDLE;
     const vector<vk::VkVertexInputAttributeDescription> vertexAttribParams(
         getVertexAttributeDescriptions(inputValues, inputLayout));
     const vector<vk::VkViewport> viewports(1, vk::makeViewport(renderSize));
@@ -1473,7 +1473,7 @@ ShaderCaseInstance::ShaderCaseInstance(Context &context, const ShaderCaseSpecifi
     {
         const vk::VkBuffer buffers[]     = {*m_posNdxBuffer, *m_inputBuffer};
         const vk::VkDeviceSize offsets[] = {POSITIONS_OFFSET, 0u};
-        const uint32_t numBuffers        = buffers[1] != 0 ? 2u : 1u;
+        const uint32_t numBuffers        = buffers[1] != VK_NULL_HANDLE ? 2u : 1u;
         vkd.cmdBindVertexBuffers(*m_cmdBuffer, 0u, numBuffers, buffers, offsets);
     }
 

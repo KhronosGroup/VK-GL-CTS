@@ -295,7 +295,7 @@ tcu::TestStatus outOfPoolMemoryTest(Context &context)
             const Unique<VkDescriptorSetLayout> descriptorSetLayout(
                 createDescriptorSetLayout(vkd, device, &descriptorSetLayoutInfo));
             const vector<VkDescriptorSetLayout> rawSetLayouts(params.descriptorSetCount, *descriptorSetLayout);
-            vector<VkDescriptorSet> rawDescriptorSets(params.descriptorSetCount, DE_NULL);
+            vector<VkDescriptorSet> rawDescriptorSets(params.descriptorSetCount, VK_NULL_HANDLE);
 
             const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                 sType;

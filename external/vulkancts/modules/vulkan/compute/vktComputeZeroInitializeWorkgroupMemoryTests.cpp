@@ -1261,7 +1261,7 @@ tcu::TestStatus RepeatedPipelineInstance::iterate(void)
     };
 
     const VkComputePipelineCreateInfo pipelineInfo = {
-        VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, DE_NULL, 0u, shaderInfo, *pipelineLayout, (VkPipeline)0, 0u,
+        VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, DE_NULL, 0u, shaderInfo, *pipelineLayout, VK_NULL_HANDLE, 0u,
     };
     Move<VkPipeline> pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineInfo, NULL);
 

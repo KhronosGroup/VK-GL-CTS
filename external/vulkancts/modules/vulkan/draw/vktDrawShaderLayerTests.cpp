@@ -145,7 +145,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
     };
 
     const bool useTessellationShaders =
-        (tessellationControlModule != DE_NULL) && (tessellationEvaluationModule != DE_NULL);
+        (tessellationControlModule != VK_NULL_HANDLE) && (tessellationEvaluationModule != VK_NULL_HANDLE);
 
     const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                             sType;
@@ -326,7 +326,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
                                                          VK_FORMAT_UNDEFINED};
 
     // when pipeline is created without render pass we are using dynamic rendering
-    if (renderPass == DE_NULL)
+    if (renderPass == VK_NULL_HANDLE)
         graphicsPipelineInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 

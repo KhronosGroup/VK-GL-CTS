@@ -134,10 +134,10 @@ public:
         };
 
         // Graphics pipeline.
-        m_graphicsPipeline =
-            makeGraphicsPipeline(vkd, device, m_pipelineLayout.get(), m_vertexShader.get(), DE_NULL, DE_NULL, DE_NULL,
-                                 DE_NULL, m_renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-                                 0u, 0u, nullptr, nullptr, nullptr, nullptr, nullptr, &dynamicStateInfo);
+        m_graphicsPipeline = makeGraphicsPipeline(
+            vkd, device, m_pipelineLayout.get(), m_vertexShader.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+            VK_NULL_HANDLE, m_renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
+            nullptr, nullptr, nullptr, nullptr, nullptr, &dynamicStateInfo);
     }
 
     const BufferWithMemory *getVertexBuffer() const

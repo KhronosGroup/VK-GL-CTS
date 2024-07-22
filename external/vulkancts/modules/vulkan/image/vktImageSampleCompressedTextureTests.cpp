@@ -512,9 +512,10 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate(void)
                                                    VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     Move<VkFramebuffer> framebuffer =
         makeFramebuffer(vk, device, *renderPass, targetImageView.get(), renderSize.width, renderSize.height);
-    const Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
-        vk, device, graphicsPipelineLayout.get(), vertexShader.get(), DE_NULL, DE_NULL, DE_NULL, fragmentShader.get(),
-        renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vtxInputInfo);
+    const Move<VkPipeline> graphicsPipeline =
+        makeGraphicsPipeline(vk, device, graphicsPipelineLayout.get(), vertexShader.get(), VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, VK_NULL_HANDLE, fragmentShader.get(), renderPass.get(), viewports,
+                             scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vtxInputInfo);
 
     // Create a result buffer.
     const VkBufferCreateInfo resultBufferCreateInfo =

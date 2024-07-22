@@ -794,14 +794,14 @@ struct Resource
         {
         case ResourceType::SAMPLER:
         {
-            const VkDescriptorImageInfo imageInfo = {sampler.get(), DE_NULL, VK_IMAGE_LAYOUT_UNDEFINED};
+            const VkDescriptorImageInfo imageInfo = {sampler.get(), VK_NULL_HANDLE, VK_IMAGE_LAYOUT_UNDEFINED};
             writeInfo                             = WriteInfoPtr(new WriteInfo(imageInfo));
         }
         break;
 
         case ResourceType::IMAGE:
         {
-            const VkDescriptorImageInfo imageInfo = {DE_NULL, imageView.get(), VK_IMAGE_LAYOUT_GENERAL};
+            const VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, imageView.get(), VK_IMAGE_LAYOUT_GENERAL};
             writeInfo                             = WriteInfoPtr(new WriteInfo(imageInfo));
         }
         break;
@@ -3124,7 +3124,7 @@ Move<VkPipeline> buildGraphicsPipeline(const DeviceInterface &vkd, VkDevice devi
     const auto extent = getDefaultExtent();
     const std::vector<VkViewport> viewports(1u, makeViewport(extent));
     const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
-    const auto hasTess  = (tescModule != DE_NULL || teseModule != DE_NULL);
+    const auto hasTess  = (tescModule != VK_NULL_HANDLE || teseModule != VK_NULL_HANDLE);
     const auto topology = (hasTess ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
@@ -3159,7 +3159,7 @@ Move<VkPipeline> buildGraphicsPipeline(const DeviceInterface &vkd, VkDevice devi
         nullptr,                                                    //  const void* pNext;
         0u,                                                         //  VkPipelineRasterizationStateCreateFlags flags;
         VK_FALSE,                                                   //  VkBool32 depthClampEnable;
-        (fragModule == DE_NULL ? VK_TRUE : VK_FALSE),               //  VkBool32 rasterizerDiscardEnable;
+        (fragModule == VK_NULL_HANDLE ? VK_TRUE : VK_FALSE),        //  VkBool32 rasterizerDiscardEnable;
         VK_POLYGON_MODE_FILL,                                       //  VkPolygonMode polygonMode;
         VK_CULL_MODE_NONE,                                          //  VkCullModeFlags cullMode;
         VK_FRONT_FACE_CLOCKWISE,                                    //  VkFrontFace frontFace;
@@ -3343,8 +3343,8 @@ tcu::TestStatus MutableTypesInstance::iterate()
         imageInfoPtr = DescriptorImageInfoPtr(new VkDescriptorImageInfo(makeDescriptorImageInfo(
             VK_NULL_HANDLE, extraResources[bindingCount++].imageView.get(), VK_IMAGE_LAYOUT_GENERAL)));
     if (useExternalSampler)
-        samplerInfoPtr = DescriptorImageInfoPtr(new VkDescriptorImageInfo(
-            makeDescriptorImageInfo(extraResources[bindingCount++].sampler.get(), DE_NULL, VK_IMAGE_LAYOUT_GENERAL)));
+        samplerInfoPtr = DescriptorImageInfoPtr(new VkDescriptorImageInfo(makeDescriptorImageInfo(
+            extraResources[bindingCount++].sampler.get(), VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL)));
     if (rayTracing)
     {
         asWriteInfoPtr  = DescriptorASInfoPtr(new VkWriteDescriptorSetAccelerationStructureKHR);
@@ -3461,10 +3461,10 @@ tcu::TestStatus MutableTypesInstance::iterate()
         de::MovePtr<BufferWithMemory> hitSBT;
         de::MovePtr<BufferWithMemory> callableSBT;
 
-        VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-        VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-        VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-        VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+        VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+        VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+        VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+        VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
         if (bindPoint == VK_PIPELINE_BIND_POINT_COMPUTE)
             pipeline = makeComputePipeline(vkd, device, pipelineLayout.get(), shaderModule.get());

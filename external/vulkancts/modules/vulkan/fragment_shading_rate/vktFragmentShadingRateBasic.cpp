@@ -421,6 +421,9 @@ void FSRTestCase::checkSupport(Context &context) const
     if (m_data.maintenance6)
         context.requireDeviceFunctionality("VK_KHR_maintenance6");
 #endif
+
+    if (m_data.sampleShadingEnable || m_data.sampleShadingInput)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 // Error codes writted by the fragment shader
@@ -1627,7 +1630,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
         0u,                 // flags
         csShaderCreateInfo, // cs
         *pipelineLayout,    // layout
-        (vk::VkPipeline)0,  // basePipelineHandle
+        VK_NULL_HANDLE,     // basePipelineHandle
         0u,                 // basePipelineIndex
     };
     Move<VkPipeline> computePipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);

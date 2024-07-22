@@ -879,9 +879,9 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                         realSamplers.push_back(std::vector<VkSampler>(dsCI.second.pBindings[i].descriptorCount));
                         for (uint32_t j = 0; j < dsCI.second.pBindings[i].descriptorCount; ++j)
                         {
-                            if (dsCI.second.pBindings[i].pImmutableSamplers[j] == DE_NULL)
+                            if (dsCI.second.pBindings[i].pImmutableSamplers[j] == VK_NULL_HANDLE)
                             {
-                                realSamplers.back()[j] = DE_NULL;
+                                realSamplers.back()[j] = VK_NULL_HANDLE;
                                 continue;
                             }
                             else

@@ -98,7 +98,7 @@ public:
 
     //! Execute
     virtual void execute(int numValues, const void *const *inputs, void *const *outputs,
-                         vk::VkDescriptorSet extraResources = (vk::VkDescriptorSet)0) = 0;
+                         vk::VkDescriptorSet extraResources = VK_NULL_HANDLE) = 0;
     bool areInputs16Bit(void) const;
     bool areOutputs16Bit(void) const;
     bool isOutput16Bit(const size_t ndx) const;
@@ -130,7 +130,7 @@ private:
 bool executorSupported(glu::ShaderType shaderType);
 void generateSources(glu::ShaderType shaderType, const ShaderSpec &shaderSpec, vk::SourceCollections &dst);
 ShaderExecutor *createExecutor(Context &context, glu::ShaderType shaderType, const ShaderSpec &shaderSpec,
-                               vk::VkDescriptorSetLayout extraResourcesLayout = (vk::VkDescriptorSetLayout)0);
+                               vk::VkDescriptorSetLayout extraResourcesLayout = VK_NULL_HANDLE);
 void checkSupportShader(Context &context, const glu::ShaderType shaderType);
 
 } // namespace shaderexecutor

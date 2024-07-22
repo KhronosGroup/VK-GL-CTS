@@ -47,6 +47,8 @@ set(DEQP_VK_VKSC_SUBGROUPS_SRCS
 set(DEQP_VK_SUBGROUPS_SRCS
   vktSubgroupsPartitionedTests.cpp
   vktSubgroupsPartitionedTests.hpp
+  vktSubgroupsUniformDescriptorIndexingTests.cpp
+  vktSubgroupsUniformDescriptorIndexingTests.hpp
   vktSubgroupUniformControlFlowTests.cpp
   vktSubgroupUniformControlFlowTests.hpp
   )

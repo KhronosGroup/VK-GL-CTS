@@ -236,9 +236,10 @@ tcu::TestStatus basicChainCase(Context &context, TestConfig config)
     VkFenceCreateInfo fci     = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, DE_NULL, 0};
     VkFence fence;
     std::vector<VkSemaphoreSubmitInfoKHR> waitSemaphoreSubmitInfos(
-        basicChainLength, makeCommonSemaphoreSubmitInfo(0u, 0u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR));
+        basicChainLength,
+        makeCommonSemaphoreSubmitInfo(VK_NULL_HANDLE, 0u, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR));
     std::vector<VkSemaphoreSubmitInfoKHR> signalSemaphoreSubmitInfos(
-        basicChainLength, makeCommonSemaphoreSubmitInfo(0u, 0u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR));
+        basicChainLength, makeCommonSemaphoreSubmitInfo(VK_NULL_HANDLE, 0u, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR));
     VkSemaphoreSubmitInfoKHR *pWaitSemaphoreInfo   = DE_NULL;
     VkSemaphoreSubmitInfoKHR *pSignalSemaphoreInfo = signalSemaphoreSubmitInfos.data();
 
@@ -261,7 +262,7 @@ tcu::TestStatus basicChainCase(Context &context, TestConfig config)
             pSignalSemaphoreInfo  // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
         );
 
-        err                           = synchronizationWrapper->queueSubmit(queue, 0);
+        err                           = synchronizationWrapper->queueSubmit(queue, VK_NULL_HANDLE);
         pWaitSemaphoreInfo            = &waitSemaphoreSubmitInfos[i];
         pWaitSemaphoreInfo->semaphore = pSignalSemaphoreInfo->semaphore;
         pSignalSemaphoreInfo++;
@@ -330,7 +331,7 @@ tcu::TestStatus basicChainTimelineCase(Context &context, TestConfig config)
             pSignalSemaphoreInfo, // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
             !!pWaitSemaphoreInfo, true);
 
-        err = synchronizationWrapper->queueSubmit(queue, 0);
+        err = synchronizationWrapper->queueSubmit(queue, VK_NULL_HANDLE);
 
         pWaitSemaphoreInfo        = &waitSemaphoreSubmitInfos[i];
         pWaitSemaphoreInfo->value = static_cast<uint64_t>(i);

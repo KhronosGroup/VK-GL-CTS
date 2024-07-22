@@ -932,14 +932,14 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
         DE_NULL,
-        0u,                // flags
-        shaderCreateInfo,  // cs
-        *pipelineLayout,   // layout
-        (vk::VkPipeline)0, // basePipelineHandle
-        0u,                // basePipelineIndex
+        0u,               // flags
+        shaderCreateInfo, // cs
+        *pipelineLayout,  // layout
+        VK_NULL_HANDLE,   // basePipelineHandle
+        0u,               // basePipelineIndex
     };
 
-    const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, (VkPipelineCache)0u, &pipelineCreateInfo));
+    const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     // Input buffer
     const VkBufferCreateInfo inputBufferCreateInfo = {

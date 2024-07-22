@@ -8235,7 +8235,7 @@ void FunctionalTest16::initTest()
         const std::string vs_body = getShaderBody(Utils::SHADER_STAGE_VERTEX, n_id);
 
         if (!Utils::buildProgram(gl, vs_body, tc_body, te_body, gs_body, fs_body, DE_NULL, /* xfb_varyings */
-                                 DE_NULL,                                                  /* n_xfb_varyings */
+                                 0,                                                        /* n_xfb_varyings */
                                  m_vs_ids + n_id, m_tc_ids + n_id, m_te_ids + n_id, m_gs_ids + n_id, m_fs_ids + n_id,
                                  m_po_ids + n_id))
         {
@@ -9274,7 +9274,7 @@ void FunctionalTest17::initTest()
     std::string vs_body = getVertexShaderBody();
 
     if (!Utils::buildProgram(gl, vs_body, tc_body, te_body, gs_body, fs_body, DE_NULL, /* xfb_varyings */
-                             DE_NULL,                                                  /* n_xfb_varyings */
+                             0,                                                        /* n_xfb_varyings */
                              &m_vs_id, &m_tc_id, &m_te_id, &m_gs_id, &m_fs_id, &m_po_id))
     {
         TCU_FAIL("Failed to link test program object");
@@ -11407,7 +11407,7 @@ void NegativeTest5::executeIteration(const Utils::_shader_stage &shader_stage)
 
     if (Utils::buildProgram(m_context.getRenderContext().getFunctions(), vs_body, tc_body, te_body, gs_body, fs_body,
                             DE_NULL, /* xfb_varyings */
-                            DE_NULL, /* n_xfb_varyings */
+                            0,       /* n_xfb_varyings */
                             &m_vs_id, &m_tc_id, &m_te_id, &m_gs_id, &m_fs_id, &m_po_id))
     {
         /* None of the test programs should ever build successfully */
@@ -11794,7 +11794,7 @@ void NegativeTest6::executeIteration(const Utils::_shader_stage &shader_stage)
 
     if (Utils::buildProgram(m_context.getRenderContext().getFunctions(), vs_body, tc_body, te_body, gs_body, fs_body,
                             DE_NULL, /* xfb_varyings */
-                            DE_NULL, /* n_xfb_varyings */
+                            0,       /* n_xfb_varyings */
                             &m_vs_id, &m_tc_id, &m_te_id, &m_gs_id, &m_fs_id, &m_po_id))
     {
         /* None of the test programs should ever build successfully */
@@ -12474,7 +12474,7 @@ void NegativeTest8::executeIteration(const Utils::_shader_stage &shader_stage)
 
     if (Utils::buildProgram(m_context.getRenderContext().getFunctions(), vs_body, tc_body, te_body, gs_body, fs_body,
                             DE_NULL, /* xfb_varyings */
-                            DE_NULL, /* n_xfb_varyings */
+                            0,       /* n_xfb_varyings */
                             &m_vs_id, &m_tc_id, &m_te_id, &m_gs_id, &m_fs_id, &m_po_id))
     {
         /* None of the test programs should ever build successfully */

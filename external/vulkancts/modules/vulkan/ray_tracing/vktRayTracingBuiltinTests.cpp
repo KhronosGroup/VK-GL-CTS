@@ -1815,22 +1815,22 @@ de::MovePtr<BufferWithMemory> RayTracingBuiltinLaunchTestInstance::runTest(void)
         raygenShaderBindingTable.get() != NULL ?
             makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0),
                                               shaderGroupHandleSize, shaderGroupHandleSize) :
-            makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+            makeStridedDeviceAddressRegionKHR(0, 0, 0);
     const VkStridedDeviceAddressRegionKHR missShaderBindingTableRegion =
         missShaderBindingTable.get() != NULL ?
             makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0),
                                               shaderGroupHandleSize, shaderGroupHandleSize) :
-            makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+            makeStridedDeviceAddressRegionKHR(0, 0, 0);
     const VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion =
         hitShaderBindingTable.get() != NULL ?
             makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0),
                                               shaderGroupHandleSize, shaderGroupHandleSize) :
-            makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+            makeStridedDeviceAddressRegionKHR(0, 0, 0);
     const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
         callableShaderBindingTable.get() != NULL ?
             makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, callableShaderBindingTable->get(), 0),
                                               shaderGroupHandleSize, shaderGroupHandleSize) :
-            makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+            makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     const VkImageCreateInfo imageCreateInfo = makeImageCreateInfo(m_data.width, m_data.height, m_data.depth, format);
     const VkImageSubresourceRange imageSubresourceRange =
@@ -3446,7 +3446,7 @@ Move<VkPipeline> RayTracingIndirectTestInstance::createPipelineAndShaderBindingT
     m_hitShaderBindingTableRegion =
         makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, m_hitShaderBindingTable->get(), 0),
                                           shaderGroupHandleSize, shaderGroupHandleSize);
-    m_callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    m_callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     return pipeline;
 }

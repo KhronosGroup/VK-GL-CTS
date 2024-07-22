@@ -162,9 +162,9 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
                                       const VkPipelineCreateFlags pipelineCreateFlags)
 {
     DE_ASSERT(tessStateCreateInfo ||
-              (tessellationControlShaderModule == DE_NULL && tessellationEvalShaderModule == DE_NULL));
+              (tessellationControlShaderModule == VK_NULL_HANDLE && tessellationEvalShaderModule == VK_NULL_HANDLE));
 
-    const VkBool32 disableRasterization = (fragmentShaderModule == DE_NULL);
+    const VkBool32 disableRasterization = (fragmentShaderModule == VK_NULL_HANDLE);
 
     VkPipelineShaderStageCreateInfo stageCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType
@@ -184,28 +184,28 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         pipelineShaderStageParams.push_back(stageCreateInfo);
     }
 
-    if (tessellationControlShaderModule != DE_NULL)
+    if (tessellationControlShaderModule != VK_NULL_HANDLE)
     {
         stageCreateInfo.stage  = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
         stageCreateInfo.module = tessellationControlShaderModule;
         pipelineShaderStageParams.push_back(stageCreateInfo);
     }
 
-    if (tessellationEvalShaderModule != DE_NULL)
+    if (tessellationEvalShaderModule != VK_NULL_HANDLE)
     {
         stageCreateInfo.stage  = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
         stageCreateInfo.module = tessellationEvalShaderModule;
         pipelineShaderStageParams.push_back(stageCreateInfo);
     }
 
-    if (geometryShaderModule != DE_NULL)
+    if (geometryShaderModule != VK_NULL_HANDLE)
     {
         stageCreateInfo.stage  = VK_SHADER_STAGE_GEOMETRY_BIT;
         stageCreateInfo.module = geometryShaderModule;
         pipelineShaderStageParams.push_back(stageCreateInfo);
     }
 
-    if (fragmentShaderModule != DE_NULL)
+    if (fragmentShaderModule != VK_NULL_HANDLE)
     {
         stageCreateInfo.stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
         stageCreateInfo.module = fragmentShaderModule;
@@ -396,7 +396,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageParams;
 
-    if (taskShaderModule != DE_NULL)
+    if (taskShaderModule != VK_NULL_HANDLE)
     {
         stageCreateInfo.stage  = VK_SHADER_STAGE_TASK_BIT_EXT;
         stageCreateInfo.module = taskShaderModule;
@@ -409,17 +409,17 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         pipelineShaderStageParams.push_back(stageCreateInfo);
     }
 
-    if (fragmentShaderModule != DE_NULL)
+    if (fragmentShaderModule != VK_NULL_HANDLE)
     {
         stageCreateInfo.stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
         stageCreateInfo.module = fragmentShaderModule;
         pipelineShaderStageParams.push_back(stageCreateInfo);
     }
 
-    return makeGraphicsPipeline(vk, device, DE_NULL, pipelineLayout, pipelineCreateFlags, pipelineShaderStageParams,
-                                renderPass, viewports, scissors, subpass, rasterizationStateCreateInfo,
-                                multisampleStateCreateInfo, depthStencilStateCreateInfo, colorBlendStateCreateInfo,
-                                dynamicStateCreateInfo, pNext);
+    return makeGraphicsPipeline(vk, device, VK_NULL_HANDLE, pipelineLayout, pipelineCreateFlags,
+                                pipelineShaderStageParams, renderPass, viewports, scissors, subpass,
+                                rasterizationStateCreateInfo, multisampleStateCreateInfo, depthStencilStateCreateInfo,
+                                colorBlendStateCreateInfo, dynamicStateCreateInfo, pNext);
 }
 #endif // CTS_USES_VULKANSC
 
@@ -699,7 +699,7 @@ Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDev
                                           const VkDescriptorSetLayout descriptorSetLayout,
                                           const VkPushConstantRange *pushConstantRange)
 {
-    const uint32_t layoutCount = ((descriptorSetLayout == DE_NULL) ? 0u : 1u);
+    const uint32_t layoutCount = ((descriptorSetLayout == VK_NULL_HANDLE) ? 0u : 1u);
     const uint32_t rangeCount  = ((pushConstantRange == nullptr) ? 0u : 1u);
     return makePipelineLayout(vk, device, layoutCount, &descriptorSetLayout, rangeCount, pushConstantRange);
 }

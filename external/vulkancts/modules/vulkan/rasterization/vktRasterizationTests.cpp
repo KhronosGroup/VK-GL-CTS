@@ -922,7 +922,7 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
             VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
             VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
             VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
-            rasterizationStateInfo.rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
+            rasterizationStateInfo.rasterizerDiscardEnable ? VK_NULL_HANDLE : *m_fragmentShaderModule,
             // const VkShaderModule                          fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                            renderPass
             viewports,               // const std::vector<VkViewport>&                viewports
@@ -1185,7 +1185,7 @@ void BaseRenderingTestInstance::drawPrimitives(
             VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
             VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
             VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
-            rasterizationStateInfo.rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
+            rasterizationStateInfo.rasterizerDiscardEnable ? VK_NULL_HANDLE : *m_fragmentShaderModule,
             // const VkShaderModule                          fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                            renderPass
             viewports,               // const std::vector<VkViewport>&                viewports
@@ -1219,7 +1219,7 @@ void BaseRenderingTestInstance::drawPrimitives(
             VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
             VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
             VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
-            rasterizationStateInfo.rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
+            rasterizationStateInfo.rasterizerDiscardEnable ? VK_NULL_HANDLE : *m_fragmentShaderModule,
             // const VkShaderModule                          fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                            renderPass
             viewports,               // const std::vector<VkViewport>&                viewports
@@ -7016,7 +7016,7 @@ void DiscardTestInstance::drawPrimitivesDiscard(tcu::Surface &result, const std:
             VK_NULL_HANDLE, // const VkShaderModule                                tessellationControlShaderModule
             VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalShaderModule
             VK_NULL_HANDLE, // const VkShaderModule                                geometryShaderModule
-            rasterizationStateInfo->rasterizerDiscardEnable ? DE_NULL : *m_fragmentShaderModule,
+            rasterizationStateInfo->rasterizerDiscardEnable ? VK_NULL_HANDLE : *m_fragmentShaderModule,
             // const VkShaderModule                                fragmentShaderModule
             *m_renderPass,           // const VkRenderPass                                renderPass
             viewports,               // const std::vector<VkViewport>&                    viewports
@@ -7900,19 +7900,19 @@ tcu::TestStatus StrideZeroInstance::iterate(void)
         &vertexAttribute, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
-    const auto renderArea     = vk::makeRect2D(kImageDim, kImageDim);
-    const auto viewports      = std::vector<vk::VkViewport>(1, vk::makeViewport(kImageDim, kImageDim));
-    const auto scissors       = std::vector<vk::VkRect2D>(1, renderArea);
-    const auto pipelineLayout = vk::makePipelineLayout(vkd, device);
-    const auto vertexShader   = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-    const auto fragmentShader = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
-    const auto renderPass     = vk::makeRenderPass(vkd, device, StrideZeroCase::kColorFormat);
-    const auto graphicsPipeline =
-        vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertexShader.get(), DE_NULL, DE_NULL, DE_NULL,
-                                 fragmentShader.get(), // Shaders.
-                                 renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u,
-                                 0u,            // Render pass, viewports, scissors, topology.
-                                 &vertexInput); // Vertex input state.
+    const auto renderArea       = vk::makeRect2D(kImageDim, kImageDim);
+    const auto viewports        = std::vector<vk::VkViewport>(1, vk::makeViewport(kImageDim, kImageDim));
+    const auto scissors         = std::vector<vk::VkRect2D>(1, renderArea);
+    const auto pipelineLayout   = vk::makePipelineLayout(vkd, device);
+    const auto vertexShader     = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+    const auto fragmentShader   = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+    const auto renderPass       = vk::makeRenderPass(vkd, device, StrideZeroCase::kColorFormat);
+    const auto graphicsPipeline = vk::makeGraphicsPipeline(
+        vkd, device, pipelineLayout.get(), vertexShader.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        fragmentShader.get(), // Shaders.
+        renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u,
+        0u,            // Render pass, viewports, scissors, topology.
+        &vertexInput); // Vertex input state.
     const auto framebuffer =
         vk::makeFramebuffer(vkd, device, renderPass.get(), colorAttachmentView.get(), kImageDim, kImageDim);
 
@@ -8161,9 +8161,9 @@ tcu::TestStatus CullAndPrimitiveIdInstance::iterate()
 
     // Pipeline layout and graphics pipeline.
     const auto pipelineLayout = makePipelineLayout(vkd, device);
-    const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertModule.get(), DE_NULL, DE_NULL,
-                                               DE_NULL, fragModule.get(), renderPass.get(), viewports, scissors,
-                                               VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u /*subpass*/,
+    const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE,
+                                               VK_NULL_HANDLE, VK_NULL_HANDLE, fragModule.get(), renderPass.get(),
+                                               viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u /*subpass*/,
                                                0u /*patchControlPoints*/, &inputState, &rasterizationState);
 
     // Command pool and buffer.

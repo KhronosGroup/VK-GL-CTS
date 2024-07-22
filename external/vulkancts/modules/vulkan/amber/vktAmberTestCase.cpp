@@ -30,6 +30,7 @@
 #include "deDefs.hpp"
 #include "deUniquePtr.hpp"
 #include "deFilePath.hpp"
+#include "vkPrograms.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "tcuTestLog.hpp"
 #include "vktAmberTestCase.hpp"
@@ -515,13 +516,17 @@ tcu::TestStatus AmberTestInstance::iterate(void)
         if (!m_context.getBinaryCollection().contains(shader.shader_name))
             continue;
 
-        size_t len = m_context.getBinaryCollection().get(shader.shader_name).getSize();
+        const vk::ProgramBinary &prog = m_context.getBinaryCollection().get(shader.shader_name);
+
+        prog.setUsed();
+
+        size_t len = prog.getSize();
         /* This is a compiled spir-v binary which must be made of 4-byte words. We
          * are moving into a word sized vector so divide by 4
          */
         std::vector<uint32_t> data;
         data.resize(len >> 2);
-        deMemcpy(data.data(), m_context.getBinaryCollection().get(shader.shader_name).getBinary(), len);
+        deMemcpy(data.data(), prog.getBinary(), len);
 
         shaderMap[shader.shader_name] = data;
     }

@@ -1272,7 +1272,8 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate(void)
                 }
             }
 
-            uint32_t attachmentCount = (*m_renderPass == DE_NULL) ? static_cast<uint32_t>(colorVector.size()) : 1u;
+            uint32_t attachmentCount =
+                (*m_renderPass == VK_NULL_HANDLE) ? static_cast<uint32_t>(colorVector.size()) : 1u;
             std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentState(
                 attachmentCount,
                 {
@@ -1288,7 +1289,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate(void)
 
             if (m_testParams.alphaBlend)
             {
-                uint32_t attachmentIndex = (*m_renderPass == DE_NULL) ? (uint32_t)pipelines.size() : 0u;
+                uint32_t attachmentIndex = (*m_renderPass == VK_NULL_HANDLE) ? (uint32_t)pipelines.size() : 0u;
                 colorBlendAttachmentState[attachmentIndex].blendEnable = true;
             }
 
@@ -1397,10 +1398,10 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate(void)
                                                   vertexShaderModule, 0u, ShaderWrapper(), ShaderWrapper(),
                                                   ShaderWrapper(), DE_NULL, DE_NULL, renderingCreateInfoWrapper)
                 .setupFragmentShaderState(pipelineLayout, *m_renderPass, subpassIdx, *fragShader,
-                                          &depthStencilStateParams, &multisampleStateParams, 0, 0, {},
+                                          &depthStencilStateParams, &multisampleStateParams, 0, VK_NULL_HANDLE, {},
                                           renderingInputAttachmentIndexInfoWrapper)
-                .setupFragmentOutputState(*m_renderPass, subpassIdx, &colorBlendStateParams, &multisampleStateParams, 0,
-                                          {}, renderingAttachmentLocationInfoWrapper)
+                .setupFragmentOutputState(*m_renderPass, subpassIdx, &colorBlendStateParams, &multisampleStateParams,
+                                          VK_NULL_HANDLE, {}, renderingAttachmentLocationInfoWrapper)
                 .setMonolithicPipelineLayout(pipelineLayout)
                 .buildPipeline();
         }

@@ -32,7 +32,7 @@ Move<VkPipeline> createGraphicsPipeline(const DeviceInterface &vk, VkDevice devi
                                         const VkGraphicsPipelineCreateInfo *pCreateInfo,
                                         const VkAllocationCallbacks *pAllocator)
 {
-    VkPipeline object = 0;
+    VkPipeline object = VK_NULL_HANDLE;
     VK_CHECK(vk.createGraphicsPipelines(device, pipelineCache, 1u, pCreateInfo, pAllocator, &object));
     return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
 }
@@ -41,7 +41,7 @@ Move<VkPipeline> createComputePipeline(const DeviceInterface &vk, VkDevice devic
                                        const VkComputePipelineCreateInfo *pCreateInfo,
                                        const VkAllocationCallbacks *pAllocator)
 {
-    VkPipeline object = 0;
+    VkPipeline object = VK_NULL_HANDLE;
     VK_CHECK(vk.createComputePipelines(device, pipelineCache, 1u, pCreateInfo, pAllocator, &object));
     return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
 }
@@ -52,7 +52,7 @@ Move<VkPipeline> createRayTracingPipelineNV(const DeviceInterface &vk, VkDevice 
                                             const VkRayTracingPipelineCreateInfoNV *pCreateInfo,
                                             const VkAllocationCallbacks *pAllocator)
 {
-    VkPipeline object = 0;
+    VkPipeline object = VK_NULL_HANDLE;
     VK_CHECK(vk.createRayTracingPipelinesNV(device, pipelineCache, 1u, pCreateInfo, pAllocator, &object));
     return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
 }
@@ -62,7 +62,7 @@ Move<VkPipeline> createRayTracingPipelineKHR(const DeviceInterface &vk, VkDevice
                                              const VkRayTracingPipelineCreateInfoKHR *pCreateInfo,
                                              const VkAllocationCallbacks *pAllocator)
 {
-    VkPipeline object = 0;
+    VkPipeline object = VK_NULL_HANDLE;
     VK_CHECK(vk.createRayTracingPipelinesKHR(device, deferredOperation, pipelineCache, 1u, pCreateInfo, pAllocator,
                                              &object));
     return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
@@ -73,7 +73,7 @@ Move<VkPipeline> createRayTracingPipelineKHR(const DeviceInterface &vk, VkDevice
 Move<VkCommandBuffer> allocateCommandBuffer(const DeviceInterface &vk, VkDevice device,
                                             const VkCommandBufferAllocateInfo *pAllocateInfo)
 {
-    VkCommandBuffer object = 0;
+    VkCommandBuffer object = VK_NULL_HANDLE;
     DE_ASSERT(pAllocateInfo->commandBufferCount == 1u);
     VK_CHECK(vk.allocateCommandBuffers(device, pAllocateInfo, &object));
     return Move<VkCommandBuffer>(check<VkCommandBuffer>(object),
@@ -87,7 +87,7 @@ void allocateCommandBuffers(const DeviceInterface &vk, VkDevice device,
     allocateInfoCopy.commandBufferCount          = 1;
     for (uint32_t i = 0; i < pAllocateInfo->commandBufferCount; ++i)
     {
-        VkCommandBuffer object = 0;
+        VkCommandBuffer object = VK_NULL_HANDLE;
         VK_CHECK(vk.allocateCommandBuffers(device, &allocateInfoCopy, &object));
         pCommandBuffers[i] = Move<VkCommandBuffer>(check<VkCommandBuffer>(object),
                                                    Deleter<VkCommandBuffer>(vk, device, pAllocateInfo->commandPool));
@@ -97,7 +97,7 @@ void allocateCommandBuffers(const DeviceInterface &vk, VkDevice device,
 Move<VkDescriptorSet> allocateDescriptorSet(const DeviceInterface &vk, VkDevice device,
                                             const VkDescriptorSetAllocateInfo *pAllocateInfo)
 {
-    VkDescriptorSet object = 0;
+    VkDescriptorSet object = VK_NULL_HANDLE;
     DE_ASSERT(pAllocateInfo->descriptorSetCount == 1u);
     VK_CHECK(vk.allocateDescriptorSets(device, pAllocateInfo, &object));
     return Move<VkDescriptorSet>(check<VkDescriptorSet>(object),
@@ -178,7 +178,7 @@ Move<VkShaderModule> createShaderModule(const DeviceInterface &vk, VkDevice devi
                                         const VkShaderModuleCreateInfo *pCreateInfo,
                                         const VkAllocationCallbacks *pAllocator)
 {
-    VkShaderModule object = 0;
+    VkShaderModule object = VK_NULL_HANDLE;
     VK_CHECK(vk.createShaderModule(device, pCreateInfo, pAllocator, &object));
     return Move<VkShaderModule>(check<VkShaderModule>(object), Deleter<VkShaderModule>(vk, device, pAllocator));
 }

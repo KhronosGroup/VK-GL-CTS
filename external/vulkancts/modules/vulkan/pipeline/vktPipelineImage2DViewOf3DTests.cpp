@@ -217,7 +217,7 @@ VkSparseMemoryBind makeSparseMemoryBinding(const DeviceInterface &vk, const VkDe
         memoryType,                             // uint32_t memoryTypeIndex;
     };
 
-    VkDeviceMemory deviceMemory = 0;
+    VkDeviceMemory deviceMemory = VK_NULL_HANDLE;
     VK_CHECK(vk.allocateMemory(device, &allocInfo, VK_NULL_HANDLE, &deviceMemory));
 
     VkSparseMemoryBind memoryBind;

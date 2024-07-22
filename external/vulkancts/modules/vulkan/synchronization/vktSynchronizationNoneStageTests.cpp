@@ -689,7 +689,7 @@ Move<VkDescriptorSet> NoneStageTestInstance::buildDescriptorSet(VkDescriptorPool
     const VkDevice &device    = m_context.getDevice();
 
     const VkDescriptorImageInfo inputImageInfo =
-        makeDescriptorImageInfo(sampler ? *sampler : 0u, inputView, inputLayout);
+        makeDescriptorImageInfo(sampler ? *sampler : VK_NULL_HANDLE, inputView, inputLayout);
     Move<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, descriptorPool, descriptorSetLayout);
 
     DescriptorSetUpdateBuilder()
@@ -827,7 +827,7 @@ tcu::TestStatus NoneStageTestInstance::iterate(void)
                 // in this case generated gradient is only used for verification
                 m_writeRenderPass     = buildBasicRenderPass(m_transitionImageFormat, m_writeRenderPassOutputLayout,
                                                              VK_ATTACHMENT_LOAD_OP_CLEAR);
-                m_writePipelineLayout = makePipelineLayout(vk, device, DE_NULL);
+                m_writePipelineLayout = makePipelineLayout(vk, device, VK_NULL_HANDLE);
                 m_writePipeline       = buildPipeline(0u, m_transitionImageAspect, *m_writePipelineLayout,
                                                       *m_writeVertShaderModule, *m_writeFragShaderModule, *m_writeRenderPass);
                 m_writeFramebuffer    = buildFramebuffer(*m_writeRenderPass, &m_attachmentViews[1].get());

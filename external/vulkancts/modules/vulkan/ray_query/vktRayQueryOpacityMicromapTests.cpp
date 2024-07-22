@@ -944,8 +944,8 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
             shaderGroupBaseAlignment           = rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
         }
 
-        auto raygenSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-        auto unusedSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+        auto raygenSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+        auto unusedSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
         {
             const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();

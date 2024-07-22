@@ -432,7 +432,7 @@ DepthClampTestInstance::DepthClampTestInstance(Context &context, const TestParam
     PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, (VkPipelineCreateFlags)0);
     pipelineCreateInfo.addShader(
         PipelineCreateInfo::PipelineShaderStage(*vertexModule, "main", VK_SHADER_STAGE_VERTEX_BIT));
-    if (*geometryModule != 0)
+    if (*geometryModule != VK_NULL_HANDLE)
         pipelineCreateInfo.addShader(
             PipelineCreateInfo::PipelineShaderStage(*geometryModule, "main", VK_SHADER_STAGE_GEOMETRY_BIT));
     pipelineCreateInfo.addShader(

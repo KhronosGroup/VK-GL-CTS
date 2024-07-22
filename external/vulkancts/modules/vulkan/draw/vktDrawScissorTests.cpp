@@ -580,7 +580,7 @@ TestStatus ScissorTestInstance::iterate(void)
         const VkOffset3D zeroOffset   = {0, 0, 0};
         const tcu::Vec4 clearColor    = {0.0f, 0.0f, 0.0f, 1.0f};
         const VkClearValue clearValue = makeClearValueColor(clearColor);
-        const VkBuffer vBuffer        = (vertexBufferSize > 0) ? vertexBuffer->object() : DE_NULL;
+        const VkBuffer vBuffer        = (vertexBufferSize > 0) ? vertexBuffer->object() : VK_NULL_HANDLE;
         const VkRect2D renderArea     = makeRect2D(m_params.framebufferSize);
 
         // Unreference value for Vulkan SC
@@ -709,7 +709,7 @@ void ScissorTestInstance::drawCommands(VkCommandBuffer cmdBuffer, VkPipeline pip
     const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkDeviceSize vertexBufferOffset = 0;
 
-    if (vertexBuffer != DE_NULL)
+    if (vertexBuffer != VK_NULL_HANDLE)
         vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 

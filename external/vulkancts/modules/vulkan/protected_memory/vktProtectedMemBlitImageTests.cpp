@@ -155,9 +155,9 @@ tcu::TestStatus BlitImageTestInstance::iterate()
         const vk::VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
             vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
             DE_NULL,
-            (vk::VkRenderPass)0u,                  // renderPass
+            VK_NULL_HANDLE,                        // renderPass
             0u,                                    // subpass
-            (vk::VkFramebuffer)0u,                 // framebuffer
+            VK_NULL_HANDLE,                        // framebuffer
             VK_FALSE,                              // occlusionQueryEnable
             (vk::VkQueryControlFlags)0u,           // queryFlags
             (vk::VkQueryPipelineStatisticFlags)0u, // pipelineStatistics

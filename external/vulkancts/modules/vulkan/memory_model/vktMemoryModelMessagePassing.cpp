@@ -1651,11 +1651,11 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
             DE_NULL,
-            0u,                // flags
-            shaderCreateInfo,  // cs
-            *pipelineLayout,   // layout
-            (vk::VkPipeline)0, // basePipelineHandle
-            0u,                // basePipelineIndex
+            0u,               // flags
+            shaderCreateInfo, // cs
+            *pipelineLayout,  // layout
+            VK_NULL_HANDLE,   // basePipelineHandle
+            0u,               // basePipelineIndex
         };
         pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
     }
@@ -1829,7 +1829,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
     VkBufferDeviceAddressInfo addrInfo = {
         VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType sType;
         DE_NULL,                                      // const void*  pNext;
-        0,                                            // VkBuffer            buffer
+        VK_NULL_HANDLE,                               // VkBuffer            buffer
     };
 
     VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);

@@ -313,7 +313,7 @@ tcu::TestStatus PaddingTestInstance::iterate(void)
             nullptr,                                                 // const VkSpecializationInfo* pSpecializationInfo;
         },
         pipelineLayout.get(), // layout
-        DE_NULL,              // basePipelineHandle
+        VK_NULL_HANDLE,       // basePipelineHandle
         0,                    // basePipelineIndex
     };
     auto pipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);

@@ -230,7 +230,7 @@ TestStatus DeviceLossInstance::iterate(void)
         {"waitSemaphores",
          [&]()
          {
-             if (*semaphore[handleIndex] == 0)
+             if (*semaphore[handleIndex] == VK_NULL_HANDLE)
                  return VK_RESULT_MAX_ENUM;
              waitInfo.pSemaphores = &*semaphore[handleIndex];
              return deviceDriver.waitSemaphores(*logicalDevice, &waitInfo, waitTimeout);

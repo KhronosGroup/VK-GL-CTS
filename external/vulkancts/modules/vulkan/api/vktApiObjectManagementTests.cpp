@@ -2047,9 +2047,9 @@ struct GraphicsPipeline
             (const VkPipelineDynamicStateCreateInfo *)DE_NULL,
             *res.layout.object,
             *res.renderPass.object,
-            0u,            // subpass
-            (VkPipeline)0, // basePipelineHandle
-            0,             // basePipelineIndex
+            0u,             // subpass
+            VK_NULL_HANDLE, // basePipelineHandle
+            0,              // basePipelineIndex
         };
 
         const uint32_t numPipelines = static_cast<uint32_t>(pOutHandles->size());
@@ -2064,7 +2064,7 @@ struct GraphicsPipeline
         // Even if an error is returned, some pipelines may have been created successfully
         for (uint32_t i = 0; i < numPipelines; ++i)
         {
-            if (pHandles[i] != DE_NULL)
+            if (pHandles[i] != VK_NULL_HANDLE)
                 pipelines.push_back(VkPipelineSp(
                     new Move<VkPipeline>(check<VkPipeline>(pHandles[i]),
                                          Deleter<VkPipeline>(env.vkd, env.device, env.allocationCallbacks))));
@@ -2075,7 +2075,7 @@ struct GraphicsPipeline
 
     static Move<VkPipeline> create(const Environment &env, const Resources &res, const Parameters &)
     {
-        vector<VkPipeline> handles(1, DE_NULL);
+        vector<VkPipeline> handles(1, VK_NULL_HANDLE);
         VkResult result                    = VK_NOT_READY;
         vector<VkPipelineSp> scopedHandles = createMultiple(env, res, Parameters(), &handles, &result);
 
@@ -2145,8 +2145,8 @@ struct ComputePipeline
                 DE_NULL // pSpecializationInfo
             },
             *res.layout.object,
-            (VkPipeline)0, // basePipelineHandle
-            0u,            // basePipelineIndex
+            VK_NULL_HANDLE, // basePipelineHandle
+            0u,             // basePipelineIndex
         };
 
         return createComputePipeline(env.vkd, env.device, *res.pipelineCache.object, &pipelineInfo,
@@ -2170,8 +2170,8 @@ struct ComputePipeline
                 DE_NULL // pSpecializationInfo
             },
             *res.layout.object,
-            (VkPipeline)0, // basePipelineHandle
-            0u,            // basePipelineIndex
+            VK_NULL_HANDLE, // basePipelineHandle
+            0u,             // basePipelineIndex
         };
 
         const uint32_t numPipelines = static_cast<uint32_t>(pOutHandles->size());
@@ -2186,7 +2186,7 @@ struct ComputePipeline
         // Even if an error is returned, some pipelines may have been created successfully
         for (uint32_t i = 0; i < numPipelines; ++i)
         {
-            if (pHandles[i] != DE_NULL)
+            if (pHandles[i] != VK_NULL_HANDLE)
                 pipelines.push_back(VkPipelineSp(
                     new Move<VkPipeline>(check<VkPipeline>(pHandles[i]),
                                          Deleter<VkPipeline>(env.vkd, env.device, env.allocationCallbacks))));
@@ -3386,7 +3386,7 @@ tcu::TestStatus allocCallbackFailMultipleObjectsTest(Context &context, typename 
                 {
                     for (uint32_t nullNdx = numPassingAllocs; nullNdx < numObjects; ++nullNdx)
                     {
-                        if (handles[nullNdx] != DE_NULL)
+                        if (handles[nullNdx] != VK_NULL_HANDLE)
                             return tcu::TestStatus::fail("Some object handles weren't set to NULL");
                     }
                 }

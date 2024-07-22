@@ -644,7 +644,7 @@ void beginSecondaryCommandBuffer(const vk::DeviceInterface &vk, const vk::VkComm
                                  const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo)
 {
     const vk::VkCommandBufferUsageFlags flags =
-        bufferInheritanceInfo.renderPass != DE_NULL ?
+        bufferInheritanceInfo.renderPass != VK_NULL_HANDLE ?
             (vk::VkCommandBufferUsageFlags)vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT :
             (vk::VkCommandBufferUsageFlags)0u;
     const vk::VkCommandBufferBeginInfo beginInfo = {

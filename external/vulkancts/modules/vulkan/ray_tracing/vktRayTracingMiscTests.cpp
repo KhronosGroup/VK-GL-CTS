@@ -8175,14 +8175,14 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
                                           getBufferDeviceAddress(deviceInterface, deviceVk,
                                                                  missShaderBindingTablePtr->get(), 0 /* offset */),
                                           missStride, missStride * nMissGroups) :
-                                      makeStridedDeviceAddressRegionKHR(DE_NULL, 0, /* stride */
+                                      makeStridedDeviceAddressRegionKHR(0, 0, /* stride */
                                                                         0 /* size   */));
             const auto hitShaderBindingTableRegion =
                 ((nHitGroups > 0u) ? makeStridedDeviceAddressRegionKHR(
                                          getBufferDeviceAddress(deviceInterface, deviceVk,
                                                                 hitShaderBindingTablePtr->get(), 0 /* offset */),
                                          hitStride, hitStride * nHitGroups) :
-                                     makeStridedDeviceAddressRegionKHR(DE_NULL, 0, /* stride */
+                                     makeStridedDeviceAddressRegionKHR(0, 0, /* stride */
                                                                        0 /* size   */));
 
             const auto callableShaderBindingTableRegion =
@@ -8192,7 +8192,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
                                                0 /* offset */),
                         callStride, /* stride */
                         callStride * static_cast<uint32_t>(callableShaderCollectionNames.size())) :
-                    makeStridedDeviceAddressRegionKHR(DE_NULL, 0, /* stride */
+                    makeStridedDeviceAddressRegionKHR(0, 0, /* stride */
                                                       0 /* size   */);
 
             if (m_testPtr->usesDynamicStackSize())
@@ -8429,10 +8429,10 @@ tcu::TestStatus nullMissInstance(Context &context)
     de::MovePtr<BufferWithMemory> hitSBT;
     de::MovePtr<BufferWithMemory> callableSBT;
 
-    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     {
         const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
@@ -8536,7 +8536,7 @@ tcu::TestStatus emptyPipelineLayoutInstance(Context &context)
     pipelineCreateInfo.layout                            = *pipelineLayout;
 
     // make sure there is no crash when pipeline layout is empty
-    auto pipeline = createRayTracingPipelineKHR(vk, device, 0, 0, &pipelineCreateInfo);
+    auto pipeline = createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
     pipeline      = Move<VkPipeline>();
 
     return tcu::TestStatus::pass("Pass");
@@ -8722,10 +8722,10 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
     de::MovePtr<BufferWithMemory> hitSBT;
     de::MovePtr<BufferWithMemory> callableSBT;
 
-    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     {
         const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();

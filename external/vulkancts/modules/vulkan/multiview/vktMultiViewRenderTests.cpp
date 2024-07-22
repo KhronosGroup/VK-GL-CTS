@@ -1118,7 +1118,7 @@ void MultiViewRenderTestInstance::madeShaderModule(map<VkShaderStageFlagBits, Sh
         DE_NULL,                                             // const void* pNext;
         (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
         (VkShaderStageFlagBits)0,                            // VkShaderStageFlagBits stage;
-        (VkShaderModule)0,                                   // VkShaderModule module;
+        VK_NULL_HANDLE,                                      // VkShaderModule module;
         "main",                                              // const char* pName;
         (const VkSpecializationInfo *)DE_NULL,               // const VkSpecializationInfo* pSpecializationInfo;
     };
@@ -1314,7 +1314,7 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline(
     const VkGraphicsPipelineCreateInfo graphicsPipelineParams{
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
 #ifndef CTS_USES_VULKANSC
-        (renderPass == 0) ? &renderingCreateInfo : DE_NULL, // const void* pNext;
+        (renderPass == VK_NULL_HANDLE) ? &renderingCreateInfo : DE_NULL, // const void* pNext;
 #else
         DE_NULL,     // const void* pNext;
 #endif                             // CTS_USES_VULKANSC
@@ -1335,7 +1335,7 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline(
         pipelineLayout,                                    // VkPipelineLayout layout;
         renderPass,                                        // VkRenderPass renderPass;
         subpass,                                           // uint32_t subpass;
-        0u,                                                // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                    // VkPipeline basePipelineHandle;
         0,                                                 // int32_t basePipelineIndex;
     };
 
@@ -1946,7 +1946,8 @@ void MultiViewAttachmentsTestInstance::beforeRenderPass(void)
 
     m_descriptorSet = vk::allocateDescriptorSet(*m_device, *m_logicalDevice, &allocateInfo);
 
-    const VkDescriptorImageInfo imageInfo = {(VkSampler)0, m_inputAttachment->getImageView(), VK_IMAGE_LAYOUT_GENERAL};
+    const VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, m_inputAttachment->getImageView(),
+                                             VK_IMAGE_LAYOUT_GENERAL};
 
     const VkWriteDescriptorSet write = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, //VkStructureType sType;
@@ -4451,7 +4452,7 @@ tcu::TestStatus MultiViewMaskIterationTestInstance::iterate(void)
             VK_NULL_HANDLE, fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u,
             0u, &vertexInputStateCreateInfo, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr,
 #ifndef CTS_USES_VULKANSC
-            (*renderPass == 0) ? &pipelineRenderingCreateInfo : VK_NULL_HANDLE
+            (*renderPass == VK_NULL_HANDLE) ? &pipelineRenderingCreateInfo : VK_NULL_HANDLE
 #else
             VK_NULL_HANDLE
 #endif // CTS_USES_VULKANSC

@@ -360,7 +360,7 @@ bool DisplayCoverageTestInstance::getDisplays(DisplayVector &displays)
     {
         const VkDisplayKHR display = displaysProps[displayIndex].display;
 
-        if (display == DE_NULL)
+        if (display == VK_NULL_HANDLE)
         {
             displays.clear();
 
@@ -560,7 +560,7 @@ bool DisplayCoverageTestInstance::getDisplays2(DisplayVector &displays)
     {
         const VkDisplayKHR display = displaysProps[displayIndex].displayProperties.display;
 
-        if (display == DE_NULL)
+        if (display == VK_NULL_HANDLE)
         {
             displays.clear();
 
@@ -693,7 +693,7 @@ void DisplayCoverageTestInstance::validateDisplayPlaneProperties(tcu::ResultColl
                   "CurrentStackIndex must be less than the number of planes reported " +
                       de::toString(nonUpdated.currentStackIndex));
 
-    results.check(currentDisplay == DE_NULL || de::contains(displaySet, currentDisplay),
+    results.check(currentDisplay == VK_NULL_HANDLE || de::contains(displaySet, currentDisplay),
                   "Plane bound to invalid handle " + de::toString(toValidate.currentDisplay));
 }
 
@@ -988,7 +988,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
                           "CurrentStackIndex must be less than the number of planes reported " +
                               de::toString(planeCountReported));
 
-            results.check(currentDisplay == DE_NULL || de::contains(displaySet, currentDisplay),
+            results.check(currentDisplay == VK_NULL_HANDLE || de::contains(displaySet, currentDisplay),
                           "Plane bound to invalid handle " + de::toString(currentDisplay));
 
             if (results.getResult() != QP_TEST_RESULT_PASS)
@@ -1294,7 +1294,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testCreateDisplayModeKHR(void)
             if (result != VK_ERROR_INITIALIZATION_FAILED)
                 TCU_FAIL_STR(string("Expected VK_ERROR_INITIALIZATION_FAILED. Have ") + getResultAsString(result));
 
-            if (modeFail != DE_NULL)
+            if (modeFail != VK_NULL_HANDLE)
                 TCU_FAIL("Mode should be kept invalid on fail");
         }
 
@@ -1310,7 +1310,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testCreateDisplayModeKHR(void)
         if (result != VK_SUCCESS)
             TCU_FAIL_STR("Expected VK_SUCCESS. Have " + getResultAsString(result));
 
-        if (mode == DE_NULL)
+        if (mode == VK_NULL_HANDLE)
             TCU_FAIL("Valid handle expected");
 
         // Builtin mode count should not be updated with a new mode
@@ -1627,7 +1627,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testDisplaySurface(SurfaceTestKind 
                             if (result != VK_SUCCESS)
                                 TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
 
-                            if (surface == DE_NULL)
+                            if (surface == VK_NULL_HANDLE)
                                 TCU_FAIL("Invalid surface handle returned");
 
                             if (testKind == SURFACE_COUNTERS)

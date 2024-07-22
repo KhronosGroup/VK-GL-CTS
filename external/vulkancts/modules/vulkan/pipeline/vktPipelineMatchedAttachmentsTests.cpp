@@ -229,7 +229,7 @@ tcu::TestStatus testMatchedAttachments(Context &context, const MatchedAttachment
         .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragmentShaderModule)
         .setupFragmentOutputState(*renderPass, 0u)
         .setMonolithicPipelineLayout(pipelineLayout)
-        .buildPipeline(params.usePipelineCache ? *pipelineCache : DE_NULL);
+        .buildPipeline(params.usePipelineCache ? *pipelineCache : VK_NULL_HANDLE);
 
     // Passes as long as createGraphicsPipeline didn't crash.
     return tcu::TestStatus::pass("Pass");

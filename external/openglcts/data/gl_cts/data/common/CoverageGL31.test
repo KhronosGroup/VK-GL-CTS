@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!-- Coverage test for OpenGL 3.1 tokens and entry points -->
+<test mode="gl" pattern="coverage">
+    <enums>
+        <!-- GL_VERSION_3_1 -->
+        <enum>
+            <name>GL_VERSION_3_1</name>
+            <value>1</value>
+        </enum>
+        <enum>
+            <name>GL_SAMPLER_2D_RECT</name>
+            <value>0x8B63</value>
+        </enum>
+        <enum>
+            <name>GL_SAMPLER_2D_RECT_SHADOW</name>
+            <value>0x8B64</value>
+        </enum>
+        <enum>
+            <name>GL_SAMPLER_BUFFER</name>
+            <value>0x8DC2</value>
+        </enum>
+        <enum>
+            <name>GL_INT_SAMPLER_2D_RECT</name>
+            <value>0x8DCD</value>
+        </enum>
+        <enum>
+            <name>GL_INT_SAMPLER_BUFFER</name>
+            <value>0x8DD0</value>
+        </enum>
+        <enum>
+            <name>GL_UNSIGNED_INT_SAMPLER_2D_RECT</name>
+            <value>0x8DD5</value>
+        </enum>
+        <enum>
+            <name>GL_UNSIGNED_INT_SAMPLER_BUFFER</name>
+            <value>0x8DD8</value>
+        </enum>
+        <enum>
+            <name>GL_TEXTURE_BUFFER</name>
+            <value>0x8C2A</value>
+        </enum>
+        <enum>
+            <name>GL_MAX_TEXTURE_BUFFER_SIZE</name>
+            <value>0x8C2B</value>
+        </enum>
+        <enum>
+            <name>GL_TEXTURE_BINDING_BUFFER</name>
+            <value>0x8C2C</value>
+        </enum>
+        <enum>
+            <name>GL_TEXTURE_BUFFER_DATA_STORE_BINDING</name>
+            <value>0x8C2D</value>
+        </enum>
+        <enum>
+            <name>GL_TEXTURE_RECTANGLE</name>
+            <value>0x84F5</value>
+        </enum>
+        <enum>
+            <name>GL_TEXTURE_BINDING_RECTANGLE</name>
+            <value>0x84F6</value>
+        </enum>
+        <enum>
+            <name>GL_PROXY_TEXTURE_RECTANGLE</name>
+            <value>0x84F7</value>
+        </enum>
+        <enum>
+            <name>GL_MAX_RECTANGLE_TEXTURE_SIZE</name>
+            <value>0x84F8</value>
+        </enum>
+        <enum>
+            <name>GL_RED_SNORM</name>
+            <value>0x8F90</value>
+        </enum>
+        <enum>
+            <name>GL_RG_SNORM</name>
+            <value>0x8F91</value>
+        </enum>
+        <enum>
+            <name>GL_RGB_SNORM</name>
+            <value>0x8F92</value>
+        </enum>
+        <enum>
+            <name>GL_RGBA_SNORM</name>
+            <value>0x8F93</value>
+        </enum>
+        <enum>
+            <name>GL_R8_SNORM</name>
+            <value>0x8F94</value>
+        </enum>
+        <enum>
+            <name>GL_RG8_SNORM</name>
+            <value>0x8F95</value>
+        </enum>
+        <enum>
+            <name>GL_RGB8_SNORM</name>
+            <value>0x8F96</value>
+        </enum>
+        <enum>
+            <name>GL_RGBA8_SNORM</name>
+            <value>0x8F97</value>
+        </enum>
+        <enum>
+            <name>GL_R16_SNORM</name>
+            <value>0x8F98</value>
+        </enum>
+        <enum>
+            <name>GL_RG16_SNORM</name>
+            <value>0x8F99</value>
+        </enum>
+        <enum>
+            <name>GL_RGB16_SNORM</name>
+            <value>0x8F9A</value>
+        </enum>
+        <enum>
+            <name>GL_RGBA16_SNORM</name>
+            <value>0x8F9B</value>
+        </enum>
+        <enum>
+            <name>GL_SIGNED_NORMALIZED</name>
+            <value>0x8F9C</value>
+        </enum>
+        <enum>
+            <name>GL_PRIMITIVE_RESTART</name>
+            <value>0x8F9D</value>
+        </enum>
+        <enum>
+            <name>GL_PRIMITIVE_RESTART_INDEX</name>
+            <value>0x8F9E</value>
+        </enum>
+        <!-- reuse GL_COPY_READ_BUFFER -->
+        <!-- reuse GL_COPY_WRITE_BUFFER -->
+        <!-- reuse GL_UNIFORM_BUFFER -->
+        <!-- reuse GL_UNIFORM_BUFFER_BINDING -->
+        <!-- reuse GL_UNIFORM_BUFFER_START -->
+        <!-- reuse GL_UNIFORM_BUFFER_SIZE -->
+        <!-- reuse GL_MAX_VERTEX_UNIFORM_BLOCKS -->
+        <!-- reuse GL_MAX_FRAGMENT_UNIFORM_BLOCKS -->
+        <!-- reuse GL_MAX_COMBINED_UNIFORM_BLOCKS -->
+        <!-- reuse GL_MAX_UNIFORM_BUFFER_BINDINGS -->
+        <!-- reuse GL_MAX_UNIFORM_BLOCK_SIZE -->
+        <!-- reuse GL_MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS -->
+        <!-- reuse GL_MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS -->
+        <!-- reuse GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT -->
+        <!-- reuse GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH -->
+        <!-- reuse GL_ACTIVE_UNIFORM_BLOCKS -->
+        <!-- reuse GL_UNIFORM_TYPE -->
+        <!-- reuse GL_UNIFORM_SIZE -->
+        <!-- reuse GL_UNIFORM_NAME_LENGTH -->
+        <!-- reuse GL_UNIFORM_BLOCK_INDEX -->
+        <!-- reuse GL_UNIFORM_OFFSET -->
+        <!-- reuse GL_UNIFORM_ARRAY_STRIDE -->
+        <!-- reuse GL_UNIFORM_MATRIX_STRIDE -->
+        <!-- reuse GL_UNIFORM_IS_ROW_MAJOR -->
+        <!-- reuse GL_UNIFORM_BLOCK_BINDING -->
+        <!-- reuse GL_UNIFORM_BLOCK_DATA_SIZE -->
+        <!-- reuse GL_UNIFORM_BLOCK_NAME_LENGTH -->
+        <!-- reuse GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS -->
+        <!-- reuse GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES -->
+        <!-- reuse GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER -->
+        <!-- reuse GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER -->
+        <!-- reuse GL_INVALID_INDEX -->
+        <!-- Reuse tokens from GL_ARB_copy_buffer -->
+        <enum>
+            <name>GL_COPY_READ_BUFFER</name>
+            <value>0x8F36</value>
+        </enum>
+        <enum>
+            <name>GL_COPY_WRITE_BUFFER</name>
+            <value>0x8F37</value>
+        </enum>
+        <!-- Reuse tokens from GL_ARB_uniform_buffer_object -->
+        <enum>
+            <name>GL_UNIFORM_BUFFER</name>
+            <value>0x8A11</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_BUFFER_BINDING</name>
+            <value>0x8A28</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_BUFFER_START</name>
+            <value>0x8A29</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_BUFFER_SIZE</name>
+            <value>0x8A2A</value>
+        </enum>
+        <enum>
+            <name>GL_MAX_VERTEX_UNIFORM_BLOCKS</name>
+            <value>0x8A2B</value>
+        </enum>
+        <enum>
+            <name>GL_MAX_GEOMETRY_UNIFORM_BLOCKS</name>
+            <value>0x8A2C</value>
+        </enum>
+        <enum>
+            <name>GL_MAX_FRAGMENT_UNIFORM_BLOCKS</name>
+            <value>0x8A2D</value>
+        </enum>
+        <enum>
+            <name>GL_MAX_COMBINED_UNIFORM_BLOCKS</name>
+            <value>0x8A2E</value>
+        </enum>
+        <enum>
+            <name>GL_MAX_UNIFORM_BUFFER_BINDINGS</name>
+            <value>0x8A2F</value>
+        </enum>
+        <enum>
+            <name>GL_MAX_UNIFORM_BLOCK_SIZE</name>
+            <value>0x8A30</value>
+        </enum>
+        <enum>
+            <name>GL_MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS</name>
+            <value>0x8A31</value>
+        </enum>
+        <enum>
+            <name>GL_MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS</name>
+            <value>0x8A32</value>
+        </enum>
+        <enum>
+            <name>GL_MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS</name>
+            <value>0x8A33</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT</name>
+            <value>0x8A34</value>
+        </enum>
+        <enum>
+            <name>GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH</name>
+            <value>0x8A35</value>
+        </enum>
+        <enum>
+            <name>GL_ACTIVE_UNIFORM_BLOCKS</name>
+            <value>0x8A36</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_TYPE</name>
+            <value>0x8A37</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_SIZE</name>
+            <value>0x8A38</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_NAME_LENGTH</name>
+            <value>0x8A39</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_BLOCK_INDEX</name>
+            <value>0x8A3A</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_OFFSET</name>
+            <value>0x8A3B</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_ARRAY_STRIDE</name>
+            <value>0x8A3C</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_MATRIX_STRIDE</name>
+            <value>0x8A3D</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_IS_ROW_MAJOR</name>
+            <value>0x8A3E</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_BLOCK_BINDING</name>
+            <value>0x8A3F</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_BLOCK_DATA_SIZE</name>
+            <value>0x8A40</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_BLOCK_NAME_LENGTH</name>
+            <value>0x8A41</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS</name>
+            <value>0x8A42</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES</name>
+            <value>0x8A43</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER</name>
+            <value>0x8A44</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_BLOCK_REFERENCED_BY_GEOMETRY_SHADER</name>
+            <value>0x8A45</value>
+        </enum>
+        <enum>
+            <name>GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER</name>
+            <value>0x8A46</value>
+        </enum>
+        <enum>
+            <name>GL_INVALID_INDEX</name>
+            <value>0xFFFFFFFFu</value>
+        </enum>
+    </enums>
+    <funcs>
+        <!-- GL_VERSION_3_1 -->
+        <func>
+            <name>glDrawArraysInstanced</name>
+        </func>
+        <func>
+            <name>glDrawElementsInstanced</name>
+        </func>
+        <func>
+            <name>glTexBuffer</name>
+        </func>
+        <func>
+            <name>glPrimitiveRestartIndex</name>
+        </func>
+        <!-- Reuse entry points from GL_ARB_copy_buffer -->
+        <func>
+            <name>glCopyBufferSubData</name>
+        </func>
+        <!-- Reuse entry points from GL_ARB_uniform_buffer_object -->
+        <func>
+            <name>glGetUniformIndices</name>
+        </func>
+        <func>
+            <name>glGetActiveUniformsiv</name>
+        </func>
+        <func>
+            <name>glGetActiveUniformName</name>
+        </func>
+        <func>
+            <name>glGetUniformBlockIndex</name>
+        </func>
+        <func>
+            <name>glGetActiveUniformBlockiv</name>
+        </func>
+        <func>
+            <name>glGetActiveUniformBlockName</name>
+        </func>
+        <func>
+            <name>glUniformBlockBinding</name>
+        </func>
+    </funcs>
+</test>

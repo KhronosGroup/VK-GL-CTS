@@ -244,7 +244,7 @@ tcu::TestStatus SparseResourceTransferQueueInstance::iterate(void)
         };
 
         // Submit sparse bind commands for execution
-        VK_CHECK(deviceInterface.queueBindSparse(universalQueue.queueHandle, 1u, &bindSparseInfo, DE_NULL));
+        VK_CHECK(deviceInterface.queueBindSparse(universalQueue.queueHandle, 1u, &bindSparseInfo, VK_NULL_HANDLE));
     }
 
     // Uploading

@@ -1220,7 +1220,7 @@ public:
             }
 
             Renderer::SpecializationMap specMap;
-            draw(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, DE_NULL, specMap, usingDeviceGroups(), firstDeviceID);
+            draw(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_NULL_HANDLE, specMap, usingDeviceGroups(), firstDeviceID);
 
             if (!isResultImageCorrect())
                 return tcu::TestStatus::fail("Some buffer values were incorrect");

@@ -966,7 +966,7 @@ void ComputeQueryTestBase::initStateObjects(void)
             (VkPipelineCreateFlags)0u,                      // flags
             pipelineShaderStageParams,                      // stage
             *m_pipelineLayout,                              // layout
-            DE_NULL,                                        // basePipelineHandle
+            VK_NULL_HANDLE,                                 // basePipelineHandle
             0,                                              // basePipelineIndex
         };
         m_pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
@@ -1083,7 +1083,7 @@ tcu::TestStatus ComputeQueryTest::iterate(void)
                 DE_NULL,                               // pSignalSemaphores
             };
 
-            VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+            VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE));
         }
 
         // submit command buffer for each pass and wait for its completion
@@ -1191,7 +1191,7 @@ tcu::TestStatus ComputeMultiplePoolsTest::iterate(void)
                 DE_NULL,                               // pSignalSemaphores
             };
 
-            VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+            VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE));
         }
 
         // submit command buffer for each pass and wait for its completion

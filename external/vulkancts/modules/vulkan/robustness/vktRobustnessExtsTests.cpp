@@ -2611,7 +2611,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                 case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
                     // Output image.
                     if (b == 1 && m_data.nullDescriptor)
-                        imageInfoVec[vecIndex] = makeDescriptorImageInfo(*sampler, DE_NULL, VK_IMAGE_LAYOUT_GENERAL);
+                        imageInfoVec[vecIndex] =
+                            makeDescriptorImageInfo(*sampler, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL);
                     else
                         imageInfoVec[vecIndex] =
                             makeDescriptorImageInfo(*sampler, **imageViews[b], VK_IMAGE_LAYOUT_GENERAL);
@@ -2619,7 +2620,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                 case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
                 case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
                     if (b == 1 && m_data.nullDescriptor)
-                        bufferViewVec[vecIndex] = DE_NULL;
+                        bufferViewVec[vecIndex] = VK_NULL_HANDLE;
                     else
                         bufferViewVec[vecIndex] = **bufferViews[0];
                     break;
@@ -2633,16 +2634,16 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                 }
 
                 VkWriteDescriptorSet w = {
-                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,           // sType
-                    DE_NULL,                                          // pNext
-                    m_data.pushDescriptor ? DE_NULL : *descriptorSet, // dstSet
-                    (uint32_t)b,                                      // binding
-                    0,                                                // dstArrayElement
-                    1u,                                               // descriptorCount
-                    binding.descriptorType,                           // descriptorType
-                    &imageInfoVec[vecIndex],                          // pImageInfo
-                    &bufferInfoVec[vecIndex],                         // pBufferInfo
-                    &bufferViewVec[vecIndex],                         // pTexelBufferView
+                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,                  // sType
+                    DE_NULL,                                                 // pNext
+                    m_data.pushDescriptor ? VK_NULL_HANDLE : *descriptorSet, // dstSet
+                    (uint32_t)b,                                             // binding
+                    0,                                                       // dstArrayElement
+                    1u,                                                      // descriptorCount
+                    binding.descriptorType,                                  // descriptorType
+                    &imageInfoVec[vecIndex],                                 // pImageInfo
+                    &bufferInfoVec[vecIndex],                                // pBufferInfo
+                    &bufferViewVec[vecIndex],                                // pTexelBufferView
                 };
 
 #ifndef CTS_USES_VULKANSC
@@ -2887,7 +2888,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
             nullptr,                                                // pLibraryInterface
             nullptr,                                                // pDynamicState
             *pipelineLayout,                                        // layout
-            (vk::VkPipeline)0,                                      // basePipelineHandle
+            VK_NULL_HANDLE,                                         // basePipelineHandle
             0u,                                                     // basePipelineIndex
         };
 
@@ -3323,7 +3324,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         if (m_data.descriptorType == VERTEX_ATTRIBUTE_FETCH)
         {
             VkDeviceSize zeroOffset = 0;
-            VkBuffer b              = m_data.nullDescriptor ? DE_NULL : **buffer;
+            VkBuffer b              = m_data.nullDescriptor ? VK_NULL_HANDLE : **buffer;
             vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &b, &zeroOffset);
             vk.cmdDraw(*cmdBuffer, 1000u, 1u, 0u, 0u);
 

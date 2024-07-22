@@ -323,7 +323,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXT(void)
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == DE_NULL || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     return tcu::TestStatus::pass("pass");
@@ -387,7 +387,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTInvalidConnec
     if (result != VK_ERROR_UNKNOWN)
         TCU_FAIL("vkGetDrmDisplayEXT failed to return error.");
 
-    if (display != DE_NULL)
+    if (display != VK_NULL_HANDLE)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display to null.");
 
     return tcu::TestStatus::pass("pass");
@@ -422,7 +422,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTNotMaster(voi
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == DE_NULL || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     return tcu::TestStatus::pass("pass");
@@ -474,7 +474,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTUnownedConnec
     if (result != VK_ERROR_UNKNOWN)
         TCU_FAIL("vkGetDrmDisplayEXT failed to return error.");
 
-    if (display != DE_NULL)
+    if (display != VK_NULL_HANDLE)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display to null.");
 
     return tcu::TestStatus::pass("pass");
@@ -516,7 +516,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXT(void)
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == DE_NULL || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     result = m_vki.acquireDrmDisplayEXT(m_physDevice, fd, display);
@@ -552,7 +552,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXTInvalidFd
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == DE_NULL || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     int invalidFd = open("/", O_RDONLY | O_PATH);
@@ -593,7 +593,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXTNotMaster
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == DE_NULL || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     result = m_vki.acquireDrmDisplayEXT(m_physDevice, fd, display);
@@ -650,7 +650,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXTUnownedCo
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == DE_NULL || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     result = m_vki.acquireDrmDisplayEXT(m_physDevice, leaseFd, display);
@@ -696,7 +696,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testReleaseDisplayEXT(void)
     if (result != VK_SUCCESS)
         TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
-    if (display == DE_NULL || display == INVALID_PTR)
+    if (display == VK_NULL_HANDLE || display == INVALID_PTR)
         TCU_FAIL("vkGetDrmDisplayEXT did not set display.");
 
     result = m_vki.acquireDrmDisplayEXT(m_physDevice, fd, display);

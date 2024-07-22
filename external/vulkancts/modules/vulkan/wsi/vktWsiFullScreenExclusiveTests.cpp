@@ -253,8 +253,8 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(Type wsiType, const Instanc
         transform,
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,         // clipped
-        (VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     return parameters;
@@ -399,7 +399,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
 
     Move<VkSwapchainKHR> swapchain;
     {
-        VkSwapchainKHR object = 0;
+        VkSwapchainKHR object = VK_NULL_HANDLE;
         VkResult result       = vkd.createSwapchainKHR(device, &swapchainInfo, DE_NULL, &object);
         if (result == VK_ERROR_INITIALIZATION_FAILED &&
             testParams.fseType == VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT)
@@ -499,7 +499,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
 
             {
                 acquireResult = vkd.acquireNextImageKHR(device, *swapchain, std::numeric_limits<uint64_t>::max(),
-                                                        imageReadySemaphore, (vk::VkFence)0, &imageNdx);
+                                                        imageReadySemaphore, VK_NULL_HANDLE, &imageNdx);
                 if (acquireResult == VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT)
                 {
                     context.getTestContext().getLog()

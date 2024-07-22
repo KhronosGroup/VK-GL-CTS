@@ -50,7 +50,7 @@ struct FrameBufferState
     vk::VkFormat depthFormat = vk::VK_FORMAT_UNDEFINED;
     tcu::UVec2 renderSize;
     uint32_t numSamples            = vk::VK_SAMPLE_COUNT_1_BIT;
-    vk::VkImageView depthImageView = 0;
+    vk::VkImageView depthImageView = VK_NULL_HANDLE;
 };
 
 struct PipelineState
@@ -137,8 +137,8 @@ struct VulkanProgram
     VulkanProgram(const std::vector<VulkanShader> &shaders_);
 
     std::vector<VulkanShader> shaders;
-    vk::VkDescriptorSetLayout descriptorSetLayout = 0;
-    vk::VkDescriptorSet descriptorSet             = 0;
+    vk::VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+    vk::VkDescriptorSet descriptorSet             = VK_NULL_HANDLE;
 };
 
 struct RenderObject
@@ -153,8 +153,8 @@ struct RenderObject
     vk::refdetails::Move<vk::VkShaderModule> shaderModules[MAX_NUM_SHADER_MODULES];
     de::MovePtr<vk::BufferWithMemory> vertexBuffer;
     uint32_t vertexCount;
-    vk::VkDescriptorSetLayout descriptorSetLayout = 0;
-    vk::VkDescriptorSet descriptorSet             = 0;
+    vk::VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+    vk::VkDescriptorSet descriptorSet             = VK_NULL_HANDLE;
 };
 
 class VulkanDrawContext : public DrawContext

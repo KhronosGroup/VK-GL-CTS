@@ -459,7 +459,7 @@ Move<VkDescriptorSet> createSubpassDescriptorSet(const DeviceInterface &vkd, VkD
     const VkDescriptorSetAllocateInfo allocateInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL, pool, 1u,
                                                    &layout};
     Move<VkDescriptorSet> set(allocateDescriptorSet(vkd, device, &allocateInfo));
-    const VkDescriptorImageInfo imageInfo{(VkSampler)0u, imageView, imageReadLayout};
+    const VkDescriptorImageInfo imageInfo{VK_NULL_HANDLE, imageView, imageReadLayout};
     const VkWriteDescriptorSet write{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                                      DE_NULL,
 
@@ -869,7 +869,7 @@ void SampleReadTestInstance::createRenderPipeline()
     colorBlendAttachmentState.colorWriteMask = 0xF;
 
     const std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(
-        uint32_t(*m_renderPass == DE_NULL) + 1u, colorBlendAttachmentState);
+        uint32_t(*m_renderPass == VK_NULL_HANDLE) + 1u, colorBlendAttachmentState);
     VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
     colorBlendStateCreateInfo.attachmentCount                     = uint32_t(colorBlendAttachmentStates.size());
     colorBlendStateCreateInfo.pAttachments                        = colorBlendAttachmentStates.data();
@@ -884,7 +884,7 @@ void SampleReadTestInstance::createRenderPipeline()
                                                       VK_FORMAT_UNDEFINED,
                                                       VK_FORMAT_UNDEFINED};
 
-    if (*m_renderPass == DE_NULL)
+    if (*m_renderPass == VK_NULL_HANDLE)
         renderingCreateInfoWrapper.ptr = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
@@ -933,7 +933,7 @@ void SampleReadTestInstance::createSubpassPipeline()
     colorBlendAttachmentState.colorWriteMask = 0xF;
 
     const std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(
-        uint32_t(*m_renderPass == DE_NULL) + 1u, colorBlendAttachmentState);
+        uint32_t(*m_renderPass == VK_NULL_HANDLE) + 1u, colorBlendAttachmentState);
     VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
     colorBlendStateCreateInfo.attachmentCount                     = uint32_t(colorBlendAttachmentStates.size());
     colorBlendStateCreateInfo.pAttachments                        = colorBlendAttachmentStates.data();
@@ -954,7 +954,7 @@ void SampleReadTestInstance::createSubpassPipeline()
     renderingCreateInfo.colorAttachmentCount          = 2u;
     renderingCreateInfo.pColorAttachmentFormats       = colorAttachmentFormats;
 
-    if (*m_renderPass == DE_NULL)
+    if (*m_renderPass == VK_NULL_HANDLE)
     {
         renderingCreateInfoWrapper.ptr           = &renderingCreateInfo;
         renderingAttachmentLocationInfoWrapper   = &renderingAttachmentLocation;
@@ -969,8 +969,8 @@ void SampleReadTestInstance::createSubpassPipeline()
                                           vertexShaderModule, 0u, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(),
                                           DE_NULL, DE_NULL, renderingCreateInfoWrapper)
         .setupFragmentShaderState(m_subpassPipelineLayout, *m_renderPass, 1u, fragmentShaderModule, 0u,
-                                  &multisampleState, 0, 0, {}, renderingInputAttachmentIndexInfoWrapper)
-        .setupFragmentOutputState(*m_renderPass, 1u, &colorBlendStateCreateInfo, &multisampleState, 0, {},
+                                  &multisampleState, 0, VK_NULL_HANDLE, {}, renderingInputAttachmentIndexInfoWrapper)
+        .setupFragmentOutputState(*m_renderPass, 1u, &colorBlendStateCreateInfo, &multisampleState, VK_NULL_HANDLE, {},
                                   renderingAttachmentLocationInfoWrapper)
         .setMonolithicPipelineLayout(m_subpassPipelineLayout)
         .buildPipeline();

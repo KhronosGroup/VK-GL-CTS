@@ -510,17 +510,17 @@ Move<VkPipeline> CrossStageTestInstance::makeGraphicsPipeline(const VkRenderPass
     };
 
     const VkShaderModule vertShader =
-        shaderFlags & VK_SHADER_STAGE_VERTEX_BIT ? **shaderModules[VK_SHADER_STAGE_VERTEX_BIT] : DE_NULL;
+        shaderFlags & VK_SHADER_STAGE_VERTEX_BIT ? **shaderModules[VK_SHADER_STAGE_VERTEX_BIT] : VK_NULL_HANDLE;
     const VkShaderModule tessControlShader = shaderFlags & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ?
                                                  **shaderModules[VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT] :
-                                                 DE_NULL;
+                                                 VK_NULL_HANDLE;
     const VkShaderModule tessEvalShader    = shaderFlags & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT ?
                                                  **shaderModules[VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT] :
-                                                 DE_NULL;
+                                                 VK_NULL_HANDLE;
     const VkShaderModule geomShader =
-        shaderFlags & VK_SHADER_STAGE_GEOMETRY_BIT ? **shaderModules[VK_SHADER_STAGE_GEOMETRY_BIT] : DE_NULL;
+        shaderFlags & VK_SHADER_STAGE_GEOMETRY_BIT ? **shaderModules[VK_SHADER_STAGE_GEOMETRY_BIT] : VK_NULL_HANDLE;
     const VkShaderModule fragShader =
-        shaderFlags & VK_SHADER_STAGE_FRAGMENT_BIT ? **shaderModules[VK_SHADER_STAGE_FRAGMENT_BIT] : DE_NULL;
+        shaderFlags & VK_SHADER_STAGE_FRAGMENT_BIT ? **shaderModules[VK_SHADER_STAGE_FRAGMENT_BIT] : VK_NULL_HANDLE;
 
     return vk::makeGraphicsPipeline(
         vk,                        // const DeviceInterface&                        vk

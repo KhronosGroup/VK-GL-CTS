@@ -47,7 +47,7 @@ using std::vector;
 
 #if defined(DEQP_SUPPORT_WAYLAND)
 #include "tcuLnxWayland.hpp"
-#define WAYLAND_DISPLAY DE_NULL
+#define WAYLAND_DISPLAY 0
 #endif // DEQP_SUPPORT_WAYLAND
 
 #if (DE_OS == DE_OS_WIN32)
@@ -333,7 +333,7 @@ Move<VkSurfaceKHR> createSurface(const InstanceInterface &vki, VkInstance instan
                                  const Display &nativeDisplay, const Window &nativeWindow,
                                  const tcu::CommandLine &cmdLine, const VkAllocationCallbacks *pAllocator)
 {
-    VkSurfaceKHR object = 0;
+    VkSurfaceKHR object = VK_NULL_HANDLE;
     VK_CHECK(createSurface(vki, instance, wsiType, nativeDisplay, nativeWindow, cmdLine, pAllocator, &object));
     return Move<VkSurfaceKHR>(check<VkSurfaceKHR>(object), Deleter<VkSurfaceKHR>(vki, instance, pAllocator));
 }

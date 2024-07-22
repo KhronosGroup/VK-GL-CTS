@@ -552,8 +552,10 @@ public:
             readOp->recordCommands(readCmdBuffer);
             endCommandBuffer(vk, readCmdBuffer);
 
-            VK_CHECK(synchronizationWrapper[QUEUETYPE_WRITE]->queueSubmit(queuePairs[pairNdx].queueWrite, DE_NULL));
-            VK_CHECK(synchronizationWrapper[QUEUETYPE_READ]->queueSubmit(queuePairs[pairNdx].queueRead, DE_NULL));
+            VK_CHECK(
+                synchronizationWrapper[QUEUETYPE_WRITE]->queueSubmit(queuePairs[pairNdx].queueWrite, VK_NULL_HANDLE));
+            VK_CHECK(
+                synchronizationWrapper[QUEUETYPE_READ]->queueSubmit(queuePairs[pairNdx].queueRead, VK_NULL_HANDLE));
             VK_CHECK(vk.queueWaitIdle(queuePairs[pairNdx].queueWrite));
             VK_CHECK(vk.queueWaitIdle(queuePairs[pairNdx].queueRead));
 
@@ -736,7 +738,7 @@ public:
 
             endCommandBuffer(vk, cmdBuffer);
 
-            VK_CHECK(synchronizationWrapper->queueSubmit(m_opQueues[opIdx].queue, DE_NULL));
+            VK_CHECK(synchronizationWrapper->queueSubmit(m_opQueues[opIdx].queue, VK_NULL_HANDLE));
         }
 
         VK_CHECK(vk.queueWaitIdle(m_opQueues.back().queue));

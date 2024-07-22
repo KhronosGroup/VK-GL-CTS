@@ -37,24 +37,65 @@ namespace
 
 tcu::TestCaseGroup *createAtomicTests(tcu::TestContext &testCtx)
 {
-    // Test atomic oprerations on multisample textures
+    // Test atomic operations on multisample textures
     de::MovePtr<tcu::TestCaseGroup> atomic(new tcu::TestCaseGroup(testCtx, "atomic"));
 #ifndef CTS_USES_VULKANSC
     static const char dataDir[] = "texture/multisample/atomic";
 
-    static const std::string cases[] = {"storage_image_r32i", "storage_image_r32ui"};
+    struct TestCase
+    {
+        std::string name;
+        VkFormat format;
+        bool requiresInt64;
+    };
+
+    TestCase cases[] = {{"storage_image_r32i", VK_FORMAT_R32_SINT, false},
+                        {"storage_image_r32ui", VK_FORMAT_R32_UINT, false},
+                        {"storage_image_r64i", VK_FORMAT_R64_SINT, true},
+                        {"storage_image_r64ui", VK_FORMAT_R64_UINT, true}};
 
     std::vector<std::string> requirements;
 
     requirements.push_back("Features.shaderStorageImageMultisample");
 
-    for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+    for (const auto &testCase : cases)
     {
-        const std::string fileName = cases[i] + ".amber";
-        cts_amber::AmberTestCase *testCase =
-            cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), dataDir, fileName, requirements);
+        if (testCase.requiresInt64)
+        {
+            requirements.push_back("Features.shaderInt64");
+        }
 
-        atomic->addChild(testCase);
+        const VkImageCreateInfo vkImageCreateInfo = {
+            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
+            DE_NULL,                             // pNext
+            0,                                   // flags
+            VK_IMAGE_TYPE_2D,                    // imageType
+            testCase.format,                     // format
+            {64, 64, 1},                         // extent
+            1,                                   // mipLevels
+            1,                                   // arrayLayers
+            VK_SAMPLE_COUNT_4_BIT,               // samples
+            VK_IMAGE_TILING_OPTIMAL,             // tiling
+            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, // usage
+            VK_SHARING_MODE_EXCLUSIVE, // sharingMode
+            0,                         // queueFamilyIndexCount
+            DE_NULL,                   // pQueueFamilyIndices
+            VK_IMAGE_LAYOUT_UNDEFINED, // initialLayout
+        };
+
+        std::vector<VkImageCreateInfo> imageRequirements = {vkImageCreateInfo};
+
+        const std::string fileName              = testCase.name + ".amber";
+        cts_amber::AmberTestCase *amberTestCase = cts_amber::createAmberTestCase(
+            testCtx, testCase.name.c_str(), dataDir, fileName, requirements, imageRequirements);
+
+        atomic->addChild(amberTestCase);
+
+        // Remove the requirement after adding the test case to avoid affecting the next iteration
+        if (testCase.requiresInt64)
+        {
+            requirements.pop_back();
+        }
     }
 #endif
 

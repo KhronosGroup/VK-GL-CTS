@@ -180,6 +180,9 @@ void FSITestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "fragment shading rate not supported");
     }
 #endif // CTS_USES_VULKANSC
+
+    if (m_data.isSampleInterlock())
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 static int bitsPerQuad(const CaseDef &c)

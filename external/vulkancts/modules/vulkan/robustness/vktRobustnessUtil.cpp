@@ -515,7 +515,7 @@ GraphicsEnvironment::GraphicsEnvironment(Context &context, const DeviceInterface
                 vk.cmdBindVertexBuffers(*m_commandBuffer, 0, (uint32_t)drawConfig.vertexBuffers.size(),
                                         drawConfig.vertexBuffers.data(), vertexBufferOffsets.data());
 
-                if (drawConfig.indexBuffer == DE_NULL || drawConfig.indexCount == 0)
+                if (drawConfig.indexBuffer == VK_NULL_HANDLE || drawConfig.indexCount == 0)
                 {
                     vk.cmdDraw(*m_commandBuffer, drawConfig.vertexCount, drawConfig.instanceCount, 0, 0);
                 }

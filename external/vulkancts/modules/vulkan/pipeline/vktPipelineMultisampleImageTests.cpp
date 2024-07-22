@@ -247,7 +247,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
     DE_ASSERT(numSubpasses > 0u);
 
     std::vector<VkGraphicsPipelineCreateInfo> graphicsPipelineInfos(0);
-    std::vector<VkPipeline> rawPipelines(numSubpasses, DE_NULL);
+    std::vector<VkPipeline> rawPipelines(numSubpasses, VK_NULL_HANDLE);
 
     {
 #ifndef CTS_USES_VULKANSC
@@ -293,7 +293,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
         }
     }
 
-    VK_CHECK(vk.createGraphicsPipelines(device, DE_NULL, static_cast<uint32_t>(graphicsPipelineInfos.size()),
+    VK_CHECK(vk.createGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(graphicsPipelineInfos.size()),
                                         &graphicsPipelineInfos[0], DE_NULL, &rawPipelines[0]));
 
     std::vector<PipelineSp> pipelines;

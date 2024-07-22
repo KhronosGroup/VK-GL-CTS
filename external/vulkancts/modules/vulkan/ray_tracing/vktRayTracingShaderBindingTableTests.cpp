@@ -507,7 +507,7 @@ void CheckerboardConfiguration::initShaderBindingTables(
         missShaderBindingTableRegion =
             makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0),
                                               shaderGroupHandleSize, shaderGroupHandleSize);
-        callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+        callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
         // fill ShaderRecordKHR data
         if (testParams.shaderRecordPresent)
@@ -557,7 +557,7 @@ void CheckerboardConfiguration::initShaderBindingTables(
             missShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(
                 getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), shaderBindingTableOffset),
                 shaderGroupHandleSize, shaderCount[STT_MISS] * shaderGroupHandleSize);
-        callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+        callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
         if (testParams.shaderRecordPresent)
         {
@@ -1501,10 +1501,10 @@ tcu::TestStatus ShaderGroupHandleAlignmentInstance::iterate(void)
     de::MovePtr<BufferWithMemory> hitSBT;
     de::MovePtr<BufferWithMemory> callableSBT;
 
-    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     // Create shader record buffer data.
     using DataVec = std::vector<uint8_t>;

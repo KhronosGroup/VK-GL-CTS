@@ -720,7 +720,7 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
         case ACCESS_TYPE_TEXEL_FETCH:
         {
             vk::VkDescriptorImageInfo descStorageImgDst =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
             vk::VkDescriptorImageInfo descSampledImgSrc =
                 makeDescriptorImageInfo(*sampler, *imageViewSrc, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
@@ -734,9 +734,9 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
         case ACCESS_TYPE_IMAGE_STORE:
         {
             vk::VkDescriptorImageInfo descStorageImgDst =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
             vk::VkDescriptorImageInfo descStorageImgSrc =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
 
             updateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                                       vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descStorageImgDst);
@@ -747,7 +747,7 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
         case ACCESS_TYPE_IMAGE_ATOMICS:
         {
             vk::VkDescriptorImageInfo descStorageImg =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
 
             updateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                                       vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descStorageImg);
@@ -1007,7 +1007,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest(void)
         case ACCESS_TYPE_IMAGE_LOAD:
         {
             vk::VkDescriptorImageInfo descStorageImg =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
 
             updateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                                       vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descStorageImg);
@@ -1016,9 +1016,9 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest(void)
         case ACCESS_TYPE_IMAGE_STORE:
         {
             vk::VkDescriptorImageInfo descStorageImgSrc =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
             vk::VkDescriptorImageInfo descStorageImgDst =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
 
             updateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                                       vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descStorageImgSrc);
@@ -1029,7 +1029,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest(void)
         case ACCESS_TYPE_IMAGE_ATOMICS:
         {
             vk::VkDescriptorImageInfo descStorageImg =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
 
             updateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                                       vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descStorageImg);

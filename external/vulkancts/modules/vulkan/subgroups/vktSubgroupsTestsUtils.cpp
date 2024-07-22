@@ -233,9 +233,9 @@ Move<VkPipeline> makeGraphicsPipeline(
     const uint32_t geometryShaderStageCreateFlags, const uint32_t fragmentShaderStageCreateFlags,
     const uint32_t requiredSubgroupSize[5])
 {
-    const VkBool32 disableRasterization = (fragmentShaderModule == DE_NULL);
+    const VkBool32 disableRasterization = (fragmentShaderModule == VK_NULL_HANDLE);
     const bool hasTessellation =
-        (tessellationControlShaderModule != DE_NULL || tessellationEvalShaderModule != DE_NULL);
+        (tessellationControlShaderModule != VK_NULL_HANDLE || tessellationEvalShaderModule != VK_NULL_HANDLE);
 
     VkPipelineShaderStageCreateInfo stageCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType
@@ -287,7 +287,7 @@ Move<VkPipeline> makeGraphicsPipeline(
         pipelineShaderStageParams.push_back(stageCreateInfo);
     }
 
-    if (tessellationControlShaderModule != DE_NULL)
+    if (tessellationControlShaderModule != VK_NULL_HANDLE)
     {
         stageCreateInfo.pNext  = (requiredSubgroupSizeCreateInfo[1].requiredSubgroupSize != 0u) ?
                                      &requiredSubgroupSizeCreateInfo[1] :
@@ -298,7 +298,7 @@ Move<VkPipeline> makeGraphicsPipeline(
         pipelineShaderStageParams.push_back(stageCreateInfo);
     }
 
-    if (tessellationEvalShaderModule != DE_NULL)
+    if (tessellationEvalShaderModule != VK_NULL_HANDLE)
     {
         stageCreateInfo.pNext =
             (requiredSubgroupSize != DE_NULL && requiredSubgroupSizeCreateInfo[2].requiredSubgroupSize != 0u) ?
@@ -310,7 +310,7 @@ Move<VkPipeline> makeGraphicsPipeline(
         pipelineShaderStageParams.push_back(stageCreateInfo);
     }
 
-    if (geometryShaderModule != DE_NULL)
+    if (geometryShaderModule != VK_NULL_HANDLE)
     {
         stageCreateInfo.pNext  = (requiredSubgroupSizeCreateInfo[3].requiredSubgroupSize != 0u) ?
                                      &requiredSubgroupSizeCreateInfo[3] :
@@ -321,7 +321,7 @@ Move<VkPipeline> makeGraphicsPipeline(
         pipelineShaderStageParams.push_back(stageCreateInfo);
     }
 
-    if (fragmentShaderModule != DE_NULL)
+    if (fragmentShaderModule != VK_NULL_HANDLE)
     {
         stageCreateInfo.pNext  = (requiredSubgroupSizeCreateInfo[4].requiredSubgroupSize != 0u) ?
                                      &requiredSubgroupSizeCreateInfo[4] :
@@ -2719,8 +2719,8 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTestRequire
         context, *pipelineLayout,
         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT |
             VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-        *vertexShaderModule, *fragmentShaderModule, DE_NULL, *teCtrlShaderModule, *teEvalShaderModule, *renderPass,
-        VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, &vertexInputBinding, &vertexInputAttribute, true, format, 0u,
+        *vertexShaderModule, *fragmentShaderModule, VK_NULL_HANDLE, *teCtrlShaderModule, *teEvalShaderModule,
+        *renderPass, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, &vertexInputBinding, &vertexInputAttribute, true, format, 0u,
         ((shaderStage & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) ? tessShaderStageCreateFlags : 0u),
         ((shaderStage & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ? tessShaderStageCreateFlags : 0u), 0u, 0u,
         requiredSubgroupSize != 0u ? requiredSubgroupSizes : DE_NULL));
@@ -2950,9 +2950,9 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize(
     const Unique<VkPipeline> pipeline(makeGraphicsPipeline(
         context, *pipelineLayout,
         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, *vertexShaderModule,
-        *fragmentShaderModule, *geometryShaderModule, DE_NULL, DE_NULL, *renderPass, VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
-        &vertexInputBinding, &vertexInputAttribute, true, format, 0u, 0u, 0u, geometryShaderStageCreateFlags, 0u,
-        requiredSubgroupSize != 0u ? requiredSubgroupSizes : DE_NULL));
+        *fragmentShaderModule, *geometryShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, *renderPass,
+        VK_PRIMITIVE_TOPOLOGY_POINT_LIST, &vertexInputBinding, &vertexInputAttribute, true, format, 0u, 0u, 0u,
+        geometryShaderStageCreateFlags, 0u, requiredSubgroupSize != 0u ? requiredSubgroupSizes : DE_NULL));
 
     for (uint32_t ndx = 0u; ndx < extraDataCount; ndx++)
         poolBuilder.addType(inputBuffers[ndx]->getType());
@@ -3517,9 +3517,9 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTestRequiredSubgroupSize(
     const uint32_t requiredSubgroupSizes[5] = {requiredSubgroupSize, 0u, 0u, 0u, 0u};
     const Unique<VkPipeline> pipeline(makeGraphicsPipeline(
         context, *pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, *vertexShaderModule,
-        *fragmentShaderModule, DE_NULL, DE_NULL, DE_NULL, *renderPass, VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
-        &vertexInputBinding, &vertexInputAttribute, true, format, vertexShaderStageCreateFlags, 0u, 0u, 0u, 0u,
-        requiredSubgroupSize != 0u ? requiredSubgroupSizes : DE_NULL));
+        *fragmentShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *renderPass,
+        VK_PRIMITIVE_TOPOLOGY_POINT_LIST, &vertexInputBinding, &vertexInputAttribute, true, format,
+        vertexShaderStageCreateFlags, 0u, 0u, 0u, 0u, requiredSubgroupSize != 0u ? requiredSubgroupSizes : DE_NULL));
     DescriptorPoolBuilder poolBuilder;
     DescriptorSetUpdateBuilder updateBuilder;
 
@@ -3727,9 +3727,9 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize(
     const uint32_t requiredSubgroupSizes[5] = {0u, 0u, 0u, 0u, requiredSubgroupSize};
     const Unique<VkPipeline> pipeline(makeGraphicsPipeline(
         context, *pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, *vertexShaderModule,
-        *fragmentShaderModule, DE_NULL, DE_NULL, DE_NULL, *renderPass, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_NULL,
-        DE_NULL, true, VK_FORMAT_R32G32B32A32_SFLOAT, 0u, 0u, 0u, 0u, fragmentShaderStageCreateFlags,
-        requiredSubgroupSize != 0u ? requiredSubgroupSizes : DE_NULL));
+        *fragmentShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *renderPass,
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_NULL, DE_NULL, true, VK_FORMAT_R32G32B32A32_SFLOAT, 0u, 0u, 0u, 0u,
+        fragmentShaderStageCreateFlags, requiredSubgroupSize != 0u ? requiredSubgroupSizes : DE_NULL));
     DescriptorPoolBuilder poolBuilder;
 
     // To stop validation complaining, always add at least one type to pool.
@@ -3951,7 +3951,7 @@ Move<VkPipeline> makeMeshPipeline(Context &context, const VkPipelineLayout pipel
         &info,                                               // const VkSpecializationInfo* pSpecializationInfo;
     };
 
-    if (taskModule != DE_NULL)
+    if (taskModule != VK_NULL_HANDLE)
     {
         pipelineShaderStageParams.module = taskModule;
         pipelineShaderStageParams.pNext  = pSubgroupSizeCreateInfo;
@@ -3959,10 +3959,10 @@ Move<VkPipeline> makeMeshPipeline(Context &context, const VkPipelineLayout pipel
         shaderStageParams.push_back(pipelineShaderStageParams);
     }
 
-    if (meshModule != DE_NULL)
+    if (meshModule != VK_NULL_HANDLE)
     {
         pipelineShaderStageParams.module = meshModule;
-        pipelineShaderStageParams.pNext  = ((taskModule == DE_NULL) ? pSubgroupSizeCreateInfo : nullptr);
+        pipelineShaderStageParams.pNext  = ((taskModule == VK_NULL_HANDLE) ? pSubgroupSizeCreateInfo : nullptr);
         pipelineShaderStageParams.stage  = VK_SHADER_STAGE_MESH_BIT_EXT;
         shaderStageParams.push_back(pipelineShaderStageParams);
     }
@@ -4137,22 +4137,21 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
     {
         if (testType == ComputeLike::COMPUTE)
         {
-            pipelines[0] = de::SharedPtr<Move<VkPipeline>>(new Move<VkPipeline>(
-                makeComputePipeline(context, *pipelineLayout, *compShader, pipelineShaderStageCreateFlags,
+            pipelines[0] = de::SharedPtr<Move<VkPipeline>>(new Move<VkPipeline>(makeComputePipeline(
+                context, *pipelineLayout, *compShader, pipelineShaderStageCreateFlags,
 #ifndef CTS_USES_VULKANSC
-                                    VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
+                VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
 #else
-                                    0u,
+                0u,
 #endif // CTS_USES_VULKANSC
-                                    (VkPipeline)DE_NULL, usedLocalSizes[0][0], usedLocalSizes[0][1],
-                                    usedLocalSizes[0][2], reqSubgroupSize)));
+                VK_NULL_HANDLE, usedLocalSizes[0][0], usedLocalSizes[0][1], usedLocalSizes[0][2], reqSubgroupSize)));
         }
 #ifndef CTS_USES_VULKANSC
         else if (testType == ComputeLike::MESH)
         {
             pipelines[0] = de::SharedPtr<Move<VkPipeline>>(new Move<VkPipeline>(makeMeshPipeline(
                 context, pipelineLayout.get(), taskShader.get(), meshShader.get(), pipelineShaderStageCreateFlags,
-                VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT, DE_NULL, usedLocalSizes[0][0], usedLocalSizes[0][1],
+                VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT, VK_NULL_HANDLE, usedLocalSizes[0][0], usedLocalSizes[0][1],
                 usedLocalSizes[0][2], reqSubgroupSize, renderPass.get())));
         }
 #endif // CTS_USES_VULKANSC

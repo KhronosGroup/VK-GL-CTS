@@ -236,7 +236,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest(VkDeviceSize size)
 
         size = std::min(size, maxBufferSize);
 
-        while (*memory == DE_NULL)
+        while (*memory == VK_NULL_HANDLE)
         {
             // Create the buffer
             {
@@ -459,7 +459,7 @@ tcu::TestStatus DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest(
 
     Move<VkDeviceMemory> memory;
     size = deAlign64(std::min(size, maxBufferSize >> 1), memReqs.memoryRequirements.alignment);
-    while (*memory == DE_NULL)
+    while (*memory == VK_NULL_HANDLE)
     {
         // Create the buffer
         {

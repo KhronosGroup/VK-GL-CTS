@@ -412,7 +412,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate(void)
     const vk::DeviceInterface &vkdi = m_context.getDeviceInterface();
 #else
     const vk::DeviceInterface &vkdi =
-        (m_computeQueueOnly && (DE_NULL != m_deviceDriver)) ? *m_deviceDriver : m_context.getDeviceInterface();
+        (m_computeQueueOnly && (VK_NULL_HANDLE != m_deviceDriver)) ? *m_deviceDriver : m_context.getDeviceInterface();
 #endif // CTS_USES_VULKANSC
     if (m_computeQueueOnly)
     {

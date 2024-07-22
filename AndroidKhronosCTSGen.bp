@@ -868,6 +868,7 @@ cc_library_static {
 
     srcs: [
         "external/openglcts/modules/common/glcAggressiveShaderOptimizationsTests.cpp",
+        "external/openglcts/modules/common/glcApiCoverageTests.cpp",
         "external/openglcts/modules/common/glcBlendEquationAdvancedTests.cpp",
         "external/openglcts/modules/common/glcBufferObjectsTests.cpp",
         "external/openglcts/modules/common/glcClipDistance.cpp",
@@ -1344,6 +1345,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/draw/vktDrawMultipleInterpolationTests.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawMultisampleLinearInterpolationTests.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawNegativeViewportHeightTests.cpp",
+        "external/vulkancts/modules/vulkan/draw/vktDrawNonLineTests.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawOutputLocationTests.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawPointClampTests.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawSampleAttributeTests.cpp",
@@ -1719,6 +1721,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmPointerParameterTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmPtrAccessChainTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmRawAccessChainTests.cpp",
+        "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmRelaxedWithForwardReferenceTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmSignedIntCompareTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmSignedOpTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmSpirvVersion1p4Tests.cpp",
@@ -1757,6 +1760,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/subgroups/vktSubgroupsSizeControlTests.cpp",
         "external/vulkancts/modules/vulkan/subgroups/vktSubgroupsTests.cpp",
         "external/vulkancts/modules/vulkan/subgroups/vktSubgroupsTestsUtils.cpp",
+        "external/vulkancts/modules/vulkan/subgroups/vktSubgroupsUniformDescriptorIndexingTests.cpp",
         "external/vulkancts/modules/vulkan/subgroups/vktSubgroupsVoteTests.cpp",
         "external/vulkancts/modules/vulkan/synchronization/vktGlobalPriorityQueueTests.cpp",
         "external/vulkancts/modules/vulkan/synchronization/vktGlobalPriorityQueueUtils.cpp",

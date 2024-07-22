@@ -137,6 +137,7 @@ class CompressedTexture
 {
 public:
     CompressedTexture(CompressedTexFormat format, int width, int height, int depth = 1);
+    CompressedTexture(CompressedTexFormat format, int width, int height, int depth, std::vector<uint8_t> &&data);
     CompressedTexture(void);
     ~CompressedTexture(void);
 

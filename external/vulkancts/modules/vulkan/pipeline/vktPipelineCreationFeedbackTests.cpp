@@ -476,7 +476,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance(Context &context, const Cac
         VkPipeline basePipeline =
             (ndx == PIPELINE_CACHE_NDX_DERIVATIVE && m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE].wasBuild()) ?
                 m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE].getPipeline() :
-                DE_NULL;
+                VK_NULL_HANDLE;
 
         preparePipelineWrapper(m_pipeline[ndx], vertShaderModule, tescShaderModule, teseShaderModule, geomShaderModule,
                                fragShaderModule, &m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * ndx],
@@ -659,7 +659,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper &
         .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams, DE_NULL, *m_cache,
                                   pipelineCreationFeedbackWrapper[3])
         .setMonolithicPipelineLayout(m_pipelineLayout)
-        .buildPipeline(*m_cache, basePipelineHandle, basePipelineHandle != DE_NULL ? -1 : 0,
+        .buildPipeline(*m_cache, basePipelineHandle, basePipelineHandle != VK_NULL_HANDLE ? -1 : 0,
                        pipelineCreationFeedbackWrapper[4]);
 }
 
@@ -1032,7 +1032,7 @@ void ComputeCacheTestInstance::buildPipeline(const CacheTestParam *param, uint32
         0u,                                             // VkPipelineCreateFlags flags;
         stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
         *m_pipelineLayout[ndx],                         // VkPipelineLayout layout;
-        (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0u,                                             // int32_t basePipelineIndex;
     };
 

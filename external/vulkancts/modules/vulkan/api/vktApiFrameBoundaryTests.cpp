@@ -388,7 +388,7 @@ Move<VkSwapchainKHR> createSwapchain(Context &context, VkSurfaceKHR surface)
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,           // VkCompositeAlphaFlagBitsKHR        compositeAlpha
         VK_PRESENT_MODE_FIFO_KHR,                    // VkPresentModeKHR                    presentMode
         VK_FALSE,                                    // VkBool32                            clipped
-        (VkSwapchainKHR)0                            // VkSwapchainKHR                    oldSwapchain
+        VK_NULL_HANDLE                               // VkSwapchainKHR                    oldSwapchain
     };
 
     return createSwapchainKHR(vk, vkDevice, &swapchainParams);

@@ -172,7 +172,7 @@ inline VkRenderPass getRenderPass(VkGraphicsPipelineLibraryFlagsEXT subset, VkRe
     if ((subsetRequiresRenderPass & subset) != 0)
         return renderPass;
 
-    return DE_NULL;
+    return VK_NULL_HANDLE;
 }
 
 inline VkGraphicsPipelineLibraryCreateInfoEXT makeGraphicsPipelineLibraryCreateInfo(
@@ -437,7 +437,7 @@ void updatePreRasterization(Context &context, GraphicsPipelineCreateInfo &graphi
     const void *pNext = delayedShaderCreate ? &shaderModuleCreateInfo : DE_NULL;
     const VkShaderModule shaderModule =
         delayedShaderCreate ?
-            DE_NULL :
+            VK_NULL_HANDLE :
             (useMeshShader ? *graphicsPipelineCreateInfo.m_meshModule : *graphicsPipelineCreateInfo.m_vertModule);
     const VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
@@ -527,7 +527,7 @@ void updatePostRasterization(Context &context, GraphicsPipelineCreateInfo &graph
     }
 
     const void *pNext                 = delayedShaderCreate ? &shaderModuleCreateInfo : DE_NULL;
-    const VkShaderModule shaderModule = delayedShaderCreate ? DE_NULL : *graphicsPipelineCreateInfo.m_fragModule;
+    const VkShaderModule shaderModule = delayedShaderCreate ? VK_NULL_HANDLE : *graphicsPipelineCreateInfo.m_fragModule;
     const VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
         pNext,                                               // const void* pNext;
@@ -765,10 +765,10 @@ Move<VkDescriptorSetLayout> PipelineLibraryTestInstance::createDescriptorSetLayo
     const VkDevice device     = m_context.getDevice();
     DescriptorSetLayoutBuilder builder;
 
-    if (vertShaderBuffer != DE_NULL)
+    if (vertShaderBuffer != VK_NULL_HANDLE)
         builder.addIndexedBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_VERTEX_BIT, 0u, DE_NULL);
 
-    if (fragShaderBuffer != DE_NULL)
+    if (fragShaderBuffer != VK_NULL_HANDLE)
         builder.addIndexedBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_FRAGMENT_BIT, 1u, DE_NULL);
 
     return builder.build(vk, device);
@@ -791,7 +791,7 @@ Move<VkDescriptorSet> PipelineLibraryTestInstance::createDescriptorSet(const VkD
     Move<VkDescriptorSet> descriptorSet = allocateDescriptorSet(vk, device, &allocInfo);
     DescriptorSetUpdateBuilder builder;
 
-    if (vertShaderBuffer != DE_NULL)
+    if (vertShaderBuffer != VK_NULL_HANDLE)
     {
         const VkDeviceSize vertShaderBufferSize = de::dataSize(m_zCoordData);
         const VkDescriptorBufferInfo vertShaderBufferInfo =
@@ -801,7 +801,7 @@ Move<VkDescriptorSet> PipelineLibraryTestInstance::createDescriptorSet(const VkD
                             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &vertShaderBufferInfo);
     }
 
-    if (fragShaderBuffer != DE_NULL)
+    if (fragShaderBuffer != VK_NULL_HANDLE)
     {
         const VkDeviceSize fragShaderBufferSize = de::dataSize(m_paletteData);
         const VkDescriptorBufferInfo fragShaderBufferInfo =
@@ -856,19 +856,21 @@ bool PipelineLibraryTestInstance::runTest(RuntimePipelineTreeConfiguration &runt
     const de::MovePtr<BufferWithMemory> paletteBuffer = makePaletteBuffer();
     const Move<VkDescriptorPool> descriptorPool       = createDescriptorPool();
 
-    const Move<VkDescriptorSetLayout> descriptorSetLayoutVert = createDescriptorSetLayout(**zCoordBuffer, DE_NULL);
-    const Move<VkDescriptorSetLayout> descriptorSetLayoutFrag = createDescriptorSetLayout(DE_NULL, **paletteBuffer);
+    const Move<VkDescriptorSetLayout> descriptorSetLayoutVert =
+        createDescriptorSetLayout(**zCoordBuffer, VK_NULL_HANDLE);
+    const Move<VkDescriptorSetLayout> descriptorSetLayoutFrag =
+        createDescriptorSetLayout(VK_NULL_HANDLE, **paletteBuffer);
     const Move<VkDescriptorSetLayout> descriptorSetLayoutBoth =
         createDescriptorSetLayout(**zCoordBuffer, **paletteBuffer);
     const Move<VkDescriptorSet> descriptorSetVert =
-        createDescriptorSet(*descriptorPool, *descriptorSetLayoutVert, **zCoordBuffer, DE_NULL);
+        createDescriptorSet(*descriptorPool, *descriptorSetLayoutVert, **zCoordBuffer, VK_NULL_HANDLE);
     const Move<VkDescriptorSet> descriptorSetFrag =
-        createDescriptorSet(*descriptorPool, *descriptorSetLayoutFrag, DE_NULL, **paletteBuffer);
+        createDescriptorSet(*descriptorPool, *descriptorSetLayoutFrag, VK_NULL_HANDLE, **paletteBuffer);
 
     VkDescriptorSet vecDescriptorSetBoth[2] = {*descriptorSetVert, *descriptorSetFrag};
 
-    VkDescriptorSetLayout vecLayoutVert[2] = {*descriptorSetLayoutVert, DE_NULL};
-    VkDescriptorSetLayout vecLayoutFrag[2] = {DE_NULL, *descriptorSetLayoutFrag};
+    VkDescriptorSetLayout vecLayoutVert[2] = {*descriptorSetLayoutVert, VK_NULL_HANDLE};
+    VkDescriptorSetLayout vecLayoutFrag[2] = {VK_NULL_HANDLE, *descriptorSetLayoutFrag};
     VkDescriptorSetLayout vecLayoutBoth[2] = {*descriptorSetLayoutVert, *descriptorSetLayoutFrag};
 
     VkPipelineLayoutCreateFlags pipelineLayoutCreateFlag = 0u;
@@ -914,7 +916,7 @@ bool PipelineLibraryTestInstance::runTest(RuntimePipelineTreeConfiguration &runt
         const VkPipelineLayout pipelineLayout = samePipelineLayout ? *pipelineLayoutSame :
                                                 vertPipelineLayout ? *pipelineLayoutVert :
                                                 fragPipelineLayout ? *pipelineLayoutFrag :
-                                                                     DE_NULL;
+                                                                     VK_NULL_HANDLE;
         const VkRenderPass renderPassHandle   = getRenderPass(node.graphicsPipelineLibraryFlags, *renderPass);
         VkGraphicsPipelineLibraryCreateInfoEXT graphicsPipelineLibraryCreateInfo =
             makeGraphicsPipelineLibraryCreateInfo(node.graphicsPipelineLibraryFlags);
@@ -1744,8 +1746,8 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSetInMonolithi
 
     // create a pipeline layout with its first descriptor set layout as VK_NULL_HANDLE
     // and a second with a valid descriptor set layout containing a buffer
-    VkDescriptorSet rawDescriptorSets[]             = {DE_NULL, *descriptorSet};
-    VkDescriptorSetLayout rawDescriptorSetLayouts[] = {DE_NULL, *descriptorSetLayout};
+    VkDescriptorSet rawDescriptorSets[]             = {VK_NULL_HANDLE, *descriptorSet};
+    VkDescriptorSetLayout rawDescriptorSetLayouts[] = {VK_NULL_HANDLE, *descriptorSetLayout};
 
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = initVulkanStructure();
     pipelineLayoutCreateInfo.setLayoutCount             = 2u;
@@ -1880,7 +1882,8 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSet
     // Fragment stage library has sets 0, 1
     // * set 0 has descriptors
     // * set 1 has descriptors
-    VkDescriptorSetLayout vertDescriptorSetLayouts[] = {*descriptorSetLayouts[0], DE_NULL, *descriptorSetLayouts[2]};
+    VkDescriptorSetLayout vertDescriptorSetLayouts[] = {*descriptorSetLayouts[0], VK_NULL_HANDLE,
+                                                        *descriptorSetLayouts[2]};
     VkDescriptorSetLayout fragDescriptorSetLayouts[] = {*descriptorSetLayouts[0], *descriptorSetLayouts[1]};
     VkDescriptorSetLayout allDescriptorSetLayouts[]  = {*descriptorSetLayouts[0], *descriptorSetLayouts[1],
                                                         *descriptorSetLayouts[2]};
@@ -1932,10 +1935,10 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSet
         finalPipelineFlag = uint32_t(VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT);
     }
 
-    GraphicsPipelineCreateInfo partialPipelineCreateInfo[]{{DE_NULL, *m_renderPass, 0, commonPipelinePartFlags},
+    GraphicsPipelineCreateInfo partialPipelineCreateInfo[]{{VK_NULL_HANDLE, *m_renderPass, 0, commonPipelinePartFlags},
                                                            {*vertLayouts, *m_renderPass, 0, commonPipelinePartFlags},
                                                            {*fragLayouts, *m_renderPass, 0, commonPipelinePartFlags},
-                                                           {DE_NULL, *m_renderPass, 0, commonPipelinePartFlags}};
+                                                           {VK_NULL_HANDLE, *m_renderPass, 0, commonPipelinePartFlags}};
 
     // fill proper portion of pipeline state
     updateVertexInputInterface(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u);
@@ -1944,7 +1947,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSet
     updateFragmentOutputInterface(m_context, partialPipelineCreateInfo[3]);
 
     // extend pNext chain and create all partial pipelines
-    std::vector<VkPipeline> rawParts(4u, DE_NULL);
+    std::vector<VkPipeline> rawParts(4u, VK_NULL_HANDLE);
     std::vector<Move<VkPipeline>> pipelineParts;
     pipelineParts.reserve(4u);
     VkGraphicsPipelineLibraryCreateInfoEXT libraryCreateInfo =
@@ -2826,7 +2829,7 @@ tcu::TestStatus PipelineLibraryShaderModuleInfoRTInstance::iterate(void)
 
     if (m_withLibrary)
     {
-        pipelineLib = createRayTracingPipelineKHR(m_vkd, m_device, DE_NULL, DE_NULL, &pipelineCreateInfo);
+        pipelineLib = createRayTracingPipelineKHR(m_vkd, m_device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
 
         const VkPipelineLibraryCreateInfoKHR libraryInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR, // VkStructureType sType;
@@ -2851,11 +2854,11 @@ tcu::TestStatus PipelineLibraryShaderModuleInfoRTInstance::iterate(void)
             VK_NULL_HANDLE,       // VkPipeline basePipelineHandle;
             0,                    // int32_t basePipelineIndex;
         };
-        pipeline = createRayTracingPipelineKHR(m_vkd, m_device, DE_NULL, DE_NULL, &nonLibCreateInfo);
+        pipeline = createRayTracingPipelineKHR(m_vkd, m_device, VK_NULL_HANDLE, VK_NULL_HANDLE, &nonLibCreateInfo);
     }
     else
     {
-        pipeline = createRayTracingPipelineKHR(m_vkd, m_device, DE_NULL, DE_NULL, &pipelineCreateInfo);
+        pipeline = createRayTracingPipelineKHR(m_vkd, m_device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     // Make shader binding table.
@@ -2878,9 +2881,9 @@ tcu::TestStatus PipelineLibraryShaderModuleInfoRTInstance::iterate(void)
     // Strided device address regions.
     VkStridedDeviceAddressRegionKHR rgenSBTRegion = makeStridedDeviceAddressRegionKHR(
         getBufferDeviceAddress(m_vkd, m_device, sbt->get(), 0), rtHandleSize, rtHandleSize);
-    VkStridedDeviceAddressRegionKHR missSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR hitsSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR callSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    VkStridedDeviceAddressRegionKHR missSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR hitsSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR callSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     beginCommandBuffer(m_vkd, m_cmdBuffer);
     m_vkd.cmdBindDescriptorSets(m_cmdBuffer, bindPoint, pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u,

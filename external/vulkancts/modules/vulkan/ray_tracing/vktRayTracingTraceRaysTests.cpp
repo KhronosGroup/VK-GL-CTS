@@ -520,7 +520,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
             0,                                              // int32_t basePipelineIndex;
         };
 
-        computePipeline = vk::createComputePipeline(vkd, device, (VkPipelineCache)0u, &pipelineCreateInfo);
+        computePipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     const Move<VkDescriptorSetLayout> descriptorSetLayout =
@@ -561,8 +561,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
     const VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion =
         makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0),
                                           shaderGroupHandleSize, shaderGroupHandleSize);
-    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
-        makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     const VkFormat imageFormat = VK_FORMAT_R32_UINT;
     const VkImageCreateInfo imageCreateInfo =
@@ -1214,7 +1213,7 @@ TestStatus TraceRaysIndirect2Instance::iterate(void)
             0,                                              // int32_t basePipelineIndex;
         };
 
-        computePipeline = vk::createComputePipeline(vkd, device, (VkPipelineCache)0u, &pipelineCreateInfo);
+        computePipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     const Move<VkDescriptorSetLayout> descriptorSetLayout =

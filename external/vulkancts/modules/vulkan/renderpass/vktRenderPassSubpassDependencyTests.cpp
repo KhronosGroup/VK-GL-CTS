@@ -2706,7 +2706,7 @@ void SeparateChannelsTestInstance::setup(void)
                                                           &colorFormat,
                                                           (isDSFormat ? m_format : VK_FORMAT_UNDEFINED),
                                                           (isDSFormat ? m_format : VK_FORMAT_UNDEFINED)};
-        if (*m_renderPass == DE_NULL)
+        if (*m_renderPass == VK_NULL_HANDLE)
         {
             renderingCreateInfoWrapper.ptr = &renderingCreateInfo;
             if (!isDSFormat)
@@ -2724,9 +2724,9 @@ void SeparateChannelsTestInstance::setup(void)
             .setupVertexInputState(&vertexInputState)
             .setupPreRasterizationShaderState(viewports, scissors, m_pipelineLayout, *m_renderPass, 0u,
                                               vertexShaderModule, 0u, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(),
-                                              DE_NULL, DE_NULL, renderingCreateInfoWrapper, DE_NULL)
+                                              DE_NULL, DE_NULL, renderingCreateInfoWrapper, VK_NULL_HANDLE)
             .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragmentShaderModule,
-                                      (isDSFormat ? &depthStencilState : DE_NULL), 0, 0, 0, {},
+                                      (isDSFormat ? &depthStencilState : DE_NULL), 0, 0, VK_NULL_HANDLE, {},
                                       renderingInputAttachmentIndexInfoWrapper)
             .setupFragmentOutputState(*m_renderPass, 0u, (isDSFormat ? DE_NULL : &colorBlendState))
             .setMonolithicPipelineLayout(m_pipelineLayout)
@@ -3436,7 +3436,7 @@ void SingleAttachmentTestInstance::setup(void)
                                                           &m_format,
                                                           VK_FORMAT_UNDEFINED,
                                                           VK_FORMAT_UNDEFINED};
-        if (*m_renderPass0 == DE_NULL)
+        if (*m_renderPass0 == VK_NULL_HANDLE)
             renderingCreateInfoWrapper.ptr = &renderingCreateInfo;
 #endif
         m_pipelineSolidColor.setDefaultMultisampleState()

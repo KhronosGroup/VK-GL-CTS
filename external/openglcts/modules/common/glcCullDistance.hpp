@@ -176,17 +176,18 @@ private:
 class FunctionalTest : public CullDistanceTestBase
 {
 public:
-    /* Public methods */
-    FunctionalTest(deqp::Context &context);
+    struct _test_item
+    {
+        int test_id;
+        bool redeclare_clipdistances_array;
+        bool redeclare_culldistances_array;
+        bool dynamic_index_writes;
+        bool use_passthrough_gs;
+        bool use_passthrough_ts;
+        bool use_core_functionality;
+        bool fetch_culldistances;
+    };
 
-protected:
-    /* Protected methods */
-    void deinit() override;
-
-    void test(void) override;
-
-private:
-    /* Private type definitions */
     enum _primitive_mode
     {
         PRIMITIVE_MODE_LINES,
@@ -195,7 +196,16 @@ private:
 
         PRIMITIVE_MODE_COUNT
     };
+    /* Public methods */
+    FunctionalTest(deqp::Context &context, _test_item test_item, _primitive_mode primitive_mode, glw::GLint iteration);
 
+protected:
+    /* Protected methods */
+    void deinit() override;
+
+    void test(void) override;
+
+private:
     /* Private methods */
     void buildPO(glw::GLuint clipdistances_array_size, glw::GLuint culldistances_array_size, bool dynamic_index_writes,
                  _primitive_mode primitive_mode, bool redeclare_clipdistances, bool redeclare_culldistances,
@@ -212,6 +222,7 @@ private:
     glw::GLfloat readRedPixelValue(glw::GLint x, glw::GLint y);
 
     void readTexturePixels();
+    std::string primitiveModeToString(_primitive_mode mode);
 
     /* Private fields */
     std::vector<glw::GLfloat> m_bo_data;
@@ -228,6 +239,10 @@ private:
     const glw::GLuint m_to_width;
     static const glw::GLuint m_to_pixel_data_cache_color_components = 4;
     std::vector<glw::GLfloat> m_to_pixel_data_cache;
+
+    _test_item m_test_item;
+    _primitive_mode m_primitive_mode;
+    glw::GLint m_iteration;
 };
 
 /** @brief Cull Distance Negative Test class
@@ -285,6 +300,8 @@ public:
 private:
     Tests(const CullDistance::Tests &other);
     Tests &operator=(const CullDistance::Tests &other);
+
+    void addFunctionalTest();
 };
 } // namespace CullDistance
 /* CullDistance namespace */

@@ -934,7 +934,7 @@ void generateWork(TestContext &testContext)
     pipelineState.layout              = layout.get();
     pipelineState.renderPass          = testContext.renderPass.get();
     pipelineState.subpass             = 0;
-    pipelineState.basePipelineHandle  = DE_NULL;
+    pipelineState.basePipelineHandle  = VK_NULL_HANDLE;
     pipelineState.basePipelineIndex   = 0;
 
     deMemset(&cacheState, 0xcd, sizeof(cacheState));

@@ -314,7 +314,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw,
         .setupFragmentShaderState(pipelineLayout, renderPass, subpass, fragmentModule, &pipelineDepthStencilStateInfo)
         .setupFragmentOutputState(renderPass, subpass, &pipelineColorBlendStateInfo)
         .setMonolithicPipelineLayout(pipelineLayout)
-        .buildPipeline(DE_NULL, basePipeline, -1);
+        .buildPipeline(VK_NULL_HANDLE, basePipeline, -1);
 }
 
 //! Make a render pass with one subpass per color attachment and depth/stencil attachment (if used).
@@ -865,7 +865,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
 
         // Attempt a memory allocation
         {
-            VkDeviceMemory object                   = 0;
+            VkDeviceMemory object                   = VK_NULL_HANDLE;
             const VkMemoryAllocateInfo allocateInfo = {
                 VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, //VkStructureType sType;
                 DE_NULL,                                //const void* pNext;
@@ -1028,8 +1028,8 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
             // We also have to create pipelines for each subpass
             pipelines.emplace_back(vki, vk, physDevice, device, context.getDeviceExtensions(),
                                    caseDef.pipelineConstructionType,
-                                   (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT :
-                                                              VK_PIPELINE_CREATE_DERIVATIVE_BIT));
+                                   (basePipeline == VK_NULL_HANDLE ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT :
+                                                                     VK_PIPELINE_CREATE_DERIVATIVE_BIT));
 #else
             pipelines.emplace_back(vki, vk, physDevice, device, context.getDeviceExtensions(),
                                    caseDef.pipelineConstructionType, 0u);
@@ -1319,8 +1319,8 @@ void drawToMipLevel(const Context &context, const CaseDef &caseDef, const int mi
 #ifndef CTS_USES_VULKANSC // Pipeline derivatives are forbidden in Vulkan SC
             pipelines.emplace_back(vki, vk, physDevice, device, context.getDeviceExtensions(),
                                    caseDef.pipelineConstructionType,
-                                   (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT :
-                                                              VK_PIPELINE_CREATE_DERIVATIVE_BIT));
+                                   (basePipeline == VK_NULL_HANDLE ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT :
+                                                                     VK_PIPELINE_CREATE_DERIVATIVE_BIT));
 #else
             pipelines.emplace_back(vki, vk, physDevice, device, context.getDeviceExtensions(),
                                    caseDef.pipelineConstructionType, 0u);

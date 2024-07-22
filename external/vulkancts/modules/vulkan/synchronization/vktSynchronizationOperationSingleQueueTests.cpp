@@ -335,7 +335,7 @@ public:
 
         endCommandBuffer(vk, cmdBuffers[READ]);
 
-        VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
+        VK_CHECK(synchronizationWrapper->queueSubmit(queue, VK_NULL_HANDLE));
         VK_CHECK(vk.queueWaitIdle(queue));
 
         {
@@ -491,7 +491,7 @@ public:
             endCommandBuffer(vk, cmdBuffer);
         }
 
-        VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
+        VK_CHECK(synchronizationWrapper->queueSubmit(queue, VK_NULL_HANDLE));
         VK_CHECK(vk.queueWaitIdle(queue));
 
         {

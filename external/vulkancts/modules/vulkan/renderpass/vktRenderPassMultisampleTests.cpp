@@ -864,8 +864,8 @@ Move<VkDescriptorSet> createSplitDescriptorSet(const DeviceInterface &vkd, VkDev
     Move<VkDescriptorSet> set(allocateDescriptorSet(vkd, device, &allocateInfo));
 
     {
-        const VkDescriptorImageInfo imageInfos[] = {{(VkSampler)0u, primaryImageView, imageReadLayout},
-                                                    {(VkSampler)0u, secondaryImageView, imageReadLayout}};
+        const VkDescriptorImageInfo imageInfos[] = {{VK_NULL_HANDLE, primaryImageView, imageReadLayout},
+                                                    {VK_NULL_HANDLE, secondaryImageView, imageReadLayout}};
         const VkWriteDescriptorSet writes[]      = {
             {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, DE_NULL,
 
@@ -873,7 +873,7 @@ Move<VkDescriptorSet> createSplitDescriptorSet(const DeviceInterface &vkd, VkDev
             {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, DE_NULL,
 
                   *set, 1u, 0u, 1u, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &imageInfos[1], DE_NULL, DE_NULL}};
-        const uint32_t count = secondaryImageView != (VkImageView)0 ? 2u : 1u;
+        const uint32_t count = secondaryImageView != VK_NULL_HANDLE ? 2u : 1u;
 
         vkd.updateDescriptorSets(device, count, writes, 0u, DE_NULL);
     }
@@ -1110,7 +1110,7 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance(Context &co
                                       m_dstMultisampleImageViews, m_dstSinglesampleImageViews, m_width, m_height))
 
     , m_renderPipelineLayout(m_groupParams->pipelineConstructionType, context.getDeviceInterface(), context.getDevice(),
-                             0, &m_pushConstantRange)
+                             VK_NULL_HANDLE, &m_pushConstantRange)
     , m_renderPipeline(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
                        context.getDevice(), context.getDeviceExtensions(), m_groupParams->pipelineConstructionType)
 
@@ -1161,7 +1161,7 @@ void MultisampleRenderPassTestInstance::createRenderPipeline(void)
     const std::vector<VkRect2D> scissors{makeRect2D(m_width, m_height)};
     PipelineRenderingCreateInfoWrapper renderingCreateInfoWrapper;
 
-    if (*m_renderPass == DE_NULL)
+    if (*m_renderPass == VK_NULL_HANDLE)
     {
         const uint32_t splitSubpassCount(deDivRoundUp32(m_sampleCount, MAX_COLOR_ATTACHMENT_COUNT));
         for (uint32_t splitSubpassIndex = 0; splitSubpassIndex < splitSubpassCount; splitSubpassIndex++)
@@ -1228,7 +1228,7 @@ void MultisampleRenderPassTestInstance::createRenderPipeline(void)
                                                       (isDepthFormat ? m_srcFormat : VK_FORMAT_UNDEFINED),
                                                       (isStencilFormat ? m_srcFormat : VK_FORMAT_UNDEFINED)};
 
-    if (*m_renderPass == DE_NULL)
+    if (*m_renderPass == VK_NULL_HANDLE)
         renderingCreateInfoWrapper.ptr = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
@@ -1323,7 +1323,7 @@ void MultisampleRenderPassTestInstance::createSplitPipelines(void)
     for (uint32_t ndx = 0; ndx < splitSubpassCount; ndx++)
     {
 #ifndef CTS_USES_VULKANSC
-        if (*m_renderPass == DE_NULL)
+        if (*m_renderPass == VK_NULL_HANDLE)
         {
             colorAttachmentCount =
                 !isDepthStencilFormat + splitSubpassCount * de::min((uint32_t)MAX_COLOR_ATTACHMENT_COUNT,
@@ -1355,8 +1355,9 @@ void MultisampleRenderPassTestInstance::createSplitPipelines(void)
                                               vertexShaderModule, 0u, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(),
                                               nullptr, nullptr, renderingCreateInfoWrapper)
             .setupFragmentShaderState(m_splitPipelineLayout, *m_renderPass, ndx + 1u, fragmentShaderModule, 0u,
-                                      &multisampleState, 0, 0, {}, renderingInputAttachmentIndexInfoWrapper)
-            .setupFragmentOutputState(*m_renderPass, ndx + 1u, &blendState, &multisampleState, 0, {},
+                                      &multisampleState, 0, VK_NULL_HANDLE, {},
+                                      renderingInputAttachmentIndexInfoWrapper)
+            .setupFragmentOutputState(*m_renderPass, ndx + 1u, &blendState, &multisampleState, VK_NULL_HANDLE, {},
                                       renderingAttachmentLocationInfoWrapper)
             .setMonolithicPipelineLayout(m_splitPipelineLayout)
             .buildPipeline();
@@ -1609,7 +1610,7 @@ void MultisampleRenderPassTestInstance::preRenderCommands(const DeviceInterface 
     std::vector<VkImageMemoryBarrier> dstImageBarriers(
         m_dstSinglesampleImages.size() + m_dstMultisampleImages.size(),
         makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DE_NULL, dstSubresourceRange));
+                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_NULL_HANDLE, dstSubresourceRange));
     for (size_t dstNdx = 0; dstNdx < m_dstSinglesampleImages.size(); dstNdx++)
         dstImageBarriers[dstNdx].image = **m_dstSinglesampleImages[dstNdx];
     for (size_t dstNdx = m_dstSinglesampleImages.size(); dstNdx < dstImageBarriers.size(); dstNdx++)

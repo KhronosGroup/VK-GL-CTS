@@ -851,9 +851,9 @@ Move<VkPipeline> SpvAsmPhysicalStorageBufferVertexInOutInTestInstance::createGra
                                     device,                           // device
                                     pipelineLayout,                   // pipelineLayout
                                     vertexModule,                     // vertexShaderModule
-                                    DE_NULL,                          // tessellationControlModule
-                                    DE_NULL,                          // tessellationEvalModule
-                                    DE_NULL,                          // geometryShaderModule
+                                    VK_NULL_HANDLE,                   // tessellationControlModule
+                                    VK_NULL_HANDLE,                   // tessellationEvalModule
+                                    VK_NULL_HANDLE,                   // geometryShaderModule
                                     fragmentModule,                   // fragmentShaderModule
                                     renderPass,                       // renderPass
                                     viewports,                        // viewports

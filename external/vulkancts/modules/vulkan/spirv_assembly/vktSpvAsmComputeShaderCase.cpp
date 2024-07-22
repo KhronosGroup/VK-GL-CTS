@@ -239,7 +239,7 @@ Move<VkPipelineLayout> createPipelineLayout(const DeviceInterface &vkdi, const V
         0,                           // size
     };
 
-    if (pushConstants != DE_NULL)
+    if (pushConstants)
     {
         vector<uint8_t> pushConstantsBytes;
         pushConstants->getBytes(pushConstantsBytes);
@@ -366,11 +366,11 @@ Move<VkPipeline> createComputePipeline(const DeviceInterface &vkdi, const VkDevi
         (VkPipelineCreateFlags)0,
         pipelineShaderStageCreateInfo, // cs
         pipelineLayout,                // layout
-        (VkPipeline)0,                 // basePipelineHandle
+        VK_NULL_HANDLE,                // basePipelineHandle
         0u,                            // basePipelineIndex
     };
 
-    return createComputePipeline(vkdi, device, (VkPipelineCache)0u, &pipelineCreateInfo);
+    return createComputePipeline(vkdi, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 } // namespace
@@ -763,7 +763,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
         VkBufferDeviceAddressInfo info{
             VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType sType;
             DE_NULL,                                      // const void* pNext;
-            0,                                            // VkBuffer            buffer
+            VK_NULL_HANDLE,                               // VkBuffer            buffer
         };
 
         for (uint32_t inputNdx = 0; inputNdx < m_shaderSpec.inputs.size(); ++inputNdx)
@@ -827,7 +827,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
     vkdi.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
     vkdi.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &descriptorSet.get(),
                                0, DE_NULL);
-    if (m_shaderSpec.pushConstants != DE_NULL)
+    if (m_shaderSpec.pushConstants)
     {
         vector<uint8_t> pushConstantsBytes;
         m_shaderSpec.pushConstants->getBytes(pushConstantsBytes);

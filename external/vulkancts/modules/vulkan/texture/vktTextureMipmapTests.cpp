@@ -2860,9 +2860,9 @@ tcu::TestStatus TextureGatherMinLodInstance::iterate(void)
     // Pipeline.
     const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
 
-    const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertModule.get(), DE_NULL, DE_NULL,
-                                               DE_NULL, fragModule.get(), renderPass.get(), viewports, scissors,
-                                               VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u /*subpass*/,
+    const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE,
+                                               VK_NULL_HANDLE, VK_NULL_HANDLE, fragModule.get(), renderPass.get(),
+                                               viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u /*subpass*/,
                                                0u /*patchControlPoints*/, &vertexInputState);
 
     // Command pool and buffer.

@@ -296,19 +296,19 @@ void InterInvocationTestCase::deinit(void)
     if (m_storageBuf)
     {
         m_context.getRenderContext().getFunctions().deleteBuffers(1, &m_storageBuf);
-        m_storageBuf = DE_NULL;
+        m_storageBuf = 0;
     }
 
     if (m_storageTex)
     {
         m_context.getRenderContext().getFunctions().deleteTextures(1, &m_storageTex);
-        m_storageTex = DE_NULL;
+        m_storageTex = 0;
     }
 
     if (m_resultBuf)
     {
         m_context.getRenderContext().getFunctions().deleteBuffers(1, &m_resultBuf);
-        m_resultBuf = DE_NULL;
+        m_resultBuf = 0;
     }
 
     delete m_program;
@@ -2352,7 +2352,7 @@ SSBOConcurrentAtomicCase::SSBOConcurrentAtomicCase(Context &context, const char 
     , m_numCalls(numCalls)
     , m_workSize(workSize)
     , m_program(DE_NULL)
-    , m_bufferID(DE_NULL)
+    , m_bufferID(0)
 {
 }
 
@@ -2588,8 +2588,8 @@ ConcurrentAtomicCounterCase::ConcurrentAtomicCounterCase(Context &context, const
     , m_workSize(workSize)
     , m_evenProgram(DE_NULL)
     , m_oddProgram(DE_NULL)
-    , m_counterBuffer(DE_NULL)
-    , m_intermediateResultBuffer(DE_NULL)
+    , m_counterBuffer(0)
+    , m_intermediateResultBuffer(0)
 {
 }
 
@@ -2813,7 +2813,7 @@ ConcurrentImageAtomicCase::ConcurrentImageAtomicCase(Context &context, const cha
     , m_program(DE_NULL)
     , m_imageReadProgram(DE_NULL)
     , m_imageClearProgram(DE_NULL)
-    , m_imageID(DE_NULL)
+    , m_imageID(0)
 {
 }
 
@@ -3188,7 +3188,7 @@ ConcurrentSSBOAtomicCounterMixedCase::ConcurrentSSBOAtomicCounterMixedCase(Conte
     : TestCase(context, name, description)
     , m_numCalls(numCalls)
     , m_workSize(workSize)
-    , m_bufferID(DE_NULL)
+    , m_bufferID(0)
     , m_ssboAtomicProgram(DE_NULL)
     , m_atomicCounterProgram(DE_NULL)
 {

@@ -954,7 +954,7 @@ VkComputePipelineCreateInfo prepareSimpleComputePipelineCI(const VkPipelineShade
         0u,                                             // VkPipelineCreateFlags            flags
         shaderStageCreateInfo,                          // VkPipelineShaderStageCreateInfo    stage
         pipelineLayout,                                 // VkPipelineLayout                    layout
-        (vk::VkPipeline)0,                              // VkPipeline                        basePipelineHandle
+        VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
         0u,                                             // int32_t                            basePipelineIndex
     };
     return pipelineCreateInfo;

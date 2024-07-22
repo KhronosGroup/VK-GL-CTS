@@ -815,9 +815,9 @@ Move<VkPipeline> HelperInvocationsInstance::makePipeline(const DeviceInterface &
         vertexInputAttributeDescription // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
     };
 
-    return makeGraphicsPipeline(vk, device, pipelineLayout, vertexShader, DE_NULL, DE_NULL, DE_NULL, fragmentShader,
-                                renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
-                                &vertexInputStateCreateInfo);
+    return makeGraphicsPipeline(vk, device, pipelineLayout, vertexShader, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                VK_NULL_HANDLE, fragmentShader, renderPass, viewports, scissors,
+                                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputStateCreateInfo);
 }
 
 de::MovePtr<TopLevelAccelerationStructure> HelperInvocationsInstance::createAccStructs(

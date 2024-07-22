@@ -259,13 +259,13 @@ Move<VkPipeline> GPQInstanceBase::createGraphicsPipeline(VkPipelineLayout pipeli
 
     auto sh = std::find_if(std::begin(m_shaders), std::end(m_shaders),
                            [](const NamedShader &ns) { return ns.name == "vert"; });
-    if (*sh->handle == DE_NULL)
+    if (*sh->handle == VK_NULL_HANDLE)
         sh->handle = createShaderModule(vkd, dev, m_context.getBinaryCollection().get("vert"));
     VkShaderModule vertex = *sh->handle;
 
     sh = std::find_if(std::begin(m_shaders), std::end(m_shaders),
                       [](const NamedShader &ns) { return ns.name == "frag"; });
-    if (*sh->handle == DE_NULL)
+    if (*sh->handle == VK_NULL_HANDLE)
         sh->handle = createShaderModule(vkd, dev, m_context.getBinaryCollection().get("frag"));
     VkShaderModule fragment = *sh->handle;
 
@@ -284,9 +284,9 @@ Move<VkPipeline> GPQInstanceBase::createGraphicsPipeline(VkPipelineLayout pipeli
         &vertexAttrib   // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
-    return makeGraphicsPipeline(vkd, dev, pipelineLayout, vertex, VkShaderModule(0), VkShaderModule(0),
-                                VkShaderModule(0), fragment, renderPass, viewports, scissors,
-                                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, 0, &vertexInputStateCreateInfo);
+    return makeGraphicsPipeline(vkd, dev, pipelineLayout, vertex, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                fragment, renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, 0,
+                                &vertexInputStateCreateInfo);
 }
 
 Move<VkPipeline> GPQInstanceBase::createComputePipeline(VkPipelineLayout pipelineLayout, bool producer)
@@ -297,7 +297,7 @@ Move<VkPipeline> GPQInstanceBase::createComputePipeline(VkPipelineLayout pipelin
     const std::string compName = producer ? "cpyb" : "cpyi";
     auto comp                  = std::find_if(std::begin(m_shaders), std::end(m_shaders),
                                               [&](const NamedShader &ns) { return ns.name == compName; });
-    if (*comp->handle == DE_NULL)
+    if (*comp->handle == VK_NULL_HANDLE)
         comp->handle = createShaderModule(vk, dev, m_context.getBinaryCollection().get(compName));
     VkShaderModule compute = *comp->handle;
 
@@ -316,10 +316,10 @@ Move<VkPipeline> GPQInstanceBase::createComputePipeline(VkPipelineLayout pipelin
     ci.flags              = VkPipelineCreateFlags(0);
     ci.stage              = sci;
     ci.layout             = pipelineLayout;
-    ci.basePipelineHandle = VkPipeline(0);
+    ci.basePipelineHandle = VK_NULL_HANDLE;
     ci.basePipelineIndex  = 0;
 
-    return vk::createComputePipeline(vk, dev, VkPipelineCache(0), &ci, nullptr);
+    return vk::createComputePipeline(vk, dev, VK_NULL_HANDLE, &ci, nullptr);
 }
 
 VkPipelineStageFlags queueFlagBitToPipelineStage(VkQueueFlagBits bit);
@@ -746,7 +746,7 @@ tcu::TestStatus GPQInstance<VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT>::iterat
     Move<VkImageView> view             = createView(**image, imageResourceRange);
     Move<VkRenderPass> renderPass      = makeRenderPass(vkd, device, m_config.format);
     Move<VkFramebuffer> framebuffer = makeFramebuffer(vkd, device, *renderPass, *view, m_config.width, m_config.height);
-    const VkDescriptorImageInfo imageDsInfo = makeDescriptorImageInfo(VkSampler(0), *view, VK_IMAGE_LAYOUT_GENERAL);
+    const VkDescriptorImageInfo imageDsInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, *view, VK_IMAGE_LAYOUT_GENERAL);
     const VkImageMemoryBarrier imageReadyBarrier = makeImageMemoryBarrier(
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         VK_IMAGE_LAYOUT_GENERAL, **image, imageResourceRange, consumerIndex, consumerIndex);
@@ -945,7 +945,7 @@ tcu::TestStatus GPQInstance<VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT>::iterat
     Move<VkImageView> view             = createView(**image, imageResourceRange);
     Move<VkRenderPass> renderPass      = makeRenderPass(vkd, device, m_config.format);
     Move<VkFramebuffer> framebuffer = makeFramebuffer(vkd, device, *renderPass, *view, m_config.width, m_config.height);
-    const VkDescriptorImageInfo imageDsInfo = makeDescriptorImageInfo(VkSampler(0), *view, VK_IMAGE_LAYOUT_GENERAL);
+    const VkDescriptorImageInfo imageDsInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, *view, VK_IMAGE_LAYOUT_GENERAL);
     const VkImageMemoryBarrier imageReadyBarrier = makeImageMemoryBarrier(
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         VK_IMAGE_LAYOUT_GENERAL, **image, imageResourceRange, producerIndex, producerIndex);

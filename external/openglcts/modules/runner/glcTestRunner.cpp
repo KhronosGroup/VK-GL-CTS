@@ -645,7 +645,7 @@ static const char *getRunTypeName(glu::ApiType type)
 }
 
 static void generateTestSessionParams(tcu::Platform &platform, glu::ApiType type,
-                                      std::vector<TestRunParams> &runSessionsParams)
+                                      std::vector<TestRunParams> &runSessionsParams, std::string configLogFilename)
 {
     // Get list of configs to test.
     ConfigList configList;
@@ -656,7 +656,6 @@ static void generateTestSessionParams(tcu::Platform &platform, glu::ApiType type
 
     // Config list run.
     {
-        const char *configLogFilename = "configs.qpa";
         TestRunParams configRun;
 
         configRun.logFilename = configLogFilename;
@@ -839,9 +838,9 @@ void TestRunner::init(void)
 
     tcu::print("Running %s conformance\n", glu::getApiTypeDescription(m_type));
 
-    m_summary.runType = m_type;
-
-    generateTestSessionParams(m_platform, m_type, m_runSessions);
+    m_summary.runType           = m_type;
+    m_summary.configLogFilename = "configs.qpa";
+    generateTestSessionParams(m_platform, m_type, m_runSessions, m_summary.configLogFilename);
 
     // Record run params for summary.
     for (std::vector<TestRunParams>::const_iterator runIter = m_runSessions.begin() + 1; runIter != m_runSessions.end();
@@ -948,7 +947,7 @@ bool TestParamCollectorRunner::iterate(void)
 
     tcu::print("Collecting %s conformance test params\n", glu::getApiTypeDescription(m_type));
 
-    generateTestSessionParams(m_platform, m_type, m_runSessionsParams);
+    generateTestSessionParams(m_platform, m_type, m_runSessionsParams, "configs.qpa");
 
     // export test run params to a file on device
     std::ofstream str(m_testParamsFilePath.c_str(), std::ofstream::binary | std::ofstream::trunc);

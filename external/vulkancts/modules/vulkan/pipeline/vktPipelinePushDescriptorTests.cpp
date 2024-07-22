@@ -567,7 +567,7 @@ void PushDescriptorBufferGraphicsTestInstance::init(void)
             VkWriteDescriptorSet writeDescriptorSet = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
                 DE_NULL,                                // const void* pNext;
-                0u,                                     // VkDescriptorSet dstSet;
+                VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
                 m_params.binding,                       // uint32_t dstBinding;
                 0u,                                     // uint32_t dstArrayElement;
                 1u,                                     // uint32_t descriptorCount;
@@ -907,11 +907,11 @@ void PushDescriptorBufferComputeTestInstance::init(void)
             0u,                                             // VkPipelineCreateFlags flags;
             stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
             *m_pipelineLayout,                              // VkPipelineLayout layout;
-            (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0u,                                             // int32_t basePipelineIndex;
         };
 
-        m_computePipeline = createComputePipeline(m_vkd, *m_device, (vk::VkPipelineCache)0u, &createInfo);
+        m_computePipeline = createComputePipeline(m_vkd, *m_device, VK_NULL_HANDLE, &createInfo);
     }
 
     // Create command pool
@@ -943,7 +943,7 @@ void PushDescriptorBufferComputeTestInstance::init(void)
                 {
                     VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
                     DE_NULL,                                // const void* pNext;
-                    0u,                                     // VkDescriptorSet dstSet;
+                    VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
                     m_params.binding,                       // uint32_t dstBinding;
                     0u,                                     // uint32_t dstArrayElement;
                     1u,                                     // uint32_t descriptorCount;
@@ -955,7 +955,7 @@ void PushDescriptorBufferComputeTestInstance::init(void)
                 {
                     VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
                     DE_NULL,                                // const void* pNext;
-                    0u,                                     // VkDescriptorSet dstSet;
+                    VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
                     m_params.binding + 1,                   // uint32_t dstBinding;
                     0u,                                     // uint32_t dstArrayElement;
                     1u,                                     // uint32_t descriptorCount;
@@ -1665,7 +1665,7 @@ void PushDescriptorImageGraphicsTestInstance::init(void)
             VkWriteDescriptorSet writeDescriptorSet = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
                 DE_NULL,                                // const void* pNext;
-                0u,                                     // VkDescriptorSet dstSet;
+                VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
                 m_params.binding,                       // uint32_t dstBinding;
                 0u,                                     // uint32_t dstArrayElement;
                 1u,                                     // uint32_t descriptorCount;
@@ -2320,11 +2320,11 @@ void PushDescriptorImageComputeTestInstance::init(void)
             0u,                                             // VkPipelineCreateFlags flags;
             stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
             *m_pipelineLayout,                              // VkPipelineLayout layout;
-            (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0u,                                             // int32_t basePipelineIndex;
         };
 
-        m_computePipeline = createComputePipeline(m_vkd, *m_device, (vk::VkPipelineCache)0u, &createInfo);
+        m_computePipeline = createComputePipeline(m_vkd, *m_device, VK_NULL_HANDLE, &createInfo);
     }
 
     // Create command pool
@@ -2379,7 +2379,7 @@ void PushDescriptorImageComputeTestInstance::init(void)
             VkWriteDescriptorSet writeDescriptorSet = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
                 DE_NULL,                                // const void* pNext;
-                0u,                                     // VkDescriptorSet dstSet;
+                VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
                 m_params.binding,                       // uint32_t dstBinding;
                 0u,                                     // uint32_t dstArrayElement;
                 1u,                                     // uint32_t descriptorCount;
@@ -2417,7 +2417,7 @@ void PushDescriptorImageComputeTestInstance::init(void)
             const VkWriteDescriptorSet writeDescriptorSetOutput = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
                 DE_NULL,                                // const void* pNext;
-                0u,                                     // VkDescriptorSet dstSet;
+                VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
                 m_outputBufferBinding,                  // uint32_t dstBinding;
                 0u,                                     // uint32_t dstArrayElement;
                 1u,                                     // uint32_t descriptorCount;
@@ -3059,7 +3059,7 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init(void)
             VkWriteDescriptorSet writeDescriptorSet = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
                 DE_NULL,                                // const void* pNext;
-                0u,                                     // VkDescriptorSet dstSet;
+                VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
                 m_params.binding,                       // uint32_t dstBinding;
                 0u,                                     // uint32_t dstArrayElement;
                 1u,                                     // uint32_t descriptorCount;
@@ -3419,11 +3419,11 @@ void PushDescriptorTexelBufferComputeTestInstance::init(void)
             0u,                                             // VkPipelineCreateFlags flags;
             stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
             *m_pipelineLayout,                              // VkPipelineLayout layout;
-            (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0u,                                             // int32_t basePipelineIndex;
         };
 
-        m_computePipeline = createComputePipeline(m_vkd, *m_device, (vk::VkPipelineCache)0u, &createInfo);
+        m_computePipeline = createComputePipeline(m_vkd, *m_device, VK_NULL_HANDLE, &createInfo);
     }
 
     // Create command pool
@@ -3442,7 +3442,7 @@ void PushDescriptorTexelBufferComputeTestInstance::init(void)
             VkWriteDescriptorSet writeDescriptorSet = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
                 DE_NULL,                                // const void* pNext;
-                0u,                                     // VkDescriptorSet dstSet;
+                VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
                 m_params.binding,                       // uint32_t dstBinding;
                 0u,                                     // uint32_t dstArrayElement;
                 1u,                                     // uint32_t descriptorCount;
@@ -3465,7 +3465,7 @@ void PushDescriptorTexelBufferComputeTestInstance::init(void)
             const VkWriteDescriptorSet writeDescriptorSetOutput = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
                 DE_NULL,                                // const void* pNext;
-                0u,                                     // VkDescriptorSet dstSet;
+                VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
                 m_params.binding + 1,                   // uint32_t dstBinding;
                 0u,                                     // uint32_t dstArrayElement;
                 1u,                                     // uint32_t descriptorCount;
@@ -4105,7 +4105,7 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init(void)
             m_vkd.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 
             VkDescriptorImageInfo descriptorImageInfo = {
-                0,                                       // VkSampler sampler;
+                VK_NULL_HANDLE,                          // VkSampler sampler;
                 **m_inputImageViews[quadNdx],            // VkImageView imageView;
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // VkImageLayout imageLayout;
             };
@@ -4113,7 +4113,7 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init(void)
             VkWriteDescriptorSet writeDescriptorSet = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
                 DE_NULL,                                // const void* pNext;
-                0u,                                     // VkDescriptorSet dstSet;
+                VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
                 m_params.binding,                       // uint32_t dstBinding;
                 0u,                                     // uint32_t dstArrayElement;
                 1u,                                     // uint32_t descriptorCount;

@@ -1240,7 +1240,7 @@ void initResolveImageLayouts(Context &context, const TestParams &params, Working
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,         // VkImageLayout            newLayout
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                    srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                    dstQueueFamilyIndex
-        0,                                                // VkImage                    image
+        VK_NULL_HANDLE,                                   // VkImage                    image
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
                                   1u), // VkImageSubresourceRange    subresourceRange
     };
@@ -1299,7 +1299,7 @@ void preRenderingImageLayoutTransition(Context &context, const TestParams &param
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout              newLayout;
         VK_QUEUE_FAMILY_IGNORED,                  // uint32_t                   srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                  // uint32_t                   dstQueueFamilyIndex;
-        0,                                        // VkImage                    image;
+        VK_NULL_HANDLE,                           // VkImage                    image;
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
                                   1u), // VkImageSubresourceRange    subresourceRange;
     };
@@ -1336,7 +1336,7 @@ void postRenderingResolveImageLayoutTransition(Context &context, const TestParam
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,         // VkImageLayout            newLayout
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                    srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                    dstQueueFamilyIndex
-        0,                                                // VkImage                    image
+        VK_NULL_HANDLE,                                   // VkImage                    image
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
                                   1u), // VkImageSubresourceRange    subresourceRange
     };
@@ -1932,7 +1932,7 @@ void clearImagesBeforeDraw(Context &context, const TestParams &params, WorkingDa
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout              newLayout;
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                   srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                   dstQueueFamilyIndex;
-        0,                                      // VkImage                    image;
+        VK_NULL_HANDLE,                         // VkImage                    image;
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
                                   1u), // VkImageSubresourceRange    subresourceRange;
     };
@@ -2117,15 +2117,15 @@ void setupVerifyDescriptorSetAndPipeline(Context &context, const TestParams &par
     const VkDescriptorBufferInfo resultBufferInfo =
         makeDescriptorBufferInfo(*wd.verificationBuffer, 0ull, sizeof(VerificationResults));
     const VkDescriptorImageInfo color1ImageInfo = makeDescriptorImageInfo(
-        DE_NULL, *wd.getResolvedFloatColorImage1View(params), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        VK_NULL_HANDLE, *wd.getResolvedFloatColorImage1View(params), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     const VkDescriptorImageInfo color2ImageInfo = makeDescriptorImageInfo(
-        DE_NULL, *wd.getResolvedFloatColorImage2View(params), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        VK_NULL_HANDLE, *wd.getResolvedFloatColorImage2View(params), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     const VkDescriptorImageInfo color3ImageInfo = makeDescriptorImageInfo(
-        DE_NULL, *wd.getResolvedIntColorImageView(params), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        VK_NULL_HANDLE, *wd.getResolvedIntColorImageView(params), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     const VkDescriptorImageInfo depthImageInfo = makeDescriptorImageInfo(
-        DE_NULL, *wd.getResolvedDepthOnlyImageView(params), VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+        VK_NULL_HANDLE, *wd.getResolvedDepthOnlyImageView(params), VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
     const VkDescriptorImageInfo stencilImageInfo = makeDescriptorImageInfo(
-        DE_NULL, *wd.getResolvedStencilOnlyImageView(params), VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+        VK_NULL_HANDLE, *wd.getResolvedStencilOnlyImageView(params), VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
     const VkDescriptorImageInfo verifyImageInfo =
         makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.verify.view, VK_IMAGE_LAYOUT_GENERAL);
 
@@ -3120,7 +3120,7 @@ void drawBasic(Context &context, const TestParams &params, WorkingData &wd, Test
 
         testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
             vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
-            pipelineLayout, params.dynamicRendering ? DE_NULL : *testObjects.renderPassFramebuffers.back(),
+            pipelineLayout, params.dynamicRendering ? VK_NULL_HANDLE : *testObjects.renderPassFramebuffers.back(),
             params.dynamicRendering ? &pipelineRenderingCreateInfo : DE_NULL, vertexModule, fragmentModule, false, true,
             false, 0, 0, params.perPass[0].intColorLocation, wd.renderArea, wd.renderArea, params.perPass[0].numSamples,
             params.useGarbageAttachment));
@@ -3447,7 +3447,7 @@ void drawClearAttachments(Context &context, const TestParams &params, WorkingDat
         // Draw to region[0]
         testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
             vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
-            pipelineLayout, params.dynamicRendering ? DE_NULL : *testObjects.renderPassFramebuffers.back(),
+            pipelineLayout, params.dynamicRendering ? VK_NULL_HANDLE : *testObjects.renderPassFramebuffers.back(),
             params.dynamicRendering ? &pipelineRenderingCreateInfo : DE_NULL, vertexModule, fragmentModule, false, true,
             false, 0, 0, params.perPass[0].intColorLocation, regions[0], regions[0], params.perPass[0].numSamples,
             params.useGarbageAttachment));
@@ -3499,7 +3499,7 @@ void drawClearAttachments(Context &context, const TestParams &params, WorkingDat
         // Draw to region[1], overriding the clear value
         testObjects.graphicsPipelines.push_back(makeGraphicsPipeline(
             vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
-            pipelineLayout, params.dynamicRendering ? DE_NULL : *testObjects.renderPassFramebuffers.back(),
+            pipelineLayout, params.dynamicRendering ? VK_NULL_HANDLE : *testObjects.renderPassFramebuffers.back(),
             params.dynamicRendering ? &pipelineRenderingCreateInfo : DE_NULL, vertexModule, fragmentModule, false, true,
             false, 0, 0, params.perPass[0].intColorLocation, regions[1], regions[1], params.perPass[0].numSamples,
             params.useGarbageAttachment));
@@ -3582,7 +3582,7 @@ void drawOnePass(Context &context, const TestParams &params, WorkingData &wd, Te
     {
         testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
             vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
-            pipelineLayout, params.dynamicRendering ? DE_NULL : *testObjects.renderPassFramebuffers.back(),
+            pipelineLayout, params.dynamicRendering ? VK_NULL_HANDLE : *testObjects.renderPassFramebuffers.back(),
             params.dynamicRendering ? pipelineRenderingCreateInfo : DE_NULL, vertexModule, fragmentModule, true, true,
             false, 1 << passNdx, subpassNdx, perPass.intColorLocation, regions[regionNdx], regions[regionNdx],
             perPass.numSamples, params.useGarbageAttachment));
@@ -3599,7 +3599,7 @@ void drawOnePass(Context &context, const TestParams &params, WorkingData &wd, Te
         {
             testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
                 vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
-                pipelineLayout, params.dynamicRendering ? DE_NULL : *testObjects.renderPassFramebuffers.back(),
+                pipelineLayout, params.dynamicRendering ? VK_NULL_HANDLE : *testObjects.renderPassFramebuffers.back(),
                 params.dynamicRendering ? pipelineRenderingCreateInfo : DE_NULL, vertexModule, fragmentModule, true,
                 false, true, 1 << passNdx, subpassNdx, perPass.intColorLocation, regions[regionNdx], regions[regionNdx],
                 perPass.numSamples, params.useGarbageAttachment));
@@ -4815,10 +4815,10 @@ void drawInputAttachments(Context &context, const TestParams &params, WorkingDat
     const VkDescriptorImageInfo color1Info =
         makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatColor1.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     const VkDescriptorImageInfo depthInfo = makeDescriptorImageInfo(
-        DE_NULL, isDepthFormat(params.depthStencilFormat) ? *wd.depthOnlyImageView : *wd.stencilOnlyImageView,
+        VK_NULL_HANDLE, isDepthFormat(params.depthStencilFormat) ? *wd.depthOnlyImageView : *wd.stencilOnlyImageView,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     const VkDescriptorImageInfo stencilInfo = makeDescriptorImageInfo(
-        DE_NULL, isStencilFormat(params.depthStencilFormat) ? *wd.stencilOnlyImageView : *wd.depthOnlyImageView,
+        VK_NULL_HANDLE, isStencilFormat(params.depthStencilFormat) ? *wd.stencilOnlyImageView : *wd.depthOnlyImageView,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     DescriptorSetUpdateBuilder builder;

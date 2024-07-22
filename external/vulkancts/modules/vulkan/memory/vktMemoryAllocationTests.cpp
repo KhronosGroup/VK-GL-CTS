@@ -471,7 +471,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
                                        (VkDeviceSize)(*m_config.memoryPercentage * (float)memoryHeap.size));
             const VkDeviceSize roundedUpAllocationSize =
                 roundUpToNextMultiple(allocationSize, m_memoryLimits.deviceMemoryAllocationGranularity);
-            vector<VkDeviceMemory> memoryObjects(m_config.memoryAllocationCount, (VkDeviceMemory)0);
+            vector<VkDeviceMemory> memoryObjects(m_config.memoryAllocationCount, VK_NULL_HANDLE);
 
             log << TestLog::Message << "Memory type index: " << m_memoryTypeIndex << TestLog::EndMessage;
 
@@ -557,7 +557,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
                                             vkd.freeMemory(device, mem, (const VkAllocationCallbacks *)DE_NULL);
 #endif // CTS_USES_VULKANSC
-                                            memoryObjects[memoryObjects.size() - 1 - ndx] = (VkDeviceMemory)0;
+                                            memoryObjects[memoryObjects.size() - 1 - ndx] = VK_NULL_HANDLE;
                                         }
                                     }
                                 }
@@ -572,7 +572,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
                                             vkd.freeMemory(device, mem, (const VkAllocationCallbacks *)DE_NULL);
 #endif // CTS_USES_VULKANSC
-                                            memoryObjects[ndx] = (VkDeviceMemory)0;
+                                            memoryObjects[ndx] = VK_NULL_HANDLE;
                                         }
                                     }
                                 }
@@ -595,7 +595,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
                                     vkd.freeMemory(device, memoryObjects[ndx], (const VkAllocationCallbacks *)DE_NULL);
 #endif // CTS_USES_VULKANSC
-                                    memoryObjects[ndx] = (VkDeviceMemory)0;
+                                    memoryObjects[ndx] = VK_NULL_HANDLE;
                                 }
                             }
                         }
@@ -611,7 +611,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
                                 vkd.freeMemory(device, mem, (const VkAllocationCallbacks *)DE_NULL);
 #endif // CTS_USES_VULKANSC
-                                memoryObjects[ndx] = (VkDeviceMemory)0;
+                                memoryObjects[ndx] = VK_NULL_HANDLE;
                             }
                         }
 
@@ -870,7 +870,7 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate(void)
         if ((allocationSize > (uint64_t)(heap.maxMemoryUsage - heap.memoryUsage)) && (allocationSize != 1))
             TCU_THROW(InternalError, "Test Error: trying to allocate memory more than the available heap size.");
 
-        const MemoryObject object = {(VkDeviceMemory)0, allocationSize, memoryType.type.propertyFlags};
+        const MemoryObject object = {VK_NULL_HANDLE, allocationSize, memoryType.type.propertyFlags};
 
         heap.objects.push_back(object);
 
@@ -920,7 +920,7 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
         vkd.freeMemory(device, memoryObject.memory, (const VkAllocationCallbacks *)DE_NULL);
 #endif
-        memoryObject.memory = (VkDeviceMemory)0;
+        memoryObject.memory = VK_NULL_HANDLE;
         m_memoryObjectCount--;
 
         if (memoryObject.propertyFlags & VK_MEMORY_PROPERTY_PROTECTED_BIT)

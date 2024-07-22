@@ -87,7 +87,7 @@ public:
 
     virtual vk::VkSemaphore getSemaphore(void) const
     {
-        return DE_NULL;
+        return VK_NULL_HANDLE;
     }
 
     Image(const Image &)            = delete;

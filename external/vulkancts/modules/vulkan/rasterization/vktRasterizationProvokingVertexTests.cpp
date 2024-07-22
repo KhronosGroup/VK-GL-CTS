@@ -400,9 +400,9 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
         renderPass  = ProvokingVertexTestInstance::makeRenderPass(vk, device);
         framebuffer = makeFramebuffer(vk, device, *renderPass, *imageView, m_params.size.x(), m_params.size.y(), 1u);
         pipeline    = makeGraphicsPipeline(vk, device, *pipelineLayout, *vertexShader,
-                                           DE_NULL, // tessellationControlShaderModule
-                                           DE_NULL, // tessellationEvalShaderModule
-                                           DE_NULL, // geometryShaderModule
+                                           VK_NULL_HANDLE, // tessellationControlShaderModule
+                                           VK_NULL_HANDLE, // tessellationEvalShaderModule
+                                           VK_NULL_HANDLE, // geometryShaderModule
                                            *fragmentShader, *renderPass, viewports, scissors, m_params.primitiveTopology,
                                            0u, // subpass
                                            0u, // patchControlPoints
@@ -438,9 +438,9 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
 
             altPipeline =
                 makeGraphicsPipeline(vk, device, *pipelineLayout, *vertexShader,
-                                     DE_NULL, // tessellationControlShaderModule
-                                     DE_NULL, // tessellationEvalShaderModule
-                                     DE_NULL, // geometryShaderModule
+                                     VK_NULL_HANDLE, // tessellationControlShaderModule
+                                     VK_NULL_HANDLE, // tessellationEvalShaderModule
+                                     VK_NULL_HANDLE, // geometryShaderModule
                                      *fragmentShader, *renderPass, viewports, scissors, m_params.primitiveTopology,
                                      0u, // subpass
                                      0u, // patchControlPoints

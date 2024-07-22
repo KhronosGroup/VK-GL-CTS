@@ -2146,10 +2146,10 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
     BufferPtr missSBT;
     BufferPtr callSBT;
 
-    VkStridedDeviceAddressRegionKHR rgenRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0ull, 0ull);
-    VkStridedDeviceAddressRegionKHR xhitRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0ull, 0ull);
-    VkStridedDeviceAddressRegionKHR missRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0ull, 0ull);
-    VkStridedDeviceAddressRegionKHR callRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0ull, 0ull);
+    VkStridedDeviceAddressRegionKHR rgenRegion = makeStridedDeviceAddressRegionKHR(0, 0ull, 0ull);
+    VkStridedDeviceAddressRegionKHR xhitRegion = makeStridedDeviceAddressRegionKHR(0, 0ull, 0ull);
+    VkStridedDeviceAddressRegionKHR missRegion = makeStridedDeviceAddressRegionKHR(0, 0ull, 0ull);
+    VkStridedDeviceAddressRegionKHR callRegion = makeStridedDeviceAddressRegionKHR(0, 0ull, 0ull);
 
     WrapperVec pipelineWrappers; // For graphics pipelines.
     PipelinePtrVec pipelinePtrs; // For other pipelines.

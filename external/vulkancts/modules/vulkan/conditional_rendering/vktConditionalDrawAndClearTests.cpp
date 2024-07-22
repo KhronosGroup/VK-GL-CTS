@@ -445,7 +445,7 @@ void ConditionalRenderingBaseTestInstance::createInitBufferWithPredicate(
 
         auto queue = m_context.getUniversalQueue();
 
-        m_vkd.queueSubmit(queue, 1, &submitInfo, 0);
+        m_vkd.queueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 
         m_vkd.queueWaitIdle(queue);
     }

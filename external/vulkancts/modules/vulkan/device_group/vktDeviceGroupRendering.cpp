@@ -180,7 +180,7 @@ DeviceGroupTestInstance::DeviceGroupTestInstance(Context &context, const uint32_
     : TestInstance(context)
     , m_instanceWrapper(new CustomInstanceWrapper(context))
     , m_physicalDeviceCount(0)
-    , m_deviceGroupQueue(DE_NULL)
+    , m_deviceGroupQueue(VK_NULL_HANDLE)
     , m_testMode(mode)
     , m_useHostMemory(m_testMode & TEST_MODE_HOSTMEMORY)
     , m_useDedicated(m_testMode & TEST_MODE_DEDICATED)
@@ -498,8 +498,8 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
         VkMemoryDedicatedAllocateInfo dedicatedAllocInfo = {
             VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // sType
             DE_NULL,                                          // pNext
-            DE_NULL,                                          // image
-            DE_NULL                                           // buffer
+            VK_NULL_HANDLE,                                   // image
+            VK_NULL_HANDLE                                    // buffer
         };
 
         VkMemoryAllocateFlagsInfo allocDeviceMaskInfo = {
@@ -842,7 +842,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
             readImage   = createImage(vk, *m_deviceGroup, &imageParams);
 
             dedicatedAllocInfo.image  = *renderImage;
-            dedicatedAllocInfo.buffer = DE_NULL;
+            dedicatedAllocInfo.buffer = VK_NULL_HANDLE;
             memReqs                   = getImageMemoryRequirements(vk, *m_deviceGroup, renderImage.get());
             memoryTypeNdx =
                 getMemoryIndex(memReqs.memoryTypeBits, m_useHostMemory ? 0 : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -851,7 +851,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
             renderImageMemory         = allocateMemory(vk, *m_deviceGroup, &allocInfo);
 
             dedicatedAllocInfo.image  = *readImage;
-            dedicatedAllocInfo.buffer = DE_NULL;
+            dedicatedAllocInfo.buffer = VK_NULL_HANDLE;
             memReqs                   = getImageMemoryRequirements(vk, *m_deviceGroup, readImage.get());
             memoryTypeNdx =
                 getMemoryIndex(memReqs.memoryTypeBits, m_useHostMemory ? 0 : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);

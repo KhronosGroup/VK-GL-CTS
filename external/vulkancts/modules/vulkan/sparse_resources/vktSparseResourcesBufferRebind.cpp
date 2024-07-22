@@ -263,7 +263,7 @@ tcu::TestStatus BufferSparseRebindInstance::iterate(void)
             };
 
             // Submit sparse bind commands for execution
-            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, DE_NULL));
+            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, VK_NULL_HANDLE));
 
             // And then fill the buffer with data on the device
             const Unique<VkCommandBuffer> commandBufferFill(
@@ -329,7 +329,7 @@ tcu::TestStatus BufferSparseRebindInstance::iterate(void)
             };
 
             // Submit sparse bind commands for execution, no need for a waitSemaphore as the host waited for the previous submit.
-            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, DE_NULL));
+            VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, VK_NULL_HANDLE));
         }
 
         // And verify the result by copying sparse buffer data into a new host-visible buffer

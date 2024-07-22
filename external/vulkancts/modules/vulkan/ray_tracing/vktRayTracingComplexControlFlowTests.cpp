@@ -153,8 +153,8 @@ Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDev
                                           const uint32_t pushConstantsSize)
 {
     const VkDescriptorSetLayout *descriptorSetLayoutPtr =
-        (descriptorSetLayout == DE_NULL) ? DE_NULL : &descriptorSetLayout;
-    const uint32_t setLayoutCount               = (descriptorSetLayout == DE_NULL) ? 0u : 1u;
+        (descriptorSetLayout == VK_NULL_HANDLE) ? DE_NULL : &descriptorSetLayout;
+    const uint32_t setLayoutCount               = (descriptorSetLayout == VK_NULL_HANDLE) ? 0u : 1u;
     const VkPushConstantRange pushConstantRange = {
         ALL_RAY_TRACING_STAGES, //  VkShaderStageFlags stageFlags;
         0u,                     //  uint32_t offset;
@@ -177,7 +177,7 @@ Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDev
 
 VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 {
-    VkBuffer result = (buffer.get() == DE_NULL) ? DE_NULL : buffer->get();
+    VkBuffer result = (buffer.get() == DE_NULL) ? VK_NULL_HANDLE : buffer->get();
 
     return result;
 }
@@ -185,7 +185,7 @@ VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 VkStridedDeviceAddressRegionKHR makeStridedDeviceAddressRegion(const DeviceInterface &vkd, const VkDevice device,
                                                                VkBuffer buffer, uint32_t stride, uint32_t count)
 {
-    if (buffer == DE_NULL)
+    if (buffer == VK_NULL_HANDLE)
     {
         return makeStridedDeviceAddressRegionKHR(0, 0, 0);
     }

@@ -158,9 +158,9 @@ tcu::TestStatus CopyBufferToImageTestInstance::iterate()
         const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo = {
             vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // sType
             DE_NULL,                                               // pNext
-            DE_NULL,                                               // renderPass
+            VK_NULL_HANDLE,                                        // renderPass
             0u,                                                    // subpass
-            DE_NULL,                                               // framebuffer
+            VK_NULL_HANDLE,                                        // framebuffer
             VK_FALSE,                                              // occlusionQueryEnable
             (vk::VkQueryControlFlags)0u,                           // queryFlags
             (vk::VkQueryPipelineStatisticFlags)0u,                 // pipelineStatistics

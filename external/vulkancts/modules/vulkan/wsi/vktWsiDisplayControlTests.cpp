@@ -184,7 +184,7 @@ VkDisplayKHR getDisplayAndDisplayPlane(const InstanceInterface &vki, VkPhysicalD
     TCU_FAIL("No intersection between displays and display planes");
 
     // Unreachable.
-    return DE_NULL;
+    return VK_NULL_HANDLE;
 }
 
 VkSurfaceKHR createSurface(const InstanceInterface &vki, VkInstance instance, VkPhysicalDevice physicalDevice,
@@ -240,7 +240,7 @@ VkSurfaceKHR createSurface(const InstanceInterface &vki, VkInstance instance, Vk
     if (result != VK_SUCCESS)
         TCU_FAIL("CreateDisplayPlaneSurfaceKHR failed");
 
-    if (surface == DE_NULL)
+    if (surface == VK_NULL_HANDLE)
         TCU_FAIL("Invalid surface handle returned");
 
     return surface;
@@ -256,11 +256,11 @@ void deinitSemaphores(const DeviceInterface &vkd, VkDevice device, std::vector<V
 {
     for (VkSemaphore &semaphore : semaphores)
     {
-        if (semaphore == (VkSemaphore)0)
+        if (semaphore == VK_NULL_HANDLE)
             continue;
 
         vkd.destroySemaphore(device, semaphore, DE_NULL);
-        semaphore = (VkSemaphore)0;
+        semaphore = VK_NULL_HANDLE;
     }
 
     semaphores.clear();
@@ -276,11 +276,11 @@ void deinitFences(const DeviceInterface &vkd, VkDevice device, std::vector<VkFen
 {
     for (VkFence &fence : fences)
     {
-        if (fence == (VkFence)0)
+        if (fence == VK_NULL_HANDLE)
             continue;
 
         vkd.destroyFence(device, fence, DE_NULL);
-        fence = (VkFence)0;
+        fence = VK_NULL_HANDLE;
     }
 
     fences.clear();
@@ -337,10 +337,10 @@ void deinitCommandBuffers(const DeviceInterface &vkd, VkDevice device, VkCommand
 {
     for (size_t ndx = 0; ndx < commandBuffers.size(); ndx++)
     {
-        if (commandBuffers[ndx] != (VkCommandBuffer)0)
+        if (commandBuffers[ndx] != VK_NULL_HANDLE)
             vkd.freeCommandBuffers(device, commandPool, 1u, &commandBuffers[ndx]);
 
-        commandBuffers[ndx] = (VkCommandBuffer)0;
+        commandBuffers[ndx] = VK_NULL_HANDLE;
     }
 
     commandBuffers.clear();
@@ -381,10 +381,10 @@ void deinitFramebuffers(const DeviceInterface &vkd, VkDevice device, std::vector
 {
     for (size_t ndx = 0; ndx < framebuffers.size(); ndx++)
     {
-        if (framebuffers[ndx] != (VkFramebuffer)0)
+        if (framebuffers[ndx] != VK_NULL_HANDLE)
             vkd.destroyFramebuffer(device, framebuffers[ndx], DE_NULL);
 
-        framebuffers[ndx] = (VkFramebuffer)0;
+        framebuffers[ndx] = VK_NULL_HANDLE;
     }
 
     framebuffers.clear();
@@ -418,10 +418,10 @@ void deinitImageViews(const DeviceInterface &vkd, VkDevice device, std::vector<V
 {
     for (size_t ndx = 0; ndx < imageViews.size(); ndx++)
     {
-        if (imageViews[ndx] != (VkImageView)0)
+        if (imageViews[ndx] != VK_NULL_HANDLE)
             vkd.destroyImageView(device, imageViews[ndx], DE_NULL);
 
-        imageViews[ndx] = (VkImageView)0;
+        imageViews[ndx] = VK_NULL_HANDLE;
     }
 
     imageViews.clear();
@@ -536,7 +536,7 @@ VkSwapchainCreateInfoKHR createSwapchainConfig(VkSurfaceKHR surface, uint32_t qu
                                                             compositeAlpha,
                                                             presentMode,
                                                             clipped,
-                                                            (VkSwapchainKHR)0};
+                                                            VK_NULL_HANDLE};
 
         return createInfo;
     }
@@ -663,13 +663,13 @@ void SwapchainCounterTestInstance::initSwapchainResources(void)
     const size_t swapchainImagesCount = m_swapchainImages.size();
     const size_t fenceCount           = swapchainImagesCount * 2;
 
-    m_swapchainImageViews = std::vector<VkImageView>(swapchainImagesCount, (VkImageView)0);
-    m_framebuffers        = std::vector<VkFramebuffer>(swapchainImagesCount, (VkFramebuffer)0);
-    m_acquireSemaphores   = std::vector<VkSemaphore>(swapchainImagesCount + 1, (VkSemaphore)0);
-    m_renderSemaphores    = std::vector<VkSemaphore>(swapchainImagesCount + 1, (VkSemaphore)0);
+    m_swapchainImageViews = std::vector<VkImageView>(swapchainImagesCount, VK_NULL_HANDLE);
+    m_framebuffers        = std::vector<VkFramebuffer>(swapchainImagesCount, VK_NULL_HANDLE);
+    m_acquireSemaphores   = std::vector<VkSemaphore>(swapchainImagesCount + 1, VK_NULL_HANDLE);
+    m_renderSemaphores    = std::vector<VkSemaphore>(swapchainImagesCount + 1, VK_NULL_HANDLE);
 
-    m_fences         = std::vector<VkFence>(fenceCount, (VkFence)0);
-    m_commandBuffers = std::vector<VkCommandBuffer>(fenceCount, (VkCommandBuffer)0);
+    m_fences         = std::vector<VkFence>(fenceCount, VK_NULL_HANDLE);
+    m_commandBuffers = std::vector<VkCommandBuffer>(fenceCount, VK_NULL_HANDLE);
 
     initImageViews(m_vkd, *m_device, m_swapchainImages, imageFormat, m_swapchainImageViews);
     initFramebuffers(m_vkd, *m_device, *m_renderPass, m_swapchainImageViews, imageWidth, imageHeight, m_framebuffers);
@@ -714,7 +714,7 @@ void SwapchainCounterTestInstance::render(void)
 
     // Acquire next image
     uint32_t imageIndex;
-    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, (VkFence)0,
+    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, VK_NULL_HANDLE,
                                        &imageIndex));
 
     // Create command buffer
@@ -940,7 +940,7 @@ tcu::TestStatus testDisplayEvent(Context &context)
 
     VkDevice device             = context.getDevice();
     const DeviceInterface &vkd  = context.getDeviceInterface();
-    std::vector<VkFence> fences = std::vector<VkFence>(availableDisplays.size(), (VkFence)0);
+    std::vector<VkFence> fences = std::vector<VkFence>(availableDisplays.size(), VK_NULL_HANDLE);
 
     // iterate over all displays
     for (size_t i = 0; i < availableDisplays.size(); ++i)
@@ -968,7 +968,7 @@ tcu::TestStatus testDeviceEvent(Context &context)
 
     VkDevice device             = context.getDevice();
     const DeviceInterface &vkd  = context.getDeviceInterface();
-    std::vector<VkFence> fences = std::vector<VkFence>(1, (VkFence)0);
+    std::vector<VkFence> fences = std::vector<VkFence>(1, VK_NULL_HANDLE);
 
     vk::VkDeviceEventInfoEXT deviceEventInfo = {VK_STRUCTURE_TYPE_DEVICE_EVENT_INFO_EXT, DE_NULL,
                                                 VK_DEVICE_EVENT_TYPE_DISPLAY_HOTPLUG_EXT};

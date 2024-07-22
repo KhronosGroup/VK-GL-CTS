@@ -1362,9 +1362,9 @@ tcu::TestStatus FragmentShadingBarycentricWeightTestInstance::iterate(void)
     }
 
     std::vector<VkImageMemoryBarrier> initialImageBarriers(
-        2, makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT,
-                                  VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                                  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, DE_NULL, imageSubresourceRange));
+        2, makeImageMemoryBarrier(
+               VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+               VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_NULL_HANDLE, imageSubresourceRange));
 
     for (size_t ndx = 0; ndx < 2; ndx++)
     {
@@ -1561,6 +1561,10 @@ void FragmentShadingBarycentricTestCase::checkSupport(Context &context) const
     if ((m_testParams.testSubtype == TEST_SUBTYPE_GEOMETRY_SHADER) ||
         (m_testParams.testSubtype == TEST_SUBTYPE_TESSGEOM_SHADER))
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+    if ((m_testParams.testSubtype == TEST_SUBTYPE_MSAA_INTERPOLATE_AT_SAMPLE) ||
+        (m_testParams.testSubtype == TEST_SUBTYPE_MSAA_INTERPOLATE_AT_OFFSET))
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 TestInstance *FragmentShadingBarycentricTestCase::createInstance(Context &context) const
@@ -2410,10 +2414,10 @@ string FragmentShadingBarycentricTestCase::generateWeightMeshShader(void) const
             "{\n"
             "    uint maxVertex = 256;\n"
             "    uint maxPrimitive = 128;\n"
+            "    SetMeshOutputsEXT(maxVertex, maxPrimitive);\n"
             "    uint iterations = max(maxVertex, maxPrimitive) / (8 * 4 * 1);\n"
             "    for (int  iteration = 0; iteration < iterations; ++iteration)\n"
             "    {\n"
-            "        SetMeshOutputsEXT(maxVertex, maxPrimitive);\n"
             "        const uint vertex = gl_LocalInvocationIndex * iterations + iteration;\n"
             "        const uint primitive = gl_LocalInvocationIndex * iterations + iteration;\n"
             "        if (vertex < maxVertex)\n"

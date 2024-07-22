@@ -178,10 +178,10 @@ void deinitSemaphores(const vk::DeviceInterface &vkd, vk::VkDevice device, std::
 {
     for (size_t ndx = 0; ndx < semaphores.size(); ndx++)
     {
-        if (semaphores[ndx] != (vk::VkSemaphore)0)
+        if (semaphores[ndx] != VK_NULL_HANDLE)
             vkd.destroySemaphore(device, semaphores[ndx], DE_NULL);
 
-        semaphores[ndx] = (vk::VkSemaphore)0;
+        semaphores[ndx] = VK_NULL_HANDLE;
     }
 
     semaphores.clear();
@@ -197,10 +197,10 @@ void deinitFences(const vk::DeviceInterface &vkd, vk::VkDevice device, std::vect
 {
     for (size_t ndx = 0; ndx < fences.size(); ndx++)
     {
-        if (fences[ndx] != (vk::VkFence)0)
+        if (fences[ndx] != VK_NULL_HANDLE)
             vkd.destroyFence(device, fences[ndx], DE_NULL);
 
-        fences[ndx] = (vk::VkFence)0;
+        fences[ndx] = VK_NULL_HANDLE;
     }
 
     fences.clear();
@@ -316,10 +316,10 @@ void deinitCommandBuffers(const vk::DeviceInterface &vkd, vk::VkDevice device, v
 {
     for (size_t ndx = 0; ndx < commandBuffers.size(); ndx++)
     {
-        if (commandBuffers[ndx] != (vk::VkCommandBuffer)0)
+        if (commandBuffers[ndx] != VK_NULL_HANDLE)
             vkd.freeCommandBuffers(device, commandPool, 1u, &commandBuffers[ndx]);
 
-        commandBuffers[ndx] = (vk::VkCommandBuffer)0;
+        commandBuffers[ndx] = VK_NULL_HANDLE;
     }
 
     commandBuffers.clear();
@@ -367,10 +367,10 @@ void deinitFramebuffers(const vk::DeviceInterface &vkd, vk::VkDevice device,
 {
     for (size_t ndx = 0; ndx < framebuffers.size(); ndx++)
     {
-        if (framebuffers[ndx] != (vk::VkFramebuffer)0)
+        if (framebuffers[ndx] != VK_NULL_HANDLE)
             vkd.destroyFramebuffer(device, framebuffers[ndx], DE_NULL);
 
-        framebuffers[ndx] = (vk::VkFramebuffer)0;
+        framebuffers[ndx] = VK_NULL_HANDLE;
     }
 
     framebuffers.clear();
@@ -405,10 +405,10 @@ void deinitImageViews(const vk::DeviceInterface &vkd, vk::VkDevice device, std::
 {
     for (size_t ndx = 0; ndx < imageViews.size(); ndx++)
     {
-        if (imageViews[ndx] != (vk::VkImageView)0)
+        if (imageViews[ndx] != VK_NULL_HANDLE)
             vkd.destroyImageView(device, imageViews[ndx], DE_NULL);
 
-        imageViews[ndx] = (vk::VkImageView)0;
+        imageViews[ndx] = VK_NULL_HANDLE;
     }
 
     imageViews.clear();
@@ -624,7 +624,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs(
                                                                 compositeAlpha,
                                                                 presentMode,
                                                                 clipped,
-                                                                (vk::VkSwapchainKHR)0};
+                                                                VK_NULL_HANDLE};
 
         createInfos.push_back(createInfo);
 
@@ -646,7 +646,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs(
                                                          compositeAlpha,
                                                          presentMode,
                                                          clipped,
-                                                         (vk::VkSwapchainKHR)0};
+                                                         VK_NULL_HANDLE};
 
         createInfos.push_back(unusedInfo);
     }
@@ -687,8 +687,8 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance(Context &context,
     , m_surfaceFormats(vk::wsi::getPhysicalDeviceSurfaceFormats(m_vki, m_physicalDevice, *m_surface))
     , m_presentModes(vk::wsi::getPhysicalDeviceSurfacePresentModes(m_vki, m_physicalDevice, *m_surface))
 
-    , m_freeAcquireSemaphore((vk::VkSemaphore)0)
-    , m_freeRenderSemaphore((vk::VkSemaphore)0)
+    , m_freeAcquireSemaphore(VK_NULL_HANDLE)
+    , m_freeRenderSemaphore(VK_NULL_HANDLE)
 
     , m_swapchainConfigs(generateSwapchainConfigs(*m_surface, &m_queueFamilyIndex, testConfig.scaling,
                                                   m_surfaceProperties, m_surfaceFormats, m_presentModes,
@@ -730,16 +730,16 @@ void IncrementalPresentTestInstance::initSwapchainResources(void)
     m_pipeline   = createPipeline(m_vkd, *m_device, *m_renderPass, *m_pipelineLayout, *m_vertexShaderModule,
                                   *m_fragmentShaderModule, imageWidth, imageHeight);
 
-    m_swapchainImageViews = std::vector<vk::VkImageView>(m_swapchainImages.size(), (vk::VkImageView)0);
-    m_framebuffers        = std::vector<vk::VkFramebuffer>(m_swapchainImages.size(), (vk::VkFramebuffer)0);
-    m_acquireSemaphores   = std::vector<vk::VkSemaphore>(m_swapchainImages.size(), (vk::VkSemaphore)0);
-    m_renderSemaphores    = std::vector<vk::VkSemaphore>(m_swapchainImages.size(), (vk::VkSemaphore)0);
+    m_swapchainImageViews = std::vector<vk::VkImageView>(m_swapchainImages.size(), VK_NULL_HANDLE);
+    m_framebuffers        = std::vector<vk::VkFramebuffer>(m_swapchainImages.size(), VK_NULL_HANDLE);
+    m_acquireSemaphores   = std::vector<vk::VkSemaphore>(m_swapchainImages.size(), VK_NULL_HANDLE);
+    m_renderSemaphores    = std::vector<vk::VkSemaphore>(m_swapchainImages.size(), VK_NULL_HANDLE);
 
-    m_fences         = std::vector<vk::VkFence>(fenceCount, (vk::VkFence)0);
-    m_commandBuffers = std::vector<vk::VkCommandBuffer>(m_fences.size(), (vk::VkCommandBuffer)0);
+    m_fences         = std::vector<vk::VkFence>(fenceCount, VK_NULL_HANDLE);
+    m_commandBuffers = std::vector<vk::VkCommandBuffer>(m_fences.size(), VK_NULL_HANDLE);
 
-    m_freeAcquireSemaphore = (vk::VkSemaphore)0;
-    m_freeRenderSemaphore  = (vk::VkSemaphore)0;
+    m_freeAcquireSemaphore = VK_NULL_HANDLE;
+    m_freeRenderSemaphore  = VK_NULL_HANDLE;
 
     m_freeAcquireSemaphore = createSemaphore(m_vkd, *m_device).disown();
     m_freeRenderSemaphore  = createSemaphore(m_vkd, *m_device).disown();
@@ -756,16 +756,16 @@ void IncrementalPresentTestInstance::deinitSwapchainResources(void)
 {
     VK_CHECK(m_vkd.queueWaitIdle(m_queue));
 
-    if (m_freeAcquireSemaphore != (vk::VkSemaphore)0)
+    if (m_freeAcquireSemaphore != VK_NULL_HANDLE)
     {
         m_vkd.destroySemaphore(*m_device, m_freeAcquireSemaphore, DE_NULL);
-        m_freeAcquireSemaphore = (vk::VkSemaphore)0;
+        m_freeAcquireSemaphore = VK_NULL_HANDLE;
     }
 
-    if (m_freeRenderSemaphore != (vk::VkSemaphore)0)
+    if (m_freeRenderSemaphore != VK_NULL_HANDLE)
     {
         m_vkd.destroySemaphore(*m_device, m_freeRenderSemaphore, DE_NULL);
-        m_freeRenderSemaphore = (vk::VkSemaphore)0;
+        m_freeRenderSemaphore = VK_NULL_HANDLE;
     }
 
     deinitSemaphores(m_vkd, *m_device, m_acquireSemaphores);
@@ -800,7 +800,7 @@ void IncrementalPresentTestInstance::render(void)
 
         m_vkd.freeCommandBuffers(*m_device, *m_commandPool, 1u,
                                  &m_commandBuffers[m_frameNdx % m_commandBuffers.size()]);
-        m_commandBuffers[m_frameNdx % m_commandBuffers.size()] = (vk::VkCommandBuffer)0;
+        m_commandBuffers[m_frameNdx % m_commandBuffers.size()] = VK_NULL_HANDLE;
     }
 
     vk::VkSemaphore currentAcquireSemaphore = m_freeAcquireSemaphore;
@@ -808,7 +808,7 @@ void IncrementalPresentTestInstance::render(void)
     uint32_t imageIndex;
 
     // Acquire next image
-    VK_CHECK_WSI(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, (vk::VkFence)0,
+    VK_CHECK_WSI(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, VK_NULL_HANDLE,
                                            &imageIndex));
 
     // Create command buffer

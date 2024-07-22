@@ -172,9 +172,9 @@ tcu::TestStatus MismatchedDimensionalityTestInstance::iterate(void)
     auto &bc(m_context.getBinaryCollection());
     const auto vertModule(createShaderModule(vk, device, bc.get("vert")));
     const auto fragModule(createShaderModule(vk, device, bc.get("frag")));
-    const auto pipeline =
-        makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, 0, 0, 0, *fragModule, *renderPass, viewport,
-                             scissor, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0, &vertexInputStateInfo);
+    const auto pipeline = makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                               VK_NULL_HANDLE, *fragModule, *renderPass, viewport, scissor,
+                                               VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0, &vertexInputStateInfo);
 
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const auto cmdPool(

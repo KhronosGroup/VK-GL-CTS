@@ -288,9 +288,9 @@ tcu::TestStatus WorkgroupStorageTestInstance::iterate(void)
         vk::DescriptorSetUpdateBuilder updateBuilder;
 
         vk::VkDescriptorImageInfo descStorageImgDst =
-            makeDescriptorImageInfo((vk::VkSampler)0, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
         vk::VkDescriptorImageInfo descStorageImgSrc =
-            makeDescriptorImageInfo((vk::VkSampler)0, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
 
         updateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                                   vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descStorageImgDst);

@@ -319,7 +319,7 @@ VulkanDrawContext::VulkanDrawContext(Context &context, const FrameBufferState &f
 
         attachmentDescriptions.push_back(attachDescriptors[0]);
         uint32_t depthReferenceNdx = 2;
-        if (depthImageView != 0)
+        if (depthImageView != VK_NULL_HANDLE)
         {
             attachmentDescriptions.push_back(attachDescriptors[1]);
             depthReferenceNdx = 1;
@@ -358,7 +358,7 @@ VulkanDrawContext::VulkanDrawContext(Context &context, const FrameBufferState &f
         std::vector<VkImageView> attachmentBindInfos;
         uint32_t numAttachments;
         attachmentBindInfos.push_back(*m_colorImageView);
-        if (depthImageView != 0)
+        if (depthImageView != VK_NULL_HANDLE)
             attachmentBindInfos.push_back(depthImageView);
 
         numAttachments                                = (uint32_t)(attachmentBindInfos.size());

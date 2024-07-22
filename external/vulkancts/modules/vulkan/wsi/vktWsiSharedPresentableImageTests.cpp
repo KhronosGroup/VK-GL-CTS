@@ -191,10 +191,10 @@ void deinitSemaphores(const vk::DeviceInterface &vkd, vk::VkDevice device, std::
 {
     for (size_t ndx = 0; ndx < semaphores.size(); ndx++)
     {
-        if (semaphores[ndx] != (vk::VkSemaphore)0)
+        if (semaphores[ndx] != VK_NULL_HANDLE)
             vkd.destroySemaphore(device, semaphores[ndx], DE_NULL);
 
-        semaphores[ndx] = (vk::VkSemaphore)0;
+        semaphores[ndx] = VK_NULL_HANDLE;
     }
 
     semaphores.clear();
@@ -210,10 +210,10 @@ void deinitFences(const vk::DeviceInterface &vkd, vk::VkDevice device, std::vect
 {
     for (size_t ndx = 0; ndx < fences.size(); ndx++)
     {
-        if (fences[ndx] != (vk::VkFence)0)
+        if (fences[ndx] != VK_NULL_HANDLE)
             vkd.destroyFence(device, fences[ndx], DE_NULL);
 
-        fences[ndx] = (vk::VkFence)0;
+        fences[ndx] = VK_NULL_HANDLE;
     }
 
     fences.clear();
@@ -258,10 +258,10 @@ void deinitCommandBuffers(const vk::DeviceInterface &vkd, vk::VkDevice device, v
 {
     for (size_t ndx = 0; ndx < commandBuffers.size(); ndx++)
     {
-        if (commandBuffers[ndx] != (vk::VkCommandBuffer)0)
+        if (commandBuffers[ndx] != VK_NULL_HANDLE)
             vkd.freeCommandBuffers(device, commandPool, 1u, &commandBuffers[ndx]);
 
-        commandBuffers[ndx] = (vk::VkCommandBuffer)0;
+        commandBuffers[ndx] = VK_NULL_HANDLE;
     }
 
     commandBuffers.clear();
@@ -548,7 +548,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs(
                                                                 compositeAlpha,
                                                                 presentMode,
                                                                 clipped,
-                                                                (vk::VkSwapchainKHR)0};
+                                                                VK_NULL_HANDLE};
 
         {
             vk::VkImageFormatProperties imageFormatProperties;
@@ -672,9 +672,9 @@ void SharedPresentableImageTestInstance::initSwapchainResources(void)
     m_swapchainImageView = createImageView(m_vkd, *m_device, m_swapchainImage, imageFormat);
     m_framebuffer = createFramebuffer(m_vkd, *m_device, *m_renderPass, *m_swapchainImageView, imageWidth, imageHeight);
 
-    m_renderSemaphores = std::vector<vk::VkSemaphore>(fenceCount, (vk::VkSemaphore)0);
-    m_fences           = std::vector<vk::VkFence>(fenceCount, (vk::VkFence)0);
-    m_commandBuffers   = std::vector<vk::VkCommandBuffer>(m_fences.size(), (vk::VkCommandBuffer)0);
+    m_renderSemaphores = std::vector<vk::VkSemaphore>(fenceCount, VK_NULL_HANDLE);
+    m_fences           = std::vector<vk::VkFence>(fenceCount, VK_NULL_HANDLE);
+    m_commandBuffers   = std::vector<vk::VkCommandBuffer>(m_fences.size(), VK_NULL_HANDLE);
 
     initSemaphores(m_vkd, *m_device, m_renderSemaphores);
 
@@ -690,7 +690,7 @@ void SharedPresentableImageTestInstance::initSwapchainResources(void)
     vk::Move<vk::VkSemaphore> semaphore(createSemaphore(m_vkd, *m_device));
     uint32_t imageIndex = 42; // initialize to junk value
 
-    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, *semaphore, 0u, &imageIndex));
+    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, *semaphore, VK_NULL_HANDLE, &imageIndex));
     TCU_CHECK(imageIndex == 0);
 
     // Transition to IMAGE_LAYOUT_SHARED_PRESENT_KHR
@@ -723,7 +723,7 @@ void SharedPresentableImageTestInstance::initSwapchainResources(void)
         vk::VK_STRUCTURE_TYPE_SUBMIT_INFO, DE_NULL, 1, &*semaphore, waitDstStages, 1, &*commandBuffer, 0, DE_NULL,
     };
 
-    VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submitInfo, (vk::VkFence)0));
+    VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submitInfo, VK_NULL_HANDLE));
     VK_CHECK(m_vkd.queueWaitIdle(m_queue));
 }
 
@@ -737,7 +737,7 @@ void SharedPresentableImageTestInstance::deinitSwapchainResources(void)
 
     m_framebuffer        = vk::Move<vk::VkFramebuffer>();
     m_swapchainImageView = vk::Move<vk::VkImageView>();
-    m_swapchainImage     = (vk::VkImage)0;
+    m_swapchainImage     = VK_NULL_HANDLE;
 
     m_swapchain  = vk::Move<vk::VkSwapchainKHR>();
     m_renderPass = vk::Move<vk::VkRenderPass>();
@@ -759,7 +759,7 @@ void SharedPresentableImageTestInstance::render(void)
 
         m_vkd.freeCommandBuffers(*m_device, *m_commandPool, 1u,
                                  &m_commandBuffers[m_frameNdx % m_commandBuffers.size()]);
-        m_commandBuffers[m_frameNdx % m_commandBuffers.size()] = (vk::VkCommandBuffer)0;
+        m_commandBuffers[m_frameNdx % m_commandBuffers.size()] = VK_NULL_HANDLE;
     }
 
     uint32_t imageIndex                          = 0; // There is only one image.

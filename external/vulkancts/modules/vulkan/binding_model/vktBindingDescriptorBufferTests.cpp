@@ -152,7 +152,7 @@ uint32_t getShaderGroupBaseAlignment(const InstanceInterface &vki, const VkPhysi
 
 VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 {
-    VkBuffer result = (buffer.get() == DE_NULL) ? DE_NULL : buffer->get();
+    VkBuffer result = (buffer.get() == DE_NULL) ? VK_NULL_HANDLE : buffer->get();
 
     return result;
 }
@@ -160,7 +160,7 @@ VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 VkStridedDeviceAddressRegionKHR makeStridedDeviceAddressRegion(const DeviceInterface &vkd, const VkDevice device,
                                                                VkBuffer buffer, VkDeviceSize size)
 {
-    const VkDeviceSize sizeFixed = ((buffer == DE_NULL) ? 0ull : size);
+    const VkDeviceSize sizeFixed = ((buffer == VK_NULL_HANDLE) ? 0ull : size);
 
     return makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, buffer, 0), sizeFixed, sizeFixed);
 }
@@ -528,7 +528,7 @@ public:
         for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(perBindingResourceIndex); ++i)
         {
             perBindingResourceIndex[i] = INDEX_INVALID;
-            immutableSamplers[i]       = 0;
+            immutableSamplers[i]       = VK_NULL_HANDLE;
         }
     }
 };
@@ -547,7 +547,7 @@ std::vector<VkDescriptorSetLayoutBinding> getDescriptorSetLayoutBindings(const s
         dslBinding.descriptorCount = binding.descriptorCount;
         dslBinding.stageFlags      = binding.stageFlags;
 
-        if (binding.immutableSamplers[0] != DE_NULL)
+        if (binding.immutableSamplers[0] != VK_NULL_HANDLE)
         {
             dslBinding.pImmutableSamplers = binding.immutableSamplers;
         }
@@ -3187,7 +3187,7 @@ void DescriptorBufferTestInstance::createDescriptorSetLayouts()
 
                 if (binding.isMutableType)
                 {
-                    DE_ASSERT(binding.immutableSamplers[0] == DE_NULL);
+                    DE_ASSERT(binding.immutableSamplers[0] == VK_NULL_HANDLE);
                     mutableDescTypeLists[bindingIndex].descriptorTypeCount = u32(mutableDescTypeDescriptors.size());
                     mutableDescTypeLists[bindingIndex].pDescriptorTypes    = mutableDescTypeDescriptors.data();
                 }
@@ -3490,11 +3490,11 @@ void DescriptorBufferTestInstance::bindDescriptorBuffers(VkCommandBuffer cmdBuf,
             info.pNext = &bufferBindingPushDescriptorBufferHandleEXT;
 
             // Make sure there is only one such buffer
-            DE_ASSERT(bufferBindingPushDescriptorBufferHandleEXT.buffer == DE_NULL);
+            DE_ASSERT(bufferBindingPushDescriptorBufferHandleEXT.buffer == VK_NULL_HANDLE);
 
             bufferBindingPushDescriptorBufferHandleEXT.buffer = *buffer->buffer;
 
-            DE_ASSERT(bufferBindingPushDescriptorBufferHandleEXT.buffer != DE_NULL);
+            DE_ASSERT(bufferBindingPushDescriptorBufferHandleEXT.buffer != VK_NULL_HANDLE);
         }
 
         bufferBindingInfos.emplace_back(info);
@@ -3916,12 +3916,12 @@ void DescriptorBufferTestInstance::createGraphicsPipeline()
         createInfo.layout                       = *m_pipelineLayout;
         createInfo.renderPass                   = *m_renderPass;
         createInfo.subpass                      = 0;
-        createInfo.basePipelineHandle           = DE_NULL;
+        createInfo.basePipelineHandle           = VK_NULL_HANDLE;
         createInfo.basePipelineIndex            = -1;
         createInfo.flags                        = VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
 
         m_pipeline = vk::createGraphicsPipeline(*m_deviceInterface, *m_device,
-                                                DE_NULL, // pipeline cache
+                                                VK_NULL_HANDLE, // pipeline cache
                                                 &createInfo);
     }
 }
@@ -4175,7 +4175,8 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
         VkDescriptorGetInfoEXT descGetInfo     = initVulkanStructure();
         VkDescriptorAddressInfoEXT addressInfo = initVulkanStructure();
         VkDescriptorImageInfo imageInfo{
-            0, 0, VK_IMAGE_LAYOUT_UNDEFINED}; // must be explicitly initialized due to CTS handles inside
+            VK_NULL_HANDLE, VK_NULL_HANDLE,
+            VK_IMAGE_LAYOUT_UNDEFINED}; // must be explicitly initialized due to CTS handles inside
 
         descGetInfo.type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
 
@@ -4342,7 +4343,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                 if (binding.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                 {
                     if (isNullDescriptor)
-                        imageInfo.imageView = DE_NULL;
+                        imageInfo.imageView = VK_NULL_HANDLE;
 
                     descGetInfo.data.pCombinedImageSampler = &imageInfo;
                 }
@@ -4513,7 +4514,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                     const VkAccelerationStructureKHR *accelerationStructure  = accelerationStructures[ndx];
                     std::vector<uint8_t> &captureReplayData                  = *captureReplayDatas[ndx];
 
-                    DE_ASSERT(accelerationStructure != DE_NULL && *accelerationStructure != DE_NULL);
+                    DE_ASSERT(accelerationStructure != DE_NULL && *accelerationStructure != VK_NULL_HANDLE);
                     DE_ASSERT(captureReplayData.empty());
 
                     info.accelerationStructure = *accelerationStructure;
@@ -4670,7 +4671,7 @@ void DescriptorBufferTestInstance::pushDescriptorSet(VkCommandBuffer cmdBuf, VkP
         const auto &binding = dsl.bindings[bindingIndex];
 
         VkWriteDescriptorSet write = initVulkanStructure();
-        write.dstSet               = DE_NULL; // ignored with push descriptors
+        write.dstSet               = VK_NULL_HANDLE; // ignored with push descriptors
         write.dstBinding           = bindingIndex;
         write.dstArrayElement      = 0;
         write.descriptorCount      = binding.descriptorCount;
@@ -4735,7 +4736,7 @@ void DescriptorBufferTestInstance::pushDescriptorSet(VkCommandBuffer cmdBuf, VkP
                 const ResourceHolder &resources = **m_resources[binding.perBindingResourceIndex[arrayIndex]];
                 const VkAccelerationStructureKHR *accelerationStructurePtr = resources.rtTlas.get()->getPtr();
 
-                DE_ASSERT(accelerationStructurePtr != DE_NULL && *accelerationStructurePtr != DE_NULL);
+                DE_ASSERT(accelerationStructurePtr != DE_NULL && *accelerationStructurePtr != VK_NULL_HANDLE);
 
                 descriptorData[bindingIndex].accelerationStructures[arrayIndex] = *accelerationStructurePtr;
 

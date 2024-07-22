@@ -1703,8 +1703,9 @@ tcu::TestStatus BarrierAcrossSecondaryInstance::iterate(void)
     const auto meshModule = createShaderModule(vkd, device, binaries.get("mesh"));
 
     const auto computePipeline = makeComputePipeline(vkd, device, pipelineLayout.get(), compModule.get());
-    const auto meshPipeline    = makeGraphicsPipeline(vkd, device, pipelineLayout.get(), taskModule.get(),
-                                                      meshModule.get(), DE_NULL, renderPass.get(), viewports, scissors);
+    const auto meshPipeline =
+        makeGraphicsPipeline(vkd, device, pipelineLayout.get(), taskModule.get(), meshModule.get(), VK_NULL_HANDLE,
+                             renderPass.get(), viewports, scissors);
 
     // Command pool and command buffers.
     const auto cmdPool          = makeCommandPool(vkd, device, queueIndex);

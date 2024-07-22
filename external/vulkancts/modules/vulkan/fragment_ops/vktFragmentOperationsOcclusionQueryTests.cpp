@@ -415,7 +415,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
         makeRenderPass(vk, device, colorFormat, (depthTestsEnabled || stencilTestsEnabled), testFormat));
     const Unique<VkFramebuffer> framebuffer(makeFramebuffer(
         vk, device, *renderPass, numUsedAttachmentImages, attachmentImages.data(), m_renderSize.x(), m_renderSize.y()));
-    const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, DE_NULL));
+    const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, VK_NULL_HANDLE));
     const Unique<VkPipeline> pipeline(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule,
                                                            *fragmentModule, m_renderSize, m_scissorTestEnabled,
                                                            depthTestsEnabled, stencilTestsEnabled, false));

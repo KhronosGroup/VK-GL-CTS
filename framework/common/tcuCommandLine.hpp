@@ -235,6 +235,9 @@ public:
     //! Enable development-time test case validation checks
     bool isValidationEnabled(void) const;
 
+    //! Enable SPIRV validation checks (--deqp-spirv-validation)
+    bool isSpirvValidationEnabled(void) const;
+
     //! Print validation errors to standard error or keep them in the log only.
     bool printValidationErrors(void) const;
 

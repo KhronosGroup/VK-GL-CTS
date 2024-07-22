@@ -2369,7 +2369,7 @@ void ConversionDatabase::initializeDatabase()
     if (entries.empty())
         TCU_FAIL("Out of memory while pre-allocating space for conversion database entries");
 
-    deMemset(&entries[0], DE_NULL, N_START_CONVERSION_DATABASE_ENTRIES * sizeof(ConversionDatabaseEntry));
+    deMemset(&entries[0], 0, N_START_CONVERSION_DATABASE_ENTRIES * sizeof(ConversionDatabaseEntry));
 
     // Add all predefined entries that the test implementation is aware of
     configureConversionDatabase();

@@ -299,7 +299,7 @@ ConstDedicatedInfo makeDedicatedAllocationInfo(VkImage image)
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType        sType
         DE_NULL,                                          // const void*            pNext
         image,                                            // VkImage                image
-        DE_NULL                                           // VkBuffer                buffer
+        VK_NULL_HANDLE                                    // VkBuffer                buffer
     };
     return dedicatedAllocationInfo;
 }

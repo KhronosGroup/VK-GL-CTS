@@ -1225,13 +1225,13 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
     {
         const VkDescriptorSetLayout setLayouts[]              = {*emptyDescriptorSetLayout, m_extraResourcesLayout};
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
-            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
-            (VkPipelineLayoutCreateFlags)0,                // VkPipelineLayoutCreateFlags flags;
-            (m_extraResourcesLayout != 0 ? 2u : 0u),       // uint32_t descriptorSetCount;
-            setLayouts,                                    // const VkDescriptorSetLayout* pSetLayouts;
-            0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,        // VkStructureType sType;
+            DE_NULL,                                              // const void* pNext;
+            (VkPipelineLayoutCreateFlags)0,                       // VkPipelineLayoutCreateFlags flags;
+            (m_extraResourcesLayout != VK_NULL_HANDLE ? 2u : 0u), // uint32_t descriptorSetCount;
+            setLayouts,                                           // const VkDescriptorSetLayout* pSetLayouts;
+            0u,                                                   // uint32_t pushConstantRangeCount;
+            DE_NULL                                               // const VkPushConstantRange* pPushConstantRanges;
         };
 
         pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -1320,15 +1320,15 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
 
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
 
-        if (m_extraResourcesLayout != 0)
+        if (m_extraResourcesLayout != VK_NULL_HANDLE)
         {
-            DE_ASSERT(extraResources != 0);
+            DE_ASSERT(extraResources != VK_NULL_HANDLE);
             const VkDescriptorSet descriptorSets[] = {*emptyDescriptorSet, extraResources};
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u,
                                      DE_LENGTH_OF_ARRAY(descriptorSets), descriptorSets, 0u, DE_NULL);
         }
         else
-            DE_ASSERT(extraResources == 0);
+            DE_ASSERT(extraResources == VK_NULL_HANDLE);
 
         const uint32_t numberOfVertexAttributes = (uint32_t)m_vertexBuffers.size();
 
@@ -2815,9 +2815,9 @@ void ComputeShaderExecutor::execute(int numValues, const void *const *inputs, vo
     Move<VkDescriptorPool> descriptorPool;
     Move<VkDescriptorSetLayout> descriptorSetLayout;
     Move<VkDescriptorSet> descriptorSet;
-    const uint32_t numDescriptorSets = (m_extraResourcesLayout != 0) ? 2u : 1u;
+    const uint32_t numDescriptorSets = (m_extraResourcesLayout != VK_NULL_HANDLE) ? 2u : 1u;
 
-    DE_ASSERT((m_extraResourcesLayout != 0) == (extraResources != 0));
+    DE_ASSERT((m_extraResourcesLayout != VK_NULL_HANDLE) == (extraResources != VK_NULL_HANDLE));
 
     initBuffers(numValues);
 
@@ -2885,7 +2885,7 @@ void ComputeShaderExecutor::execute(int numValues, const void *const *inputs, vo
             (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags flags;
             *shaderStageParams,                             // VkPipelineShaderStageCreateInfo cs;
             *pipelineLayout,                                // VkPipelineLayout layout;
-            0u,                                             // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0u,                                             // int32_t basePipelineIndex;
         };
 
@@ -3109,7 +3109,7 @@ void MeshTaskShaderExecutor::execute(int numValues, const void *const *inputs, v
     const auto pipelineStage =
         (useTask ? VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT : VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT);
 
-    DE_ASSERT((m_extraResourcesLayout != DE_NULL) == (extraResources != DE_NULL));
+    DE_ASSERT((m_extraResourcesLayout != VK_NULL_HANDLE) == (extraResources != VK_NULL_HANDLE));
 
     // Create input and output buffers.
     initBuffers(numValues);
@@ -3141,7 +3141,7 @@ void MeshTaskShaderExecutor::execute(int numValues, const void *const *inputs, v
     // Create pipeline layout
     std::vector<VkDescriptorSetLayout> setLayouts;
     setLayouts.push_back(descriptorSetLayout.get());
-    if (m_extraResourcesLayout != DE_NULL)
+    if (m_extraResourcesLayout != VK_NULL_HANDLE)
         setLayouts.push_back(m_extraResourcesLayout);
 
     const auto pipelineLayout =
@@ -3164,7 +3164,7 @@ void MeshTaskShaderExecutor::execute(int numValues, const void *const *inputs, v
     // Create pipeline.
     const auto meshPipeline =
         makeGraphicsPipeline(vk, vkDevice, pipelineLayout.get(), taskShaderModule.get(), meshShaderModule.get(),
-                             DE_NULL, renderPass.get(), viewports, scissors);
+                             VK_NULL_HANDLE, renderPass.get(), viewports, scissors);
 
     const int maxValuesPerInvocation = m_context.getMeshShaderPropertiesEXT().maxMeshWorkGroupSize[0];
     const uint32_t inputStride       = getInputStride();
@@ -3202,7 +3202,7 @@ void MeshTaskShaderExecutor::execute(int numValues, const void *const *inputs, v
 
         std::vector<VkDescriptorSet> descriptorSets;
         descriptorSets.push_back(descriptorSet.get());
-        if (extraResources != DE_NULL)
+        if (extraResources != VK_NULL_HANDLE)
             descriptorSets.push_back(extraResources);
 
         const auto bufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
@@ -3307,9 +3307,9 @@ void TessellationExecutor::renderTess(uint32_t numValues, uint32_t vertexCount, 
     Move<VkDescriptorPool> descriptorPool;
     Move<VkDescriptorSetLayout> descriptorSetLayout;
     Move<VkDescriptorSet> descriptorSet;
-    const uint32_t numDescriptorSets = (m_extraResourcesLayout != 0) ? 2u : 1u;
+    const uint32_t numDescriptorSets = (m_extraResourcesLayout != VK_NULL_HANDLE) ? 2u : 1u;
 
-    DE_ASSERT((m_extraResourcesLayout != 0) == (extraResources != 0));
+    DE_ASSERT((m_extraResourcesLayout != VK_NULL_HANDLE) == (extraResources != VK_NULL_HANDLE));
 
     // Create color image
     {
@@ -3464,9 +3464,9 @@ void TessellationExecutor::renderTess(uint32_t numValues, uint32_t vertexCount, 
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputDescriptorBufferInfo);
 
             VkDescriptorBufferInfo inputDescriptorBufferInfo = {
-                0,            // VkBuffer buffer;
-                0u,           // VkDeviceSize offset;
-                VK_WHOLE_SIZE // VkDeviceSize range;
+                VK_NULL_HANDLE, // VkBuffer buffer;
+                0u,             // VkDeviceSize offset;
+                VK_WHOLE_SIZE   // VkDeviceSize range;
             };
 
             if (inputBufferSize > 0)

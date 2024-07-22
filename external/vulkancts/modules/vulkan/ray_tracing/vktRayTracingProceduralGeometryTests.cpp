@@ -221,7 +221,7 @@ tcu::TestStatus RayTracingProceduralGeometryTestBase::iterate(void)
         getBufferDeviceAddress(vkd, device, m_chitShaderBT->get(), 0), sgHandleSize, sgHandleSize);
     const VkStridedDeviceAddressRegionKHR missSBTR = makeStridedDeviceAddressRegionKHR(
         getBufferDeviceAddress(vkd, device, m_missShaderBT->get(), 0), sgHandleSize, sgHandleSize);
-    const VkStridedDeviceAddressRegionKHR callableSBTR = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    const VkStridedDeviceAddressRegionKHR callableSBTR = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     m_cmdPool   = createCommandPool(vkd, device, 0, queueFamilyIndex);
     m_cmdBuffer = allocateCommandBuffer(vkd, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);

@@ -656,7 +656,7 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance(Context &context, con
         m_renderPass = Move<VkRenderPass>();
 
     // Create framebuffer if renderpass handle is valid
-    if (*m_renderPass != DE_NULL)
+    if (*m_renderPass != VK_NULL_HANDLE)
     {
         const VkImageView imageViews[] = {*m_colorAttachmentView, *m_unusedAttachmentView, *m_inputAttachmentView};
 
@@ -803,7 +803,7 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance(Context &context, con
         deMemset(&colorBlendAttachmentState, 0x00, sizeof(VkPipelineColorBlendAttachmentState));
         colorBlendAttachmentState.colorWriteMask = 0xF;
 
-        uint32_t colorAttachmentsCount = (*m_renderPass == DE_NULL) ? 3u : 1u;
+        uint32_t colorAttachmentsCount = (*m_renderPass == VK_NULL_HANDLE) ? 3u : 1u;
         const std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(colorAttachmentsCount,
                                                                                           colorBlendAttachmentState);
         VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
@@ -842,7 +842,7 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance(Context &context, con
                                                           VK_FORMAT_UNDEFINED,
                                                           VK_FORMAT_UNDEFINED};
 
-        if (*m_renderPass == DE_NULL)
+        if (*m_renderPass == VK_NULL_HANDLE)
         {
             renderingCreateInfoWrapper.ptr               = &renderingCreateInfo;
             renderingAttachmentLocationInfoWrapper.ptr   = &renderingAttachmentLocationInfo;
@@ -858,7 +858,7 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance(Context &context, con
                                               m_vertexShaderModule, 0u, ShaderWrapper(), ShaderWrapper(),
                                               ShaderWrapper(), DE_NULL, DE_NULL, renderingCreateInfoWrapper)
             .setupFragmentShaderState(m_pipelineLayoutSubpass0, *m_renderPass, 0u, m_fragmentShaderModuleSubpass0)
-            .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo, 0, 0, {},
+            .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo, 0, VK_NULL_HANDLE, {},
                                       renderingAttachmentLocationInfoWrapper)
             .setMonolithicPipelineLayout(m_pipelineLayoutSubpass0)
             .buildPipeline();
@@ -875,8 +875,8 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance(Context &context, con
                                               m_vertexShaderModule, 0u, ShaderWrapper(), ShaderWrapper(),
                                               ShaderWrapper(), DE_NULL, DE_NULL, renderingCreateInfoWrapper)
             .setupFragmentShaderState(m_pipelineLayoutSubpass1, *m_renderPass, 1u, m_fragmentShaderModuleSubpass1, 0, 0,
-                                      0, 0, {}, renderingInputAttachmentIndexInfoWrapper)
-            .setupFragmentOutputState(*m_renderPass, 1u, &colorBlendStateCreateInfo, 0, 0, {},
+                                      0, VK_NULL_HANDLE, {}, renderingInputAttachmentIndexInfoWrapper)
+            .setupFragmentOutputState(*m_renderPass, 1u, &colorBlendStateCreateInfo, 0, VK_NULL_HANDLE, {},
                                       renderingAttachmentLocationInfoWrapper)
             .setMonolithicPipelineLayout(m_pipelineLayoutSubpass1)
             .buildPipeline();

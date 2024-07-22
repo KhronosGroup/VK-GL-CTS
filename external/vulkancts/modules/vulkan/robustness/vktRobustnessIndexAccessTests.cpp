@@ -226,12 +226,12 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     Move<VkShaderModule> fragShaderModule =
         createShaderModule(vk, *m_device, m_context.getBinaryCollection().get("frag"), 0);
     Move<VkRenderPass> renderPass         = makeRenderPass(vk, *m_device, colorFormat);
-    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, *m_device, DE_NULL);
+    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, *m_device, VK_NULL_HANDLE);
     Move<VkFramebuffer> framebuffer =
         makeFramebuffer(vk, *m_device, *renderPass, *colorImageView, renderSize.x(), renderSize.y());
-    Move<VkPipeline> graphicsPipeline =
-        makeGraphicsPipeline(vk, *m_device, *pipelineLayout, *vertShaderModule, DE_NULL, DE_NULL, DE_NULL,
-                             *fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+    Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
+        vk, *m_device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        *fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
 
     Move<VkCommandPool> cmdPool =
         createCommandPool(vk, *m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
@@ -792,9 +792,9 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device);
     Move<VkFramebuffer> framebuffer =
         makeFramebuffer(vk, device, *renderPass, *colorImageView, renderSize.x(), renderSize.y());
-    Move<VkPipeline> graphicsPipeline =
-        makeGraphicsPipeline(vk, device, *pipelineLayout, *vertShaderModule, DE_NULL, DE_NULL, DE_NULL,
-                             *fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
+        vk, device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        *fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
     Move<VkCommandPool> cmdPool =
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIdx);

@@ -83,6 +83,7 @@ enum RangeSizeCase
     SIZE_CASE_36,
     SIZE_CASE_48,
     SIZE_CASE_128,
+    SIZE_CASE_256,
     SIZE_CASE_UNSUPPORTED
 };
 
@@ -787,7 +788,7 @@ void PushConstantGraphicsDisjointInstance::updatePushConstants(VkCommandBuffer c
                                                                VkPipelineLayout pipelineLayout)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
-    std::vector<tcu::Vec4> color(8, tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    std::vector<tcu::Vec4> color(16, tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
     std::vector<tcu::Vec4> allOnes(8, tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
     switch (m_indexType)
@@ -1137,6 +1138,18 @@ void PushConstantGraphicsTest::checkSupport(Context &context) const
 
     if (m_pushConstant2)
         context.requireDeviceFunctionality("VK_KHR_maintenance6");
+
+    const VkPhysicalDeviceLimits &limits = context.getDeviceProperties().limits;
+
+    for (size_t rangeNdx = 0; rangeNdx < m_rangeCount; rangeNdx++)
+    {
+        if (m_pushConstantRange[rangeNdx].range.size > limits.maxPushConstantsSize)
+        {
+            TCU_THROW(NotSupportedError, "PushConstant size " +
+                                             std::to_string(m_pushConstantRange[rangeNdx].range.size) +
+                                             " exceeds device limit " + std::to_string(limits.maxPushConstantsSize));
+        }
+    }
 }
 
 RangeSizeCase PushConstantGraphicsTest::getRangeSizeCase(uint32_t rangeSize) const
@@ -1159,6 +1172,8 @@ RangeSizeCase PushConstantGraphicsTest::getRangeSizeCase(uint32_t rangeSize) con
         return SIZE_CASE_48;
     case 128:
         return SIZE_CASE_128;
+    case 256:
+        return SIZE_CASE_256;
     default:
         DE_FATAL("Range size unsupported yet");
         return SIZE_CASE_UNSUPPORTED;
@@ -1244,6 +1259,10 @@ void PushConstantGraphicsDisjointTest::initPrograms(SourceCollections &sourceCol
                         vertexSrc << "vec4 color[8];\n"
                                   << "} matInst;\n";
                         break;
+                    case SIZE_CASE_256:
+                        vertexSrc << "vec4 color[16];\n"
+                                  << "} matInst;\n";
+                        break;
                     default:
                         DE_FATAL("Not implemented yet");
                         break;
@@ -1300,6 +1319,15 @@ void PushConstantGraphicsDisjointTest::initPrograms(SourceCollections &sourceCol
                                   << "  color = color + matInst.color[i];\n"
                                   << "}\n"
                                   << "vtxColor = color * 0.125;\n"
+                                  << "}\n";
+                        break;
+                    case SIZE_CASE_256:
+                        vertexSrc << "vec4 color = vec4(0.0, 0, 0, 0.0);\n"
+                                  << "for (int i = 0; i < 16; i++)\n"
+                                  << "{\n"
+                                  << "  color = color + matInst.color[i];\n"
+                                  << "}\n"
+                                  << "vtxColor = color * 0.0625;\n"
                                   << "}\n";
                         break;
                     default:
@@ -2013,11 +2041,11 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance(Context &contex
             0u,                                             // VkPipelineCreateFlags                       flags;
             stageCreateInfo,                                // VkPipelineShaderStageCreateInfo             stage;
             *m_pipelineLayout,                              // VkPipelineLayout                            layout;
-            (VkPipeline)0, // VkPipeline                                  basePipelineHandle;
-            0u,            // int32_t                                     basePipelineIndex;
+            VK_NULL_HANDLE, // VkPipeline                                  basePipelineHandle;
+            0u,             // int32_t                                     basePipelineIndex;
         };
 
-        m_computePipelines = createComputePipeline(vk, vkDevice, (vk::VkPipelineCache)0u, &createInfo);
+        m_computePipelines = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &createInfo);
     }
 
     // Create command pool
@@ -2542,12 +2570,11 @@ void PushConstantLifetimeTestInstance::init(void)
                 0u,                                             // VkPipelineCreateFlags flags;
                 stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
                 *m_pipelineLayout[0],                           // VkPipelineLayout layout;
-                (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+                VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
                 0u,                                             // int32_t basePipelineIndex;
             };
 
-            m_computePipeline[0] =
-                createComputePipeline(vk, vkDevice, (vk::VkPipelineCache)0u, &computePipelineLayoutParams);
+            m_computePipeline[0] = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &computePipelineLayoutParams);
         }
         if (m_pushConstantRange[1].range.shaderStage & VK_SHADER_STAGE_COMPUTE_BIT)
         {
@@ -2557,12 +2584,11 @@ void PushConstantLifetimeTestInstance::init(void)
                 0u,                                             // VkPipelineCreateFlags flags;
                 stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
                 *m_pipelineLayout[1],                           // VkPipelineLayout layout;
-                (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+                VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
                 0u,                                             // int32_t basePipelineIndex;
             };
 
-            m_computePipeline[1] =
-                createComputePipeline(vk, vkDevice, (vk::VkPipelineCache)0u, &computePipelineLayoutParams);
+            m_computePipeline[1] = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &computePipelineLayoutParams);
         }
     }
 }
@@ -3195,8 +3221,10 @@ tcu::TestCaseGroup *createPushConstantTests(tcu::TestContext &testCtx,
         {"range_size_4", 1u, {{{VK_SHADER_STAGE_VERTEX_BIT, 0, 4}, {0, 4}}}, false, INDEX_TYPE_CONST_LITERAL},
         // test range size is 16 bytes, and together with a normal uniform
         {"range_size_16", 1u, {{{VK_SHADER_STAGE_VERTEX_BIT, 0, 16}, {0, 16}}}, false, INDEX_TYPE_CONST_LITERAL},
-        // test range size is 128 bytes(maximum valid size)
+        // test range size is 128 bytes(maximum valid size in Vulkan 1.3)
         {"range_size_128", 1u, {{{VK_SHADER_STAGE_VERTEX_BIT, 0, 128}, {0, 128}}}, false, INDEX_TYPE_CONST_LITERAL},
+        // test range size is 256 bytes(maximum valid size in Vulkan 1.4)
+        {"range_size_256", 1u, {{{VK_SHADER_STAGE_VERTEX_BIT, 0, 256}, {0, 256}}}, false, INDEX_TYPE_CONST_LITERAL},
         // test range count, including all valid shader stage in graphics pipeline, and also multiple shader stages share one single range
         {"count_2_shaders_vert_frag",
          2u,

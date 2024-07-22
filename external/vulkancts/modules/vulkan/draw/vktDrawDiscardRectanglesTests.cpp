@@ -338,7 +338,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
                                                              VK_FORMAT_UNDEFINED};
 
     // when pipeline is created without render pass we are using dynamic rendering
-    if (renderPass == DE_NULL)
+    if (renderPass == VK_NULL_HANDLE)
         graphicsPipelineInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 

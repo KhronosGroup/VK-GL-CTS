@@ -267,7 +267,7 @@ void NestedCommandBuffersTestInstance::beginRenderPass(void)
             *m_imageView,                                        // VkImageView imageView;
             vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
             vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-            DE_NULL,                                             // VkImageView resolveImageView;
+            VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
             vk::VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
             vk::VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
             vk::VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -488,12 +488,14 @@ tcu::TestStatus NestedCommandBuffersTestInstance::iterate(void)
         vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 1u);
     }
     vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*secondaries[0]);
+    vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
     if (!m_testParams.beginInline)
     {
         vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 1u);
     }
     vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 3u);
     vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*secondaries[1]);
+    vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
     vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 3u);
 
     if (!m_testParams.endInline)
@@ -503,6 +505,7 @@ tcu::TestStatus NestedCommandBuffersTestInstance::iterate(void)
     vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*secondaries[2]);
     if (m_testParams.endInline)
     {
+        vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
         vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 5u);
     }
 

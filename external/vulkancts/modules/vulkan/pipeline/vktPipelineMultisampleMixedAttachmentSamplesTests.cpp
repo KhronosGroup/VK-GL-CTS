@@ -1104,7 +1104,7 @@ void dispatchImageCheck(Context &context, const TestParams &params, WorkingData 
         const VkDescriptorImageInfo depthImageInfo = makeDescriptorImageInfo(
             VK_NULL_HANDLE, *subpassData.depthOnlyImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         const VkDescriptorImageInfo stencilImageInfo = makeDescriptorImageInfo(
-            DE_NULL, *subpassData.stencilOnlyImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            VK_NULL_HANDLE, *subpassData.stencilOnlyImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         DescriptorSetUpdateBuilder builder;
 
@@ -1703,6 +1703,9 @@ void checkRequirements(Context &context, TestParams params)
                             false /* require standard sample locations */);
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           params.pipelineConstructionType);
+
+    if (params.numColorSamples != VK_SAMPLE_COUNT_1_BIT)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 //! Verify the values of shader builtins

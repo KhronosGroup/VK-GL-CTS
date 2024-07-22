@@ -242,7 +242,7 @@ tcu::TestStatus createDeviceTest(Context &context, TestParams testParams)
         log << tcu::TestLog::Message << "Creating device with application parameters: " << appParams
             << tcu::TestLog::EndMessage;
 
-        VkDevice device       = (VkDevice)0;
+        VkDevice device       = VK_NULL_HANDLE;
         const VkResult result = instanceDriver.createDevice(physicalDevice, &deviceCreateInfo, DE_NULL, &device);
 
         if (device)

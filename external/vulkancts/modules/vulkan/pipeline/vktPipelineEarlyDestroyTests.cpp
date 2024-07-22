@@ -212,7 +212,7 @@ tcu::TestStatus testEarlyDestroy(Context &context, const TestParams &params, boo
             .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, vk::ShaderWrapper())
             .setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo)
             .setMonolithicPipelineLayout(pipelineLayout)
-            .buildPipeline(params.usePipelineCache ? *pipelineCache : DE_NULL);
+            .buildPipeline(params.usePipelineCache ? *pipelineCache : VK_NULL_HANDLE);
 
         const uint32_t framebufferWidth  = 32;
         const uint32_t framebufferHeight = 32;

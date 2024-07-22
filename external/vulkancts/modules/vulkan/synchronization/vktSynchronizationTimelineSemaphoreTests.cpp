@@ -119,10 +119,10 @@ void deviceSignal(const DeviceInterface &vk, const VkDevice device, const VkQueu
             1u,                         // uint32_t                                signalSemaphoreInfoCount
             &signalSemaphoreSubmitInfo, // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
             false, true);
-        VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
+        VK_CHECK(synchronizationWrapper->queueSubmit(queue, VK_NULL_HANDLE));
     }
 
-    if (fence != DE_NULL)
+    if (fence != VK_NULL_HANDLE)
     {
         SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(type, vk, 1u);
         synchronizationWrapper->addSubmitInfo(0u,      // uint32_t                                waitSemaphoreInfoCount
@@ -307,7 +307,7 @@ public:
                 &signalSemaphoreSubmitInfo, // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
                 true, true);
 
-            VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
+            VK_CHECK(synchronizationWrapper->queueSubmit(queue, VK_NULL_HANDLE));
 
             timelineValues.push_back(newTimelineValue);
         }
@@ -423,7 +423,7 @@ public:
         {
             if (m_signalFromDevice)
             {
-                deviceSignal(vk, device, queue, semIdx == (semaphores.size() - 1) ? *fence : DE_NULL,
+                deviceSignal(vk, device, queue, semIdx == (semaphores.size() - 1) ? *fence : VK_NULL_HANDLE,
                              SynchronizationType::LEGACY, semaphores[semIdx], timelineValues[semIdx]);
             }
             else
@@ -601,13 +601,13 @@ tcu::TestStatus maxDifferenceValueCase(Context &context, SynchronizationType typ
         uint64_t fenceValue;
 
         for (uint32_t j = 1; j <= 10; j++)
-            deviceSignal(vk, device, queue, DE_NULL, type, *semaphore, ++timelineFrontValue);
+            deviceSignal(vk, device, queue, VK_NULL_HANDLE, type, *semaphore, ++timelineFrontValue);
 
         timelineFrontValue = timelineBackValue + maxTimelineValueDifference - 10;
         fenceValue         = timelineFrontValue;
         deviceSignal(vk, device, queue, *fence, type, *semaphore, fenceValue);
         for (uint32_t j = 1; j < 10; j++)
-            deviceSignal(vk, device, queue, DE_NULL, type, *semaphore, ++timelineFrontValue);
+            deviceSignal(vk, device, queue, VK_NULL_HANDLE, type, *semaphore, ++timelineFrontValue);
 
         uint64_t value;
         VK_CHECK(vk.getSemaphoreCounterValue(device, *semaphore, &value));
@@ -672,7 +672,7 @@ tcu::TestStatus initialValueCase(Context &context, SynchronizationType type)
             DE_NULL,                  // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
             true, false);
 
-        VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
+        VK_CHECK(synchronizationWrapper->queueSubmit(queue, VK_NULL_HANDLE));
 
         VK_CHECK(vk.deviceWaitIdle(device));
     }
@@ -1054,7 +1054,7 @@ public:
             }
         }
 
-        VK_CHECK(synchronizationWrapper->queueSubmit(queue, DE_NULL));
+        VK_CHECK(synchronizationWrapper->queueSubmit(queue, VK_NULL_HANDLE));
 
         VK_CHECK(vk.deviceWaitIdle(device));
 
@@ -1659,7 +1659,7 @@ public:
 
             endCommandBuffer(vk, cmdBuffer);
 
-            VK_CHECK(synchronizationWrapper->queueSubmit(m_iterations[iterIdx]->queue, DE_NULL));
+            VK_CHECK(synchronizationWrapper->queueSubmit(m_iterations[iterIdx]->queue, VK_NULL_HANDLE));
         }
 
         // Submit the last read operation in order.
@@ -1684,7 +1684,7 @@ public:
             m_iterations[iterIdx]->op->recordCommands(cmdBuffer);
             endCommandBuffer(vk, cmdBuffer);
 
-            VK_CHECK(synchronizationWrapper->queueSubmit(m_iterations[iterIdx]->queue, DE_NULL));
+            VK_CHECK(synchronizationWrapper->queueSubmit(m_iterations[iterIdx]->queue, VK_NULL_HANDLE));
         }
 
         {
@@ -2126,7 +2126,7 @@ public:
             &signalSemaphoreSubmitInfo, // const VkSemaphoreSubmitInfoKHR*        pSignalSemaphoreInfos
             true, true);
 
-        VK_CHECK(synchronizationWrapper->queueSubmit(iter.queue, DE_NULL));
+        VK_CHECK(synchronizationWrapper->queueSubmit(iter.queue, VK_NULL_HANDLE));
     }
 
     tcu::TestStatus iterate(void)
@@ -2479,7 +2479,7 @@ SparseBindInstance::SparseBindInstance(Context &context, const SparseBindParams 
 void queueBindSparse(const vk::DeviceInterface &vkd, vk::VkQueue queue, uint32_t bindInfoCount,
                      const vk::VkBindSparseInfo *pBindInfo)
 {
-    VK_CHECK(vkd.queueBindSparse(queue, bindInfoCount, pBindInfo, DE_NULL));
+    VK_CHECK(vkd.queueBindSparse(queue, bindInfoCount, pBindInfo, VK_NULL_HANDLE));
 }
 
 #endif // CTS_USES_VULKANSC

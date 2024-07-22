@@ -1216,7 +1216,7 @@ struct GraphicsPipeline
             *res.layout.object,                                // VkPipelineLayout layout;
             *res.renderPass.object,                            // VkRenderPass renderPass;
             0u,                                                // uint32_t subpass;
-            (VkPipeline)0,                                     // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                    // VkPipeline basePipelineHandle;
             0,                                                 // int32_t basePipelineIndex;
         };
 
@@ -1282,7 +1282,7 @@ struct ComputePipeline
                 DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
             },
             *res.layout.object, // VkPipelineLayout layout;
-            (VkPipeline)0,      // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,     // VkPipeline basePipelineHandle;
             0u,                 // int32_t basePipelineIndex;
         };
 

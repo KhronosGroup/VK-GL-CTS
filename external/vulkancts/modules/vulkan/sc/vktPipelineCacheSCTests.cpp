@@ -329,7 +329,7 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
             deviceCreateInfo.enabledLayerCount   = static_cast<uint32_t>(enabledLayers.size());
             deviceCreateInfo.ppEnabledLayerNames = (enabledLayers.empty() ? DE_NULL : enabledLayers.data());
         }
-        VkDevice object = 0;
+        VkDevice object = VK_NULL_HANDLE;
         VkResult result = instanceDriver.createDevice(physicalDevice, &deviceCreateInfo, DE_NULL, &object);
         switch (testParams.type)
         {

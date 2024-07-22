@@ -1704,7 +1704,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
             VkBufferDeviceAddressInfo info{
                 VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType  sType;
                 DE_NULL,                                      // const void*  pNext;
-                0,                                            // VkBuffer            buffer
+                VK_NULL_HANDLE,                               // VkBuffer            buffer
             };
             VkDeviceAddress *addrsInMemory = (VkDeviceAddress *)ptrs[4];
             for (uint32_t i = 0; i < 4; ++i)

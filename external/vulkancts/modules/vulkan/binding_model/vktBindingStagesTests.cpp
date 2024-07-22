@@ -364,8 +364,9 @@ tcu::TestStatus StagesTestInstance::iterate(void)
         0u,      // uint32_t vertexAttributeDescriptionCount;
         DE_NULL, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
-    const auto pipeline        = vk::makeGraphicsPipeline(vk, device, *pipelineLayout, *vertexModule, DE_NULL, DE_NULL,
-                                                          DE_NULL, *fragmentModule, *renderPass, 0u, &vertexInputState);
+    const auto pipeline =
+        vk::makeGraphicsPipeline(vk, device, *pipelineLayout, *vertexModule, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                 VK_NULL_HANDLE, *fragmentModule, *renderPass, 0u, &vertexInputState);
     const auto computePipeline = vk::makeComputePipeline(vk, device, *pipelineLayout, *compModule);
 
     vk::VkDescriptorSet descriptorSets[] = {*readDescriptorSet, *writeDescriptorSet};

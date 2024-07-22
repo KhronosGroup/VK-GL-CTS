@@ -640,7 +640,7 @@ Move<VkFramebuffer> AttachmentRateInstance::buildFramebuffer(VkDevice device, co
     }
 
     // create array containing just attachment views
-    std::vector<VkImageView> attachments(attachmentInfo.size(), 0);
+    std::vector<VkImageView> attachments(attachmentInfo.size(), VK_NULL_HANDLE);
     for (uint32_t i = 0; i < (uint32_t)attachmentInfo.size(); ++i)
         attachments[i] = attachmentInfo[i].view;
 
@@ -886,11 +886,11 @@ Move<VkPipeline> AttachmentRateInstance::buildComputePipeline(VkDevice device, c
         0u,                                             // VkPipelineCreateFlags flags;
         stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout,                                 // VkPipelineLayout layout;
-        (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0u,                                             // int32_t basePipelineIndex;
     };
 
-    return createComputePipeline(vk, device, (vk::VkPipelineCache)0u, &createInfo);
+    return createComputePipeline(vk, device, VK_NULL_HANDLE, &createInfo);
 }
 
 VkDescriptorSetAllocateInfo AttachmentRateInstance::makeDescriptorSetAllocInfo(
@@ -972,7 +972,7 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer commandBuffer,
     DE_UNREF(srTileHeight);
 #endif // CTS_USES_VULKANSC
 
-    std::vector<VkImageView> attachments(attachmentInfo.size(), 0);
+    std::vector<VkImageView> attachments(attachmentInfo.size(), VK_NULL_HANDLE);
     VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo;
     void *pNext(DE_NULL);
 

@@ -546,7 +546,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
 
         m_descriptorSet = allocateDescriptorSet(vk, vkDevice, &descriptorSetAllocateInfo);
 
-        const VkSampler sampler = m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? DE_NULL : *m_sampler;
+        const VkSampler sampler = m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? VK_NULL_HANDLE : *m_sampler;
         std::vector<VkDescriptorImageInfo> descriptorImageInfo(m_imageCount);
         for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
         {
@@ -1141,7 +1141,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
 
         m_descriptorSet = allocateDescriptorSet(vk, vkDevice, &descriptorSetAllocateInfo);
 
-        const VkSampler sampler = m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? DE_NULL : *m_sampler;
+        const VkSampler sampler = m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? VK_NULL_HANDLE : *m_sampler;
         std::vector<VkDescriptorImageInfo> descriptorImageInfo(m_imageCount);
         for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
         {
