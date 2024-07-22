@@ -198,7 +198,7 @@ eglu::NativeWindow *NativeWindowFactory::createWindow(const eglu::WindowParams &
     Window *window = m_windowRegistry.tryAcquireWindow();
 
     if (!window)
-        throw ResourceError("Native window is not available", DE_NULL, __FILE__, __LINE__);
+        throw ResourceError("Native window is not available", nullptr, __FILE__, __LINE__);
 
     return new NativeWindow(window, params.width, params.height, format);
 }
@@ -223,7 +223,7 @@ class VulkanLibrary : public vk::Library
 {
 public:
     VulkanLibrary(const char *libraryPath)
-        : m_library(libraryPath != DE_NULL ? libraryPath : "libvulkan.so")
+        : m_library(libraryPath != nullptr ? libraryPath : "libvulkan.so")
         , m_driver(m_library)
     {
     }

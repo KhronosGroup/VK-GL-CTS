@@ -278,7 +278,7 @@ public:
 
 IterateResult NumLayersTest::build(FboBuilder &builder)
 {
-    TextureLayered *texCfg = DE_NULL;
+    TextureLayered *texCfg = nullptr;
     const GLenum target    = GL_COLOR_ATTACHMENT0;
 
     switch (m_params.textureKind)

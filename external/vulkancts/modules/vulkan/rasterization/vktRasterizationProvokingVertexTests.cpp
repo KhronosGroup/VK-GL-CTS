@@ -280,7 +280,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
 
         const VkImageCreateInfo createInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
-            DE_NULL,                             // pNext
+            nullptr,                             // pNext
             0u,                                  // flags
             VK_IMAGE_TYPE_2D,                    // imageType
             m_params.format,                     // format
@@ -296,7 +296,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
             VK_IMAGE_LAYOUT_UNDEFINED            // initialLayout
         };
 
-        image = createImage(vk, device, &createInfo, DE_NULL);
+        image = createImage(vk, device, &createInfo, nullptr);
 
         imageMemory = allocator.allocate(getImageMemoryRequirements(vk, device, *image), MemoryRequirement::Any);
         VK_CHECK(vk.bindImageMemory(device, *image, imageMemory->getMemory(), imageMemory->getOffset()));
@@ -313,7 +313,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
         };
 
         imageView =
-            makeImageView(vk, device, *image, VK_IMAGE_VIEW_TYPE_2D, m_params.format, subresourceRange, DE_NULL);
+            makeImageView(vk, device, *image, VK_IMAGE_VIEW_TYPE_2D, m_params.format, subresourceRange, nullptr);
     }
 
     // Result Buffer
@@ -337,7 +337,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
             createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
         const std::vector<VkViewport> viewports(1, makeViewport(tcu::UVec2(m_params.size)));
         const std::vector<VkRect2D> scissors(1, makeRect2D(tcu::UVec2(m_params.size)));
-        const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, 0, DE_NULL);
+        const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, 0, nullptr);
 
         const VkVertexInputBindingDescription vertexInputBindingDescription = {
             0,                          // binding
@@ -363,7 +363,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // sType
-            DE_NULL,                                                   // pNext
+            nullptr,                                                   // pNext
             0,                                                         // flags
             1u,                                                        // bindingCount
             &vertexInputBindingDescription,                            // pVertexBindingDescriptions
@@ -377,13 +377,13 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
 
         const VkPipelineRasterizationProvokingVertexStateCreateInfoEXT provokingVertexCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_PROVOKING_VERTEX_STATE_CREATE_INFO_EXT, // sType
-            DE_NULL,                                                                         // pNext
+            nullptr,                                                                         // pNext
             provokingVertexMode                                                              // provokingVertexMode
         };
 
         const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,   // sType
-            useProvokingVertexExt ? &provokingVertexCreateInfo : DE_NULL, // pNext
+            useProvokingVertexExt ? &provokingVertexCreateInfo : nullptr, // pNext
             0,                                                            // flags
             false,                                                        // depthClipEnable
             false,                                                        // rasterizerDiscardEnable
@@ -407,16 +407,16 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
                                            0u, // subpass
                                            0u, // patchControlPoints
                                            &vertexInputStateParams, &rasterizationStateCreateInfo,
-                                           DE_NULL,  // multisampleStateCreateInfo
-                                           DE_NULL,  // depthStencilStateCreateInfo
-                                           DE_NULL,  // colorBlendStateCreateInfo
-                                           DE_NULL); // dynamicStateCreateInfo
+                                           nullptr,  // multisampleStateCreateInfo
+                                           nullptr,  // depthStencilStateCreateInfo
+                                           nullptr,  // colorBlendStateCreateInfo
+                                           nullptr); // dynamicStateCreateInfo
 
         if (m_params.provokingVertexMode == PROVOKING_VERTEX_PER_PIPELINE)
         {
             const VkPipelineRasterizationProvokingVertexStateCreateInfoEXT altProvokingVertexCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_PROVOKING_VERTEX_STATE_CREATE_INFO_EXT, // sType
-                DE_NULL,                                                                         // pNext
+                nullptr,                                                                         // pNext
                 VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT                                         // provokingVertexMode
             };
 
@@ -445,10 +445,10 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
                                      0u, // subpass
                                      0u, // patchControlPoints
                                      &vertexInputStateParams, &altRasterizationStateCreateInfo,
-                                     DE_NULL,  // multisampleStateCreateInfo
-                                     DE_NULL,  // depthStencilStateCreateInfo
-                                     DE_NULL,  // colorBlendStateCreateInfo
-                                     DE_NULL); // dynamicStateCreateInfo
+                                     nullptr,  // multisampleStateCreateInfo
+                                     nullptr,  // depthStencilStateCreateInfo
+                                     nullptr,  // colorBlendStateCreateInfo
+                                     nullptr); // dynamicStateCreateInfo
         }
     }
 
@@ -853,7 +853,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
 
         const VkImageMemoryBarrier imageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // sType
-            DE_NULL,                                  // pNext
+            nullptr,                                  // pNext
             0,                                        // srcAccessMask
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // dstAccessMask
             VK_IMAGE_LAYOUT_UNDEFINED,                // oldLayout
@@ -879,7 +879,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
 
         beginCommandBuffer(vk, *commandBuffer, 0u);
         {
-            vk.cmdPipelineBarrier(*commandBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1,
+            vk.cmdPipelineBarrier(*commandBuffer, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
                                   &imageBarrier);
 
             beginRenderPass(vk, *commandBuffer, *renderPass, *framebuffer, renderArea, 1, &clearValue);
@@ -906,7 +906,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
                         vk.cmdEndTransformFeedbackEXT(*commandBuffer, 0, 1, &*counterBuffer, &counterBufferOffset);
                         vk.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
                                               VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT, 0u, 1u, &counterBarrier, 0u,
-                                              DE_NULL, 0u, DE_NULL);
+                                              nullptr, 0u, nullptr);
                     }
 
                     vk.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *altPipeline);
@@ -924,7 +924,7 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate(void)
 
             if (m_params.transformFeedback)
                 vk.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
-                                      VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &xfbMemoryBarrier, 0u, DE_NULL, 0u, DE_NULL);
+                                      VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &xfbMemoryBarrier, 0u, nullptr, 0u, nullptr);
 
             copyImageToBuffer(vk, *commandBuffer, *image, *resultBuffer,
                               tcu::IVec2(m_params.size.x(), m_params.size.y()));
@@ -1029,13 +1029,13 @@ Move<VkRenderPass> ProvokingVertexTestInstance::makeRenderPass(const DeviceInter
         (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags       flags
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint             pipelineBindPoint
         0u,                              // uint32_t                        inputAttachmentCount
-        DE_NULL,                         // const VkAttachmentReference*    pInputAttachments
+        nullptr,                         // const VkAttachmentReference*    pInputAttachments
         1u,                              // uint32_t                        colorAttachmentCount
         &colorAttachmentRef,             // const VkAttachmentReference*    pColorAttachments
-        DE_NULL,                         // const VkAttachmentReference*    pResolveAttachments
-        DE_NULL,                         // const VkAttachmentReference*    pDepthStencilAttachment
+        nullptr,                         // const VkAttachmentReference*    pResolveAttachments
+        nullptr,                         // const VkAttachmentReference*    pDepthStencilAttachment
         0u,                              // uint32_t                        preserveAttachmentCount
-        DE_NULL                          // const uint32_t*                 pPreserveAttachments
+        nullptr                          // const uint32_t*                 pPreserveAttachments
     };
 
     const VkSubpassDependency selfDependency = {
@@ -1053,17 +1053,17 @@ Move<VkRenderPass> ProvokingVertexTestInstance::makeRenderPass(const DeviceInter
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                   sType
-        DE_NULL,                                   // const void*                       pNext
+        nullptr,                                   // const void*                       pNext
         (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags           flags
         1u,                                        // uint32_t                          attachmentCount
         &colorAttachmentDescription,               // const VkAttachmentDescription*    pAttachments
         1u,                                        // uint32_t                          subpassCount
         &subpassDescription,                       // const VkSubpassDescription*       pSubpasses
         xfbPerPipeline ? 1u : 0u,                  // uint32_t                          dependencyCount
-        xfbPerPipeline ? &selfDependency : DE_NULL // const VkSubpassDependency*        pDependencies
+        xfbPerPipeline ? &selfDependency : nullptr // const VkSubpassDependency*        pDependencies
     };
 
-    return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
+    return createRenderPass(vk, device, &renderPassInfo, nullptr);
 }
 
 void createTests(tcu::TestCaseGroup *testGroup)

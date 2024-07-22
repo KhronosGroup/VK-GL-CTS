@@ -467,8 +467,8 @@ std::string getShaderImageType(const VkFormat format, const VkImageType imageTyp
 std::string getShaderImageFormatQualifier(const VkFormat format)
 {
     const tcu::TextureFormat texFormat = mapVkFormat(format);
-    const char *orderPart              = DE_NULL;
-    const char *typePart               = DE_NULL;
+    const char *orderPart              = nullptr;
+    const char *typePart               = nullptr;
 
     switch (texFormat.order)
     {
@@ -603,7 +603,7 @@ public:
                 0u,                                   // VkDeviceSize                        offset
                 m_resource.getBuffer().size           // VkDeviceSize                        size
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
         else
@@ -751,7 +751,7 @@ public:
                 0u,                                   // VkDeviceSize                        offset
                 m_resource.getBuffer().size           // VkDeviceSize                        size
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
         else
@@ -766,7 +766,7 @@ public:
             //    0u, // VkDeviceSize                        offset
             //    m_resource.getBuffer().size                                // VkDeviceSize                        size
             //);
-            //VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+            //VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
             //synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
             vk.cmdCopyBuffer(cmdBuffer, **m_hostBuffer, m_resource.getBuffer().handle, 1u, &copyRegion);
@@ -893,7 +893,7 @@ public:
 
     Data getData(void) const
     {
-        Data data = {0, DE_NULL};
+        Data data = {0, nullptr};
         return data;
     }
 
@@ -1012,7 +1012,7 @@ public:
                 **m_image,                               // VkImage                            image
                 m_resource.getImage().subresourceRange   // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
 
@@ -1032,7 +1032,7 @@ public:
                 **m_image,                             // VkImage                            image
                 m_resource.getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR imageDependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR imageDependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &imageDependencyInfo);
 
             // Image -> Host buffer
@@ -1049,7 +1049,7 @@ public:
                 0u,                                   // VkDeviceSize                        offset
                 m_bufferSize                          // VkDeviceSize                        size
             );
-            VkDependencyInfoKHR bufferDependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+            VkDependencyInfoKHR bufferDependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &bufferDependencyInfo);
         }
         else
@@ -1070,7 +1070,7 @@ public:
                     **m_image,                             // VkImage                            image
                     m_resource.getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
                 );
-                VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+                VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
                 synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
             }
 
@@ -1086,7 +1086,7 @@ public:
                     m_resource.getImage().handle,            // VkImage                            image
                     m_resource.getImage().subresourceRange   // VkImageSubresourceRange            subresourceRange
                 );
-                VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+                VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
                 synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
             }
 
@@ -1409,7 +1409,7 @@ public:
                 m_outResource.getImage().handle,          // VkImage                            image
                 m_outResource.getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
 
@@ -1440,7 +1440,7 @@ public:
 
     Data getData(void) const
     {
-        Data data = {0, DE_NULL};
+        Data data = {0, nullptr};
         return data;
     }
 
@@ -1486,7 +1486,7 @@ public:
                 m_outResource.getImage().handle,          // VkImage                            image
                 m_outResource.getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
 
@@ -1516,7 +1516,7 @@ public:
 
     Data getData(void) const
     {
-        Data data = {0, DE_NULL};
+        Data data = {0, nullptr};
         return data;
     }
 
@@ -1628,20 +1628,20 @@ public:
         pipelineBuilder.setRenderSize(tcu::IVec2(m_colorImageExtent.width, m_colorImageExtent.height))
             .setVertexInputSingleAttribute(m_vertices.getVertexFormat(), m_vertices.getVertexStride())
             .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get(shaderPrefix + "vert"),
-                       DE_NULL)
+                       nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,
-                       context.getBinaryCollection().get(shaderPrefix + "frag"), DE_NULL);
+                       context.getBinaryCollection().get(shaderPrefix + "frag"), nullptr);
 
         if (requiredStages & (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT))
             pipelineBuilder.setPatchControlPoints(m_vertices.getNumVertices())
                 .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-                           context.getBinaryCollection().get(shaderPrefix + "tesc"), DE_NULL)
+                           context.getBinaryCollection().get(shaderPrefix + "tesc"), nullptr)
                 .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-                           context.getBinaryCollection().get(shaderPrefix + "tese"), DE_NULL);
+                           context.getBinaryCollection().get(shaderPrefix + "tese"), nullptr);
 
         if (requiredStages & VK_SHADER_STAGE_GEOMETRY_BIT)
             pipelineBuilder.setShader(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,
-                                      context.getBinaryCollection().get(shaderPrefix + "geom"), DE_NULL);
+                                      context.getBinaryCollection().get(shaderPrefix + "geom"), nullptr);
 
         m_pipeline = pipelineBuilder.build(vk, device, *m_pipelineLayout, *m_renderPass, context.getPipelineCacheData(),
                                            context.getResourceInterface());
@@ -1665,7 +1665,7 @@ public:
                 **m_colorAttachmentImage,                      // VkImage                            image
                 m_colorImageSubresourceRange                   // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
 
@@ -1678,7 +1678,7 @@ public:
 
         vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
         vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &descriptorSet,
-                                 0u, DE_NULL);
+                                 0u, nullptr);
         {
             const VkDeviceSize vertexBufferOffset = 0ull;
             const VkBuffer vertexBuffer           = m_vertices.getVertexBuffer();
@@ -1735,7 +1735,7 @@ public:
             vk, device, context.getBinaryCollection().get(shaderPrefix + "comp"), (VkShaderModuleCreateFlags)0));
 
         m_pipelineLayout = makePipelineLayout(vk, device, descriptorSetLayout);
-        m_pipeline       = makeComputePipeline(vk, device, *m_pipelineLayout, *shaderModule, DE_NULL,
+        m_pipeline       = makeComputePipeline(vk, device, *m_pipelineLayout, *shaderModule, nullptr,
                                                context.getPipelineCacheData(), context.getResourceInterface());
     }
 
@@ -1745,7 +1745,7 @@ public:
 
         vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipeline);
         vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &descriptorSet,
-                                 0u, DE_NULL);
+                                 0u, nullptr);
 
         if (m_dispatchCall == DISPATCH_CALL_DISPATCH_INDIRECT)
             vk.cmdDispatchIndirect(cmdBuffer, **m_indirectBuffer, 0u);
@@ -1892,7 +1892,7 @@ public:
                 0u,                               // VkDeviceSize                        offset
                 m_resource.getBuffer().size       // VkDeviceSize                        size
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
     }
@@ -2117,7 +2117,7 @@ public:
                 *m_dstImage,                           // VkImage                            image
                 m_resource.getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
 
@@ -2136,7 +2136,7 @@ public:
                     *m_srcImage,                           // VkImage                            image
                     m_resource.getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
                 );
-                VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+                VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
                 synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
             }
 
@@ -2156,7 +2156,7 @@ public:
                     *m_srcImage,                           // VkImage                            image
                     m_resource.getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
                 );
-                VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+                VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
                 synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
             }
         }
@@ -2181,7 +2181,7 @@ public:
                     *m_dstImage,                           // VkImage                            image
                     m_resource.getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
                 );
-                VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+                VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
                 synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
             }
 
@@ -2200,7 +2200,7 @@ public:
                     0u,                                 // VkDeviceSize                        offset
                     m_hostBufferSizeBytes               // VkDeviceSize                        size
                 );
-                VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+                VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
                 synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
             }
         }
@@ -2741,7 +2741,7 @@ public:
 
     Data getData(void) const
     {
-        Data data = {0, DE_NULL};
+        Data data = {0, nullptr};
         return data;
     }
 
@@ -2955,12 +2955,12 @@ public:
             );
             VkDependencyInfoKHR dependencyInfo{
                 VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR, // VkStructureType                    sType
-                DE_NULL,                               // const void*                        pNext
+                nullptr,                               // const void*                        pNext
                 VK_DEPENDENCY_BY_REGION_BIT,           // VkDependencyFlags                dependencyFlags
                 0u,                                    // uint32_t                            memoryBarrierCount
-                DE_NULL,                               // const VkMemoryBarrier2KHR*        pMemoryBarriers
+                nullptr,                               // const VkMemoryBarrier2KHR*        pMemoryBarriers
                 0u,                                    // uint32_t                            bufferMemoryBarrierCount
-                DE_NULL,                               // const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers
+                nullptr,                               // const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers
                 1,                                     // uint32_t                            imageMemoryBarrierCount
                 &imageMemoryBarriers2                  // const VkImageMemoryBarrier2KHR*    pImageMemoryBarriers
             };
@@ -2997,7 +2997,7 @@ public:
 
     Data getData(void) const
     {
-        Data data = {0, DE_NULL};
+        Data data = {0, nullptr};
         return data;
     }
 
@@ -3182,7 +3182,7 @@ public:
         const Unique<VkShaderModule> shaderModule(
             createShaderModule(vk, device, context.getBinaryCollection().get("comp"), (VkShaderModuleCreateFlags)0));
         m_pipelineLayout = makePipelineLayout(vk, device, *m_descriptorSetLayout);
-        m_pipeline       = makeComputePipeline(vk, device, *m_pipelineLayout, *shaderModule, DE_NULL,
+        m_pipeline       = makeComputePipeline(vk, device, *m_pipelineLayout, *shaderModule, nullptr,
                                                context.getPipelineCacheData(), context.getResourceInterface());
     }
 
@@ -3204,14 +3204,14 @@ public:
                 m_resource.getImage().handle,               // VkImage                            image
                 m_resource.getImage().subresourceRange      // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
 
         // execute shader
         vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipeline);
         vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u,
-                                 &*m_descriptorSet, 0u, DE_NULL);
+                                 &*m_descriptorSet, 0u, nullptr);
         vk.cmdDispatch(cmdBuffer, m_resource.getImage().extent.width, m_resource.getImage().extent.height, 1u);
     }
 
@@ -3365,7 +3365,7 @@ public:
             m_resource.getImage().handle,            // VkImage                            image
             m_resource.getImage().subresourceRange   // VkImageSubresourceRange            subresourceRange
         );
-        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
         synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
         vk.cmdCopyBufferToImage(cmdBuffer, **m_hostBuffer, m_resource.getImage().handle,
@@ -3458,7 +3458,7 @@ public:
                 **m_image,                               // VkImage                            image
                 m_subresourceRange                       // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
             vk.cmdCopyBufferToImage(cmdBuffer, m_resource.getBuffer().handle, **m_image,
@@ -3476,7 +3476,7 @@ public:
                 **m_image,                            // VkImage                            image
                 m_subresourceRange                    // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR layoutDependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageLayoutBarrier2);
+            VkDependencyInfoKHR layoutDependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageLayoutBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &layoutDependencyInfo);
 
             vk.cmdCopyImageToBuffer(cmdBuffer, **m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_hostBuffer, 1u,
@@ -3491,7 +3491,7 @@ public:
                 0u,                                   // VkDeviceSize                        offset
                 m_resource.getBuffer().size           // VkDeviceSize                        size
             );
-            VkDependencyInfoKHR bufferDependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+            VkDependencyInfoKHR bufferDependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &bufferDependencyInfo);
         }
     }
@@ -3633,7 +3633,7 @@ public:
             m_outResource.getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
         );
         VkDependencyInfoKHR dependencyInfo =
-            makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2, &imageMemoryBarrier2);
+            makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2, &imageMemoryBarrier2);
         synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
         vk.cmdCopyBufferToImage(cmdBuffer, m_inResource.getBuffer().handle, m_outResource.getImage().handle,
@@ -3662,7 +3662,7 @@ public:
 
     Data getData(void) const
     {
-        Data data = {0, DE_NULL};
+        Data data = {0, nullptr};
         return data;
     }
 
@@ -3789,7 +3789,7 @@ public:
                 **m_image,                               // VkImage                            image
                 m_subresourceRange                       // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
             vk.cmdCopyBufferToImage(cmdBuffer, **m_hostBuffer, **m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u,
@@ -3807,7 +3807,7 @@ public:
                 **m_image,                            // VkImage                            image
                 m_subresourceRange                    // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
             vk.cmdCopyImageToBuffer(cmdBuffer, **m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -3895,7 +3895,7 @@ public:
                 0u,                                   // VkDeviceSize                        offset
                 VK_WHOLE_SIZE                         // VkDeviceSize                        size
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
     }
@@ -3974,7 +3974,7 @@ public:
                 m_outResource.getBuffer().size           // VkDeviceSize                        size
             );
             VkDependencyInfoKHR dependencyInfo =
-                makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2, &imageMemoryBarrier2);
+                makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
 
@@ -4004,7 +4004,7 @@ public:
 
     Data getData(void) const
     {
-        Data data = {0, DE_NULL};
+        Data data = {0, nullptr};
         return data;
     }
 
@@ -4121,7 +4121,7 @@ public:
             m_resource.getImage().handle,            // VkImage                            image
             m_resource.getImage().subresourceRange   // VkImageSubresourceRange            subresourceRange
         );
-        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
         synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
 
         if (m_mode == CLEAR_MODE_COLOR)
@@ -4305,9 +4305,9 @@ public:
         GraphicsPipelineBuilder pipelineBuilder;
         pipelineBuilder.setRenderSize(tcu::IVec2(m_attachmentExtent.width, m_attachmentExtent.height))
             .setVertexInputSingleAttribute(m_vertices.getVertexFormat(), m_vertices.getVertexStride())
-            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("draw_vert"), DE_NULL)
+            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("draw_vert"), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("draw_frag"),
-                       DE_NULL);
+                       nullptr);
 
         m_pipeline = pipelineBuilder.build(vk, device, *m_pipelineLayout, *m_renderPass, context.getPipelineCacheData(),
                                            context.getResourceInterface());
@@ -4339,7 +4339,7 @@ public:
                 m_colorImage,                                        // VkImage                            image
                 m_colorSubresourceRange // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
 
@@ -4582,7 +4582,7 @@ public:
         {
             const VkImageMemoryBarrier imageBarrier = {
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // sType
-                DE_NULL,                                          // pNext
+                nullptr,                                          // pNext
                 0u,                                               // srcAccessMask
                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // dstAccessMask
                 VK_IMAGE_LAYOUT_UNDEFINED,                        // oldLayout
@@ -4595,7 +4595,7 @@ public:
             vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT,
                                   VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                       VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                                  0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+                                  0u, 0u, nullptr, 0u, nullptr, 1u, &imageBarrier);
         }
         beginRenderPass(vk, cmdBuffer, *m_renderPass, *m_frameBuffer,
                         makeRect2D(0, 0, m_resource.getImage().extent.width, m_resource.getImage().extent.height),
@@ -4764,9 +4764,9 @@ public:
         pipelineBuilder.setRenderSize(tcu::IVec2(m_colorImageExtent.width, m_colorImageExtent.height))
             .setVertexInputSingleAttribute(m_vertices.getVertexFormat(), m_vertices.getVertexStride())
             .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get(shaderPrefix + "vert"),
-                       DE_NULL)
+                       nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,
-                       context.getBinaryCollection().get(shaderPrefix + "frag"), DE_NULL);
+                       context.getBinaryCollection().get(shaderPrefix + "frag"), nullptr);
 
         m_pipeline = pipelineBuilder.build(vk, device, *m_pipelineLayout, *m_renderPass, context.getPipelineCacheData(),
                                            context.getResourceInterface());
@@ -4790,7 +4790,7 @@ public:
                 **m_colorAttachmentImage,                            // VkImage                            image
                 m_colorImageSubresourceRange // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
 
@@ -4803,7 +4803,7 @@ public:
 
         vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
         vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &descriptorSet,
-                                 0u, DE_NULL);
+                                 0u, nullptr);
         {
             const VkDeviceSize vertexBufferOffset = 0ull;
             const VkBuffer vertexBuffer           = m_vertices.getVertexBuffer();
@@ -4857,7 +4857,7 @@ public:
             vk, device, context.getBinaryCollection().get(shaderPrefix + "comp"), (VkShaderModuleCreateFlags)0));
 
         m_pipelineLayout = makePipelineLayout(vk, device, descriptorSetLayout);
-        m_pipeline       = makeComputePipeline(vk, device, *m_pipelineLayout, *shaderModule, DE_NULL,
+        m_pipeline       = makeComputePipeline(vk, device, *m_pipelineLayout, *shaderModule, nullptr,
                                                context.getPipelineCacheData(), context.getResourceInterface());
     }
 
@@ -4867,7 +4867,7 @@ public:
 
         vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipeline);
         vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &descriptorSet,
-                                 0u, DE_NULL);
+                                 0u, nullptr);
         vk.cmdDispatchIndirect(cmdBuffer, m_indirectBuffer, 0u);
     }
 
@@ -4954,7 +4954,7 @@ public:
             0u,                               // VkDeviceSize                        offset
             m_hostBufferSizeBytes             // VkDeviceSize                        size
         );
-        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
         synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
     }
 
@@ -5328,9 +5328,9 @@ public:
                     tcu::IVec2(static_cast<int>(m_colorImageExtent.width), static_cast<int>(m_colorImageExtent.height)))
                 .setVertexInputSingleAttribute(attributeFormat, tcu::getPixelSize(mapVkFormat(attributeFormat)))
                 .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("input_vert"),
-                           DE_NULL)
+                           nullptr)
                 .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("input_frag"),
-                           DE_NULL)
+                           nullptr)
                 .build(vk, device, *m_pipelineLayout, *m_renderPass, context.getPipelineCacheData(),
                        context.getResourceInterface());
     }
@@ -5354,7 +5354,7 @@ public:
                 **m_colorAttachmentImage,                            // VkImage                            image
                 m_colorImageSubresourceRange // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
 
@@ -5367,7 +5367,7 @@ public:
 
         vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
         vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u,
-                                 &m_descriptorSet.get(), 0u, DE_NULL);
+                                 &m_descriptorSet.get(), 0u, nullptr);
 
         const VkDeviceSize vertexBufferOffset = 0ull;
         if (m_drawMode == DRAW_MODE_VERTEX)
@@ -5397,7 +5397,7 @@ public:
                 0u,                                        // VkDeviceSize                        offset
                 m_resource.getBuffer().size                // VkDeviceSize                        size
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
     }

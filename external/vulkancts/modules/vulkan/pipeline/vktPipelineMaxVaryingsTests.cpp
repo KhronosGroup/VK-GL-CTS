@@ -801,7 +801,7 @@ VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const VkFormat for
 {
     const VkImageCreateInfo imageInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0,               // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -813,7 +813,7 @@ VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const VkFormat for
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
     return imageInfo;
@@ -830,7 +830,7 @@ void recordImageBarrier(const DeviceInterface &vk, const VkCommandBuffer cmdBuff
                         const VkImageAspectFlags aspect, const VkPipelineStageFlags srcStageMask,
                         const VkPipelineStageFlags dstStageMask, const VkAccessFlags srcAccessMask,
                         const VkAccessFlags dstAccessMask, const VkImageLayout oldLayout, const VkImageLayout newLayout,
-                        const VkSampleLocationsInfoEXT *pSampleLocationsInfo = DE_NULL)
+                        const VkSampleLocationsInfoEXT *pSampleLocationsInfo = nullptr)
 {
     const VkImageMemoryBarrier barrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,            // VkStructureType sType;
@@ -845,7 +845,7 @@ void recordImageBarrier(const DeviceInterface &vk, const VkCommandBuffer cmdBuff
         makeImageSubresourceRange(aspect, 0u, 1u, 0u, 1u), // VkImageSubresourceRange subresourceRange;
     };
 
-    vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, 1u,
+    vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, 1u,
                           &barrier);
 }
 
@@ -870,7 +870,7 @@ void recordCopyImageToBuffer(const DeviceInterface &vk, const VkCommandBuffer cm
     {
         const VkBufferMemoryBarrier barrier = {
             VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-            DE_NULL,                                 // const void* pNext;
+            nullptr,                                 // const void* pNext;
             VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
             VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
             VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -881,7 +881,7 @@ void recordCopyImageToBuffer(const DeviceInterface &vk, const VkCommandBuffer cm
         };
 
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+                              (VkDependencyFlags)0, 0u, nullptr, 1u, &barrier, 0u, nullptr);
     }
 }
 
@@ -894,7 +894,7 @@ Move<VkBuffer> createBufferAndBindMemory(Context &context, VkDeviceSize size, Vk
 
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         size,                                 // VkDeviceSize size;
         usage,                                // VkBufferUsageFlags usage;
@@ -1067,7 +1067,7 @@ tcu::TestStatus test(Context &context, const MaxVaryingsParam param)
         .setupVertexInputState()
         .setupPreRasterizationShaderState(viewport, scissor, pipelineLayout, *renderPass, 0u, vertShaderModule, 0u,
                                           tescShaderModule, teseShaderModule, geomShaderModule, &pSpecInfo)
-        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShaderModule, DE_NULL, DE_NULL, &pSpecInfo)
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShaderModule, nullptr, nullptr, &pSpecInfo)
         .setupFragmentOutputState(*renderPass)
         .setMonolithicPipelineLayout(pipelineLayout)
         .buildPipeline();
@@ -1087,7 +1087,7 @@ tcu::TestStatus test(Context &context, const MaxVaryingsParam param)
                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *colorImage, imageFullSubresourceRange);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u,
-                              0u, DE_NULL, 0u, DE_NULL, 1u, &barrierColorAttachmentSetInitialLayout);
+                              0u, nullptr, 0u, nullptr, 1u, &barrierColorAttachmentSetInitialLayout);
     }
 
     renderPass.begin(vk, *cmdBuffer, renderArea, clearColor);

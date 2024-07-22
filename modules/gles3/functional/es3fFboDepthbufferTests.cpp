@@ -180,7 +180,7 @@ protected:
 
         glBindTexture(GL_TEXTURE_2D, depthTexture);
         glTexImage2D(GL_TEXTURE_2D, 0, m_format, m_width, m_height, 0, transferFmt.format, transferFmt.dataType,
-                     DE_NULL);
+                     nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -267,7 +267,7 @@ protected:
 
         glBindTexture(GL_TEXTURE_2D, depthTexture);
         glTexImage2D(GL_TEXTURE_2D, 0, m_format, m_width, m_height, 0, transferFmt.format, transferFmt.dataType,
-                     DE_NULL);
+                     nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 

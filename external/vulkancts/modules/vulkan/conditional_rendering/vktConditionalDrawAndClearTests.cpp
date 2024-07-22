@@ -427,7 +427,7 @@ void ConditionalRenderingBaseTestInstance::createInitBufferWithPredicate(
         auto cmdBuffer = vk::allocateCommandBuffer(m_vkd, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         const vk::VkCommandBufferBeginInfo commandBufferBeginInfo = {
-            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, DE_NULL, vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr, vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
             nullptr};
 
         VK_CHECK(m_vkd.beginCommandBuffer(*cmdBuffer, &commandBufferBeginInfo));
@@ -509,9 +509,9 @@ void ConditionalRenderingBaseTestInstance::createRenderPass(VkFormat format, VkI
     };
 
     renderPassCreateInfo.addSubpass(
-        SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, isDepthStencilFormat(format) ? 0 : 1,
-                           isDepthStencilFormat(format) ? DE_NULL : &attachmentReference, DE_NULL,
-                           isDepthStencilFormat(format) ? attachmentReference : AttachmentReference(), 0, DE_NULL));
+        SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, isDepthStencilFormat(format) ? 0 : 1,
+                           isDepthStencilFormat(format) ? nullptr : &attachmentReference, nullptr,
+                           isDepthStencilFormat(format) ? attachmentReference : AttachmentReference(), 0, nullptr));
 
     m_renderPass = vk::createRenderPass(m_vkd, m_device, &renderPassCreateInfo);
 }
@@ -520,7 +520,7 @@ void ConditionalRenderingBaseTestInstance::createFramebuffer(VkImageView imageVi
 {
     const VkFramebufferCreateInfo framebufferCreateInfo = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType                sType
-        DE_NULL,                                   // const void*                    pNext
+        nullptr,                                   // const void*                    pNext
         (VkFramebufferCreateFlags)0,               // VkFramebufferCreateFlags flags;
         *m_renderPass,                             // VkRenderPass                    renderPass
         1,                                         // uint32_t                        attachmentCount
@@ -548,7 +548,7 @@ void ConditionalRenderingBaseTestInstance::imageMemoryBarrier(VkImage image, VkA
     };
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
-        DE_NULL,                                // const void*                pNext
+        nullptr,                                // const void*                pNext
         srcAccessMask,                          // VkAccessFlags            srcAccessMask
         dstAccessMask,                          // VkAccessFlags            dstAccessMask
         oldLayout,                              // VkImageLayout            oldLayout
@@ -559,7 +559,7 @@ void ConditionalRenderingBaseTestInstance::imageMemoryBarrier(VkImage image, VkA
         subRangeColor                           // VkImageSubresourceRange    subresourceRange
     };
 
-    m_vkd.cmdPipelineBarrier(*m_cmdBufferPrimary, srcStageMask, dstStageMask, false, 0u, DE_NULL, 0u, DE_NULL, 1u,
+    m_vkd.cmdPipelineBarrier(*m_cmdBufferPrimary, srcStageMask, dstStageMask, false, 0u, nullptr, 0u, nullptr, 1u,
                              &imageBarrier);
 }
 
@@ -570,7 +570,7 @@ void ConditionalRenderingBaseTestInstance::bufferMemoryBarrier(VkBuffer buffer, 
 {
     const VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //VkStructureType sType;
-        DE_NULL,                                 //const void* pNext;
+        nullptr,                                 //const void* pNext;
         srcAccessMask,                           //VkAccessFlags srcAccessMask;
         dstAccessMask,                           //VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                 //uint32_t srcQueueFamilyIndex;
@@ -580,8 +580,8 @@ void ConditionalRenderingBaseTestInstance::bufferMemoryBarrier(VkBuffer buffer, 
         size                                     //VkDeviceSize size;
     };
 
-    m_vkd.cmdPipelineBarrier(*m_cmdBufferPrimary, srcStageMask, dstStageMask, false, 0u, DE_NULL, 1u, &bufferBarrier,
-                             0u, DE_NULL);
+    m_vkd.cmdPipelineBarrier(*m_cmdBufferPrimary, srcStageMask, dstStageMask, false, 0u, nullptr, 1u, &bufferBarrier,
+                             0u, nullptr);
 }
 
 void ConditionalRenderingBaseTestInstance::prepareReferenceImageOneColor(tcu::PixelBufferAccess &reference,
@@ -748,12 +748,12 @@ void ConditionalRenderingBaseTestInstance::createPipelineLayout(void)
 {
     const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                sType
-        DE_NULL,                                       // const void*                    pNext
+        nullptr,                                       // const void*                    pNext
         (VkPipelineLayoutCreateFlags)0,                // VkPipelineLayoutCreateFlags    flags
         1u,                                            // uint32_t                        descriptorSetCount
         &(m_descriptorSetLayout.get()),                // const VkDescriptorSetLayout*    pSetLayouts
         0u,                                            // uint32_t                        pushConstantRangeCount
-        DE_NULL                                        // const VkPushConstantRange*    pPushConstantRanges
+        nullptr                                        // const VkPushConstantRange*    pPushConstantRanges
     };
 
     m_pipelineLayout = vk::createPipelineLayout(m_vkd, m_device, &pipelineLayoutParams);
@@ -763,7 +763,7 @@ void ConditionalRenderingBaseTestInstance::createAndUpdateDescriptorSet(void)
 {
     const VkDescriptorSetAllocateInfo allocInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                                sType
-        DE_NULL,                                        // const void*                                    pNext
+        nullptr,                                        // const void*                                    pNext
         *m_descriptorPool,             // VkDescriptorPool                                descriptorPool
         1u,                            // uint32_t                                        setLayoutCount
         &(m_descriptorSetLayout.get()) // const VkDescriptorSetLayout*                    pSetLayouts
@@ -786,12 +786,12 @@ void ConditionalRenderingBaseTestInstance::createPipeline(void)
     const VkPrimitiveTopology topology                                = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
     const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                                sType
-        DE_NULL, // const void*                                    pNext
+        nullptr, // const void*                                    pNext
         0u,      // vkPipelineVertexInputStateCreateFlags        flags
         0u,      // uint32_t                                        bindingCount
-        DE_NULL, // const VkVertexInputBindingDescription*        pVertexBindingDescriptions
+        nullptr, // const VkVertexInputBindingDescription*        pVertexBindingDescriptions
         0u,      // uint32_t                                        attributeCount
-        DE_NULL, // const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
+        nullptr, // const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
     };
 
     m_pipeline = makeGraphicsPipeline(
@@ -869,7 +869,7 @@ tcu::TestStatus ConditionalRenderingClearAttachmentsTestInstance::iterate(void)
 
     const VkConditionalRenderingBeginInfoEXT conditionalRenderingBeginInfo = {
         VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT, //VkStructureType sType;
-        DE_NULL,                                                //const void* pNext;
+        nullptr,                                                //const void* pNext;
         m_conditionalRenderingBuffer->object(),                 //VkBuffer buffer;
         sizeof(uint32_t) * offsetMultiplier,                    //VkDeviceSize offset;
         (m_testParams.m_invert ? (VkConditionalRenderingFlagsEXT)VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT :
@@ -964,7 +964,7 @@ tcu::TestStatus ConditionalRenderingClearAttachmentsTestInstance::iterate(void)
                             m_testParams.m_testDepth ? m_depthTargetImage->object() : m_colorTargetImage->object());
 
     const vk::VkBufferMemoryBarrier bufferMemoryBarrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                            vk::VK_ACCESS_HOST_READ_BIT,
                                                            VK_QUEUE_FAMILY_IGNORED,
@@ -974,7 +974,7 @@ tcu::TestStatus ConditionalRenderingClearAttachmentsTestInstance::iterate(void)
                                                            VK_WHOLE_SIZE};
 
     m_vkd.cmdPipelineBarrier(*m_cmdBufferPrimary, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                             0u, 0u, DE_NULL, 1u, &bufferMemoryBarrier, 0u, DE_NULL);
+                             0u, 0u, nullptr, 1u, &bufferMemoryBarrier, 0u, nullptr);
 
     endCommandBuffer(m_vkd, *m_cmdBufferPrimary);
 
@@ -1089,7 +1089,7 @@ tcu::TestStatus ConditionalRenderingDrawTestInstance::iterate(void)
 
     VkConditionalRenderingBeginInfoEXT conditionalRenderingBeginInfo = {
         VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT, //VkStructureType sType;
-        DE_NULL,                                                //const void* pNext;
+        nullptr,                                                //const void* pNext;
         m_conditionalRenderingBuffer->object(),                 //VkBuffer buffer;
         sizeof(uint32_t) * offsetMultiplier,                    //VkDeviceSize offset;
         (m_testParams.m_invert ? (VkConditionalRenderingFlagsEXT)VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT :
@@ -1121,7 +1121,7 @@ tcu::TestStatus ConditionalRenderingDrawTestInstance::iterate(void)
 
     m_vkd.cmdBindPipeline(*m_cmdBufferPrimary, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
     m_vkd.cmdBindDescriptorSets(*m_cmdBufferPrimary, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1,
-                                &(*m_descriptorSet), 0, DE_NULL);
+                                &(*m_descriptorSet), 0, nullptr);
 
     if (m_testParams.m_togglePredicate)
     {
@@ -1185,7 +1185,7 @@ tcu::TestStatus ConditionalRenderingDrawTestInstance::iterate(void)
     copyResultImageToBuffer(VK_IMAGE_ASPECT_COLOR_BIT, m_colorTargetImage->object());
 
     const vk::VkBufferMemoryBarrier bufferMemoryBarrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                            vk::VK_ACCESS_HOST_READ_BIT,
                                                            VK_QUEUE_FAMILY_IGNORED,
@@ -1195,7 +1195,7 @@ tcu::TestStatus ConditionalRenderingDrawTestInstance::iterate(void)
                                                            VK_WHOLE_SIZE};
 
     m_vkd.cmdPipelineBarrier(*m_cmdBufferPrimary, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                             0u, 0u, DE_NULL, 1u, &bufferMemoryBarrier, 0u, DE_NULL);
+                             0u, 0u, nullptr, 1u, &bufferMemoryBarrier, 0u, nullptr);
 
     endCommandBuffer(m_vkd, *m_cmdBufferPrimary);
 
@@ -1230,7 +1230,7 @@ void ConditionalRenderingDrawTestInstance::createPipelineLayout(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, //VkStructureType                sType
-        DE_NULL,                                       //const void*                    pNext
+        nullptr,                                       //const void*                    pNext
         (VkPipelineLayoutCreateFlags)0,                //VkPipelineLayoutCreateFlags    flags
         1u,                                            //uint32_t                        descriptorSetCount
         &(m_descriptorSetLayout.get()),                //const VkDescriptorSetLayout*    pSetLayouts
@@ -1276,7 +1276,7 @@ void ConditionalRenderingUpdateBufferWithDrawTestInstance::createAndUpdateDescri
     //the same descriptor set layout can be used for the creation of both descriptor sets
     const VkDescriptorSetAllocateInfo allocInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, //VkStructureType                        sType
-        DE_NULL,                                        //const void*                            pNext
+        nullptr,                                        //const void*                            pNext
         *m_descriptorPool,                              //VkDescriptorPool                        descriptorPool
         1u,                                             //uint32_t                                setLayoutCount
         &(m_descriptorSetLayout.get())                  //const VkDescriptorSetLayout*            pSetLayouts
@@ -1308,12 +1308,12 @@ void ConditionalRenderingUpdateBufferWithDrawTestInstance::createPipelines(void)
     const VkPrimitiveTopology topology                                = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
     const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, //VkStructureType                                sType
-        DE_NULL, //const void*                                    pNext
+        nullptr, //const void*                                    pNext
         0u,      //vkPipelineVertexInputStateCreateFlags            flags
         0u,      //uint32_t                                        bindingCount
-        DE_NULL, //const VkVertexInputBindingDescription*        pVertexBindingDescriptions
+        nullptr, //const VkVertexInputBindingDescription*        pVertexBindingDescriptions
         0u,      //uint32_t                                        attributeCount
-        DE_NULL, //const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
+        nullptr, //const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
     };
 
     m_pipelineDraw = makeGraphicsPipeline(
@@ -1369,9 +1369,9 @@ void ConditionalRenderingUpdateBufferWithDrawTestInstance::createRenderPass(VkFo
     };
 
     renderPassCreateInfo.addSubpass(
-        SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, isDepthStencilFormat(format) ? 0 : 1,
-                           isDepthStencilFormat(format) ? DE_NULL : &attachmentReference, DE_NULL,
-                           isDepthStencilFormat(format) ? attachmentReference : AttachmentReference(), 0, DE_NULL));
+        SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, isDepthStencilFormat(format) ? 0 : 1,
+                           isDepthStencilFormat(format) ? nullptr : &attachmentReference, nullptr,
+                           isDepthStencilFormat(format) ? attachmentReference : AttachmentReference(), 0, nullptr));
 
     VkSubpassDependency dependency = {
         0,                                               //uint32_t srcSubpass;
@@ -1431,7 +1431,7 @@ tcu::TestStatus ConditionalRenderingUpdateBufferWithDrawTestInstance::iterate(vo
 
     VkConditionalRenderingBeginInfoEXT conditionalRenderingBeginInfo = {
         VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT, //VkStructureType sType;
-        DE_NULL,                                                //const void* pNext;
+        nullptr,                                                //const void* pNext;
         m_conditionalRenderingBuffer->object(),                 //VkBuffer buffer;
         0,                                                      //VkDeviceSize offset;
         VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT               //VkConditionalRenderingFlagsEXT flags;
@@ -1464,7 +1464,7 @@ tcu::TestStatus ConditionalRenderingUpdateBufferWithDrawTestInstance::iterate(vo
 
     m_vkd.cmdBindPipeline(*m_cmdBufferPrimary, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineUpdate);
     m_vkd.cmdBindDescriptorSets(*m_cmdBufferPrimary, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1,
-                                &(*m_descriptorSetUpdate), 0, DE_NULL);
+                                &(*m_descriptorSetUpdate), 0, nullptr);
 
     draw();
 
@@ -1478,7 +1478,7 @@ tcu::TestStatus ConditionalRenderingUpdateBufferWithDrawTestInstance::iterate(vo
 
     m_vkd.cmdBindPipeline(*m_cmdBufferPrimary, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineDraw);
     m_vkd.cmdBindDescriptorSets(*m_cmdBufferPrimary, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1,
-                                &(*m_descriptorSet), 0, DE_NULL);
+                                &(*m_descriptorSet), 0, nullptr);
 
     m_vkd.cmdBeginConditionalRenderingEXT(*m_cmdBufferPrimary, &conditionalRenderingBeginInfo);
     draw();
@@ -1499,7 +1499,7 @@ tcu::TestStatus ConditionalRenderingUpdateBufferWithDrawTestInstance::iterate(vo
     copyResultImageToBuffer(VK_IMAGE_ASPECT_COLOR_BIT, m_colorTargetImage->object());
 
     const vk::VkBufferMemoryBarrier bufferMemoryBarrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            vk::VK_ACCESS_TRANSFER_WRITE_BIT,
                                                            vk::VK_ACCESS_HOST_READ_BIT,
                                                            VK_QUEUE_FAMILY_IGNORED,
@@ -1509,7 +1509,7 @@ tcu::TestStatus ConditionalRenderingUpdateBufferWithDrawTestInstance::iterate(vo
                                                            VK_WHOLE_SIZE};
 
     m_vkd.cmdPipelineBarrier(*m_cmdBufferPrimary, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                             0u, 0u, DE_NULL, 1u, &bufferMemoryBarrier, 0u, DE_NULL);
+                             0u, 0u, nullptr, 1u, &bufferMemoryBarrier, 0u, nullptr);
 
     endCommandBuffer(m_vkd, *m_cmdBufferPrimary);
 

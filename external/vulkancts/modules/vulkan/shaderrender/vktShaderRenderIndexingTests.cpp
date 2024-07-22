@@ -265,7 +265,7 @@ ShaderIndexingCase::ShaderIndexingCase(tcu::TestContext &testCtx, const std::str
                                        const ShaderEvalFunc evalFunc, const std::string &vertShaderSource,
                                        const std::string &fragShaderSource, const DataType varType,
                                        const bool usesArray)
-    : ShaderRenderCase(testCtx, name, isVertexCase, evalFunc, new IndexingTestUniformSetup(varType, usesArray), DE_NULL)
+    : ShaderRenderCase(testCtx, name, isVertexCase, evalFunc, new IndexingTestUniformSetup(varType, usesArray), nullptr)
 {
     m_vertShaderSource = vertShaderSource;
     m_fragShaderSource = fragShaderSource;
@@ -990,7 +990,7 @@ static ShaderEvalFunc getMatrixSubscriptEvalFunc(DataType dataType)
 
     default:
         DE_FATAL("Invalid data type.");
-        return DE_NULL;
+        return nullptr;
     }
 }
 

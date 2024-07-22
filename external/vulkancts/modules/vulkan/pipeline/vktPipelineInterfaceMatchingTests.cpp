@@ -198,7 +198,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
     {
         const VkImageCreateInfo colorImageParams{
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             colorFormat,                                                           // VkFormat format;
@@ -227,7 +227,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
     {
         const VkImageViewCreateInfo colorAttachmentViewParams{
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             *m_colorImage,                            // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -246,7 +246,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
     {
         const VkFramebufferCreateInfo framebufferParams{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             1u,                                        // uint32_t attachmentCount;
@@ -263,12 +263,12 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams{
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = PipelineLayoutWrapper(m_params->pipelineConstructionType, vk, device, &pipelineLayoutParams);
@@ -309,7 +309,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
         .setDefaultColorBlendState()
         .setupVertexInputState()
         .setupPreRasterizationShaderState(viewports, scissors, m_pipelineLayout, *m_renderPass, 0u, m_vertShaderModule,
-                                          DE_NULL, m_tescShaderModule, m_teseShaderModule, m_geomShaderModule)
+                                          nullptr, m_tescShaderModule, m_teseShaderModule, m_geomShaderModule)
         .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, m_fragShaderModule)
         .setupFragmentOutputState(*m_renderPass)
         .setMonolithicPipelineLayout(m_pipelineLayout)
@@ -357,7 +357,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
         makeImageMemoryBarrier(VK_ACCESS_NONE_KHR, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_colorImage, subresourceRange);
     vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                           &attachmentLayoutBarrier);
 
     // render single triangle

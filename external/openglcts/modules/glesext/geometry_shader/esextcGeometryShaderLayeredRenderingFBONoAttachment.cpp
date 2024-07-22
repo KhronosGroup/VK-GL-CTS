@@ -125,8 +125,8 @@ GeometryShaderLayeredRenderingFBONoAttachment::GeometryShaderLayeredRenderingFBO
     , m_to_id(0)
     , m_vao_id(0)
     , m_vs_id(0)
-    , m_all_layers_data(DE_NULL)
-    , m_layer_data(DE_NULL)
+    , m_all_layers_data(nullptr)
+    , m_layer_data(nullptr)
 {
     /* Nothing to be done here */
 }
@@ -186,16 +186,16 @@ void GeometryShaderLayeredRenderingFBONoAttachment::deinit(void)
         m_vao_id = 0;
     }
 
-    if (m_all_layers_data != DE_NULL)
+    if (m_all_layers_data != nullptr)
     {
         delete[] m_all_layers_data;
-        m_all_layers_data = DE_NULL;
+        m_all_layers_data = nullptr;
     }
 
-    if (m_layer_data != DE_NULL)
+    if (m_layer_data != nullptr)
     {
         delete[] m_layer_data;
-        m_layer_data = DE_NULL;
+        m_layer_data = nullptr;
     }
 
     /* Release base class */

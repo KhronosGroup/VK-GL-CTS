@@ -310,7 +310,7 @@ tcu::TestStatus testShadingRates(Context &context)
     uint32_t supportedFragmentShadingRateCount = 0;
 
     vk::VkResult result =
-        vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, DE_NULL);
+        vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, nullptr);
     if ((result != vk::VK_SUCCESS) && (result != vk::VK_ERROR_OUT_OF_HOST_MEMORY))
     {
         someChecksFailed = true;
@@ -322,7 +322,7 @@ tcu::TestStatus testShadingRates(Context &context)
     for (auto &fragmentShadingRate : fragmentShadingRateVect)
     {
         fragmentShadingRate.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR;
-        fragmentShadingRate.pNext = DE_NULL;
+        fragmentShadingRate.pNext = nullptr;
     }
 
     // Pass a value of 1 into pFragmentShadingRateCount, and an array of at least length one into pFragmentShadingRates.

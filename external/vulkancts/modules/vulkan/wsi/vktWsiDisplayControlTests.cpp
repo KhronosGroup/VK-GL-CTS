@@ -81,7 +81,7 @@ CustomInstance createInstance(Context &context)
 uint32_t chooseQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
     uint32_t numTotalFamilyIndices;
-    vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numTotalFamilyIndices, DE_NULL);
+    vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numTotalFamilyIndices, nullptr);
 
     for (uint32_t queueFamilyNdx = 0; queueFamilyNdx < numTotalFamilyIndices; ++queueFamilyNdx)
     {
@@ -95,14 +95,14 @@ uint32_t chooseQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice p
 
 Move<VkDevice> createTestDevice(const Context &context, const PlatformInterface &vkp, const VkInstance instance,
                                 const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator = DE_NULL)
+                                const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[] = {1.0f};
     bool displayAvailable         = true;
     bool validationEnabled        = context.getTestContext().getCommandLine().isValidationEnabled();
     const vk::Platform &platform  = context.getTestContext().getPlatform().getVulkanPlatform();
 
-    const VkDeviceQueueCreateInfo queueInfos[] = {{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, DE_NULL,
+    const VkDeviceQueueCreateInfo queueInfos[] = {{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
                                                    (VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                    DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
 
@@ -112,12 +112,12 @@ Move<VkDevice> createTestDevice(const Context &context, const PlatformInterface 
     const char *extensions[] = {"VK_KHR_swapchain", "VK_EXT_display_control"};
 
     const VkDeviceCreateInfo deviceParams = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                             DE_NULL,
+                                             nullptr,
                                              (VkDeviceCreateFlags)0,
                                              DE_LENGTH_OF_ARRAY(queueInfos),
                                              &queueInfos[0],
                                              0u,
-                                             DE_NULL,
+                                             nullptr,
                                              DE_LENGTH_OF_ARRAY(extensions),
                                              &extensions[0],
                                              &features};
@@ -148,7 +148,7 @@ VkDisplayKHR getDisplayAndDisplayPlane(const InstanceInterface &vki, VkPhysicalD
                                        uint32_t *pPlaneIndex)
 {
     uint32_t countDisplays = 0;
-    VkResult result        = vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countDisplays, DE_NULL);
+    VkResult result        = vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countDisplays, nullptr);
     if (result != VK_SUCCESS)
         TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceDisplayPropertiesKHR failed");
 
@@ -156,14 +156,14 @@ VkDisplayKHR getDisplayAndDisplayPlane(const InstanceInterface &vki, VkPhysicalD
         TCU_THROW(NotSupportedError, "No displays available");
 
     uint32_t countDisplayPlanes = 0;
-    result = vki.getPhysicalDeviceDisplayPlanePropertiesKHR(physicalDevice, &countDisplayPlanes, DE_NULL);
+    result = vki.getPhysicalDeviceDisplayPlanePropertiesKHR(physicalDevice, &countDisplayPlanes, nullptr);
     if (result != VK_SUCCESS || !countDisplayPlanes)
         TCU_FAIL("GetPhysicalDeviceDisplayPlanePropertiesKHR failed");
 
     for (uint32_t p = 0; p < countDisplayPlanes; p++)
     {
         uint32_t count = 0u;
-        result         = vki.getDisplayPlaneSupportedDisplaysKHR(physicalDevice, p, &count, DE_NULL);
+        result         = vki.getDisplayPlaneSupportedDisplaysKHR(physicalDevice, p, &count, nullptr);
         if (result != VK_SUCCESS)
             TCU_FAIL("GetDisplayPlaneSupportedDisplaysKHR failed");
 
@@ -192,7 +192,7 @@ VkSurfaceKHR createSurface(const InstanceInterface &vki, VkInstance instance, Vk
 {
     // get number of display modes for this display
     uint32_t displayModesCount = 0;
-    VkResult result            = vki.getDisplayModePropertiesKHR(physicalDevice, display, &displayModesCount, DE_NULL);
+    VkResult result            = vki.getDisplayModePropertiesKHR(physicalDevice, display, &displayModesCount, nullptr);
     if (result != VK_SUCCESS)
         TCU_FAIL("GetDisplayModePropertiesKHR failed");
 
@@ -211,7 +211,7 @@ VkSurfaceKHR createSurface(const InstanceInterface &vki, VkInstance instance, Vk
 
     // get plane properties count
     uint32_t planePropertiesCount = 0;
-    result = vki.getPhysicalDeviceDisplayPlanePropertiesKHR(physicalDevice, &planePropertiesCount, DE_NULL);
+    result = vki.getPhysicalDeviceDisplayPlanePropertiesKHR(physicalDevice, &planePropertiesCount, nullptr);
     if (result != VK_SUCCESS || !planePropertiesCount)
         TCU_FAIL("GetPhysicalDeviceDisplayPlanePropertiesKHR failed");
 
@@ -224,7 +224,7 @@ VkSurfaceKHR createSurface(const InstanceInterface &vki, VkInstance instance, Vk
     // define surface create info
     const VkDisplaySurfaceCreateInfoKHR createInfo = {
         VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR, // VkStructureType                    sType
-        DE_NULL,                                           // const void*                        pNext
+        nullptr,                                           // const void*                        pNext
         0,                                                 // VkDisplaySurfaceCreateFlagsKHR    flags
         displayMode,                                       // VkDisplayModeKHR                    displayMode
         planeIndex,                                        // uint32_t                            planeIndex
@@ -236,7 +236,7 @@ VkSurfaceKHR createSurface(const InstanceInterface &vki, VkInstance instance, Vk
          planeCapabilities.minDstExtent.width, planeCapabilities.minDstExtent.height}};
 
     VkSurfaceKHR surface = VK_NULL_HANDLE;
-    result               = vki.createDisplayPlaneSurfaceKHR(instance, &createInfo, DE_NULL, &surface);
+    result               = vki.createDisplayPlaneSurfaceKHR(instance, &createInfo, nullptr, &surface);
     if (result != VK_SUCCESS)
         TCU_FAIL("CreateDisplayPlaneSurfaceKHR failed");
 
@@ -259,7 +259,7 @@ void deinitSemaphores(const DeviceInterface &vkd, VkDevice device, std::vector<V
         if (semaphore == VK_NULL_HANDLE)
             continue;
 
-        vkd.destroySemaphore(device, semaphore, DE_NULL);
+        vkd.destroySemaphore(device, semaphore, nullptr);
         semaphore = VK_NULL_HANDLE;
     }
 
@@ -279,7 +279,7 @@ void deinitFences(const DeviceInterface &vkd, VkDevice device, std::vector<VkFen
         if (fence == VK_NULL_HANDLE)
             continue;
 
-        vkd.destroyFence(device, fence, DE_NULL);
+        vkd.destroyFence(device, fence, nullptr);
         fence = VK_NULL_HANDLE;
     }
 
@@ -290,12 +290,12 @@ Move<VkCommandBuffer> createCommandBuffer(const DeviceInterface &vkd, VkDevice d
                                           VkRenderPass renderPass, VkImage image, VkFramebuffer framebuffer,
                                           VkPipeline pipeline, uint32_t imageWidth, uint32_t imageHeight)
 {
-    const VkCommandBufferAllocateInfo allocateInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, DE_NULL,
+    const VkCommandBufferAllocateInfo allocateInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr,
 
                                                       commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1};
 
     VkImageMemoryBarrier imageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType;
-                                         DE_NULL,                                  // const void* pNext;
+                                         nullptr,                                  // const void* pNext;
                                          0u,                                       // VkAccessFlags srcAccessMask;
                                          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags dstAccessMask;
                                          VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout;
@@ -316,9 +316,8 @@ Move<VkCommandBuffer> createCommandBuffer(const DeviceInterface &vkd, VkDevice d
     beginCommandBuffer(vkd, *commandBuffer, 0u);
 
     vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0,
-                           (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                           &imageBarrier);
+                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
+                           1, &imageBarrier);
 
     beginRenderPass(vkd, *commandBuffer, renderPass, framebuffer, makeRect2D(0, 0, imageWidth, imageHeight),
                     tcu::Vec4(0.25f, 0.5f, 0.75f, 1.0f));
@@ -348,7 +347,7 @@ void deinitCommandBuffers(const DeviceInterface &vkd, VkDevice device, VkCommand
 
 Move<VkCommandPool> createCommandPool(const DeviceInterface &vkd, VkDevice device, uint32_t queueFamilyIndex)
 {
-    const VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, DE_NULL, 0u,
+    const VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr, 0u,
                                                 queueFamilyIndex};
 
     return createCommandPool(vkd, device, &createInfo);
@@ -363,7 +362,7 @@ void initFramebuffers(const DeviceInterface &vkd, VkDevice device, VkRenderPass 
     for (size_t ndx = 0; ndx < framebuffers.size(); ndx++)
     {
         const VkFramebufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                                                    DE_NULL,
+                                                    nullptr,
 
                                                     0u,
                                                     renderPass,
@@ -382,7 +381,7 @@ void deinitFramebuffers(const DeviceInterface &vkd, VkDevice device, std::vector
     for (size_t ndx = 0; ndx < framebuffers.size(); ndx++)
     {
         if (framebuffers[ndx] != VK_NULL_HANDLE)
-            vkd.destroyFramebuffer(device, framebuffers[ndx], DE_NULL);
+            vkd.destroyFramebuffer(device, framebuffers[ndx], nullptr);
 
         framebuffers[ndx] = VK_NULL_HANDLE;
     }
@@ -393,7 +392,7 @@ void deinitFramebuffers(const DeviceInterface &vkd, VkDevice device, std::vector
 Move<VkImageView> createImageView(const DeviceInterface &vkd, VkDevice device, VkImage image, VkFormat format)
 {
     const VkImageViewCreateInfo createInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                              DE_NULL,
+                                              nullptr,
 
                                               0u,
                                               image,
@@ -402,7 +401,7 @@ Move<VkImageView> createImageView(const DeviceInterface &vkd, VkDevice device, V
                                               makeComponentMappingRGBA(),
                                               {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
 
-    return createImageView(vkd, device, &createInfo, DE_NULL);
+    return createImageView(vkd, device, &createInfo, nullptr);
 }
 
 void initImageViews(const DeviceInterface &vkd, VkDevice device, const std::vector<VkImage> &images, VkFormat format,
@@ -419,7 +418,7 @@ void deinitImageViews(const DeviceInterface &vkd, VkDevice device, std::vector<V
     for (size_t ndx = 0; ndx < imageViews.size(); ndx++)
     {
         if (imageViews[ndx] != VK_NULL_HANDLE)
-            vkd.destroyImageView(device, imageViews[ndx], DE_NULL);
+            vkd.destroyImageView(device, imageViews[ndx], nullptr);
 
         imageViews[ndx] = VK_NULL_HANDLE;
     }
@@ -432,7 +431,7 @@ Move<VkPipeline> createPipeline(const DeviceInterface &vkd, VkDevice device, VkR
                                 VkShaderModule fragmentShaderModule, uint32_t width, uint32_t height)
 {
     const VkPipelineVertexInputStateCreateInfo vertexInputState = {
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, DE_NULL, 0u, 0u, DE_NULL, 0u, DE_NULL};
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, nullptr, 0u, 0u, nullptr, 0u, nullptr};
     const std::vector<VkViewport> viewports(1, makeViewport(tcu::UVec2(width, height)));
     const std::vector<VkRect2D> scissors(1, makeRect2D(tcu::UVec2(width, height)));
 
@@ -457,7 +456,7 @@ Move<VkPipeline> createPipeline(const DeviceInterface &vkd, VkDevice device, VkR
 Move<VkPipelineLayout> createPipelineLayout(const DeviceInterface &vkd, VkDevice device)
 {
     const VkPipelineLayoutCreateInfo createInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, DE_NULL, 0u, 0u, DE_NULL, 0u, DE_NULL,
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, nullptr, 0u, 0u, nullptr, 0u, nullptr,
     };
 
     return createPipelineLayout(vkd, device, &createInfo);
@@ -466,7 +465,7 @@ Move<VkPipelineLayout> createPipelineLayout(const DeviceInterface &vkd, VkDevice
 VkSwapchainCounterCreateInfoEXT createSwapchainCounterConfig()
 {
     const VkSwapchainCounterCreateInfoEXT swapchainCounterConfig = {VK_STRUCTURE_TYPE_SWAPCHAIN_COUNTER_CREATE_INFO_EXT,
-                                                                    DE_NULL, VK_SURFACE_COUNTER_VBLANK_EXT};
+                                                                    nullptr, VK_SURFACE_COUNTER_VBLANK_EXT};
     return swapchainCounterConfig;
 }
 
@@ -643,7 +642,7 @@ SwapchainCounterTestInstance::~SwapchainCounterTestInstance(void)
 {
     deinitSwapchainResources();
 
-    m_vki.destroySurfaceKHR(m_instance, m_surface, DE_NULL);
+    m_vki.destroySurfaceKHR(m_instance, m_surface, nullptr);
 }
 
 void SwapchainCounterTestInstance::initSwapchainResources(void)
@@ -726,7 +725,7 @@ void SwapchainCounterTestInstance::render(void)
     {
         const VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         const VkSubmitInfo submitInfo           = {
-            VK_STRUCTURE_TYPE_SUBMIT_INFO, DE_NULL, 1u, &currentAcquireSemaphore, &dstStageMask, 1u, &commandBuffer, 1u,
+            VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 1u, &currentAcquireSemaphore, &dstStageMask, 1u, &commandBuffer, 1u,
             &currentRenderSemaphore};
 
         VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submitInfo, fence));
@@ -734,7 +733,7 @@ void SwapchainCounterTestInstance::render(void)
 
     VkResult result;
     const VkPresentInfoKHR presentInfo = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                                          DE_NULL,
+                                          nullptr,
                                           1u,
                                           &currentRenderSemaphore,
                                           1u,
@@ -858,7 +857,7 @@ void getDisplays(Context &context, std::vector<VkDisplayKHR> &availableDisplays)
     const InstanceInterface &vki    = context.getInstanceInterface();
     const vk::Platform &platform    = context.getTestContext().getPlatform().getVulkanPlatform();
 
-    VkResult result = vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countReported, DE_NULL);
+    VkResult result = vki.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &countReported, nullptr);
     if (result != VK_SUCCESS)
         TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceDisplayPropertiesKHR failed");
 
@@ -915,7 +914,7 @@ tcu::TestStatus testDisplayPowerControl(Context &context)
         // iterate over tested sequence of power states
         for (const auto &psd : powerStateDataVect)
         {
-            VkDisplayPowerInfoEXT displayPowerInfo = {VK_STRUCTURE_TYPE_DISPLAY_POWER_INFO_EXT, DE_NULL, psd.state};
+            VkDisplayPowerInfoEXT displayPowerInfo = {VK_STRUCTURE_TYPE_DISPLAY_POWER_INFO_EXT, nullptr, psd.state};
 
             VkResult result = vkd.displayPowerControlEXT(device, display, &displayPowerInfo);
             if (result != VK_SUCCESS)
@@ -945,12 +944,12 @@ tcu::TestStatus testDisplayEvent(Context &context)
     // iterate over all displays
     for (size_t i = 0; i < availableDisplays.size(); ++i)
     {
-        VkDisplayEventInfoEXT displayEventInfo = {VK_STRUCTURE_TYPE_DISPLAY_EVENT_INFO_EXT, DE_NULL,
+        VkDisplayEventInfoEXT displayEventInfo = {VK_STRUCTURE_TYPE_DISPLAY_EVENT_INFO_EXT, nullptr,
                                                   VK_DISPLAY_EVENT_TYPE_FIRST_PIXEL_OUT_EXT};
 
         VkFence &fence        = fences[i];
         VkDisplayKHR &display = availableDisplays[i];
-        VkResult result       = vkd.registerDisplayEventEXT(device, display, &displayEventInfo, DE_NULL, &fence);
+        VkResult result       = vkd.registerDisplayEventEXT(device, display, &displayEventInfo, nullptr, &fence);
         if (result != VK_SUCCESS)
             return tcu::TestStatus::fail(std::string("vkRegisterDisplayEventEXT returned invalid result"));
     }
@@ -970,10 +969,10 @@ tcu::TestStatus testDeviceEvent(Context &context)
     const DeviceInterface &vkd  = context.getDeviceInterface();
     std::vector<VkFence> fences = std::vector<VkFence>(1, VK_NULL_HANDLE);
 
-    vk::VkDeviceEventInfoEXT deviceEventInfo = {VK_STRUCTURE_TYPE_DEVICE_EVENT_INFO_EXT, DE_NULL,
+    vk::VkDeviceEventInfoEXT deviceEventInfo = {VK_STRUCTURE_TYPE_DEVICE_EVENT_INFO_EXT, nullptr,
                                                 VK_DEVICE_EVENT_TYPE_DISPLAY_HOTPLUG_EXT};
 
-    VkResult result = vkd.registerDeviceEventEXT(device, &deviceEventInfo, DE_NULL, &fences[0]);
+    VkResult result = vkd.registerDeviceEventEXT(device, &deviceEventInfo, nullptr, &fences[0]);
     if (result != VK_SUCCESS)
         return tcu::TestStatus::fail(std::string("vkRegisterDeviceEventEXT returned invalid result"));
 

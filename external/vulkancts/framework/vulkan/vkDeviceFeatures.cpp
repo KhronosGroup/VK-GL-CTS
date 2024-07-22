@@ -56,7 +56,7 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
     if (isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
     {
         const std::vector<VkExtensionProperties> deviceExtensionProperties =
-            enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+            enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
         void **nextPtr = &m_coreFeatures2.pNext;
         std::vector<FeatureStructWrapperBase *> featuresToFillFromBlob;
 #ifndef CTS_USES_VULKANSC
@@ -107,7 +107,7 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
                 verifyFeatureAddCriteria(featureStructCreationData, deviceExtensionProperties))
             {
                 FeatureStructWrapperBase *p = (*featureStructCreationData.creatorFunction)();
-                if (p == DE_NULL)
+                if (p == nullptr)
                     continue;
 
 #ifdef CTS_USES_VULKANSC
@@ -175,7 +175,7 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
                                   "VK_EXT_extended_dynamic_state")))
                 {
                     FeatureStructWrapperBase *p = (*featureStructCreationData.creatorFunction)();
-                    if (p == DE_NULL)
+                    if (p == nullptr)
                         continue;
 
                     auto f =
@@ -188,7 +188,7 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
                                   "VK_EXT_extended_dynamic_state2")))
                 {
                     FeatureStructWrapperBase *p = (*featureStructCreationData.creatorFunction)();
-                    if (p == DE_NULL)
+                    if (p == nullptr)
                         continue;
 
                     auto f =

@@ -180,7 +180,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
 {
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_3D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -193,7 +193,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
             VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -205,7 +205,7 @@ Move<VkQueryPool> makeQueryPool(const DeviceInterface &vk, const VkDevice device
 {
     const VkQueryPoolCreateInfo queryPoolCreateInfo = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // sType
-        DE_NULL,                                  // pNext
+        nullptr,                                  // pNext
         (VkQueryPoolCreateFlags)0,                // flags
         queryType,                                // queryType
         queryCount,                               // queryCount
@@ -219,7 +219,7 @@ VkDeviceAddress getAccelerationStructureDeviceAddress(const DeviceInterface &vk,
 {
     const VkAccelerationStructureDeviceAddressInfoKHR addressInfo = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR, // VkStructureType               sType;
-        DE_NULL,                                                          // const void*                   pNext;
+        nullptr,                                                          // const void*                   pNext;
         accelerationStructure // VkAccelerationStructureKHR    accelerationStructure
     };
     return vk.getAccelerationStructureDeviceAddressKHR(device, &addressInfo);
@@ -386,7 +386,7 @@ void TestShaderBindingTablesConfiguration::initShaderBindingTables(de::MovePtr<R
         // capture SBT addresses
         VkBufferDeviceAddressInfo deviceAddressInfo = {
             VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, //VkStructureType    sType;
-            DE_NULL,                                      //const void*        pNext;
+            nullptr,                                      //const void*        pNext;
             VK_NULL_HANDLE                                //VkBuffer           buffer;
         };
         deviceAddressInfo.buffer = pipelineData.pipelines[0].raygenShaderBindingTable->get();
@@ -1430,7 +1430,7 @@ std::vector<uint32_t> RayTracingCaptureReplayTestInstance::runTest(bool replay)
 
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelRayTracedPtr->getPtr() //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -1453,7 +1453,7 @@ std::vector<uint32_t> RayTracingCaptureReplayTestInstance::runTest(bool replay)
                 .update(vkd, device);
 
             vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                      &(pipelineData.pipelines[i].descriptorSet.get()), 0, DE_NULL);
+                                      &(pipelineData.pipelines[i].descriptorSet.get()), 0, nullptr);
 
             vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
                                 *(pipelineData.pipelines[i].pipeline));

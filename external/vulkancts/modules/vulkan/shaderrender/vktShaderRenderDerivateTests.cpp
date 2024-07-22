@@ -131,7 +131,7 @@ static const char *getDerivateFuncName(DerivateFunc func)
         return "fwidthCoarse";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -163,7 +163,7 @@ static const char *getDerivateFuncCaseName(DerivateFunc func)
         return "fwidthcoarse";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -717,7 +717,7 @@ static VkSampleCountFlagBits getVkSampleCount(int numSamples)
 TriangleDerivateCaseInstance::TriangleDerivateCaseInstance(Context &context, const UniformSetup &uniformSetup,
                                                            const DerivateCaseDefinition &definitions,
                                                            const DerivateCaseValues &values)
-    : ShaderRenderCaseInstance(context, true, DE_NULL, uniformSetup, DE_NULL)
+    : ShaderRenderCaseInstance(context, true, nullptr, uniformSetup, nullptr)
     , m_definitions(definitions)
     , m_values(values)
 {
@@ -858,7 +858,7 @@ protected:
 
 TriangleDerivateCase::TriangleDerivateCase(tcu::TestContext &testCtx, const std::string &name,
                                            const UniformSetup *uniformSetup)
-    : ShaderRenderCase(testCtx, name, false, (ShaderEvaluator *)DE_NULL, uniformSetup, DE_NULL)
+    : ShaderRenderCase(testCtx, name, false, (ShaderEvaluator *)nullptr, uniformSetup, nullptr)
     , m_definitions()
 {
 }

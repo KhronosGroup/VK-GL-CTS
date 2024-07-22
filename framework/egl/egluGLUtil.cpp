@@ -311,7 +311,7 @@ EGLConfig chooseConfig(const Library &egl, EGLDisplay display, const glu::Render
             return *iter;
     }
 
-    throw tcu::NotSupportedError("Matching EGL config not found", DE_NULL, __FILE__, __LINE__);
+    throw tcu::NotSupportedError("Matching EGL config not found", nullptr, __FILE__, __LINE__);
 }
 
 } // namespace eglu

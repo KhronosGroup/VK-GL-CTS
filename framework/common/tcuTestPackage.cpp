@@ -79,7 +79,7 @@ void TestPackageRegistry::destroy(void)
 
 TestPackageRegistry *TestPackageRegistry::getOrDestroy(bool isCreate)
 {
-    static TestPackageRegistry *s_ptr = DE_NULL;
+    static TestPackageRegistry *s_ptr = nullptr;
 
     if (isCreate)
     {
@@ -93,16 +93,16 @@ TestPackageRegistry *TestPackageRegistry::getOrDestroy(bool isCreate)
         if (s_ptr)
         {
             delete s_ptr;
-            s_ptr = DE_NULL;
+            s_ptr = nullptr;
         }
 
-        return DE_NULL;
+        return nullptr;
     }
 }
 
 void TestPackageRegistry::registerPackage(const char *name, TestPackageCreateFunc createFunc)
 {
-    DE_ASSERT(getPackageInfoByName(name) == DE_NULL);
+    DE_ASSERT(getPackageInfoByName(name) == nullptr);
     m_packageInfos.push_back(new PackageInfo(name, createFunc));
 }
 
@@ -119,13 +119,13 @@ TestPackageRegistry::PackageInfo *TestPackageRegistry::getPackageInfoByName(cons
             return m_packageInfos[i];
     }
 
-    return DE_NULL;
+    return nullptr;
 }
 
 TestPackage *TestPackageRegistry::createPackage(const char *name, TestContext &testCtx) const
 {
     PackageInfo *info = getPackageInfoByName(name);
-    return info ? info->createFunc(testCtx) : DE_NULL;
+    return info ? info->createFunc(testCtx) : nullptr;
 }
 
 // TestPackageDescriptor

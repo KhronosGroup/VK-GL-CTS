@@ -1514,7 +1514,7 @@ TestCase *createDiffTest(Context &context, PrePost prepost, const char *name, co
     else
     {
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -1552,7 +1552,7 @@ TestCase *createAdvancedEqDiffTest(Context &context, PrePost prepost, const char
     else
     {
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

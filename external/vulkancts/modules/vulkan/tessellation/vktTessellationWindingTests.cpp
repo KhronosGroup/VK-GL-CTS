@@ -448,12 +448,12 @@ tcu::TestStatus WindingTestInstance::iterate(void)
         GraphicsPipelineBuilder()
             .setCullModeFlags(cullMode)
             .setFrontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE)
-            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert"), DE_NULL)
+            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert"), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-                       m_context.getBinaryCollection().get("tesc"), DE_NULL)
+                       m_context.getBinaryCollection().get("tesc"), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-                       m_context.getBinaryCollection().get("tese"), DE_NULL)
-            .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("frag"), DE_NULL)
+                       m_context.getBinaryCollection().get("tese"), nullptr)
+            .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("frag"), nullptr)
             .setTessellationDomainOrigin(m_domainOrigin)
             .build(vk, device, *pipelineLayout, *renderPass));
 
@@ -461,12 +461,12 @@ tcu::TestStatus WindingTestInstance::iterate(void)
         GraphicsPipelineBuilder()
             .setCullModeFlags(cullMode)
             .setFrontFace(VK_FRONT_FACE_CLOCKWISE)
-            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert"), DE_NULL)
+            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert"), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-                       m_context.getBinaryCollection().get("tesc"), DE_NULL)
+                       m_context.getBinaryCollection().get("tesc"), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-                       m_context.getBinaryCollection().get("tese"), DE_NULL)
-            .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("frag"), DE_NULL)
+                       m_context.getBinaryCollection().get("tese"), nullptr)
+            .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("frag"), nullptr)
             .setTessellationDomainOrigin(m_domainOrigin)
             .build(vk, device, *pipelineLayout, *renderPass));
 
@@ -513,7 +513,7 @@ tcu::TestStatus WindingTestInstance::iterate(void)
                 *colorAttachmentImage, colorImageSubresourceRange);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                                   &colorAttachmentLayoutBarrier);
         }
 

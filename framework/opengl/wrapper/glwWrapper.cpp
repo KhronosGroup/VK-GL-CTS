@@ -40,7 +40,7 @@ namespace glw
 #if defined(DE_THREAD_LOCAL)
 
 // Thread-local current function table.
-DE_THREAD_LOCAL const glw::Functions *s_functions = DE_NULL;
+DE_THREAD_LOCAL const glw::Functions *s_functions = nullptr;
 
 void setCurrentThreadFunctions(const glw::Functions *gl)
 {

@@ -108,7 +108,7 @@ static EAGLRenderingAPI getEAGLApi(glu::ContextType type)
 }
 
 RawContext::RawContext(glu::ContextType type)
-    : m_type(type), m_context(DE_NULL),
+    : m_type(type), m_context(nullptr),
       m_emptyTarget(0, 0, tcu::PixelFormat(0, 0, 0, 0), 0, 0, 0)
 {
     const EAGLRenderingAPI eaglApi = getEAGLApi(type);
@@ -171,7 +171,7 @@ NSString *chooseLayerColorFormat(const glu::RenderConfig &config)
 
 ScreenContext::ScreenContext(ScreenManager *screenManager,
                              const glu::RenderConfig &config)
-    : RawContext(config.type), m_screenManager(screenManager), m_layer(DE_NULL),
+    : RawContext(config.type), m_screenManager(screenManager), m_layer(nullptr),
       m_framebuffer(
           *this) // \note Perfectly safe to give reference to this RC as
                  // everything except postIterate() works at this point.

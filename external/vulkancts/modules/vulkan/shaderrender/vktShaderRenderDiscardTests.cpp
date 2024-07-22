@@ -69,7 +69,7 @@ public:
 ShaderDiscardCaseInstance::ShaderDiscardCaseInstance(Context &context, bool isVertexCase,
                                                      const ShaderEvaluator &evaluator, const UniformSetup &uniformSetup,
                                                      bool usesTexture, bool fuzzyCompare)
-    : ShaderRenderCaseInstance(context, isVertexCase, evaluator, uniformSetup, DE_NULL, IMAGE_BACKING_MODE_REGULAR,
+    : ShaderRenderCaseInstance(context, isVertexCase, evaluator, uniformSetup, nullptr, IMAGE_BACKING_MODE_REGULAR,
                                static_cast<uint32_t>(GRID_SIZE_DEFAULTS), fuzzyCompare)
 {
     if (usesTexture)
@@ -112,7 +112,7 @@ private:
 
 ShaderDiscardCase::ShaderDiscardCase(tcu::TestContext &testCtx, const char *name, const char *shaderSource,
                                      const ShaderEvalFunc evalFunc, bool usesTexture, bool fuzzyCompare, bool demote)
-    : ShaderRenderCase(testCtx, name, false, evalFunc, new SamplerUniformSetup(usesTexture), DE_NULL)
+    : ShaderRenderCase(testCtx, name, false, evalFunc, new SamplerUniformSetup(usesTexture), nullptr)
     , m_usesTexture(usesTexture)
     , m_fuzzyCompare(fuzzyCompare)
 #ifndef CTS_USES_VULKANSC
@@ -293,7 +293,7 @@ static const char *getTemplate(DiscardTemplate variant)
 
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 
 #undef GLSL_SHADER_TEMPLATE_HEADER
@@ -315,7 +315,7 @@ static const char *getTemplateName(DiscardTemplate variant)
         return "function_static_loop";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -337,7 +337,7 @@ static const char *getModeName(DiscardMode mode)
         return "deriv";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

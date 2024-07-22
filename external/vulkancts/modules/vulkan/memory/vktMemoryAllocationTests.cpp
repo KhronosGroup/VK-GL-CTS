@@ -139,7 +139,7 @@ public:
             createTestDevice();
 
         m_allocFlagsInfo.sType      = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
-        m_allocFlagsInfo.pNext      = DE_NULL;
+        m_allocFlagsInfo.pNext      = nullptr;
         m_allocFlagsInfo.flags      = VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
         m_allocFlagsInfo.deviceMask = 0;
     }
@@ -184,7 +184,7 @@ void BaseAllocateTestInstance::createTestDevice(void)
     bool protMemSupported                         = false;
     const bool usePageable                        = m_allocationMode == ALLOCATION_MODE_PAGEABLE;
 
-    void *pNext = DE_NULL;
+    void *pNext = nullptr;
 
     if (usePageable && !m_context.isDeviceFunctionalitySupported("VK_EXT_pageable_device_local_memory"))
         TCU_THROW(NotSupportedError, "VK_EXT_pageable_device_local_memory is not supported");
@@ -195,7 +195,7 @@ void BaseAllocateTestInstance::createTestDevice(void)
         pNext,    // const void*                        pNext
         VK_FALSE, // VkBool32 pageableDeviceLocalMemory;
     };
-    pNext = (usePageable) ? &pageableDeviceLocalMemoryFeature : DE_NULL;
+    pNext = (usePageable) ? &pageableDeviceLocalMemoryFeature : nullptr;
 #endif // CTS_USES_VULKANSC
 
     VkPhysicalDeviceProtectedMemoryFeatures protectedMemoryFeature = {
@@ -251,7 +251,7 @@ void BaseAllocateTestInstance::createTestDevice(void)
 
     VkDeviceQueueCreateInfo queueInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         queueCreateFlags,                           // VkDeviceQueueCreateFlags flags;
         queueFamilyIndex,                           // uint32_t queueFamilyIndex;
         1u,                                         // uint32_t queueCount;
@@ -260,16 +260,16 @@ void BaseAllocateTestInstance::createTestDevice(void)
 
     const VkDeviceCreateInfo deviceInfo = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType sType;
-        (protMemSupported || usePageable || m_deviceCoherentMemSupported) ? &features2 : DE_NULL, // const void* pNext;
+        (protMemSupported || usePageable || m_deviceCoherentMemSupported) ? &features2 : nullptr, // const void* pNext;
         (VkDeviceCreateFlags)0,            // VkDeviceCreateFlags flags;
         1u,                                // uint32_t queueCreateInfoCount;
         &queueInfo,                        // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                // uint32_t enabledLayerCount;
-        DE_NULL,                           // const char* const* ppEnabledLayerNames;
+        nullptr,                           // const char* const* ppEnabledLayerNames;
         uint32_t(deviceExtensions.size()), // uint32_t enabledExtensionCount;
-        (deviceExtensions.empty()) ? DE_NULL : deviceExtensions.data(), // const char* const* ppEnabledExtensionNames;
+        (deviceExtensions.empty()) ? nullptr : deviceExtensions.data(), // const char* const* ppEnabledExtensionNames;
         (protMemSupported || usePageable || m_deviceCoherentMemSupported) ?
-            DE_NULL :
+            nullptr :
             &deviceFeatures // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
@@ -312,7 +312,7 @@ void BaseAllocateTestInstance::createDeviceGroup(void)
 
     VkDeviceGroupDeviceCreateInfo deviceGroupInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO,   //stype
-        DE_NULL,                                             //pNext
+        nullptr,                                             //pNext
         devGroupProperties[devGroupIdx].physicalDeviceCount, //physicalDeviceCount
         devGroupProperties[devGroupIdx].physicalDevices      //physicalDevices
     };
@@ -330,7 +330,7 @@ void BaseAllocateTestInstance::createDeviceGroup(void)
 
     VkDeviceQueueCreateInfo queueInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         (VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags flags;
         queueFamilyIndex,                           // uint32_t queueFamilyIndex;
         1u,                                         // uint32_t queueCount;
@@ -344,9 +344,9 @@ void BaseAllocateTestInstance::createDeviceGroup(void)
         1u,                                                        // uint32_t queueCreateInfoCount;
         &queueInfo,                                                // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                                        // uint32_t enabledLayerCount;
-        DE_NULL,                                                   // const char* const* ppEnabledLayerNames;
+        nullptr,                                                   // const char* const* ppEnabledLayerNames;
         uint32_t(deviceExtensions.size()),                         // uint32_t enabledExtensionCount;
-        deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0], // const char* const* ppEnabledExtensionNames;
+        deviceExtensions.empty() ? nullptr : &deviceExtensions[0], // const char* const* ppEnabledExtensionNames;
         &deviceFeatures,                                           // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
@@ -453,7 +453,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
 
                 VkBufferCreateInfo bufferParams = {
                     VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType          sType;
-                    DE_NULL,                              // const void*              pNext;
+                    nullptr,                              // const void*              pNext;
                     createFlags,                          // VkBufferCreateFlags      flags;
                     bufferSize,                           // VkDeviceSize             size;
                     usageFlags,                           // VkBufferUsageFlags       usage;
@@ -521,13 +521,12 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
                                     VkMemoryAllocateInfo alloc = {
                                         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // sType
                                         (m_allocationMode == ALLOCATION_MODE_DEVICE_GROUP) ? &m_allocFlagsInfo :
-                                                                                             DE_NULL, // pNext
+                                                                                             nullptr, // pNext
                                         allocationSize,                                               // allocationSize
                                         m_memoryTypeIndex // memoryTypeIndex;
                                     };
 
-                                    VkResult res = vkd.allocateMemory(
-                                        device, &alloc, (const VkAllocationCallbacks *)DE_NULL, &memoryObjects[ndx]);
+                                    VkResult res = vkd.allocateMemory(device, &alloc, nullptr, &memoryObjects[ndx]);
 
                                     // Some implementations might have limitations on protected heap, and these limitations
                                     // don't show up in Vulkan queries. Use a hard coded threshold after which out of memory
@@ -555,7 +554,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
                                         if (!!mem)
                                         {
 #ifndef CTS_USES_VULKANSC
-                                            vkd.freeMemory(device, mem, (const VkAllocationCallbacks *)DE_NULL);
+                                            vkd.freeMemory(device, mem, nullptr);
 #endif // CTS_USES_VULKANSC
                                             memoryObjects[memoryObjects.size() - 1 - ndx] = VK_NULL_HANDLE;
                                         }
@@ -570,7 +569,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
                                         if (!!mem)
                                         {
 #ifndef CTS_USES_VULKANSC
-                                            vkd.freeMemory(device, mem, (const VkAllocationCallbacks *)DE_NULL);
+                                            vkd.freeMemory(device, mem, nullptr);
 #endif // CTS_USES_VULKANSC
                                             memoryObjects[ndx] = VK_NULL_HANDLE;
                                         }
@@ -584,16 +583,15 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
                                     const VkMemoryAllocateInfo alloc = {
                                         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // sType
                                         (m_allocationMode == ALLOCATION_MODE_DEVICE_GROUP) ? &m_allocFlagsInfo :
-                                                                                             DE_NULL, // pNext
+                                                                                             nullptr, // pNext
                                         allocationSize,                                               // allocationSize
                                         m_memoryTypeIndex // memoryTypeIndex;
                                     };
 
-                                    VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks *)DE_NULL,
-                                                                &memoryObjects[ndx]));
+                                    VK_CHECK(vkd.allocateMemory(device, &alloc, nullptr, &memoryObjects[ndx]));
                                     TCU_CHECK(!!memoryObjects[ndx]);
 #ifndef CTS_USES_VULKANSC
-                                    vkd.freeMemory(device, memoryObjects[ndx], (const VkAllocationCallbacks *)DE_NULL);
+                                    vkd.freeMemory(device, memoryObjects[ndx], nullptr);
 #endif // CTS_USES_VULKANSC
                                     memoryObjects[ndx] = VK_NULL_HANDLE;
                                 }
@@ -609,7 +607,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate(void)
                             if (!!mem)
                             {
 #ifndef CTS_USES_VULKANSC
-                                vkd.freeMemory(device, mem, (const VkAllocationCallbacks *)DE_NULL);
+                                vkd.freeMemory(device, mem, nullptr);
 #endif // CTS_USES_VULKANSC
                                 memoryObjects[ndx] = VK_NULL_HANDLE;
                             }
@@ -644,7 +642,7 @@ size_t computeDeviceMemorySystemMemFootprint(const DeviceInterface &vk, VkDevice
         // 1 B allocation from memory type 0
         const VkMemoryAllocateInfo allocInfo = {
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            DE_NULL,
+            nullptr,
             1u,
             0u,
         };
@@ -766,7 +764,7 @@ RandomAllocFreeTestInstance::~RandomAllocFreeTestInstance(void)
         {
             if (!!heap.objects[objectNdx].memory)
             {
-                vkd.freeMemory(device, heap.objects[objectNdx].memory, (const VkAllocationCallbacks *)DE_NULL);
+                vkd.freeMemory(device, heap.objects[objectNdx].memory, nullptr);
             }
         }
     }
@@ -877,13 +875,12 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate(void)
         m_allocFlagsInfo.deviceMask      = m_currentDeviceMask;
         const VkMemoryAllocateInfo alloc = {
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,                                           // sType
-            (m_allocationMode == ALLOCATION_MODE_DEVICE_GROUP) ? &m_allocFlagsInfo : DE_NULL, // pNext
+            (m_allocationMode == ALLOCATION_MODE_DEVICE_GROUP) ? &m_allocFlagsInfo : nullptr, // pNext
             object.size,                                                                      // allocationSize
             memoryType.index                                                                  // memoryTypeIndex;
         };
 
-        VkResult res =
-            vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks *)DE_NULL, &heap.objects.back().memory);
+        VkResult res = vkd.allocateMemory(device, &alloc, nullptr, &heap.objects.back().memory);
 
         // Some implementations might have limitations on protected heap, and these
         // limitations don't show up in Vulkan queries. Use a hard coded threshold
@@ -918,7 +915,7 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate(void)
         const bool isDeviceLocal     = (heap.heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
 
 #ifndef CTS_USES_VULKANSC
-        vkd.freeMemory(device, memoryObject.memory, (const VkAllocationCallbacks *)DE_NULL);
+        vkd.freeMemory(device, memoryObject.memory, nullptr);
 #endif
         memoryObject.memory = VK_NULL_HANDLE;
         m_memoryObjectCount--;

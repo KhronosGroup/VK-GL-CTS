@@ -118,7 +118,7 @@ Texture2DMipmapCase::Texture2DMipmapCase(tcu::TestContext &testCtx, glu::RenderC
     , m_dataType(dataType)
     , m_width(width)
     , m_height(height)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES,
                  renderCtxInfo.isFragmentHighPrecisionSupported() ? glu::PRECISION_HIGHP // Use highp if available.
                                                                     :
@@ -161,7 +161,7 @@ void Texture2DMipmapCase::init(void)
 void Texture2DMipmapCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -456,7 +456,7 @@ TextureCubeMipmapCase::TextureCubeMipmapCase(tcu::TestContext &testCtx, glu::Ren
     , m_format(format)
     , m_dataType(dataType)
     , m_size(size)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES,
                  renderCtxInfo.isFragmentHighPrecisionSupported() ? glu::PRECISION_HIGHP // Use highp if available.
                                                                     :
@@ -526,7 +526,7 @@ void TextureCubeMipmapCase::init(void)
 void TextureCubeMipmapCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -770,7 +770,7 @@ Texture2DGenMipmapCase::Texture2DGenMipmapCase(tcu::TestContext &testCtx, glu::R
     , m_hint(hint)
     , m_width(width)
     , m_height(height)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
 {
 }
@@ -789,7 +789,7 @@ void Texture2DGenMipmapCase::init(void)
 void Texture2DGenMipmapCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -912,7 +912,7 @@ TextureCubeGenMipmapCase::TextureCubeGenMipmapCase(tcu::TestContext &testCtx, gl
     , m_dataType(dataType)
     , m_hint(hint)
     , m_size(size)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
 {
 }
@@ -935,7 +935,7 @@ void TextureCubeGenMipmapCase::init(void)
 void TextureCubeGenMipmapCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -1118,7 +1118,7 @@ void TextureMipmapTests::init(void)
         const char *name;
         int width;
         int height;
-    } tex2DSizes[] = {{DE_NULL, 64, 64}, // Default.
+    } tex2DSizes[] = {{nullptr, 64, 64}, // Default.
                       {"non_square", 32, 64}};
 
     // 2D cases.

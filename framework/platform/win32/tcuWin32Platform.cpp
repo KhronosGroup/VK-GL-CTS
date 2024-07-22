@@ -51,7 +51,7 @@ Platform::Platform(void) : m_instance(GetModuleHandle(NULL)), m_vulkanPlatform(m
     }
 
     {
-        wgl::ContextFactory *factory = DE_NULL;
+        wgl::ContextFactory *factory = nullptr;
 
         try
         {

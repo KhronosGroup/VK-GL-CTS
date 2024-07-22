@@ -101,7 +101,7 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate(void)
 
     const VkDescriptorSetAllocateInfo allocInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // sType
-        DE_NULL,                                        // pNext
+        nullptr,                                        // pNext
         *descriptorPool,                                // descriptorPool
         1u,                                             // descriptorSetCount
         &(*descriptorSetLayout1)                        // pSetLayouts
@@ -136,7 +136,7 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate(void)
 
         const VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,                 // sType
-            DE_NULL,                                                             // pNext
+            nullptr,                                                             // pNext
             VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT, // flags
             VK_SHADER_STAGE_COMPUTE_BIT,                                         // stage
             *computeShader,                                                      // module
@@ -146,7 +146,7 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate(void)
 
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // sType
-            DE_NULL,                                        // pNext
+            nullptr,                                        // pNext
             0u,                                             // flags
             shaderStageCreateInfo,                          // stage
             *computePipelineLayout,                         // layout

@@ -125,7 +125,7 @@ protected:
 
 RenderCase::RenderCase(Context &context, const char *name, const char *desc, RenderTargetType renderTargetType)
     : TestCase(context, name, desc)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_renderTargetType(renderTargetType)
 {
 }
@@ -177,7 +177,7 @@ void RenderCase::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 }
 
@@ -494,7 +494,7 @@ void FramebufferRenderCase::init(void)
         // gen texture
         gl.genTextures(1, &m_texID);
         gl.bindTexture(GL_TEXTURE_2D, m_texID);
-        gl.texImage2D(GL_TEXTURE_2D, 0, internalFormat, TEST_CANVAS_SIZE, TEST_CANVAS_SIZE, 0, format, type, DE_NULL);
+        gl.texImage2D(GL_TEXTURE_2D, 0, internalFormat, TEST_CANVAS_SIZE, TEST_CANVAS_SIZE, 0, format, type, nullptr);
         GLU_EXPECT_NO_ERROR(gl.getError(), "texture init");
 
         // gen fbo
@@ -721,14 +721,14 @@ VertexAttributeCase::IterateResult VertexAttributeCase::iterate(void)
         if (m_storage == STORAGE_BUFFER)
         {
             gl.bindBuffer(GL_ARRAY_BUFFER, m_positionVboID);
-            gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+            gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
 
             gl.bindBuffer(GL_ARRAY_BUFFER, m_attribVboID);
-            gl.vertexAttribPointer(attribLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+            gl.vertexAttribPointer(attribLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
 
             gl.enableVertexAttribArray(positionLoc);
             gl.enableVertexAttribArray(attribLoc);
-            gl.drawElements(GL_TRIANGLES, (glw::GLsizei)(indices.size()), GL_UNSIGNED_SHORT, DE_NULL);
+            gl.drawElements(GL_TRIANGLES, (glw::GLsizei)(indices.size()), GL_UNSIGNED_SHORT, nullptr);
             gl.disableVertexAttribArray(positionLoc);
             gl.disableVertexAttribArray(attribLoc);
 
@@ -1130,7 +1130,7 @@ void TextureCase::init(void)
         if (m_textureType == TEXTURE_FLOAT)
         {
             std::vector<uint32_t> texData(TEST_TEXTURE_SIZE * TEST_TEXTURE_SIZE * 2);
-            const uint32_t *dataPtr = (m_uploadType == UPLOAD_CLIENT) ? (&texData[0]) : (DE_NULL);
+            const uint32_t *dataPtr = (m_uploadType == UPLOAD_CLIENT) ? (&texData[0]) : (nullptr);
 
             m_testCtx.getLog() << tcu::TestLog::Message
                                << "Creating a 2D 2-component float texture. Pixel contents are of form (special, 1)."
@@ -1158,7 +1158,7 @@ void TextureCase::init(void)
         else if (m_textureType == TEXTURE_DEPTH)
         {
             std::vector<uint32_t> texData(TEST_TEXTURE_SIZE * TEST_TEXTURE_SIZE);
-            const uint32_t *dataPtr = (m_uploadType == UPLOAD_CLIENT) ? (&texData[0]) : (DE_NULL);
+            const uint32_t *dataPtr = (m_uploadType == UPLOAD_CLIENT) ? (&texData[0]) : (nullptr);
 
             m_testCtx.getLog() << tcu::TestLog::Message
                                << "Creating a 2D depth texture and filling it with special floating point values.\n"

@@ -146,7 +146,7 @@ class MultiQueues
         {
             const VkDeviceQueueCreateInfo queueInfo = {
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,     //VkStructureType sType;
-                DE_NULL,                                        //const void* pNext;
+                nullptr,                                        //const void* pNext;
                 (VkDeviceQueueCreateFlags)0u,                   //VkDeviceQueueCreateFlags flags;
                 it->first,                                      //uint32_t queueFamilyIndex;
                 static_cast<uint32_t>(it->second.queue.size()), //uint32_t queueCount;
@@ -156,12 +156,12 @@ class MultiQueues
         }
 
         {
-            VkPhysicalDeviceFeatures2 createPhysicalFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, DE_NULL,
+            VkPhysicalDeviceFeatures2 createPhysicalFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr,
                                                             context.getDeviceFeatures()};
             VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures{
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, DE_NULL, true};
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, nullptr, true};
             VkPhysicalDeviceSynchronization2FeaturesKHR synchronization2Features{
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, DE_NULL, true};
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, nullptr, true};
             void **nextPtr = &createPhysicalFeature.pNext;
 
             std::vector<const char *> deviceExtensions;
@@ -198,7 +198,7 @@ class MultiQueues
                 {
                     pcCI = {
                         VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                        DE_NULL,                                      // const void* pNext;
+                        nullptr,                                      // const void* pNext;
                         VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                             VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                         context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
@@ -224,10 +224,10 @@ class MultiQueues
                 static_cast<uint32_t>(queueInfos.size()),       //uint32_t queueCreateInfoCount;
                 &queueInfos[0],                                 //const VkDeviceQueueCreateInfo* pQueueCreateInfos;
                 0u,                                             //uint32_t enabledLayerCount;
-                DE_NULL,                                        //const char* const* ppEnabledLayerNames;
+                nullptr,                                        //const char* const* ppEnabledLayerNames;
                 static_cast<uint32_t>(deviceExtensions.size()), //uint32_t enabledExtensionCount;
-                deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0], //const char* const* ppEnabledExtensionNames;
-                DE_NULL //const VkPhysicalDeviceFeatures* pEnabledFeatures;
+                deviceExtensions.empty() ? nullptr : &deviceExtensions[0], //const char* const* ppEnabledExtensionNames;
+                nullptr //const VkPhysicalDeviceFeatures* pEnabledFeatures;
             };
 
             m_logicalDevice = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
@@ -426,12 +426,12 @@ void createBarrierMultiQueue(SynchronizationWrapperPtr synchronizationWrapper, c
             imageMemoryBarrier2.srcQueueFamilyIndex = writeFamily;
             imageMemoryBarrier2.dstQueueFamilyIndex = readFamily;
 
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
         else if (!secondQueue)
         {
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
         }
     }
@@ -450,7 +450,7 @@ void createBarrierMultiQueue(SynchronizationWrapperPtr synchronizationWrapper, c
             bufferMemoryBarrier2.dstQueueFamilyIndex = readFamily;
         }
 
-        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
         synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
     }
 }
@@ -528,10 +528,10 @@ public:
                 getSynchronizationWrapper(m_type, vk, false),
             };
 
-            synchronizationWrapper[QUEUETYPE_WRITE]->addSubmitInfo(0u, DE_NULL, 1u, &cmdBufferInfos[QUEUETYPE_WRITE],
+            synchronizationWrapper[QUEUETYPE_WRITE]->addSubmitInfo(0u, nullptr, 1u, &cmdBufferInfos[QUEUETYPE_WRITE],
                                                                    1u, &signalSemaphoreSubmitInfo);
             synchronizationWrapper[QUEUETYPE_READ]->addSubmitInfo(1u, &waitSemaphoreSubmitInfo, 1u,
-                                                                  &cmdBufferInfos[QUEUETYPE_READ], 0u, DE_NULL);
+                                                                  &cmdBufferInfos[QUEUETYPE_READ], 0u, nullptr);
 
             const SyncInfo writeSync       = writeOp->getOutSyncInfo();
             const SyncInfo readSync        = readOp->getInSyncInfo();
@@ -953,7 +953,7 @@ public:
                                                      m_pipelineCacheData, m_sharingMode);
         default:
             DE_ASSERT(0);
-            return DE_NULL;
+            return nullptr;
         }
     }
 

@@ -38,7 +38,7 @@ namespace
 inline bool isCurrentTopStatementBlock(const GeneratorState &state)
 {
     int stackDepth = state.getStatementDepth();
-    return dynamic_cast<const BlockStatement *>(state.getStatementStackEntry(stackDepth - 1)) != DE_NULL;
+    return dynamic_cast<const BlockStatement *>(state.getStatementStackEntry(stackDepth - 1)) != nullptr;
 }
 
 template <class T>
@@ -80,8 +80,8 @@ const StatementSpec *chooseStatement(GeneratorState &state)
     // Random number in range
     float p = state.getRandom().getFloat(0.0f, sum);
 
-    const StatementSpec *spec        = DE_NULL;
-    const StatementSpec *lastNonZero = DE_NULL;
+    const StatementSpec *spec        = nullptr;
+    const StatementSpec *lastNonZero = nullptr;
 
     // Find element in that point
     sum = 0.0f;
@@ -118,7 +118,7 @@ Statement::~Statement(void)
 {
 }
 
-ExpressionStatement::ExpressionStatement(GeneratorState &state) : m_expression(DE_NULL)
+ExpressionStatement::ExpressionStatement(GeneratorState &state) : m_expression(nullptr)
 {
     ExpressionGenerator generator(state);
     m_expression = generator.generate(ValueRange(VariableType(VariableType::TYPE_VOID)));
@@ -187,7 +187,7 @@ Statement *BlockStatement::createNextChild(GeneratorState &state)
     {
         // Done, pop scope
         state.getVariableManager().popVariableScope();
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -249,10 +249,10 @@ bool hasDeclarableVars(const VariableManager &varMgr)
 } // namespace
 
 DeclarationStatement::DeclarationStatement(GeneratorState &state, Variable *variable)
-    : m_variable(DE_NULL)
-    , m_expression(DE_NULL)
+    : m_variable(nullptr)
+    , m_expression(nullptr)
 {
-    if (variable == DE_NULL)
+    if (variable == nullptr)
     {
         // Choose random
         // \todo [2011-02-03 pyry] Allocate a new here?
@@ -356,9 +356,9 @@ void DeclarationStatement::execute(ExecutionContext &execCtx) const
 }
 
 ConditionalStatement::ConditionalStatement(GeneratorState &)
-    : m_condition(DE_NULL)
-    , m_trueStatement(DE_NULL)
-    , m_falseStatement(DE_NULL)
+    : m_condition(nullptr)
+    , m_trueStatement(nullptr)
+    , m_falseStatement(nullptr)
 {
 }
 
@@ -438,7 +438,7 @@ Statement *ConditionalStatement::createNextChild(GeneratorState &state)
 
         m_condition = generator.generate(range, 1);
 
-        return DE_NULL; // Done with this statement
+        return nullptr; // Done with this statement
     }
 }
 
@@ -447,12 +447,12 @@ namespace
 
 bool isBlockStatement(const Statement *statement)
 {
-    return dynamic_cast<const BlockStatement *>(statement) != DE_NULL;
+    return dynamic_cast<const BlockStatement *>(statement) != nullptr;
 }
 
 bool isConditionalStatement(const Statement *statement)
 {
-    return dynamic_cast<const ConditionalStatement *>(statement) != DE_NULL;
+    return dynamic_cast<const ConditionalStatement *>(statement) != nullptr;
 }
 
 } // namespace
@@ -545,7 +545,7 @@ AssignStatement::AssignStatement(const Variable *variable, Expression *value)
 
 AssignStatement::AssignStatement(GeneratorState &state, const Variable *variable, ConstValueRangeAccess valueRange)
     : m_variable(variable)
-    , m_valueExpr(DE_NULL)
+    , m_valueExpr(nullptr)
 {
     // Generate random value
     ExpressionGenerator generator(state);

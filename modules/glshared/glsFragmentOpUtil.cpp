@@ -129,7 +129,7 @@ static const char *getFragSrc(glu::GLSLVersion glslVersion)
 
 QuadRenderer::QuadRenderer(const glu::RenderContext &context, glu::GLSLVersion glslVersion)
     : m_context(context)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_positionLoc(0)
     , m_colorLoc(-1)
     , m_color1Loc(-1)
@@ -146,7 +146,7 @@ QuadRenderer::QuadRenderer(const glu::RenderContext &context, glu::GLSLVersion g
     if (!m_program->isOk())
     {
         delete m_program;
-        throw tcu::TestError("Failed to compile program", DE_NULL, __FILE__, __LINE__);
+        throw tcu::TestError("Failed to compile program", nullptr, __FILE__, __LINE__);
     }
 
     m_positionLoc = gl.getAttribLocation(m_program->getProgram(), "a_position");
@@ -158,7 +158,7 @@ QuadRenderer::QuadRenderer(const glu::RenderContext &context, glu::GLSLVersion g
     if (m_positionLoc < 0 || m_colorLoc < 0 || (m_blendFuncExt && m_color1Loc < 0))
     {
         delete m_program;
-        throw tcu::TestError("Invalid attribute locations", DE_NULL, __FILE__, __LINE__);
+        throw tcu::TestError("Invalid attribute locations", nullptr, __FILE__, __LINE__);
     }
 }
 

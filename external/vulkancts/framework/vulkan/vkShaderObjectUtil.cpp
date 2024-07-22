@@ -33,8 +33,8 @@ inline Move<VkShaderEXT> createShader(const DeviceInterface &vk, VkDevice device
                                       const vk::VkShaderCreateInfoEXT &shaderCreateInfo)
 {
     VkShaderEXT object;
-    VK_CHECK(vk.createShadersEXT(device, 1u, &shaderCreateInfo, DE_NULL, &object));
-    return Move<VkShaderEXT>(check<VkShaderEXT>(object), Deleter<VkShaderEXT>(vk, device, DE_NULL));
+    VK_CHECK(vk.createShadersEXT(device, 1u, &shaderCreateInfo, nullptr, &object));
+    return Move<VkShaderEXT>(check<VkShaderEXT>(object), Deleter<VkShaderEXT>(vk, device, nullptr));
 }
 
 std::vector<std::string> removeUnsupportedShaderObjectExtensions(const vk::InstanceInterface &vki,
@@ -43,7 +43,7 @@ std::vector<std::string> removeUnsupportedShaderObjectExtensions(const vk::Insta
 {
     std::vector<std::string> extensions = deviceExtensions;
 
-    const auto extensionProperties = vk::enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const auto extensionProperties = vk::enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     uint32_t discardRectanglesVersion = 0;
     uint32_t scissorExclusiveVersion  = 0;

@@ -108,7 +108,7 @@ struct ExternalHostMemory
 
     ~ExternalHostMemory()
     {
-        if (data != DE_NULL)
+        if (data != nullptr)
         {
             deAlignedFree(data);
         }

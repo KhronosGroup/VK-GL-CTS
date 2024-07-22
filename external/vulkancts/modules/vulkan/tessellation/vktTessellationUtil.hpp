@@ -238,7 +238,7 @@ static inline const char *getTessPrimitiveTypeShaderName(const TessPrimitiveType
     if (type >= TESSPRIMITIVETYPE_LAST)
     {
         DE_FATAL("Unexpected primitive type.");
-        return DE_NULL;
+        return nullptr;
     }
 
     return primitiveName[type][forSpirv].c_str();
@@ -256,7 +256,7 @@ static inline const char *getDomainName(const TessPrimitiveType type)
         return "isoline";
     default:
         DE_FATAL("Unexpected primitive type.");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -271,7 +271,7 @@ static inline const char *getOutputTopologyName(const TessPrimitiveType type, co
         return "line";
 
     DE_FATAL("Unexpected primitive type.");
-    return DE_NULL;
+    return nullptr;
 }
 
 static inline const char *getSpacingModeShaderName(SpacingMode mode, bool forSpirv = false)
@@ -284,7 +284,7 @@ static inline const char *getSpacingModeShaderName(SpacingMode mode, bool forSpi
     if (mode >= SPACINGMODE_LAST)
     {
         DE_FATAL("Unexpected spacing type.");
-        return DE_NULL;
+        return nullptr;
     }
 
     return spacingName[mode][forSpirv].c_str();
@@ -302,7 +302,7 @@ static inline const char *getPartitioningShaderName(SpacingMode mode)
         return "fractional_even";
     default:
         DE_FATAL("Unexpected spacing mode.");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -316,7 +316,7 @@ static inline const char *getWindingShaderName(const Winding winding)
         return "cw";
     default:
         DE_FATAL("Unexpected winding type.");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -330,7 +330,7 @@ static inline const char *getShaderLanguageName(const ShaderLanguage language)
         return "hlsl";
     default:
         DE_FATAL("Unexpected shader language.");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -351,7 +351,7 @@ static inline const char *getGeometryShaderInputPrimitiveTypeShaderName(const Te
 
     default:
         DE_FATAL("Unexpected primitive type.");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -372,7 +372,7 @@ static inline const char *getGeometryShaderOutputPrimitiveTypeShaderName(const T
 
     default:
         DE_FATAL("Unexpected primitive type.");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -382,7 +382,7 @@ static inline const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR *getPortabi
 {
     if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
         return &context.getPortabilitySubsetFeatures();
-    return DE_NULL;
+    return nullptr;
 }
 
 static inline void checkIsolines(const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR &features)

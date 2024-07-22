@@ -1340,7 +1340,7 @@ glcts::ClipDistance::Utility::Program::CompilationStatus glcts::ClipDistance::Ut
 {
     CompilationStatus shader = {0, GL_NONE, ""};
 
-    if (shader_code != DE_NULL)
+    if (shader_code != nullptr)
     {
         try
         {
@@ -1380,7 +1380,7 @@ glcts::ClipDistance::Utility::Program::CompilationStatus glcts::ClipDistance::Ut
                     {
                         memset(log, 0, log_size);
 
-                        m_gl.getShaderInfoLog(shader.shader_id, log_size, DE_NULL, log);
+                        m_gl.getShaderInfoLog(shader.shader_id, log_size, nullptr, log);
 
                         shader.shader_log = log;
 
@@ -1476,7 +1476,7 @@ glcts::ClipDistance::Utility::Program::LinkageStatus glcts::ClipDistance::Utilit
                         {
                             memset(log, 0, log_size);
 
-                            m_gl.getProgramInfoLog(program.program_id, log_size, DE_NULL, log);
+                            m_gl.getProgramInfoLog(program.program_id, log_size, nullptr, log);
 
                             program.program_linkage_log = log;
 

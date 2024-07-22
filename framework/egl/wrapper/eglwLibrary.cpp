@@ -57,7 +57,7 @@ tcu::FunctionLibrary *createStaticLibrary(void)
     };
     return new tcu::StaticFunctionLibrary(s_staticEntries, DE_LENGTH_OF_ARRAY(s_staticEntries));
 #else
-    return new tcu::StaticFunctionLibrary(DE_NULL, 0);
+    return new tcu::StaticFunctionLibrary(nullptr, 0);
 #endif
 }
 
@@ -67,7 +67,7 @@ public:
     CoreLoader(const de::DynamicLibrary *dynLib)
         : m_staticLib(createStaticLibrary())
         , m_dynLib(dynLib)
-        , m_getProcAddress(DE_NULL)
+        , m_getProcAddress(nullptr)
     {
         // Try to obtain eglGetProcAddress
         m_getProcAddress = (eglGetProcAddressFunc)m_staticLib->getFunction("eglGetProcAddress");
@@ -83,7 +83,7 @@ public:
 
     GenericFuncType get(const char *name) const
     {
-        GenericFuncType res = (GenericFuncType)DE_NULL;
+        GenericFuncType res = nullptr;
 
         res = (GenericFuncType)m_staticLib->getFunction(name);
 
@@ -120,7 +120,7 @@ protected:
 
 } // namespace
 
-DefaultLibrary::DefaultLibrary(const char *dynamicLibraryName) : m_dynLib(DE_NULL)
+DefaultLibrary::DefaultLibrary(const char *dynamicLibraryName) : m_dynLib(nullptr)
 {
     if (dynamicLibraryName)
         m_dynLib = new de::DynamicLibrary(dynamicLibraryName);
@@ -149,7 +149,7 @@ const char *DefaultLibrary::getLibraryFileName(void)
 #elif (DE_OS == DE_OS_WIN32)
     return "libEGL.dll";
 #else
-    return DE_NULL;
+    return nullptr;
 #endif
 }
 

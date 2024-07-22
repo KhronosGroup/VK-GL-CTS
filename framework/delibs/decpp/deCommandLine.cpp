@@ -89,7 +89,7 @@ void TypedFieldMap::set(const std::type_info *key, const Entry &value)
     if (pos != m_fields.end())
     {
         pos->second.destructor(pos->second.value);
-        pos->second.value = DE_NULL;
+        pos->second.value = nullptr;
 
         pos->second = value;
     }
@@ -170,7 +170,7 @@ bool Parser::parse(int numArgs, const char *const *args, CommandLine *dst, std::
             const bool hasImmValue        = nameEnd != (arg + argLen);
             const OptMap &optMap          = isLongName ? longOptMap : shortOptMap;
             OptMap::const_iterator optPos = optMap.find(string(nameStart, nameEnd));
-            const OptInfo *opt            = optPos != optMap.end() ? optPos->second : DE_NULL;
+            const OptInfo *opt            = optPos != optMap.end() ? optPos->second : nullptr;
 
             if (!opt)
             {
@@ -192,7 +192,7 @@ bool Parser::parse(int numArgs, const char *const *args, CommandLine *dst, std::
             {
                 if (!hasImmValue)
                 {
-                    opt->dispatchParse(opt, DE_NULL, &dst->m_options);
+                    opt->dispatchParse(opt, nullptr, &dst->m_options);
                 }
                 else
                 {
@@ -206,7 +206,7 @@ bool Parser::parse(int numArgs, const char *const *args, CommandLine *dst, std::
 
                 if (hasValue)
                 {
-                    const char *value = hasValue ? (hasImmValue ? nameEnd + 1 : args[argNdx + 1]) : DE_NULL;
+                    const char *value = hasValue ? (hasImmValue ? nameEnd + 1 : args[argNdx + 1]) : nullptr;
 
                     if (!hasImmValue)
                         argNdx += 1; // Skip value
@@ -361,7 +361,7 @@ void selfTest(void)
         {
             std::ostringstream err;
             CommandLine cmdLine;
-            const bool parseOk = parser.parse(0, DE_NULL, &cmdLine, err);
+            const bool parseOk = parser.parse(0, nullptr, &cmdLine, err);
 
             DE_TEST_ASSERT(parseOk && err.str().empty());
         }
@@ -423,7 +423,7 @@ void selfTest(void)
         {
             CommandLine cmdLine;
             std::ostringstream err;
-            bool parseOk = parser.parse(0, DE_NULL, &cmdLine, err);
+            bool parseOk = parser.parse(0, nullptr, &cmdLine, err);
 
             DE_TEST_ASSERT(parseOk);
             DE_TEST_ASSERT(err.str().empty());

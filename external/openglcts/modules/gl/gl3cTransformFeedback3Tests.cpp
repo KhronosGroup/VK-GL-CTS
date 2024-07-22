@@ -212,7 +212,7 @@ void TransformFeedbackBaseTestCase::createVertexBuffers(const glw::GLuint &progr
             gl.enableVertexAttribArray(0);
             GLU_EXPECT_NO_ERROR(gl.getError(), "enableVertexAttribArray");
 
-            gl.vertexAttribPointer(locVertices, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+            gl.vertexAttribPointer(locVertices, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
             GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
         }
     }

@@ -127,7 +127,7 @@ tcu::TestStatus testQueryProperties(Context &context, const TestType testType)
 
     deMemset(&deviceDriverProperties, memsetPattern, sizeof(deviceDriverProperties));
     deviceDriverProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
-    deviceDriverProperties.pNext = DE_NULL;
+    deviceDriverProperties.pNext = nullptr;
 
     deMemset(&deviceProperties2, memsetPattern, sizeof(deviceProperties2));
     deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;

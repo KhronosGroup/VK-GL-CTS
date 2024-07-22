@@ -45,7 +45,7 @@ const glw::GLuint TextureCubeMapArrayStencilAttachments::m_n_cube_map_array_conf
 const glw::GLuint TextureCubeMapArrayStencilAttachments::m_n_vertices_gs = 3;
 
 /** Constructor **/
-CubeMapArrayDataStorage::CubeMapArrayDataStorage() : m_data_array(DE_NULL), m_depth(0), m_height(0), m_width(0)
+CubeMapArrayDataStorage::CubeMapArrayDataStorage() : m_data_array(nullptr), m_depth(0), m_height(0), m_width(0)
 {
 }
 
@@ -79,11 +79,11 @@ void CubeMapArrayDataStorage::init(const glw::GLuint width, const glw::GLuint he
 /** Deinitializes data array **/
 void CubeMapArrayDataStorage::deinit(void)
 {
-    if (m_data_array != DE_NULL)
+    if (m_data_array != nullptr)
     {
         delete[] m_data_array;
 
-        m_data_array = DE_NULL;
+        m_data_array = nullptr;
     }
 
     m_width  = 0;
@@ -160,8 +160,8 @@ TextureCubeMapArrayStencilAttachments::TextureCubeMapArrayStencilAttachments(Con
     , m_vao_id(0)
     , m_vbo_id(0)
     , m_vertex_shader_id(0)
-    , m_cube_map_array_data(DE_NULL)
-    , m_result_data(DE_NULL)
+    , m_cube_map_array_data(nullptr)
+    , m_result_data(nullptr)
 {
     /* Nothing to be done here */
 }
@@ -314,11 +314,11 @@ void TextureCubeMapArrayStencilAttachments::deinit(void)
         m_vao_id = 0;
     }
 
-    if (m_cube_map_array_data != DE_NULL)
+    if (m_cube_map_array_data != nullptr)
     {
         delete[] m_cube_map_array_data;
 
-        m_cube_map_array_data = DE_NULL;
+        m_cube_map_array_data = nullptr;
     }
 
     /* Deinitialize base class */
@@ -344,7 +344,7 @@ void TextureCubeMapArrayStencilAttachments::buildAndUseProgram(glw::GLuint test_
     if (m_fbo_layered)
     {
         std::string geometry_shader_code;
-        const char *geometry_shader_code_ptr = DE_NULL;
+        const char *geometry_shader_code_ptr = nullptr;
         std::stringstream max_vertices_sstream;
         std::stringstream n_iterations_sstream;
 
@@ -487,11 +487,11 @@ void TextureCubeMapArrayStencilAttachments::cleanAfterTest(void)
         m_texture_cube_array_stencil_id = 0;
     }
 
-    if (m_result_data != DE_NULL)
+    if (m_result_data != nullptr)
     {
         delete[] m_result_data;
 
-        m_result_data = DE_NULL;
+        m_result_data = nullptr;
     }
 }
 

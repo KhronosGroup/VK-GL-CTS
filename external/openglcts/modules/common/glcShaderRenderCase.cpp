@@ -105,7 +105,7 @@ TextureBinding::TextureBinding(const glu::Texture3D *tex3D, const tcu::Sampler &
 
 TextureBinding::TextureBinding(void) : m_type(TYPE_NONE)
 {
-    m_binding.tex2D = DE_NULL;
+    m_binding.tex2D = nullptr;
 }
 
 TextureBinding::TextureBinding(const glu::TextureCubeArray *texCubeArray, const tcu::Sampler &sampler)
@@ -394,7 +394,7 @@ tcu::Vec4 ShaderEvalContext::texture2D(int unitNdx, const tcu::Vec2 &texCoords)
 
 // ShaderEvaluator
 
-ShaderEvaluator::ShaderEvaluator(void) : m_evalFunc(DE_NULL)
+ShaderEvaluator::ShaderEvaluator(void) : m_evalFunc(nullptr)
 {
 }
 
@@ -424,7 +424,7 @@ ShaderRenderCase::ShaderRenderCase(TestContext &testCtx, RenderContext &renderCt
     , m_defaultEvaluator(evalFunc)
     , m_evaluator(m_defaultEvaluator)
     , m_clearColor(DEFAULT_CLEAR_COLOR)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -435,10 +435,10 @@ ShaderRenderCase::ShaderRenderCase(TestContext &testCtx, RenderContext &renderCt
     , m_renderCtx(renderCtx)
     , m_ctxInfo(ctxInfo)
     , m_isVertexCase(isVertexCase)
-    , m_defaultEvaluator(DE_NULL)
+    , m_defaultEvaluator(nullptr)
     , m_evaluator(evaluator)
     , m_clearColor(DEFAULT_CLEAR_COLOR)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -478,7 +478,7 @@ void ShaderRenderCase::init(void)
 void ShaderRenderCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 tcu::IVec2 ShaderRenderCase::getViewportSize(void) const

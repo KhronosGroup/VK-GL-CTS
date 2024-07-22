@@ -213,7 +213,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, VkFormat 
 {
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -226,7 +226,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, VkFormat 
             VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -238,7 +238,7 @@ Move<VkQueryPool> makeQueryPool(const DeviceInterface &vk, const VkDevice device
 {
     const VkQueryPoolCreateInfo queryPoolCreateInfo = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // sType
-        DE_NULL,                                  // pNext
+        nullptr,                                  // pNext
         (VkQueryPoolCreateFlags)0,                // flags
         queryType,                                // queryType
         queryCount,                               // queryCount
@@ -2210,7 +2210,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
 
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelRayTracedPtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -2223,7 +2223,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 
@@ -2709,7 +2709,7 @@ tcu::TestStatus RayTracingASDynamicIndexingTestInstance::iterate(void)
             // get acceleration structure device address
             const VkAccelerationStructureDeviceAddressInfoKHR addressInfo = {
                 VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR, // VkStructureType                sType
-                DE_NULL,        // const void*                    pNext
+                nullptr,        // const void*                    pNext
                 *tlas->getPtr() // VkAccelerationStructureKHR    accelerationStructure
             };
             VkDeviceAddress vkda   = vkd.getAccelerationStructureDeviceAddressKHR(device, &addressInfo);
@@ -2737,7 +2737,7 @@ tcu::TestStatus RayTracingASDynamicIndexingTestInstance::iterate(void)
 
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, // VkStructureType sType;
-            DE_NULL,                                                           // const void* pNext;
+            nullptr,                                                           // const void* pNext;
             tlasCount,                                                         // uint32_t accelerationStructureCount;
             tlasVkVect.data(), // const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -2761,7 +2761,7 @@ tcu::TestStatus RayTracingASDynamicIndexingTestInstance::iterate(void)
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 
@@ -2928,7 +2928,7 @@ VkAccelerationStructureCompatibilityKHR RayTracingDeviceASCompabilityKHRTestInst
 
     const VkAccelerationStructureVersionInfoKHR versionInfo = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_VERSION_INFO_KHR, // sType
-        DE_NULL,                                                   // pNext
+        nullptr,                                                   // pNext
         versionInfoData                                            // pVersionData
     };
 
@@ -5055,7 +5055,7 @@ TestStatus ASUpdateInstance::iterate(void)
 
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelRayTracedPtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -5068,7 +5068,7 @@ TestStatus ASUpdateInstance::iterate(void)
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 
@@ -6092,7 +6092,7 @@ void addUpdateHeaderBottomAddressTests(tcu::TestCaseGroup *group)
                 OP_NONE,                                   // operationType
                 RTAS_DEFAULT_SIZE,                         // width
                 RTAS_DEFAULT_SIZE,                         // height
-                de::SharedPtr<TestConfiguration>(DE_NULL), // testConfiguration
+                de::SharedPtr<TestConfiguration>(nullptr), // testConfiguration
                 0u,                                        // workerThreadsCount
                 EmptyAccelerationStructureCase::NOT_EMPTY, // emptyASCase
                 InstanceCustomIndexCase::NONE,             // instanceCustomIndexCase

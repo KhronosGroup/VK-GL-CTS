@@ -51,13 +51,13 @@ void registerOptions(de::cmdline::Parser &parser)
     using de::cmdline::NamedValue;
     using de::cmdline::Option;
 
-    parser << Option<Port>(DE_NULL, "port", "Port", DefaultPortStr.c_str());
-    parser << Option<LogFile>(DE_NULL, "log", "Log filename", "dummy.log");
-    parser << Option<PipelineCompilerPath>(DE_NULL, "pipeline-compiler", "Path to offline pipeline compiler", "");
-    parser << Option<PipelineCompilerDataDir>(DE_NULL, "pipeline-dir", "Offline pipeline data directory", "");
-    parser << Option<PipelineCompilerOutputFile>(DE_NULL, "pipeline-file", "Output file with pipeline cache", "");
-    parser << Option<PipelineCompilerLogFile>(DE_NULL, "pipeline-log", "Compiler log file", "compiler.log");
-    parser << Option<PipelineCompilerArgs>(DE_NULL, "pipeline-args", "Additional compiler parameters", "");
+    parser << Option<Port>(nullptr, "port", "Port", DefaultPortStr.c_str());
+    parser << Option<LogFile>(nullptr, "log", "Log filename", "dummy.log");
+    parser << Option<PipelineCompilerPath>(nullptr, "pipeline-compiler", "Path to offline pipeline compiler", "");
+    parser << Option<PipelineCompilerDataDir>(nullptr, "pipeline-dir", "Offline pipeline data directory", "");
+    parser << Option<PipelineCompilerOutputFile>(nullptr, "pipeline-file", "Output file with pipeline cache", "");
+    parser << Option<PipelineCompilerLogFile>(nullptr, "pipeline-log", "Compiler log file", "compiler.log");
+    parser << Option<PipelineCompilerArgs>(nullptr, "pipeline-args", "Additional compiler parameters", "");
 }
 
 } // namespace opt

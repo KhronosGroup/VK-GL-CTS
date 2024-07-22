@@ -37,7 +37,7 @@ namespace xs
 namespace posix
 {
 
-CaseListWriter::CaseListWriter(void) : m_file(DE_NULL), m_run(false)
+CaseListWriter::CaseListWriter(void) : m_file(nullptr), m_run(false)
 {
 }
 
@@ -90,10 +90,10 @@ void CaseListWriter::stop(void)
     // Join thread.
     join();
 
-    m_file = DE_NULL;
+    m_file = nullptr;
 }
 
-PipeReader::PipeReader(ThreadedByteBuffer *dst) : m_file(DE_NULL), m_buf(dst)
+PipeReader::PipeReader(ThreadedByteBuffer *dst) : m_file(nullptr), m_buf(dst)
 {
 }
 
@@ -158,13 +158,13 @@ void PipeReader::stop(void)
     // Join thread.
     join();
 
-    m_file = DE_NULL;
+    m_file = nullptr;
 }
 
 } // namespace posix
 
 PosixTestProcess::PosixTestProcess(void)
-    : m_process(DE_NULL)
+    : m_process(nullptr)
     , m_processStartTime(0)
     , m_infoBuffer(INFO_BUFFER_BLOCK_SIZE, INFO_BUFFER_NUM_BLOCKS)
     , m_stdOutReader(&m_infoBuffer)
@@ -209,12 +209,12 @@ void PosixTestProcess::start(const char *name, const char *params, const char *w
 
     try
     {
-        m_process->start(cmdLine.c_str(), strlen(workingDir) > 0 ? workingDir : DE_NULL);
+        m_process->start(cmdLine.c_str(), strlen(workingDir) > 0 ? workingDir : nullptr);
     }
     catch (const de::ProcessError &e)
     {
         delete m_process;
-        m_process = DE_NULL;
+        m_process = nullptr;
         throw TestProcessException(e.what());
     }
 
@@ -286,7 +286,7 @@ void PosixTestProcess::cleanup(void)
         }
 
         delete m_process;
-        m_process = DE_NULL;
+        m_process = nullptr;
     }
 }
 

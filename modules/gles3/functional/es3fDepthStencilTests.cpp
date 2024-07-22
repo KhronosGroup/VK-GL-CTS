@@ -543,11 +543,11 @@ DepthStencilCase::DepthStencilCase(Context &context, const char *name, const cha
                                    const std::vector<DepthStencilParams> &cases)
     : TestCase(context, name, desc)
     , m_cases(cases)
-    , m_renderer(DE_NULL)
-    , m_refColorBuffer(DE_NULL)
-    , m_refDepthBuffer(DE_NULL)
-    , m_refStencilBuffer(DE_NULL)
-    , m_refRenderer(DE_NULL)
+    , m_renderer(nullptr)
+    , m_refColorBuffer(nullptr)
+    , m_refDepthBuffer(nullptr)
+    , m_refStencilBuffer(nullptr)
+    , m_refRenderer(nullptr)
     , m_iterNdx(0)
 {
 }
@@ -605,11 +605,11 @@ void DepthStencilCase::deinit(void)
     delete m_refStencilBuffer;
     delete m_refRenderer;
 
-    m_renderer         = DE_NULL;
-    m_refColorBuffer   = DE_NULL;
-    m_refDepthBuffer   = DE_NULL;
-    m_refStencilBuffer = DE_NULL;
-    m_refRenderer      = DE_NULL;
+    m_renderer         = nullptr;
+    m_refColorBuffer   = nullptr;
+    m_refDepthBuffer   = nullptr;
+    m_refStencilBuffer = nullptr;
+    m_refRenderer      = nullptr;
 
     m_baseClears.clear();
     m_baseDepthRenders.clear();

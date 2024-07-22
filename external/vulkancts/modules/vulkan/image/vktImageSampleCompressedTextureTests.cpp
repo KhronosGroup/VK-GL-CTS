@@ -100,7 +100,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const IVec3 &size, const VkFormat &
 
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,  //  VkStructureType         sType;
-        DE_NULL,                              //  const void*             pNext;
+        nullptr,                              //  const void*             pNext;
         createFlags,                          //  VkImageCreateFlags      flags;
         VK_IMAGE_TYPE_2D,                     //  VkImageType             imageType;
         format,                               //  VkFormat                format;
@@ -112,7 +112,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const IVec3 &size, const VkFormat &
         usageFlags,                           //  VkImageUsageFlags       usage;
         VK_SHARING_MODE_EXCLUSIVE,            //  VkSharingMode           sharingMode;
         0u,                                   //  uint32_t                queueFamilyIndexCount;
-        DE_NULL,                              //  const uint32_t*         pQueueFamilyIndices;
+        nullptr,                              //  const uint32_t*         pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,            //  VkImageLayout           initialLayout;
     };
 
@@ -123,7 +123,7 @@ Move<VkBuffer> makeVertexBuffer(const DeviceInterface &vk, const VkDevice device
 {
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType      sType;
-        DE_NULL,                              // const void*          pNext;
+        nullptr,                              // const void*          pNext;
         0u,                                   // VkBufferCreateFlags  flags;
         BUFFERSIZE,                           // VkDeviceSize         size;
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags   usage;
@@ -166,7 +166,7 @@ Move<VkSampler> makeSampler(const DeviceInterface &vk, const VkDevice &device)
 {
     const VkSamplerCreateInfo samplerParams = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType          sType;
-        DE_NULL,                                 // const void*              pNext;
+        nullptr,                                 // const void*              pNext;
         (VkSamplerCreateFlags)0,                 // VkSamplerCreateFlags     flags;
         VK_FILTER_NEAREST,                       // VkFilter                 magFilter;
         VK_FILTER_NEAREST,                       // VkFilter                 minFilter;
@@ -371,7 +371,7 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate(void)
     VkImageUsageFlags usageFlags                  = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     VkImageViewUsageCreateInfo imageViewUsageInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO, //VkStructureType sType;
-        DE_NULL,                                        //const void* pNext;
+        nullptr,                                        //const void* pNext;
         usageFlags,                                     //VkImageUsageFlags usage;
     };
 
@@ -536,7 +536,7 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate(void)
     const auto barrier1 = makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                                  VK_IMAGE_LAYOUT_GENERAL, storageImage.get(), imageSubresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0,
-                          DE_NULL, 0, DE_NULL, 1u, &barrier1);
+                          nullptr, 0, nullptr, 1u, &barrier1);
 
     // Bind the vertices and the descriptors used in the graphics pipeline.
     vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
@@ -559,14 +559,14 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate(void)
                 for (int face = 0; face < FACES; face++)
                 {
                     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u,
-                                             &(cubeStorageDscrSets[face].get()), 0u, DE_NULL);
+                                             &(cubeStorageDscrSets[face].get()), 0u, nullptr);
                     vk.cmdDispatch(*cmdBuffer, storageImageViewSize.x(), storageImageViewSize.y(), 1u);
                 }
             }
             else
             {
                 vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u,
-                                         &storageImageDescriptorSet.get(), 0u, DE_NULL);
+                                         &storageImageDescriptorSet.get(), 0u, nullptr);
                 vk.cmdDispatch(*cmdBuffer, storageImageViewSize.x(), storageImageViewSize.y(), 1u);
             }
 
@@ -574,7 +574,7 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate(void)
                 makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
                                        VK_IMAGE_LAYOUT_GENERAL, storageImage.get(), imageSubresourceRange);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier2);
+                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1u, &barrier2);
         }
 
         vk.cmdPushConstants(*cmdBuffer, *graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int32_t),
@@ -588,10 +588,10 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate(void)
             for (int face = 0; face < FACES; face++)
             {
                 vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0u, 1u,
-                                         &(cubeSamplerDescriptorSets[face].get()), 0u, DE_NULL);
+                                         &(cubeSamplerDescriptorSets[face].get()), 0u, nullptr);
 
                 beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer,
-                                makeRect2D(0, 0, imageSize.x(), imageSize.y()), 0u, DE_NULL);
+                                makeRect2D(0, 0, imageSize.x(), imageSize.y()), 0u, nullptr);
                 vk.cmdDraw(*cmdBuffer, vertexCount, 1u, 0u, 0u);
                 endRenderPass(vk, *cmdBuffer);
 
@@ -603,7 +603,7 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate(void)
                         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                         targetImage.get(), targetSubresourceRange);
                     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u,
+                                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1u,
                                           &barrier4);
                 }
             }
@@ -611,10 +611,10 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate(void)
         else
         {
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0u, 1u,
-                                     &(graphicsDescriptorSet.get()), 0u, DE_NULL);
+                                     &(graphicsDescriptorSet.get()), 0u, nullptr);
 
             beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, imageSize.x(), imageSize.y()),
-                            0u, DE_NULL);
+                            0u, nullptr);
             vk.cmdDraw(*cmdBuffer, vertexCount, 1u, 0u, 0u);
             endRenderPass(vk, *cmdBuffer);
         }
@@ -625,7 +625,7 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate(void)
                 makeImageMemoryBarrier(VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL,
                                        VK_IMAGE_LAYOUT_GENERAL, storageImage.get(), imageSubresourceRange);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier3);
+                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1u, &barrier3);
 
             const auto barrier4 =
                 makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -633,7 +633,7 @@ tcu::TestStatus SampleDrawnTextureTestInstance::iterate(void)
                                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                                        targetImage.get(), targetSubresourceRange);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u,
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1u,
                                   &barrier4);
         }
     }

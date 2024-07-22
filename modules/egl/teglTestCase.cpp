@@ -61,7 +61,7 @@ const eglw::Library &EglTestContext::getLibrary(void) const
 
 void EglTestContext::initGLFunctions(glw::Functions *dst, glu::ApiType apiType) const
 {
-    initGLFunctions(dst, apiType, 0, DE_NULL);
+    initGLFunctions(dst, apiType, 0, nullptr);
 }
 
 void EglTestContext::initGLFunctions(glw::Functions *dst, glu::ApiType apiType, int numExtensions,

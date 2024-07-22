@@ -74,7 +74,7 @@ class BufferCreateInfo : public vk::VkBufferCreateInfo
 public:
     BufferCreateInfo(vk::VkDeviceSize size, vk::VkBufferCreateFlags usage,
                      vk::VkSharingMode sharingMode = vk::VK_SHARING_MODE_EXCLUSIVE, uint32_t queueFamilyIndexCount = 0,
-                     const uint32_t *pQueueFamilyIndices = DE_NULL, vk::VkBufferCreateFlags flags = 0);
+                     const uint32_t *pQueueFamilyIndices = nullptr, vk::VkBufferCreateFlags flags = 0);
 
     BufferCreateInfo(const BufferCreateInfo &other);
     BufferCreateInfo &operator=(const BufferCreateInfo &other);
@@ -89,7 +89,7 @@ public:
     ImageCreateInfo(vk::VkImageType imageType, vk::VkFormat format, vk::VkExtent3D extent, uint32_t mipLevels,
                     uint32_t arrayLayers, vk::VkSampleCountFlagBits samples, vk::VkImageTiling tiling,
                     vk::VkImageUsageFlags usage, vk::VkSharingMode sharingMode = vk::VK_SHARING_MODE_EXCLUSIVE,
-                    uint32_t queueFamilyIndexCount = 0, const uint32_t *pQueueFamilyIndices = DE_NULL,
+                    uint32_t queueFamilyIndexCount = 0, const uint32_t *pQueueFamilyIndices = nullptr,
                     vk::VkImageCreateFlags flags = 0, vk::VkImageLayout initialLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED);
 
 private:
@@ -165,9 +165,9 @@ public:
         const std::vector<vk::VkSubpassDescription> &subpasses,
         const std::vector<vk::VkSubpassDependency> &dependiences = std::vector<vk::VkSubpassDependency>());
 
-    RenderPassCreateInfo(uint32_t attachmentCount = 0, const vk::VkAttachmentDescription *pAttachments = DE_NULL,
-                         uint32_t subpassCount = 0, const vk::VkSubpassDescription *pSubpasses = DE_NULL,
-                         uint32_t dependencyCount = 0, const vk::VkSubpassDependency *pDependiences = DE_NULL);
+    RenderPassCreateInfo(uint32_t attachmentCount = 0, const vk::VkAttachmentDescription *pAttachments = nullptr,
+                         uint32_t subpassCount = 0, const vk::VkSubpassDescription *pSubpasses = nullptr,
+                         uint32_t dependencyCount = 0, const vk::VkSubpassDependency *pDependiences = nullptr);
 
     void addAttachment(vk::VkAttachmentDescription attachment);
     void addSubpass(vk::VkSubpassDescription subpass);
@@ -245,11 +245,11 @@ class PipelineLayoutCreateInfo : public vk::VkPipelineLayoutCreateInfo
 public:
     PipelineLayoutCreateInfo(uint32_t descriptorSetCount, const vk::VkDescriptorSetLayout *pSetLayouts,
                              uint32_t pushConstantRangeCount                    = 0,
-                             const vk::VkPushConstantRange *pPushConstantRanges = DE_NULL);
+                             const vk::VkPushConstantRange *pPushConstantRanges = nullptr);
 
     PipelineLayoutCreateInfo(
         const std::vector<vk::VkDescriptorSetLayout> &setLayouts = std::vector<vk::VkDescriptorSetLayout>(),
-        uint32_t pushConstantRangeCount = 0, const vk::VkPushConstantRange *pPushConstantRanges = DE_NULL);
+        uint32_t pushConstantRangeCount = 0, const vk::VkPushConstantRange *pPushConstantRanges = nullptr);
 
 private:
     std::vector<vk::VkDescriptorSetLayout> m_setLayouts;

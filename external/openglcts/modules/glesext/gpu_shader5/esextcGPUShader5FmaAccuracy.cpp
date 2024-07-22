@@ -186,7 +186,7 @@ void GPUShader5FmaAccuracyTest::initTest()
     /* Generate, bind and allocate buffer */
     gl.genBuffers(1, &m_buffer_object_id);
     gl.bindBuffer(GL_ARRAY_BUFFER, m_buffer_object_id);
-    gl.bufferData(GL_ARRAY_BUFFER, m_buffer_size, DE_NULL /* undefined start data */, GL_STATIC_DRAW);
+    gl.bufferData(GL_ARRAY_BUFFER, m_buffer_size, nullptr /* undefined start data */, GL_STATIC_DRAW);
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "Could not create vertex array object");
 }

@@ -843,7 +843,7 @@ bool Utils::buildProgram(const glw::Functions &gl, const std::string &vs_body, c
     *out_po_id = gl.createProgram();
     GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateProgram() call failed.");
 
-    if (out_vs_id != DE_NULL)
+    if (out_vs_id != nullptr)
     {
         const char *vs_body_raw_ptr = vs_body.c_str();
 
@@ -853,11 +853,11 @@ bool Utils::buildProgram(const glw::Functions &gl, const std::string &vs_body, c
         gl.attachShader(*out_po_id, *out_vs_id);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glAttachShader() call failed.");
 
-        gl.shaderSource(*out_vs_id, 1 /* count */, &vs_body_raw_ptr, DE_NULL /* length */);
+        gl.shaderSource(*out_vs_id, 1 /* count */, &vs_body_raw_ptr, nullptr /* length */);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
     }
 
-    if (out_tc_id != DE_NULL)
+    if (out_tc_id != nullptr)
     {
         const char *tc_body_raw_ptr = tc_body.c_str();
 
@@ -867,11 +867,11 @@ bool Utils::buildProgram(const glw::Functions &gl, const std::string &vs_body, c
         gl.attachShader(*out_po_id, *out_tc_id);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glAttachShader() call failed.");
 
-        gl.shaderSource(*out_tc_id, 1 /* count */, &tc_body_raw_ptr, DE_NULL /* length */);
+        gl.shaderSource(*out_tc_id, 1 /* count */, &tc_body_raw_ptr, nullptr /* length */);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
     }
 
-    if (out_te_id != DE_NULL)
+    if (out_te_id != nullptr)
     {
         const char *te_body_raw_ptr = te_body.c_str();
 
@@ -881,11 +881,11 @@ bool Utils::buildProgram(const glw::Functions &gl, const std::string &vs_body, c
         gl.attachShader(*out_po_id, *out_te_id);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glAttachShader() call failed.");
 
-        gl.shaderSource(*out_te_id, 1 /* count */, &te_body_raw_ptr, DE_NULL /* length */);
+        gl.shaderSource(*out_te_id, 1 /* count */, &te_body_raw_ptr, nullptr /* length */);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
     }
 
-    if (out_gs_id != DE_NULL)
+    if (out_gs_id != nullptr)
     {
         const char *gs_body_raw_ptr = gs_body.c_str();
 
@@ -895,11 +895,11 @@ bool Utils::buildProgram(const glw::Functions &gl, const std::string &vs_body, c
         gl.attachShader(*out_po_id, *out_gs_id);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glAttachShader() call failed.");
 
-        gl.shaderSource(*out_gs_id, 1 /* count */, &gs_body_raw_ptr, DE_NULL /* length */);
+        gl.shaderSource(*out_gs_id, 1 /* count */, &gs_body_raw_ptr, nullptr /* length */);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
     }
 
-    if (out_fs_id != DE_NULL)
+    if (out_fs_id != nullptr)
     {
         const char *fs_body_raw_ptr = fs_body.c_str();
 
@@ -909,14 +909,14 @@ bool Utils::buildProgram(const glw::Functions &gl, const std::string &vs_body, c
         gl.attachShader(*out_po_id, *out_fs_id);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glAttachShader() call failed.");
 
-        gl.shaderSource(*out_fs_id, 1 /* count */, &fs_body_raw_ptr, DE_NULL /* length */);
+        gl.shaderSource(*out_fs_id, 1 /* count */, &fs_body_raw_ptr, nullptr /* length */);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
     }
 
     /* Compile all shaders */
-    const glw::GLuint so_ids[] = {(out_vs_id != DE_NULL) ? *out_vs_id : 0, (out_tc_id != DE_NULL) ? *out_tc_id : 0,
-                                  (out_te_id != DE_NULL) ? *out_te_id : 0, (out_gs_id != DE_NULL) ? *out_gs_id : 0,
-                                  (out_fs_id != DE_NULL) ? *out_fs_id : 0};
+    const glw::GLuint so_ids[] = {(out_vs_id != nullptr) ? *out_vs_id : 0, (out_tc_id != nullptr) ? *out_tc_id : 0,
+                                  (out_te_id != nullptr) ? *out_te_id : 0, (out_gs_id != nullptr) ? *out_gs_id : 0,
+                                  (out_fs_id != nullptr) ? *out_fs_id : 0};
     const unsigned int n_so_ids = sizeof(so_ids) / sizeof(so_ids[0]);
 
     for (unsigned int n_so_id = 0; n_so_id < n_so_ids; ++n_so_id)
@@ -1822,7 +1822,7 @@ APITest2::APITest2(deqp::Context &context)
     : TestCase(context, "name_getters",
                "Verifies glGetActiveSubroutineName() and glGetActiveSubroutineUniformName() "
                "functions work correctly.")
-    , m_buffer(DE_NULL)
+    , m_buffer(nullptr)
     , m_has_test_passed(true)
     , m_po_id(0)
     , m_subroutine_name1("subroutine1")
@@ -1840,11 +1840,11 @@ void APITest2::deinit()
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    if (m_buffer != DE_NULL)
+    if (m_buffer != nullptr)
     {
         delete[] m_buffer;
 
-        m_buffer = DE_NULL;
+        m_buffer = nullptr;
     }
 
     if (m_po_id != 0)
@@ -1912,7 +1912,7 @@ void APITest2::initTest()
     std::string vs_body         = getVertexShaderBody();
     const char *vs_body_raw_ptr = vs_body.c_str();
 
-    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body_raw_ptr, DE_NULL /* length */);
+    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body_raw_ptr, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     gl.compileShader(m_vs_id);
@@ -2015,8 +2015,8 @@ void APITest2::verifyGLGetActiveSubroutineNameFunctionality()
 
     gl.getActiveSubroutineName(m_po_id, GL_VERTEX_SHADER, 0, /* index */
                                0,                            /* bufsize */
-                               DE_NULL,                      /* length */
-                               DE_NULL);                     /* name */
+                               nullptr,                      /* length */
+                               nullptr);                     /* name */
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetActiveSubroutineName() call failed.");
 
     gl.getProgramInterfaceiv(m_po_id, GL_VERTEX_SUBROUTINE, GL_MAX_NAME_LENGTH, &reported_length);
@@ -2036,7 +2036,7 @@ void APITest2::verifyGLGetActiveSubroutineNameFunctionality()
 
     memset(m_buffer, 0, reported_length);
 
-    gl.getActiveSubroutineName(m_po_id, GL_VERTEX_SHADER, 0, reported_length, DE_NULL, /* length */
+    gl.getActiveSubroutineName(m_po_id, GL_VERTEX_SHADER, 0, reported_length, nullptr, /* length */
                                m_buffer);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetActiveSubroutineName() call failed.");
 
@@ -2054,7 +2054,7 @@ void APITest2::verifyGLGetActiveSubroutineNameFunctionality()
     }
 
     delete[] m_buffer;
-    m_buffer = DE_NULL;
+    m_buffer = nullptr;
 }
 
 /** Verifies glGetActiveSubroutineUniformName() behaves as per GL_ARB_shader_subroutine
@@ -2068,13 +2068,13 @@ void APITest2::verifyGLGetActiveSubroutineUniformNameFunctionality()
 
     gl.getActiveSubroutineUniformName(m_po_id, GL_VERTEX_SHADER, 0, /* index */
                                       0,                            /* bufsize */
-                                      DE_NULL,                      /* length */
-                                      DE_NULL);                     /* name */
+                                      nullptr,                      /* length */
+                                      nullptr);                     /* name */
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetActiveSubroutineUniformName() call failed.");
 
     gl.getActiveSubroutineUniformName(m_po_id, GL_VERTEX_SHADER, 0, /* index */
                                       0,                            /* bufsize */
-                                      &reported_length, DE_NULL);   /* name */
+                                      &reported_length, nullptr);   /* name */
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetActiveSubroutineUniformName() call failed.");
 
     // reported_length is the actual number of characters written into <name>
@@ -2115,7 +2115,7 @@ void APITest2::verifyGLGetActiveSubroutineUniformNameFunctionality()
     }
 
     delete[] m_buffer;
-    m_buffer = DE_NULL;
+    m_buffer = nullptr;
 }
 
 /** Constructor.
@@ -2245,7 +2245,7 @@ bool FunctionalTest1_2::executeTestIteration(const _test_case &test_case)
 
     total_xfb_bo_size = iteration_xfb_bo_size * 2 /* subroutines we will be testing */;
 
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, total_xfb_bo_size, DE_NULL /* data */, GL_STATIC_DRAW);
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, total_xfb_bo_size, nullptr /* data */, GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
     /* Activate test program object */
@@ -5028,10 +5028,10 @@ void FunctionalTest9::initTest()
                              "",                                              /* te_body */
                              "",                                              /* gs_body */
                              "",                                              /* fs_body */
-                             xfb_varyings, n_xfb_varyings, &m_vs_id, DE_NULL, /* out_tc_id */
-                             DE_NULL,                                         /* out_te_id */
-                             DE_NULL,                                         /* out_gs_id */
-                             DE_NULL,                                         /* out_fs_id */
+                             xfb_varyings, n_xfb_varyings, &m_vs_id, nullptr, /* out_tc_id */
+                             nullptr,                                         /* out_te_id */
+                             nullptr,                                         /* out_gs_id */
+                             nullptr,                                         /* out_fs_id */
                              &m_po_id))
     {
         TCU_FAIL("Program failed to link successfully");
@@ -5049,7 +5049,7 @@ void FunctionalTest9::initTest()
     gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0 /* index */, m_xfb_bo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBufferBase() call failed.");
 
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, xfb_bo_size, DE_NULL, /* data */
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, xfb_bo_size, nullptr, /* data */
                   GL_STATIC_COPY);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
@@ -6596,7 +6596,7 @@ FunctionalTest13::FunctionalTest13(deqp::Context &context)
                "shader objects")
     , m_fbo_id(0)
     , m_pipeline_id(0)
-    , m_read_buffer(DE_NULL)
+    , m_read_buffer(nullptr)
     , m_to_height(4)
     , m_to_id(0)
     , m_to_width(4)
@@ -6633,11 +6633,11 @@ void FunctionalTest13::deinit()
         m_pipeline_id = 0;
     }
 
-    if (m_read_buffer != DE_NULL)
+    if (m_read_buffer != nullptr)
     {
         delete[] m_read_buffer;
 
-        m_read_buffer = DE_NULL;
+        m_read_buffer = nullptr;
     }
 
     for (unsigned int n_id = 0; n_id < 2 /* po id variants */; ++n_id)
@@ -8234,7 +8234,7 @@ void FunctionalTest16::initTest()
         const std::string te_body = getShaderBody(Utils::SHADER_STAGE_TESSELLATION_EVALUATION, n_id);
         const std::string vs_body = getShaderBody(Utils::SHADER_STAGE_VERTEX, n_id);
 
-        if (!Utils::buildProgram(gl, vs_body, tc_body, te_body, gs_body, fs_body, DE_NULL, /* xfb_varyings */
+        if (!Utils::buildProgram(gl, vs_body, tc_body, te_body, gs_body, fs_body, nullptr, /* xfb_varyings */
                                  0,                                                        /* n_xfb_varyings */
                                  m_vs_ids + n_id, m_tc_ids + n_id, m_te_ids + n_id, m_gs_ids + n_id, m_fs_ids + n_id,
                                  m_po_ids + n_id))
@@ -8497,7 +8497,7 @@ tcu::TestNode::IterateResult FunctionalTest16::iterate()
             /* Re-configure subroutine uniforms so that they point to different subroutines than
              * the default ones.
              */
-            const _shader_stage *stages[5 /* fs+gs+tc+te+vs */] = {DE_NULL};
+            const _shader_stage *stages[5 /* fs+gs+tc+te+vs */] = {nullptr};
 
             getShaderStages(static_cast<_test_case>(test_case) == TEST_CASE_SWITCH_TO_DIFFERENT_PROGRAM_OBJECT,
                             n_object_id, stages);
@@ -8679,7 +8679,7 @@ tcu::TestNode::IterateResult FunctionalTest16::iterate()
             }
             else
             {
-                const _shader_stage *shader_stages[Utils::SHADER_STAGE_COUNT] = {DE_NULL};
+                const _shader_stage *shader_stages[Utils::SHADER_STAGE_COUNT] = {nullptr};
 
                 getShaderStages(static_cast<_test_case>(test_case) == TEST_CASE_SWITCH_TO_DIFFERENT_PROGRAM_OBJECT,
                                 n_object_id, shader_stages);
@@ -8792,11 +8792,11 @@ void FunctionalTest16::verifySubroutineUniformValues(const _test_case &test_case
                                                      const _subroutine_uniform_value_verification &verification)
 {
     const _shader_stage *stages[] = {
-        DE_NULL, /* fragment shader     stage slot */
-        DE_NULL, /* geometry shader     stage slot */
-        DE_NULL, /* tess control shader stage slot */
-        DE_NULL, /* tess eval shader    stage slot */
-        DE_NULL  /* vertex shader       stage slot */
+        nullptr, /* fragment shader     stage slot */
+        nullptr, /* geometry shader     stage slot */
+        nullptr, /* tess control shader stage slot */
+        nullptr, /* tess eval shader    stage slot */
+        nullptr  /* vertex shader       stage slot */
     };
     const unsigned int n_stages = sizeof(stages) / sizeof(stages[0]);
 
@@ -8930,7 +8930,7 @@ FunctionalTest17::FunctionalTest17(deqp::Context &context)
     , m_po_id(0)
     , m_tc_id(0)
     , m_te_id(0)
-    , m_to_data(DE_NULL)
+    , m_to_data(nullptr)
     , m_to_height(4) /* arbitrary value */
     , m_to_id(0)
     , m_to_width(4) /* arbitrary value */
@@ -8987,11 +8987,11 @@ void FunctionalTest17::deinit()
         m_te_id = 0;
     }
 
-    if (m_to_data != DE_NULL)
+    if (m_to_data != nullptr)
     {
         delete[] m_to_data;
 
-        m_to_data = DE_NULL;
+        m_to_data = nullptr;
     }
 
     if (m_to_id != 0)
@@ -9273,7 +9273,7 @@ void FunctionalTest17::initTest()
     std::string te_body = getTessellationEvaluationShaderBody();
     std::string vs_body = getVertexShaderBody();
 
-    if (!Utils::buildProgram(gl, vs_body, tc_body, te_body, gs_body, fs_body, DE_NULL, /* xfb_varyings */
+    if (!Utils::buildProgram(gl, vs_body, tc_body, te_body, gs_body, fs_body, nullptr, /* xfb_varyings */
                              0,                                                        /* n_xfb_varyings */
                              &m_vs_id, &m_tc_id, &m_te_id, &m_gs_id, &m_fs_id, &m_po_id))
     {
@@ -9607,10 +9607,10 @@ void FunctionalTest18_19::initTest()
                              "",                                      /* te_body */
                              "",                                      /* gs_body */
                              "",                                      /* fs_body */
-                             varyings, n_varyings, &m_vs_id, DE_NULL, /* out_tc_id */
-                             DE_NULL,                                 /* out_te_id */
-                             DE_NULL,                                 /* out_gs_id */
-                             DE_NULL,                                 /* out_fs_id */
+                             varyings, n_varyings, &m_vs_id, nullptr, /* out_tc_id */
+                             nullptr,                                 /* out_te_id */
+                             nullptr,                                 /* out_gs_id */
+                             nullptr,                                 /* out_fs_id */
                              &m_po_id))
     {
         TCU_FAIL("Failed to build test program object");
@@ -9659,7 +9659,7 @@ void FunctionalTest18_19::initTest()
     gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0 /* index */, m_xfb_bo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBufferBase() call failed.");
 
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, DE_NULL /* data */, GL_STATIC_COPY);
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, nullptr /* data */, GL_STATIC_COPY);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
     /* Set up a VAO */
@@ -9979,7 +9979,7 @@ void NegativeTest1::initTest()
                           "    }\n"
                           "}\n";
 
-    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body, DE_NULL /* length */);
+    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed");
 
     gl.compileShader(m_vs_id);
@@ -10110,14 +10110,14 @@ tcu::TestNode::IterateResult NegativeTest1::iterate()
     }
 
     gl.getActiveSubroutineUniformName(m_po_id, GL_VERTEX_SHADER, m_po_active_subroutine_uniforms, 0, /* bufsize */
-                                      &temp_length, DE_NULL);                                        /* name */
+                                      &temp_length, nullptr);                                        /* name */
     error_code = gl.getError();
 
     if (error_code == GL_INVALID_VALUE)
     {
         gl.getActiveSubroutineUniformName(m_po_id, GL_VERTEX_SHADER, m_po_active_subroutine_uniforms + 1,
                                           0,                      /* bufsize */
-                                          &temp_length, DE_NULL); /* name */
+                                          &temp_length, nullptr); /* name */
 
         error_code = gl.getError();
     }
@@ -10138,13 +10138,13 @@ tcu::TestNode::IterateResult NegativeTest1::iterate()
      * stage.
      */
     gl.getActiveSubroutineName(m_po_id, GL_VERTEX_SHADER, m_po_active_subroutines, 0, /* bufsize */
-                               &temp_length, DE_NULL);                                /* name */
+                               &temp_length, nullptr);                                /* name */
     error_code = gl.getError();
 
     if (error_code == GL_INVALID_VALUE)
     {
         gl.getActiveSubroutineName(m_po_id, GL_VERTEX_SHADER, m_po_active_subroutines + 1, 0, /* bufsize */
-                                   &temp_length, DE_NULL);                                    /* name */
+                                   &temp_length, nullptr);                                    /* name */
 
         error_code = gl.getError();
     }
@@ -10789,7 +10789,7 @@ void NegativeTest3::executeTest(const Utils::_shader_stage &shader_stage)
 
     /* Assign body to the shader */
     std::string body;
-    const char *body_raw_ptr = DE_NULL;
+    const char *body_raw_ptr = nullptr;
 
     switch (shader_stage)
     {
@@ -10817,7 +10817,7 @@ void NegativeTest3::executeTest(const Utils::_shader_stage &shader_stage)
 
     body_raw_ptr = body.c_str();
 
-    gl.shaderSource(m_so_id, 1 /* count */, &body_raw_ptr, DE_NULL /* length */);
+    gl.shaderSource(m_so_id, 1 /* count */, &body_raw_ptr, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     /* Try to compile the shader */
@@ -11269,7 +11269,7 @@ tcu::TestNode::IterateResult NegativeTest4::iterate()
                 m_so_id = gl.createShader(shader_type);
                 GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateShader() call failed");
 
-                gl.shaderSource(m_so_id, 1 /* count */, &body_raw_ptr, DE_NULL);
+                gl.shaderSource(m_so_id, 1 /* count */, &body_raw_ptr, nullptr);
                 GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed");
 
                 gl.compileShader(m_so_id);
@@ -11406,7 +11406,7 @@ void NegativeTest5::executeIteration(const Utils::_shader_stage &shader_stage)
     std::string vs_body = getVertexShaderBody(shader_stage == Utils::SHADER_STAGE_VERTEX);
 
     if (Utils::buildProgram(m_context.getRenderContext().getFunctions(), vs_body, tc_body, te_body, gs_body, fs_body,
-                            DE_NULL, /* xfb_varyings */
+                            nullptr, /* xfb_varyings */
                             0,       /* n_xfb_varyings */
                             &m_vs_id, &m_tc_id, &m_te_id, &m_gs_id, &m_fs_id, &m_po_id))
     {
@@ -11793,7 +11793,7 @@ void NegativeTest6::executeIteration(const Utils::_shader_stage &shader_stage)
     std::string vs_body = getVertexShaderBody(shader_stage == Utils::SHADER_STAGE_VERTEX);
 
     if (Utils::buildProgram(m_context.getRenderContext().getFunctions(), vs_body, tc_body, te_body, gs_body, fs_body,
-                            DE_NULL, /* xfb_varyings */
+                            nullptr, /* xfb_varyings */
                             0,       /* n_xfb_varyings */
                             &m_vs_id, &m_tc_id, &m_te_id, &m_gs_id, &m_fs_id, &m_po_id))
     {
@@ -12473,7 +12473,7 @@ void NegativeTest8::executeIteration(const Utils::_shader_stage &shader_stage)
     std::string vs_body = getVertexShaderBody(shader_stage == Utils::SHADER_STAGE_VERTEX);
 
     if (Utils::buildProgram(m_context.getRenderContext().getFunctions(), vs_body, tc_body, te_body, gs_body, fs_body,
-                            DE_NULL, /* xfb_varyings */
+                            nullptr, /* xfb_varyings */
                             0,       /* n_xfb_varyings */
                             &m_vs_id, &m_tc_id, &m_te_id, &m_gs_id, &m_fs_id, &m_po_id))
     {
@@ -12937,12 +12937,12 @@ tcu::TestNode::IterateResult NegativeTest9::iterate()
                                                   "",                /* te_body */
                                                   "",                /* gs_body */
                                                   "",                /* fs_body */
-                                                  DE_NULL,           /* xfb_varyings */
+                                                  nullptr,           /* xfb_varyings */
                                                   0,                 /* n_xfb_varyings */
-                                                  &m_vs_id, DE_NULL, /* out_tc_id */
-                                                  DE_NULL,           /* out_te_id */
-                                                  DE_NULL,           /* out_gs_id */
-                                                  DE_NULL,           /* out_fs_id */
+                                                  &m_vs_id, nullptr, /* out_tc_id */
+                                                  nullptr,           /* out_te_id */
+                                                  nullptr,           /* out_gs_id */
+                                                  nullptr,           /* out_fs_id */
                                                   &m_po_id))
         {
             m_testCtx.getLog() << tcu::TestLog::Message << "A program object was successfully built for ["
@@ -13332,12 +13332,12 @@ tcu::TestNode::IterateResult NegativeTest10::iterate()
 
         /* Try to build the program object */
         if (ShaderSubroutine::Utils::buildProgram(gl, test_case.vs_body, test_case.tc_body, test_case.te_body,
-                                                  test_case.gs_body, test_case.fs_body, DE_NULL, /* xfb_varyings */
+                                                  test_case.gs_body, test_case.fs_body, nullptr, /* xfb_varyings */
                                                   0,                                             /* n_xfb_varyings */
-                                                  &m_vs_id, (test_case.tc_body.length() > 0) ? &m_tc_id : DE_NULL,
-                                                  (test_case.te_body.length() > 0) ? &m_te_id : DE_NULL,
-                                                  (test_case.gs_body.length() > 0) ? &m_gs_id : DE_NULL,
-                                                  (test_case.fs_body.length() > 0) ? &m_fs_id : DE_NULL, &m_po_id))
+                                                  &m_vs_id, (test_case.tc_body.length() > 0) ? &m_tc_id : nullptr,
+                                                  (test_case.te_body.length() > 0) ? &m_te_id : nullptr,
+                                                  (test_case.gs_body.length() > 0) ? &m_gs_id : nullptr,
+                                                  (test_case.fs_body.length() > 0) ? &m_fs_id : nullptr, &m_po_id))
         {
             m_testCtx.getLog() << tcu::TestLog::Message << "A program object was successfully built for ["
                                << test_case.name << "] test case, even though it was invalid."
@@ -13537,12 +13537,12 @@ tcu::TestNode::IterateResult NegativeTest11::iterate()
                                                   "",                /* te_body */
                                                   "",                /* gs_body */
                                                   "",                /* fs_body */
-                                                  DE_NULL,           /* xfb_varyings */
+                                                  nullptr,           /* xfb_varyings */
                                                   0,                 /* n_xfb_varyings */
-                                                  &m_vs_id, DE_NULL, /* out_tc_id */
-                                                  DE_NULL,           /* out_te_id */
-                                                  DE_NULL,           /* out_gs_id */
-                                                  DE_NULL,           /* out_fs_id */
+                                                  &m_vs_id, nullptr, /* out_tc_id */
+                                                  nullptr,           /* out_te_id */
+                                                  nullptr,           /* out_gs_id */
+                                                  nullptr,           /* out_fs_id */
                                                   &m_po_id))
         {
             m_testCtx.getLog() << tcu::TestLog::Message << "A program object was successfully built for ["
@@ -13775,12 +13775,12 @@ tcu::TestNode::IterateResult NegativeTest12::iterate()
                                                   "",                /* te_body */
                                                   "",                /* gs_body */
                                                   "",                /* fs_body */
-                                                  DE_NULL,           /* xfb_varyings */
+                                                  nullptr,           /* xfb_varyings */
                                                   0,                 /* n_xfb_varyings */
-                                                  &m_vs_id, DE_NULL, /* out_tc_id */
-                                                  DE_NULL,           /* out_te_id */
-                                                  DE_NULL,           /* out_gs_id */
-                                                  DE_NULL,           /* out_fs_id */
+                                                  &m_vs_id, nullptr, /* out_tc_id */
+                                                  nullptr,           /* out_te_id */
+                                                  nullptr,           /* out_gs_id */
+                                                  nullptr,           /* out_fs_id */
                                                   &m_po_id))
         {
             m_testCtx.getLog() << tcu::TestLog::Message << "A program object was successfully built for ["

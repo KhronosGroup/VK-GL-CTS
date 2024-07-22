@@ -114,11 +114,11 @@ uint32_t createGLES2Program(const glw::Functions &gl, TestLog &log)
 
         GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to create shaders and program");
 
-        gl.shaderSource(vertexShader, 1, &vertexShaderSource, DE_NULL);
+        gl.shaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
         gl.compileShader(vertexShader);
         GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to setup vertex shader");
 
-        gl.shaderSource(fragmentShader, 1, &fragmentShaderSource, DE_NULL);
+        gl.shaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
         gl.compileShader(fragmentShader);
         GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to setup fragment shader");
 
@@ -330,7 +330,7 @@ bool testNativeWindow(TestLog &log, eglu::NativeDisplay &nativeDisplay, eglu::Na
 {
     const Library &egl = nativeDisplay.getLibrary();
     eglu::UniqueSurface surface(egl, display,
-                                eglu::createWindowSurface(nativeDisplay, nativeWindow, display, config, DE_NULL));
+                                eglu::createWindowSurface(nativeDisplay, nativeWindow, display, config, nullptr));
     tcu::TextureLevel result;
     uint32_t program = 0;
     bool isOk        = true;
@@ -377,7 +377,7 @@ bool testNativePixmap(TestLog &log, eglu::NativeDisplay &nativeDisplay, eglu::Na
 {
     const Library &egl = nativeDisplay.getLibrary();
     eglu::UniqueSurface surface(egl, display,
-                                eglu::createPixmapSurface(nativeDisplay, nativePixmap, display, config, DE_NULL));
+                                eglu::createPixmapSurface(nativeDisplay, nativePixmap, display, config, nullptr));
     tcu::TextureLevel result;
     uint32_t program = 0;
     bool isOk        = true;
@@ -419,7 +419,7 @@ bool testNativePixmapCopy(TestLog &log, const Library &egl, eglu::NativePixmap &
                           EGLContext context, EGLConfig config, const glw::Functions &gl, bool renderColor,
                           size_t colorCount, const tcu::Vec4 *colors)
 {
-    eglu::UniqueSurface surface(egl, display, egl.createPbufferSurface(display, config, DE_NULL));
+    eglu::UniqueSurface surface(egl, display, egl.createPbufferSurface(display, config, nullptr));
     tcu::TextureLevel result;
     uint32_t program = 0;
     bool isOk        = true;
@@ -495,7 +495,7 @@ void NativeColorMappingCase::executeForConfig(EGLDisplay display, EGLConfig conf
         if (m_nativeType == NATIVETYPE_WINDOW)
             throw;
         else
-            windowFactory = DE_NULL;
+            windowFactory = nullptr;
     }
 
     try
@@ -520,7 +520,7 @@ void NativeColorMappingCase::executeForConfig(EGLDisplay display, EGLConfig conf
         if (m_nativeType == NATIVETYPE_PIXMAP || m_nativeType == NATIVETYPE_PBUFFER_COPY_TO_PIXMAP)
             throw;
         else
-            pixmapFactory = DE_NULL;
+            pixmapFactory = nullptr;
     }
 
     DE_ASSERT(m_nativeType != NATIVETYPE_WINDOW || windowFactory);
@@ -537,7 +537,7 @@ void NativeColorMappingCase::executeForConfig(EGLDisplay display, EGLConfig conf
     case NATIVETYPE_WINDOW:
     {
         de::UniquePtr<eglu::NativeWindow> nativeWindow(
-            windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL,
+            windowFactory->createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, nullptr,
                                         eglu::WindowParams(width, height, eglu::WindowParams::VISIBILITY_VISIBLE)));
 
         if (!testNativeWindow(m_testCtx.getLog(), m_eglTestCtx.getNativeDisplay(), *nativeWindow, display, *context,
@@ -549,7 +549,7 @@ void NativeColorMappingCase::executeForConfig(EGLDisplay display, EGLConfig conf
     case NATIVETYPE_PIXMAP:
     {
         de::UniquePtr<eglu::NativePixmap> nativePixmap(
-            pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
+            pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, nullptr, width, height));
 
         if (!testNativePixmap(m_testCtx.getLog(), m_eglTestCtx.getNativeDisplay(), *nativePixmap, display, *context,
                               config, gl, m_render, DE_LENGTH_OF_ARRAY(colors), colors))
@@ -560,7 +560,7 @@ void NativeColorMappingCase::executeForConfig(EGLDisplay display, EGLConfig conf
     case NATIVETYPE_PBUFFER_COPY_TO_PIXMAP:
     {
         de::UniquePtr<eglu::NativePixmap> nativePixmap(
-            pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
+            pixmapFactory->createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, nullptr, width, height));
 
         if (!testNativePixmapCopy(m_testCtx.getLog(), egl, *nativePixmap, display, *context, config, gl, m_render,
                                   DE_LENGTH_OF_ARRAY(colors), colors))

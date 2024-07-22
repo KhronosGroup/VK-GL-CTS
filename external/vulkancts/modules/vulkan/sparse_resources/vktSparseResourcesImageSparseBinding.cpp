@@ -162,7 +162,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
         const uint32_t secondDeviceID = (firstDeviceID + 1) % m_numPhysicalDevices;
 
         imageSparseInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO; //VkStructureType sType;
-        imageSparseInfo.pNext         = DE_NULL;                             //const void* pNext;
+        imageSparseInfo.pNext         = nullptr;                             //const void* pNext;
         imageSparseInfo.flags         = VK_IMAGE_CREATE_SPARSE_BINDING_BIT;  //VkImageCreateFlags flags;
         imageSparseInfo.imageType     = mapImageType(m_imageType);           //VkImageType imageType;
         imageSparseInfo.format        = m_format;                            //VkFormat format;
@@ -175,7 +175,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT; //VkImageUsageFlags usage;
         imageSparseInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;     //VkSharingMode sharingMode;
         imageSparseInfo.queueFamilyIndexCount = 0u;                            //uint32_t queueFamilyIndexCount;
-        imageSparseInfo.pQueueFamilyIndices   = DE_NULL;                       //const uint32_t* pQueueFamilyIndices;
+        imageSparseInfo.pQueueFamilyIndices   = nullptr;                       //const uint32_t* pQueueFamilyIndices;
 
         if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
         {
@@ -246,7 +246,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
 
                 deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
                     Move<VkDeviceMemory>(check<VkDeviceMemory>(sparseMemoryBind.memory),
-                                         Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
+                                         Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
 
                 sparseMemoryBinds.push_back(sparseMemoryBind);
             }
@@ -256,22 +256,22 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
 
             const VkDeviceGroupBindSparseInfo devGroupBindSparseInfo = {
                 VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO, //VkStructureType sType;
-                DE_NULL,                                         //const void* pNext;
+                nullptr,                                         //const void* pNext;
                 firstDeviceID,                                   //uint32_t resourceDeviceIndex;
                 secondDeviceID,                                  //uint32_t memoryDeviceIndex;
             };
 
             const VkBindSparseInfo bindSparseInfo = {
                 VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,                    //VkStructureType sType;
-                m_useDeviceGroups ? &devGroupBindSparseInfo : DE_NULL, //const void* pNext;
+                m_useDeviceGroups ? &devGroupBindSparseInfo : nullptr, //const void* pNext;
                 0u,                                                    //uint32_t waitSemaphoreCount;
-                DE_NULL,                                               //const VkSemaphore* pWaitSemaphores;
+                nullptr,                                               //const VkSemaphore* pWaitSemaphores;
                 0u,                                                    //uint32_t bufferBindCount;
-                DE_NULL,                        //const VkSparseBufferMemoryBindInfo* pBufferBinds;
+                nullptr,                        //const VkSparseBufferMemoryBindInfo* pBufferBinds;
                 1u,                             //uint32_t imageOpaqueBindCount;
                 &opaqueBindInfo,                //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
                 0u,                             //uint32_t imageBindCount;
-                DE_NULL,                        //const VkSparseImageMemoryBindInfo* pImageBinds;
+                nullptr,                        //const VkSparseImageMemoryBindInfo* pImageBinds;
                 1u,                             //uint32_t signalSemaphoreCount;
                 &imageMemoryBindSemaphore.get() //const VkSemaphore* pSignalSemaphores;
             };
@@ -344,8 +344,8 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
             const VkBufferMemoryBarrier inputBufferBarrier = makeBufferMemoryBarrier(
                 VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, *inputBuffer, 0u, imageSizeInBytes);
             deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_HOST_BIT,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 1u, &inputBufferBarrier,
-                                               0u, DE_NULL);
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 1u, &inputBufferBarrier,
+                                               0u, nullptr);
         }
 
         {
@@ -366,7 +366,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
                                                                                     VK_QUEUE_FAMILY_IGNORED));
             }
             deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                                static_cast<uint32_t>(imageSparseTransferDstBarriers.size()),
                                                imageSparseTransferDstBarriers.data());
         }
@@ -390,7 +390,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
             }
 
             deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                                static_cast<uint32_t>(imageSparseTransferSrcBarriers.size()),
                                                imageSparseTransferSrcBarriers.data());
         }
@@ -410,8 +410,8 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
                 VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0u, imageSizeInBytes);
 
             deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                               VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &outputBufferBarrier,
-                                               0u, DE_NULL);
+                                               VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &outputBufferBarrier,
+                                               0u, nullptr);
         }
 
         // End recording commands
@@ -421,7 +421,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate(void)
 
         // Submit commands for execution and wait for completion
         submitCommandsAndWait(deviceInterface, getDevice(), computeQueue.queueHandle, *commandBuffer, 1u,
-                              &imageMemoryBindSemaphore.get(), stageBits, 0, DE_NULL, m_useDeviceGroups, firstDeviceID);
+                              &imageMemoryBindSemaphore.get(), stageBits, 0, nullptr, m_useDeviceGroups, firstDeviceID);
 
         // Retrieve data from buffer to host memory
         invalidateAlloc(deviceInterface, getDevice(), *outputBufferAlloc);

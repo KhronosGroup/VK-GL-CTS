@@ -215,8 +215,8 @@ InvalidDrawCase::IterateResult InvalidDrawCase::iterate(void)
         // any data is ok
         gl.glGenBuffers(1, &m_dataBufferID);
         gl.glBindBuffer(GL_ARRAY_BUFFER, m_dataBufferID);
-        gl.glBufferData(GL_ARRAY_BUFFER, dataSize * sizeof(float[4]), DE_NULL, GL_STATIC_DRAW);
-        gl.glVertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        gl.glBufferData(GL_ARRAY_BUFFER, dataSize * sizeof(float[4]), nullptr, GL_STATIC_DRAW);
+        gl.glVertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
         gl.glEnableVertexAttribArray(posLocation);
         glu::checkError(gl.glGetError(), "", __FILE__, __LINE__);
     }
@@ -227,8 +227,8 @@ InvalidDrawCase::IterateResult InvalidDrawCase::iterate(void)
 
         gl.glGenBuffers(1, &m_colorBufferID);
         gl.glBindBuffer(GL_ARRAY_BUFFER, m_colorBufferID);
-        gl.glBufferData(GL_ARRAY_BUFFER, dataSize * sizeof(float[4]), DE_NULL, GL_STATIC_DRAW);
-        gl.glVertexAttribPointer(colorLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        gl.glBufferData(GL_ARRAY_BUFFER, dataSize * sizeof(float[4]), nullptr, GL_STATIC_DRAW);
+        gl.glVertexAttribPointer(colorLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
         gl.glEnableVertexAttribArray(colorLocation);
         gl.glVertexAttribDivisor(colorLocation, 1);
         glu::checkError(gl.glGetError(), "", __FILE__, __LINE__);
@@ -280,9 +280,9 @@ InvalidDrawCase::IterateResult InvalidDrawCase::iterate(void)
     gl.glUseProgram(programID);
 
     if (m_drawType == DRAW_ELEMENTS)
-        gl.glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, DE_NULL);
+        gl.glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, nullptr);
     else if (m_drawType == DRAW_ARRAYS)
-        gl.glDrawArraysIndirect(GL_TRIANGLES, DE_NULL);
+        gl.glDrawArraysIndirect(GL_TRIANGLES, nullptr);
     else
         DE_ASSERT(false);
 

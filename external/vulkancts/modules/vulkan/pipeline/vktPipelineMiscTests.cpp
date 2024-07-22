@@ -343,7 +343,7 @@ tcu::TestStatus ImplicitPrimitiveIDPassthroughInstance::iterate()
     const VkPipelineVertexInputStateCreateInfo vertexInputState     = initVulkanStructure();
     const VkPipelineRasterizationStateCreateInfo rasterizationState = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                          sType;
-        DE_NULL,                                                    // const void*                              pNext;
+        nullptr,                                                    // const void*                              pNext;
         (VkPipelineRasterizationStateCreateFlags)0,                 // VkPipelineRasterizationStateCreateFlags  flags;
         VK_FALSE,                // VkBool32                                 depthClampEnable;
         VK_FALSE,                // VkBool32                                 rasterizerDiscardEnable;
@@ -631,7 +631,7 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory &i
         .setupVertexInputState(&vertexInputState)
         .setupPreRasterizationShaderState(viewports, scissors, graphicsPipelineLayout, VK_NULL_HANDLE, 0u, vtxshader)
         .setupFragmentShaderState(graphicsPipelineLayout, VK_NULL_HANDLE, 0u, frgshader)
-        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, DE_NULL, &multisampling)
+        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, nullptr, &multisampling)
         .setMonolithicPipelineLayout(graphicsPipelineLayout)
         .buildPipeline();
 
@@ -644,7 +644,7 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory &i
 
     const vk::VkRenderingAttachmentInfoKHR colorAttachments = {
         vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                             // const void* pNext;
+        nullptr,                                             // const void* pNext;
         colorAttachmentView.get(),                           // VkImageView imageView;
         vk::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,          // VkImageLayout imageLayout;
         vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
@@ -655,7 +655,7 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory &i
         clearValueColor                                      // VkClearValue clearValue;
     };
     const VkRenderingInfoKHR render_info = {
-        VK_STRUCTURE_TYPE_RENDERING_INFO_KHR, 0, 0, renderArea, 1, 0, 1, &colorAttachments, DE_NULL, DE_NULL};
+        VK_STRUCTURE_TYPE_RENDERING_INFO_KHR, 0, 0, renderArea, 1, 0, 1, &colorAttachments, nullptr, nullptr};
 
     vk::beginCommandBuffer(vkd, commandBuffer.get());
     vk::VkImageMemoryBarrier initialBarrier =
@@ -951,7 +951,7 @@ tcu::TestStatus PipelineLayoutBindingTestInstance::iterate()
     const VkPipelineVertexInputStateCreateInfo vertexInputState     = initVulkanStructure();
     const VkPipelineRasterizationStateCreateInfo rasterizationState = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                          sType;
-        DE_NULL,                                                    // const void*                              pNext;
+        nullptr,                                                    // const void*                              pNext;
         (VkPipelineRasterizationStateCreateFlags)0,                 // VkPipelineRasterizationStateCreateFlags  flags;
         VK_FALSE,                // VkBool32                                 depthClampEnable;
         VK_FALSE,                // VkBool32                                 rasterizerDiscardEnable;

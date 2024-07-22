@@ -255,7 +255,7 @@ void IndirectDispatchCase::createCmdBufferCompute(uint32_t buffer) const
         gl.useProgram(program.getProgram());
 
         gl.bindBuffer(GL_DISPATCH_INDIRECT_BUFFER, buffer);
-        gl.bufferData(GL_DISPATCH_INDIRECT_BUFFER, (glw::GLsizeiptr)m_bufferSize, DE_NULL, GL_STATIC_DRAW);
+        gl.bufferData(GL_DISPATCH_INDIRECT_BUFFER, (glw::GLsizeiptr)m_bufferSize, nullptr, GL_STATIC_DRAW);
         gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buffer);
         GLU_EXPECT_NO_ERROR(gl.getError(), "Buffer setup failed");
 
@@ -303,7 +303,7 @@ bool IndirectDispatchCase::verifyResultBuffer(uint32_t buffer)
     const int resultBlockSize  = getResultBlockAlignedSize(gl);
     const int resultBufferSize = resultBlockSize * (int)m_commands.size();
 
-    void *mapPtr = DE_NULL;
+    void *mapPtr = nullptr;
     bool allOk   = true;
 
     try

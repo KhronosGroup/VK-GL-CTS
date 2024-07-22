@@ -140,7 +140,7 @@ PrimitiveRestartCase::PrimitiveRestartCase(Context &context, const char *name, c
     , m_beginWithRestart(beginWithRestart)
     , m_endWithRestart(endWithRestart)
     , m_duplicateRestarts(duplicateRestarts)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -152,7 +152,7 @@ PrimitiveRestartCase::~PrimitiveRestartCase(void)
 void PrimitiveRestartCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 void PrimitiveRestartCase::addIndex(uint32_t index)
@@ -221,7 +221,7 @@ void *PrimitiveRestartCase::getIndexPtr(int indexNdx)
         return (void *)&m_indicesUI[indexNdx];
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -726,9 +726,9 @@ void PrimitiveRestartTests::init(void)
                         primType == (int)PrimitiveRestartCase::PRIMITIVE_TRIANGLE_STRIP ? "triangle_strip" :
                         primType == (int)PrimitiveRestartCase::PRIMITIVE_TRIANGLE_FAN   ? "triangle_fan" :
                         primType == (int)PrimitiveRestartCase::PRIMITIVE_TRIANGLES      ? "triangles" :
-                                                                                          DE_NULL;
+                                                                                          nullptr;
 
-                    DE_ASSERT(primTypeName != DE_NULL);
+                    DE_ASSERT(primTypeName != nullptr);
 
                     TestCaseGroup *primTypeGroup = new TestCaseGroup(m_context, primTypeName, "");
                     specialCaseGroup->addChild(primTypeGroup);
@@ -739,9 +739,9 @@ void PrimitiveRestartTests::init(void)
                             indexType == (int)PrimitiveRestartCase::INDEX_UNSIGNED_BYTE  ? "unsigned_byte" :
                             indexType == (int)PrimitiveRestartCase::INDEX_UNSIGNED_SHORT ? "unsigned_short" :
                             indexType == (int)PrimitiveRestartCase::INDEX_UNSIGNED_INT   ? "unsigned_int" :
-                                                                                           DE_NULL;
+                                                                                           nullptr;
 
-                        DE_ASSERT(indexTypeName != DE_NULL);
+                        DE_ASSERT(indexTypeName != nullptr);
 
                         TestCaseGroup *indexTypeGroup = new TestCaseGroup(m_context, indexTypeName, "");
                         primTypeGroup->addChild(indexTypeGroup);
@@ -755,9 +755,9 @@ void PrimitiveRestartTests::init(void)
                                     "draw_elements_instanced" :
                                 function == (int)PrimitiveRestartCase::FUNCTION_DRAW_RANGE_ELEMENTS ?
                                     "draw_range_elements" :
-                                    DE_NULL;
+                                    nullptr;
 
-                            DE_ASSERT(functionName != DE_NULL);
+                            DE_ASSERT(functionName != nullptr);
 
                             indexTypeGroup->addChild(new PrimitiveRestartCase(
                                 m_context, functionName, "", (PrimitiveRestartCase::PrimitiveType)primType,

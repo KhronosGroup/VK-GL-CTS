@@ -3895,7 +3895,7 @@ tcu::TestStatus verifyIndependenceSettings(Context &context)
 
     vk::VkPhysicalDeviceFloatControlsProperties fcProperties;
     fcProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES;
-    fcProperties.pNext = DE_NULL;
+    fcProperties.pNext = nullptr;
 
     vk::VkPhysicalDeviceProperties2 deviceProperties;
     deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -4893,9 +4893,9 @@ void getGraphicsShaderCode(vk::SourceCollections &dst, InstanceContext context)
         "OpReturn\n"
         "OpFunctionEnd\n";
 
-    dst.spirvAsmSources.add("vert", DE_NULL) << StringTemplate(vertexTemplate).specialize(context.testCodeFragments)
+    dst.spirvAsmSources.add("vert", nullptr) << StringTemplate(vertexTemplate).specialize(context.testCodeFragments)
                                              << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-    dst.spirvAsmSources.add("frag", DE_NULL) << StringTemplate(fragmentTemplate).specialize(context.testCodeFragments)
+    dst.spirvAsmSources.add("frag", nullptr) << StringTemplate(fragmentTemplate).specialize(context.testCodeFragments)
                                              << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 

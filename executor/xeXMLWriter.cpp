@@ -108,7 +108,7 @@ inline const char *getEscapeEntity(char ch)
         return "&lt;US&gt;";
 
     default:
-        return DE_NULL;
+        return nullptr;
     }
 }
 

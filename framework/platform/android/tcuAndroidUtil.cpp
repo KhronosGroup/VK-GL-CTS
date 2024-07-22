@@ -60,13 +60,13 @@ private:
     bool m_detach;
 };
 
-ScopedJNIEnv::ScopedJNIEnv(JavaVM *vm) : m_vm(vm), m_env(DE_NULL), m_detach(false)
+ScopedJNIEnv::ScopedJNIEnv(JavaVM *vm) : m_vm(vm), m_env(nullptr), m_detach(false)
 {
     const int getEnvRes = m_vm->GetEnv((void **)&m_env, JNI_VERSION_1_6);
 
     if (getEnvRes == JNI_EDETACHED)
     {
-        if (m_vm->AttachCurrentThread(&m_env, DE_NULL) != JNI_OK)
+        if (m_vm->AttachCurrentThread(&m_env, nullptr) != JNI_OK)
             throw std::runtime_error("JNI AttachCurrentThread() failed");
 
         m_detach = true;
@@ -158,7 +158,7 @@ jmethodID getMethodID(JNIEnv *env, jclass cls, const char *methodName, const cha
 
 string getStringValue(JNIEnv *env, jstring jniStr)
 {
-    const char *ptr  = env->GetStringUTFChars(jniStr, DE_NULL);
+    const char *ptr  = env->GetStringUTFChars(jniStr, nullptr);
     const string str = string(ptr);
 
     env->ReleaseStringUTFChars(jniStr, ptr);

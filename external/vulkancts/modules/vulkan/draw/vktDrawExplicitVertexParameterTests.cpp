@@ -409,9 +409,9 @@ tcu::TestStatus DrawTestInstance::iterate(void)
         }
 
         renderPassCreateInfo.addSubpass(
-            SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, 1u,
+            SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1u,
                                useMultisampling ? &multisampleAttachmentRef : &colorAttachmentRef,
-                               useMultisampling ? &colorAttachmentRef : DE_NULL, AttachmentReference(), 0, DE_NULL));
+                               useMultisampling ? &colorAttachmentRef : nullptr, AttachmentReference(), 0, nullptr));
 
         m_renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
@@ -521,7 +521,7 @@ tcu::TestStatus DrawTestInstance::iterate(void)
 
 #ifndef CTS_USES_VULKANSC
         VkPipelineRenderingCreateInfoKHR renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              0u,
                                                              1u,
                                                              &imageFormat,
@@ -634,7 +634,7 @@ void DrawTestInstance::beginRenderPass(VkCommandBuffer cmdBuffer, VkRect2D rende
 
     const VkRenderPassBeginInfo renderPassBeginInfo{
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         *m_renderPass,                            // VkRenderPass renderPass;
         *m_framebuffer,                           // VkFramebuffer framebuffer;
         renderArea,                               // VkRect2D renderArea;
@@ -653,7 +653,7 @@ void DrawTestInstance::drawCommands(VkCommandBuffer cmdBuffer, VkBuffer vertexBu
     vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
     vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &*m_descriptorSet,
-                             0u, DE_NULL);
+                             0u, nullptr);
     vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
 }
 
@@ -663,7 +663,7 @@ void DrawTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkForm
 {
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                         // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         renderingFlags,                                                  // VkRenderingFlagsKHR flags;
         0u,                                                              // uint32_t viewMask;
         1u,                                                              // uint32_t colorAttachmentCount;
@@ -680,7 +680,7 @@ void DrawTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkForm
 
     const VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
@@ -696,7 +696,7 @@ void DrawTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkRect2D re
 
     VkRenderingAttachmentInfoKHR colorAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,                       // VkStructureType sType;
-        DE_NULL,                                                               // const void* pNext;
+        nullptr,                                                               // const void* pNext;
         useMultisampling ? *m_multisampleTargetView : *m_colorTargetView,      // VkImageView imageView;
         VK_IMAGE_LAYOUT_GENERAL,                                               // VkImageLayout imageLayout;
         useMultisampling ? VK_RESOLVE_MODE_AVERAGE_BIT : VK_RESOLVE_MODE_NONE, // VkResolveModeFlagBits resolveMode;
@@ -709,15 +709,15 @@ void DrawTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkRect2D re
 
     VkRenderingInfoKHR renderingInfo{
         VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-        DE_NULL,
+        nullptr,
         renderingFlags,   // VkRenderingFlagsKHR flags;
         renderArea,       // VkRect2D renderArea;
         1u,               // uint32_t layerCount;
         0u,               // uint32_t viewMask;
         1u,               // uint32_t colorAttachmentCount;
         &colorAttachment, // const VkRenderingAttachmentInfoKHR* pColorAttachments;
-        DE_NULL,          // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-        DE_NULL,          // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+        nullptr,          // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+        nullptr,          // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
     };
 
     vk.cmdBeginRendering(cmdBuffer, &renderingInfo);

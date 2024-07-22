@@ -53,7 +53,7 @@ tcu::TestStatus queryRefreshableObjects(Context &context)
     const vk::InstanceInterface &vki    = context.getInstanceInterface();
 
     // get number of refreshable objects
-    vk::VkResult result = vki.getPhysicalDeviceRefreshableObjectTypesKHR(physicalDevice, &countReported, DE_NULL);
+    vk::VkResult result = vki.getPhysicalDeviceRefreshableObjectTypesKHR(physicalDevice, &countReported, nullptr);
     if (result != vk::VK_SUCCESS)
         TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceRefreshableObjectTypesKHR returned invalid return code");
 
@@ -99,7 +99,7 @@ tcu::TestStatus refreshObjects(Context &context, bool individualRefresh)
     const vk::InstanceInterface &vki    = context.getInstanceInterface();
     const vk::DeviceInterface &vkd      = context.getDeviceInterface();
 
-    vk::VkResult result = vki.getPhysicalDeviceRefreshableObjectTypesKHR(physicalDevice, &countReported, DE_NULL);
+    vk::VkResult result = vki.getPhysicalDeviceRefreshableObjectTypesKHR(physicalDevice, &countReported, nullptr);
     if ((result != vk::VK_SUCCESS) || (countReported == 0))
         TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceRefreshableObjectTypesKHR failed");
 
@@ -123,7 +123,7 @@ tcu::TestStatus refreshObjects(Context &context, bool individualRefresh)
     vk::Move<vk::VkEvent> event         = createEvent(vkd, device);
     const vk::VkQueryPoolCreateInfo queryPoolCreateInfo{
         vk::VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         0u,                                           // VkQueryPoolCreateFlags flags;
         vk::VK_QUERY_TYPE_OCCLUSION,                  // VkQueryType queryType;
         1u,                                           // uint32_t queryCount;
@@ -132,14 +132,14 @@ tcu::TestStatus refreshObjects(Context &context, bool individualRefresh)
     vk::Move<vk::VkQueryPool> queryPool = createQueryPool(vkd, device, &queryPoolCreateInfo);
     const vk::VkBufferCreateInfo bufferCreateInfo{
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType                        sType
-        DE_NULL,                                  // const void*                            pNext
+        nullptr,                                  // const void*                            pNext
         0u,                                       // VkBufferCreateFlags                    flags
         (vk::VkDeviceSize)64,                     // VkDeviceSize                            size
         vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
             vk::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT, // VkBufferUsageFlags                    usage
         vk::VK_SHARING_MODE_EXCLUSIVE,                    // VkSharingMode                        sharingMode
         0u,     // uint32_t                                queueFamilyIndexCount
-        DE_NULL // const uint32_t*                        pQueueFamilyIndices
+        nullptr // const uint32_t*                        pQueueFamilyIndices
     };
     vk::Move<vk::VkBuffer> buffer                     = createBuffer(vkd, device, &bufferCreateInfo);
     const vk::VkMemoryRequirements bufferRequirements = getBufferMemoryRequirements(vkd, device, *buffer);
@@ -150,7 +150,7 @@ tcu::TestStatus refreshObjects(Context &context, bool individualRefresh)
         makeBufferView(vkd, device, *buffer, vk::VK_FORMAT_R32G32B32A32_SFLOAT, 0ull, VK_WHOLE_SIZE);
     const vk::VkSamplerCreateInfo samplerCreateInfo{
         vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         (vk::VkSamplerCreateFlags)0,                 // VkSamplerCreateFlags flags;
         vk::VK_FILTER_NEAREST,                       // VkFilter magFilter;
         vk::VK_FILTER_NEAREST,                       // VkFilter minFilter;
@@ -171,7 +171,7 @@ tcu::TestStatus refreshObjects(Context &context, bool individualRefresh)
     vk::Move<vk::VkSampler> sampler = createSampler(vkd, device, &samplerCreateInfo);
     const vk::VkSamplerYcbcrConversionCreateInfo conversionInfo{
         vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,                    // VkFormat format;
         vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,         // VkSamplerYcbcrModelConversion ycbcrModel;
         vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL,                        // VkSamplerYcbcrRange ycbcrRange;
@@ -187,7 +187,7 @@ tcu::TestStatus refreshObjects(Context &context, bool individualRefresh)
         vk::createSamplerYcbcrConversion(vkd, device, &conversionInfo);
     const vk::VkImageCreateInfo imageCreateInfo{
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                       // VkStructureType sType;
-        DE_NULL,                                                                       // const void* pNext;
+        nullptr,                                                                       // const void* pNext;
         0u,                                                                            // VkImageCreateFlags flags;
         vk::VK_IMAGE_TYPE_2D,                                                          // VkImageType imageType;
         vk::VK_FORMAT_R8G8B8A8_UNORM,                                                  // VkFormat format;
@@ -215,7 +215,7 @@ tcu::TestStatus refreshObjects(Context &context, bool individualRefresh)
     vk::Move<vk::VkFramebuffer> framebuffer = makeFramebuffer(vkd, device, *renderPass, *imageView, 64, 64);
     const vk::VkPipelineCacheCreateInfo pipelineCacheCreateInfo{
         vk::VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                          // const void* pNext;
+        nullptr,                                          // const void* pNext;
         vk::VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
             vk::VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
         context.getResourceInterface()->getCacheDataSize(),           // uintptr_t initialDataSize;
@@ -288,7 +288,7 @@ tcu::TestStatus refreshObjects(Context &context, bool individualRefresh)
         {vk::VK_OBJECT_TYPE_DISPLAY_MODE_KHR, 0},
         {vk::VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT, 0}};
 
-    const vk::VkMemoryBarrier objRefreshBarrier{vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL,
+    const vk::VkMemoryBarrier objRefreshBarrier{vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr,
                                                 vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_MEMORY_READ_BIT};
 
     // record command buffer
@@ -310,12 +310,12 @@ tcu::TestStatus refreshObjects(Context &context, bool individualRefresh)
                 continue;
 
             vk::VkRefreshObjectKHR refreshObject   = {objectType, objectHandle, 0};
-            vk::VkRefreshObjectListKHR refreshList = {vk::VK_STRUCTURE_TYPE_REFRESH_OBJECT_LIST_KHR, DE_NULL, 1,
+            vk::VkRefreshObjectListKHR refreshList = {vk::VK_STRUCTURE_TYPE_REFRESH_OBJECT_LIST_KHR, nullptr, 1,
                                                       &refreshObject};
             vkd.cmdRefreshObjectsKHR(*cmdBuffer, &refreshList);
             vkd.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 1, &objRefreshBarrier, 0, DE_NULL, 0,
-                                   DE_NULL);
+                                   vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 1, &objRefreshBarrier, 0, nullptr, 0,
+                                   nullptr);
         }
     }
     else
@@ -333,11 +333,11 @@ tcu::TestStatus refreshObjects(Context &context, bool individualRefresh)
             objectsToRefreshList[countUsed++] = {objectType, objectHandle, 0};
         }
 
-        vk::VkRefreshObjectListKHR refreshList = {vk::VK_STRUCTURE_TYPE_REFRESH_OBJECT_LIST_KHR, DE_NULL, countUsed,
+        vk::VkRefreshObjectListKHR refreshList = {vk::VK_STRUCTURE_TYPE_REFRESH_OBJECT_LIST_KHR, nullptr, countUsed,
                                                   objectsToRefreshList.data()};
         vkd.cmdRefreshObjectsKHR(*cmdBuffer, &refreshList);
         vkd.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                               0, 1, &objRefreshBarrier, 0, DE_NULL, 0, DE_NULL);
+                               0, 1, &objRefreshBarrier, 0, nullptr, 0, nullptr);
     }
 
     vk::endCommandBuffer(vkd, *cmdBuffer);

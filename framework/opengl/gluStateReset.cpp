@@ -84,7 +84,7 @@ void resetStateES(const RenderContext &renderCtx, const ContextInfo &ctxInfo)
         for (int ndx = 0; ndx < numVertexAttribArrays; ndx++)
         {
             gl.disableVertexAttribArray(ndx);
-            gl.vertexAttribPointer(ndx, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+            gl.vertexAttribPointer(ndx, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
 
             if (contextSupports(type, ApiType::es(3, 0)))
                 gl.vertexAttribDivisor(ndx, 0);
@@ -157,7 +157,7 @@ void resetStateES(const RenderContext &renderCtx, const ContextInfo &ctxInfo)
 
             // Reset 2D texture.
             gl.bindTexture(GL_TEXTURE_2D, 0);
-            gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
             gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -185,12 +185,12 @@ void resetStateES(const RenderContext &renderCtx, const ContextInfo &ctxInfo)
 
             // Reset cube map texture.
             gl.bindTexture(GL_TEXTURE_CUBE_MAP, 0);
-            gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-            gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-            gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-            gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-            gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-            gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
             gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -220,7 +220,7 @@ void resetStateES(const RenderContext &renderCtx, const ContextInfo &ctxInfo)
             {
                 // Reset 2D array texture.
                 gl.bindTexture(GL_TEXTURE_2D_ARRAY, 0);
-                gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
                 gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
                 gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -247,7 +247,7 @@ void resetStateES(const RenderContext &renderCtx, const ContextInfo &ctxInfo)
             {
                 // Reset 3D texture.
                 gl.bindTexture(GL_TEXTURE_3D, 0);
-                gl.texImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                gl.texImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
                 gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
                 gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -587,7 +587,7 @@ void resetStateES(const RenderContext &renderCtx, const ContextInfo &ctxInfo)
     if (ctxInfo.isExtensionSupported("GL_KHR_debug"))
     {
         const bool entrypointsPresent =
-            gl.debugMessageControl != DE_NULL && gl.debugMessageCallback != DE_NULL && gl.popDebugGroup != DE_NULL;
+            gl.debugMessageControl != nullptr && gl.debugMessageCallback != nullptr && gl.popDebugGroup != nullptr;
 
         // some drivers advertise GL_KHR_debug but give out null pointers. Silently ignore.
         if (entrypointsPresent)
@@ -597,9 +597,9 @@ void resetStateES(const RenderContext &renderCtx, const ContextInfo &ctxInfo)
             for (int ndx = 1; ndx < stackDepth; ++ndx)
                 gl.popDebugGroup();
 
-            gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, true);
-            gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_LOW, 0, DE_NULL, false);
-            gl.debugMessageCallback(DE_NULL, DE_NULL);
+            gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
+            gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_LOW, 0, nullptr, false);
+            gl.debugMessageCallback(nullptr, nullptr);
 
             if (type.getFlags() & glu::CONTEXT_DEBUG)
                 gl.enable(GL_DEBUG_OUTPUT);
@@ -768,7 +768,7 @@ void resetStateGLCore(const RenderContext &renderCtx, const ContextInfo &ctxInfo
 
             // Reset 1D texture.
             gl.bindTexture(GL_TEXTURE_1D, 0);
-            gl.texImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.texImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             gl.texParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
             gl.texParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             gl.texParameterfv(GL_TEXTURE_1D, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
@@ -791,7 +791,7 @@ void resetStateGLCore(const RenderContext &renderCtx, const ContextInfo &ctxInfo
 
             // Reset 2D texture.
             gl.bindTexture(GL_TEXTURE_2D, 0);
-            gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
             gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             gl.texParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
@@ -815,12 +815,12 @@ void resetStateGLCore(const RenderContext &renderCtx, const ContextInfo &ctxInfo
 
             // Reset cube map texture.
             gl.bindTexture(GL_TEXTURE_CUBE_MAP, 0);
-            gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-            gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-            gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-            gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-            gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
-            gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            gl.texImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
             gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             gl.texParameterfv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
@@ -866,7 +866,7 @@ void resetStateGLCore(const RenderContext &renderCtx, const ContextInfo &ctxInfo
 
             // Reset 1D array texture.
             gl.bindTexture(GL_TEXTURE_1D_ARRAY, 0);
-            gl.texImage2D(GL_TEXTURE_1D_ARRAY, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.texImage2D(GL_TEXTURE_1D_ARRAY, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             gl.texParameteri(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
             gl.texParameteri(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             gl.texParameterfv(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
@@ -889,7 +889,7 @@ void resetStateGLCore(const RenderContext &renderCtx, const ContextInfo &ctxInfo
 
             // Reset 2D array texture.
             gl.bindTexture(GL_TEXTURE_2D_ARRAY, 0);
-            gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
             gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             gl.texParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
@@ -913,7 +913,7 @@ void resetStateGLCore(const RenderContext &renderCtx, const ContextInfo &ctxInfo
 
             // Reset 3D texture.
             gl.bindTexture(GL_TEXTURE_3D, 0);
-            gl.texImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.texImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 0, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
             gl.texParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             gl.texParameterfv(GL_TEXTURE_3D, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
@@ -940,7 +940,7 @@ void resetStateGLCore(const RenderContext &renderCtx, const ContextInfo &ctxInfo
             {
                 // Reset rectangle texture.
                 gl.bindTexture(GL_TEXTURE_RECTANGLE, 0);
-                gl.texImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                gl.texImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
                 gl.texParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 gl.texParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 gl.texParameterfv(GL_TEXTURE_RECTANGLE, GL_TEXTURE_BORDER_COLOR, &borderColor[0]);
@@ -1225,14 +1225,14 @@ void resetStateGLCore(const RenderContext &renderCtx, const ContextInfo &ctxInfo
     // Debug state
     if (ctxInfo.isExtensionSupported("GL_KHR_debug"))
     {
-        const bool entrypointsPresent = gl.debugMessageControl != DE_NULL && gl.debugMessageCallback != DE_NULL;
+        const bool entrypointsPresent = gl.debugMessageControl != nullptr && gl.debugMessageCallback != nullptr;
 
         // some drivers advertise GL_KHR_debug but give out null pointers. Silently ignore.
         if (entrypointsPresent)
         {
-            gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, true);
-            gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_LOW, 0, DE_NULL, false);
-            gl.debugMessageCallback(DE_NULL, DE_NULL);
+            gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
+            gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_LOW, 0, nullptr, false);
+            gl.debugMessageCallback(nullptr, nullptr);
 
             if (type.getFlags() & glu::CONTEXT_DEBUG)
                 gl.enable(GL_DEBUG_OUTPUT);

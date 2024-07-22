@@ -115,7 +115,7 @@ public:
                 m_resource->getImage().handle,          // VkImage                            image
                 m_resource->getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2, true);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2, true);
             synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &dependencyInfo);
             synchronizationWrapper->cmdWaitEvents(*cmdBuffer, 1u, &event.get(), &dependencyInfo);
         }
@@ -131,7 +131,7 @@ public:
                                          m_resource->getBuffer().size    // VkDeviceSize                        size
                 );
             VkDependencyInfoKHR dependencyInfo =
-                makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2, DE_NULL, true);
+                makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2, nullptr, true);
             synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &dependencyInfo);
             synchronizationWrapper->cmdWaitEvents(*cmdBuffer, 1u, &event.get(), &dependencyInfo);
         }
@@ -203,7 +203,7 @@ public:
                 m_resource->getImage().handle,          // VkImage                            image
                 m_resource->getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(*cmdBuffer, &dependencyInfo);
         }
         else
@@ -217,7 +217,7 @@ public:
                                          m_resource->getBuffer().offset, // VkDeviceSize                        offset
                                          m_resource->getBuffer().size    // VkDeviceSize                        size
                 );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(*cmdBuffer, &dependencyInfo);
         }
 
@@ -288,10 +288,10 @@ public:
         VkCommandBufferSubmitInfoKHR commandBufferSubmitInfo[]{makeCommonCommandBufferSubmitInfo(cmdBuffers[WRITE]),
                                                                makeCommonCommandBufferSubmitInfo(cmdBuffers[READ])};
 
-        synchronizationWrapper->addSubmitInfo(0u, DE_NULL, 1u, &commandBufferSubmitInfo[WRITE], 1u,
+        synchronizationWrapper->addSubmitInfo(0u, nullptr, 1u, &commandBufferSubmitInfo[WRITE], 1u,
                                               &signalSemaphoreSubmitInfo);
         synchronizationWrapper->addSubmitInfo(1u, &waitSemaphoreSubmitInfo, 1u, &commandBufferSubmitInfo[READ], 0u,
-                                              DE_NULL);
+                                              nullptr);
 
         beginCommandBuffer(vk, cmdBuffers[WRITE]);
 
@@ -309,7 +309,7 @@ public:
                 m_resource->getImage().handle,          // VkImage                            image
                 m_resource->getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffers[WRITE], &dependencyInfo);
         }
         else
@@ -323,7 +323,7 @@ public:
                                          0,                              // VkDeviceSize                        offset
                                          VK_WHOLE_SIZE                   // VkDeviceSize                        size
                 );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
             synchronizationWrapper->cmdPipelineBarrier(cmdBuffers[WRITE], &dependencyInfo);
         }
 
@@ -439,7 +439,7 @@ public:
             waitSemaphoreSubmitInfos[opNdx].value   = increment;
 
             synchronizationWrapper->addSubmitInfo(
-                opNdx == 0 ? 0u : 1u, opNdx == 0 ? DE_NULL : &waitSemaphoreSubmitInfos[opNdx - 1], 1u,
+                opNdx == 0 ? 0u : 1u, opNdx == 0 ? nullptr : &waitSemaphoreSubmitInfos[opNdx - 1], 1u,
                 &cmdBuffersInfo[opNdx], 1u, &signalSemaphoreSubmitInfos[opNdx], opNdx == 0 ? false : true, true);
 
             VkCommandBuffer cmdBuffer = cmdBuffersInfo[opNdx].commandBuffer;
@@ -467,7 +467,7 @@ public:
                         resource.getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
                     );
                     VkDependencyInfoKHR dependencyInfo =
-                        makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+                        makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
                     synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
                 }
                 else
@@ -481,7 +481,7 @@ public:
                         0,                           // VkDeviceSize                        offset
                         VK_WHOLE_SIZE                // VkDeviceSize                        size
                     );
-                    VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+                    VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
                     synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
                 }
             }
@@ -572,7 +572,7 @@ public:
                 m_resource->getImage().handle,          // VkImage                            image
                 m_resource->getImage().subresourceRange // VkImageSubresourceRange            subresourceRange
             );
-            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+            VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
             synchronizationWrapper[WRITE]->cmdPipelineBarrier(cmdBuffers[WRITE], &dependencyInfo);
         }
 
@@ -697,7 +697,7 @@ public:
         }
 
         DE_ASSERT(0);
-        return DE_NULL;
+        return nullptr;
     }
 
 private:

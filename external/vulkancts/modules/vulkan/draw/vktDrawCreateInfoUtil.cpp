@@ -55,7 +55,7 @@ ImageViewCreateInfo::ImageViewCreateInfo(vk::VkImage _image, vk::VkImageViewType
                                          const vk::VkComponentMapping &_components, vk::VkImageViewCreateFlags _flags)
 {
     sType            = vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    pNext            = DE_NULL;
+    pNext            = nullptr;
     flags            = 0u;
     image            = _image;
     viewType         = _viewType;
@@ -72,7 +72,7 @@ ImageViewCreateInfo::ImageViewCreateInfo(vk::VkImage _image, vk::VkImageViewType
                                          const vk::VkComponentMapping &_components, vk::VkImageViewCreateFlags _flags)
 {
     sType        = vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    pNext        = DE_NULL;
+    pNext        = nullptr;
     flags        = 0u;
     image        = _image;
     viewType     = _viewType;
@@ -109,7 +109,7 @@ BufferViewCreateInfo::BufferViewCreateInfo(vk::VkBuffer _buffer, vk::VkFormat _f
                                            vk::VkDeviceSize _range)
 {
     sType = vk::VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO;
-    pNext = DE_NULL;
+    pNext = nullptr;
 
     flags  = 0;
     buffer = _buffer;
@@ -123,7 +123,7 @@ BufferCreateInfo::BufferCreateInfo(vk::VkDeviceSize _size, vk::VkBufferUsageFlag
                                    const uint32_t *_pQueueFamilyIndices, vk::VkBufferCreateFlags _flags)
 {
     sType                 = vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    pNext                 = DE_NULL;
+    pNext                 = nullptr;
     size                  = _size;
     usage                 = _usage;
     flags                 = _flags;
@@ -161,7 +161,7 @@ BufferCreateInfo::BufferCreateInfo(const BufferCreateInfo &other)
     }
     else
     {
-        pQueueFamilyIndices = DE_NULL;
+        pQueueFamilyIndices = nullptr;
     }
 }
 
@@ -185,7 +185,7 @@ BufferCreateInfo &BufferCreateInfo::operator=(const BufferCreateInfo &other)
     }
     else
     {
-        pQueueFamilyIndices = DE_NULL;
+        pQueueFamilyIndices = nullptr;
     }
 
     return *this;
@@ -205,7 +205,7 @@ ImageCreateInfo::ImageCreateInfo(vk::VkImageType _imageType, vk::VkFormat _forma
     }
 
     sType                 = vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    pNext                 = DE_NULL;
+    pNext                 = nullptr;
     flags                 = _flags;
     imageType             = _imageType;
     format                = _format;
@@ -224,7 +224,7 @@ ImageCreateInfo::ImageCreateInfo(vk::VkImageType _imageType, vk::VkFormat _forma
     }
     else
     {
-        pQueueFamilyIndices = DE_NULL;
+        pQueueFamilyIndices = nullptr;
     }
     initialLayout = _initialLayout;
 }
@@ -234,7 +234,7 @@ FramebufferCreateInfo::FramebufferCreateInfo(vk::VkRenderPass _renderPass,
                                              uint32_t _height, uint32_t _layers)
 {
     sType = vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    pNext = DE_NULL;
+    pNext = nullptr;
     flags = 0u;
 
     renderPass      = _renderPass;
@@ -262,7 +262,7 @@ RenderPassCreateInfo::RenderPassCreateInfo(const std::vector<vk::VkAttachmentDes
     , m_dependiencesStructs(m_dependiences.begin(), m_dependiences.end())
 {
     sType = vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    pNext = DE_NULL;
+    pNext = nullptr;
     flags = 0;
 
     attachmentCount = static_cast<uint32_t>(m_attachments.size());
@@ -287,7 +287,7 @@ RenderPassCreateInfo::RenderPassCreateInfo(uint32_t _attachmentCount, const vk::
     m_dependiencesStructs = std::vector<vk::VkSubpassDependency>(m_dependiences.begin(), m_dependiences.end());
 
     sType = vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    pNext = DE_NULL;
+    pNext = nullptr;
     flags = 0;
 
     attachmentCount = static_cast<uint32_t>(m_attachments.size());
@@ -298,7 +298,7 @@ RenderPassCreateInfo::RenderPassCreateInfo(uint32_t _attachmentCount, const vk::
     }
     else
     {
-        pAttachments = DE_NULL;
+        pAttachments = nullptr;
     }
 
     subpassCount = static_cast<uint32_t>(m_subpasses.size());
@@ -309,7 +309,7 @@ RenderPassCreateInfo::RenderPassCreateInfo(uint32_t _attachmentCount, const vk::
     }
     else
     {
-        pSubpasses = DE_NULL;
+        pSubpasses = nullptr;
     }
 
     dependencyCount = static_cast<uint32_t>(m_dependiences.size());
@@ -320,7 +320,7 @@ RenderPassCreateInfo::RenderPassCreateInfo(uint32_t _attachmentCount, const vk::
     }
     else
     {
-        pDependencies = DE_NULL;
+        pDependencies = nullptr;
     }
 }
 
@@ -359,18 +359,18 @@ RenderPassBeginInfo::RenderPassBeginInfo(vk::VkRenderPass _renderPass, vk::VkFra
     m_clearValues = _clearValues;
 
     sType           = vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    pNext           = DE_NULL;
+    pNext           = nullptr;
     renderPass      = _renderPass;
     framebuffer     = _framebuffer;
     renderArea      = _renderArea;
     clearValueCount = static_cast<uint32_t>(m_clearValues.size());
-    pClearValues    = m_clearValues.size() ? &m_clearValues[0] : DE_NULL;
+    pClearValues    = m_clearValues.size() ? &m_clearValues[0] : nullptr;
 }
 
 CmdPoolCreateInfo::CmdPoolCreateInfo(uint32_t _queueFamilyIndex, unsigned int _flags)
 {
     sType = vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    pNext = DE_NULL;
+    pNext = nullptr;
 
     queueFamilyIndex = _queueFamilyIndex;
     flags            = _flags;
@@ -444,12 +444,12 @@ SubpassDescription::SubpassDescription(vk::VkPipelineBindPoint _pipelineBindPoin
     flags                   = _flags;
     pipelineBindPoint       = _pipelineBindPoint;
     inputAttachmentCount    = _inputAttachmentCount;
-    pInputAttachments       = DE_NULL;
+    pInputAttachments       = nullptr;
     colorAttachmentCount    = _colorAttachmentCount;
-    pColorAttachments       = DE_NULL;
-    pResolveAttachments     = DE_NULL;
+    pColorAttachments       = nullptr;
+    pResolveAttachments     = nullptr;
     pDepthStencilAttachment = &m_depthStencilAttachment;
-    pPreserveAttachments    = DE_NULL;
+    pPreserveAttachments    = nullptr;
     preserveAttachmentCount = _preserveAttachmentCount;
 
     if (!m_inputAttachments.empty())
@@ -559,9 +559,9 @@ SubpassDependency::SubpassDependency(const vk::VkSubpassDependency &rhs)
 CmdBufferBeginInfo::CmdBufferBeginInfo(vk::VkCommandBufferUsageFlags _flags)
 {
     sType            = vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    pNext            = DE_NULL;
+    pNext            = nullptr;
     flags            = _flags;
-    pInheritanceInfo = DE_NULL;
+    pInheritanceInfo = nullptr;
 }
 
 DescriptorPoolCreateInfo::DescriptorPoolCreateInfo(const std::vector<vk::VkDescriptorPoolSize> &poolSizeCounts,
@@ -569,7 +569,7 @@ DescriptorPoolCreateInfo::DescriptorPoolCreateInfo(const std::vector<vk::VkDescr
     : m_poolSizeCounts(poolSizeCounts)
 {
     sType         = vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    pNext         = DE_NULL;
+    pNext         = nullptr;
     flags         = _flags;
     maxSets       = _maxSets;
     poolSizeCount = static_cast<uint32_t>(m_poolSizeCounts.size());
@@ -591,7 +591,7 @@ DescriptorSetLayoutCreateInfo::DescriptorSetLayoutCreateInfo(uint32_t _bindingCo
                                                              const vk::VkDescriptorSetLayoutBinding *_pBindings)
 {
     sType        = vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    pNext        = DE_NULL;
+    pNext        = nullptr;
     flags        = 0;
     bindingCount = _bindingCount;
     pBindings    = _pBindings;
@@ -609,10 +609,10 @@ PipelineLayoutCreateInfo::PipelineLayoutCreateInfo(uint32_t _descriptorSetCount,
     }
 
     sType                  = vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pNext                  = DE_NULL;
+    pNext                  = nullptr;
     flags                  = 0;
     setLayoutCount         = static_cast<uint32_t>(m_setLayouts.size());
-    pSetLayouts            = setLayoutCount > 0 ? &m_setLayouts[0] : DE_NULL;
+    pSetLayouts            = setLayoutCount > 0 ? &m_setLayouts[0] : nullptr;
     pushConstantRangeCount = static_cast<uint32_t>(m_pushConstantRanges.size());
 
     if (m_pushConstantRanges.size())
@@ -621,7 +621,7 @@ PipelineLayoutCreateInfo::PipelineLayoutCreateInfo(uint32_t _descriptorSetCount,
     }
     else
     {
-        pPushConstantRanges = DE_NULL;
+        pPushConstantRanges = nullptr;
     }
 }
 
@@ -632,7 +632,7 @@ PipelineLayoutCreateInfo::PipelineLayoutCreateInfo(const std::vector<vk::VkDescr
     , m_pushConstantRanges(_pPushConstantRanges, _pPushConstantRanges + _pushConstantRangeCount)
 {
     sType = vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pNext = DE_NULL;
+    pNext = nullptr;
 
     flags          = 0;
     setLayoutCount = static_cast<uint32_t>(m_setLayouts.size());
@@ -643,7 +643,7 @@ PipelineLayoutCreateInfo::PipelineLayoutCreateInfo(const std::vector<vk::VkDescr
     }
     else
     {
-        pSetLayouts = DE_NULL;
+        pSetLayouts = nullptr;
     }
 
     pushConstantRangeCount = static_cast<uint32_t>(m_pushConstantRanges.size());
@@ -653,7 +653,7 @@ PipelineLayoutCreateInfo::PipelineLayoutCreateInfo(const std::vector<vk::VkDescr
     }
     else
     {
-        pPushConstantRanges = DE_NULL;
+        pPushConstantRanges = nullptr;
     }
 }
 
@@ -661,12 +661,12 @@ PipelineCreateInfo::PipelineShaderStage::PipelineShaderStage(vk::VkShaderModule 
                                                              vk::VkShaderStageFlagBits _stage)
 {
     sType               = vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    pNext               = DE_NULL;
+    pNext               = nullptr;
     flags               = 0u;
     stage               = _stage;
     module              = _module;
     pName               = _pName;
-    pSpecializationInfo = DE_NULL;
+    pSpecializationInfo = nullptr;
 }
 
 PipelineCreateInfo::VertexInputState::VertexInputState(
@@ -675,7 +675,7 @@ PipelineCreateInfo::VertexInputState::VertexInputState(
     const vk::VkVertexInputAttributeDescription *_pVertexAttributeDescriptions)
 {
     sType                           = vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    pNext                           = DE_NULL;
+    pNext                           = nullptr;
     flags                           = 0u;
     vertexBindingDescriptionCount   = _vertexBindingDescriptionCount;
     pVertexBindingDescriptions      = _pVertexBindingDescriptions;
@@ -701,7 +701,7 @@ PipelineCreateInfo::InputAssemblerState::InputAssemblerState(vk::VkPrimitiveTopo
                                                              vk::VkBool32 _primitiveRestartEnable)
 {
     sType                  = vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    pNext                  = DE_NULL;
+    pNext                  = nullptr;
     flags                  = 0u;
     topology               = _topology;
     primitiveRestartEnable = _primitiveRestartEnable;
@@ -710,7 +710,7 @@ PipelineCreateInfo::InputAssemblerState::InputAssemblerState(vk::VkPrimitiveTopo
 PipelineCreateInfo::TessellationState::TessellationState(uint32_t _patchControlPoints)
 {
     sType              = vk::VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
-    pNext              = DE_NULL;
+    pNext              = nullptr;
     flags              = 0;
     patchControlPoints = _patchControlPoints;
 }
@@ -719,7 +719,7 @@ PipelineCreateInfo::ViewportState::ViewportState(uint32_t _viewportCount, std::v
                                                  std::vector<vk::VkRect2D> _scissors)
 {
     sType         = vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    pNext         = DE_NULL;
+    pNext         = nullptr;
     flags         = 0u;
     viewportCount = _viewportCount;
     scissorCount  = _viewportCount;
@@ -787,7 +787,7 @@ PipelineCreateInfo::RasterizerState::RasterizerState(vk::VkBool32 _depthClampEna
                                                      float _depthBiasSlopeFactor, float _lineWidth)
 {
     sType                   = vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    pNext                   = DE_NULL;
+    pNext                   = nullptr;
     flags                   = 0u;
     depthClampEnable        = _depthClampEnable;
     rasterizerDiscardEnable = _rasterizerDiscardEnable;
@@ -809,7 +809,7 @@ PipelineCreateInfo::MultiSampleState::MultiSampleState(vk::VkSampleCountFlagBits
     : m_sampleMask(_sampleMask)
 {
     sType                 = vk::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    pNext                 = DE_NULL;
+    pNext                 = nullptr;
     flags                 = 0u;
     rasterizationSamples  = _rasterizationSamples;
     sampleShadingEnable   = _sampleShadingEnable;
@@ -859,7 +859,7 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState(
     : m_attachments(_attachments)
 {
     sType           = vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    pNext           = DE_NULL;
+    pNext           = nullptr;
     flags           = 0u;
     logicOpEnable   = _logicOpEnable;
     logicOp         = _logicOp;
@@ -874,7 +874,7 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState(uint32_t _attachmentCount,
     : m_attachments(_attachments, _attachments + _attachmentCount)
 {
     sType           = vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    pNext           = DE_NULL;
+    pNext           = nullptr;
     flags           = 0;
     logicOpEnable   = _logicOpEnable;
     logicOp         = _logicOp;
@@ -948,7 +948,7 @@ PipelineCreateInfo::DepthStencilState::DepthStencilState(vk::VkBool32 _depthTest
                                                          float _maxDepthBounds)
 {
     sType                 = vk::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    pNext                 = DE_NULL;
+    pNext                 = nullptr;
     flags                 = 0u;
     depthTestEnable       = _depthTestEnable;
     depthWriteEnable      = _depthWriteEnable;
@@ -965,7 +965,7 @@ PipelineCreateInfo::DepthStencilState::DepthStencilState(vk::VkBool32 _depthTest
 PipelineCreateInfo::DynamicState::DynamicState(const std::vector<vk::VkDynamicState> &_dynamicStates)
 {
     sType = vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    pNext = DE_NULL;
+    pNext = nullptr;
     flags = 0;
 
     if (!_dynamicStates.size())
@@ -1024,14 +1024,14 @@ PipelineCreateInfo::PipelineCreateInfo(vk::VkPipelineLayout _layout, vk::VkRende
     deMemset(static_cast<vk::VkGraphicsPipelineCreateInfo *>(this), 0, sizeof(vk::VkGraphicsPipelineCreateInfo));
 
     sType              = vk::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pNext              = DE_NULL;
+    pNext              = nullptr;
     flags              = _flags;
     renderPass         = _renderPass;
     subpass            = _subpass;
     layout             = _layout;
     basePipelineHandle = VK_NULL_HANDLE;
     basePipelineIndex  = 0;
-    pDynamicState      = DE_NULL;
+    pDynamicState      = nullptr;
 }
 
 PipelineCreateInfo &PipelineCreateInfo::addShader(const vk::VkPipelineShaderStageCreateInfo &shader)
@@ -1112,7 +1112,7 @@ PipelineCreateInfo &PipelineCreateInfo::addState(const vk::VkPipelineMultisample
     const size_t sampleMaskArrayLen =
         (sizeof(vk::VkSampleMask) * 8 + state.rasterizationSamples) / (sizeof(vk::VkSampleMask) * 8);
     m_multisampleState = state;
-    if (state.pSampleMask != DE_NULL)
+    if (state.pSampleMask != nullptr)
     {
         m_multisampleStateSampleMask =
             std::vector<vk::VkSampleMask>(state.pSampleMask, state.pSampleMask + sampleMaskArrayLen);
@@ -1142,7 +1142,7 @@ SamplerCreateInfo::SamplerCreateInfo(vk::VkFilter _magFilter, vk::VkFilter _minF
                                      vk::VkBool32 _unnormalizedCoordinates)
 {
     sType                   = vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    pNext                   = DE_NULL;
+    pNext                   = nullptr;
     flags                   = 0u;
     magFilter               = _magFilter;
     minFilter               = _minFilter;

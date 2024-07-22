@@ -554,7 +554,7 @@ ApiCaseParams apiTests[] = {
              },
              GL_INVALID_ENUM},
         },
-        DE_NULL, // ApiCaseStepGeneratorFn stepsGenerator;
+        nullptr, // ApiCaseStepGeneratorFn stepsGenerator;
     },
     {gles31,                                                             // ApiType minApi;
      "invalid_width_or_height",                                          // string                   name;
@@ -615,7 +615,7 @@ ApiCaseParams apiTests[] = {
                                               (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
           },
           GL_INVALID_VALUE}},
-        DE_NULL, // ApiCaseStepGeneratorFn stepsGenerator;
+        nullptr, // ApiCaseStepGeneratorFn stepsGenerator;
     },
     {gles31,                                                             // ApiType minApi;
      "invalid_size_value_negative",                                      // string                   name;
@@ -736,7 +736,7 @@ ApiCaseParams apiTests[] = {
              },
              GL_INVALID_VALUE},
         },
-        DE_NULL, // ApiCaseStepGeneratorFn   stepsGenerator;
+        nullptr, // ApiCaseStepGeneratorFn   stepsGenerator;
     },
     {
         gles31,                                                             // ApiType minApi;
@@ -765,7 +765,7 @@ ApiCaseParams apiTests[] = {
              },
              GL_INVALID_OPERATION},
         },
-        DE_NULL, // ApiCaseStepGeneratorFn   stepsGenerator;
+        nullptr, // ApiCaseStepGeneratorFn   stepsGenerator;
     },
     {gles31,                                                    // ApiType minApi;
      "invalid_target_3d",                                       // string                   name;
@@ -957,7 +957,7 @@ ApiCaseParams apiTests[] = {
                                                  (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
           },
           GL_INVALID_OPERATION}},
-        DE_NULL // ApiCaseStepGeneratorFn   stepsGenerator;
+        nullptr // ApiCaseStepGeneratorFn   stepsGenerator;
     },
     {
         gles31,                                                                // ApiType minApi;
@@ -1000,7 +1000,7 @@ ApiCaseParams apiTests[] = {
                                          (glw::GLsizei)data.data.size(), 0);
           },
           GL_INVALID_OPERATION}},
-        DE_NULL // ApiCaseStepGeneratorFn   stepsGenerator;
+        nullptr // ApiCaseStepGeneratorFn   stepsGenerator;
     },
     {gles31,                                                                    // ApiType minApi;
      "invalid_inconsistent_data_size",                                          // string                   name;

@@ -2149,7 +2149,7 @@ void TextureViewUtilities::initTextureStorage(const glw::Functions &gl, bool ini
             case GL_TEXTURE_1D:
             {
                 gl.texImage1D(texture_target, n_level, texture_internalformat, texture_width >> n_level, 0, /* border */
-                              texture_format, texture_type, DE_NULL);                                       /* pixels */
+                              texture_format, texture_type, nullptr);                                       /* pixels */
 
                 GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D() call failed for GL_TEXTURE_1D texture target");
 
@@ -2162,7 +2162,7 @@ void TextureViewUtilities::initTextureStorage(const glw::Functions &gl, bool ini
             {
                 gl.texImage2D(texture_target, n_level, texture_internalformat, texture_width >> n_level,
                               texture_height >> n_level, 0,           /* border */
-                              texture_format, texture_type, DE_NULL); /* pixels */
+                              texture_format, texture_type, nullptr); /* pixels */
 
                 GLU_EXPECT_NO_ERROR(gl.getError(),
                                     (texture_target == GL_TEXTURE_1D_ARRAY) ?
@@ -2179,7 +2179,7 @@ void TextureViewUtilities::initTextureStorage(const glw::Functions &gl, bool ini
             {
                 gl.texImage3D(texture_target, n_level, texture_internalformat, texture_width >> n_level,
                               texture_height >> n_level, texture_depth >> n_level, 0, /* border */
-                              texture_format, texture_type, DE_NULL);                 /* pixels */
+                              texture_format, texture_type, nullptr);                 /* pixels */
 
                 GLU_EXPECT_NO_ERROR(gl.getError(),
                                     (texture_target == GL_TEXTURE_2D_ARRAY) ?
@@ -2224,7 +2224,7 @@ void TextureViewUtilities::initTextureStorage(const glw::Functions &gl, bool ini
 
                     gl.texImage2D(cubemap_texture_target, n_level, texture_internalformat, texture_width >> n_level,
                                   texture_height >> n_level, 0,           /* border */
-                                  texture_format, texture_type, DE_NULL); /* pixels */
+                                  texture_format, texture_type, nullptr); /* pixels */
 
                     GLU_EXPECT_NO_ERROR(gl.getError(),
                                         "glTexImage2D() call failed for one of the cube-map texture targets");
@@ -2237,7 +2237,7 @@ void TextureViewUtilities::initTextureStorage(const glw::Functions &gl, bool ini
             {
                 gl.texImage3D(texture_target, n_level, texture_internalformat, texture_width >> n_level,
                               texture_height >> n_level, 6 /* layer-faces */ * n_cubemaps_needed, 0, /* border */
-                              texture_format, texture_type, DE_NULL);                                /* pixels */
+                              texture_format, texture_type, nullptr);                                /* pixels */
 
                 GLU_EXPECT_NO_ERROR(gl.getError(),
                                     "glTexImage3D() call failed for GL_TEXTURE_CUBE_MAP_ARRAY texture target");
@@ -3423,7 +3423,7 @@ tcu::TestNode::IterateResult TextureViewTestErrors::iterate()
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed");
 
     gl.bufferData(GL_TEXTURE_BUFFER, 123, /* arbitrary size */
-                  DE_NULL,                /* data */
+                  nullptr,                /* data */
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed");
 
@@ -3538,7 +3538,7 @@ tcu::TestNode::IterateResult TextureViewTestErrors::iterate()
     {
         gl.texImage2D(GL_TEXTURE_2D, n_level, reference_to_internalformat, reference_to_width << n_level,
                       reference_to_height << n_level, 0,                /* border */
-                      reference_to_format, reference_to_type, DE_NULL); /* pixels */
+                      reference_to_format, reference_to_type, nullptr); /* pixels */
 
         GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage2D() call failed");
     }
@@ -4252,8 +4252,8 @@ TextureViewTestViewSampling::TextureViewTestViewSampling(deqp::Context &context)
     , m_reference_texture_height(4)
     , m_reference_texture_n_mipmaps(3)
     , m_reference_texture_width(4)
-    , m_reference_color_storage(DE_NULL)
-    , m_result_data(DE_NULL)
+    , m_reference_color_storage(nullptr)
+    , m_result_data(nullptr)
 {
     /* Left blank on purpose */
 }
@@ -4268,11 +4268,11 @@ void TextureViewTestViewSampling::deinit()
     deinitTextureObjects();
 
     /* Make sure any buffers we may have allocated during the execution do not leak */
-    if (m_result_data != DE_NULL)
+    if (m_result_data != nullptr)
     {
         delete[] m_result_data;
 
-        m_result_data = DE_NULL;
+        m_result_data = nullptr;
     }
 
     /* Deinitialize other objects that are not re-created every iteration */
@@ -4290,11 +4290,11 @@ void TextureViewTestViewSampling::deinit()
         m_fbo_id = 0;
     }
 
-    if (m_reference_color_storage != DE_NULL)
+    if (m_reference_color_storage != nullptr)
     {
         delete m_reference_color_storage;
 
-        m_reference_color_storage = DE_NULL;
+        m_reference_color_storage = nullptr;
     }
 
     if (m_vao_id != 0)
@@ -4691,13 +4691,13 @@ bool TextureViewTestViewSampling::executeTest()
 
             /* Done - we can release the buffer at this point */
             delete[] m_result_data;
-            m_result_data = DE_NULL;
+            m_result_data = nullptr;
         } /* for (all mip-maps) */
     }     /* for (all texture layers) */
 
     /* Release the reference color data buffer */
     delete[] reference_color_data;
-    reference_color_data = DE_NULL;
+    reference_color_data = nullptr;
 
     /* All done */
     return result;
@@ -4753,8 +4753,8 @@ tcu::Vec4 TextureViewTestViewSampling::getReferenceColor(unsigned int n_layer, u
 {
     tcu::Vec4 result;
 
-    DE_ASSERT(m_reference_color_storage != DE_NULL);
-    if (m_reference_color_storage != DE_NULL)
+    DE_ASSERT(m_reference_color_storage != nullptr);
+    if (m_reference_color_storage != nullptr)
     {
         bool is_parent_texture_cm_cma = (m_iteration_parent_texture_target == GL_TEXTURE_CUBE_MAP ||
                                          m_iteration_parent_texture_target == GL_TEXTURE_CUBE_MAP_ARRAY);
@@ -5743,7 +5743,7 @@ void TextureViewTestViewSampling::initPerSampleFillerProgramObject()
                                          "    result = reference_colors[gl_SampleID];\n"
                                          "}\n";
     std::string fs_body_string         = fs_body;
-    const char *fs_body_string_raw_ptr = DE_NULL;
+    const char *fs_body_string_raw_ptr = nullptr;
     std::stringstream n_max_samples_sstream;
     const char *n_max_samples_token = "N_MAX_SAMPLES";
     std::size_t token_location      = std::string::npos;
@@ -5757,7 +5757,7 @@ void TextureViewTestViewSampling::initPerSampleFillerProgramObject()
 
     fs_body_string_raw_ptr = fs_body_string.c_str();
 
-    gl.shaderSource(m_per_sample_filler_fs_id, 1 /* count */, &fs_body_string_raw_ptr, DE_NULL /* length */);
+    gl.shaderSource(m_per_sample_filler_fs_id, 1 /* count */, &fs_body_string_raw_ptr, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     /* Configure geometry shader's body */
@@ -5790,7 +5790,7 @@ void TextureViewTestViewSampling::initPerSampleFillerProgramObject()
                                  "\n"
                                  "}\n";
 
-    gl.shaderSource(m_per_sample_filler_gs_id, 1 /* count */, &gs_body, DE_NULL /* length */);
+    gl.shaderSource(m_per_sample_filler_gs_id, 1 /* count */, &gs_body, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     /* Configure vertex shader */
@@ -5801,7 +5801,7 @@ void TextureViewTestViewSampling::initPerSampleFillerProgramObject()
                                  "    gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
                                  "}\n";
 
-    gl.shaderSource(m_per_sample_filler_vs_id, 1 /* count */, &vs_body, DE_NULL /* length */);
+    gl.shaderSource(m_per_sample_filler_vs_id, 1 /* count */, &vs_body, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     /* Attach the shaders to the program object */
@@ -5877,7 +5877,7 @@ void TextureViewTestViewSampling::initTest()
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed.");
 
     gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 6 /* draw calls */ * (4 * sizeof(int)), /* as per comment */
-                  DE_NULL, GL_STATIC_DRAW);
+                  nullptr, GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
     /* Generate a FBO and bind it to both binding targets */
@@ -6395,7 +6395,7 @@ void TextureViewTestViewSampling::resetReferenceColorStorage(unsigned int n_laye
 
     /* Allocate the descriptor if it's the first time the test will be
      * attempting to access it */
-    if (m_reference_color_storage == DE_NULL)
+    if (m_reference_color_storage == nullptr)
     {
         m_reference_color_storage = new _reference_color_storage(n_faces, n_layers, n_mipmaps, n_samples);
     }
@@ -6410,11 +6410,11 @@ void TextureViewTestViewSampling::resetReferenceColorStorage(unsigned int n_laye
 
     /* If there's any data descriptor found allocated at this point,
      * release it */
-    if (m_reference_color_storage->data != DE_NULL)
+    if (m_reference_color_storage->data != nullptr)
     {
         delete[] m_reference_color_storage->data;
 
-        m_reference_color_storage->data = DE_NULL;
+        m_reference_color_storage->data = nullptr;
     }
 
     m_reference_color_storage->data = new tcu::Vec4[n_layers * n_faces * n_mipmaps * n_samples];
@@ -6437,8 +6437,8 @@ void TextureViewTestViewSampling::resetReferenceColorStorage(unsigned int n_laye
 void TextureViewTestViewSampling::setReferenceColor(unsigned int n_layer, unsigned int n_face, unsigned int n_mipmap,
                                                     unsigned int n_sample, tcu::Vec4 color)
 {
-    DE_ASSERT(m_reference_color_storage != DE_NULL);
-    if (m_reference_color_storage != DE_NULL)
+    DE_ASSERT(m_reference_color_storage != nullptr);
+    if (m_reference_color_storage != nullptr)
     {
         DE_ASSERT(n_face < m_reference_color_storage->n_faces);
         DE_ASSERT(n_layer < m_reference_color_storage->n_layers);
@@ -6473,8 +6473,8 @@ TextureViewTestViewClasses::TextureViewTestViewClasses(deqp::Context &context)
     , m_vao_id(0)
     , m_view_to_id(0)
     , m_vs_id(0)
-    , m_decompressed_mipmap_data(DE_NULL)
-    , m_mipmap_data(DE_NULL)
+    , m_decompressed_mipmap_data(nullptr)
+    , m_mipmap_data(nullptr)
     , m_bo_size(0)
     , m_has_test_failed(false)
     , m_texture_height(4)
@@ -6500,18 +6500,18 @@ void TextureViewTestViewClasses::deinit()
         m_bo_id = 0;
     }
 
-    if (m_decompressed_mipmap_data != DE_NULL)
+    if (m_decompressed_mipmap_data != nullptr)
     {
         delete[] m_decompressed_mipmap_data;
 
-        m_decompressed_mipmap_data = DE_NULL;
+        m_decompressed_mipmap_data = nullptr;
     }
 
-    if (m_mipmap_data != DE_NULL)
+    if (m_mipmap_data != nullptr)
     {
         delete[] m_mipmap_data;
 
-        m_mipmap_data = DE_NULL;
+        m_mipmap_data = nullptr;
     }
 
     if (m_po_id != 0)
@@ -6748,7 +6748,7 @@ void TextureViewTestViewClasses::initBufferObject(glw::GLenum texture_internalfo
         static_cast<unsigned int>(parent_texture_n_components * sizeof(float) * m_texture_height * m_texture_width +
                                   view_texture_n_components * sizeof(float) * m_texture_height * m_texture_width);
 
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, m_bo_size, DE_NULL, /* data */
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, m_bo_size, nullptr, /* data */
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
@@ -6858,7 +6858,7 @@ void TextureViewTestViewClasses::initProgramObject(glw::GLenum texture_internalf
     glw::GLint compile_status   = GL_FALSE;
     const char *vs_body_raw_ptr = vs_body.c_str();
 
-    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body_raw_ptr, DE_NULL /* length */);
+    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body_raw_ptr, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     gl.compileShader(m_vs_id);
@@ -7476,7 +7476,7 @@ void TextureViewTestViewClasses::verifyResultData(glw::GLenum texture_internalfo
      * If both buffers are a match, we're OK.
      */
     bool has_failed                  = false;
-    const unsigned char *mipmap_data = DE_NULL;
+    const unsigned char *mipmap_data = nullptr;
 
     if (memcmp(texture_data_ptr, view_data_ptr, m_view_data_offset) != 0)
     {
@@ -7552,11 +7552,11 @@ void TextureViewTestViewClasses::verifyResultData(glw::GLenum texture_internalfo
         if (is_view_internalformat_compressed)
         {
             /* Deallocate the buffer if necessary just in case */
-            if (m_decompressed_mipmap_data != DE_NULL)
+            if (m_decompressed_mipmap_data != nullptr)
             {
                 delete[] m_decompressed_mipmap_data;
 
-                m_decompressed_mipmap_data = DE_NULL;
+                m_decompressed_mipmap_data = nullptr;
             }
 
             m_decompressed_mipmap_data =
@@ -8124,7 +8124,7 @@ void TextureViewTestCoherency::checkAPICallCoherency(_texture_type texture_type,
             /* Good to release static color data buffer at this point */
             delete[] static_color_data_ptr;
 
-            static_color_data_ptr = DE_NULL;
+            static_color_data_ptr = nullptr;
 
             /* Make sure the API call was successful */
             GLU_EXPECT_NO_ERROR(gl.getError(), "glTexSubImage2D() call failed.");
@@ -8200,7 +8200,7 @@ void TextureViewTestCoherency::checkAPICallCoherency(_texture_type texture_type,
     gl.unmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glUnmapBuffer() call failed.");
 
-    data_ptr = DE_NULL;
+    data_ptr = nullptr;
 
     /* Disable GL_RASTERIZER_DISCARD mode */
     gl.disable(GL_RASTERIZER_DISCARD);
@@ -8391,7 +8391,7 @@ void TextureViewTestCoherency::checkProgramWriteCoherency(_texture_type texture_
 
         GLU_EXPECT_NO_ERROR(gl.getError(), "glMapBuffer() call failed.");
 
-        if (result_data_ptr == DE_NULL)
+        if (result_data_ptr == nullptr)
         {
             TCU_FAIL("glMapBuffer() did not generate an error but returned a NULL pointer");
         }
@@ -8475,7 +8475,7 @@ void TextureViewTestCoherency::checkProgramWriteCoherency(_texture_type texture_
         /* Good to release the data buffer at this point */
         delete[] data_ptr;
 
-        data_ptr = DE_NULL;
+        data_ptr = nullptr;
 
         /* Fail the test if any of the rendered texels were found invalid */
         if (!is_data_correct)
@@ -8736,9 +8736,9 @@ unsigned char *TextureViewTestCoherency::getStaticColorTextureData(unsigned int 
 void TextureViewTestCoherency::getWritePropertiesForTextureType(_texture_type texture_type, glw::GLuint *out_to_id,
                                                                 unsigned int *out_width, unsigned int *out_height) const
 {
-    DE_ASSERT(out_to_id != DE_NULL);
-    DE_ASSERT(out_width != DE_NULL);
-    DE_ASSERT(out_height != DE_NULL);
+    DE_ASSERT(out_to_id != nullptr);
+    DE_ASSERT(out_width != nullptr);
+    DE_ASSERT(out_height != nullptr);
 
     /* All tests will be attempting to modify layer 1 of either the texture
      * or its sibling view. For views, the resolution is therefore going to
@@ -8798,7 +8798,7 @@ void TextureViewTestCoherency::initBufferObjects()
      **/
     glw::GLint bo_size = static_cast<glw::GLint>((m_texture_height >> 1) * (m_texture_width >> 1) * sizeof(int));
 
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, DE_NULL, /* data */
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, nullptr, /* data */
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferdata() call failed.");
 }
@@ -9251,7 +9251,7 @@ void TextureViewTestCoherency::initTextureContents()
     /* Good to release the buffer at this point */
     delete[] static_texture_data_ptr;
 
-    static_texture_data_ptr = DE_NULL;
+    static_texture_data_ptr = nullptr;
 
     /* Was the API call successful? */
     GLU_EXPECT_NO_ERROR(gl.getError(), "glTexSubImage2D() call failed.");
@@ -9352,8 +9352,8 @@ TextureViewTestBaseAndMaxLevels::TextureViewTestBaseAndMaxLevels(deqp::Context &
     , m_texture_width(256)
     , m_view_height(128)
     , m_view_width(128)
-    , m_layer_data_lod0(DE_NULL)
-    , m_layer_data_lod1(DE_NULL)
+    , m_layer_data_lod0(nullptr)
+    , m_layer_data_lod1(nullptr)
     , m_fbo_id(0)
     , m_fs_id(0)
     , m_po_id(0)
@@ -9387,18 +9387,18 @@ void TextureViewTestBaseAndMaxLevels::deinit()
         m_fs_id = 0;
     }
 
-    if (m_layer_data_lod0 != DE_NULL)
+    if (m_layer_data_lod0 != nullptr)
     {
         delete[] m_layer_data_lod0;
 
-        m_layer_data_lod0 = DE_NULL;
+        m_layer_data_lod0 = nullptr;
     }
 
-    if (m_layer_data_lod1 != DE_NULL)
+    if (m_layer_data_lod1 != nullptr)
     {
         delete[] m_layer_data_lod1;
 
-        m_layer_data_lod1 = DE_NULL;
+        m_layer_data_lod1 = nullptr;
     }
 
     if (m_po_id != 0)
@@ -9477,7 +9477,7 @@ void TextureViewTestBaseAndMaxLevels::initProgram()
         "    };\n"
         "}\n";
 
-    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body, DE_NULL /* length */);
+    gl.shaderSource(m_vs_id, 1 /* count */, &vs_body, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed for vertex shader case");
 
     /* Set up fragment shader body */
@@ -9495,7 +9495,7 @@ void TextureViewTestBaseAndMaxLevels::initProgram()
                                  "    result = textureLod(to_sampler, uv, float(lod_index) );\n"
                                  "}\n";
 
-    gl.shaderSource(m_fs_id, 1 /* count */, &fs_body, DE_NULL /* length */);
+    gl.shaderSource(m_fs_id, 1 /* count */, &fs_body, nullptr /* length */);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed for fragment shader case");
 
     /* Compile both shaders */
@@ -9582,7 +9582,7 @@ void TextureViewTestBaseAndMaxLevels::initTest()
     m_layer_data_lod0 = new unsigned char[m_texture_width * m_texture_height * m_texture_n_components];
     m_layer_data_lod1 = new unsigned char[(m_texture_width >> 1) * (m_texture_height >> 1) * m_texture_n_components];
 
-    if (m_layer_data_lod0 == DE_NULL || m_layer_data_lod1 == DE_NULL)
+    if (m_layer_data_lod0 == nullptr || m_layer_data_lod1 == nullptr)
     {
         TCU_FAIL("Out of memory");
     }
@@ -9662,7 +9662,7 @@ void TextureViewTestBaseAndMaxLevels::initTextures()
         /* Release the data buffer */
         delete[] data;
 
-        data = DE_NULL;
+        data = nullptr;
 
         /* Make sure the API call finished successfully */
         GLU_EXPECT_NO_ERROR(gl.getError(), "glTexSubImage2D() call failed");
@@ -10132,7 +10132,7 @@ void TextureViewTestReferenceCounting::initXFB()
     gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0 /* index */, m_bo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBufferBase() call failed.");
 
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, DE_NULL, /* data */
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, nullptr, /* data */
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 }

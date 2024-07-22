@@ -106,7 +106,7 @@ tcu::TestStatus VideoQueueQueryTestInstance::iterate(void)
     bool encodePass = false;
     bool decodePass = false;
 
-    vk.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertiesCount, DE_NULL);
+    vk.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertiesCount, nullptr);
 
     if (queueFamilyPropertiesCount == 0u)
         TCU_FAIL("Device reports an empty set of queue family properties");
@@ -119,7 +119,7 @@ tcu::TestStatus VideoQueueQueryTestInstance::iterate(void)
         queueFamilyProperties2[ndx].sType                     = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
         queueFamilyProperties2[ndx].pNext                     = &videoQueueFamilyProperties2[ndx];
         videoQueueFamilyProperties2[ndx].sType                = VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR;
-        videoQueueFamilyProperties2[ndx].pNext                = DE_NULL;
+        videoQueueFamilyProperties2[ndx].pNext                = nullptr;
         videoQueueFamilyProperties2[ndx].videoCodecOperations = 0;
     }
 
@@ -319,7 +319,7 @@ tcu::TestStatus VideoFormatPropertiesQueryTestInstance<ProfileOperation>::iterat
     };
     const VkVideoProfileListInfoKHR videoProfiles = {
         VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                       //  void* pNext;
+        nullptr,                                       //  void* pNext;
         1u,                                            //  uint32_t profilesCount;
         &videoProfile,                                 //  const VkVideoProfileInfoKHR* pProfiles;
     };
@@ -335,7 +335,7 @@ tcu::TestStatus VideoFormatPropertiesQueryTestInstance<ProfileOperation>::iterat
 
     {
         const VkResult result = vk.getPhysicalDeviceVideoFormatPropertiesKHR(physicalDevice, &videoFormatInfo,
-                                                                             &videoFormatPropertiesCount, DE_NULL);
+                                                                             &videoFormatPropertiesCount, nullptr);
 
         if (result != VK_SUCCESS)
         {
@@ -353,7 +353,7 @@ tcu::TestStatus VideoFormatPropertiesQueryTestInstance<ProfileOperation>::iterat
     {
         const VkVideoFormatPropertiesKHR videoFormatPropertiesKHR = {
             VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR, //  VkStructureType sType;
-            DE_NULL,                                       //  void* pNext;
+            nullptr,                                       //  void* pNext;
             VK_FORMAT_MAX_ENUM,                            //  VkFormat format;
             vk::makeComponentMappingIdentity(),            //  VkComponentMapping componentMapping;
             (VkImageCreateFlags)0u,                        //  VkImageCreateFlags imageCreateFlags;
@@ -598,7 +598,7 @@ tcu::TestStatus VideoCapabilitiesQueryH264DecodeTestInstance::iterate(void)
     const VkVideoCodecOperationFlagBitsKHR videoCodecOperation  = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
     const VkVideoDecodeH264ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         STD_VIDEO_H264_PROFILE_IDC_BASELINE,                  //  StdVideoH264ProfileIdc stdProfileIdc;
         VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_PROGRESSIVE_KHR,  //  VkVideoDecodeH264PictureLayoutFlagsKHR pictureLayout;
     };
@@ -628,7 +628,7 @@ tcu::TestStatus VideoCapabilitiesQueryH264DecodeTestInstance::iterate(void)
         videoDecodeCapabilities[ndx].sType     = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
         videoDecodeCapabilities[ndx].pNext     = &videoDecodeH264Capabilities[ndx];
         videoDecodeH264Capabilities[ndx].sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_KHR;
-        videoDecodeH264Capabilities[ndx].pNext = DE_NULL;
+        videoDecodeH264Capabilities[ndx].pNext = nullptr;
 
         VkResult result =
             vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
@@ -691,7 +691,7 @@ tcu::TestStatus VideoCapabilitiesQueryH264EncodeTestInstance::iterate(void)
     const VkVideoCodecOperationFlagBitsKHR videoCodecOperation  = VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR;
     const VkVideoEncodeH264ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         STD_VIDEO_H264_PROFILE_IDC_BASELINE,                  //  StdVideoH264ProfileIdc stdProfileIdc;
     };
     const VkVideoProfileInfoKHR videoProfile = {
@@ -719,7 +719,7 @@ tcu::TestStatus VideoCapabilitiesQueryH264EncodeTestInstance::iterate(void)
         videoEncodeCapabilities[ndx].sType     = VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
         videoEncodeCapabilities[ndx].pNext     = &videoEncodeH264Capabilities[ndx];
         videoEncodeH264Capabilities[ndx].sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_KHR;
-        videoEncodeH264Capabilities[ndx].pNext = DE_NULL;
+        videoEncodeH264Capabilities[ndx].pNext = nullptr;
 
         VkResult result =
             vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
@@ -809,7 +809,7 @@ tcu::TestStatus VideoCapabilitiesQueryH265DecodeTestInstance::iterate(void)
     const VkVideoCodecOperationFlagBitsKHR videoCodecOperation  = VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR;
     const VkVideoDecodeH265ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         STD_VIDEO_H265_PROFILE_IDC_MAIN,                      //  StdVideoH265ProfileIdc stdProfileIdc;
     };
     const VkVideoProfileInfoKHR videoProfile = {
@@ -837,7 +837,7 @@ tcu::TestStatus VideoCapabilitiesQueryH265DecodeTestInstance::iterate(void)
         videoDecodeCapabilities[ndx].sType     = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
         videoDecodeCapabilities[ndx].pNext     = &videoDecodeH265Capabilities[ndx];
         videoDecodeH265Capabilities[ndx].sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_KHR;
-        videoDecodeH265Capabilities[ndx].pNext = DE_NULL;
+        videoDecodeH265Capabilities[ndx].pNext = nullptr;
 
         VkResult result =
             vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
@@ -899,7 +899,7 @@ tcu::TestStatus VideoCapabilitiesQueryAV1DecodeTestInstance::iterate(void)
     const VkVideoCodecOperationFlagBitsKHR videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
     VkVideoDecodeAV1ProfileInfoKHR videoProfileOperation       = {
         VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                             //  const void* pNext;
+        nullptr,                                             //  const void* pNext;
         STD_VIDEO_AV1_PROFILE_MAIN,                          //  StdVideoAV1ProfileIdc stdProfileIdc;
         false,                                               // VkBool filmGrainSupport
     };
@@ -928,7 +928,7 @@ tcu::TestStatus VideoCapabilitiesQueryAV1DecodeTestInstance::iterate(void)
         videoDecodeCapabilities[ndx].sType    = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
         videoDecodeCapabilities[ndx].pNext    = &videoDecodeAV1Capabilities[ndx];
         videoDecodeAV1Capabilities[ndx].sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_CAPABILITIES_KHR;
-        videoDecodeAV1Capabilities[ndx].pNext = DE_NULL;
+        videoDecodeAV1Capabilities[ndx].pNext = nullptr;
 
         VkResult result =
             vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
@@ -990,7 +990,7 @@ tcu::TestStatus VideoCapabilitiesQueryH265EncodeTestInstance::iterate(void)
     const VkVideoCodecOperationFlagBitsKHR videoCodecOperation  = VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR;
     const VkVideoEncodeH265ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         STD_VIDEO_H265_PROFILE_IDC_MAIN,                      //  StdVideoH265ProfileIdc stdProfileIdc;
     };
     const VkVideoProfileInfoKHR videoProfile = {
@@ -1018,7 +1018,7 @@ tcu::TestStatus VideoCapabilitiesQueryH265EncodeTestInstance::iterate(void)
         videoEncodeCapabilities[ndx].sType     = VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
         videoEncodeCapabilities[ndx].pNext     = &videoEncodeH265Capabilities[ndx];
         videoEncodeH265Capabilities[ndx].sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_KHR;
-        videoEncodeH265Capabilities[ndx].pNext = DE_NULL;
+        videoEncodeH265Capabilities[ndx].pNext = nullptr;
 
         VkResult result =
             vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);

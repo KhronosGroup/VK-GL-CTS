@@ -72,7 +72,7 @@ public:
 
         VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-            DE_NULL,                                                         // const void* pNext;
+            nullptr,                                                         // const void* pNext;
             renderingFlags,                                                  // VkRenderingFlagsKHR flags;
             0u,                                                              // uint32_t viewMask;
             1u,                                                              // uint32_t colorAttachmentCount;
@@ -89,7 +89,7 @@ public:
 
         const VkCommandBufferBeginInfo commandBufBeginParams{
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             usageFlags,                                  // VkCommandBufferUsageFlags flags;
             &bufferInheritanceInfo};
 
@@ -239,13 +239,13 @@ NegativeViewportHeightTestInstance::NegativeViewportHeightTestInstance(Context &
         renderPassCreateInfo.addSubpass(SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
                                                            (VkSubpassDescriptionFlags)0,    // flags
                                                            0u,                              // inputAttachmentCount
-                                                           DE_NULL,                         // inputAttachments
+                                                           nullptr,                         // inputAttachments
                                                            1u,                              // colorAttachmentCount
                                                            &colorAttachmentReference,       // colorAttachments
-                                                           DE_NULL,                         // resolveAttachments
+                                                           nullptr,                         // resolveAttachments
                                                            AttachmentReference(),           // depthStencilAttachment
                                                            0u,                              // preserveAttachmentCount
-                                                           DE_NULL));                       // preserveAttachments
+                                                           nullptr));                       // preserveAttachments
 
         m_renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
@@ -315,7 +315,7 @@ NegativeViewportHeightTestInstance::NegativeViewportHeightTestInstance(Context &
 
 #ifndef CTS_USES_VULKANSC
     vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo{vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              0u,
                                                              1u,
                                                              &m_colorAttachmentFormat,
@@ -341,13 +341,13 @@ void NegativeViewportHeightTestInstance::preRenderCommands(VkCommandBuffer cmdBu
 
     const VkMemoryBarrier memBarrier{
         VK_STRUCTURE_TYPE_MEMORY_BARRIER,                                          // VkStructureType sType;
-        DE_NULL,                                                                   // const void* pNext;
+        nullptr,                                                                   // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,                                              // VkAccessFlags srcAccessMask;
         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT // VkAccessFlags dstAccessMask;
     };
 
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0,
-                          1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+                          1, &memBarrier, 0, nullptr, 0, nullptr);
 }
 
 void NegativeViewportHeightTestInstance::draw(VkCommandBuffer cmdBuffer, const VkViewport &viewport)
@@ -884,10 +884,10 @@ tcu::TestStatus OffScreenViewportInstance::iterate(void)
     const std::vector<VkViewport> viewports(1u, testViewport);
     const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
 
-    void *pNext = DE_NULL;
+    void *pNext = nullptr;
 #ifndef CTS_USES_VULKANSC
     vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo{vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              0u,
                                                              1u,
                                                              &fbFormat,
@@ -902,7 +902,7 @@ tcu::TestStatus OffScreenViewportInstance::iterate(void)
     const auto pipeline       = makeGraphicsPipeline(
         ctx.vkd, ctx.device, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
         fragModule.get(), pipelineRP, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u,
-        &vertexInputStateCreateInfo, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL, pNext);
+        &vertexInputStateCreateInfo, nullptr, nullptr, nullptr, nullptr, nullptr, pNext);
 
     const auto cmdBuffer = cmd.cmdBuffer.get();
     const auto secCmdBufferPtr =

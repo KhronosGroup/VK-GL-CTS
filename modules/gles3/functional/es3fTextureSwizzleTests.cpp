@@ -119,7 +119,7 @@ Texture2DSwizzleCase::Texture2DSwizzleCase(Context &context, const char *name, c
     , m_swizzleG(swizzleG)
     , m_swizzleB(swizzleB)
     , m_swizzleA(swizzleA)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES,
                  glu::PRECISION_HIGHP)
 {
@@ -149,7 +149,7 @@ void Texture2DSwizzleCase::init(void)
 void Texture2DSwizzleCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }

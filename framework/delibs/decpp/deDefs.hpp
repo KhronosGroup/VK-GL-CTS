@@ -251,7 +251,7 @@ inline int findMSB(int32_t value)
     do                                                                \
     {                                                                 \
         if ((!false && (X)) ? false : true)                           \
-            ::de::throwRuntimeError(DE_NULL, #X, __FILE__, __LINE__); \
+            ::de::throwRuntimeError(nullptr, #X, __FILE__, __LINE__); \
     } while (false)
 
 /*--------------------------------------------------------------------*//*!

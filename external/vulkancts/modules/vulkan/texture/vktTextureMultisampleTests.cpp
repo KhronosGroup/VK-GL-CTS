@@ -67,7 +67,7 @@ tcu::TestCaseGroup *createAtomicTests(tcu::TestContext &testCtx)
 
         const VkImageCreateInfo vkImageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
-            DE_NULL,                             // pNext
+            nullptr,                             // pNext
             0,                                   // flags
             VK_IMAGE_TYPE_2D,                    // imageType
             testCase.format,                     // format
@@ -79,7 +79,7 @@ tcu::TestCaseGroup *createAtomicTests(tcu::TestContext &testCtx)
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, // usage
             VK_SHARING_MODE_EXCLUSIVE, // sharingMode
             0,                         // queueFamilyIndexCount
-            DE_NULL,                   // pQueueFamilyIndices
+            nullptr,                   // pQueueFamilyIndices
             VK_IMAGE_LAYOUT_UNDEFINED, // initialLayout
         };
 
@@ -118,7 +118,7 @@ tcu::TestCaseGroup *createInvalidSampleIndexTests(tcu::TestContext &testCtx)
     {
         const VkImageCreateInfo vkImageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
-            DE_NULL,                             // pNext
+            nullptr,                             // pNext
             0,                                   // flags
             VK_IMAGE_TYPE_2D,                    // imageType
             VK_FORMAT_R8G8B8A8_UNORM,            // format
@@ -130,7 +130,7 @@ tcu::TestCaseGroup *createInvalidSampleIndexTests(tcu::TestContext &testCtx)
             VK_IMAGE_USAGE_SAMPLED_BIT,          // usage
             VK_SHARING_MODE_EXCLUSIVE,           // sharingMode
             0,                                   // queueFamilyIndexCount
-            DE_NULL,                             // pQueueFamilyIndices
+            nullptr,                             // pQueueFamilyIndices
             VK_IMAGE_LAYOUT_UNDEFINED,           // initialLayout
         };
 

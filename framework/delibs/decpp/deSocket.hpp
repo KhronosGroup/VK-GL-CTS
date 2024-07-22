@@ -118,7 +118,7 @@ public:
     }
     Socket *accept(void)
     {
-        return accept(DE_NULL);
+        return accept(nullptr);
     }
 
     void connect(const SocketAddress &address);

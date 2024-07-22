@@ -56,7 +56,7 @@ public:
 
 private:
     virtual vk::Library *createLibrary(vk::Platform::LibraryType libraryType = vk::Platform::LIBRARY_TYPE_VULKAN,
-                                       const char *libraryPath               = DE_NULL) const;
+                                       const char *libraryPath               = nullptr) const;
 };
 
 } // namespace null

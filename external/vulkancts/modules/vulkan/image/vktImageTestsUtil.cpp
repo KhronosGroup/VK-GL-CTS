@@ -250,7 +250,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags;
         1u,                              // uint32_t                                    vertexBindingDescriptionCount;
         &vertexInputBindingDescription,  // const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
@@ -275,13 +275,13 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                              sType;
-        DE_NULL,                                                  // const void*                                  pNext;
+        nullptr,                                                  // const void*                                  pNext;
         (VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags         flags;
         VK_FALSE,                          // VkBool32                                     logicOpEnable;
         VK_LOGIC_OP_COPY,                  // VkLogicOp                                    logicOp;
         (uint32_t)colorAttachments.size(), // uint32_t                                     attachmentCount;
         colorAttachments.size() != 0 ? &colorAttachments[0] :
-                                       DE_NULL, // const VkPipelineColorBlendAttachmentState*   pAttachments;
+                                       nullptr, // const VkPipelineColorBlendAttachmentState*   pAttachments;
         {0.0f, 0.0f, 0.0f, 0.0f}                // float                                        blendConstants[4];
     };
 
@@ -301,9 +301,9 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         0u,                                  // const uint32_t                                subpass
         0u,                                  // const uint32_t                                patchControlPoints
         &vertexInputStateCreateInfo,         // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-        DE_NULL,                       // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-        DE_NULL,                       // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-        DE_NULL,                       // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+        nullptr,                       // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+        nullptr,                       // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+        nullptr,                       // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
         &pipelineColorBlendStateInfo); // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
 }
 
@@ -328,10 +328,10 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
         &inputAttachmentRef,             // const VkAttachmentReference* pInputAttachments;
         1u,                              // uint32_t colorAttachmentCount;
         &colorAttachmentRef,             // const VkAttachmentReference* pColorAttachments;
-        DE_NULL,                         // const VkAttachmentReference* pResolveAttachments;
-        DE_NULL,                         // const VkAttachmentReference* pDepthStencilAttachment;
+        nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+        nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
         0u,                              // uint32_t preserveAttachmentCount;
-        DE_NULL                          // const uint32_t* pPreserveAttachments;
+        nullptr                          // const uint32_t* pPreserveAttachments;
     };
 
     const VkAttachmentDescription attachmentsDescriptions[] = {
@@ -362,14 +362,14 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,   // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         (VkRenderPassCreateFlags)0,                  // VkRenderPassCreateFlags flags;
         DE_LENGTH_OF_ARRAY(attachmentsDescriptions), // uint32_t attachmentCount;
         attachmentsDescriptions,                     // const VkAttachmentDescription* pAttachments;
         1u,                                          // uint32_t subpassCount;
         &subpassDescription,                         // const VkSubpassDescription* pSubpasses;
         0u,                                          // uint32_t dependencyCount;
-        DE_NULL                                      // const VkSubpassDependency* pDependencies;
+        nullptr                                      // const VkSubpassDependency* pDependencies;
     };
 
     return createRenderPass(vk, device, &renderPassInfo);
@@ -379,7 +379,7 @@ VkImageViewUsageCreateInfo makeImageViewUsageCreateInfo(const VkImageUsageFlags 
 {
     VkImageViewUsageCreateInfo imageViewUsageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO, //VkStructureType sType;
-        DE_NULL,                                        //const void* pNext;
+        nullptr,                                        //const void* pNext;
         imageUsageFlags,                                //VkImageUsageFlags usage;
     };
 
@@ -390,7 +390,7 @@ VkSamplerCreateInfo makeSamplerCreateInfo()
 {
     const VkSamplerCreateInfo defaultSamplerParams = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         0u,                                      // VkSamplerCreateFlags flags;
         VK_FILTER_NEAREST,                       // VkFilter magFilter;
         VK_FILTER_NEAREST,                       // VkFilter minFilter;
@@ -626,7 +626,7 @@ std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
 
         default:
             DE_FATAL("Order not found");
-            orderPart = DE_NULL;
+            orderPart = nullptr;
         }
 
         switch (format.type)
@@ -684,7 +684,7 @@ std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
 
         default:
             DE_FATAL("Type not found");
-            typePart = DE_NULL;
+            typePart = nullptr;
         }
 
         return std::string() + orderPart + typePart;
@@ -709,7 +709,7 @@ std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
 
 std::string getGlslSamplerType(const tcu::TextureFormat &format, VkImageViewType type)
 {
-    const char *typePart   = DE_NULL;
+    const char *typePart   = nullptr;
     const char *formatPart = tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ?
                                  "u" :
                              tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ? "i" :

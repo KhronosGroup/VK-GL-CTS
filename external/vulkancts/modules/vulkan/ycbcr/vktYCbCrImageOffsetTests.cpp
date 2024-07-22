@@ -71,7 +71,7 @@ vk::Move<vk::VkImage> createImage(const vk::DeviceInterface &vkd, vk::VkDevice d
                                   const UVec2 &size)
 {
     const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                              DE_NULL,
+                                              nullptr,
                                               vk::VK_IMAGE_CREATE_DISJOINT_BIT,
                                               vk::VK_IMAGE_TYPE_2D,
                                               format,
@@ -83,7 +83,7 @@ vk::Move<vk::VkImage> createImage(const vk::DeviceInterface &vkd, vk::VkDevice d
                                               vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                                               vk::VK_SHARING_MODE_EXCLUSIVE,
                                               0u,
-                                              (const uint32_t *)DE_NULL,
+                                              nullptr,
                                               vk::VK_IMAGE_LAYOUT_PREINITIALIZED};
 
     return vk::createImage(vkd, device, &createInfo);
@@ -116,7 +116,7 @@ tcu::TestStatus imageOffsetTest(Context &context, const TestConfig config)
         srcImageMemory.push_back(
             AllocationSp(context.getDefaultAllocator().allocate(reqs, srcMemoryRequirement).release()));
 
-        vk::VkBindImagePlaneMemoryInfo planeInfo = {vk::VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO, DE_NULL,
+        vk::VkBindImagePlaneMemoryInfo planeInfo = {vk::VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO, nullptr,
                                                     planeAspect};
         planeInfos.push_back(planeInfo);
 

@@ -43,7 +43,7 @@ ShaderPerformanceCase::ShaderPerformanceCase(tcu::TestContext &testCtx, glu::Ren
     : tcu::TestCase(testCtx, tcu::NODETYPE_PERFORMANCE, name, description)
     , m_renderCtx(renderCtx)
     , m_caseType(caseType)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_measurer(renderCtx, caseType)
 {
 }
@@ -160,7 +160,7 @@ void ShaderPerformanceCase::init(void)
 void ShaderPerformanceCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     m_measurer.deinit();
 }

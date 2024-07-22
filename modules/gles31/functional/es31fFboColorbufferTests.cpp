@@ -164,7 +164,7 @@ protected:
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexImage2D(GL_TEXTURE_2D, 0, format, size.x(), size.y(), 0, transferFmt.format, transferFmt.dataType,
-                         DE_NULL);
+                         nullptr);
 
             glBindFramebuffer(GL_FRAMEBUFFER, fbo);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
@@ -271,7 +271,7 @@ protected:
             glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, isFilterable ? GL_LINEAR : GL_NEAREST);
             glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, isFilterable ? GL_LINEAR : GL_NEAREST);
             glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, m_format, size.x(), size.y(), size.z(), 0, transferFmt.format,
-                         transferFmt.dataType, DE_NULL);
+                         transferFmt.dataType, nullptr);
 
             log << TestLog::Message << "Creating a framebuffer object for each layer-face" << TestLog::EndMessage;
 

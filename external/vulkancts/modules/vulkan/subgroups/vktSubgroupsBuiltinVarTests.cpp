@@ -1687,10 +1687,10 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
         switch (caseDef.testType)
         {
         case TEST_TYPE_SUBGROUP_SIZE:
-            return makeVertexFrameBufferTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+            return makeVertexFrameBufferTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                              checkVertexPipelineStagesSubgroupSize);
         case TEST_TYPE_SUBGROUP_INVOCATION_ID:
-            return makeVertexFrameBufferTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+            return makeVertexFrameBufferTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                              checkVertexPipelineStagesSubgroupInvocationID);
         default:
             TCU_THROW(InternalError, "Unknown builtin");
@@ -1702,10 +1702,10 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
         switch (caseDef.testType)
         {
         case TEST_TYPE_SUBGROUP_SIZE:
-            return makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+            return makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                              checkVertexPipelineStagesSubgroupSize);
         case TEST_TYPE_SUBGROUP_INVOCATION_ID:
-            return makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+            return makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                              checkVertexPipelineStagesSubgroupInvocationID);
         default:
             TCU_THROW(InternalError, "Unknown builtin");
@@ -1716,10 +1716,10 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
         switch (caseDef.testType)
         {
         case TEST_TYPE_SUBGROUP_SIZE:
-            return makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+            return makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                checkVertexPipelineStagesSubgroupSize);
         case TEST_TYPE_SUBGROUP_INVOCATION_ID:
-            return makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+            return makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                checkVertexPipelineStagesSubgroupInvocationID);
         default:
             TCU_THROW(InternalError, "Unknown builtin");
@@ -1759,7 +1759,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
             if (caseDef.requiredSubgroupSize == false)
             {
                 if (isCompute)
-                    return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+                    return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                            checkComputeSubgroupSize);
                 else
                     return makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
@@ -1777,7 +1777,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 TestStatus result(QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
 
                 if (isCompute)
-                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL,
+                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
                                                         checkComputeSubgroupSize, size);
                 else
                     result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
@@ -1799,10 +1799,10 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
             if (caseDef.requiredSubgroupSize == false)
             {
                 if (isCompute)
-                    return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+                    return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                            checkComputeSubgroupInvocationID);
                 else
-                    return makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+                    return makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                         checkComputeSubgroupInvocationID);
             }
 
@@ -1817,10 +1817,10 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 TestStatus result(QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
 
                 if (isCompute)
-                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL,
+                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
                                                         checkComputeSubgroupInvocationID, size);
                 else
-                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL,
+                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
                                                      checkComputeSubgroupInvocationID, size);
 
                 if (result.getCode() != QP_TEST_RESULT_PASS)
@@ -1839,10 +1839,10 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
             if (caseDef.requiredSubgroupSize == false)
             {
                 if (isCompute)
-                    return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+                    return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                            checkComputeNumSubgroups);
                 else
-                    return makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+                    return makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                         checkComputeNumSubgroups);
             }
 
@@ -1857,10 +1857,10 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 TestStatus result(QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
 
                 if (isCompute)
-                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL,
+                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
                                                         checkComputeNumSubgroups, size);
                 else
-                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL,
+                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
                                                      checkComputeNumSubgroups, size);
 
                 if (result.getCode() != QP_TEST_RESULT_PASS)
@@ -1879,10 +1879,10 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
             if (caseDef.requiredSubgroupSize == false)
             {
                 if (isCompute)
-                    return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+                    return makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                            checkComputeSubgroupID);
                 else
-                    return makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+                    return makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                         checkComputeSubgroupID);
             }
 
@@ -1897,10 +1897,10 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 TestStatus result(QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
 
                 if (isCompute)
-                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL,
+                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
                                                         checkComputeSubgroupID, size);
                 else
-                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, DE_NULL,
+                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
                                                      checkComputeSubgroupID, size);
 
                 if (result.getCode() != QP_TEST_RESULT_PASS)
@@ -1925,10 +1925,10 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         switch (caseDef.testType)
         {
         case TEST_TYPE_SUBGROUP_SIZE:
-            return subgroups::allStages(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+            return subgroups::allStages(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                         checkVertexPipelineStagesSubgroupSize, stages);
         case TEST_TYPE_SUBGROUP_INVOCATION_ID:
-            return subgroups::allStages(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+            return subgroups::allStages(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                         checkVertexPipelineStagesSubgroupInvocationID, stages);
         default:
             TCU_THROW(InternalError, "Unknown builtin");
@@ -1942,10 +1942,10 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         switch (caseDef.testType)
         {
         case TEST_TYPE_SUBGROUP_SIZE:
-            return subgroups::allRayTracingStages(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+            return subgroups::allRayTracingStages(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                   checkVertexPipelineStagesSubgroupSize, stages);
         case TEST_TYPE_SUBGROUP_INVOCATION_ID:
-            return subgroups::allRayTracingStages(context, VK_FORMAT_R32G32B32A32_UINT, DE_NULL, 0, DE_NULL,
+            return subgroups::allRayTracingStages(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                   checkVertexPipelineStagesSubgroupInvocationID, stages);
         default:
             TCU_THROW(InternalError, "Unknown builtin");

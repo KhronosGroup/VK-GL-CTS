@@ -37,7 +37,7 @@ PlatformDriver::PlatformDriver(const tcu::FunctionLibrary &library)
 {
     m_vk.getInstanceProcAddr = (GetInstanceProcAddrFunc)library.getFunction("vkGetInstanceProcAddr");
 
-#define GET_PROC_ADDR(NAME) m_vk.getInstanceProcAddr(DE_NULL, NAME)
+#define GET_PROC_ADDR(NAME) m_vk.getInstanceProcAddr(nullptr, NAME)
 #include "vkInitPlatformFunctionPointers.inl"
 #undef GET_PROC_ADDR
 }
@@ -80,14 +80,14 @@ std::pair<void **, void *> prepareDeviceGroupPatch(const VkDeviceCreateInfo *pCr
         const StructureBase *pNext;
     };
 
-    const StructureBase *prev = DE_NULL;
+    const StructureBase *prev = nullptr;
     const StructureBase *curr = reinterpret_cast<const StructureBase *>(pCreateInfo);
 
     while (curr)
     {
         if (curr->sType == VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO)
         {
-            if (prev != DE_NULL)
+            if (prev != nullptr)
                 return std::pair<void **, void *>((void **)&prev->pNext, (void *)curr);
         }
 
@@ -95,14 +95,14 @@ std::pair<void **, void *> prepareDeviceGroupPatch(const VkDeviceCreateInfo *pCr
         curr = reinterpret_cast<const StructureBase *>(curr->pNext);
     }
 
-    return std::pair<void **, void *>(DE_NULL, DE_NULL);
+    return std::pair<void **, void *>(nullptr, nullptr);
 }
 
 VkResult InstanceDriverSC::createDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo *pCreateInfo,
                                         const VkAllocationCallbacks *pAllocator, VkDevice *pDevice) const
 {
     std::pair<void *, void *> patch = prepareDeviceGroupPatch(pCreateInfo);
-    const bool patchNeeded          = patch.first != DE_NULL;
+    const bool patchNeeded          = patch.first != nullptr;
 
     // Structure restored from JSON does not contain valid physicalDevice.
     // Workaround: set to delivered physicalDevice argument.
@@ -112,7 +112,7 @@ VkResult InstanceDriverSC::createDevice(VkPhysicalDevice physicalDevice, const V
 
         DE_ASSERT(p->physicalDeviceCount == 1);
 
-        if (p->physicalDeviceCount == 1 && p->pPhysicalDevices[0] == DE_NULL)
+        if (p->physicalDeviceCount == 1 && p->pPhysicalDevices[0] == nullptr)
         {
             VkPhysicalDevice *v = const_cast<VkPhysicalDevice *>(p->pPhysicalDevices);
             v[0]                = physicalDevice;
@@ -232,7 +232,7 @@ void DeviceDriverSC::createDescriptorSetLayoutHandlerStat(VkDevice device,
             m_resourceInterface->getStatMax().descriptorSetLayoutBindingLimit, pCreateInfo->pBindings[i].binding + 1);
         if ((pCreateInfo->pBindings[i].descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER ||
              pCreateInfo->pBindings[i].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) &&
-            pCreateInfo->pBindings[i].pImmutableSamplers != DE_NULL)
+            pCreateInfo->pBindings[i].pImmutableSamplers != nullptr)
             immutableSamplersCount += pCreateInfo->pBindings[i].descriptorCount;
     }
     m_resourceInterface->getStatMax().maxImmutableSamplersPerDescriptorSetLayout =
@@ -729,7 +729,7 @@ VkResult DeviceDriverSC::createCommandPoolHandlerNorm(VkDevice device, const VkC
 
     VkCommandPoolCreateInfo pCreateInfoCopy = *pCreateInfo;
     VkCommandPoolMemoryReservationCreateInfo cpMemReservationCI;
-    if (chainedMemoryReservation == DE_NULL)
+    if (chainedMemoryReservation == nullptr)
     {
         VkDeviceSize cmdPoolSize = de::max(memC.maxCommandPoolReservedSize, m_commandPoolMinimumSize);
         cmdPoolSize              = de::max(cmdPoolSize, memC.commandBufferCount * m_commandBufferMinimumSize);
@@ -738,7 +738,7 @@ VkResult DeviceDriverSC::createCommandPoolHandlerNorm(VkDevice device, const VkC
                                   m_physicalDeviceVulkanSC10Properties.maxCommandBufferSize * memC.commandBufferCount);
         cpMemReservationCI = {
             VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO, // VkStructureType        sType
-            DE_NULL,                                                       // const void*            pNext
+            nullptr,                                                       // const void*            pNext
             de::max(cmdPoolSize, m_commandBufferMinimumSize), // VkDeviceSize            commandPoolReservedSize
             de::max(memC.commandBufferCount, 1u)              // uint32_t                commandPoolMaxCommandBuffers
         };
@@ -772,7 +772,7 @@ void DeviceDriverSC::createCommandPoolHandlerStat(VkDevice device, const VkComma
         (VkCommandPoolMemoryReservationCreateInfo *)findStructureInChain(
             pCreateInfo->pNext, VK_STRUCTURE_TYPE_COMMAND_POOL_MEMORY_RESERVATION_CREATE_INFO);
 
-    if (chainedMemoryReservation != DE_NULL)
+    if (chainedMemoryReservation != nullptr)
         DDSTAT_HANDLE_CREATE(commandBufferRequestCount, chainedMemoryReservation->commandPoolMaxCommandBuffers);
     else
         DDSTAT_HANDLE_CREATE(commandBufferRequestCount, 1);

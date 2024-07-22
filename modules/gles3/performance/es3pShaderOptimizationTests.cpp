@@ -1111,7 +1111,7 @@ void ShaderOptimizationTests::init(void)
         const CaseShaderType caseShaderType    = (CaseShaderType)caseShaderTypeI;
         const char *const caseShaderTypeSuffix = caseShaderType == CASESHADERTYPE_VERTEX   ? "_vertex" :
                                                  caseShaderType == CASESHADERTYPE_FRAGMENT ? "_fragment" :
-                                                                                             DE_NULL;
+                                                                                             nullptr;
 
         // Loop unrolling cases.
 
@@ -1124,11 +1124,11 @@ void ShaderOptimizationTests::init(void)
                 const string caseTypeName               = caseType == LoopUnrollCase::CASETYPE_INDEPENDENT ?
                                                               "independent_iterations" :
                                                           caseType == LoopUnrollCase::CASETYPE_DEPENDENT ? "dependent_iterations" :
-                                                                                                           DE_NULL;
+                                                                                                           nullptr;
                 const string caseTypeDesc =
                     caseType == LoopUnrollCase::CASETYPE_INDEPENDENT ? "loop iterations don't depend on each other" :
                     caseType == LoopUnrollCase::CASETYPE_DEPENDENT   ? "loop iterations depend on each other" :
-                                                                       DE_NULL;
+                                                                       nullptr;
 
                 for (int loopIterNdx = 0; loopIterNdx < DE_LENGTH_OF_ARRAY(loopIterationCounts); loopIterNdx++)
                 {
@@ -1181,7 +1181,7 @@ void ShaderOptimizationTests::init(void)
                                             "built_in_functions" :
                                         caseType == ConstantPropagationCase::CASETYPE_ARRAY  ? "array" :
                                         caseType == ConstantPropagationCase::CASETYPE_STRUCT ? "struct" :
-                                                                                               DE_NULL;
+                                                                                               nullptr;
 
             for (int constantExpressionsOnlyI = 0; constantExpressionsOnlyI <= 1; constantExpressionsOnlyI++)
             {
@@ -1204,7 +1204,7 @@ void ShaderOptimizationTests::init(void)
                 caseType == CommonSubexpressionCase::CASETYPE_MULTIPLE_STATEMENTS ? "multiple_statements" :
                 caseType == CommonSubexpressionCase::CASETYPE_STATIC_BRANCH       ? "static_branch" :
                 caseType == CommonSubexpressionCase::CASETYPE_LOOP                ? "loop" :
-                                                                                    DE_NULL;
+                                                                                    nullptr;
 
             const string description = caseType == CommonSubexpressionCase::CASETYPE_SINGLE_STATEMENT ?
                                            "A single statement containing multiple uses of same subexpression" :
@@ -1214,7 +1214,7 @@ void ShaderOptimizationTests::init(void)
                                            "Multiple statements including a static conditional" :
                                        caseType == CommonSubexpressionCase::CASETYPE_LOOP ?
                                            "Multiple loops performing the same computations" :
-                                           DE_NULL;
+                                           nullptr;
 
             commonSubexpressionGroup->addChild(
                 new CommonSubexpressionCase(m_context, (caseTypeName + caseShaderTypeSuffix).c_str(),
@@ -1237,7 +1237,7 @@ void ShaderOptimizationTests::init(void)
                 caseType == DeadCodeEliminationCase::CASETYPE_UNUSED_VALUE_DEAD_BRANCH  ? "unused_value_dead_branch" :
                 caseType == DeadCodeEliminationCase::CASETYPE_UNUSED_VALUE_AFTER_RETURN ? "unused_value_after_return" :
                 caseType == DeadCodeEliminationCase::CASETYPE_UNUSED_VALUE_MUL_ZERO     ? "unused_value_mul_zero" :
-                                                                                          DE_NULL;
+                                                                                          nullptr;
 
             const char *const caseTypeDescription =
                 caseType == DeadCodeEliminationCase::CASETYPE_DEAD_BRANCH_SIMPLE ?
@@ -1262,7 +1262,7 @@ void ShaderOptimizationTests::init(void)
                     "Compute a value that is used only after a return statement" :
                 caseType == DeadCodeEliminationCase::CASETYPE_UNUSED_VALUE_MUL_ZERO ?
                     "Compute a value that is used but multiplied by a zero constant expression" :
-                    DE_NULL;
+                    nullptr;
 
             deadCodeEliminationGroup->addChild(
                 new DeadCodeEliminationCase(m_context, (string() + caseTypeName + caseShaderTypeSuffix).c_str(),

@@ -1362,7 +1362,7 @@ glw::GLuint buildProgram(glw::Functions const &gl, tcu::TestLog &log, glw::GLcha
                          glw::GLchar const *const *const transform_feedback_varyings,
                          glw::GLsizei const transform_feedback_varyings_count,
                          glw::GLenum const transform_feedback_varyings_mode, bool const do_not_detach = false,
-                         glw::GLint *linking_status = DE_NULL);
+                         glw::GLint *linking_status = nullptr);
 
 /** Preprocess source string by replacing key tokens with new values.
  *

@@ -850,7 +850,7 @@ void FragmentOutExecutor::addAttribute(uint32_t bindingLocation, VkFormat format
     const VkDeviceSize inputSize                = sizePerElement * count;
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         inputSize,                            // VkDeviceSize size;
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -925,7 +925,7 @@ void FragmentOutExecutor::clearRenderData(void)
 static Move<VkDescriptorSetLayout> createEmptyDescriptorSetLayout(const DeviceInterface &vkd, VkDevice device)
 {
     const VkDescriptorSetLayoutCreateInfo createInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, DE_NULL, (VkDescriptorSetLayoutCreateFlags)0, 0u, DE_NULL,
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, (VkDescriptorSetLayoutCreateFlags)0, 0u, nullptr,
     };
     return createDescriptorSetLayout(vkd, device, &createInfo);
 }
@@ -938,7 +938,7 @@ static Move<VkDescriptorPool> createEmptyDescriptorPool(const DeviceInterface &v
     };
     const VkDescriptorPoolCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
         1u,
         1u,
@@ -950,7 +950,7 @@ static Move<VkDescriptorSet> allocateSingleDescriptorSet(const DeviceInterface &
                                                          VkDescriptorPool pool, VkDescriptorSetLayout layout)
 {
     const VkDescriptorSetAllocateInfo allocInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL, pool, 1u, &layout,
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, pool, 1u, &layout,
     };
     return allocateDescriptorSet(vkd, device, &allocInfo);
 }
@@ -1046,7 +1046,7 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
 
             const VkImageCreateInfo colorImageParams = {
                 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-                DE_NULL,                                                               // const void* pNext;
+                nullptr,                                                               // const void* pNext;
                 0u,                                                                    // VkImageCreateFlags flags;
                 VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
                 colorFormat,                                                           // VkFormat format;
@@ -1102,7 +1102,7 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
             {
                 const VkImageViewCreateInfo colorImageViewParams = {
                     VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-                    DE_NULL,                                  // const void* pNext;
+                    nullptr,                                  // const void* pNext;
                     0u,                                       // VkImageViewCreateFlags flags;
                     colorImages.back().get()->get(),          // VkImage image;
                     VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -1127,7 +1127,7 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
 
                 const VkImageMemoryBarrier colorImagePreRenderBarrier = {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,                                       // sType
-                    DE_NULL,                                                                      // pNext
+                    nullptr,                                                                      // pNext
                     0u,                                                                           // srcAccessMask
                     (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT), // dstAccessMask
                     VK_IMAGE_LAYOUT_UNDEFINED,                                                    // oldLayout
@@ -1147,7 +1147,7 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
 
                 const VkImageMemoryBarrier colorImagePostRenderBarrier = {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,                                       // sType
-                    DE_NULL,                                                                      // pNext
+                    nullptr,                                                                      // pNext
                     (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT), // srcAccessMask
                     VK_ACCESS_TRANSFER_READ_BIT,                                                  // dstAccessMask
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                                     // oldLayout
@@ -1174,25 +1174,25 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
             0u,                              // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
             0u,                              // uint32_t inputCount;
-            DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+            nullptr,                         // const VkAttachmentReference* pInputAttachments;
             (uint32_t)colorImages.size(),    // uint32_t colorCount;
             &colorAttachmentReferences[0],   // const VkAttachmentReference* colorAttachments;
-            DE_NULL,                         // const VkAttachmentReference* resolveAttachments;
-            DE_NULL,                         // VkAttachmentReference depthStencilAttachment;
+            nullptr,                         // const VkAttachmentReference* resolveAttachments;
+            nullptr,                         // VkAttachmentReference depthStencilAttachment;
             0u,                              // uint32_t preserveCount;
-            DE_NULL                          // const VkAttachmentReference* pPreserveAttachments;
+            nullptr                          // const VkAttachmentReference* pPreserveAttachments;
         };
 
         const VkRenderPassCreateInfo renderPassParams = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags flags;
             (uint32_t)attachments.size(),              // uint32_t attachmentCount;
             &attachments[0],                           // const VkAttachmentDescription* pAttachments;
             1u,                                        // uint32_t subpassCount;
             &subpassDescription,                       // const VkSubpassDescription* pSubpasses;
             0u,                                        // uint32_t dependencyCount;
-            DE_NULL                                    // const VkSubpassDependency* pDependencies;
+            nullptr                                    // const VkSubpassDependency* pDependencies;
         };
 
         renderPass = createRenderPass(vk, vkDevice, &renderPassParams);
@@ -1208,7 +1208,7 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *renderPass,                               // VkRenderPass renderPass;
             (uint32_t)views.size(),                    // uint32_t attachmentCount;
@@ -1226,12 +1226,12 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
         const VkDescriptorSetLayout setLayouts[]              = {*emptyDescriptorSetLayout, m_extraResourcesLayout};
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,        // VkStructureType sType;
-            DE_NULL,                                              // const void* pNext;
+            nullptr,                                              // const void* pNext;
             (VkPipelineLayoutCreateFlags)0,                       // VkPipelineLayoutCreateFlags flags;
             (m_extraResourcesLayout != VK_NULL_HANDLE ? 2u : 0u), // uint32_t descriptorSetCount;
             setLayouts,                                           // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                                   // uint32_t pushConstantRangeCount;
-            DE_NULL                                               // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                               // const VkPushConstantRange* pPushConstantRanges;
         };
 
         pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -1256,7 +1256,7 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
     {
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags flags;
             (uint32_t)m_vertexBindingDescriptions.size(),              // uint32_t bindingCount;
             &m_vertexBindingDescriptions[0], // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -1269,7 +1269,7 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             (VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags flags;
             VK_FALSE,                                                 // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -1295,9 +1295,9 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
             0u,                                 // const uint32_t                                subpass
             0u,                                 // const uint32_t                                patchControlPoints
             &vertexInputStateParams, // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-            DE_NULL,                 // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-            DE_NULL,                 // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-            DE_NULL,                 // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+            nullptr,                 // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+            nullptr,                 // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+            nullptr,                 // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
             &colorBlendStateParams); // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
     }
 
@@ -1311,10 +1311,9 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
         beginCommandBuffer(vk, *cmdBuffer);
 
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0,
-                              (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL,
-                              (uint32_t)colorImagePreRenderBarriers.size(),
-                              colorImagePreRenderBarriers.empty() ? DE_NULL : &colorImagePreRenderBarriers[0]);
+                              vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
+                              nullptr, (uint32_t)colorImagePreRenderBarriers.size(),
+                              colorImagePreRenderBarriers.empty() ? nullptr : &colorImagePreRenderBarriers[0]);
         beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()),
                         (uint32_t)attachmentClearValues.size(), &attachmentClearValues[0]);
 
@@ -1325,7 +1324,7 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
             DE_ASSERT(extraResources != VK_NULL_HANDLE);
             const VkDescriptorSet descriptorSets[] = {*emptyDescriptorSet, extraResources};
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u,
-                                     DE_LENGTH_OF_ARRAY(descriptorSets), descriptorSets, 0u, DE_NULL);
+                                     DE_LENGTH_OF_ARRAY(descriptorSets), descriptorSets, 0u, nullptr);
         }
         else
             DE_ASSERT(extraResources == VK_NULL_HANDLE);
@@ -1345,10 +1344,9 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
 
         endRenderPass(vk, *cmdBuffer);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0,
-                              (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL,
+                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
                               (uint32_t)colorImagePostRenderBarriers.size(),
-                              colorImagePostRenderBarriers.empty() ? DE_NULL : &colorImagePostRenderBarriers[0]);
+                              colorImagePostRenderBarriers.empty() ? nullptr : &colorImagePostRenderBarriers[0]);
 
         endCommandBuffer(vk, *cmdBuffer);
     }
@@ -1361,7 +1359,7 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
         const VkDeviceSize imageSizeBytes = (VkDeviceSize)(4 * sizeof(uint32_t) * renderSize.x() * renderSize.y());
         const VkBufferCreateInfo readImageBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             imageSizeBytes,                       // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
@@ -1423,7 +1421,7 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
                     {
                         const VkBufferMemoryBarrier barrier = {
                             VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType;
-                            DE_NULL,                                 // const void*        pNext;
+                            nullptr,                                 // const void*        pNext;
                             VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags      srcAccessMask;
                             VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags      dstAccessMask;
                             VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           srcQueueFamilyIndex;
@@ -1434,9 +1432,8 @@ void FragmentOutExecutor::execute(int numValues, const void *const *inputs, void
                         };
 
                         vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                              vk::VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0,
-                                              (const VkMemoryBarrier *)DE_NULL, 1, &barrier, 0,
-                                              (const VkImageMemoryBarrier *)DE_NULL);
+                                              vk::VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, nullptr, 1,
+                                              &barrier, 0, nullptr);
                     }
 
                     endCommandBuffer(vk, *copyCmdBuffer);
@@ -1724,7 +1721,7 @@ void BufferIoExecutor::computeVarLayout(const std::vector<Symbol> &symbols, std:
     uint32_t maxAlignment = 0;
     uint32_t curOffset    = 0;
 
-    DE_ASSERT(layout != DE_NULL);
+    DE_ASSERT(layout != nullptr);
     DE_ASSERT(layout->empty());
     layout->resize(symbols.size());
 
@@ -2012,7 +2009,7 @@ void BufferIoExecutor::initBuffers(int numValues)
 
     const VkBufferCreateInfo inputBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         inputBufferSize,                      // VkDeviceSize size;
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,   // VkBufferUsageFlags usage;
@@ -2029,7 +2026,7 @@ void BufferIoExecutor::initBuffers(int numValues)
 
     const VkBufferCreateInfo outputBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         outputBufferSize,                     // VkDeviceSize size;
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,   // VkBufferUsageFlags usage;
@@ -2841,7 +2838,7 @@ void ComputeShaderExecutor::execute(int numValues, const void *const *inputs, vo
     descriptorSetLayout = descriptorSetLayoutBuilder.build(vk, vkDevice);
     descriptorPool = descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
-    const VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+    const VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                    *descriptorPool, 1u, &*descriptorSetLayout};
 
     descriptorSet = allocateDescriptorSet(vk, vkDevice, &allocInfo);
@@ -2851,12 +2848,12 @@ void ComputeShaderExecutor::execute(int numValues, const void *const *inputs, vo
         const VkDescriptorSetLayout descriptorSetLayouts[]    = {*descriptorSetLayout, m_extraResourcesLayout};
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             (VkPipelineLayoutCreateFlags)0,                // VkPipelineLayoutCreateFlags flags;
             numDescriptorSets,                             // uint32_t CdescriptorSetCount;
             descriptorSetLayouts,                          // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -2871,17 +2868,17 @@ void ComputeShaderExecutor::execute(int numValues, const void *const *inputs, vo
     {
         const VkPipelineShaderStageCreateInfo shaderStageParams[1] = {{
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             (VkPipelineShaderStageCreateFlags)0u,                // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagsBit stage;
             *computeShaderModule,                                // VkShaderModule shader;
             "main",                                              // const char* pName;
-            DE_NULL                                              // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr                                              // const VkSpecializationInfo* pSpecializationInfo;
         }};
 
         const VkComputePipelineCreateInfo computePipelineParams = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags flags;
             *shaderStageParams,                             // VkPipelineShaderStageCreateInfo cs;
             *pipelineLayout,                                // VkPipelineLayout layout;
@@ -2939,7 +2936,7 @@ void ComputeShaderExecutor::execute(int numValues, const void *const *inputs, vo
         {
             const VkDescriptorSet descriptorSets[] = {*descriptorSet, extraResources};
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, numDescriptorSets,
-                                     descriptorSets, 0u, DE_NULL);
+                                     descriptorSets, 0u, nullptr);
         }
 
         vk.cmdDispatch(*cmdBuffer, numToExec, 1, 1);
@@ -2948,7 +2945,7 @@ void ComputeShaderExecutor::execute(int numValues, const void *const *inputs, vo
         {
             const VkBufferMemoryBarrier bufferBarrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType;
-                DE_NULL,                                 // const void*        pNext;
+                nullptr,                                 // const void*        pNext;
                 VK_ACCESS_SHADER_WRITE_BIT,              // VkAccessFlags      srcAccessMask;
                 VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags      dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           srcQueueFamilyIndex;
@@ -2959,8 +2956,7 @@ void ComputeShaderExecutor::execute(int numValues, const void *const *inputs, vo
             };
 
             vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
         }
 
         endCommandBuffer(vk, *cmdBuffer);
@@ -3216,7 +3212,7 @@ void MeshTaskShaderExecutor::execute(int numValues, const void *const *inputs, v
         vk.cmdBindPipeline(cmdBuffer, bindPoint, meshPipeline.get());
         vk.cmdBindDescriptorSets(cmdBuffer, bindPoint, pipelineLayout.get(), 0u,
                                  static_cast<uint32_t>(descriptorSets.size()), de::dataOrNull(descriptorSets), 0u,
-                                 DE_NULL);
+                                 nullptr);
         vk.cmdDrawMeshTasksEXT(cmdBuffer, numToExec, 1u, 1u);
         endRenderPass(vk, cmdBuffer);
         cmdPipelineBufferMemoryBarrier(vk, cmdBuffer, pipelineStage, VK_PIPELINE_STAGE_HOST_BIT, &bufferBarrier);
@@ -3315,7 +3311,7 @@ void TessellationExecutor::renderTess(uint32_t numValues, uint32_t vertexCount, 
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             colorFormat,                                                           // VkFormat format;
@@ -3343,7 +3339,7 @@ void TessellationExecutor::renderTess(uint32_t numValues, uint32_t vertexCount, 
     {
         const VkImageViewCreateInfo colorImageViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             *colorImage,                              // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -3391,25 +3387,25 @@ void TessellationExecutor::renderTess(uint32_t numValues, uint32_t vertexCount, 
             0u,                              // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
             0u,                              // uint32_t inputCount;
-            DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+            nullptr,                         // const VkAttachmentReference* pInputAttachments;
             1u,                              // uint32_t colorCount;
             &colorAttachmentReference,       // const VkAttachmentReference* pColorAttachments;
-            DE_NULL,                         // const VkAttachmentReference* pResolveAttachments;
-            DE_NULL,                         // VkAttachmentReference depthStencilAttachment;
+            nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                         // VkAttachmentReference depthStencilAttachment;
             0u,                              // uint32_t preserveCount;
-            DE_NULL                          // const VkAttachmentReference* pPreserveAttachments;
+            nullptr                          // const VkAttachmentReference* pPreserveAttachments;
         };
 
         const VkRenderPassCreateInfo renderPassParams = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkRenderPassCreateFlags flags;
             1u,                                        // uint32_t attachmentCount;
             attachments,                               // const VkAttachmentDescription* pAttachments;
             1u,                                        // uint32_t subpassCount;
             &subpassDescription,                       // const VkSubpassDescription* pSubpasses;
             0u,                                        // uint32_t dependencyCount;
-            DE_NULL                                    // const VkSubpassDependency* pDependencies;
+            nullptr                                    // const VkSubpassDependency* pDependencies;
         };
 
         renderPass = createRenderPass(vk, vkDevice, &renderPassParams);
@@ -3419,7 +3415,7 @@ void TessellationExecutor::renderTess(uint32_t numValues, uint32_t vertexCount, 
     {
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *renderPass,                               // VkRenderPass renderPass;
             1u,                                        // uint32_t attachmentCount;
@@ -3446,7 +3442,7 @@ void TessellationExecutor::renderTess(uint32_t numValues, uint32_t vertexCount, 
         descriptorPool =
             descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
-        const VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+        const VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                        *descriptorPool, 1u, &*descriptorSetLayout};
 
         descriptorSet = allocateDescriptorSet(vk, vkDevice, &allocInfo);
@@ -3487,12 +3483,12 @@ void TessellationExecutor::renderTess(uint32_t numValues, uint32_t vertexCount, 
         const VkDescriptorSetLayout descriptorSetLayouts[]    = {*descriptorSetLayout, m_extraResourcesLayout};
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             (VkPipelineLayoutCreateFlags)0,                // VkPipelineLayoutCreateFlags flags;
             numDescriptorSets,                             // uint32_t descriptorSetCount;
             descriptorSetLayouts,                          // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -3511,12 +3507,12 @@ void TessellationExecutor::renderTess(uint32_t numValues, uint32_t vertexCount, 
     {
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags flags;
             0u,                                                        // uint32_t bindingCount;
-            DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+            nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
             0u,      // uint32_t attributeCount;
-            DE_NULL, // const VkVertexInputAttributeDescription* pvertexAttributeDescriptions;
+            nullptr, // const VkVertexInputAttributeDescription* pvertexAttributeDescriptions;
         };
 
         const std::vector<VkViewport> viewports(1, makeViewport(renderSize));
@@ -3559,7 +3555,7 @@ void TessellationExecutor::renderTess(uint32_t numValues, uint32_t vertexCount, 
         {
             const VkDescriptorSet descriptorSets[] = {*descriptorSet, extraResources};
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u,
-                                     numDescriptorSets, descriptorSets, 0u, DE_NULL);
+                                     numDescriptorSets, descriptorSets, 0u, nullptr);
         }
 
         vk.cmdDraw(*cmdBuffer, vertexCount, 1, 0, 0);
@@ -3570,7 +3566,7 @@ void TessellationExecutor::renderTess(uint32_t numValues, uint32_t vertexCount, 
         {
             const VkBufferMemoryBarrier bufferBarrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType;
-                DE_NULL,                                 // const void*        pNext;
+                nullptr,                                 // const void*        pNext;
                 VK_ACCESS_SHADER_WRITE_BIT,              // VkAccessFlags      srcAccessMask;
                 VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags      dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           srcQueueFamilyIndex;
@@ -3581,9 +3577,8 @@ void TessellationExecutor::renderTess(uint32_t numValues, uint32_t vertexCount, 
             };
 
             vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,
-                                  vk::VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0,
-                                  (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  vk::VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier,
+                                  0, nullptr);
         }
 
         endCommandBuffer(vk, *cmdBuffer);

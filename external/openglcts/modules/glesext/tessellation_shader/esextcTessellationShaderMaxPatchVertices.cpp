@@ -171,8 +171,8 @@ TessellationShaderMaxPatchVertices::TessellationShaderMaxPatchVertices(Context &
     , m_gl_max_patch_vertices(0)
     , m_patch_vertices_bo_f_id(0)
     , m_patch_vertices_bo_i_id(0)
-    , m_patch_vertices_f(DE_NULL)
-    , m_patch_vertices_i(DE_NULL)
+    , m_patch_vertices_f(nullptr)
+    , m_patch_vertices_i(nullptr)
 {
 }
 
@@ -188,18 +188,18 @@ void TessellationShaderMaxPatchVertices::deinit(void)
     }
 
     /* Dealocate input array of patch vertices. */
-    if (m_patch_vertices_f != DE_NULL)
+    if (m_patch_vertices_f != nullptr)
     {
         free(m_patch_vertices_f);
 
-        m_patch_vertices_f = DE_NULL;
+        m_patch_vertices_f = nullptr;
     }
 
-    if (m_patch_vertices_i != DE_NULL)
+    if (m_patch_vertices_i != nullptr)
     {
         free(m_patch_vertices_i);
 
-        m_patch_vertices_i = DE_NULL;
+        m_patch_vertices_i = nullptr;
     }
 
     /* Retrieve ES entry-points. */
@@ -401,14 +401,14 @@ void TessellationShaderMaxPatchVertices::initVertexBufferObjects(void)
     /* Input patch vertices buffer setup. */
     m_patch_vertices_f = (glw::GLfloat *)malloc(m_gl_max_patch_vertices * 4 /* components */ * sizeof(glw::GLfloat));
 
-    if (m_patch_vertices_f == DE_NULL)
+    if (m_patch_vertices_f == nullptr)
     {
         TCU_FAIL("Memory allocation failed!");
     }
 
     m_patch_vertices_i = (glw::GLint *)malloc(m_gl_max_patch_vertices * 4 /* components */ * sizeof(glw::GLint));
 
-    if (m_patch_vertices_i == DE_NULL)
+    if (m_patch_vertices_i == nullptr)
     {
         TCU_FAIL("Memory allocation failed!");
     }
@@ -501,7 +501,7 @@ void TessellationShaderMaxPatchVertices::initTransformFeedbackBufferObjects(void
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() failed!");
 
     gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER,
-                  ((sizeof(glw::GLfloat)) * 4 /* components */ * OUTPUT_VERTEX_COUNT /* vertices */), DE_NULL,
+                  ((sizeof(glw::GLfloat)) * 4 /* components */ * OUTPUT_VERTEX_COUNT /* vertices */), nullptr,
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed");
 
@@ -509,7 +509,7 @@ void TessellationShaderMaxPatchVertices::initTransformFeedbackBufferObjects(void
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() failed!");
 
     gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER,
-                  ((sizeof(glw::GLint)) * 4 /* components */ * OUTPUT_VERTEX_COUNT /* vertices */), DE_NULL,
+                  ((sizeof(glw::GLint)) * 4 /* components */ * OUTPUT_VERTEX_COUNT /* vertices */), nullptr,
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed");
 
@@ -526,7 +526,7 @@ void TessellationShaderMaxPatchVertices::initTransformFeedbackBufferObjects(void
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() failed!");
 
         gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER,
-                      ((sizeof(glw::GLfloat)) * 4 /* components */ * OUTPUT_VERTEX_COUNT /* vertices */), DE_NULL,
+                      ((sizeof(glw::GLfloat)) * 4 /* components */ * OUTPUT_VERTEX_COUNT /* vertices */), nullptr,
                       GL_STATIC_DRAW);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed");
 
@@ -534,7 +534,7 @@ void TessellationShaderMaxPatchVertices::initTransformFeedbackBufferObjects(void
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() failed!");
 
         gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER,
-                      ((sizeof(glw::GLint)) * 4 /* components */ * OUTPUT_VERTEX_COUNT /* vertices */), DE_NULL,
+                      ((sizeof(glw::GLint)) * 4 /* components */ * OUTPUT_VERTEX_COUNT /* vertices */), nullptr,
                       GL_STATIC_DRAW);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed");
 
@@ -654,7 +654,7 @@ bool TessellationShaderMaxPatchVertices::compareResults(const char *description,
 {
     /* Retrieve ES entry/state points. */
     const glw::Functions &gl         = m_context.getRenderContext().getFunctions();
-    const glw::GLfloat *resultFloats = DE_NULL;
+    const glw::GLfloat *resultFloats = nullptr;
 
     resultFloats = (const glw::GLfloat *)gl.mapBufferRange(
         GL_TRANSFORM_FEEDBACK_BUFFER, 0, /* offset */
@@ -705,7 +705,7 @@ bool TessellationShaderMaxPatchVertices::compareResults(const char *description,
 {
     /* Retrieve ES entry/state points. */
     const glw::Functions &gl     = m_context.getRenderContext().getFunctions();
-    const glw::GLint *resultInts = DE_NULL;
+    const glw::GLint *resultInts = nullptr;
 
     resultInts = (const glw::GLint *)gl.mapBufferRange(
         GL_TRANSFORM_FEEDBACK_BUFFER, 0,

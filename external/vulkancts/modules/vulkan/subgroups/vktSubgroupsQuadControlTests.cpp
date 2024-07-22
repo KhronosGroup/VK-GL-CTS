@@ -101,7 +101,7 @@ VkImageCreateInfo DrawWithQuadControlInstanceBase::getImageCreateInfo(VkExtent3D
 {
     return {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         VK_FORMAT_R8G8B8A8_UNORM,            // VkFormat format;
@@ -113,7 +113,7 @@ VkImageCreateInfo DrawWithQuadControlInstanceBase::getImageCreateInfo(VkExtent3D
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
 }
@@ -166,7 +166,7 @@ tcu::TestStatus DrawWithQuadControlInstanceBase::iterate(void)
     // create sampler
     const VkSamplerCreateInfo samplerCreateInfo{
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         0u,                                      // VkSamplerCreateFlags flags;
         VK_FILTER_NEAREST,                       // VkFilter magFilter;
         VK_FILTER_NEAREST,                       // VkFilter minFilter;
@@ -210,7 +210,7 @@ tcu::TestStatus DrawWithQuadControlInstanceBase::iterate(void)
 
     const VkPipelineVertexInputStateCreateInfo vertexInputState{
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                                sType
-        DE_NULL,                                  // const void*                                    pNext
+        nullptr,                                  // const void*                                    pNext
         (VkPipelineVertexInputStateCreateFlags)0, // VkPipelineVertexInputStateCreateFlags        flags
         1u,                             // uint32_t                                        vertexBindingDescriptionCount
         &vertexInputBindingDescription, // const VkVertexInputBindingDescription*        pVertexBindingDescriptions

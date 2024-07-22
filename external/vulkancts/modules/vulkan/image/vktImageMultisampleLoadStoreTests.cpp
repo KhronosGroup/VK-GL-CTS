@@ -397,7 +397,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
             };
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                  (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers),
+                                  (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, DE_LENGTH_OF_ARRAY(barriers),
                                   barriers);
         }
 
@@ -417,7 +417,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
                 .update(vk, device);
 
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                     &descriptorSet, 0u, DE_NULL);
+                                     &descriptorSet, 0u, nullptr);
             vk.cmdDispatch(*cmdBuffer, workSize.x(), workSize.y(), workSize.z());
         }
 
@@ -442,7 +442,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
             };
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL,
+                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr,
                                   DE_LENGTH_OF_ARRAY(barriers), barriers);
         }
 
@@ -466,7 +466,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
                 .update(vk, device);
 
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                     &descriptorSet, 0u, DE_NULL);
+                                     &descriptorSet, 0u, nullptr);
             vk.cmdDispatch(*cmdBuffer, workSize.x(), workSize.y(), workSize.z());
         }
 
@@ -485,7 +485,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
                                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **checksumImage, subresourceAllLayers),
             };
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers),
+                                  (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, DE_LENGTH_OF_ARRAY(barriers),
                                   barriers);
         }
         {
@@ -500,8 +500,8 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
                                         resultBufferSizeBytes),
             };
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers, 0u,
-                                  DE_NULL);
+                                  (VkDependencyFlags)0, 0u, nullptr, DE_LENGTH_OF_ARRAY(barriers), barriers, 0u,
+                                  nullptr);
         }
 
         endCommandBuffer(vk, *cmdBuffer);

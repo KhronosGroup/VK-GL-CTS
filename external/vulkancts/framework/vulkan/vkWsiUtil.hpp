@@ -71,7 +71,7 @@ VkResult createSurface(const InstanceInterface &vki, VkInstance instance, Type w
 
 Move<VkSurfaceKHR> createSurface(const InstanceInterface &vki, VkInstance instance, Type wsiType,
                                  const Display &nativeDisplay, const Window &nativeWindow,
-                                 const tcu::CommandLine &cmdLine, const VkAllocationCallbacks *pAllocator = DE_NULL);
+                                 const tcu::CommandLine &cmdLine, const VkAllocationCallbacks *pAllocator = nullptr);
 
 VkBool32 getPhysicalDeviceSurfaceSupport(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
                                          uint32_t queueFamilyIndex, VkSurfaceKHR surface);

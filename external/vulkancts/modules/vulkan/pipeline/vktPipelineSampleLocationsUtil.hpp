@@ -103,7 +103,7 @@ inline vk::VkSampleLocationsInfoEXT makeSampleLocationsInfo(const MultisamplePix
 {
     const vk::VkSampleLocationsInfoEXT info = {
         vk::VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT, // VkStructureType               sType;
-        DE_NULL,                                         // const void*                   pNext;
+        nullptr,                                         // const void*                   pNext;
         pixelGrid.samplesPerPixel(),                     // VkSampleCountFlagBits         sampleLocationsPerPixel;
         vk::makeExtent2D(pixelGrid.size().x(),
                          pixelGrid.size().y()), // VkExtent2D                    sampleLocationGridSize;

@@ -151,7 +151,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, VkFormat 
 {
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -164,7 +164,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, VkFormat 
             VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -1065,7 +1065,7 @@ de::MovePtr<BufferWithMemory> ShaderBindingTableIndexingTestInstance::runTest()
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -1080,7 +1080,7 @@ de::MovePtr<BufferWithMemory> ShaderBindingTableIndexingTestInstance::runTest()
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 

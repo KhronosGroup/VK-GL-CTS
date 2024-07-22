@@ -275,9 +275,9 @@ private:
 
 Integer64StateQueryTests::Integer64StateQueryTests(Context &context)
     : TestCaseGroup(context, "integers64", "Integer (64) Values")
-    , m_verifierBoolean(DE_NULL)
-    , m_verifierInteger(DE_NULL)
-    , m_verifierFloat(DE_NULL)
+    , m_verifierBoolean(nullptr)
+    , m_verifierInteger(nullptr)
+    , m_verifierFloat(nullptr)
 {
 }
 
@@ -288,9 +288,9 @@ Integer64StateQueryTests::~Integer64StateQueryTests(void)
 
 void Integer64StateQueryTests::init(void)
 {
-    DE_ASSERT(m_verifierBoolean == DE_NULL);
-    DE_ASSERT(m_verifierInteger == DE_NULL);
-    DE_ASSERT(m_verifierFloat == DE_NULL);
+    DE_ASSERT(m_verifierBoolean == nullptr);
+    DE_ASSERT(m_verifierInteger == nullptr);
+    DE_ASSERT(m_verifierFloat == nullptr);
 
     m_verifierBoolean =
         new GetBooleanVerifier(m_context.getRenderContext().getFunctions(), m_context.getTestContext().getLog());
@@ -340,17 +340,17 @@ void Integer64StateQueryTests::deinit(void)
     if (m_verifierBoolean)
     {
         delete m_verifierBoolean;
-        m_verifierBoolean = DE_NULL;
+        m_verifierBoolean = nullptr;
     }
     if (m_verifierInteger)
     {
         delete m_verifierInteger;
-        m_verifierInteger = DE_NULL;
+        m_verifierInteger = nullptr;
     }
     if (m_verifierFloat)
     {
         delete m_verifierFloat;
-        m_verifierFloat = DE_NULL;
+        m_verifierFloat = nullptr;
     }
 
     this->TestCaseGroup::deinit();

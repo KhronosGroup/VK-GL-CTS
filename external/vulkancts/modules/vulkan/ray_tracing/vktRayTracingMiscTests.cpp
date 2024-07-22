@@ -8118,7 +8118,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
         {
             VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-                DE_NULL,                                                           //  const void* pNext;
+                nullptr,                                                           //  const void* pNext;
                 static_cast<uint32_t>(tlasVkVec.size()), //  uint32_t accelerationStructureCount;
                 tlasVkVec.data(),                        //  const VkAccelerationStructureKHR* pAccelerationStructures;
             };
@@ -8139,7 +8139,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
                                               0,                          /* firstSet           */
                                               1,                          /* descriptorSetCount */
                                               &descriptorSetPtr.get(), 0, /* dynamicOffsetCount */
-                                              DE_NULL);                   /* pDynamicOffsets    */
+                                              nullptr);                   /* pDynamicOffsets    */
 
         deviceInterface.cmdBindPipeline(*cmdBufferPtr, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineVkPtr);
 
@@ -8515,13 +8515,13 @@ tcu::TestStatus emptyPipelineLayoutInstance(Context &context)
 
     const VkRayTracingShaderGroupCreateInfoKHR defaultShaderGroupCreateInfo{
         VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,               // VkRayTracingShaderGroupTypeKHR type;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t generalShader;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t closestHitShader;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t anyHitShader;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t intersectionShader;
-        DE_NULL,                                                    // const void* pShaderGroupCaptureReplayHandle;
+        nullptr,                                                    // const void* pShaderGroupCaptureReplayHandle;
     };
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroupCreateInfoVect(2, defaultShaderGroupCreateInfo);
     shaderGroupCreateInfoVect[0].generalShader = 0u;

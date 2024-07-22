@@ -273,7 +273,7 @@ protected:
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, isFilterable ? GL_LINEAR : GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, isFilterable ? GL_LINEAR : GL_NEAREST);
             glTexImage2D(GL_TEXTURE_2D, 0, format, size.x(), size.y(), 0, transferFmt.format, transferFmt.dataType,
-                         DE_NULL);
+                         nullptr);
 
             glBindFramebuffer(GL_FRAMEBUFFER, fbo);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
@@ -392,7 +392,7 @@ protected:
             // Generate an image and FBO for each cube face
             for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(cubeGLFaces); ndx++)
                 glTexImage2D(cubeGLFaces[ndx], 0, m_format, size.x(), size.y(), 0, transferFmt.format,
-                             transferFmt.dataType, DE_NULL);
+                             transferFmt.dataType, nullptr);
             checkError();
 
             for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(cubeGLFaces); ndx++)
@@ -521,7 +521,7 @@ protected:
             glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, isFilterable ? GL_LINEAR : GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, isFilterable ? GL_LINEAR : GL_NEAREST);
             glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, m_format, size.x(), size.y(), size.z(), 0, transferFmt.format,
-                         transferFmt.dataType, DE_NULL);
+                         transferFmt.dataType, nullptr);
 
             // Generate an FBO for each layer
             for (int ndx = 0; ndx < m_texSize.z(); ndx++)
@@ -648,7 +648,7 @@ protected:
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexImage3D(GL_TEXTURE_3D, 0, m_format, size.x(), size.y(), size.z(), 0, transferFmt.format,
-                         transferFmt.dataType, DE_NULL);
+                         transferFmt.dataType, nullptr);
 
             // Generate an FBO for each layer
             for (int ndx = 0; ndx < m_texSize.z(); ndx++)

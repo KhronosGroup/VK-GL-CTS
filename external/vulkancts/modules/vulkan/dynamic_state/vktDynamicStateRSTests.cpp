@@ -217,9 +217,9 @@ protected:
         const vk::VkAttachmentReference depthAttachmentReference = {
             1, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 
-        renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, 1,
-                                                           &colorAttachmentReference, DE_NULL, depthAttachmentReference,
-                                                           0, DE_NULL));
+        renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1,
+                                                           &colorAttachmentReference, nullptr, depthAttachmentReference,
+                                                           0, nullptr));
 
         m_renderPass = vk::RenderPassWrapper(m_pipelineConstructionType, m_vk, device, &renderPassCreateInfo);
 
@@ -359,7 +359,7 @@ protected:
                                        subresourceRangeDepthStencil);
 
         const vk::VkMemoryBarrier memBarrier = {
-            vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+            vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, vk::VK_ACCESS_TRANSFER_WRITE_BIT,
             vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
                 vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT};
 
@@ -367,7 +367,7 @@ protected:
                                 vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                                     vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                     vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                                0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+                                0, 1, &memBarrier, 0, nullptr, 0, nullptr);
 
         transition2DImage(
             m_vk, *m_cmdBuffer, m_depthStencilImage->object(),

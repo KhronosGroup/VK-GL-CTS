@@ -96,7 +96,7 @@ private:
         {
             n_isolines = 0;
             n_vertices = 0;
-            parent     = DE_NULL;
+            parent     = nullptr;
             rendered_data.clear();
 
             irrelevant_tess_level = 0;
@@ -123,7 +123,7 @@ private:
 
         _test_descriptor() : irrelevant_tess_level(0)
         {
-            parent = DE_NULL;
+            parent = nullptr;
 
             memset(inner_tess_levels, 0, sizeof(inner_tess_levels));
             memset(outer_tess_levels, 0, sizeof(outer_tess_levels));

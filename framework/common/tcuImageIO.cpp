@@ -88,7 +88,7 @@ void loadPNG(TextureLevel &dst, const tcu::Archive &archive, const char *fileNam
     resource->read(header, sizeof(header));
     TCU_CHECK(png_sig_cmp((png_bytep)&header[0], 0, DE_LENGTH_OF_ARRAY(header)) == 0);
 
-    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, DE_NULL, DE_NULL, DE_NULL);
+    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
     TCU_CHECK(png_ptr);
 
     png_infop info_ptr = png_create_info_struct(png_ptr);
@@ -129,7 +129,7 @@ void loadPNG(TextureLevel &dst, const tcu::Archive &archive, const char *fileNam
     png_read_image(png_ptr, &row_pointers[0]);
 
     png_destroy_info_struct(png_ptr, &info_ptr);
-    png_destroy_read_struct(&png_ptr, DE_NULL, DE_NULL);
+    png_destroy_read_struct(&png_ptr, nullptr, nullptr);
 }
 
 static int textureFormatToPNGFormat(const TextureFormat &format)
@@ -139,7 +139,7 @@ static int textureFormatToPNGFormat(const TextureFormat &format)
     else if (format == TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8))
         return PNG_COLOR_TYPE_RGBA;
     else
-        throw InternalError("Unsupported texture format", DE_NULL, __FILE__, __LINE__);
+        throw InternalError("Unsupported texture format", nullptr, __FILE__, __LINE__);
 }
 
 /*--------------------------------------------------------------------*//*!

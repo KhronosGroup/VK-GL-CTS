@@ -163,7 +163,7 @@ void getEnumNames(const GLenum e, std::set<std::string> &names)
     // clang-format on
 
     for (size_t i = 0; i < sizeof(func_ptrs) / sizeof(func_ptrs[0]); i++)
-        if (func_ptrs[i](e) != DE_NULL)
+        if (func_ptrs[i](e) != nullptr)
             names.insert(func_ptrs[i](e));
 }
 

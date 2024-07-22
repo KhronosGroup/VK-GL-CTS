@@ -216,7 +216,7 @@ void transition2DImage(const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuf
 {
     vk::VkImageMemoryBarrier barrier;
     barrier.sType                           = vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.pNext                           = DE_NULL;
+    barrier.pNext                           = nullptr;
     barrier.srcAccessMask                   = srcAccessMask;
     barrier.dstAccessMask                   = dstAccessMask;
     barrier.oldLayout                       = oldLayout;
@@ -230,8 +230,7 @@ void transition2DImage(const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuf
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount     = 1;
 
-    vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (vk::VkDependencyFlags)0, 0,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1,
+    vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
                           &barrier);
 }
 
@@ -1107,21 +1106,21 @@ void ShaderTileImageTestInstance::generateComputePipeline()
             VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, // descriptorType
             1,                                // descriptorCount
             VK_SHADER_STAGE_COMPUTE_BIT,      // stageFlags
-            DE_NULL,                          // pImmutableSamplers
+            nullptr,                          // pImmutableSamplers
         },
         {
             1,                                 // binding
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // descriptorType
             1,                                 // descriptorCount
             VK_SHADER_STAGE_COMPUTE_BIT,       // stageFlags
-            DE_NULL,                           // pImmutableSamplers
+            nullptr,                           // pImmutableSamplers
         },
     };
 
     // Create a layout and allocate a descriptor set for it.
     const VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                                 // pNext
+        nullptr,                                                 // pNext
         layoutCreateFlags,                                       // flags
         sizeof(bindings) / sizeof(bindings[0]),                  // bindingCount
         &bindings[0]                                             // pBindings
@@ -1131,29 +1130,29 @@ void ShaderTileImageTestInstance::generateComputePipeline()
 
     const VkPipelineShaderStageCreateInfo csShaderCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineShaderStageCreateFlags)0,
         VK_SHADER_STAGE_COMPUTE_BIT, // stage
         *cs,                         // shader
         "main",
-        DE_NULL, // pSpecializationInfo
+        nullptr, // pSpecializationInfo
     };
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,
         1,                                   // setLayoutCount
         &m_computeDescriptorSetLayout.get(), // pSetLayouts
         0,                                   // pushConstantRangeCount
-        DE_NULL,                             // pPushConstantRanges
+        nullptr,                             // pPushConstantRanges
     };
 
     m_computePipelineLayout = createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo, NULL);
 
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,                       // flags
         csShaderCreateInfo,       // cs
         *m_computePipelineLayout, // layout
@@ -1180,7 +1179,7 @@ void ShaderTileImageTestInstance::generateComputePipeline()
 
         VkWriteDescriptorSet w = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // sType
-            DE_NULL,                                // pNext
+            nullptr,                                // pNext
             *m_descriptorSets[i],                   // dstSet
             (uint32_t)0,                            // dstBinding
             0,                                      // dstArrayElement
@@ -1188,7 +1187,7 @@ void ShaderTileImageTestInstance::generateComputePipeline()
             bindings[0].descriptorType,             // descriptorType
             &imageInfo,                             // pImageInfo
             &bufferInfo,                            // pBufferInfo
-            DE_NULL,                                // pTexelBufferView
+            nullptr,                                // pTexelBufferView
         };
 
         imageInfo =
@@ -1233,7 +1232,7 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         0,                                                         // VkPipelineVertexInputStateCreateFlags flags;
         1u,                                                        // uint32_t bindingCount;
         &vertexInputBindingDescription,   // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -1243,7 +1242,7 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
 
     const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                     // const void* pNext;
+        nullptr,                                                     // const void* pNext;
         (VkPipelineInputAssemblyStateCreateFlags)0,                  // VkPipelineInputAssemblyStateCreateFlags flags;
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,                         // VkPrimitiveTopology topology;
         VK_FALSE,                                                    // VkBool32 primitiveRestartEnable;
@@ -1255,7 +1254,7 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
 
     const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                               // const void* pNext;
+        nullptr,                                               // const void* pNext;
         (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags flags;
         1u,                                                    // uint32_t viewportCount;
         &viewport,                                             // const VkViewport* pViewports;
@@ -1265,7 +1264,7 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
 
     const VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         0u,                                                         // VkPipelineRasterizationStateCreateFlags flags;
         VK_FALSE,                                                   // VkBool32 depthClampEnable;
         VK_FALSE,                                                   // VkBool32 rasterizerDiscardEnable;
@@ -1280,12 +1279,12 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
     };
 
     const VkSampleMask sampleMask   = getSampleMask(m_testParam->testType);
-    const VkSampleMask *pSampleMask = (m_testParam->testType == TestType::MsaaSampleMask) ? &sampleMask : DE_NULL;
+    const VkSampleMask *pSampleMask = (m_testParam->testType == TestType::MsaaSampleMask) ? &sampleMask : nullptr;
     const bool sampleShadingEnable  = (m_testParam->testType != TestType::MsaaSampleMask);
 
     const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
         m_testParam->m_sampleCount,                               // VkSampleCountFlagBits rasterizationSamples;
         sampleShadingEnable,                                      // VkBool32 sampleShadingEnable;
@@ -1315,7 +1314,7 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
 
     const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         /* always needed */
         0,                                          // VkPipelineColorBlendStateCreateFlags flags;
         false,                                      // VkBool32 logicOpEnable;
@@ -1345,7 +1344,7 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
     VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         // VkStructureType sType;
-        DE_NULL, // const void* pNext;
+        nullptr, // const void* pNext;
         0,
         // VkPipelineDepthStencilStateCreateFlags flags;
         VK_TRUE,              // VkBool32 depthTestEnable;
@@ -1373,7 +1372,7 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
         tcu::hasStencilComponent(depthStencilTexFormat.order) ? m_testParam->depthStencilFormat : VK_FORMAT_UNDEFINED;
     const VkPipelineRenderingCreateInfoKHR renderingCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,  // VkStructureType sType;
-        DE_NULL,                                               // const void* pNext;
+        nullptr,                                               // const void* pNext;
         0u,                                                    // uint32_t viewMask;
         static_cast<uint32_t>(colorsAttachmentFormats.size()), // uint32_t colorAttachmentCount;
         colorsAttachmentFormats.data(),                        // const VkFormat* pColorAttachmentFormats;
@@ -1384,21 +1383,21 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
     const VkPipelineShaderStageCreateInfo pShaderStages[] = {
         {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void*  pNext;
+            nullptr,                                             // const void*  pNext;
             (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits stage;
             *m_vertexModule,                                     // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
         },
         {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits stage;
             *m_fragmentModule,                                   // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
         },
     };
 
@@ -1410,13 +1409,13 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
         pShaderStages,                                   // const VkPipelineShaderStageCreateInfo* pStages;
         &vertexInputStateParams,         // const VkPipelineVertexInputStateCreateInfo* pVertexInputState;
         &pipelineInputAssemblyStateInfo, // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
-        DE_NULL,                         // const VkPipelineTessellationStateCreateInfo* pTessellationState;
+        nullptr,                         // const VkPipelineTessellationStateCreateInfo* pTessellationState;
         &pipelineViewportStateInfo,      // const VkPipelineViewportStateCreateInfo* pViewportState;
         &pipelineRasterizationStateInfo, // const VkPipelineRasterizationStateCreateInfo* pRasterizationState;
         &pipelineMultisampleStateInfo,   // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
         &pipelineDepthStencilStateInfo,  // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
         &pipelineColorBlendStateInfo,    // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
-        DE_NULL,                         // const VkPipelineDynamicStateCreateInfo* pDynamicState;
+        nullptr,                         // const VkPipelineDynamicStateCreateInfo* pDynamicState;
         *m_graphicsPipelineLayout,       // VkPipelineLayout layout;
         VK_NULL_HANDLE,                  // VkRenderPass renderPass;
         0u,                              // uint32_t subpass;
@@ -1437,7 +1436,7 @@ void ShaderTileImageTestInstance::generateAttachments()
     {
         const VkImageCreateInfo imageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,   // VkStructureType sType;
-            DE_NULL,                               // const void* pNext;
+            nullptr,                               // const void* pNext;
             (VkImageCreateFlags)0,                 // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                      // VkImageType imageType;
             format,                                // VkFormat format;
@@ -1449,7 +1448,7 @@ void ShaderTileImageTestInstance::generateAttachments()
             usage,                                 // VkImageUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,             // VkSharingMode sharingMode;
             0u,                                    // uint32_t queueFamilyIndexCount;
-            DE_NULL,                               // const uint32_t* pQueueFamilyIndices;
+            nullptr,                               // const uint32_t* pQueueFamilyIndices;
             VK_IMAGE_LAYOUT_UNDEFINED,             // VkImageLayout initialLayout;
         };
         return imageParams;
@@ -1561,7 +1560,7 @@ void ShaderTileImageTestInstance::generateVertexBuffer()
     {
         const VkBufferCreateInfo bufferInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             dataSize,                             // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -1756,7 +1755,7 @@ void ShaderTileImageTestInstance::rendering()
     {
         const VkRenderingAttachmentInfoKHR renderingAtachInfo = {
             VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-            DE_NULL,                                         // const void* pNext;
+            nullptr,                                         // const void* pNext;
             *m_imageColorView[colorIndex],                   // VkImageView imageView;
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
             VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
@@ -1793,7 +1792,7 @@ void ShaderTileImageTestInstance::rendering()
 
     const VkRenderingAttachmentInfoKHR depthStencilAttachment = {
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         *m_imageDepthStencilView,                        // VkImageView imageView;
         depthStencilLayout,                              // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
@@ -1806,15 +1805,15 @@ void ShaderTileImageTestInstance::rendering()
 
     const VkRenderingInfoKHR renderingInfo = {
         VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,           // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         0,                                              // VkRenderingFlagsKHR flags;
         renderArea,                                     // VkRect2D renderArea;
         1u,                                             // uint32_t layerCount;
         0u,                                             // uint32_t viewMask;
         static_cast<uint32_t>(colorAttachments.size()), // uint32_t colorAttachmentCount;
         colorAttachments.data(),                        // const VkRenderingAttachmentInfoKHR* pColorAttachments;
-        hasDepth ? &depthStencilAttachment : DE_NULL,   // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-        hasStencil ? &depthStencilAttachment : DE_NULL  // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+        hasDepth ? &depthStencilAttachment : nullptr,   // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+        hasStencil ? &depthStencilAttachment : nullptr  // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
     };
 
     for (uint32_t colorIndex = 0; colorIndex < colorAttachmentCount; colorIndex++)
@@ -1860,7 +1859,7 @@ void ShaderTileImageTestInstance::rendering()
         {
             VkMemoryBarrier2KHR memoryBarrierForColor = {
                 VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR,              // sType
-                DE_NULL,                                             // pNext
+                nullptr,                                             // pNext
                 VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, // srcStageMask
                 VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT_KHR,          // srcAccessMask
                 VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, // dstStageMask
@@ -1869,7 +1868,7 @@ void ShaderTileImageTestInstance::rendering()
 
             VkMemoryBarrier2KHR memoryBarrierForDepthStencil = {
                 VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR, // sType
-                DE_NULL,                                // pNext
+                nullptr,                                // pNext
                 VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
                     VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,    // srcStageMask
                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT_KHR, // srcAccessMask
@@ -1885,14 +1884,14 @@ void ShaderTileImageTestInstance::rendering()
 
             VkDependencyInfoKHR dependencyInfo{
                 VK_STRUCTURE_TYPE_DEPENDENCY_INFO, // sType
-                DE_NULL,                           // pNext
+                nullptr,                           // pNext
                 VK_DEPENDENCY_BY_REGION_BIT,       //dependency flags
                 1,                                 //memory barrier count
                 memoryBarrier,                     //memory barrier
                 0,                                 // bufferMemoryBarrierCount
-                DE_NULL,                           // pBufferMemoryBarriers
+                nullptr,                           // pBufferMemoryBarriers
                 0,                                 // imageMemoryBarrierCount
-                DE_NULL,                           // pImageMemoryBarriers
+                nullptr,                           // pImageMemoryBarriers
             };
             m_vk.cmdPipelineBarrier2(*m_cmdBuffer, &dependencyInfo);
         }
@@ -1913,7 +1912,7 @@ void ShaderTileImageTestInstance::rendering()
 
     VkMemoryBarrier memBarrier = {
         VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
-        DE_NULL,                          // pNext
+        nullptr,                          // pNext
         0u,                               // srcAccessMask
         0u,                               // dstAccessMask
     };
@@ -1921,7 +1920,7 @@ void ShaderTileImageTestInstance::rendering()
     memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
     m_vk.cmdPipelineBarrier(*m_cmdBuffer,
                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+                            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memBarrier, 0, nullptr, 0, nullptr);
 
     m_vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
 
@@ -1929,14 +1928,14 @@ void ShaderTileImageTestInstance::rendering()
     for (uint32_t attachmentIndex = 0; attachmentIndex < colorAttachmentCount; attachmentIndex++)
     {
         m_vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipelineLayout, 0u, 1,
-                                   &*m_descriptorSets[attachmentIndex], 0u, DE_NULL);
+                                   &*m_descriptorSets[attachmentIndex], 0u, nullptr);
 
         m_vk.cmdDispatch(*m_cmdBuffer, m_testParam->frameBufferSize, m_testParam->frameBufferSize, 1);
     }
     memBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
     memBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
     m_vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1,
-                            &memBarrier, 0, DE_NULL, 0, DE_NULL);
+                            &memBarrier, 0, nullptr, 0, nullptr);
 
     VK_CHECK(m_vk.endCommandBuffer(*m_cmdBuffer));
 

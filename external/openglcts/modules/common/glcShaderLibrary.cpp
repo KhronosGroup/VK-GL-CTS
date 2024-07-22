@@ -192,7 +192,7 @@ private:
 ShaderParser::ShaderParser(tcu::TestContext &testCtx, RenderContext &renderCtx)
     : m_testCtx(testCtx)
     , m_renderCtx(renderCtx)
-    , m_curPtr(DE_NULL)
+    , m_curPtr(nullptr)
     , m_curToken(TOKEN_LAST)
 {
 }
@@ -1044,9 +1044,9 @@ void ShaderParser::parseShaderCase(vector<tcu::TestNode *> &shaderNodeList)
         string vertName = caseName + "_vertex";
         string fragName = caseName + "_fragment";
         shaderNodeList.push_back(new ShaderCase(m_testCtx, m_renderCtx, vertName.c_str(), description.c_str(),
-                                                expectResult, valueBlockList, version, bothSource.c_str(), DE_NULL));
+                                                expectResult, valueBlockList, version, bothSource.c_str(), nullptr));
         shaderNodeList.push_back(new ShaderCase(m_testCtx, m_renderCtx, fragName.c_str(), description.c_str(),
-                                                expectResult, valueBlockList, version, DE_NULL, bothSource.c_str()));
+                                                expectResult, valueBlockList, version, nullptr, bothSource.c_str()));
     }
     else
     {

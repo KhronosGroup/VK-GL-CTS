@@ -65,7 +65,7 @@ void Context::texImage2D(uint32_t target, int level, uint32_t internalFormat, in
     }
     }
 
-    texImage2D(target, level, internalFormat, width, height, 0, format, dataType, DE_NULL);
+    texImage2D(target, level, internalFormat, width, height, 0, format, dataType, nullptr);
 }
 
 void Context::texSubImage2D(uint32_t target, int level, int xoffset, int yoffset, const tcu::Surface &src)

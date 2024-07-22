@@ -301,7 +301,7 @@ TestCase::IterateResult StencilCase::iterate(void)
     tcu::Surface refFrame(width, height);
     GLenum gles2Error;
 
-    const char *failReason = DE_NULL;
+    const char *failReason = nullptr;
 
     // Get ops for stencil values
     vector<vector<StencilOp>> ops(numStencilValues + 2);

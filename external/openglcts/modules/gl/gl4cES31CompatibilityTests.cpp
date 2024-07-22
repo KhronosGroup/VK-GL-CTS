@@ -134,7 +134,7 @@ tcu::TestNode::IterateResult gl4cts::es31compatibility::ShaderCompilationCompati
                         {
                             memset(log, 0, log_size);
 
-                            gl.getShaderInfoLog(shader, log_size, DE_NULL, log);
+                            gl.getShaderInfoLog(shader, log_size, nullptr, log);
 
                             /* Logging. */
                             m_context.getTestContext().getLog()
@@ -383,7 +383,7 @@ bool gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::createProgram
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 
@@ -422,7 +422,7 @@ bool gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::createProgram
                         {
                             memset(log, 0, log_size);
 
-                            gl.getShaderInfoLog(shader[i].id, log_size, DE_NULL, log);
+                            gl.getShaderInfoLog(shader[i].id, log_size, nullptr, log);
 
                             m_context.getTestContext().getLog()
                                 << tcu::TestLog::Message << "Compilation of shader has failed.\nShader source:\n"
@@ -478,7 +478,7 @@ bool gl4cts::es31compatibility::ShaderFunctionalCompatibilityTest::createProgram
                 {
                     memset(log, 0, log_size);
 
-                    gl.getProgramInfoLog(m_po_id, log_size, DE_NULL, log);
+                    gl.getProgramInfoLog(m_po_id, log_size, nullptr, log);
 
                     m_context.getTestContext().getLog()
                         << tcu::TestLog::Message << "Linkage of shader program has failed.\nLinkage log:\n"

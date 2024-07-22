@@ -112,7 +112,7 @@ static tcu::Texture1DView getSubView(const tcu::Texture1DView &view, int baseLev
 }
 
 static tcu::Texture2DView getSubView(const tcu::Texture2DView &view, int baseLevel, int maxLevel,
-                                     tcu::ImageViewMinLodParams *minLodParams = DE_NULL)
+                                     tcu::ImageViewMinLodParams *minLodParams = nullptr)
 {
     const int clampedBase = de::clamp(baseLevel, 0, view.getNumLevels() - 1);
     const int clampedMax  = de::clamp(maxLevel, clampedBase, view.getNumLevels() - 1);
@@ -121,7 +121,7 @@ static tcu::Texture2DView getSubView(const tcu::Texture2DView &view, int baseLev
 }
 
 static tcu::TextureCubeView getSubView(const tcu::TextureCubeView &view, int baseLevel, int maxLevel,
-                                       tcu::ImageViewMinLodParams *minLodParams = DE_NULL)
+                                       tcu::ImageViewMinLodParams *minLodParams = nullptr)
 {
     const int clampedBase = de::clamp(baseLevel, 0, view.getNumLevels() - 1);
     const int clampedMax  = de::clamp(maxLevel, clampedBase, view.getNumLevels() - 1);
@@ -135,7 +135,7 @@ static tcu::TextureCubeView getSubView(const tcu::TextureCubeView &view, int bas
 }
 
 static tcu::Texture3DView getSubView(const tcu::Texture3DView &view, int baseLevel, int maxLevel,
-                                     tcu::ImageViewMinLodParams *minLodParams = DE_NULL)
+                                     tcu::ImageViewMinLodParams *minLodParams = nullptr)
 {
     const int clampedBase = de::clamp(baseLevel, 0, view.getNumLevels() - 1);
     const int clampedMax  = de::clamp(maxLevel, clampedBase, view.getNumLevels() - 1);
@@ -144,7 +144,7 @@ static tcu::Texture3DView getSubView(const tcu::Texture3DView &view, int baseLev
 }
 
 static tcu::TextureCubeArrayView getSubView(const tcu::TextureCubeArrayView &view, int baseLevel, int maxLevel,
-                                            tcu::ImageViewMinLodParams *minLodParams DE_UNUSED_ATTR = DE_NULL)
+                                            tcu::ImageViewMinLodParams *minLodParams DE_UNUSED_ATTR = nullptr)
 {
     const int clampedBase = de::clamp(baseLevel, 0, view.getNumLevels() - 1);
     const int clampedMax  = de::clamp(maxLevel, clampedBase, view.getNumLevels() - 1);
@@ -603,7 +603,7 @@ void sampleTexture(const tcu::PixelBufferAccess &dst, const tcu::Texture2DView &
     };
 
     const tcu::Texture2DView view =
-        getSubView(src, params.baseLevel, params.maxLevel, params.imageViewMinLod != 0.0f ? &minLodParams : DE_NULL);
+        getSubView(src, params.baseLevel, params.maxLevel, params.imageViewMinLod != 0.0f ? &minLodParams : nullptr);
     const tcu::Vec4 sq = tcu::Vec4(texCoord[0 + 0], texCoord[2 + 0], texCoord[4 + 0], texCoord[6 + 0]);
     const tcu::Vec4 tq = tcu::Vec4(texCoord[0 + 1], texCoord[2 + 1], texCoord[4 + 1], texCoord[6 + 1]);
 
@@ -626,7 +626,7 @@ void sampleTexture(const tcu::SurfaceAccess &dst, const tcu::Texture2DView &src,
     };
 
     const tcu::Texture2DView view =
-        getSubView(src, params.baseLevel, params.maxLevel, params.imageViewMinLod != 0.0f ? &minLodParams : DE_NULL);
+        getSubView(src, params.baseLevel, params.maxLevel, params.imageViewMinLod != 0.0f ? &minLodParams : nullptr);
     const tcu::Vec4 sq = tcu::Vec4(texCoord[0 + 0], texCoord[2 + 0], texCoord[4 + 0], texCoord[6 + 0]);
     const tcu::Vec4 tq = tcu::Vec4(texCoord[0 + 1], texCoord[2 + 1], texCoord[4 + 1], texCoord[6 + 1]);
 
@@ -639,7 +639,7 @@ void sampleTexture(const tcu::SurfaceAccess &dst, const tcu::Texture2DView &src,
 void sampleTexture(const tcu::SurfaceAccess &dst, const tcu::Texture1DView &src, const float *texCoord,
                    const ReferenceParams &params)
 {
-    const tcu::Texture1DView view = getSubView(src, params.baseLevel, params.maxLevel, DE_NULL);
+    const tcu::Texture1DView view = getSubView(src, params.baseLevel, params.maxLevel, nullptr);
     const tcu::Vec4 sq            = tcu::Vec4(texCoord[0], texCoord[1], texCoord[2], texCoord[3]);
 
     if (params.flags & ReferenceParams::PROJECTED)
@@ -767,7 +767,7 @@ void sampleTexture(const tcu::SurfaceAccess &dst, const tcu::TextureCubeView &sr
     };
 
     const tcu::TextureCubeView view =
-        getSubView(src, params.baseLevel, params.maxLevel, params.imageViewMinLod != 0.0f ? &minLodParams : DE_NULL);
+        getSubView(src, params.baseLevel, params.maxLevel, params.imageViewMinLod != 0.0f ? &minLodParams : nullptr);
     const tcu::Vec4 sq = tcu::Vec4(texCoord[0 + 0], texCoord[3 + 0], texCoord[6 + 0], texCoord[9 + 0]);
     const tcu::Vec4 tq = tcu::Vec4(texCoord[0 + 1], texCoord[3 + 1], texCoord[6 + 1], texCoord[9 + 1]);
     const tcu::Vec4 rq = tcu::Vec4(texCoord[0 + 2], texCoord[3 + 2], texCoord[6 + 2], texCoord[9 + 2]);
@@ -988,7 +988,7 @@ void sampleTexture(const tcu::SurfaceAccess &dst, const tcu::Texture3DView &src,
     };
 
     const tcu::Texture3DView view =
-        getSubView(src, params.baseLevel, params.maxLevel, params.imageViewMinLod != 0.0f ? &minLodParams : DE_NULL);
+        getSubView(src, params.baseLevel, params.maxLevel, params.imageViewMinLod != 0.0f ? &minLodParams : nullptr);
     const tcu::Vec4 sq = tcu::Vec4(texCoord[0 + 0], texCoord[3 + 0], texCoord[6 + 0], texCoord[9 + 0]);
     const tcu::Vec4 tq = tcu::Vec4(texCoord[0 + 1], texCoord[3 + 1], texCoord[6 + 1], texCoord[9 + 1]);
     const tcu::Vec4 rq = tcu::Vec4(texCoord[0 + 2], texCoord[3 + 2], texCoord[6 + 2], texCoord[9 + 2]);
@@ -1242,7 +1242,7 @@ void computeQuadTexCoordCube(std::vector<float> &dst, tcu::CubeFace face)
     static const float texCoordPosZ[] = {-1.0f, 1.0f, +1.0f, -1.0f, -1.0f, +1.0f,
                                          1.0f,  1.0f, +1.0f, 1.0f,  -1.0f, +1.0f};
 
-    const float *texCoord = DE_NULL;
+    const float *texCoord = nullptr;
     int texCoordSize      = DE_LENGTH_OF_ARRAY(texCoordNegX);
 
     switch (face)
@@ -1456,7 +1456,7 @@ int computeTextureLookupDiff(const tcu::ConstPixelBufferAccess &result, const tc
 
     std::vector<tcu::ConstPixelBufferAccess> srcLevelStorage;
     const tcu::Texture1DView src =
-        getEffectiveTextureView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel, DE_NULL),
+        getEffectiveTextureView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel, nullptr),
                                 srcLevelStorage, sampleParams.sampler);
 
     const tcu::Vec4 sq = tcu::Vec4(texCoord[0], texCoord[1], texCoord[2], texCoord[3]);
@@ -1567,7 +1567,7 @@ int computeTextureLookupDiff(const tcu::ConstPixelBufferAccess &result, const tc
     };
 
     const tcu::Texture2DView view = getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel,
-                                               sampleParams.imageViewMinLod != 0.0f ? &minLodParams : DE_NULL);
+                                               sampleParams.imageViewMinLod != 0.0f ? &minLodParams : nullptr);
 
     const tcu::Texture2DView src = getEffectiveTextureView(view, srcLevelStorage, sampleParams.sampler);
 
@@ -1788,7 +1788,7 @@ int computeTextureLookupDiff(const tcu::ConstPixelBufferAccess &result, const tc
 
     const tcu::TextureCubeView src =
         getEffectiveTextureView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel,
-                                           sampleParams.imageViewMinLod != 0.0f ? &minLodParams : DE_NULL),
+                                           sampleParams.imageViewMinLod != 0.0f ? &minLodParams : nullptr),
                                 srcLevelStorage, sampleParams.sampler);
 
     const tcu::Vec4 sq = tcu::Vec4(texCoord[0 + 0], texCoord[3 + 0], texCoord[6 + 0], texCoord[9 + 0]);
@@ -1987,7 +1987,7 @@ int computeTextureLookupDiff(const tcu::ConstPixelBufferAccess &result, const tc
 
     const tcu::Texture3DView src =
         getEffectiveTextureView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel,
-                                           sampleParams.imageViewMinLod != 0.0f ? &minLodParams : DE_NULL),
+                                           sampleParams.imageViewMinLod != 0.0f ? &minLodParams : nullptr),
                                 srcLevelStorage, sampleParams.sampler);
 
     const tcu::Vec4 sq = tcu::Vec4(texCoord[0 + 0], texCoord[3 + 0], texCoord[6 + 0], texCoord[9 + 0]);
@@ -2472,7 +2472,7 @@ int computeTextureLookupDiff(const tcu::ConstPixelBufferAccess &result, const tc
 
     const tcu::TextureCubeArrayView src =
         getEffectiveTextureView(getSubView(baseView, sampleParams.baseLevel, sampleParams.maxLevel,
-                                           sampleParams.imageViewMinLod != 0.0f ? &minLodParams : DE_NULL),
+                                           sampleParams.imageViewMinLod != 0.0f ? &minLodParams : nullptr),
                                 srcLevelStorage, sampleParams.sampler);
 
     const tcu::Vec4 sq = tcu::Vec4(texCoord[0 + 0], texCoord[4 + 0], texCoord[8 + 0], texCoord[12 + 0]);

@@ -248,7 +248,7 @@ void FilePath_selfTest(void)
 static void createDirectoryImpl(const char *path)
 {
 #if (DE_OS == DE_OS_WIN32)
-    if (!CreateDirectory(path, DE_NULL))
+    if (!CreateDirectory(path, nullptr))
         throw std::runtime_error("Failed to create directory");
 #elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS) || (DE_OS == DE_OS_ANDROID) || \
     (DE_OS == DE_OS_SYMBIAN) || (DE_OS == DE_OS_QNX) || (DE_OS == DE_OS_FUCHSIA)

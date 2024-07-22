@@ -845,7 +845,7 @@ Move<VkImage> ImageClearingTestInstance::createImage(VkImageType imageType, VkFo
 
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         getImageCreateFlags(),               // VkImageCreateFlags flags;
         imageType,                           // VkImageType imageType;
         format,                              // VkFormat format;
@@ -861,7 +861,7 @@ Move<VkImage> ImageClearingTestInstance::createImage(VkImageType imageType, VkFo
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
-    return vk::createImage(m_vkd, m_device, &imageCreateInfo, DE_NULL);
+    return vk::createImage(m_vkd, m_device, &imageCreateInfo, nullptr);
 }
 
 Move<VkImageView> ImageClearingTestInstance::createImageView(VkImage image, VkImageViewType viewType, VkFormat format,
@@ -869,7 +869,7 @@ Move<VkImageView> ImageClearingTestInstance::createImageView(VkImage image, VkIm
 {
     const VkImageViewCreateInfo imageViewCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         0u,                                       // VkImageViewCreateFlags flags;
         image,                                    // VkImage image;
         viewType,                                 // VkImageViewType viewType;
@@ -889,7 +889,7 @@ Move<VkImageView> ImageClearingTestInstance::createImageView(VkImage image, VkIm
         },                             // VkImageSubresourceRange subresourceRange;
     };
 
-    return vk::createImageView(m_vkd, m_device, &imageViewCreateInfo, DE_NULL);
+    return vk::createImageView(m_vkd, m_device, &imageViewCreateInfo, nullptr);
 }
 
 Move<VkRenderPass> ImageClearingTestInstance::createRenderPass(VkFormat format, VkSampleCountFlagBits sampleCount) const
@@ -943,9 +943,9 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass(VkFormat format, 
             imageLayout, // VkImageLayout layout;
         };
 
-        const VkAttachmentReference *pColorAttachments       = DE_NULL;
-        const VkAttachmentReference *pDepthStencilAttachment = DE_NULL;
-        const VkAttachmentReference *pResolveAttachments     = DE_NULL;
+        const VkAttachmentReference *pColorAttachments       = nullptr;
+        const VkAttachmentReference *pDepthStencilAttachment = nullptr;
+        const VkAttachmentReference *pResolveAttachments     = nullptr;
         uint32_t colorAttachmentCount                        = 1;
 
         if (isDepthStencilFormat(format))
@@ -965,28 +965,28 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass(VkFormat format, 
             0u,                              // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
             0u,                              // uint32_t inputAttachmentCount;
-            DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+            nullptr,                         // const VkAttachmentReference* pInputAttachments;
             colorAttachmentCount,            // uint32_t colorAttachmentCount;
             pColorAttachments,               // const VkAttachmentReference* pColorAttachments;
             pResolveAttachments,             // const VkAttachmentReference* pResolveAttachments;
             pDepthStencilAttachment,         // const VkAttachmentReference* pDepthStencilAttachment;
             0u,                              // uint32_t preserveAttachmentCount;
-            DE_NULL,                         // const VkAttachmentReference* pPreserveAttachments;
+            nullptr,                         // const VkAttachmentReference* pPreserveAttachments;
         }};
 
         const VkRenderPassCreateInfo renderPassCreateInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkRenderPassCreateFlags flags;
             attachmentCount,                           // uint32_t attachmentCount;
             attachments,                               // const VkAttachmentDescription* pAttachments;
             1u,                                        // uint32_t subpassCount;
             subpassDesc,                               // const VkSubpassDescription* pSubpasses;
             0u,                                        // uint32_t dependencyCount;
-            DE_NULL,                                   // const VkSubpassDependency* pDependencies;
+            nullptr,                                   // const VkSubpassDependency* pDependencies;
         };
 
-        return vk::createRenderPass(m_vkd, m_device, &renderPassCreateInfo, DE_NULL);
+        return vk::createRenderPass(m_vkd, m_device, &renderPassCreateInfo, nullptr);
     }
     else
     {
@@ -998,7 +998,7 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass(VkFormat format, 
         VkImageLayout finalLayout                           = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         VkAttachmentDescriptionStencilLayout stencilLayouts = {
             VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT,
-            DE_NULL,
+            nullptr,
             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
         };
@@ -1006,7 +1006,7 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass(VkFormat format, 
         VkImageLayout imageLayout;
         VkAttachmentReferenceStencilLayout stencilLayoutRef = {
             VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT,
-            DE_NULL,
+            nullptr,
             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
         };
 
@@ -1053,35 +1053,35 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass(VkFormat format, 
 
         const VkSubpassDescription2 subpassDesc = {
             VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2, // VkStructureType sType;
-            DE_NULL,                                 // const void* pNext;
+            nullptr,                                 // const void* pNext;
             0u,                                      // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS,         // VkPipelineBindPoint pipelineBindPoint;
             0u,                                      // uint32_t viewMask;
             0u,                                      // uint32_t inputAttachmentCount;
-            DE_NULL,                                 // const VkAttachmentReference2KHR* pInputAttachments;
+            nullptr,                                 // const VkAttachmentReference2KHR* pInputAttachments;
             0u,                                      // uint32_t colorAttachmentCount;
-            DE_NULL,                                 // const VkAttachmentReference2KHR* pColorAttachments;
-            DE_NULL,                                 // const VkAttachmentReference2KHR* pResolveAttachments;
+            nullptr,                                 // const VkAttachmentReference2KHR* pColorAttachments;
+            nullptr,                                 // const VkAttachmentReference2KHR* pResolveAttachments;
             &attachmentRef,                          // const VkAttachmentReference2KHR* pDepthStencilAttachment;
             0u,                                      // uint32_t preserveAttachmentCount;
-            DE_NULL,                                 // const VkAttachmentReference2KHR* pPreserveAttachments;
+            nullptr,                                 // const VkAttachmentReference2KHR* pPreserveAttachments;
         };
 
         const VkRenderPassCreateInfo2 renderPassCreateInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2, // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkRenderPassCreateFlags flags;
             1u,                                          // uint32_t attachmentCount;
             &attachmentDesc,                             // const VkAttachmentDescription* pAttachments;
             1u,                                          // uint32_t subpassCount;
             &subpassDesc,                                // const VkSubpassDescription* pSubpasses;
             0u,                                          // uint32_t dependencyCount;
-            DE_NULL,                                     // const VkSubpassDependency* pDependencies;
+            nullptr,                                     // const VkSubpassDependency* pDependencies;
             0u,                                          // uint32_t correlatedViewMaskCount;
-            DE_NULL,                                     // const uint32_t* pCorrelatedViewMasks;
+            nullptr,                                     // const uint32_t* pCorrelatedViewMasks;
         };
 
-        return vk::createRenderPass2(m_vkd, m_device, &renderPassCreateInfo, DE_NULL);
+        return vk::createRenderPass2(m_vkd, m_device, &renderPassCreateInfo, nullptr);
     }
 }
 
@@ -1099,7 +1099,7 @@ Move<VkFramebuffer> ImageClearingTestInstance::createFrameBuffer(VkImageView ima
 
     const VkFramebufferCreateInfo framebufferCreateInfo = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         0u,                                        // VkFramebufferCreateFlags flags;
         renderPass,                                // VkRenderPass renderPass;
         de::sizeU32(attachmentViews),              // uint32_t attachmentCount;
@@ -1109,7 +1109,7 @@ Move<VkFramebuffer> ImageClearingTestInstance::createFrameBuffer(VkImageView ima
         imageLayersCount,                          // uint32_t layers;
     };
 
-    return createFramebuffer(m_vkd, m_device, &framebufferCreateInfo, DE_NULL);
+    return createFramebuffer(m_vkd, m_device, &framebufferCreateInfo, nullptr);
 }
 
 void ImageClearingTestInstance::beginCommandBuffer(VkCommandBufferUsageFlags usageFlags) const
@@ -1138,7 +1138,7 @@ void ImageClearingTestInstance::pipelineImageBarrierGen(VkImage image, VkPipelin
 
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         srcAccessMask,                          // VkAccessFlags srcAccessMask;
         dstAccessMask,                          // VkAccessFlags dstAccessMask;
         oldLayout,                              // VkImageLayout oldLayout;
@@ -1155,7 +1155,7 @@ void ImageClearingTestInstance::pipelineImageBarrierGen(VkImage image, VkPipelin
         },                             // VkImageSubresourceRange subresourceRange;
     };
 
-    m_vkd.cmdPipelineBarrier(*m_commandBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageBarrier);
+    m_vkd.cmdPipelineBarrier(*m_commandBuffer, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
 }
 
 void ImageClearingTestInstance::pipelineImageBarrier(VkPipelineStageFlags srcStageMask,
@@ -1201,13 +1201,13 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage(VkImageAsp
     {
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             imageTotalSize,                       // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL                               // const uint32_t* pQueueFamilyIndices;
+            nullptr                               // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer      = createBuffer(m_vkd, m_device, &bufferParams);
@@ -1220,7 +1220,7 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage(VkImageAsp
 
     const VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
         VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -1259,8 +1259,7 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage(VkImageAsp
     m_vkd.cmdCopyImageToBuffer(*m_commandBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer,
                                static_cast<uint32_t>(copyRegions.size()), &copyRegions[0]);
     m_vkd.cmdPipelineBarrier(*m_commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                             (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                             (const VkImageMemoryBarrier *)DE_NULL);
+                             (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
 
     pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT,
                          VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
@@ -1482,13 +1481,13 @@ Move<VkBuffer> ImageClearingTestInstance::createImageClearingBuffer(const Device
     {
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                // VkStructureType sType;
-            DE_NULL,                                                             // const void* pNext;
+            nullptr,                                                             // const void* pNext;
             0u,                                                                  // VkBufferCreateFlags flags;
             stagingBufferSize,                                                   // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,                                           // VkSharingMode sharingMode;
             0u,                                                                  // uint32_t queueFamilyIndexCount;
-            DE_NULL                                                              // const uint32_t* pQueueFamilyIndices;
+            nullptr                                                              // const uint32_t* pQueueFamilyIndices;
         };
         stagingBuffer = createBuffer(vkd, device, &bufferParams);
     }
@@ -1535,7 +1534,7 @@ void ImageClearingTestInstance::preClearImage(const uint32_t imageMipLevels, VkE
 
     const vk::VkBufferMemoryBarrier copyBufferBarrier = {
         vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType
-        DE_NULL,                                     // const void*        pNext
+        nullptr,                                     // const void*        pNext
         VK_ACCESS_TRANSFER_WRITE_BIT,                // VkAccessFlags    srcAccessMask
         VK_ACCESS_TRANSFER_READ_BIT,                 // VkAccessFlags    dstAccessMask
         VK_QUEUE_FAMILY_IGNORED,                     // uint32_t            srcQueueFamilyIndex
@@ -1546,8 +1545,7 @@ void ImageClearingTestInstance::preClearImage(const uint32_t imageMipLevels, VkE
     };
 
     m_vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                             (VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 1, &copyBufferBarrier, 0,
-                             (const vk::VkImageMemoryBarrier *)DE_NULL);
+                             (VkDependencyFlags)0, 0, nullptr, 1, &copyBufferBarrier, 0, nullptr);
 
     pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,        // VkPipelineStageFlags        srcStageMask
                          VK_PIPELINE_STAGE_TRANSFER_BIT,        // VkPipelineStageFlags        dstStageMask

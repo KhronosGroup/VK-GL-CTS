@@ -862,21 +862,21 @@ void InstancedGridRenderTest::renderTo(sglr::Context &ctx, sglr::ShaderProgram &
     ctx.genBuffers(1, &positionBuf);
     ctx.bindBuffer(GL_ARRAY_BUFFER, positionBuf);
     ctx.bufferData(GL_ARRAY_BUFFER, sizeof(vertexPositions), vertexPositions, GL_STATIC_DRAW);
-    ctx.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    ctx.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     ctx.vertexAttribDivisor(posLocation, 0);
     ctx.enableVertexAttribArray(posLocation);
 
     ctx.genBuffers(1, &offsetBuf);
     ctx.bindBuffer(GL_ARRAY_BUFFER, offsetBuf);
     ctx.bufferData(GL_ARRAY_BUFFER, offsets.size() * sizeof(tcu::Vec4), &offsets[0], GL_STATIC_DRAW);
-    ctx.vertexAttribPointer(offsetLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    ctx.vertexAttribPointer(offsetLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     ctx.vertexAttribDivisor(offsetLocation, 1);
     ctx.enableVertexAttribArray(offsetLocation);
 
     ctx.genBuffers(1, &colorBuf);
     ctx.bindBuffer(GL_ARRAY_BUFFER, colorBuf);
     ctx.bufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(tcu::Vec4), &colors[0], GL_STATIC_DRAW);
-    ctx.vertexAttribPointer(colorLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    ctx.vertexAttribPointer(colorLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     ctx.vertexAttribDivisor(colorLocation, 1);
     ctx.enableVertexAttribArray(colorLocation);
 
@@ -919,9 +919,9 @@ void InstancedGridRenderTest::renderTo(sglr::Context &ctx, sglr::ShaderProgram &
 
     ctx.useProgram(programID);
     if (m_useIndices)
-        ctx.drawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, DE_NULL);
+        ctx.drawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, nullptr);
     else
-        ctx.drawArraysIndirect(GL_TRIANGLES, DE_NULL);
+        ctx.drawArraysIndirect(GL_TRIANGLES, nullptr);
     ctx.useProgram(0);
 
     glu::checkError(ctx.getError(), "", __FILE__, __LINE__);
@@ -1050,7 +1050,7 @@ ComputeShaderGeneratedCase::ComputeShaderGeneratedCase(Context &context, const c
     , m_cmdBufferID(0)
     , m_dataBufferID(0)
     , m_indexBufferID(0)
-    , m_shaderProgram(DE_NULL)
+    , m_shaderProgram(nullptr)
 {
     const int triangleCount = m_gridSize * m_gridSize * 2;
 
@@ -1123,7 +1123,7 @@ void ComputeShaderGeneratedCase::deinit(void)
     if (m_shaderProgram)
     {
         delete m_shaderProgram;
-        m_shaderProgram = DE_NULL;
+        m_shaderProgram = nullptr;
     }
 }
 
@@ -1527,7 +1527,7 @@ void ComputeShaderGeneratedCase::renderTo(tcu::Surface &dst)
     // Setup buffers
 
     gl.bindBuffer(GL_ARRAY_BUFFER, m_dataBufferID);
-    gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 8 * (int)sizeof(float), DE_NULL);
+    gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 8 * (int)sizeof(float), nullptr);
     gl.vertexAttribPointer(colorLoc, 4, GL_FLOAT, GL_FALSE, 8 * (int)sizeof(float),
                            glu::BufferOffsetAsPointer(4 * sizeof(float)));
     gl.enableVertexAttribArray(positionLoc);
@@ -1618,7 +1618,7 @@ ComputeShaderGeneratedCombinedCase::ComputeShaderGeneratedCombinedCase(Context &
                                                                        int numDrawCalls)
     : ComputeShaderGeneratedCase(context, name, desc, method, computeCmd, computeData, computeIndices, gridSize,
                                  numDrawCalls)
-    , m_computeProgram(DE_NULL)
+    , m_computeProgram(nullptr)
 {
 }
 
@@ -1651,7 +1651,7 @@ void ComputeShaderGeneratedCombinedCase::deinit(void)
     if (m_computeProgram)
     {
         delete m_computeProgram;
-        m_computeProgram = DE_NULL;
+        m_computeProgram = nullptr;
     }
 }
 
@@ -1690,7 +1690,7 @@ void ComputeShaderGeneratedCombinedCase::runComputeShader(void)
 
         m_testCtx.getLog() << tcu::TestLog::Message << "Allocating memory for command buffer, size "
                            << sizeToString(bufferSize) << "." << tcu::TestLog::EndMessage;
-        gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, DE_NULL, GL_DYNAMIC_DRAW);
+        gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
     }
 
     if (m_computeData)
@@ -1704,7 +1704,7 @@ void ComputeShaderGeneratedCombinedCase::runComputeShader(void)
 
         m_testCtx.getLog() << tcu::TestLog::Message << "Allocating memory for data buffer, size "
                            << sizeToString(bufferSize) << "." << tcu::TestLog::EndMessage;
-        gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, DE_NULL, GL_DYNAMIC_DRAW);
+        gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
     }
 
     if (m_computeIndices)
@@ -1718,7 +1718,7 @@ void ComputeShaderGeneratedCombinedCase::runComputeShader(void)
 
         m_testCtx.getLog() << tcu::TestLog::Message << "Allocating memory for index buffer, size "
                            << sizeToString(bufferSize) << "." << tcu::TestLog::EndMessage;
-        gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, DE_NULL, GL_DYNAMIC_DRAW);
+        gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
     }
 
     glu::checkError(gl.getError(), "setup buffers", __FILE__, __LINE__);
@@ -1761,9 +1761,9 @@ ComputeShaderGeneratedSeparateCase::ComputeShaderGeneratedSeparateCase(Context &
                                                                        int numDrawCalls)
     : ComputeShaderGeneratedCase(context, name, desc, method, computeCmd, computeData, computeIndices, gridSize,
                                  numDrawCalls)
-    , m_computeCmdProgram(DE_NULL)
-    , m_computeDataProgram(DE_NULL)
-    , m_computeIndicesProgram(DE_NULL)
+    , m_computeCmdProgram(nullptr)
+    , m_computeDataProgram(nullptr)
+    , m_computeIndicesProgram(nullptr)
 {
 }
 
@@ -1822,17 +1822,17 @@ void ComputeShaderGeneratedSeparateCase::deinit(void)
     if (m_computeCmdProgram)
     {
         delete m_computeCmdProgram;
-        m_computeCmdProgram = DE_NULL;
+        m_computeCmdProgram = nullptr;
     }
     if (m_computeDataProgram)
     {
         delete m_computeDataProgram;
-        m_computeDataProgram = DE_NULL;
+        m_computeDataProgram = nullptr;
     }
     if (m_computeIndicesProgram)
     {
         delete m_computeIndicesProgram;
-        m_computeIndicesProgram = DE_NULL;
+        m_computeIndicesProgram = nullptr;
     }
 }
 
@@ -1873,7 +1873,7 @@ void ComputeShaderGeneratedSeparateCase::runComputeShader(void)
 
         m_testCtx.getLog() << tcu::TestLog::Message << "Allocating memory for command buffer, size "
                            << sizeToString(bufferSize) << "." << tcu::TestLog::EndMessage;
-        gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, DE_NULL, GL_DYNAMIC_DRAW);
+        gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
 
         // calculate
 
@@ -1906,7 +1906,7 @@ void ComputeShaderGeneratedSeparateCase::runComputeShader(void)
 
         m_testCtx.getLog() << tcu::TestLog::Message << "Allocating memory for data buffer, size "
                            << sizeToString(bufferSize) << "." << tcu::TestLog::EndMessage;
-        gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, DE_NULL, GL_DYNAMIC_DRAW);
+        gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
 
         // calculate
 
@@ -1937,7 +1937,7 @@ void ComputeShaderGeneratedSeparateCase::runComputeShader(void)
 
         m_testCtx.getLog() << tcu::TestLog::Message << "Allocating memory for index buffer, size "
                            << sizeToString(bufferSize) << "." << tcu::TestLog::EndMessage;
-        gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, DE_NULL, GL_DYNAMIC_DRAW);
+        gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
 
         // calculate
 
@@ -2460,7 +2460,7 @@ BadCommandBufferCase::IterateResult BadCommandBufferCase::iterate(void)
     gl.genBuffers(1, &positionBuf);
     gl.bindBuffer(GL_ARRAY_BUFFER, positionBuf);
     gl.bufferData(GL_ARRAY_BUFFER, sizeof(vertexPositions), vertexPositions, GL_STATIC_DRAW);
-    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.vertexAttribDivisor(posLocation, 0);
     gl.enableVertexAttribArray(posLocation);
     glu::checkError(gl.getError(), "", __FILE__, __LINE__);
@@ -2641,7 +2641,7 @@ BadStateCase::IterateResult BadStateCase::iterate(void)
         gl.genBuffers(1, &dataBufferID);
         gl.bindBuffer(GL_ARRAY_BUFFER, dataBufferID);
         gl.bufferData(GL_ARRAY_BUFFER, sizeof(vertexPositions), vertexPositions, GL_STATIC_DRAW);
-        gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
         gl.enableVertexAttribArray(posLocation);
         glu::checkError(gl.getError(), "", __FILE__, __LINE__);
     }
@@ -2650,7 +2650,7 @@ BadStateCase::IterateResult BadStateCase::iterate(void)
         gl.genBuffers(1, &dataBufferID);
         gl.bindBuffer(GL_ARRAY_BUFFER, dataBufferID);
         gl.bufferData(GL_ARRAY_BUFFER, sizeof(vertexPositions), vertexPositions, GL_STATIC_DRAW);
-        gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
         gl.enableVertexAttribArray(posLocation);
         glu::checkError(gl.getError(), "", __FILE__, __LINE__);
     }
@@ -2674,7 +2674,7 @@ BadStateCase::IterateResult BadStateCase::iterate(void)
 
     gl.useProgram(programID);
     gl.drawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT,
-                            (m_caseType != CASE_CLIENT_BUFFER_COMMAND) ? (DE_NULL) : (&drawCommand));
+                            (m_caseType != CASE_CLIENT_BUFFER_COMMAND) ? (nullptr) : (&drawCommand));
 
     error = gl.getError();
 
@@ -2779,7 +2779,7 @@ BadDrawModeCase::IterateResult BadDrawModeCase::iterate(void)
     gl.genBuffers(1, &dataBufferID);
     gl.bindBuffer(GL_ARRAY_BUFFER, dataBufferID);
     gl.bufferData(GL_ARRAY_BUFFER, sizeof(vertexPositions), vertexPositions, GL_STATIC_DRAW);
-    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(posLocation);
     glu::checkError(gl.getError(), "", __FILE__, __LINE__);
 
@@ -2825,9 +2825,9 @@ BadDrawModeCase::IterateResult BadDrawModeCase::iterate(void)
     gl.viewport(0, 0, 1, 1);
     gl.useProgram(programID);
     if (m_drawType == DRAW_ELEMENTS || m_drawType == DRAW_ELEMENTS_BAD_INDEX)
-        gl.drawElementsIndirect(mode, indexType, DE_NULL);
+        gl.drawElementsIndirect(mode, indexType, nullptr);
     else if (m_drawType == DRAW_ARRAYS)
-        gl.drawArraysIndirect(mode, DE_NULL);
+        gl.drawArraysIndirect(mode, nullptr);
     else
         DE_ASSERT(false);
 

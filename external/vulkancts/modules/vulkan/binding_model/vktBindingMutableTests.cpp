@@ -74,7 +74,7 @@ VkDevice getDevice(Context &context)
         // Create a universal queue that supports graphics and compute
         const VkDeviceQueueCreateInfo queueParams{
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0u,                                         // VkDeviceQueueCreateFlags flags;
             context.getUniversalQueueFamilyIndex(),     // uint32_t queueFamilyIndex;
             1u,                                         // uint32_t queueCount;
@@ -127,7 +127,7 @@ VkDevice getDevice(Context &context)
             nullptr,                              //ppEnabledLayerNames;
             de::sizeU32(extensionPtrs),           // uint32_t enabledExtensionCount;
             de::dataOrNull(extensionPtrs),        // const char* const* ppEnabledExtensionNames;
-            DE_NULL,                              //pEnabledFeatures;
+            nullptr,                              //pEnabledFeatures;
         };
 
         Move<VkDevice> device = createCustomDevice(

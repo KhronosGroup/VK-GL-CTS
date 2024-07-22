@@ -72,7 +72,7 @@ Move<VkImage> createTestImage(const DeviceInterface &vkd, VkDevice device, VkFor
 {
     const VkImageCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         createFlags,
         VK_IMAGE_TYPE_2D,
         format,
@@ -84,7 +84,7 @@ Move<VkImage> createTestImage(const DeviceInterface &vkd, VkDevice device, VkFor
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        (const uint32_t *)DE_NULL,
+        nullptr,
         layout,
     };
 
@@ -94,7 +94,7 @@ Move<VkImage> createTestImage(const DeviceInterface &vkd, VkDevice device, VkFor
 Move<VkImageView> createImageView(const DeviceInterface &vkd, VkDevice device, VkImage image, VkFormat format,
                                   VkSamplerYcbcrConversion conversion, uint32_t layerCount)
 {
-    const VkSamplerYcbcrConversionInfo conversionInfo = {VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO, DE_NULL,
+    const VkSamplerYcbcrConversionInfo conversionInfo = {VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO, nullptr,
                                                          conversion};
     const VkImageViewCreateInfo viewInfo              = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -123,7 +123,7 @@ Move<VkDescriptorSetLayout> createDescriptorSetLayout(const DeviceInterface &vkd
                                                         VK_SHADER_STAGE_ALL, &sampler};
     const VkDescriptorSetLayoutCreateInfo layoutInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkDescriptorSetLayoutCreateFlags)0u,
         1u,
         &binding,
@@ -140,7 +140,7 @@ Move<VkDescriptorPool> createDescriptorPool(const DeviceInterface &vkd, VkDevice
     };
     const VkDescriptorPoolCreateInfo poolInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
         1u, // maxSets
         DE_LENGTH_OF_ARRAY(poolSizes),
@@ -157,7 +157,7 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkd, VkDevice d
 
     {
         const VkDescriptorSetAllocateInfo allocInfo = {
-            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL, descPool, 1u, &descLayout,
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, descPool, 1u, &descLayout,
         };
 
         descSet = allocateDescriptorSet(vkd, device, &allocInfo);
@@ -170,18 +170,18 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkd, VkDevice d
             imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         const VkWriteDescriptorSet descriptorWrite = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            DE_NULL,
+            nullptr,
             *descSet,
             0u, // dstBinding
             0u, // dstArrayElement
             1u, // descriptorCount
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             &imageInfo,
-            (const VkDescriptorBufferInfo *)DE_NULL,
-            (const VkBufferView *)DE_NULL,
+            nullptr,
+            nullptr,
         };
 
-        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, nullptr);
     }
 
     return descSet;
@@ -295,7 +295,7 @@ tcu::TestStatus testFormat(Context &context, TestParameters params)
 
     const VkSamplerYcbcrConversionCreateInfo conversionInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         format,
         VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,
         VK_SAMPLER_YCBCR_RANGE_ITU_FULL,
@@ -315,7 +315,7 @@ tcu::TestStatus testFormat(Context &context, TestParameters params)
 
     const VkSamplerYcbcrConversionInfo samplerConversionInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-        DE_NULL,
+        nullptr,
         *conversion,
     };
 
@@ -342,7 +342,7 @@ tcu::TestStatus testFormat(Context &context, TestParameters params)
 
     const VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
-        DE_NULL,
+        nullptr,
         params.format,
         VK_IMAGE_TYPE_2D,
         params.tiling,
@@ -351,7 +351,7 @@ tcu::TestStatus testFormat(Context &context, TestParameters params)
     };
     VkSamplerYcbcrConversionImageFormatProperties ycbcrProperties = {
         VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES,
-        DE_NULL,
+        nullptr,
         0,
     };
     VkImageFormatProperties2 extProperties = {

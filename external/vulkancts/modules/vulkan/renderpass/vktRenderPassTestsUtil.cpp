@@ -41,7 +41,7 @@ AttachmentDescription1::AttachmentDescription1(const void *pNext_, VkAttachmentD
                                                VkAttachmentLoadOp stencilLoadOp_, VkAttachmentStoreOp stencilStoreOp_,
                                                VkImageLayout initialLayout_, VkImageLayout finalLayout_)
 {
-    DE_ASSERT(pNext_ == DE_NULL);
+    DE_ASSERT(pNext_ == nullptr);
 
     // No sType field in this struct
     DE_UNREF(pNext_);
@@ -78,7 +78,7 @@ AttachmentDescription2::AttachmentDescription2(const void *pNext_, VkAttachmentD
 AttachmentReference1::AttachmentReference1(const void *pNext_, uint32_t attachment_, VkImageLayout layout_,
                                            VkImageAspectFlags aspectMask_)
 {
-    DE_ASSERT(pNext_ == DE_NULL);
+    DE_ASSERT(pNext_ == nullptr);
 
     // No sType field in this struct
     DE_UNREF(pNext_);
@@ -104,7 +104,7 @@ SubpassDescription1::SubpassDescription1(
     const VkAttachmentReference *pDepthStencilAttachment_, uint32_t preserveAttachmentCount_,
     const uint32_t *pPreserveAttachments_)
 {
-    DE_ASSERT(pNext_ == DE_NULL);
+    DE_ASSERT(pNext_ == nullptr);
     DE_ASSERT(viewMask_ == 0);
 
     // No sType field in this struct
@@ -149,7 +149,7 @@ SubpassDependency1::SubpassDependency1(const void *pNext_, uint32_t srcSubpass_,
                                        VkAccessFlags srcAccessMask_, VkAccessFlags dstAccessMask_,
                                        VkDependencyFlags dependencyFlags_, int32_t viewOffset_)
 {
-    DE_ASSERT(pNext_ == DE_NULL);
+    DE_ASSERT(pNext_ == nullptr);
     DE_ASSERT(viewOffset_ == 0);
 
     // No sType field in this struct
@@ -188,7 +188,7 @@ RenderPassCreateInfo1::RenderPassCreateInfo1(const void *pNext_, VkRenderPassCre
                                              uint32_t correlatedViewMaskCount_, const uint32_t *pCorrelatedViewMasks_)
 {
     DE_ASSERT(correlatedViewMaskCount_ == 0);
-    DE_ASSERT(pCorrelatedViewMasks_ == DE_NULL);
+    DE_ASSERT(pCorrelatedViewMasks_ == nullptr);
 
     sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     pNext           = pNext_;
@@ -234,7 +234,7 @@ Move<VkRenderPass> RenderPassCreateInfo2::createRenderPass(const DeviceInterface
 
 SubpassBeginInfo1::SubpassBeginInfo1(const void *pNext_, VkSubpassContents contents_) : contents(contents_)
 {
-    DE_ASSERT(pNext_ == DE_NULL);
+    DE_ASSERT(pNext_ == nullptr);
 
     DE_UNREF(pNext_);
 }
@@ -248,7 +248,7 @@ SubpassBeginInfo2::SubpassBeginInfo2(const void *pNext_, VkSubpassContents conte
 
 SubpassEndInfo1::SubpassEndInfo1(const void *pNext_)
 {
-    DE_ASSERT(pNext_ == DE_NULL);
+    DE_ASSERT(pNext_ == nullptr);
 
     DE_UNREF(pNext_);
 }
@@ -263,7 +263,7 @@ void RenderpassSubpass1::cmdBeginRenderPass(const DeviceInterface &vk, VkCommand
                                             const VkRenderPassBeginInfo *pRenderPassBegin,
                                             const SubpassBeginInfo *pSubpassBeginInfo)
 {
-    DE_ASSERT(pSubpassBeginInfo != DE_NULL);
+    DE_ASSERT(pSubpassBeginInfo != nullptr);
 
     vk.cmdBeginRenderPass(cmdBuffer, pRenderPassBegin, pSubpassBeginInfo->contents);
 }
@@ -273,7 +273,7 @@ void RenderpassSubpass1::cmdNextSubpass(const DeviceInterface &vk, VkCommandBuff
                                         const SubpassEndInfo *pSubpassEndInfo)
 {
     DE_UNREF(pSubpassEndInfo);
-    DE_ASSERT(pSubpassBeginInfo != DE_NULL);
+    DE_ASSERT(pSubpassBeginInfo != nullptr);
 
     vk.cmdNextSubpass(cmdBuffer, pSubpassBeginInfo->contents);
 }
@@ -297,8 +297,8 @@ void RenderpassSubpass2::cmdNextSubpass(const DeviceInterface &vk, VkCommandBuff
                                         const SubpassBeginInfo *pSubpassBeginInfo,
                                         const SubpassEndInfo *pSubpassEndInfo)
 {
-    DE_ASSERT(pSubpassBeginInfo != DE_NULL);
-    DE_ASSERT(pSubpassEndInfo != DE_NULL);
+    DE_ASSERT(pSubpassBeginInfo != nullptr);
+    DE_ASSERT(pSubpassEndInfo != nullptr);
 
     vk.cmdNextSubpass2(cmdBuffer, pSubpassBeginInfo, pSubpassEndInfo);
 }
@@ -306,7 +306,7 @@ void RenderpassSubpass2::cmdNextSubpass(const DeviceInterface &vk, VkCommandBuff
 void RenderpassSubpass2::cmdEndRenderPass(const DeviceInterface &vk, VkCommandBuffer cmdBuffer,
                                           const SubpassEndInfo *pSubpassEndInfo)
 {
-    DE_ASSERT(pSubpassEndInfo != DE_NULL);
+    DE_ASSERT(pSubpassEndInfo != nullptr);
 
     vk.cmdEndRenderPass2(cmdBuffer, pSubpassEndInfo);
 }
@@ -550,7 +550,7 @@ AttachmentDesc createAttachmentDescription(const Attachment &attachment)
         attachmentDescription //  VkAttachmentDescription                            ||  VkAttachmentDescription2
         (
             // ||  VkStructureType sType;
-            DE_NULL,                 // ||  const void* pNext;
+            nullptr,                 // ||  const void* pNext;
             0u,                      //  VkAttachmentDescriptionFlags flags; ||  VkAttachmentDescriptionFlags flags;
             attachment.getFormat(),  //  VkFormat format; ||  VkFormat format;
             attachment.getSamples(), //  VkSampleCountFlagBits samples; ||  VkSampleCountFlagBits samples;
@@ -572,7 +572,7 @@ AttachmentRef createAttachmentReference(const AttachmentReference &referenceInfo
     const AttachmentRef reference //  VkAttachmentReference                ||  VkAttachmentReference2
         (
             // ||  VkStructureType sType;
-            DE_NULL,                        // ||  const void* pNext;
+            nullptr,                        // ||  const void* pNext;
             referenceInfo.getAttachment(),  //  uint32_t attachment; ||  uint32_t attachment;
             referenceInfo.getImageLayout(), //  VkImageLayout layout; ||  VkImageLayout layout;
             referenceInfo.getAspectMask()   // ||  VkImageAspectFlags aspectMask;
@@ -616,7 +616,7 @@ SubpassDesc createSubpassDescription(const Subpass &subpass, std::vector<Attachm
             subpassDescription //  VkSubpassDescription                                        ||  VkSubpassDescription2
             (
                 //  ||  VkStructureType sType;
-                DE_NULL,            //   ||  const void* pNext;
+                nullptr,            //   ||  const void* pNext;
                 subpass.getFlags(), //  VkSubpassDescriptionFlags flags; ||  VkSubpassDescriptionFlags flags;
                 subpass
                     .getPipelineBindPoint(), //  VkPipelineBindPoint pipelineBindPoint; ||  VkPipelineBindPoint pipelineBindPoint;
@@ -624,17 +624,17 @@ SubpassDesc createSubpassDescription(const Subpass &subpass, std::vector<Attachm
                 (uint32_t)inputAttachmentReferences
                     .size(), //  uint32_t inputAttachmentCount; ||  uint32_t inputAttachmentCount;
                 inputAttachmentReferences.empty() ?
-                    DE_NULL :
+                    nullptr :
                     &inputAttachmentReferences
                         [0], //  const VkAttachmentReference* pInputAttachments; ||  const VkAttachmentReference2* pInputAttachments;
                 (uint32_t)colorAttachmentReferences
                     .size(), //  uint32_t colorAttachmentCount; ||  uint32_t colorAttachmentCount;
                 colorAttachmentReferences.empty() ?
-                    DE_NULL :
+                    nullptr :
                     &colorAttachmentReferences
                         [0], //  const VkAttachmentReference* pColorAttachments; ||  const VkAttachmentReference2* pColorAttachments;
                 resolveAttachmentReferences.empty() ?
-                    DE_NULL :
+                    nullptr :
                     &resolveAttachmentReferences
                         [0], //  const VkAttachmentReference* pResolveAttachments; ||  const VkAttachmentReference2* pResolveAttachments;
                 &depthStencilAttachmentReferences
@@ -642,7 +642,7 @@ SubpassDesc createSubpassDescription(const Subpass &subpass, std::vector<Attachm
                 (uint32_t)preserveAttachmentReferences
                     ->size(), //  uint32_t preserveAttachmentCount; ||  uint32_t preserveAttachmentCount;
                 preserveAttachmentReferences->empty() ?
-                    DE_NULL :
+                    nullptr :
                     &(*preserveAttachmentReferences)
                         [0] //  const uint32_t* pPreserveAttachments; ||  const uint32_t* pPreserveAttachments;
             );
@@ -655,7 +655,7 @@ VkMemoryBarrier2KHR createMemoryBarrierFromSubpassDependency(const SubpassDepend
 {
     return {
         VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR, // VkStructureType                sType
-        DE_NULL,                                // const void*                    pNext
+        nullptr,                                // const void*                    pNext
         static_cast<VkPipelineStageFlags2KHR>(
             dependencyInfo.getSrcStageMask()), // VkPipelineStageFlags2KHR        srcStageMask
         static_cast<VkAccessFlags2KHR>(dependencyInfo.getSrcAccessMask()), // VkAccessFlags2KHR            srcAccessMask
@@ -667,7 +667,7 @@ VkMemoryBarrier2KHR createMemoryBarrierFromSubpassDependency(const SubpassDepend
 
 template <typename SubpassDep>
 SubpassDep createSubpassDependency(const SubpassDependency &dependencyInfo,
-                                   VkMemoryBarrier2KHR *memoryBarrierPtr = DE_NULL)
+                                   VkMemoryBarrier2KHR *memoryBarrierPtr = nullptr)
 {
     VkPipelineStageFlags srcStageMask = dependencyInfo.getSrcStageMask();
     VkPipelineStageFlags dstStageMask = dependencyInfo.getDstStageMask();
@@ -705,13 +705,13 @@ SubpassDep createSubpassDependency(const SubpassDependency &dependencyInfo,
 de::MovePtr<VkRenderPassInputAttachmentAspectCreateInfo> createRenderPassInputAttachmentAspectCreateInfo(
     const RenderPass &renderPassInfo)
 {
-    de::MovePtr<VkRenderPassInputAttachmentAspectCreateInfo> result(DE_NULL);
+    de::MovePtr<VkRenderPassInputAttachmentAspectCreateInfo> result(nullptr);
 
     if (!renderPassInfo.getInputAspects().empty())
     {
         const VkRenderPassInputAttachmentAspectCreateInfo inputAspectCreateInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO,
-            DE_NULL,
+            nullptr,
 
             (uint32_t)renderPassInfo.getInputAspects().size(),
             renderPassInfo.getInputAspects().data(),
@@ -774,21 +774,21 @@ Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice device, 
             (VkRenderPassCreateFlags)0u,  //  VkRenderPassCreateFlags flags; ||  VkRenderPassCreateFlags flags;
             (uint32_t)attachments.size(), //  uint32_t attachmentCount; ||  uint32_t attachmentCount;
             (attachments.empty() ?
-                 DE_NULL :
+                 nullptr :
                  &attachments
                      [0]), //  const VkAttachmentDescription* pAttachments; ||  const VkAttachmentDescription2* pAttachments;
             (uint32_t)subpasses.size(), //  uint32_t subpassCount; ||  uint32_t subpassCount;
             (subpasses.empty() ?
-                 DE_NULL :
+                 nullptr :
                  &subpasses
                      [0]), //  const VkSubpassDescription* pSubpasses; ||  const VkSubpassDescription2* pSubpasses;
             (uint32_t)dependencies.size(), //  uint32_t dependencyCount; ||  uint32_t dependencyCount;
             (dependencies.empty() ?
-                 DE_NULL :
+                 nullptr :
                  &dependencies
                      [0]), //  const VkSubpassDependency* pDependencies; ||  const VkSubpassDependency2* pDependencies;
             0u,            // ||  uint32_t correlatedViewMaskCount;
-            DE_NULL        // ||  const uint32_t* pCorrelatedViewMasks;
+            nullptr        // ||  const uint32_t* pCorrelatedViewMasks;
         );
 
     return renderPassCreator.createRenderPass(vk, device);

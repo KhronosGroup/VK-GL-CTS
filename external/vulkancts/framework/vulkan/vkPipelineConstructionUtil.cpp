@@ -79,7 +79,7 @@ static const VkVertexInputAttributeDescription defaultVertexInputAttributeDescri
 
 static const VkPipelineVertexInputStateCreateInfo defaultVertexInputState{
     VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                                sType
-    DE_NULL,                                                   // const void*                                    pNext
+    nullptr,                                                   // const void*                                    pNext
     (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags        flags
     1u, // uint32_t                                        vertexBindingDescriptionCount
     &defaultVertexInputBindingDescription, // const VkVertexInputBindingDescription*        pVertexBindingDescriptions
@@ -99,7 +99,7 @@ static const VkStencilOpState defaultStencilOpState{
 
 static const VkPipelineDepthStencilStateCreateInfo defaultDepthStencilState{
     VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                                sType
-    DE_NULL,                                                    // const void*                                    pNext
+    nullptr,                                                    // const void*                                    pNext
     0u,                                                         // VkPipelineDepthStencilStateCreateFlags        flags
     VK_FALSE,                    // VkBool32                                        depthTestEnable
     VK_FALSE,                    // VkBool32                                        depthWriteEnable
@@ -114,12 +114,12 @@ static const VkPipelineDepthStencilStateCreateInfo defaultDepthStencilState{
 
 static const VkPipelineMultisampleStateCreateInfo defaultMultisampleState{
     VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                                sType
-    DE_NULL,                                                  // const void*                                    pNext
+    nullptr,                                                  // const void*                                    pNext
     0u,                                                       // VkPipelineMultisampleStateCreateFlags        flags
     VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                        rasterizationSamples
     VK_FALSE,              // VkBool32                                        sampleShadingEnable
     1.0f,                  // float                                        minSampleShading
-    DE_NULL,               // const VkSampleMask*                            pSampleMask
+    nullptr,               // const VkSampleMask*                            pSampleMask
     VK_FALSE,              // VkBool32                                        alphaToCoverageEnable
     VK_FALSE               // VkBool32                                        alphaToOneEnable
 };
@@ -137,7 +137,7 @@ static const VkPipelineColorBlendAttachmentState defaultColorBlendAttachmentStat
 
 static const VkPipelineColorBlendStateCreateInfo defaultColorBlendState{
     VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                                sType
-    DE_NULL,                                                  // const void*                                    pNext
+    nullptr,                                                  // const void*                                    pNext
     0u,                                                       // VkPipelineColorBlendStateCreateFlags            flags
     VK_FALSE,                          // VkBool32                                        logicOpEnable
     VK_LOGIC_OP_CLEAR,                 // VkLogicOp                                    logicOp
@@ -154,7 +154,7 @@ VkGraphicsPipelineLibraryCreateInfoEXT makeGraphicsPipelineLibraryCreateInfo(
 {
     return {
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                                     // void* pNext;
+        nullptr,                                                     // void* pNext;
         flags,                                                       // VkGraphicsPipelineLibraryFlagsEXT flags;
     };
 }
@@ -223,7 +223,7 @@ void addToChain(void **structThatStartsChain, void *structToAddAtTheEnd)
 {
     DE_ASSERT(structThatStartsChain);
 
-    if (structToAddAtTheEnd == DE_NULL)
+    if (structToAddAtTheEnd == nullptr)
         return;
 
     // Cast to the base out structure which has a non-const pNext pointer.
@@ -232,7 +232,7 @@ void addToChain(void **structThatStartsChain, void *structToAddAtTheEnd)
     // make sure that pNext pointer of structure that is added to chain is empty;
     // we are construting chains on our own and there are cases that use same
     // structure for multiple instances of GraphicsPipelineWrapper
-    structToAddAtTheEndCasted->pNext = DE_NULL;
+    structToAddAtTheEndCasted->pNext = nullptr;
 
     uint32_t safetyCouter = 10u;
     void **structInChain  = structThatStartsChain;
@@ -240,7 +240,7 @@ void addToChain(void **structThatStartsChain, void *structToAddAtTheEnd)
     do
     {
         // check if this is free spot
-        if (*structInChain == DE_NULL)
+        if (*structInChain == nullptr)
         {
             // attach new structure at the end
             *structInChain = structToAddAtTheEndCasted;
@@ -345,7 +345,7 @@ PipelineLayoutWrapper::PipelineLayoutWrapper(PipelineConstructionType pipelineCo
         m_setLayouts.resize(1);
         m_setLayouts[0] = descriptorSetLayout;
     }
-    if (pushConstantRange == DE_NULL)
+    if (pushConstantRange == nullptr)
     {
         m_pushConstantRangeCount = 0;
     }
@@ -593,7 +593,7 @@ RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructi
                 }
             }
 
-            if (pCreateInfo->pSubpasses[s].pDepthStencilAttachment != DE_NULL)
+            if (pCreateInfo->pSubpasses[s].pDepthStencilAttachment != nullptr)
             {
                 uint32_t j = pCreateInfo->pSubpasses[s].pDepthStencilAttachment->attachment;
                 if (j < pCreateInfo->attachmentCount)
@@ -620,7 +620,7 @@ RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructi
                 }
             }
 
-            if (pCreateInfo->pSubpasses[s].pResolveAttachments != DE_NULL)
+            if (pCreateInfo->pSubpasses[s].pResolveAttachments != nullptr)
             {
                 subpass.m_resolveAttachments.resize(pCreateInfo->pSubpasses[s].colorAttachmentCount);
                 for (uint32_t i = 0; i < pCreateInfo->pSubpasses[s].colorAttachmentCount; ++i)
@@ -744,7 +744,7 @@ RenderPassWrapper::RenderPassWrapper(const DeviceInterface &vk, VkDevice device,
                 }
             }
 
-            if (pCreateInfo->pSubpasses[s].pDepthStencilAttachment != DE_NULL)
+            if (pCreateInfo->pSubpasses[s].pDepthStencilAttachment != nullptr)
             {
                 uint32_t j = pCreateInfo->pSubpasses[s].pDepthStencilAttachment->attachment;
                 if (j < pCreateInfo->attachmentCount)
@@ -771,7 +771,7 @@ RenderPassWrapper::RenderPassWrapper(const DeviceInterface &vk, VkDevice device,
                 }
             }
 
-            if (pCreateInfo->pSubpasses[s].pResolveAttachments != DE_NULL)
+            if (pCreateInfo->pSubpasses[s].pResolveAttachments != nullptr)
             {
                 subpass.m_resolveAttachments.resize(pCreateInfo->pSubpasses[s].colorAttachmentCount);
                 for (uint32_t i = 0; i < pCreateInfo->pSubpasses[s].colorAttachmentCount; ++i)
@@ -861,7 +861,7 @@ RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructi
 
             const VkAttachmentDescription2 colorAttachmentDescription = {
                 VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
-                DE_NULL,
+                nullptr,
                 (VkAttachmentDescriptionFlags)0,  // VkAttachmentDescriptionFlags    flags
                 colorFormat,                      // VkFormat                        format
                 VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits           samples
@@ -894,7 +894,7 @@ RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructi
 
             const VkAttachmentDescription2 depthStencilAttachmentDescription = {
                 VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
-                DE_NULL,
+                nullptr,
                 (VkAttachmentDescriptionFlags)0, // VkAttachmentDescriptionFlags    flags
                 depthStencilFormat,              // VkFormat                        format
                 VK_SAMPLE_COUNT_1_BIT,           // VkSampleCountFlagBits           samples
@@ -982,8 +982,8 @@ void RenderPassWrapper::clearAttachments(const DeviceInterface &vk, const VkComm
 
         if (hasDepthAspect || hasStencilAspect)
         {
-            renderingInfo.pDepthAttachment   = hasDepthAspect ? &attachment : DE_NULL;
-            renderingInfo.pStencilAttachment = hasStencilAspect ? &attachment : DE_NULL;
+            renderingInfo.pDepthAttachment   = hasDepthAspect ? &attachment : nullptr;
+            renderingInfo.pStencilAttachment = hasStencilAspect ? &attachment : nullptr;
         }
         else
         {
@@ -1325,7 +1325,7 @@ void RenderPassWrapper::begin(const DeviceInterface &vk, const VkCommandBuffer c
 void RenderPassWrapper::begin(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
                               const VkRect2D &renderArea, const VkSubpassContents contents) const
 {
-    begin(vk, commandBuffer, renderArea, 0u, DE_NULL, contents);
+    begin(vk, commandBuffer, renderArea, 0u, nullptr, contents);
 }
 
 void RenderPassWrapper::begin(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
@@ -1448,22 +1448,22 @@ void RenderPassWrapper::beginRendering(const DeviceInterface &vk, const VkComman
         const auto tcuFormat               = vk::mapVkFormat(subpass.m_depthStencilAttachment.format);
         bool hasDepthAspect                = tcu::hasDepthComponent(tcuFormat.order);
         bool hasStencilAspect              = tcu::hasStencilComponent(tcuFormat.order);
-        m_renderingInfo.pDepthAttachment   = hasDepthAspect ? &depthAttachment : DE_NULL;
-        m_renderingInfo.pStencilAttachment = hasStencilAspect ? &stencilAttachment : DE_NULL;
+        m_renderingInfo.pDepthAttachment   = hasDepthAspect ? &depthAttachment : nullptr;
+        m_renderingInfo.pStencilAttachment = hasStencilAspect ? &stencilAttachment : nullptr;
     }
     else
     {
-        m_renderingInfo.pDepthAttachment   = DE_NULL;
-        m_renderingInfo.pStencilAttachment = DE_NULL;
+        m_renderingInfo.pDepthAttachment   = nullptr;
+        m_renderingInfo.pStencilAttachment = nullptr;
     }
 
     if (m_activeSubpass < (uint32_t)m_viewMasks.size())
         m_renderingInfo.viewMask = m_viewMasks[m_activeSubpass];
 
-    m_renderingInfo.pNext = DE_NULL;
+    m_renderingInfo.pNext = nullptr;
     if (subpass.m_msrtss.sType == VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT)
     {
-        subpass.m_msrtss.pNext = DE_NULL;
+        subpass.m_msrtss.pNext = nullptr;
         m_renderingInfo.pNext  = &subpass.m_msrtss;
     }
 
@@ -1684,12 +1684,12 @@ void RenderPassWrapper::createFramebuffer(const DeviceInterface &vk, const VkDev
 }
 
 ShaderWrapper::ShaderWrapper()
-    : m_vk(DE_NULL)
+    : m_vk(nullptr)
     , m_device(VK_NULL_HANDLE)
-    , m_binary(DE_NULL)
+    , m_binary(nullptr)
     , m_moduleCreateFlags((VkShaderModuleCreateFlags)0u)
-    , m_layout(DE_NULL)
-    , m_specializationInfo(DE_NULL)
+    , m_layout(nullptr)
+    , m_specializationInfo(nullptr)
 #ifndef CTS_USES_VULKANSC
     , m_shaderCreateFlags((VkShaderCreateFlagsEXT)0u)
     , m_binaryDataSize(0u)
@@ -1703,8 +1703,8 @@ ShaderWrapper::ShaderWrapper(const DeviceInterface &vk, VkDevice device, const v
     , m_device(device)
     , m_binary(&binary)
     , m_moduleCreateFlags(createFlags)
-    , m_layout(DE_NULL)
-    , m_specializationInfo(DE_NULL)
+    , m_layout(nullptr)
+    , m_specializationInfo(nullptr)
 #ifndef CTS_USES_VULKANSC
     , m_shaderCreateFlags((VkShaderCreateFlagsEXT)0u)
     , m_binaryDataSize(0u)
@@ -1781,7 +1781,7 @@ void ShaderWrapper::setLayoutAndSpecialization(const PipelineLayoutWrapper *layo
 #ifndef CTS_USES_VULKANSC
 void ShaderWrapper::getShaderBinary(void)
 {
-    m_vk->getShaderBinaryDataEXT(m_device, *m_shader, &m_binaryDataSize, DE_NULL);
+    m_vk->getShaderBinaryDataEXT(m_device, *m_shader, &m_binaryDataSize, nullptr);
     m_binaryData.resize(m_binaryDataSize);
     m_vk->getShaderBinaryDataEXT(m_device, *m_shader, &m_binaryDataSize, m_binaryData.data());
 }
@@ -1953,7 +1953,7 @@ struct GraphicsPipelineWrapper::InternalData
         , inputAssemblyState
         {
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL, // const void*                                    pNext
+            nullptr, // const void*                                    pNext
             0u, // VkPipelineInputAssemblyStateCreateFlags        flags
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // VkPrimitiveTopology                            topology
             VK_FALSE                                                        // VkBool32                                        primitiveRestartEnable
@@ -1961,7 +1961,7 @@ struct GraphicsPipelineWrapper::InternalData
         , defaultRasterizationState
         {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL, // const void*                                    pNext
+            nullptr, // const void*                                    pNext
             0u, // VkPipelineRasterizationStateCreateFlags        flags
             VK_FALSE, // VkBool32                                        depthClampEnable
             VK_FALSE, // VkBool32                                        rasterizerDiscardEnable
@@ -1977,22 +1977,22 @@ struct GraphicsPipelineWrapper::InternalData
         , viewportState
         {
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL, // const void*                                    pNext
+            nullptr, // const void*                                    pNext
             (VkPipelineViewportStateCreateFlags)0, // VkPipelineViewportStateCreateFlags            flags
             1u, // uint32_t                                        viewportCount
-            DE_NULL, // const VkViewport*                            pViewports
+            nullptr, // const VkViewport*                            pViewports
             1u, // uint32_t                                        scissorCount
-            DE_NULL                                                            // const VkRect2D*                                pScissors
+            nullptr                                                            // const VkRect2D*                                pScissors
         }
         , tessellationState
         {
             VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL, // const void*                                    pNext
+            nullptr, // const void*                                    pNext
             0u, // VkPipelineTessellationStateCreateFlags        flags
             3u                                                                // uint32_t                                        patchControlPoints
         }
         , pFragmentShadingRateState        (nullptr)
-        , pDynamicState                    (DE_NULL)
+        , pDynamicState                    (nullptr)
         , pRepresentativeFragmentTestState(nullptr)
         , pPipelineRobustnessState          (nullptr)
         , pTessellationDomainOrigin        ()
@@ -2552,12 +2552,12 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     const auto pRasterizationState =
         rasterizationState ?
             rasterizationState :
-            (m_internalData->useDefaultRasterizationState ? &m_internalData->defaultRasterizationState : DE_NULL);
+            (m_internalData->useDefaultRasterizationState ? &m_internalData->defaultRasterizationState : nullptr);
     const bool forceNullTessState =
         (m_internalData->tessellationState.patchControlPoints == std::numeric_limits<uint32_t>::max());
     const auto pTessellationState =
         ((hasTesc || hasTese) && !forceNullTessState) ? &m_internalData->tessellationState : nullptr;
-    const auto pViewportState = m_internalData->useViewportState ? &m_internalData->viewportState : DE_NULL;
+    const auto pViewportState = m_internalData->useViewportState ? &m_internalData->viewportState : nullptr;
 
     VkPipelineCreateFlags shaderModuleIdFlags = 0u;
 
@@ -2571,7 +2571,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
         2u + hasTesc + hasTese + hasGeom,
         {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                        sType
-            DE_NULL,                                             // const void*                            pNext
+            nullptr,                                             // const void*                            pNext
             0u,                                                  // VkPipelineShaderStageCreateFlags        flags
             VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits                stage
             m_internalData->vertexShader.getModule(),            // VkShaderModule                        module
@@ -2791,7 +2791,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
             rasterizationState :
             (m_internalData->useDefaultRasterizationState ? &m_internalData->defaultRasterizationState : nullptr);
     const auto pTessellationState = nullptr;
-    const auto pViewportState     = m_internalData->useViewportState ? &m_internalData->viewportState : DE_NULL;
+    const auto pViewportState     = m_internalData->useViewportState ? &m_internalData->viewportState : nullptr;
 
     // Reserve space for all stages including fragment. This is needed when we create monolithic pipeline.
     m_internalData->pipelineShaderStages = std::vector<VkPipelineShaderStageCreateInfo>(
@@ -2963,10 +2963,10 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
 
     const auto pDepthStencilState =
         depthStencilState ? depthStencilState :
-                            (m_internalData->useDefaultDepthStencilState ? &defaultDepthStencilState : DE_NULL);
+                            (m_internalData->useDefaultDepthStencilState ? &defaultDepthStencilState : nullptr);
     const auto pMultisampleState =
         multisampleState ? multisampleState :
-                           (m_internalData->useDefaultMultisampleState ? &defaultMultisampleState : DE_NULL);
+                           (m_internalData->useDefaultMultisampleState ? &defaultMultisampleState : nullptr);
     const bool hasFrag = (fragmentShader.isSet() || fragmentShaderModuleId.ptr);
 
     VkPipelineCreateFlags shaderModuleIdFlags = 0u;
@@ -3049,7 +3049,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
         pipelinePartCreateInfo.pDepthStencilState = pDepthStencilState;
         pipelinePartCreateInfo.pMultisampleState  = pMultisampleState;
         pipelinePartCreateInfo.stageCount         = hasFrag;
-        pipelinePartCreateInfo.pStages       = hasFrag ? &m_internalData->pipelineShaderStages[stageIndex] : DE_NULL;
+        pipelinePartCreateInfo.pStages       = hasFrag ? &m_internalData->pipelineShaderStages[stageIndex] : nullptr;
         pipelinePartCreateInfo.pDynamicState = &pickedDynamicStateInfo;
 
         if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
@@ -3096,7 +3096,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
     DE_UNREF(partPipelineCache);
     DE_UNREF(partCreationFeedback);
 
-    void *firstStructInChain = DE_NULL;
+    void *firstStructInChain = nullptr;
     addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
 
 #ifndef CTS_USES_VULKANSC
@@ -3105,10 +3105,10 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
 
     const auto pColorBlendState = colorBlendState ?
                                       colorBlendState :
-                                      (m_internalData->useDefaultColorBlendState ? &defaultColorBlendState : DE_NULL);
+                                      (m_internalData->useDefaultColorBlendState ? &defaultColorBlendState : nullptr);
     const auto pMultisampleState =
         multisampleState ? multisampleState :
-                           (m_internalData->useDefaultMultisampleState ? &defaultMultisampleState : DE_NULL);
+                           (m_internalData->useDefaultMultisampleState ? &defaultMultisampleState : nullptr);
 
     if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
     {
@@ -3332,36 +3332,36 @@ void GraphicsPipelineWrapper::createShaders(bool linked, bool binary)
 
     std::vector<VkShaderEXT> shaders(createInfos.size());
     m_internalData->vk.createShadersEXT(m_internalData->device, (uint32_t)createInfos.size(), createInfos.data(),
-                                        DE_NULL, shaders.data());
+                                        nullptr, shaders.data());
     uint32_t shaderIndex = 0;
     if (m_internalData->vertexShader.isSet())
         m_internalData->vertexShader.setShader(
             Move<VkShaderEXT>(check<VkShaderEXT>(shaders[shaderIndex++]),
-                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, DE_NULL)));
+                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, nullptr)));
     if (m_internalData->tessellationControlShader.isSet())
         m_internalData->tessellationControlShader.setShader(
             Move<VkShaderEXT>(check<VkShaderEXT>(shaders[shaderIndex++]),
-                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, DE_NULL)));
+                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, nullptr)));
     if (m_internalData->tessellationEvaluationShader.isSet())
         m_internalData->tessellationEvaluationShader.setShader(
             Move<VkShaderEXT>(check<VkShaderEXT>(shaders[shaderIndex++]),
-                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, DE_NULL)));
+                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, nullptr)));
     if (m_internalData->geometryShader.isSet())
         m_internalData->geometryShader.setShader(
             Move<VkShaderEXT>(check<VkShaderEXT>(shaders[shaderIndex++]),
-                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, DE_NULL)));
+                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, nullptr)));
     if (m_internalData->fragmentShader.isSet())
         m_internalData->fragmentShader.setShader(
             Move<VkShaderEXT>(check<VkShaderEXT>(shaders[shaderIndex++]),
-                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, DE_NULL)));
+                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, nullptr)));
     if (m_internalData->taskShader.isSet())
         m_internalData->taskShader.setShader(
             Move<VkShaderEXT>(check<VkShaderEXT>(shaders[shaderIndex++]),
-                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, DE_NULL)));
+                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, nullptr)));
     if (m_internalData->meshShader.isSet())
         m_internalData->meshShader.setShader(
             Move<VkShaderEXT>(check<VkShaderEXT>(shaders[shaderIndex++]),
-                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, DE_NULL)));
+                              Deleter<VkShaderEXT>(m_internalData->vk, m_internalData->device, nullptr)));
 }
 #endif
 

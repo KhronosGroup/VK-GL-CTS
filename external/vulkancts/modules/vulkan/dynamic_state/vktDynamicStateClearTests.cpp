@@ -409,7 +409,7 @@ public:
             };
             const vk::VkImageMemoryBarrier imageBarrier = {
                 vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-                DE_NULL,                                    // const void* pNext;
+                nullptr,                                    // const void* pNext;
                 vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
                 vk::VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags dstAccessMask;
                 vk::VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout oldLayout;
@@ -420,7 +420,7 @@ public:
                 subresourceRange,                           // VkImageSubresourceRange subresourceRange;
             };
             m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                    vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                    vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                                     &imageBarrier);
         }
     }

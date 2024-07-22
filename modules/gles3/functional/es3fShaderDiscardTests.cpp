@@ -71,7 +71,7 @@ ShaderDiscardCase::ShaderDiscardCase(Context &context, const char *name, const c
     : ShaderRenderCase(context.getTestContext(), context.getRenderContext(), context.getContextInfo(), name,
                        description, false, evalFunc)
     , m_usesTexture(usesTexture)
-    , m_brickTexture(DE_NULL)
+    , m_brickTexture(nullptr)
 {
     m_fragShaderSource = shaderSource;
     m_vertShaderSource = "#version 300 es\n"
@@ -108,7 +108,7 @@ void ShaderDiscardCase::deinit(void)
 {
     gls::ShaderRenderCase::deinit();
     delete m_brickTexture;
-    m_brickTexture = DE_NULL;
+    m_brickTexture = nullptr;
 }
 
 void ShaderDiscardCase::setupUniforms(int programID, const tcu::Vec4 &)
@@ -282,7 +282,7 @@ static const char *getTemplate(DiscardTemplate variant)
 
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -302,7 +302,7 @@ static const char *getTemplateName(DiscardTemplate variant)
         return "function_static_loop";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -322,7 +322,7 @@ static const char *getModeName(DiscardMode mode)
         return "texture";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -342,7 +342,7 @@ static const char *getTemplateDesc(DiscardTemplate variant)
         return "static loop in function";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -362,7 +362,7 @@ static const char *getModeDesc(DiscardMode mode)
         return "Discard based on texture value";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

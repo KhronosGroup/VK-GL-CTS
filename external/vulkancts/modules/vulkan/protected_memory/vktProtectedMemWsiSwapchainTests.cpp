@@ -251,7 +251,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
     const vk::VkSurfaceKHR surface                    = context.getSurface();
     const vk::VkSwapchainCreateInfoKHR baseParameters = {
         vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
 #ifndef NOT_PROTECTED
         vk::VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,
 #else
@@ -293,7 +293,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
         vk::VkMemoryRequirements memoryRequirements;
         {
             const vk::VkImageCreateInfo imageInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                     DE_NULL,
+                                                     nullptr,
                                                      imageCreateFlag,
                                                      vk::VK_IMAGE_TYPE_2D,
                                                      baseParameters.imageFormat,
@@ -416,7 +416,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
             {
                 const vk::VkImageCreateInfo imageInfo = {
                     vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                    DE_NULL,
+                    nullptr,
                     imageCreateFlag,
                     vk::VK_IMAGE_TYPE_2D,
                     curFmt->format,
@@ -506,7 +506,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                 vk::VkMemoryRequirements memoryRequirements;
                 {
                     const vk::VkImageCreateInfo imageInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              imageCreateFlag,
                                                              vk::VK_IMAGE_TYPE_2D,
                                                              baseParameters.imageFormat,
@@ -562,7 +562,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
             vk::VkMemoryRequirements memoryRequirements;
             {
                 const vk::VkImageCreateInfo imageInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                         DE_NULL,
+                                                         nullptr,
                                                          imageCreateFlag,
                                                          vk::VK_IMAGE_TYPE_2D,
                                                          baseParameters.imageFormat,
@@ -619,7 +619,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                 vk::VkMemoryRequirements memoryRequirements;
                 {
                     const vk::VkImageCreateInfo imageInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              imageCreateFlag,
                                                              vk::VK_IMAGE_TYPE_2D,
                                                              baseParameters.imageFormat,
@@ -730,7 +730,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
             std::vector<vk::VkQueueFamilyProperties> properties;
             uint32_t numFamilies = 0;
 
-            instanceDriver.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, DE_NULL);
+            instanceDriver.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, nullptr);
             DE_ASSERT(numFamilies > 0);
             properties.resize(numFamilies);
 
@@ -881,7 +881,7 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
 {
     bool isExtensionForPresentModeEnabled = false;
     std::vector<vk::VkExtensionProperties> supportedExtensions(
-        enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), DE_NULL));
+        enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), nullptr));
     std::vector<std::string> instExts = getRequiredWsiExtensions(supportedExtensions, params.wsiType);
     std::vector<std::string> devExts;
     devExts.push_back("VK_KHR_swapchain");
@@ -890,7 +890,7 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
     if (params.dimension == TEST_DIMENSION_PRESENT_MODE)
     {
         Extensions deviceExtensions = vk::enumerateDeviceExtensionProperties(baseCtx.getInstanceInterface(),
-                                                                             baseCtx.getPhysicalDevice(), DE_NULL);
+                                                                             baseCtx.getPhysicalDevice(), nullptr);
         for (size_t i = 0u; i < deviceExtensions.size(); ++i)
         {
             if (std::strcmp(deviceExtensions[i].extensionName, "VK_KHR_shared_presentable_image") == 0)
@@ -913,10 +913,10 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
         vk::VkSurfaceCapabilities2KHR extCapabilities;
         vk::VkSurfaceProtectedCapabilitiesKHR extProtectedCapabilities;
         const vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
-            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, DE_NULL, surface};
+            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, nullptr, surface};
 
         extProtectedCapabilities.sType             = vk::VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
-        extProtectedCapabilities.pNext             = DE_NULL;
+        extProtectedCapabilities.pNext             = nullptr;
         extProtectedCapabilities.supportsProtected = false;
 
         extCapabilities.sType = vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
@@ -944,7 +944,7 @@ struct GroupParameters
     {
     }
 
-    GroupParameters(void) : wsiType(vk::wsi::TYPE_LAST), function((Function)DE_NULL)
+    GroupParameters(void) : wsiType(vk::wsi::TYPE_LAST), function(nullptr)
     {
     }
 };
@@ -980,7 +980,7 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, 
             capabilities.currentTransform;
     const vk::VkSwapchainCreateInfoKHR parameters = {
         vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         vk::VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,
         surface,
         de::clamp(desiredImageCount, capabilities.minImageCount,
@@ -995,7 +995,7 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, 
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         vk::VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        (const uint32_t *)DE_NULL,
+        nullptr,
         transform,
         firstSupportedCompositeAlpha(capabilities),
         vk::VK_PRESENT_MODE_FIFO_KHR,
@@ -1068,13 +1068,13 @@ vk::Move<vk::VkRenderPass> TriangleRenderer::createRenderPass(const vk::DeviceIn
         (vk::VkSubpassDescriptionFlags)0u,
         vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
         0u,           // inputAttachmentCount
-        DE_NULL,      // pInputAttachments
+        nullptr,      // pInputAttachments
         1u,           // colorAttachmentCount
         &colorAttRef, // pColorAttachments
-        DE_NULL,      // pResolveAttachments
-        DE_NULL,      // depthStencilAttachment
+        nullptr,      // pResolveAttachments
+        nullptr,      // depthStencilAttachment
         0u,           // preserveAttachmentCount
-        DE_NULL,      // pPreserveAttachments
+        nullptr,      // pPreserveAttachments
     };
     const vk::VkSubpassDependency dependencies[] = {
         {VK_SUBPASS_EXTERNAL, // srcSubpass
@@ -1091,7 +1091,7 @@ vk::Move<vk::VkRenderPass> TriangleRenderer::createRenderPass(const vk::DeviceIn
     };
     const vk::VkRenderPassCreateInfo renderPassParams = {
         vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkRenderPassCreateFlags)0,
         1u,
         &colorAttDesc,
@@ -1114,10 +1114,10 @@ vk::Move<vk::VkPipelineLayout> TriangleRenderer::createPipelineLayout(const vk::
     };
     const vk::VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineLayoutCreateFlags)0,
         0u,      // setLayoutCount
-        DE_NULL, // pSetLayouts
+        nullptr, // pSetLayouts
         1u,
         &pushConstantRange,
     };
@@ -1283,7 +1283,7 @@ std::vector<CommandBufferSp> allocateCommandBuffers(const vk::DeviceInterface &v
 tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
 {
     std::vector<vk::VkExtensionProperties> supportedExtensions(
-        enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), DE_NULL));
+        enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), nullptr));
     std::vector<std::string> instExts = getRequiredWsiExtensions(supportedExtensions, wsiType);
     std::vector<std::string> devExts;
     devExts.push_back("VK_KHR_swapchain");
@@ -1302,10 +1302,10 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
         vk::VkSurfaceCapabilities2KHR extCapabilities;
         vk::VkSurfaceProtectedCapabilitiesKHR extProtectedCapabilities;
         const vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
-            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, DE_NULL, surface};
+            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, nullptr, surface};
 
         extProtectedCapabilities.sType             = vk::VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
-        extProtectedCapabilities.pNext             = DE_NULL;
+        extProtectedCapabilities.pNext             = nullptr;
         extProtectedCapabilities.supportsProtected = false;
 
         extCapabilities.sType = vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
@@ -1382,7 +1382,7 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
                 const vk::VkCommandBuffer commandBuffer     = **commandBuffers[frameNdx % commandBuffers.size()];
                 const vk::VkPipelineStageFlags waitDstStage = vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                 vk::VkSubmitInfo submitInfo                 = {vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                                               DE_NULL,
+                                                               nullptr,
                                                                1u,
                                                                &imageReadySemaphore,
                                                                &waitDstStage,
@@ -1393,19 +1393,19 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
 
                 const vk::VkProtectedSubmitInfo protectedInfo = {
                     vk::VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO, // sType
-                    DE_NULL,                                     // pNext
+                    nullptr,                                     // pNext
                     VK_TRUE,                                     // protectedSubmit
                 };
                 submitInfo.pNext = &protectedInfo;
 
                 const vk::VkPresentInfoKHR presentInfo = {vk::VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                                                          DE_NULL,
+                                                          nullptr,
                                                           1u,
                                                           &renderingCompleteSemaphore,
                                                           1u,
                                                           &*swapchain,
                                                           &imageNdx,
-                                                          (vk::VkResult *)DE_NULL};
+                                                          nullptr};
 
                 renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
                 VK_CHECK(vkd.queueSubmit(context.getQueue(), 1u, &submitInfo, imageReadyFence));

@@ -93,7 +93,7 @@ static const char *getInterpolationName(Interpolation interp)
         return "centroid";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -325,7 +325,7 @@ static std::string getAttributeName(const char *varyingName, const glu::TypeComp
 
     for (glu::TypeComponentVector::const_iterator iter = path.begin(); iter != path.end(); iter++)
     {
-        const char *prefix = DE_NULL;
+        const char *prefix = nullptr;
 
         switch (iter->type)
         {
@@ -927,7 +927,7 @@ static void logTransformFeedbackVaryings(TestLog &log, const glw::Functions &gl,
         glw::GLsizei size = 0;
         glw::GLenum type  = 0;
 
-        gl.getTransformFeedbackVarying(program, ndx, (glw::GLsizei)nameBuf.size(), DE_NULL, &size, &type, &nameBuf[0]);
+        gl.getTransformFeedbackVarying(program, ndx, (glw::GLsizei)nameBuf.size(), nullptr, &size, &type, &nameBuf[0]);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTransformFeedbackVarying()");
 
         const glu::DataType dataType = glu::getDataTypeFromGLType(type);
@@ -982,8 +982,8 @@ TransformFeedbackCase::TransformFeedbackCase(Context &context, const char *name,
     , m_bufferMode(bufferMode)
     , m_primitiveType(primitiveType)
     , m_inputStride(0)
-    , m_program(DE_NULL)
-    , m_transformFeedback(DE_NULL)
+    , m_program(nullptr)
+    , m_transformFeedback(nullptr)
     , m_iterNdx(0)
 {
 }
@@ -1102,10 +1102,10 @@ void TransformFeedbackCase::deinit(void)
     }
 
     delete m_transformFeedback;
-    m_transformFeedback = DE_NULL;
+    m_transformFeedback = nullptr;
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     // Clean up state.
     m_attributes.clear();
@@ -1214,7 +1214,7 @@ bool TransformFeedbackCase::runTest(const DrawCall *first, const DrawCall *end, 
         const uint32_t usage = GL_DYNAMIC_READ;
 
         gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buffer);
-        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, size + guardSize, DE_NULL, usage);
+        gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, size + guardSize, nullptr, usage);
         writeBufferGuard(gl, GL_TRANSFORM_FEEDBACK_BUFFER, size, guardSize);
 
         // \todo [2012-07-30 pyry] glBindBufferRange()?
@@ -1310,7 +1310,7 @@ bool TransformFeedbackCase::runTest(const DrawCall *first, const DrawCall *end, 
         int stride         = m_bufferStrides[bufferNdx];
         int size           = stride * numOutputs;
         int guardSize      = stride * BUFFER_GUARD_MULTIPLIER;
-        const void *bufPtr = DE_NULL;
+        const void *bufPtr = nullptr;
 
         // Bind buffer for reading.
         gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buffer);

@@ -109,7 +109,7 @@ void checkSupport(Context &context, const TestParameters params)
     {
         const VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,        // sType;
-            DE_NULL,                                                      // pNext;
+            nullptr,                                                      // pNext;
             params.format,                                                // format;
             VK_IMAGE_TYPE_2D,                                             // type;
             VK_IMAGE_TILING_OPTIMAL,                                      // tiling;
@@ -119,7 +119,7 @@ void checkSupport(Context &context, const TestParameters params)
 
         VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = {};
         samplerYcbcrConversionImage.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
-        samplerYcbcrConversionImage.pNext = DE_NULL;
+        samplerYcbcrConversionImage.pNext = nullptr;
 
         VkImageFormatProperties2 imageFormatProperties = {};
         imageFormatProperties.sType                    = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
@@ -145,7 +145,7 @@ void checkSupport(Context &context, const TestParameters params)
 
                 const VkPhysicalDeviceImageFormatInfo2 planeImageFormatInfo = {
                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,        // sType;
-                    DE_NULL,                                                      // pNext;
+                    nullptr,                                                      // pNext;
                     planeCompatibleFormat,                                        // format;
                     VK_IMAGE_TYPE_2D,                                             // type;
                     VK_IMAGE_TILING_OPTIMAL,                                      // tiling;
@@ -223,7 +223,7 @@ tcu::TestStatus testStorageImageWrite(Context &context, TestParameters params)
 
     VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         params.flags,
         VK_IMAGE_TYPE_2D,
         params.format,
@@ -235,7 +235,7 @@ tcu::TestStatus testStorageImageWrite(Context &context, TestParameters params)
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        (const uint32_t *)DE_NULL,
+        nullptr,
         VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
@@ -310,7 +310,7 @@ tcu::TestStatus testStorageImageWrite(Context &context, TestParameters params)
             shaderModules.push_back(shaderModule);
             auto computePipeline = makeVkSharedPtr(
                 makeComputePipeline(vkd, device, *pipelineLayout, (VkPipelineCreateFlags)0u, nullptr,
-                                    shaderModule->get(), (VkPipelineShaderStageCreateFlags)0u, DE_NULL));
+                                    shaderModule->get(), (VkPipelineShaderStageCreateFlags)0u, nullptr));
             computePipelines.push_back(computePipeline);
             vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline->get());
 
@@ -319,13 +319,13 @@ tcu::TestStatus testStorageImageWrite(Context &context, TestParameters params)
 
             VkImageViewUsageCreateInfo imageViewUsageCreateInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO, //VkStructureType sType;
-                DE_NULL,                                        //const void* pNext;
+                nullptr,                                        //const void* pNext;
                 VK_IMAGE_USAGE_STORAGE_BIT,                     //VkImageUsageFlags usage;
             };
 
             auto imageView =
                 makeVkSharedPtr(makeImageView(vkd, device, *image, VK_IMAGE_VIEW_TYPE_2D, planeCompatibleFormat,
-                                              subresourceRange, transferByViews ? &imageViewUsageCreateInfo : DE_NULL));
+                                              subresourceRange, transferByViews ? &imageViewUsageCreateInfo : nullptr));
             imageViews.push_back(imageView);
             const VkDescriptorImageInfo imageInfo =
                 makeDescriptorImageInfo(VK_NULL_HANDLE, imageView->get(), VK_IMAGE_LAYOUT_GENERAL);
@@ -336,14 +336,14 @@ tcu::TestStatus testStorageImageWrite(Context &context, TestParameters params)
                 .update(vkd, device);
 
             vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                      &descriptorSet->get(), 0u, DE_NULL);
+                                      &descriptorSet->get(), 0u, nullptr);
 
             {
                 const VkImageMemoryBarrier imageLayoutChangeBarrier = makeImageMemoryBarrier(
                     0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *image,
                     subresourceRange, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED);
                 vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                                        &imageLayoutChangeBarrier);
             }
 
@@ -373,7 +373,7 @@ tcu::TestStatus testStorageImageWrite(Context &context, TestParameters params)
                     VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *image, subresourceRange);
                 vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                                        &imageTransferBarrier);
             }
         }
@@ -419,7 +419,7 @@ tcu::TestStatus testStorageImageWrite(Context &context, TestParameters params)
                 VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0u, imageSizeInBytes);
 
             vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                   DE_NULL, 1u, &outputBufferHostReadBarrier, 0u, DE_NULL);
+                                   nullptr, 1u, &outputBufferHostReadBarrier, 0u, nullptr);
         }
 
         // End recording commands

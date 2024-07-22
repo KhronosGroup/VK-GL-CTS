@@ -130,9 +130,9 @@ gl3cts::TransformFeedback::APIErrors::APIErrors(deqp::Context &context)
     , m_program_id_without_output(0)
     , m_program_id_with_geometry_shader(0)
     , m_program_id_with_tessellation_shaders(0)
-    , m_glBindBufferOffsetEXT(DE_NULL)
-    , m_glGetIntegerIndexedvEXT(DE_NULL)
-    , m_glGetBooleanIndexedvEXT(DE_NULL)
+    , m_glBindBufferOffsetEXT(nullptr)
+    , m_glGetIntegerIndexedvEXT(nullptr)
+    , m_glGetBooleanIndexedvEXT(nullptr)
 {
 }
 
@@ -425,7 +425,7 @@ bool gl3cts::TransformFeedback::APIErrors::testExtension1(void)
         return false;
     }
 
-    if (DE_NULL != m_glBindBufferOffsetEXT)
+    if (nullptr != m_glBindBufferOffsetEXT)
     {
         m_glBindBufferOffsetEXT(GL_TRANSFORM_FEEDBACK_BUFFER, index_count, m_buffer_0, 0);
 
@@ -479,7 +479,7 @@ bool gl3cts::TransformFeedback::APIErrors::testExtension1(void)
         return false;
     }
 
-    if (DE_NULL != m_glBindBufferOffsetEXT)
+    if (nullptr != m_glBindBufferOffsetEXT)
     {
         m_glBindBufferOffsetEXT(GL_TRANSFORM_FEEDBACK_BUFFER, index_count, m_buffer_0, 3);
 
@@ -537,7 +537,7 @@ bool gl3cts::TransformFeedback::APIErrors::testExtension1(void)
         return false;
     }
 
-    if (DE_NULL != m_glBindBufferOffsetEXT)
+    if (nullptr != m_glBindBufferOffsetEXT)
     {
         m_glBindBufferOffsetEXT(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_buffer_0, 0);
 
@@ -913,7 +913,7 @@ bool gl3cts::TransformFeedback::APIErrors::testExtension1(void)
      * TRANSFORM_FEEDBACK_BUFFER_START,
      * TRANSFORM_FEEDBACK_BUFFER_SIZE; */
 
-    if (DE_NULL != m_glGetIntegerIndexedvEXT)
+    if (nullptr != m_glGetIntegerIndexedvEXT)
     {
         glw::GLint tmp_int_value;
 
@@ -961,7 +961,7 @@ bool gl3cts::TransformFeedback::APIErrors::testExtension1(void)
      limits of MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS and <param> is
      TRANSFORM_FEEDBACK_BUFFER_BINDING. */
 
-    if (DE_NULL != m_glGetBooleanIndexedvEXT)
+    if (nullptr != m_glGetBooleanIndexedvEXT)
     {
         glw::GLboolean tmp_bool_value;
 
@@ -1355,7 +1355,7 @@ bool gl3cts::TransformFeedback::APIErrors::testExtension3(void)
     const glw::GLchar **tf_next_buffer_varying_names =
         new const glw::GLchar *[more_than_max_transform_feedback_buffers];
 
-    if (DE_NULL == tf_next_buffer_varying_names)
+    if (nullptr == tf_next_buffer_varying_names)
     {
         /* Allocation error. */
         throw 0;
@@ -2297,7 +2297,7 @@ gl3cts::TransformFeedback::CaptureVertexInterleaved::CaptureVertexInterleaved(de
     , m_max_transform_feedback_components(0)
     , m_attrib_type(GL_INTERLEAVED_ATTRIBS)
     , m_max_vertices_drawn(8)
-    , m_glBindBufferOffsetEXT(DE_NULL)
+    , m_glBindBufferOffsetEXT(nullptr)
 {
 }
 
@@ -2325,7 +2325,7 @@ tcu::TestNode::IterateResult gl3cts::TransformFeedback::CaptureVertexInterleaved
             m_glBindBufferOffsetEXT =
                 (BindBufferOffsetEXT_ProcAddress)m_context.getRenderContext().getProcAddress("glBindBufferOffsetEXT");
 
-            if (DE_NULL == m_glBindBufferOffsetEXT)
+            if (nullptr == m_glBindBufferOffsetEXT)
             {
                 throw 0;
             }
@@ -2345,7 +2345,7 @@ tcu::TestNode::IterateResult gl3cts::TransformFeedback::CaptureVertexInterleaved
 
             for (glw::GLint i_bind_case = 0; (i_bind_case < BIND_BUFFER_CASES_COUNT) && is_ok; ++i_bind_case)
             {
-                if ((i_bind_case == BIND_BUFFER_OFFSET_CASE) && (DE_NULL == m_glBindBufferOffsetEXT))
+                if ((i_bind_case == BIND_BUFFER_OFFSET_CASE) && (nullptr == m_glBindBufferOffsetEXT))
                 {
                     continue;
                 }
@@ -2713,7 +2713,7 @@ void gl3cts::TransformFeedback::CaptureVertexInterleaved::bindBuffer(BindBufferC
         gl.bindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_buffer, 0, m_buffer_size);
         break;
     case BIND_BUFFER_OFFSET_CASE:
-        if (DE_NULL == m_glBindBufferOffsetEXT)
+        if (nullptr == m_glBindBufferOffsetEXT)
         {
             throw 0;
         }
@@ -2888,7 +2888,7 @@ tcu::TestNode::IterateResult gl3cts::TransformFeedback::CaptureGeometryInterleav
 
                 for (glw::GLint i_bind_case = 0; (i_bind_case < BIND_BUFFER_CASES_COUNT) && is_ok; ++i_bind_case)
                 {
-                    if ((i_bind_case == BIND_BUFFER_OFFSET_CASE) && (DE_NULL == m_glBindBufferOffsetEXT))
+                    if ((i_bind_case == BIND_BUFFER_OFFSET_CASE) && (nullptr == m_glBindBufferOffsetEXT))
                     {
                         continue;
                     }
@@ -3134,7 +3134,7 @@ const glw::GLuint gl3cts::TransformFeedback::CaptureGeometryInterleaved::s_geome
 gl3cts::TransformFeedback::CaptureVertexSeparate::CaptureVertexSeparate(deqp::Context &context, const char *test_name,
                                                                         const char *test_description)
     : CaptureVertexInterleaved(context, test_name, test_description)
-    , m_buffers(DE_NULL)
+    , m_buffers(nullptr)
     , m_max_transform_feedback_separate_attribs(0)
 {
     m_attrib_type = GL_SEPARATE_ATTRIBS;
@@ -3192,7 +3192,7 @@ void gl3cts::TransformFeedback::CaptureVertexSeparate::createTransformFeedbackBu
 
     m_buffers = new glw::GLuint[m_max_transform_feedback_components];
 
-    if (DE_NULL == m_buffers)
+    if (nullptr == m_buffers)
     {
         throw 0;
     }
@@ -3247,13 +3247,13 @@ void gl3cts::TransformFeedback::CaptureVertexSeparate::cleanBuffer(void)
     /* Functions handler */
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    if (DE_NULL != m_buffers)
+    if (nullptr != m_buffers)
     {
         gl.deleteBuffers(m_max_transform_feedback_separate_attribs, m_buffers);
 
         delete[] m_buffers;
 
-        m_buffers = DE_NULL;
+        m_buffers = nullptr;
     }
 }
 
@@ -3360,7 +3360,7 @@ gl3cts::TransformFeedback::CaptureGeometrySeparate::CaptureGeometrySeparate(deqp
     : CaptureVertexInterleaved(context, test_name, test_description)
     , CaptureVertexSeparate(context, test_name, test_description)
     , CaptureGeometryInterleaved(context, test_name, test_description)
-    , m_buffers(DE_NULL)
+    , m_buffers(nullptr)
     , m_max_transform_feedback_separate_attribs(0)
 {
 }
@@ -3405,7 +3405,7 @@ glw::GLuint gl3cts::TransformFeedback::CheckGetXFBVarying::numberOfAttributes(gl
 {
     /* Setup limits of the case. */
     const glw::GLuint max_total_components =
-        ((s_shader_cases[shader_case].geometry_shader == DE_NULL) ? m_max_varying_components :
+        ((s_shader_cases[shader_case].geometry_shader == nullptr) ? m_max_varying_components :
                                                                     m_max_geometry_total_output_components) -
         4 /* gl_Position is not captured */;
 
@@ -3597,7 +3597,7 @@ glw::GLuint gl3cts::TransformFeedback::CheckGetXFBVarying::buildProgram(glw::GLu
 
     std::string xfb_shader;
 
-    if (DE_NULL == s_shader_cases[shader_case].geometry_shader)
+    if (nullptr == s_shader_cases[shader_case].geometry_shader)
     {
         /* XFB tested in vertex shader. */
         xfb_shader = vertex_shader;
@@ -3614,7 +3614,7 @@ glw::GLuint gl3cts::TransformFeedback::CheckGetXFBVarying::buildProgram(glw::GLu
     xfb_shader = gl3cts::TransformFeedback::Utilities::preprocessCode(xfb_shader, "TEMPLATE_OUTPUT_SETTERS",
                                                                       xfb_variable_setters);
 
-    if (DE_NULL == s_shader_cases[shader_case].geometry_shader)
+    if (nullptr == s_shader_cases[shader_case].geometry_shader)
     {
         /* XFB tested in vertex shader. */
         vertex_shader = xfb_shader.c_str();
@@ -3636,7 +3636,7 @@ glw::GLuint gl3cts::TransformFeedback::CheckGetXFBVarying::buildProgram(glw::GLu
         m_context.getTestContext().getLog()
             << tcu::TestLog::Message << "Building program has failed.\nVertex shader:\n"
             << vertex_shader << "Geometry shader:\n"
-            << ((DE_NULL == geometry_shader) ? "" : geometry_shader) << "Fragment shader:\n"
+            << ((nullptr == geometry_shader) ? "" : geometry_shader) << "Fragment shader:\n"
             << s_generic_fragment_shader << tcu::TestLog::EndMessage;
 
         throw 0;
@@ -5786,8 +5786,8 @@ gl3cts::TransformFeedback::DrawXFBInstanced::DrawXFBInstanced(deqp::Context &con
     , m_bo_id_uniform(0)
     , m_fbo_id(0)
     , m_rbo_id(0)
-    , m_glGetUniformBlockIndex(DE_NULL)
-    , m_glUniformBlockBinding(DE_NULL)
+    , m_glGetUniformBlockIndex(nullptr)
+    , m_glUniformBlockBinding(nullptr)
 {
 }
 
@@ -5814,7 +5814,7 @@ tcu::TestNode::IterateResult gl3cts::TransformFeedback::DrawXFBInstanced::iterat
         m_glUniformBlockBinding =
             (UniformBlockBinding_ProcAddress)m_context.getRenderContext().getProcAddress("glUniformBlockBinding");
 
-        if (DE_NULL == m_glGetUniformBlockIndex || DE_NULL == m_glUniformBlockBinding)
+        if (nullptr == m_glGetUniformBlockIndex || nullptr == m_glUniformBlockBinding)
         {
             throw 0;
         }
@@ -6222,8 +6222,8 @@ gl3cts::TransformFeedback::DrawXFBStreamInstanced::DrawXFBStreamInstanced(deqp::
     , m_bo_id_uniform(0)
     , m_fbo_id(0)
     , m_rbo_id(0)
-    , m_glGetUniformBlockIndex(DE_NULL)
-    , m_glUniformBlockBinding(DE_NULL)
+    , m_glGetUniformBlockIndex(nullptr)
+    , m_glUniformBlockBinding(nullptr)
 {
 }
 
@@ -6252,7 +6252,7 @@ tcu::TestNode::IterateResult gl3cts::TransformFeedback::DrawXFBStreamInstanced::
         m_glUniformBlockBinding =
             (UniformBlockBinding_ProcAddress)m_context.getRenderContext().getProcAddress("glUniformBlockBinding");
 
-        if (DE_NULL == m_glGetUniformBlockIndex || DE_NULL == m_glUniformBlockBinding)
+        if (nullptr == m_glGetUniformBlockIndex || nullptr == m_glUniformBlockBinding)
         {
             throw 0;
         }
@@ -7092,7 +7092,7 @@ glw::GLuint gl3cts::TransformFeedback::Utilities::buildProgram(
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 
@@ -7158,7 +7158,7 @@ glw::GLuint gl3cts::TransformFeedback::Utilities::buildProgram(
 
         gl.getProgramiv(program, GL_LINK_STATUS, &status);
 
-        if (DE_NULL != linking_status)
+        if (nullptr != linking_status)
         {
             *linking_status = status;
         }

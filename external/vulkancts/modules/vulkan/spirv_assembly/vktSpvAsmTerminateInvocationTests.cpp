@@ -90,7 +90,7 @@ void addTestsForAmberFiles(tcu::TestCaseGroup *tests, CaseGroup group)
         const std::string file = std::string(cases[i].basename) + ".amber";
         cts_amber::AmberTestCase *testCase =
             cts_amber::createAmberTestCase(testCtx, cases[i].basename, category.c_str(), file);
-        DE_ASSERT(testCase != DE_NULL);
+        DE_ASSERT(testCase != nullptr);
         testCase->addRequirement("VK_KHR_shader_terminate_invocation");
         const std::vector<std::string> &reqmts = cases[i].requirements;
         for (size_t r = 0; r < reqmts.size(); ++r)

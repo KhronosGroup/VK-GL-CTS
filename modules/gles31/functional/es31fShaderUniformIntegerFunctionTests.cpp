@@ -72,7 +72,7 @@ UniformIntegerFunctionCase::UniformIntegerFunctionCase(Context &context, const c
     , m_shaderType(shaderType)
     , m_input(inputValue)
     , m_value(0)
-    , m_executor(DE_NULL)
+    , m_executor(nullptr)
 {
     m_spec.version = glu::GLSL_VERSION_310_ES;
 
@@ -92,7 +92,7 @@ UniformIntegerFunctionCase::~UniformIntegerFunctionCase(void)
 void UniformIntegerFunctionCase::deinit(void)
 {
     delete m_executor;
-    m_executor = DE_NULL;
+    m_executor = nullptr;
 }
 
 void UniformIntegerFunctionCase::init(void)
@@ -123,7 +123,7 @@ tcu::TestNode::IterateResult UniformIntegerFunctionCase::iterate(void)
 
     m_executor->useProgram();
     m_context.getRenderContext().getFunctions().uniform1i(m_value, m_input);
-    m_executor->execute(1, DE_NULL, &outputPointers[0]);
+    m_executor->execute(1, nullptr, &outputPointers[0]);
 
     int expectedResult = computeExpectedResult(m_input);
     if (result != expectedResult)

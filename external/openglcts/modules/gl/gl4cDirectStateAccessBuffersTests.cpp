@@ -194,10 +194,10 @@ tcu::TestNode::IterateResult CreationTest::iterate()
  */
 DataTest::DataTest(deqp::Context &context)
     : deqp::TestCase(context, "buffers_data", "Buffer Objects Data Test")
-    , m_pNamedBufferData(DE_NULL)
-    , m_pNamedBufferSubData(DE_NULL)
-    , m_pNamedBufferStorage(DE_NULL)
-    , m_pCopyNamedBufferSubData(DE_NULL)
+    , m_pNamedBufferData(nullptr)
+    , m_pNamedBufferSubData(nullptr)
+    , m_pNamedBufferStorage(nullptr)
+    , m_pCopyNamedBufferSubData(nullptr)
 {
     /* Intentionally left blank. */
 }
@@ -233,8 +233,8 @@ tcu::TestNode::IterateResult DataTest::iterate()
 
     try
     {
-        if ((DE_NULL == m_pNamedBufferData) || (DE_NULL == m_pNamedBufferSubData) ||
-            (DE_NULL == m_pNamedBufferStorage) || (DE_NULL == m_pCopyNamedBufferSubData))
+        if ((nullptr == m_pNamedBufferData) || (nullptr == m_pNamedBufferSubData) ||
+            (nullptr == m_pNamedBufferStorage) || (nullptr == m_pCopyNamedBufferSubData))
         {
             throw 0;
         }
@@ -398,7 +398,7 @@ void DataTest::UploadUsingNamedBufferSubData(glw::GLuint id, glw::GLenum paramet
     /* Shortcut for GL functionality. */
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    m_pNamedBufferData(id, s_reference_size, DE_NULL, parameter);
+    m_pNamedBufferData(id, s_reference_size, nullptr, parameter);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBufferData failed.");
 
     m_pNamedBufferSubData(id, 0, s_reference_size, s_reference);
@@ -445,7 +445,7 @@ void DataTest::UploadUsingCopyNamedBufferSubData(glw::GLuint id, glw::GLenum par
     /* Shortcut for GL functionality. */
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    m_pNamedBufferData(id, s_reference_size, DE_NULL, parameter);
+    m_pNamedBufferData(id, s_reference_size, nullptr, parameter);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBufferData failed.");
 
     glw::GLuint auxiliary_buffer = 0;
@@ -664,9 +664,9 @@ const glw::GLsizei DataTest::s_reference_count =
  */
 ClearTest::ClearTest(deqp::Context &context)
     : deqp::TestCase(context, "buffers_clear", "Buffer Objects Clear Test")
-    , m_pNamedBufferData(DE_NULL)
-    , m_pClearNamedBufferData(DE_NULL)
-    , m_pClearNamedBufferSubData(DE_NULL)
+    , m_pNamedBufferData(nullptr)
+    , m_pClearNamedBufferData(nullptr)
+    , m_pClearNamedBufferSubData(nullptr)
 {
     /* Intentionally left blank. */
 }
@@ -947,8 +947,8 @@ tcu::TestNode::IterateResult ClearTest::iterate()
 
     try
     {
-        if ((DE_NULL == m_pNamedBufferData) || (DE_NULL == m_pClearNamedBufferData) ||
-            (DE_NULL == m_pClearNamedBufferSubData))
+        if ((nullptr == m_pNamedBufferData) || (nullptr == m_pClearNamedBufferData) ||
+            (nullptr == m_pClearNamedBufferSubData))
         {
             throw 0;
         }
@@ -1151,9 +1151,9 @@ tcu::TestNode::IterateResult ClearTest::iterate()
  */
 MapReadOnlyTest::MapReadOnlyTest(deqp::Context &context)
     : deqp::TestCase(context, "buffers_map_read_only", "Buffer Objects Map Read Only Test")
-    , m_pNamedBufferData(DE_NULL)
-    , m_pMapNamedBuffer(DE_NULL)
-    , m_pUnmapNamedBuffer(DE_NULL)
+    , m_pNamedBufferData(nullptr)
+    , m_pMapNamedBuffer(nullptr)
+    , m_pUnmapNamedBuffer(nullptr)
 {
     /* Intentionally left blank. */
 }
@@ -1190,7 +1190,7 @@ tcu::TestNode::IterateResult MapReadOnlyTest::iterate()
 
     try
     {
-        if ((DE_NULL == m_pNamedBufferData) || (DE_NULL == m_pMapNamedBuffer) || (DE_NULL == m_pUnmapNamedBuffer))
+        if ((nullptr == m_pNamedBufferData) || (nullptr == m_pMapNamedBuffer) || (nullptr == m_pUnmapNamedBuffer))
         {
             throw 0;
         }
@@ -1207,7 +1207,7 @@ tcu::TestNode::IterateResult MapReadOnlyTest::iterate()
         glw::GLuint *data = (glw::GLuint *)m_pMapNamedBuffer(buffer, GL_READ_ONLY);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-        if (DE_NULL == data)
+        if (nullptr == data)
         {
             /* Log. */
             m_context.getTestContext().getLog()
@@ -1295,9 +1295,9 @@ const glw::GLsizei MapReadOnlyTest::s_reference_count = s_reference_size / sizeo
  */
 MapReadWriteTest::MapReadWriteTest(deqp::Context &context)
     : deqp::TestCase(context, "buffers_map_read_write", "Buffer Objects Map Read Write Test")
-    , m_pNamedBufferData(DE_NULL)
-    , m_pMapNamedBuffer(DE_NULL)
-    , m_pUnmapNamedBuffer(DE_NULL)
+    , m_pNamedBufferData(nullptr)
+    , m_pMapNamedBuffer(nullptr)
+    , m_pUnmapNamedBuffer(nullptr)
 {
     /* Intentionally left blank. */
 }
@@ -1334,7 +1334,7 @@ tcu::TestNode::IterateResult MapReadWriteTest::iterate()
 
     try
     {
-        if ((DE_NULL == m_pNamedBufferData) || (DE_NULL == m_pMapNamedBuffer) || (DE_NULL == m_pUnmapNamedBuffer))
+        if ((nullptr == m_pNamedBufferData) || (nullptr == m_pMapNamedBuffer) || (nullptr == m_pUnmapNamedBuffer))
         {
             throw 0;
         }
@@ -1351,7 +1351,7 @@ tcu::TestNode::IterateResult MapReadWriteTest::iterate()
         glw::GLuint *data = (glw::GLuint *)m_pMapNamedBuffer(buffer, GL_READ_WRITE);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-        if (DE_NULL == data)
+        if (nullptr == data)
         {
             /* Log. */
             m_context.getTestContext().getLog()
@@ -1394,12 +1394,12 @@ tcu::TestNode::IterateResult MapReadWriteTest::iterate()
             }
             GLU_EXPECT_NO_ERROR(gl.getError(), "glUnmapNamedBuffer failed.");
 
-            data = DE_NULL;
+            data = nullptr;
 
             data = (glw::GLuint *)m_pMapNamedBuffer(buffer, GL_READ_WRITE);
             GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-            if (DE_NULL == data)
+            if (nullptr == data)
             {
                 /* Log. */
                 m_context.getTestContext().getLog()
@@ -1482,9 +1482,9 @@ const glw::GLsizei MapReadWriteTest::s_reference_count =
  */
 MapWriteOnlyTest::MapWriteOnlyTest(deqp::Context &context)
     : deqp::TestCase(context, "buffers_map_write_only", "Buffer Objects Map Write Only Test")
-    , m_pNamedBufferData(DE_NULL)
-    , m_pMapNamedBuffer(DE_NULL)
-    , m_pUnmapNamedBuffer(DE_NULL)
+    , m_pNamedBufferData(nullptr)
+    , m_pMapNamedBuffer(nullptr)
+    , m_pUnmapNamedBuffer(nullptr)
 {
     /* Intentionally left blank. */
 }
@@ -1521,7 +1521,7 @@ tcu::TestNode::IterateResult MapWriteOnlyTest::iterate()
 
     try
     {
-        if ((DE_NULL == m_pNamedBufferData) || (DE_NULL == m_pMapNamedBuffer) || (DE_NULL == m_pUnmapNamedBuffer))
+        if ((nullptr == m_pNamedBufferData) || (nullptr == m_pMapNamedBuffer) || (nullptr == m_pUnmapNamedBuffer))
         {
             throw 0;
         }
@@ -1538,7 +1538,7 @@ tcu::TestNode::IterateResult MapWriteOnlyTest::iterate()
         glw::GLuint *data = (glw::GLuint *)m_pMapNamedBuffer(buffer, GL_WRITE_ONLY);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glMapNamedBuffer failed.");
 
-        if (DE_NULL == data)
+        if (nullptr == data)
         {
             /* Log. */
             m_context.getTestContext().getLog()
@@ -1570,7 +1570,7 @@ tcu::TestNode::IterateResult MapWriteOnlyTest::iterate()
             gl.bindBuffer(GL_ARRAY_BUFFER, buffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer failed.");
 
-            data = DE_NULL;
+            data = nullptr;
 
             data = (glw::GLuint *)gl.mapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
             GLU_EXPECT_NO_ERROR(gl.getError(), "glMapBuffer failed.");
@@ -1646,9 +1646,9 @@ const glw::GLsizei MapWriteOnlyTest::s_reference_count =
  */
 MapRangeReadBitTest::MapRangeReadBitTest(deqp::Context &context)
     : deqp::TestCase(context, "buffers_map_range_read_bit", "Buffer Objects Map Range Read Bit Test")
-    , m_pNamedBufferStorage(DE_NULL)
-    , m_pMapNamedBufferRange(DE_NULL)
-    , m_pUnmapNamedBuffer(DE_NULL)
+    , m_pNamedBufferStorage(nullptr)
+    , m_pMapNamedBufferRange(nullptr)
+    , m_pUnmapNamedBuffer(nullptr)
 {
     /* Intentionally left blank. */
 }
@@ -1685,8 +1685,8 @@ tcu::TestNode::IterateResult MapRangeReadBitTest::iterate()
 
     try
     {
-        if ((DE_NULL == m_pNamedBufferStorage) || (DE_NULL == m_pMapNamedBufferRange) ||
-            (DE_NULL == m_pUnmapNamedBuffer))
+        if ((nullptr == m_pNamedBufferStorage) || (nullptr == m_pMapNamedBufferRange) ||
+            (nullptr == m_pUnmapNamedBuffer))
         {
             throw 0;
         }
@@ -1786,7 +1786,7 @@ tcu::TestNode::IterateResult MapRangeReadBitTest::iterate()
  */
 bool MapRangeReadBitTest::CompareWithReference(glw::GLuint *data, glw::GLintptr offset, glw::GLsizei length)
 {
-    if (DE_NULL == data)
+    if (nullptr == data)
     {
         /* Log. */
         m_context.getTestContext().getLog()
@@ -1838,10 +1838,10 @@ const glw::GLsizei MapRangeReadBitTest::s_reference_count =
  */
 MapRangeWriteBitTest::MapRangeWriteBitTest(deqp::Context &context)
     : deqp::TestCase(context, "buffers_map_range_write_bit", "Buffer Objects Map Range Write Bit Test")
-    , m_pNamedBufferStorage(DE_NULL)
-    , m_pMapNamedBufferRange(DE_NULL)
-    , m_pUnmapNamedBuffer(DE_NULL)
-    , m_pFlushMappedNamedBufferRange(DE_NULL)
+    , m_pNamedBufferStorage(nullptr)
+    , m_pMapNamedBufferRange(nullptr)
+    , m_pUnmapNamedBuffer(nullptr)
+    , m_pFlushMappedNamedBufferRange(nullptr)
 {
     /* Intentionally left blank. */
 }
@@ -1879,8 +1879,8 @@ tcu::TestNode::IterateResult MapRangeWriteBitTest::iterate()
 
     try
     {
-        if ((DE_NULL == m_pNamedBufferStorage) || (DE_NULL == m_pMapNamedBufferRange) ||
-            (DE_NULL == m_pUnmapNamedBuffer) || (DE_NULL == m_pFlushMappedNamedBufferRange))
+        if ((nullptr == m_pNamedBufferStorage) || (nullptr == m_pMapNamedBufferRange) ||
+            (nullptr == m_pUnmapNamedBuffer) || (nullptr == m_pFlushMappedNamedBufferRange))
         {
             throw 0;
         }
@@ -1908,7 +1908,7 @@ tcu::TestNode::IterateResult MapRangeWriteBitTest::iterate()
             GLU_EXPECT_NO_ERROR(gl.getError(), "glCreateBuffers failed.");
 
             /* Buffer's storage allocation and reference data upload. */
-            m_pNamedBufferStorage(buffer, s_reference_size, DE_NULL, access_flags[i].creation);
+            m_pNamedBufferStorage(buffer, s_reference_size, nullptr, access_flags[i].creation);
             GLU_EXPECT_NO_ERROR(gl.getError(), "glNamedBufferStorage failed.");
 
             /* Mapping with first half of named buffer. */
@@ -2035,7 +2035,7 @@ bool MapRangeWriteBitTest::CompareWithReference(glw::GLuint buffer, glw::GLbitfi
     /* Default return value. */
     bool is_ok = true;
 
-    if (DE_NULL != data)
+    if (nullptr != data)
     {
         /* Comparison results with reference data. */
         for (glw::GLsizei i = 0; i < s_reference_count; ++i)
@@ -2104,8 +2104,8 @@ const glw::GLsizei SubDataQueryTest::s_reference_count =
  */
 SubDataQueryTest::SubDataQueryTest(deqp::Context &context)
     : deqp::TestCase(context, "buffers_get_named_buffer_subdata", "Buffer Objects Get Named Buffer SubData Query Test")
-    , m_pNamedBufferData(DE_NULL)
-    , m_pGetNamedBufferSubData(DE_NULL)
+    , m_pNamedBufferData(nullptr)
+    , m_pGetNamedBufferSubData(nullptr)
 {
     /* Intentionally left blank. */
 }
@@ -2141,7 +2141,7 @@ tcu::TestNode::IterateResult SubDataQueryTest::iterate()
 
     try
     {
-        if ((DE_NULL == m_pNamedBufferData) || (DE_NULL == m_pGetNamedBufferSubData))
+        if ((nullptr == m_pNamedBufferData) || (nullptr == m_pGetNamedBufferSubData))
         {
             throw 0;
         }
@@ -2223,10 +2223,10 @@ tcu::TestNode::IterateResult SubDataQueryTest::iterate()
  */
 DefaultsTest::DefaultsTest(deqp::Context &context)
     : deqp::TestCase(context, "buffers_defaults", "Buffer Objects Defaults Test")
-    , m_pNamedBufferData(DE_NULL)
-    , m_pGetNamedBufferParameteri64v(DE_NULL)
-    , m_pGetNamedBufferParameteriv(DE_NULL)
-    , m_pGetNamedBufferPointerv(DE_NULL)
+    , m_pNamedBufferData(nullptr)
+    , m_pGetNamedBufferParameteri64v(nullptr)
+    , m_pGetNamedBufferParameteriv(nullptr)
+    , m_pGetNamedBufferPointerv(nullptr)
 {
     /* Intentionally left blank. */
 }
@@ -2289,8 +2289,8 @@ tcu::TestNode::IterateResult DefaultsTest::iterate()
 
     try
     {
-        if ((DE_NULL == m_pNamedBufferData) || (DE_NULL == m_pGetNamedBufferParameteri64v) ||
-            (DE_NULL == m_pGetNamedBufferParameteriv) || (DE_NULL == m_pGetNamedBufferPointerv))
+        if ((nullptr == m_pNamedBufferData) || (nullptr == m_pGetNamedBufferParameteri64v) ||
+            (nullptr == m_pGetNamedBufferParameteriv) || (nullptr == m_pGetNamedBufferPointerv))
         {
             throw 0;
         }
@@ -2351,8 +2351,7 @@ tcu::TestNode::IterateResult DefaultsTest::iterate()
 
             is_ok &= CheckParameterError("GL_BUFFER_MAP_POINTER", "glGetNamedBufferPointer");
 
-            is_ok &= CheckValue<glw::GLvoid *>(data, (glw::GLvoid *)DE_NULL, "GL_BUFFER_MAP_POINTER",
-                                               "glGetNamedBufferParameteriv");
+            is_ok &= CheckValue<glw::GLvoid *>(data, nullptr, "GL_BUFFER_MAP_POINTER", "glGetNamedBufferParameteriv");
         }
     }
     catch (...)
@@ -2427,20 +2426,20 @@ bool DefaultsTest::CheckParameterError(const glw::GLchar *pname_string, const gl
  */
 ErrorsTest::ErrorsTest(deqp::Context &context)
     : deqp::TestCase(context, "buffers_errors", "Buffer Objects Errors Test")
-    , m_pClearNamedBufferData(DE_NULL)
-    , m_pClearNamedBufferSubData(DE_NULL)
-    , m_pCopyNamedBufferSubData(DE_NULL)
-    , m_pFlushMappedNamedBufferRange(DE_NULL)
-    , m_pGetNamedBufferParameteri64v(DE_NULL)
-    , m_pGetNamedBufferParameteriv(DE_NULL)
-    , m_pGetNamedBufferPointerv(DE_NULL)
-    , m_pGetNamedBufferSubData(DE_NULL)
-    , m_pMapNamedBuffer(DE_NULL)
-    , m_pMapNamedBufferRange(DE_NULL)
-    , m_pNamedBufferData(DE_NULL)
-    , m_pNamedBufferStorage(DE_NULL)
-    , m_pNamedBufferSubData(DE_NULL)
-    , m_pUnmapNamedBuffer(DE_NULL)
+    , m_pClearNamedBufferData(nullptr)
+    , m_pClearNamedBufferSubData(nullptr)
+    , m_pCopyNamedBufferSubData(nullptr)
+    , m_pFlushMappedNamedBufferRange(nullptr)
+    , m_pGetNamedBufferParameteri64v(nullptr)
+    , m_pGetNamedBufferParameteriv(nullptr)
+    , m_pGetNamedBufferPointerv(nullptr)
+    , m_pGetNamedBufferSubData(nullptr)
+    , m_pMapNamedBuffer(nullptr)
+    , m_pMapNamedBufferRange(nullptr)
+    , m_pNamedBufferData(nullptr)
+    , m_pNamedBufferStorage(nullptr)
+    , m_pNamedBufferSubData(nullptr)
+    , m_pUnmapNamedBuffer(nullptr)
 {
     /* Intentionally left blank. */
 }
@@ -2488,13 +2487,13 @@ tcu::TestNode::IterateResult ErrorsTest::iterate()
     try
     {
         /* API function pointers check. */
-        if ((DE_NULL == m_pClearNamedBufferData) || (DE_NULL == m_pClearNamedBufferSubData) ||
-            (DE_NULL == m_pCopyNamedBufferSubData) || (DE_NULL == m_pFlushMappedNamedBufferRange) ||
-            (DE_NULL == m_pGetNamedBufferParameteri64v) || (DE_NULL == m_pGetNamedBufferParameteriv) ||
-            (DE_NULL == m_pGetNamedBufferPointerv) || (DE_NULL == m_pGetNamedBufferSubData) ||
-            (DE_NULL == m_pMapNamedBuffer) || (DE_NULL == m_pMapNamedBufferRange) || (DE_NULL == m_pNamedBufferData) ||
-            (DE_NULL == m_pNamedBufferStorage) || (DE_NULL == m_pNamedBufferSubData) ||
-            (DE_NULL == m_pUnmapNamedBuffer))
+        if ((nullptr == m_pClearNamedBufferData) || (nullptr == m_pClearNamedBufferSubData) ||
+            (nullptr == m_pCopyNamedBufferSubData) || (nullptr == m_pFlushMappedNamedBufferRange) ||
+            (nullptr == m_pGetNamedBufferParameteri64v) || (nullptr == m_pGetNamedBufferParameteriv) ||
+            (nullptr == m_pGetNamedBufferPointerv) || (nullptr == m_pGetNamedBufferSubData) ||
+            (nullptr == m_pMapNamedBuffer) || (nullptr == m_pMapNamedBufferRange) || (nullptr == m_pNamedBufferData) ||
+            (nullptr == m_pNamedBufferStorage) || (nullptr == m_pNamedBufferSubData) ||
+            (nullptr == m_pUnmapNamedBuffer))
         {
             throw 0;
         }
@@ -3739,7 +3738,7 @@ bool ErrorsTest::TestErrorsOfGetNamedBufferPointerv()
             while (gl.isBuffer(++not_a_buffer_name))
                 ;
 
-            glw::GLvoid *pointer = DE_NULL;
+            glw::GLvoid *pointer = nullptr;
 
             /* Test. */
             m_pGetNamedBufferPointerv(not_a_buffer_name, GL_BUFFER_MAP_POINTER, &pointer);
@@ -4033,7 +4032,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBuffer()
                                       " if access is not READ_ONLY, WRITE_ONLY, or READ_WRITE.");
 
             /* Sanity unmapping. */
-            if (DE_NULL != mapped_data)
+            if (nullptr != mapped_data)
             {
                 m_pUnmapNamedBuffer(buffer);
                 while (gl.getError())
@@ -4157,7 +4156,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
             is_ok &= ErrorCheckAndLog("glMapNamedBufferRange", GL_INVALID_VALUE, " if offset is negative.");
 
             /* Sanity unmapping. */
-            if (DE_NULL != mapped_data)
+            if (nullptr != mapped_data)
             {
                 m_pUnmapNamedBuffer(buffer);
                 while (gl.getError())
@@ -4172,7 +4171,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
             is_ok &= ErrorCheckAndLog("glMapNamedBufferRange", GL_INVALID_VALUE, " if length is negative.");
 
             /* Sanity unmapping. */
-            if (DE_NULL != mapped_data)
+            if (nullptr != mapped_data)
             {
                 m_pUnmapNamedBuffer(buffer);
                 while (gl.getError())
@@ -4190,7 +4189,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
                                       " than those defined above.");
 
             /* Sanity unmapping. */
-            if (DE_NULL != mapped_data)
+            if (nullptr != mapped_data)
             {
                 m_pUnmapNamedBuffer(buffer);
                 while (gl.getError())
@@ -4209,7 +4208,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
                                       " than those defined above.");
 
             /* Sanity unmapping. */
-            if (DE_NULL != mapped_data)
+            if (nullptr != mapped_data)
             {
                 m_pUnmapNamedBuffer(buffer);
                 while (gl.getError())
@@ -4224,7 +4223,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
             is_ok &= ErrorCheckAndLog("glMapNamedBufferRange", GL_INVALID_OPERATION, " if length is zero.");
 
             /* Sanity unmapping. */
-            if (DE_NULL != mapped_data)
+            if (nullptr != mapped_data)
             {
                 m_pUnmapNamedBuffer(buffer);
                 while (gl.getError())
@@ -4267,7 +4266,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
                                       " if neither MAP_READ_BIT nor MAP_WRITE_BIT is set.");
 
             /* Sanity unmapping. */
-            if (DE_NULL != mapped_data)
+            if (nullptr != mapped_data)
             {
                 m_pUnmapNamedBuffer(buffer);
                 while (gl.getError())
@@ -4295,7 +4294,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
                     ErrorCheckAndLog("glMapNamedBufferRange", GL_INVALID_OPERATION, read_access_invalid_flags_log[i]);
 
                 /* Sanity unmapping. */
-                if (DE_NULL != mapped_data)
+                if (nullptr != mapped_data)
                 {
                     m_pUnmapNamedBuffer(buffer);
                     while (gl.getError())
@@ -4313,7 +4312,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
                                       " if MAP_FLUSH_EXPLICIT_BIT is set and MAP_WRITE_BIT is not set.");
 
             /* Sanity unmapping. */
-            if (DE_NULL != mapped_data)
+            if (nullptr != mapped_data)
             {
                 m_pUnmapNamedBuffer(buffer);
                 while (gl.getError())
@@ -4350,7 +4349,7 @@ bool ErrorsTest::TestErrorsOfMapNamedBufferRange()
                 is_ok &= ErrorCheckAndLog("glMapNamedBufferRange", GL_INVALID_OPERATION, mapping_flags_log[i]);
 
                 /* Sanity unmapping. */
-                if (DE_NULL != mapped_data)
+                if (nullptr != mapped_data)
                 {
                     m_pUnmapNamedBuffer(buffer);
                     while (gl.getError())
@@ -5065,20 +5064,20 @@ const glw::GLint FunctionalTest::s_expected_data[] = {
  */
 FunctionalTest::FunctionalTest(deqp::Context &context)
     : deqp::TestCase(context, "buffers_functional", "Buffer Objects Functional Test")
-    , m_pClearNamedBufferData(DE_NULL)
-    , m_pClearNamedBufferSubData(DE_NULL)
-    , m_pCopyNamedBufferSubData(DE_NULL)
-    , m_pFlushMappedNamedBufferRange(DE_NULL)
-    , m_pGetNamedBufferParameteri64v(DE_NULL)
-    , m_pGetNamedBufferParameteriv(DE_NULL)
-    , m_pGetNamedBufferPointerv(DE_NULL)
-    , m_pGetNamedBufferSubData(DE_NULL)
-    , m_pMapNamedBuffer(DE_NULL)
-    , m_pMapNamedBufferRange(DE_NULL)
-    , m_pNamedBufferData(DE_NULL)
-    , m_pNamedBufferStorage(DE_NULL)
-    , m_pNamedBufferSubData(DE_NULL)
-    , m_pUnmapNamedBuffer(DE_NULL)
+    , m_pClearNamedBufferData(nullptr)
+    , m_pClearNamedBufferSubData(nullptr)
+    , m_pCopyNamedBufferSubData(nullptr)
+    , m_pFlushMappedNamedBufferRange(nullptr)
+    , m_pGetNamedBufferParameteri64v(nullptr)
+    , m_pGetNamedBufferParameteriv(nullptr)
+    , m_pGetNamedBufferPointerv(nullptr)
+    , m_pGetNamedBufferSubData(nullptr)
+    , m_pMapNamedBuffer(nullptr)
+    , m_pMapNamedBufferRange(nullptr)
+    , m_pNamedBufferData(nullptr)
+    , m_pNamedBufferStorage(nullptr)
+    , m_pNamedBufferSubData(nullptr)
+    , m_pUnmapNamedBuffer(nullptr)
     , m_po(0)
     , m_vao(0)
     , m_bo_in(0)
@@ -5131,13 +5130,13 @@ tcu::TestNode::IterateResult FunctionalTest::iterate()
     try
     {
         /* API function pointers check. */
-        if ((DE_NULL == m_pClearNamedBufferData) || (DE_NULL == m_pClearNamedBufferSubData) ||
-            (DE_NULL == m_pCopyNamedBufferSubData) || (DE_NULL == m_pFlushMappedNamedBufferRange) ||
-            (DE_NULL == m_pGetNamedBufferParameteri64v) || (DE_NULL == m_pGetNamedBufferParameteriv) ||
-            (DE_NULL == m_pGetNamedBufferPointerv) || (DE_NULL == m_pGetNamedBufferSubData) ||
-            (DE_NULL == m_pMapNamedBuffer) || (DE_NULL == m_pMapNamedBufferRange) || (DE_NULL == m_pNamedBufferData) ||
-            (DE_NULL == m_pNamedBufferStorage) || (DE_NULL == m_pNamedBufferSubData) ||
-            (DE_NULL == m_pUnmapNamedBuffer))
+        if ((nullptr == m_pClearNamedBufferData) || (nullptr == m_pClearNamedBufferSubData) ||
+            (nullptr == m_pCopyNamedBufferSubData) || (nullptr == m_pFlushMappedNamedBufferRange) ||
+            (nullptr == m_pGetNamedBufferParameteri64v) || (nullptr == m_pGetNamedBufferParameteriv) ||
+            (nullptr == m_pGetNamedBufferPointerv) || (nullptr == m_pGetNamedBufferSubData) ||
+            (nullptr == m_pMapNamedBuffer) || (nullptr == m_pMapNamedBufferRange) || (nullptr == m_pNamedBufferData) ||
+            (nullptr == m_pNamedBufferStorage) || (nullptr == m_pNamedBufferSubData) ||
+            (nullptr == m_pUnmapNamedBuffer))
         {
             throw 0;
         }
@@ -5216,7 +5215,7 @@ void FunctionalTest::BuildProgram()
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 
@@ -5394,7 +5393,7 @@ bool FunctionalTest::PrepareInputBuffer()
                     /* Third element preparation. */
                     glw::GLint *p = (glw::GLint *)m_pMapNamedBuffer(m_bo_in, GL_READ_WRITE);
 
-                    if ((GL_NO_ERROR == gl.getError()) || (DE_NULL == p))
+                    if ((GL_NO_ERROR == gl.getError()) || (nullptr == p))
                     {
                         p[2] = 2;
 
@@ -5425,7 +5424,7 @@ bool FunctionalTest::PrepareInputBuffer()
                                     if (GL_NO_ERROR == gl.getError())
                                     {
                                         /* Mapped Buffer Pointer query. */
-                                        glw::GLvoid *is_p = DE_NULL;
+                                        glw::GLvoid *is_p = nullptr;
                                         m_pGetNamedBufferPointerv(m_bo_in, GL_BUFFER_MAP_POINTER, &is_p);
 
                                         if (GL_NO_ERROR == gl.getError())

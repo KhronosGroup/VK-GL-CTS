@@ -103,8 +103,8 @@ struct GraphicsResources
 
     GraphicsResources()
         : inputFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
-        , verifyIO(DE_NULL)
-        , verifyBinary(DE_NULL)
+        , verifyIO(nullptr)
+        , verifyBinary(nullptr)
         , spirvVersion(SPIRV_VERSION_1_0)
         , graphicsFeaturesRequired(true)
     {

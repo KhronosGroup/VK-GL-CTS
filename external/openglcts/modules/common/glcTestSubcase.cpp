@@ -294,7 +294,7 @@ TestSubcase::IterateResult TestSubcase::iterate(void)
     if (glError != GL_NO_ERROR)
     {
         const char *name = glu::getErrorName(glError);
-        if (name == DE_NULL)
+        if (name == nullptr)
             name = "UNKNOWN ERROR";
         log << TestLog::Message << "After test execution glGetError() returned: " << name
             << ", forcing FAIL for subcase" << TestLog::EndMessage;

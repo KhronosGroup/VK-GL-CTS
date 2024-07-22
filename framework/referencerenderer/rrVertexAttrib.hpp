@@ -115,7 +115,7 @@ struct VertexAttrib
     const void *pointer; //!< Data pointer.
     GenericVec4 generic; //!< Generic attribute, used if pointer is null.
 
-    VertexAttrib(void) : type(VERTEXATTRIBTYPE_FLOAT), size(0), stride(0), instanceDivisor(0), pointer(DE_NULL)
+    VertexAttrib(void) : type(VERTEXATTRIBTYPE_FLOAT), size(0), stride(0), instanceDivisor(0), pointer(nullptr)
     {
     }
 
@@ -134,7 +134,7 @@ struct VertexAttrib
         , size(0)
         , stride(0)
         , instanceDivisor(0)
-        , pointer(DE_NULL)
+        , pointer(nullptr)
         , generic(generic_)
     {
     }

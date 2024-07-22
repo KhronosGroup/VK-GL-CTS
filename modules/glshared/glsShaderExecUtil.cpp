@@ -981,7 +981,7 @@ void BufferIoExecutor::resizeInputBuffer(int newSize)
 {
     const glw::Functions &gl = m_renderCtx.getFunctions();
     gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *m_inputBuffer);
-    gl.bufferData(GL_SHADER_STORAGE_BUFFER, newSize, DE_NULL, GL_STATIC_DRAW);
+    gl.bufferData(GL_SHADER_STORAGE_BUFFER, newSize, nullptr, GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to allocate input buffer");
 }
 
@@ -989,7 +989,7 @@ void BufferIoExecutor::resizeOutputBuffer(int newSize)
 {
     const glw::Functions &gl = m_renderCtx.getFunctions();
     gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *m_outputBuffer);
-    gl.bufferData(GL_SHADER_STORAGE_BUFFER, newSize, DE_NULL, GL_STATIC_DRAW);
+    gl.bufferData(GL_SHADER_STORAGE_BUFFER, newSize, nullptr, GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to allocate output buffer");
 }
 

@@ -244,7 +244,7 @@ Move<VkCommandPool> GPQInstanceBase::makeCommandPool(uint32_t qFamilyIndex) cons
                                            (m_config.enableProtected ? VK_COMMAND_POOL_CREATE_PROTECTED_BIT : 0);
     const VkCommandPoolCreateInfo commandPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         flags,                                      // VkCommandPoolCreateFlags flags;
         qFamilyIndex,                               // uint32_t queueFamilyIndex;
     };

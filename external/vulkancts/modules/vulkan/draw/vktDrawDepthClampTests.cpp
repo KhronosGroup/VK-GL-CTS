@@ -384,13 +384,13 @@ DepthClampTestInstance::DepthClampTestInstance(Context &context, const TestParam
         renderPassCreateInfo.addSubpass(SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
                                                            (VkSubpassDescriptionFlags)0,    // flags
                                                            0u,                              // inputAttachmentCount
-                                                           DE_NULL,                         // inputAttachments
+                                                           nullptr,                         // inputAttachments
                                                            0u,                              // colorAttachmentCount
-                                                           DE_NULL,                         // colorAttachments
-                                                           DE_NULL,                         // resolveAttachments
+                                                           nullptr,                         // colorAttachments
+                                                           nullptr,                         // resolveAttachments
                                                            depthAttachmentReference,        // depthStencilAttachment
                                                            0u,                              // preserveAttachmentCount
-                                                           DE_NULL));                       // preserveAttachments
+                                                           nullptr));                       // preserveAttachments
         m_renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
         const std::vector<VkImageView> depthAttachments{*m_depthTargetView};
@@ -425,7 +425,7 @@ DepthClampTestInstance::DepthClampTestInstance(Context &context, const TestParam
     if (viewportCount > 1)
         geometryModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("geom"), 0);
 
-    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(0u, DE_NULL, 0u, DE_NULL);
+    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(0u, nullptr, 0u, nullptr);
     m_pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
     std::vector<VkDynamicState> dynamicStates{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
@@ -458,7 +458,7 @@ DepthClampTestInstance::DepthClampTestInstance(Context &context, const TestParam
 
 #ifndef CTS_USES_VULKANSC
     VkPipelineRenderingCreateInfoKHR renderingCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR, DE_NULL, 0u, 0u, DE_NULL, m_format, VK_FORMAT_UNDEFINED};
+        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR, nullptr, 0u, 0u, nullptr, m_format, VK_FORMAT_UNDEFINED};
 
     if (m_groupParams->useDynamicRendering)
         pipelineCreateInfo.pNext = &renderingCreateInfo;
@@ -581,10 +581,10 @@ void DepthClampTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, const 
                       VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 
     {
-        const VkMemoryBarrier memBarrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, VK_ACCESS_TRANSFER_WRITE_BIT,
+        const VkMemoryBarrier memBarrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_TRANSFER_WRITE_BIT,
                                             VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT};
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                              0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+                              0, 1, &memBarrier, 0, nullptr, 0, nullptr);
     }
 }
 
@@ -616,11 +616,11 @@ void DepthClampTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer,
 {
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                         // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         renderingFlags,                                                  // VkRenderingFlagsKHR flags;
         0u,                                                              // uint32_t viewMask;
         0u,                                                              // uint32_t colorAttachmentCount;
-        DE_NULL,                                                         // const VkFormat* pColorAttachmentFormats;
+        nullptr,                                                         // const VkFormat* pColorAttachmentFormats;
         m_format,                                                        // VkFormat depthAttachmentFormat;
         VK_FORMAT_UNDEFINED,                                             // VkFormat stencilAttachmentFormat;
         VK_SAMPLE_COUNT_1_BIT,                                           // VkSampleCountFlagBits rasterizationSamples;
@@ -634,7 +634,7 @@ void DepthClampTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer,
 
     const VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
@@ -650,7 +650,7 @@ void DepthClampTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkCle
 
     VkRenderingAttachmentInfoKHR depthAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,  // VkStructureType sType;
-        DE_NULL,                                          // const void* pNext;
+        nullptr,                                          // const void* pNext;
         *m_depthTargetView,                               // VkImageView imageView;
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                             // VkResolveModeFlagBits resolveMode;
@@ -663,15 +663,15 @@ void DepthClampTestInstance::beginDynamicRender(VkCommandBuffer cmdBuffer, VkCle
 
     VkRenderingInfoKHR renderingInfo{
         VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-        DE_NULL,
+        nullptr,
         renderingFlags,   // VkRenderingFlagsKHR flags;
         renderArea,       // VkRect2D renderArea;
         1u,               // uint32_t layerCount;
         0u,               // uint32_t viewMask;
         0u,               // uint32_t colorAttachmentCount;
-        DE_NULL,          // const VkRenderingAttachmentInfoKHR* pColorAttachments;
+        nullptr,          // const VkRenderingAttachmentInfoKHR* pColorAttachments;
         &depthAttachment, // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-        DE_NULL,          // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+        nullptr,          // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
     };
 
     vk.cmdBeginRendering(cmdBuffer, &renderingInfo);

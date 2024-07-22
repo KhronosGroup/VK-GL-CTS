@@ -144,7 +144,7 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         colorAttachmentFormat,                   // VkFormat                    format
@@ -156,7 +156,7 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
@@ -235,15 +235,14 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
             vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
             vk::VK_IMAGE_LAYOUT_GENERAL, **images[i], subresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                              &preImageBarrier);
+                              vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr,
+                              0u, nullptr, 1u, &preImageBarrier);
     }
 
     std::vector<vk::VkRenderingAttachmentInfoKHR> colorAttachments(colorAttachmentCount);
     vk::VkRenderingAttachmentInfoKHR colorAttachment{
         vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                             // const void* pNext;
+        nullptr,                                             // const void* pNext;
         VK_NULL_HANDLE,                                      // VkImageView imageView;
         vk::VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout imageLayout;
         vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
@@ -262,15 +261,15 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
 
     vk::VkRenderingInfoKHR renderingInfo{
         vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-        DE_NULL,
+        nullptr,
         (vk::VkRenderingFlags)0u,          // VkRenderingFlagsKHR flags;
         renderArea,                        // VkRect2D renderArea;
         1u,                                // uint32_t layerCount;
         0x0,                               // uint32_t viewMask;
         (uint32_t)colorAttachments.size(), // uint32_t colorAttachmentCount;
         colorAttachments.data(),           // const VkRenderingAttachmentInfoKHR* pColorAttachments;
-        DE_NULL,                           // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-        DE_NULL,                           // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+        nullptr,                           // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+        nullptr,                           // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
     };
 
     const vk::VkDeviceSize bufferSize        = 1024;
@@ -329,14 +328,14 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
         setVertexInput(vk, *cmdBuffer, m_params.vertexBuffersNullStride ? m_params.stride : 100);
 
     vk::VkDeviceSize stride   = m_params.stride;
-    vk::VkDeviceSize *pStride = m_params.vertexBuffersNullStride ? DE_NULL : &stride;
+    vk::VkDeviceSize *pStride = m_params.vertexBuffersNullStride ? nullptr : &stride;
     bindVertexBuffers(vk, *cmdBuffer, pStride, **buffer, bufferSize);
 
     if (!m_params.vertexInputBefore)
         setVertexInput(vk, *cmdBuffer, m_params.stride);
 
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1,
-                             &descriptorSet.get(), 0, DE_NULL);
+                             &descriptorSet.get(), 0, nullptr);
 
     vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader,
                             taskSupported, meshSupported);
@@ -351,9 +350,8 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
             vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
             vk::VK_IMAGE_LAYOUT_GENERAL, **images[i], subresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                              &postImageBarrier);
+                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr,
+                              1u, &postImageBarrier);
     }
 
     const vk::VkBufferImageCopy copyRegion = vk::makeBufferImageCopy(extent, subresourceLayers);
@@ -508,13 +506,13 @@ de::MovePtr<tcu::TextureLevel> readDepthAttachment(const vk::DeviceInterface &vk
     {
         const vk::VkBufferCreateInfo bufferParams = {
             vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkBufferCreateFlags flags;
             pixelDataSize,                            // VkDeviceSize size;
             vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                       // uint32_t queueFamilyIndexCount;
-            DE_NULL                                   // const uint32_t* pQueueFamilyIndices;
+            nullptr                                   // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -567,13 +565,13 @@ de::MovePtr<tcu::TextureLevel> readStencilAttachment(const vk::DeviceInterface &
     {
         const vk::VkBufferCreateInfo bufferParams = {
             vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkBufferCreateFlags flags;
             pixelDataSize,                            // VkDeviceSize size;
             vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                       // uint32_t queueFamilyIndexCount;
-            DE_NULL                                   // const uint32_t* pQueueFamilyIndices;
+            nullptr                                   // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -715,12 +713,12 @@ void ShaderObjectStateInstance::createDevice(void)
     vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT viFeatures =
         m_context.getVertexInputDynamicStateFeaturesEXT();
 
-    dynamicRenderingFeatures.pNext = DE_NULL;
-    shaderObjectFeatures.pNext     = DE_NULL;
-    edsFeatures.pNext              = DE_NULL;
-    eds2Features.pNext             = DE_NULL;
-    eds3Features.pNext             = DE_NULL;
-    viFeatures.pNext               = DE_NULL;
+    dynamicRenderingFeatures.pNext = nullptr;
+    shaderObjectFeatures.pNext     = nullptr;
+    edsFeatures.pNext              = nullptr;
+    eds2Features.pNext             = nullptr;
+    eds3Features.pNext             = nullptr;
+    viFeatures.pNext               = nullptr;
 
     vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure();
     void *pNext                             = &dynamicRenderingFeatures;
@@ -842,7 +840,7 @@ void ShaderObjectStateInstance::createDevice(void)
 
     vk::VkDeviceQueueCreateInfo queueInfo = {
         vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         0u,                                             // VkDeviceQueueCreateFlags flags;
         0u,                                             // uint32_t queueFamilyIndex;
         1u,                                             // uint32_t queueCount;
@@ -856,10 +854,10 @@ void ShaderObjectStateInstance::createDevice(void)
         1u,                                       // uint32_t queueCreateInfoCount;
         &queueInfo,                               // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                       // uint32_t enabledLayerCount;
-        DE_NULL,                                  // const char* const* ppEnabledLayerNames;
+        nullptr,                                  // const char* const* ppEnabledLayerNames;
         uint32_t(deviceExtensions.size()),        // uint32_t enabledExtensionCount;
         deviceExtensions.data(),                  // const char* const* ppEnabledExtensionNames;
-        DE_NULL                                   // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        nullptr                                   // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
     m_customDevice           = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
@@ -1041,7 +1039,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
     if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_STENCIL_REFERENCE))
         vk.cmdSetStencilReference(cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xFFFFFFFF);
     if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
-        vk.cmdBindVertexBuffers2(cmdBuffer, 0, 0, DE_NULL, DE_NULL, DE_NULL, DE_NULL);
+        vk.cmdBindVertexBuffers2(cmdBuffer, 0, 0, nullptr, nullptr, nullptr, nullptr);
     if (!m_params.rasterizerDiscardEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CULL_MODE))
         vk.cmdSetCullMode(cmdBuffer, m_params.cull ? vk::VK_CULL_MODE_FRONT_AND_BACK : vk::VK_CULL_MODE_NONE);
     if (!m_params.rasterizerDiscardEnable && m_params.depthBounds &&
@@ -1080,7 +1078,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
     if (m_params.vertShader && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
         if (extensionEnabled(deviceExtensions, "VK_EXT_shader_object") ||
             extensionEnabled(deviceExtensions, "VK_EXT_vertex_input_dynamic_state"))
-            vk.cmdSetVertexInputEXT(cmdBuffer, 0u, DE_NULL, 0u, DE_NULL);
+            vk.cmdSetVertexInputEXT(cmdBuffer, 0u, nullptr, 0u, nullptr);
     if (m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.logicOpEnable &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LOGIC_OP_EXT))
         vk.cmdSetLogicOpEXT(cmdBuffer, vk::VK_LOGIC_OP_COPY);
@@ -1159,7 +1157,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
     vk::VkSampleLocationEXT sampleLocation                 = {0.5f, 0.5f};
     const vk::VkSampleLocationsInfoEXT sampleLocationsInfo = {
         vk::VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT, // VkStructureType               sType;
-        DE_NULL,                                         // const void*                   pNext;
+        nullptr,                                         // const void*                   pNext;
         vk::VK_SAMPLE_COUNT_1_BIT,                       // VkSampleCountFlagBits         sampleLocationsPerPixel;
         {1u, 1u},                                        // VkExtent2D                    sampleLocationGridSize;
         1,                                               // uint32_t                      sampleLocationsCount;
@@ -1262,7 +1260,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         colorAttachmentFormat,                   // VkFormat                    format
@@ -1274,13 +1272,13 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
     const vk::VkImageCreateInfo depthCreateInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         depthStencilAttachmentFormat,            // VkFormat                    format
@@ -1293,7 +1291,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
             vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
         0,                                       // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                                 // const uint32_t*            pQueueFamilyIndices
+        nullptr,                                 // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout            initialLayout
     };
 
@@ -1376,12 +1374,12 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineVertexInputStateCreateInfo vertexInputState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                       // const void* pNext;
+            nullptr,                                                       // const void* pNext;
             (vk::VkPipelineVertexInputStateCreateFlags)0, // VkPipelineVertexInputStateCreateFlags flags;
             0u,                                           // uint32_t vertexBindingDescriptionCount;
-            DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+            nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
             0u,      // uint32_t vertexAttributeDescriptionCount;
-            DE_NULL  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+            nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
         };
 
         vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
@@ -1392,7 +1390,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                         // const void* pNext;
+            nullptr,                                                         // const void* pNext;
             (vk::VkPipelineInputAssemblyStateCreateFlags)0, // VkPipelineInputAssemblyStateCreateFlags flags;
             topology,                                       // VkPrimitiveTopology topology;
             VK_FALSE                                        // VkBool32 primitiveRestartEnable;
@@ -1400,21 +1398,21 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineTessellationStateCreateInfo tessellationState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                       // const void* pNext;
+            nullptr,                                                       // const void* pNext;
             (vk::VkPipelineTessellationStateCreateFlags)0u, // VkPipelineTessellationStateCreateFlags flags;
             4u                                              // uint32_t patchControlPoints;
         };
 
         const vk::VkPipelineRasterizationDepthClipStateCreateInfoEXT depthClipState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                                       // const void* pNext;
+            nullptr,                                                                       // const void* pNext;
             (vk::VkPipelineRasterizationDepthClipStateCreateFlagsEXT)0u, // VkPipelineRasterizationDepthClipStateCreateFlagsEXT flags;
             m_params.depthClip                                           // VkBool32 depthClipEnable;
         };
 
         const vk::VkPipelineRasterizationStateCreateInfo rasterizationState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-            m_params.depthClip ? &depthClipState : DE_NULL,                 // const void* pNext;
+            m_params.depthClip ? &depthClipState : nullptr,                 // const void* pNext;
             (vk::VkPipelineRasterizationStateCreateFlags)0, // VkPipelineRasterizationStateCreateFlags flags;
             m_params.depthClamp,                            // VkBool32 depthClampEnable;
             m_params.rasterizerDiscardEnable,               // VkBool32 rasterizerDiscardEnable;
@@ -1431,12 +1429,12 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineMultisampleStateCreateInfo multisampleState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                            sType
-            DE_NULL,                                       // const void*                                pNext
+            nullptr,                                       // const void*                                pNext
             (vk::VkPipelineMultisampleStateCreateFlags)0u, // VkPipelineMultisampleStateCreateFlags    flags
             vk::VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                    rasterizationSamples
             VK_FALSE,                  // VkBool32                                    sampleShadingEnable
             1.0f,                      // float                                    minSampleShading
-            DE_NULL,                   // const VkSampleMask*                        pSampleMask
+            nullptr,                   // const VkSampleMask*                        pSampleMask
             VK_FALSE,                  // VkBool32                                    alphaToCoverageEnable
             m_params.alphaToOne ? VK_TRUE : VK_FALSE // VkBool32                                    alphaToOneEnable
         };
@@ -1455,7 +1453,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineDepthStencilStateCreateInfo depthStencilState{
             vk::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                          sType
-            DE_NULL,                                        // const void*                              pNext
+            nullptr,                                        // const void*                              pNext
             (vk::VkPipelineDepthStencilStateCreateFlags)0u, // VkPipelineDepthStencilStateCreateFlags   flags
             m_params.depthTestEnable ? VK_TRUE : VK_FALSE,  // VkBool32                                 depthTestEnable
             VK_TRUE,                                        // VkBool32                                 depthWriteEnable
@@ -1492,14 +1490,14 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         }
         const vk::VkPipelineColorWriteCreateInfoEXT colorWriteState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             (uint32_t)colorWriteEnables.size(),                         // uint32_t attachmentCount;
             colorWriteEnables.data()                                    // const VkBool32* pColorWriteEnables;
         };
 
         const vk::VkPipelineColorBlendStateCreateInfo colorBlendState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            m_params.colorWrite ? &colorWriteState : DE_NULL,             // const void* pNext;
+            m_params.colorWrite ? &colorWriteState : nullptr,             // const void* pNext;
             (vk::VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags flags;
             m_params.logicOpEnable ? VK_TRUE : VK_FALSE,                  // VkBool32 logicOpEnable;
             vk::VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -1527,14 +1525,14 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineViewportDepthClipControlCreateInfoEXT depthClipControlState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                                    // const void* pNext;
+            nullptr,                                                                    // const void* pNext;
             VK_TRUE,                                                                    // VkBool32 negativeOneToOne;
         };
 
         const vk::VkPipelineViewportStateCreateInfo viewportState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                                    sType
             m_params.depthClipControl ? &depthClipControlState :
-                                        DE_NULL,       // const void*                                        pNext
+                                        nullptr,       // const void*                                        pNext
             (vk::VkPipelineViewportStateCreateFlags)0, // VkPipelineViewportStateCreateFlags                flags
             viewportAndScissorCount, // uint32_t                                            viewportCount
             &viewport,               // const VkViewport*                                pViewports
@@ -1546,7 +1544,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineDynamicStateCreateInfo dynamicState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL,                        // const void*                                    pNext
+            nullptr,                        // const void*                                    pNext
             0u,                             // VkPipelineDynamicStateCreateFlags            flags
             (uint32_t)dynamicStates.size(), // uint32_t                                        dynamicStateCount
             dynamicStates.data(),           // const VkDynamicState*                        pDynamicStates
@@ -1554,7 +1552,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
 
         const vk::VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType    sType
-            DE_NULL,                                              // const void*        pNext
+            nullptr,                                              // const void*        pNext
             0u,                                                   // uint32_t            viewMask
             1u,                                                   // uint32_t            colorAttachmentCount
             &colorAttachmentFormat,                               // const VkFormat*    pColorAttachmentFormats
@@ -1631,23 +1629,21 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     vk::beginCommandBuffer(vk, *cmdBuffer);
 
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0, 1,
-                             &descriptorSet.get(), 0, DE_NULL);
+                             &descriptorSet.get(), 0, nullptr);
 
     vk::VkImageMemoryBarrier preImageBarrier = vk::makeImageMemoryBarrier(
         vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
         vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                          &preImageBarrier);
+                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &preImageBarrier);
 
     vk::VkImageMemoryBarrier preDepthImageBarrier = vk::makeImageMemoryBarrier(
         vk::VK_ACCESS_NONE, vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
         vk::VK_IMAGE_LAYOUT_GENERAL, **depthImage, depthSubresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                          vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                          &preDepthImageBarrier);
+                          vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &preDepthImageBarrier);
 
     vk::beginRendering(vk, *cmdBuffer, *imageView, *depthImageView, true, renderArea, clearValue, clearDepthValue,
                        vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
@@ -1683,7 +1679,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
     {
         vk::VkDeviceSize offset = 0u;
         vk.cmdBindTransformFeedbackBuffersEXT(*cmdBuffer, 0, 1, &*tfBuf, &offset, &tfBufSize);
-        vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0u, DE_NULL, DE_NULL);
+        vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0u, nullptr, nullptr);
     }
 
     bool secondDraw = !m_params.depthClamp && !m_params.depthClip;
@@ -1701,33 +1697,30 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
             vk.cmdDraw(*cmdBuffer, 4, 1, 0, 1);
     }
     if (m_params.geometryStreams)
-        vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0u, DE_NULL, DE_NULL);
+        vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0u, nullptr, nullptr);
     vk::endRendering(vk, *cmdBuffer);
 
     vk::VkImageMemoryBarrier postImageBarrier =
         vk::makeImageMemoryBarrier(vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
                                    vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
+                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u,
                           &postImageBarrier);
 
     vk::VkImageMemoryBarrier postDepthImageBarrier = vk::makeImageMemoryBarrier(
         vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
         vk::VK_IMAGE_LAYOUT_GENERAL, **depthImage, depthSubresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                          (vk::VkDependencyFlags)0u, 0u, (const vk::VkMemoryBarrier *)DE_NULL, 0u,
-                          (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u, &postDepthImageBarrier);
+                          (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &postDepthImageBarrier);
 
     vk::VkBufferMemoryBarrier bufferBarrier = vk::makeBufferMemoryBarrier(
         vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0u, bufferSizeBytes);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                          (vk::VkDependencyFlags)0u, 0u, (const vk::VkMemoryBarrier *)DE_NULL, 1u, &bufferBarrier, 0u,
-                          (const vk::VkImageMemoryBarrier *)DE_NULL);
+                          (vk::VkDependencyFlags)0u, 0u, nullptr, 1u, &bufferBarrier, 0u, nullptr);
 
     if (m_params.geometryStreams)
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
-                              vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &tfMemoryBarrier, 0u, DE_NULL, 0u, DE_NULL);
+                              vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &tfMemoryBarrier, 0u, nullptr, 0u, nullptr);
 
     const vk::VkBufferImageCopy copyRegion = vk::makeBufferImageCopy(extent, subresourceLayers);
     vk.cmdCopyImageToBuffer(*cmdBuffer, **image, vk::VK_IMAGE_LAYOUT_GENERAL, **colorOutputBuffer, 1u, &copyRegion);
@@ -2069,10 +2062,10 @@ void ShaderObjectStateCase::checkSupport(Context &context) const
 
         uint32_t propertyCount = 0u;
         std::vector<vk::VkExtensionProperties> extensionsProperties;
-        context.getInstanceInterface().enumerateDeviceExtensionProperties(context.getPhysicalDevice(), DE_NULL,
-                                                                          &propertyCount, DE_NULL);
+        context.getInstanceInterface().enumerateDeviceExtensionProperties(context.getPhysicalDevice(), nullptr,
+                                                                          &propertyCount, nullptr);
         extensionsProperties.resize(propertyCount);
-        context.getInstanceInterface().enumerateDeviceExtensionProperties(context.getPhysicalDevice(), DE_NULL,
+        context.getInstanceInterface().enumerateDeviceExtensionProperties(context.getPhysicalDevice(), nullptr,
                                                                           &propertyCount, extensionsProperties.data());
 
         for (const auto &extProp : extensionsProperties)
@@ -2377,7 +2370,7 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         colorAttachmentFormat,                   // VkFormat                    format
@@ -2389,7 +2382,7 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
@@ -2420,7 +2413,7 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
                                  geometrySupported),
     };
 
-    vk.createShadersEXT(device, 5u, shaderCreateInfos, DE_NULL, shaders);
+    vk.createShadersEXT(device, 5u, shaderCreateInfos, nullptr, shaders);
 
     if (m_params.linked)
         for (auto &ci : shaderCreateInfos)
@@ -2436,9 +2429,8 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
         vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
         vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                          &preImageBarrier);
+                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &preImageBarrier);
 
     const vk::VkClearValue clearValue = vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 0.0f});
     vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL,
@@ -2456,8 +2448,7 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
         vk::makeImageMemoryBarrier(vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
                                    vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
+                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u,
                           &postImageBarrier);
 
     const vk::VkBufferImageCopy copyRegion = vk::makeBufferImageCopy(extent, subresourceLayers);
@@ -2467,7 +2458,7 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate(void)
     vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
     for (uint32_t i = 0u; i < 5u; ++i)
-        vk.destroyShaderEXT(device, shaders[i], DE_NULL);
+        vk.destroyShaderEXT(device, shaders[i], nullptr);
 
     tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(
         vk::mapVkFormat(colorAttachmentFormat), renderArea.extent.width, renderArea.extent.height, 1,
@@ -2716,7 +2707,7 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate(void)
 
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         0u,                                      // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         colorAttachmentFormat,                   // VkFormat                    format
@@ -2728,7 +2719,7 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate(void)
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         0,                             // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                       // const uint32_t*            pQueueFamilyIndices
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
@@ -2771,9 +2762,8 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate(void)
         vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
         vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                          &preImageBarrier);
+                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &preImageBarrier);
 
     const vk::VkClearValue clearValue = vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 0.0f});
     vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL,
@@ -2793,8 +2783,7 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate(void)
         vk::makeImageMemoryBarrier(vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
                                    vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
+                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u,
                           &postImageBarrier);
 
     const vk::VkBufferImageCopy copyRegion = vk::makeBufferImageCopy(extent, subresourceLayers);

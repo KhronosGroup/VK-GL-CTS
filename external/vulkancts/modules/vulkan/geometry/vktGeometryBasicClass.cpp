@@ -107,11 +107,11 @@ tcu::TestStatus GeometryExpanderRenderTestInstance::iterate(void)
     const Unique<VkPipeline> pipeline(
         GraphicsPipelineBuilder()
             .setRenderSize(resolution)
-            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vertex"), DE_NULL)
+            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vertex"), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,
-                       m_context.getBinaryCollection().get(geometryShaderName), DE_NULL)
+                       m_context.getBinaryCollection().get(geometryShaderName), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("fragment"),
-                       DE_NULL)
+                       nullptr)
             .addVertexBinding(makeVertexInputBindingDescription(0u, 2u * vertexAtrrOffset, VK_VERTEX_INPUT_RATE_VERTEX))
             .addVertexAttribute(
                 makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, vertexPositionsOffset))
@@ -156,7 +156,7 @@ tcu::TestStatus GeometryExpanderRenderTestInstance::iterate(void)
                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *colorAttachmentImage, colorSubRange);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                               &colorAttachmentLayoutBarrier);
     }
 

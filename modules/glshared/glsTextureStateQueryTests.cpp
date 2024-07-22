@@ -1752,23 +1752,23 @@ void TextureImmutableFormatCase::test(glu::CallLogWrapper &gl, tcu::ResultCollec
         {
         case GL_TEXTURE_2D:
         {
-            gl.glTexImage2D(m_target, 0, GL_RGBA8, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.glTexImage2D(m_target, 0, GL_RGBA8, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             break;
         }
         case GL_TEXTURE_CUBE_MAP:
         {
-            gl.glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA8, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA8, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             break;
         }
         case GL_TEXTURE_2D_ARRAY:
         case GL_TEXTURE_3D:
         {
-            gl.glTexImage3D(m_target, 0, GL_RGBA8, 32, 32, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.glTexImage3D(m_target, 0, GL_RGBA8, 32, 32, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             break;
         }
         case GL_TEXTURE_CUBE_MAP_ARRAY:
         {
-            gl.glTexImage3D(m_target, 0, GL_RGBA8, 32, 32, 6 * 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+            gl.glTexImage3D(m_target, 0, GL_RGBA8, 32, 32, 6 * 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             break;
         }
         default:
@@ -2558,17 +2558,17 @@ tcu::TestCase *createTexParamTest(tcu::TestContext &testCtx, const glu::RenderCo
     if (isMultisampleTarget(target) && isSamplerStateTester(tester))
     {
         DE_FATAL("Multisample textures have no sampler state");
-        return DE_NULL;
+        return nullptr;
     }
     if (target == GL_TEXTURE_BUFFER)
     {
         DE_FATAL("Buffer textures have no texture state");
-        return DE_NULL;
+        return nullptr;
     }
     if (target != GL_TEXTURE_3D && mapTesterToPname(tester) == GL_TEXTURE_WRAP_R)
     {
         DE_FATAL("Only 3D textures have wrap r filter");
-        return DE_NULL;
+        return nullptr;
     }
 
 #define CASE_ALL_SETTERS(X) \
@@ -2644,7 +2644,7 @@ tcu::TestCase *createTexParamTest(tcu::TestContext &testCtx, const glu::RenderCo
 #undef CASE_ALL_SETTERS
 
     DE_ASSERT(false);
-    return DE_NULL;
+    return nullptr;
 }
 
 tcu::TestCase *createSamplerParamTest(tcu::TestContext &testCtx, const glu::RenderContext &renderCtx,
@@ -2699,7 +2699,7 @@ tcu::TestCase *createSamplerParamTest(tcu::TestContext &testCtx, const glu::Rend
 #undef CASE_ALL_SETTERS
 
     DE_ASSERT(false);
-    return DE_NULL;
+    return nullptr;
 }
 
 } // namespace TextureStateQueryTests

@@ -975,7 +975,7 @@ Move<VkShaderModule> createShaderModule(const DeviceInterface &deviceInterface, 
     if (binary.getFormat() == PROGRAM_FORMAT_SPIRV)
     {
         const struct VkShaderModuleCreateInfo shaderModuleInfo = {
-            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, DE_NULL, flags, (uintptr_t)binary.getSize(),
+            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr, flags, (uintptr_t)binary.getSize(),
             (const uint32_t *)binary.getBinary(),
         };
 

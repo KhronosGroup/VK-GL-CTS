@@ -386,7 +386,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_colorFormat,                                                         // VkFormat format;
@@ -415,7 +415,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkImageCreateInfo depthImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,      // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                         // VkImageType imageType;
             m_depthFormat,                            // VkFormat format;
@@ -466,7 +466,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0u,                                         // VkImageViewCreateFlags flags;
             *m_colorImage,                              // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
@@ -482,7 +482,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkImageViewCreateInfo depthAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             *m_depthImage,                            // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -513,7 +513,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             (uint32_t)attachmentBindInfos.size(),      // uint32_t attachmentCount;
@@ -530,12 +530,12 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
@@ -577,7 +577,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t vertexBindingDescriptionCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -587,7 +587,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL,             // const void*                                    pNext
+            nullptr,             // const void*                                    pNext
             0u,                  // VkPipelineInputAssemblyStateCreateFlags        flags
             m_primitiveTopology, // VkPrimitiveTopology                            topology
             VK_FALSE             // VkBool32                                        primitiveRestartEnable
@@ -595,7 +595,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         VkPipelineDepthStencilStateCreateInfo depthStencilStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
             m_depthTestEnable,                                          // VkBool32 depthTestEnable;
             true,                                                       // VkBool32 depthWriteEnable;
@@ -649,7 +649,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 #ifndef CTS_USES_VULKANSC
         VkPipelineViewportDepthClipControlCreateInfoEXT depthClipControlCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                                // const void* pNext;
+            nullptr,                                                                // const void* pNext;
             VK_TRUE,                                                                // VkBool32 negativeOneToOne;
         };
         if (hasDepthClipControl)
@@ -658,7 +658,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
         // Using the range 0,1 in the structure.
         VkPipelineViewportDepthClipControlCreateInfoEXT depthClipControlCreateInfo01{
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                                // const void* pNext;
+            nullptr,                                                                // const void* pNext;
             VK_FALSE,                                                               // VkBool32 negativeOneToOne;
         };
         depthClipControl01Wrapper.ptr = &depthClipControlCreateInfo01;
@@ -697,7 +697,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL,                 // const void*                                    pNext
+            nullptr,                 // const void*                                    pNext
             0u,                      // VkPipelineColorBlendStateCreateFlags            flags
             VK_FALSE,                // VkBool32                                        logicOpEnable
             VK_LOGIC_OP_CLEAR,       // VkLogicOp                                    logicOp
@@ -769,7 +769,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             1024u,                                // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -858,7 +858,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkImageMemoryBarrier colorBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType            sType;
-            DE_NULL,                                    // const void*                pNext;
+            nullptr,                                    // const void*                pNext;
             (VkAccessFlags)0,                           // VkAccessFlags              srcAccessMask;
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,       // VkAccessFlags              dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout              oldLayout;
@@ -879,7 +879,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkImageMemoryBarrier depthBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,       // VkStructureType            sType;
-            DE_NULL,                                      // const void*                pNext;
+            nullptr,                                      // const void*                pNext;
             (VkAccessFlags)0,                             // VkAccessFlags              srcAccessMask;
             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // VkAccessFlags              dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                    // VkImageLayout              oldLayout;
@@ -905,7 +905,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                                   VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                   VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                              (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, (uint32_t)imageLayoutBarriers.size(),
+                              (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, (uint32_t)imageLayoutBarriers.size(),
                               imageLayoutBarriers.data());
 
         m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),

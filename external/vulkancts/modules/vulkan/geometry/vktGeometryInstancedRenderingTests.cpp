@@ -65,7 +65,7 @@ VkImageCreateInfo makeImageCreateInfo(const VkFormat format, const VkExtent3D si
 {
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0,               // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -77,7 +77,7 @@ VkImageCreateInfo makeImageCreateInfo(const VkFormat format, const VkExtent3D si
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
     return imageParams;
@@ -106,7 +106,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags;
         1u,                              // uint32_t                                    vertexBindingDescriptionCount;
         &vertexInputBindingDescription,  // const VkVertexInputBindingDescription*      pVertexBindingDescriptions;

@@ -83,7 +83,7 @@ vk::VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const vk::VkFo
 {
     const vk::VkImageCreateInfo imageParams = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         (vk::VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                                  // VkFormat format;
@@ -95,7 +95,7 @@ vk::VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const vk::VkFo
         usage,                                   // VkImageUsageFlags usage;
         vk::VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                      // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                 // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                 // const uint32_t* pQueueFamilyIndices;
         vk::VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
 
@@ -121,7 +121,7 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const ui
 {
     DE_UNREF(pipelineConstructionType);
 
-    void *pNext = DE_NULL;
+    void *pNext = nullptr;
 
 #ifndef CTS_USES_VULKANSC
     vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT graphicsPipelineFeatures{
@@ -162,7 +162,7 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const ui
 
     const vk::VkDeviceQueueCreateInfo queueParams = {
         vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         0u,                                             // VkDeviceQueueCreateFlags flags;
         testQueueFamilyIndex,                           // uint32_t queueFamilyIndex;
         1u,                                             // uint32_t queueCount;
@@ -188,7 +188,7 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const ui
         1u,                                       // uint32_t queueCreateInfoCount;
         &queueParams,                             // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                       // uint32_t enabledLayerCount;
-        DE_NULL,                                  // const char* const* ppEnabledLayerNames;
+        nullptr,                                  // const char* const* ppEnabledLayerNames;
         (uint32_t)extensionPtrs.size(),           // uint32_t enabledExtensionCount;
         extensionPtrs.data(),                     // const char* const* ppEnabledExtensionNames;
         NULL                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
@@ -274,12 +274,12 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
 
     const vk::VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{
         vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                       // const void* pNext;
+        nullptr,                                                       // const void* pNext;
         (vk::VkPipelineVertexInputStateCreateFlags)0u,                 // VkPipelineVertexInputStateCreateFlags flags;
         0u,                                                            // uint32_t vertexBindingDescriptionCount;
-        DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
         0u,      // uint32_t vertexAttributeDescriptionCount;
-        DE_NULL  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+        nullptr  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
     vk::Move<vk::VkImage> colorImage =
@@ -317,25 +317,25 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
         (vk::VkSubpassDescriptionFlags)0u,   // VkSubpassDescriptionFlags    flags
         vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint            pipelineBindPoint
         0u,                                  // uint32_t                        inputAttachmentCount
-        DE_NULL,                             // const VkAttachmentReference*    pInputAttachments
+        nullptr,                             // const VkAttachmentReference*    pInputAttachments
         1u,                                  // uint32_t                        colorAttachmentCount
         &attachmentReference,                // const VkAttachmentReference*    pColorAttachments
-        DE_NULL,                             // const VkAttachmentReference*    pResolveAttachments
-        DE_NULL,                             // const VkAttachmentReference*    pDepthStencilAttachment
+        nullptr,                             // const VkAttachmentReference*    pResolveAttachments
+        nullptr,                             // const VkAttachmentReference*    pDepthStencilAttachment
         0u,                                  // uint32_t                        preserveAttachmentCount
-        DE_NULL                              // const uint32_t*                pPreserveAttachments
+        nullptr                              // const uint32_t*                pPreserveAttachments
     };
 
     const vk::VkRenderPassCreateInfo renderPassInfo = {
         vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureTypei                    sType
-        DE_NULL,                                       // const void*                        pNext
+        nullptr,                                       // const void*                        pNext
         (vk::VkRenderPassCreateFlags)0u,               // VkRenderPassCreateFlags            flags
         1u,                                            // uint32_t                            attachmentCount
         &attachmentDescription,                        // const VkAttachmentDescription*    pAttachments
         1u,                                            // uint32_t                            subpassCount
         &subpassDescription,                           // const VkSubpassDescription*        pSubpasses
         0u,                                            // uint32_t                            dependencyCount
-        DE_NULL                                        // const VkSubpassDependency*        pDependencies
+        nullptr                                        // const VkSubpassDependency*        pDependencies
     };
 
     vk::RenderPassWrapper renderPass = vk::RenderPassWrapper(m_pipelineConstructionType, vk, *device, &renderPassInfo);
@@ -345,7 +345,7 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
 
     const vk::VkFramebufferCreateInfo framebufferCreateInfo = {
         vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         vk::VkFramebufferCreateFlags(0),               // VkFramebufferCreateFlags flags;
         *renderPass,                                   // VkRenderPass renderPass;
         1u,                                            // uint32_t attachmentCount;
@@ -363,7 +363,7 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
 
     vk::VkPipelineDynamicStateCreateInfo pipelineDynamicStateNfo{
         vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (vk::VkPipelineDynamicStateCreateFlags)0u,                // VkPipelineDynamicStateCreateFlags flags;
         static_cast<uint32_t>(dynamicStates.size()),              // uint32_t dynamicStateCount;
         dynamicStates.data()                                      // const VkDynamicState* pDynamicStates;
@@ -372,12 +372,12 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
     // Create pipeline layout
     const vk::VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                           // const void* pNext;
+        nullptr,                                           // const void* pNext;
         0u,                                                // VkPipelineLayoutCreateFlags flags;
         0u,                                                // uint32_t descriptorSetCount;
-        DE_NULL,                                           // const VkDescriptorSetLayout* pSetLayouts;
+        nullptr,                                           // const VkDescriptorSetLayout* pSetLayouts;
         0u,                                                // uint32_t pushConstantRangeCount;
-        DE_NULL                                            // const VkPushDescriptorRange* pPushDescriptorRanges;
+        nullptr                                            // const VkPushDescriptorRange* pPushDescriptorRanges;
     };
 
     vk::PipelineLayoutWrapper pipelineLayout(m_pipelineConstructionType, vk, *device, &pipelineLayoutInfo);
@@ -404,7 +404,7 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
             .setupVertexInputState(&vertexInputStateCreateInfo)
             .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u,
                                               vertexShaderModules[i])
-            .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragmentShaderModule, DE_NULL, DE_NULL)
+            .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragmentShaderModule, nullptr, nullptr)
             .setupFragmentOutputState(*renderPass)
             .setMonolithicPipelineLayout(pipelineLayout)
             .buildPipeline();

@@ -188,7 +188,7 @@ protected:
 
         gl.bindTexture(GL_TEXTURE_2D, m_depthTexure);
         gl.texImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, viewportW, viewportH, 0, GL_DEPTH_COMPONENT,
-                      GL_UNSIGNED_SHORT, DE_NULL);
+                      GL_UNSIGNED_SHORT, nullptr);
 
         gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo);
         gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_rboC);

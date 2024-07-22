@@ -72,7 +72,7 @@ struct Range
 
 #define GLS_NULL_RANGE   \
     {                    \
-        DE_NULL, DE_NULL \
+        nullptr, nullptr \
     }
 
 //! A pair type that, unlike stl::pair, is POD so it can be statically initialized.

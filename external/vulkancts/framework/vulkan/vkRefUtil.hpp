@@ -33,18 +33,18 @@ namespace vk
 
 Move<VkPipeline> createGraphicsPipeline(const DeviceInterface &vk, VkDevice device, VkPipelineCache pipelineCache,
                                         const VkGraphicsPipelineCreateInfo *pCreateInfo,
-                                        const VkAllocationCallbacks *pAllocator = DE_NULL);
+                                        const VkAllocationCallbacks *pAllocator = nullptr);
 Move<VkPipeline> createComputePipeline(const DeviceInterface &vk, VkDevice device, VkPipelineCache pipelineCache,
                                        const VkComputePipelineCreateInfo *pCreateInfo,
-                                       const VkAllocationCallbacks *pAllocator = DE_NULL);
+                                       const VkAllocationCallbacks *pAllocator = nullptr);
 #ifndef CTS_USES_VULKANSC
 Move<VkPipeline> createRayTracingPipelineNV(const DeviceInterface &vk, VkDevice device, VkPipelineCache pipelineCache,
                                             const VkRayTracingPipelineCreateInfoNV *pCreateInfo,
-                                            const VkAllocationCallbacks *pAllocator = DE_NULL);
+                                            const VkAllocationCallbacks *pAllocator = nullptr);
 Move<VkPipeline> createRayTracingPipelineKHR(const DeviceInterface &vk, VkDevice device,
                                              VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache,
                                              const VkRayTracingPipelineCreateInfoKHR *pCreateInfo,
-                                             const VkAllocationCallbacks *pAllocator = DE_NULL);
+                                             const VkAllocationCallbacks *pAllocator = nullptr);
 #endif // CTS_USES_VULKANSC
 
 Move<VkCommandBuffer> allocateCommandBuffer(const DeviceInterface &vk, VkDevice device,
@@ -56,29 +56,29 @@ Move<VkDescriptorSet> allocateDescriptorSet(const DeviceInterface &vk, VkDevice 
 
 Move<VkSemaphore> createSemaphore(const DeviceInterface &vk, VkDevice device,
                                   VkSemaphoreCreateFlags flags            = (VkSemaphoreCreateFlags)0,
-                                  const VkAllocationCallbacks *pAllocator = DE_NULL);
+                                  const VkAllocationCallbacks *pAllocator = nullptr);
 
 Move<VkSemaphore> createSemaphoreType(const DeviceInterface &vk, VkDevice device, VkSemaphoreType type,
                                       VkSemaphoreCreateFlags flags            = (VkSemaphoreCreateFlags)0,
                                       const uint64_t initialValue             = 0,
-                                      const VkAllocationCallbacks *pAllocator = DE_NULL);
+                                      const VkAllocationCallbacks *pAllocator = nullptr);
 
 Move<VkFence> createFence(const DeviceInterface &vk, VkDevice device, VkFenceCreateFlags flags = (VkFenceCreateFlags)0,
-                          const VkAllocationCallbacks *pAllocator = DE_NULL);
+                          const VkAllocationCallbacks *pAllocator = nullptr);
 
 Move<VkCommandPool> createCommandPool(const DeviceInterface &vk, VkDevice device, VkCommandPoolCreateFlags flags,
-                                      uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator = DE_NULL);
+                                      uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator = nullptr);
 
 Move<VkCommandBuffer> allocateCommandBuffer(const DeviceInterface &vk, VkDevice device, VkCommandPool commandPool,
                                             VkCommandBufferLevel level);
 
 Move<VkEvent> createEvent(const DeviceInterface &vk, VkDevice device, VkEventCreateFlags flags = (VkEventCreateFlags)0u,
-                          const VkAllocationCallbacks *pAllocateInfo = DE_NULL);
+                          const VkAllocationCallbacks *pAllocateInfo = nullptr);
 
 #ifdef CTS_USES_VULKANSC
 Move<VkShaderModule> createShaderModule(const DeviceInterface &vk, VkDevice device,
                                         const VkShaderModuleCreateInfo *pCreateInfo,
-                                        const VkAllocationCallbacks *pAllocator = DE_NULL);
+                                        const VkAllocationCallbacks *pAllocator = nullptr);
 #endif // CTS_USES_VULKANSC
 
 } // namespace vk

@@ -62,7 +62,7 @@ public:
     }
     const uint8_t *getBytes(void) const
     {
-        return !m_data.empty() ? &m_data[0] : DE_NULL;
+        return !m_data.empty() ? &m_data[0] : nullptr;
     }
 
     void append(const uint8_t *bytes, size_t numBytes);
@@ -107,11 +107,11 @@ public:
 
     const uint8_t *getData(void) const
     {
-        return !m_data.empty() ? &m_data[0] : DE_NULL;
+        return !m_data.empty() ? &m_data[0] : nullptr;
     }
     uint8_t *getData(void)
     {
-        return !m_data.empty() ? &m_data[0] : DE_NULL;
+        return !m_data.empty() ? &m_data[0] : nullptr;
     }
 
     void clear(void);

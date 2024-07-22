@@ -160,7 +160,7 @@ inline void release(Context &context, VkShaderEXT shaderObject, const VkAllocati
 inline void release(Context &context, VkDevice device, VkCommandPool cmdPool, uint32_t numCmdBuffers,
                     const VkCommandBuffer *pCmdBuffers)
 {
-    DE_ASSERT(device != DE_NULL);
+    DE_ASSERT(device != nullptr);
     DE_ASSERT(cmdPool != VK_NULL_HANDLE);
     DE_ASSERT(numCmdBuffers > 0u);
     context.getDeviceInterface().freeCommandBuffers(device, cmdPool, numCmdBuffers, pCmdBuffers);
@@ -169,7 +169,7 @@ inline void release(Context &context, VkDevice device, VkCommandPool cmdPool, ui
 inline void release(Context &context, VkDevice device, VkDescriptorPool descriptorPool, uint32_t numDescriptorSets,
                     const VkDescriptorSet *pDescriptorSets)
 {
-    DE_ASSERT(device != DE_NULL);
+    DE_ASSERT(device != nullptr);
     DE_ASSERT(descriptorPool != VK_NULL_HANDLE);
     DE_ASSERT(numDescriptorSets > 0u);
     context.getDeviceInterface().freeDescriptorSets(device, descriptorPool, numDescriptorSets, pDescriptorSets);
@@ -194,7 +194,7 @@ template <typename Object>
 tcu::TestStatus test(Context &context)
 {
     const Object nullHandle                     = VK_NULL_HANDLE;
-    const VkAllocationCallbacks *pNullAllocator = DE_NULL;
+    const VkAllocationCallbacks *pNullAllocator = nullptr;
 
 #ifndef CTS_USES_VULKANSC
     AllocationCallbackRecorder recordingAllocator(getSystemAllocator(), 1u);
@@ -221,7 +221,7 @@ tcu::TestStatus test<VkCommandBuffer>(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolCreateInfo = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // VkStructureType             sType;
-        DE_NULL,                                    // const void*                 pNext;
+        nullptr,                                    // const void*                 pNext;
         VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,       // VkCommandPoolCreateFlags    flags;
         queueFamilyIndex,                           // uint32_t                    queueFamilyIndex;
     };
@@ -284,7 +284,7 @@ tcu::TestStatus test<VkDescriptorSet>(Context &context)
     };
     const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,         // VkStructureType                sType;
-        DE_NULL,                                               // const void*                    pNext;
+        nullptr,                                               // const void*                    pNext;
         VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,     // VkDescriptorPoolCreateFlags    flags;
         2u,                                                    // uint32_t                       maxSets;
         static_cast<uint32_t>(DE_LENGTH_OF_ARRAY(pPoolSizes)), // uint32_t                       poolSizeCount;

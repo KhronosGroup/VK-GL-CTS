@@ -155,7 +155,7 @@ SyncTest::SyncTest(EglTestContext &eglTestCtx, EGLenum syncType, Extension exten
     , m_eglDisplay(EGL_NO_DISPLAY)
     , m_eglConfig(((eglw::EGLConfig)0)) // EGL_NO_CONFIG
     , m_eglSurface(EGL_NO_SURFACE)
-    , m_nativeWindow(DE_NULL)
+    , m_nativeWindow(nullptr)
     , m_eglContext(EGL_NO_CONTEXT)
     , m_sync(EGL_NO_SYNC_KHR)
 {
@@ -281,10 +281,10 @@ void SyncTest::init(void)
 
         // Create surface
         m_nativeWindow = windowFactory.createWindow(
-            &m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, DE_NULL,
+            &m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, nullptr,
             eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
         m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_nativeWindow, m_eglDisplay,
-                                                 m_eglConfig, DE_NULL);
+                                                 m_eglConfig, nullptr);
 
         EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
@@ -328,7 +328,7 @@ void SyncTest::deinit(void)
         }
 
         delete m_nativeWindow;
-        m_nativeWindow = DE_NULL;
+        m_nativeWindow = nullptr;
 
         egl.terminate(m_eglDisplay);
         m_eglDisplay = EGL_NO_DISPLAY;
@@ -398,11 +398,11 @@ class CreateLongRunningSyncTest : public SyncTest
             TCU_THROW(NotSupportedError, "GLES3 not supported");
 
         m_nativeWindow = windowFactory.createWindow(
-            &m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, DE_NULL,
+            &m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, nullptr,
             eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
 
         m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_nativeWindow, m_eglDisplay,
-                                                 m_eglConfig, DE_NULL);
+                                                 m_eglConfig, nullptr);
 
         EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 

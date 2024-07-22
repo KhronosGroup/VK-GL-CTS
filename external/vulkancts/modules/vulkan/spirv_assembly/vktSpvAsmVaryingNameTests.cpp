@@ -167,8 +167,8 @@ void createShaders(SourceCollections &dst, InstanceContext &context, string data
         "                        OpReturn\n"
         "                        OpFunctionEnd\n";
 
-    dst.spirvAsmSources.add("vert", DE_NULL) << vertexShader << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-    dst.spirvAsmSources.add("frag", DE_NULL)
+    dst.spirvAsmSources.add("vert", nullptr) << vertexShader << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+    dst.spirvAsmSources.add("frag", nullptr)
         << fragmentShader << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 

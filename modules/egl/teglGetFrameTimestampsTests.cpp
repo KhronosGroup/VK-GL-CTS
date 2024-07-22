@@ -336,11 +336,11 @@ private:
 
 GetFrameTimestampTest::GetFrameTimestampTest(EglTestContext &eglTestCtx, const NamedFilterList &filters)
     : SimpleConfigCase(eglTestCtx, filters.getName(), filters.getDescription(), filters)
-    , m_eglGetNextFrameIdANDROID(DE_NULL)
-    , m_eglGetCompositorTimingANDROID(DE_NULL)
-    , m_eglGetCompositorTimingSupportedANDROID(DE_NULL)
-    , m_eglGetFrameTimestampsANDROID(DE_NULL)
-    , m_eglGetFrameTimestampSupportedANDROID(DE_NULL)
+    , m_eglGetNextFrameIdANDROID(nullptr)
+    , m_eglGetCompositorTimingANDROID(nullptr)
+    , m_eglGetCompositorTimingSupportedANDROID(nullptr)
+    , m_eglGetFrameTimestampsANDROID(nullptr)
+    , m_eglGetFrameTimestampSupportedANDROID(nullptr)
     , m_result(m_testCtx.getLog())
 {
 }
@@ -412,11 +412,11 @@ uint32_t createGLES2Program(const glw::Functions &gl, TestLog &log)
 
         GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to create shaders and program");
 
-        gl.shaderSource(vertexShader, 1, &vertexShaderSource, DE_NULL);
+        gl.shaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
         gl.compileShader(vertexShader);
         GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to setup vertex shader");
 
-        gl.shaderSource(fragmentShader, 1, &fragmentShaderSource, DE_NULL);
+        gl.shaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
         gl.compileShader(fragmentShader);
         GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to setup fragment shader");
 
@@ -540,11 +540,11 @@ void GetFrameTimestampTest::executeForConfig(EGLDisplay display, EGLConfig confi
     }
 
     de::UniquePtr<eglu::NativeWindow> window(
-        factory.createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL,
+        factory.createWindow(&m_eglTestCtx.getNativeDisplay(), display, config, nullptr,
                              eglu::WindowParams(128, 128, eglu::WindowParams::VISIBILITY_VISIBLE)));
 
     eglu::UniqueSurface surface(
-        egl, display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, DE_NULL));
+        egl, display, eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, nullptr));
     eglu::UniqueContext context(egl, display, createGLES2Context(egl, display, config));
     glw::Functions gl;
     uint32_t program = 0;

@@ -380,7 +380,7 @@ void gl4cts::ConditionalRenderInverted::FunctionalTest::createProgram()
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 

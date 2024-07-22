@@ -88,10 +88,10 @@ private:
 
 MultiviewCase::MultiviewCase(Context &context, const char *name, const char *description, int numSamples)
     : TestCase(context, name, description)
-    , m_multiviewProgram(DE_NULL)
+    , m_multiviewProgram(nullptr)
     , m_multiviewFbo(0)
     , m_arrayTexture(0)
-    , m_finalProgram(DE_NULL)
+    , m_finalProgram(nullptr)
     , m_caseIndex(0)
     , m_numSamples(numSamples)
     , m_width(512)
@@ -233,9 +233,9 @@ void MultiviewCase::deinit()
 {
     deleteFramebufferObjects();
     delete m_multiviewProgram;
-    m_multiviewProgram = DE_NULL;
+    m_multiviewProgram = nullptr;
     delete m_finalProgram;
-    m_finalProgram = DE_NULL;
+    m_finalProgram = nullptr;
 }
 
 MultiviewCase::IterateResult MultiviewCase::iterate()

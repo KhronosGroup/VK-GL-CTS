@@ -242,7 +242,7 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
 
                     vk::VkShaderModuleCreateInfo smCI{
                         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,    // VkStructureType sType;
-                        DE_NULL,                                        // const void* pNext;
+                        nullptr,                                        // const void* pNext;
                         vk::VkShaderModuleCreateFlags(0u),              // VkShaderModuleCreateFlags flags;
                         fileSize,                                       // uintptr_t codeSize;
                         reinterpret_cast<uint32_t *>(shaderData.data()) // const uint32_t* pCode;
@@ -273,7 +273,7 @@ void importFilesForExternalCompiler(vksc_server::VulkanPipelineCacheInput &input
         if (!jsonPipelineUUID.isNull())
         {
             pipelineDescription.id.sType = VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO;
-            pipelineDescription.id.pNext = DE_NULL;
+            pipelineDescription.id.pNext = nullptr;
             for (Json::ArrayIndex i = 0; i < jsonPipelineUUID.size(); ++i)
                 pipelineDescription.id.pipelineIdentifier[i] = uint8_t(jsonPipelineUUID[i].asUInt());
             pipelineDescription.id.matchControl  = VK_PIPELINE_MATCH_CONTROL_APPLICATION_UUID_EXACT_MATCH;
@@ -316,9 +316,9 @@ int main(int argc, char **argv)
         de::SharedPtr<tcu::Platform> platform{createPlatform()};
 #ifdef DE_PLATFORM_USE_LIBRARY_TYPE
         de::SharedPtr<vk::Library> library{
-            platform->getVulkanPlatform().createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN, DE_NULL)};
+            platform->getVulkanPlatform().createLibrary(vk::Platform::LIBRARY_TYPE_VULKAN, nullptr)};
 #else
-        de::SharedPtr<vk::Library> library{platform->getVulkanPlatform().createLibrary(DE_NULL)};
+        de::SharedPtr<vk::Library> library{platform->getVulkanPlatform().createLibrary(nullptr)};
 #endif
         tcu::TestContext tcx{*platform, archive, log, cmdLineDummy, nullptr};
         vk::BinaryCollection collection{};

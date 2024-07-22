@@ -215,7 +215,7 @@ void pushConstants(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, VkPipel
 #ifndef CTS_USES_VULKANSC
         vk::VkPushConstantsInfoKHR pushConstantInfo = {
             VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO_KHR, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             layout,                                    // VkPipelineLayout layout;
             stageFlags,                                // VkShaderStageFlags stageFlags;
             offset,                                    // uint32_t offset;
@@ -342,7 +342,7 @@ void PushConstantGraphicsTestInstance::init(void)
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_colorFormat,                                                         // VkFormat format;
@@ -372,7 +372,7 @@ void PushConstantGraphicsTestInstance::init(void)
     {
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkImageViewCreateFlags flags;
             *m_colorImage,                               // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
@@ -393,7 +393,7 @@ void PushConstantGraphicsTestInstance::init(void)
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             1u,                                        // uint32_t attachmentCount;
@@ -421,7 +421,7 @@ void PushConstantGraphicsTestInstance::init(void)
         // create uniform buffer
         const VkBufferCreateInfo uniformBufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags    flags
             16u,                                  // VkDeviceSize size;
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,   // VkBufferUsageFlags usage;
@@ -443,7 +443,7 @@ void PushConstantGraphicsTestInstance::init(void)
         // create and update descriptor set
         const VkDescriptorSetAllocateInfo allocInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                             sType;
-            DE_NULL,                                        // const void*                                 pNext;
+            nullptr,                                        // const void*                                 pNext;
             *m_descriptorPool,         // VkDescriptorPool                            descriptorPool;
             1u,                        // uint32_t                                    setLayoutCount;
             &(*m_descriptorSetLayout), // const VkDescriptorSetLayout*                pSetLayouts;
@@ -469,7 +469,7 @@ void PushConstantGraphicsTestInstance::init(void)
 #endif // CTS_USES_VULKANSC
         VkPipelineLayoutCreateInfo pipelineLayoutParams{
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             pipelineLayoutFlags,                           // VkPipelineLayoutCreateFlags flags;
             1u,                                            // uint32_t setLayoutCount;
             &(*m_descriptorSetLayout),                     // const VkDescriptorSetLayout* pSetLayouts;
@@ -480,7 +480,7 @@ void PushConstantGraphicsTestInstance::init(void)
         m_preRasterizationStatePipelineLayout =
             PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
         pipelineLayoutParams.setLayoutCount = 0u;
-        pipelineLayoutParams.pSetLayouts    = DE_NULL;
+        pipelineLayoutParams.pSetLayouts    = nullptr;
         m_fragmentStatePipelineLayout =
             PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
     }
@@ -554,7 +554,7 @@ void PushConstantGraphicsTestInstance::init(void)
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // vkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t bindingCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -577,7 +577,7 @@ void PushConstantGraphicsTestInstance::init(void)
             .setDefaultTopology(topology)
             .setupVertexInputState(&vertexInputStateParams)
             .setupPreRasterizationShaderState(viewports, scissors, m_preRasterizationStatePipelineLayout, *m_renderPass,
-                                              0u, m_vertexShaderModule, DE_NULL,
+                                              0u, m_vertexShaderModule, nullptr,
                                               useTessellation ? m_tessControlShaderModule : ShaderWrapper(),
                                               useTessellation ? m_tessEvaluationShaderModule : ShaderWrapper(),
                                               useGeometry ? m_geometryShaderModule : ShaderWrapper())
@@ -592,7 +592,7 @@ void PushConstantGraphicsTestInstance::init(void)
 
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                    // VkStructureType sType;
-            DE_NULL,                                                 // const void* pNext;
+            nullptr,                                                 // const void* pNext;
             0u,                                                      // VkBufferCreateFlags flags;
             (VkDeviceSize)(sizeof(Vertex4RGBA) * m_vertices.size()), // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,                       // VkBufferUsageFlags usage;
@@ -647,7 +647,7 @@ void PushConstantGraphicsTestInstance::init(void)
             m_graphicsPipeline.bind(*m_cmdBuffer);
             vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
             vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                     *m_preRasterizationStatePipelineLayout, 0, 1, &(*m_descriptorSet), 0, DE_NULL);
+                                     *m_preRasterizationStatePipelineLayout, 0, 1, &(*m_descriptorSet), 0, nullptr);
 
             vk.cmdDraw(*m_cmdBuffer, (uint32_t)(m_vertices.size() / TRIANGLE_COUNT), 1, 0, 0);
         }
@@ -823,7 +823,7 @@ void PushConstantGraphicsDisjointInstance::updatePushConstants(VkCommandBuffer c
     }
 
     const uint32_t kind = 2u;
-    const void *value   = DE_NULL;
+    const void *value   = nullptr;
 
     for (size_t rangeNdx = 0; rangeNdx < m_rangeCount; rangeNdx++)
     {
@@ -1974,7 +1974,7 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance(Context &contex
         const VkDeviceSize bufferSize             = sizeof(tcu::Vec4) * 8;
         const VkBufferCreateInfo bufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags    flags
             bufferSize,                           // VkDeviceSize size;
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,   // VkBufferUsageFlags usage;
@@ -1992,7 +1992,7 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance(Context &contex
         // create and update descriptor set
         const VkDescriptorSetAllocateInfo allocInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                             sType;
-            DE_NULL,                                        // const void*                                 pNext;
+            nullptr,                                        // const void*                                 pNext;
             *m_descriptorPool,         // VkDescriptorPool                            descriptorPool;
             1u,                        // uint32_t                                    setLayoutCount;
             &(*m_descriptorSetLayout), // const VkDescriptorSetLayout*                pSetLayouts;
@@ -2010,7 +2010,7 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance(Context &contex
         // create pipeline layout
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             1u,                                            // uint32_t descriptorSetCount;
             &(*m_descriptorSetLayout),                     // const VkDescriptorSetLayout* pSetLayouts;
@@ -2027,17 +2027,17 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance(Context &contex
 
         const VkPipelineShaderStageCreateInfo stageCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             0u,                                                  // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             *m_computeShaderModule,                              // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL                                              // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr                                              // const VkSpecializationInfo* pSpecializationInfo;
         };
 
         const VkComputePipelineCreateInfo createInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType                             sType;
-            DE_NULL,                                        // const void*                                 pNext;
+            nullptr,                                        // const void*                                 pNext;
             0u,                                             // VkPipelineCreateFlags                       flags;
             stageCreateInfo,                                // VkPipelineShaderStageCreateInfo             stage;
             *m_pipelineLayout,                              // VkPipelineLayout                            layout;
@@ -2059,7 +2059,7 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance(Context &contex
 
         vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipelines);
         vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0, 1,
-                                 &(*m_descriptorSet), 0, DE_NULL);
+                                 &(*m_descriptorSet), 0, nullptr);
 
         // update push constant
         if (CTT_UNINITIALIZED != m_testType)
@@ -2073,7 +2073,7 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance(Context &contex
 
         const VkBufferMemoryBarrier buf_barrier = {
             VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //    VkStructureType    sType;
-            DE_NULL,                                 //    const void*        pNext;
+            nullptr,                                 //    const void*        pNext;
             VK_ACCESS_SHADER_WRITE_BIT,              //    VkAccessFlags      srcAccessMask;
             VK_ACCESS_HOST_READ_BIT,                 //    VkAccessFlags      dstAccessMask;
             VK_QUEUE_FAMILY_IGNORED,                 //    uint32_t           srcQueueFamilyIndex;
@@ -2084,7 +2084,7 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance(Context &contex
         };
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0,
-                              DE_NULL, 1, &buf_barrier, 0, DE_NULL);
+                              nullptr, 1, &buf_barrier, 0, nullptr);
 
         endCommandBuffer(vk, *m_cmdBuffer);
     }
@@ -2310,7 +2310,7 @@ void PushConstantLifetimeTestInstance::init(void)
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_colorFormat,                                                         // VkFormat format;
@@ -2340,7 +2340,7 @@ void PushConstantLifetimeTestInstance::init(void)
     {
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkImageViewCreateFlags flags;
             *m_colorImage,                               // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
@@ -2361,7 +2361,7 @@ void PushConstantLifetimeTestInstance::init(void)
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             1u,                                        // uint32_t attachmentCount;
@@ -2390,7 +2390,7 @@ void PushConstantLifetimeTestInstance::init(void)
         const VkDeviceSize bufferSize             = sizeof(tcu::Vec4) * 8;
         const VkBufferCreateInfo bufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags                flags
             bufferSize,                           // VkDeviceSize size;
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,   // VkBufferUsageFlags usage;
@@ -2408,7 +2408,7 @@ void PushConstantLifetimeTestInstance::init(void)
         // create and update descriptor set
         const VkDescriptorSetAllocateInfo allocInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             *m_descriptorPool,                              // VkDescriptorPool descriptorPool;
             1u,                                             // uint32_t setLayoutCount;
             &(*m_descriptorSetLayout),                      // const VkDescriptorSetLayout* pSetLayouts;
@@ -2432,14 +2432,14 @@ void PushConstantLifetimeTestInstance::init(void)
 
         const VkPipelineLayoutCreateInfo pipelineLayoutParams[]{
             {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-             DE_NULL,                                       // const void* pNext;
+             nullptr,                                       // const void* pNext;
              0u,                                            // VkPipelineLayoutCreateFlags flags;
              1u,                                            // uint32_t descriptorSetCount;
              &(*m_descriptorSetLayout),                     // const VkDescriptorSetLayout* pSetLayouts;
              1u,                                            // uint32_t pushConstantRangeCount;
              &(pushConstantRanges[0])},
             {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-             DE_NULL,                                       // const void* pNext;
+             nullptr,                                       // const void* pNext;
              0u,                                            // VkPipelineLayoutCreateFlags flags;
              1u,                                            // uint32_t descriptorSetCount;
              &(*m_descriptorSetLayout),                     // const VkDescriptorSetLayout* pSetLayouts;
@@ -2479,7 +2479,7 @@ void PushConstantLifetimeTestInstance::init(void)
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // vkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t bindingCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -2527,7 +2527,7 @@ void PushConstantLifetimeTestInstance::init(void)
 
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                    // VkStructureType sType;
-            DE_NULL,                                                 // const void* pNext;
+            nullptr,                                                 // const void* pNext;
             0u,                                                      // VkBufferCreateFlags flags;
             (VkDeviceSize)(sizeof(Vertex4RGBA) * m_vertices.size()), // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,                       // VkBufferUsageFlags usage;
@@ -2554,19 +2554,19 @@ void PushConstantLifetimeTestInstance::init(void)
 
         const VkPipelineShaderStageCreateInfo stageCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             0u,                                                  // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             m_computeShaderModule.getModule(),                   // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL                                              // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr                                              // const VkSpecializationInfo* pSpecializationInfo;
         };
 
         if (m_pushConstantRange[0].range.shaderStage & VK_SHADER_STAGE_COMPUTE_BIT)
         {
             const VkComputePipelineCreateInfo computePipelineLayoutParams = {
                 VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                        // const void* pNext;
+                nullptr,                                        // const void* pNext;
                 0u,                                             // VkPipelineCreateFlags flags;
                 stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
                 *m_pipelineLayout[0],                           // VkPipelineLayout layout;
@@ -2580,7 +2580,7 @@ void PushConstantLifetimeTestInstance::init(void)
         {
             const VkComputePipelineCreateInfo computePipelineLayoutParams = {
                 VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                        // const void* pNext;
+                nullptr,                                        // const void* pNext;
                 0u,                                             // VkPipelineCreateFlags flags;
                 stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
                 *m_pipelineLayout[1],                           // VkPipelineLayout layout;
@@ -2642,7 +2642,7 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate(void)
             {
                 vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
                                          *m_pipelineLayout[m_cmdList[ndx].rangeNdx], 0, 1u, &(*m_descriptorSet), 0,
-                                         DE_NULL);
+                                         nullptr);
 
                 vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
                                    *m_computePipeline[m_cmdList[ndx].rangeNdx]);
@@ -2659,7 +2659,7 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate(void)
 
                 const VkImageMemoryBarrier prePassBarrier = {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType sType;
-                    DE_NULL,                                    // const void* pNext;
+                    nullptr,                                    // const void* pNext;
                     0,                                          // VkAccessFlags srcAccessMask;
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,       // VkAccessFlags dstAccessMask;
                     VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout oldLayout;
@@ -2671,7 +2671,7 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate(void)
                 };
 
                 vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                      VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1,
+                                      VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1,
                                       &prePassBarrier);
 
                 m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
@@ -2684,7 +2684,7 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate(void)
 
                 const VkImageMemoryBarrier postPassBarrier = {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType sType;
-                    DE_NULL,                                    // const void* pNext;
+                    nullptr,                                    // const void* pNext;
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,       // VkAccessFlags srcAccessMask;
                     VK_ACCESS_TRANSFER_WRITE_BIT,               // VkAccessFlags dstAccessMask;
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,   // VkImageLayout oldLayout;
@@ -2696,7 +2696,7 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate(void)
                 };
 
                 vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                      0, 0, DE_NULL, 0, DE_NULL, 1, &postPassBarrier);
+                                      0, 0, nullptr, 0, nullptr, 1, &postPassBarrier);
 
                 verifyGraphics = true;
                 break;
@@ -2708,7 +2708,7 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate(void)
 
                 const VkBufferMemoryBarrier outputBarrier = {
                     VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-                    DE_NULL,                                 // const void* pNext;
+                    nullptr,                                 // const void* pNext;
                     VK_ACCESS_SHADER_WRITE_BIT,              // VkAccessFlags srcAccessMask;
                     VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
                     VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -2719,7 +2719,7 @@ tcu::TestStatus PushConstantLifetimeTestInstance::iterate(void)
                 };
 
                 vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0,
-                                      0, DE_NULL, 1, &outputBarrier, 0, DE_NULL);
+                                      0, nullptr, 1, &outputBarrier, 0, nullptr);
 
                 verifyCompute = true;
                 break;
@@ -3031,16 +3031,16 @@ tcu::TestStatus OverwriteTestInstance::iterate(void)
             nullptr, // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
         };
         renderPass = RenderPassWrapper(m_params.pipelineConstructionType, vkd, device);
-        renderPass.createFramebuffer(vkd, device, 0u, DE_NULL, DE_NULL, imageExtent.width, imageExtent.height);
+        renderPass.createFramebuffer(vkd, device, 0u, nullptr, nullptr, imageExtent.width, imageExtent.height);
 
         const VkPipelineColorBlendStateCreateInfo colorBlendState{
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL,                 // const void*                                    pNext
+            nullptr,                 // const void*                                    pNext
             0u,                      // VkPipelineColorBlendStateCreateFlags            flags
             VK_FALSE,                // VkBool32                                        logicOpEnable
             VK_LOGIC_OP_CLEAR,       // VkLogicOp                                    logicOp
             0u,                      // uint32_t                                        attachmentCount
-            DE_NULL,                 // const VkPipelineColorBlendAttachmentState*    pAttachments
+            nullptr,                 // const VkPipelineColorBlendAttachmentState*    pAttachments
             {0.0f, 0.0f, 0.0f, 0.0f} // float                                        blendConstants[4]
         };
 

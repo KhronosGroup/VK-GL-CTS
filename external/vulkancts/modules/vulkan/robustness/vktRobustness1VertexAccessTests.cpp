@@ -459,7 +459,7 @@ VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const VkFormat for
 {
     const VkImageCreateInfo imageInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType;
-        DE_NULL,                             // const void*              pNext;
+        nullptr,                             // const void*              pNext;
         (VkImageCreateFlags)0,               // VkImageCreateFlags       flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType              imageType;
         format,                              // VkFormat                 format;
@@ -471,7 +471,7 @@ VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const VkFormat for
         usage,                               // VkImageUsageFlags        usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode;
         0u,                                  // uint32_t                 queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t*          pQueueFamilyIndices;
+        nullptr,                             // const uint32_t*          pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout            initialLayout;
     };
     return imageInfo;
@@ -505,7 +505,7 @@ static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, cons
         VK_CHECK(vk.bindImageMemory(device, *image, imageAlloc->getMemory(), imageAlloc->getOffset()));
         const auto createInfo = VkImageViewCreateInfo{
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             *image,                                   // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -541,13 +541,13 @@ static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, cons
         static_cast<VkSubpassDescriptionFlags>(0),       // VkSubpassDescriptionFlags flags;
         VK_PIPELINE_BIND_POINT_GRAPHICS,                 // VkPipelineBindPoint pipelineBindPoint;
         0u,                                              // uint32_t inputAttachmentCount;
-        DE_NULL,                                         // const VkAttachmentReference* pInputAttachments;
+        nullptr,                                         // const VkAttachmentReference* pInputAttachments;
         static_cast<uint32_t>(attachmentRefs[0].size()), // uint32_t colorAttachmentCount;
         attachmentRefs[0].data(),                        // const VkAttachmentReference* pColorAttachments;
-        DE_NULL,                                         // const VkAttachmentReference* pResolveAttachments;
-        DE_NULL,                                         // const VkAttachmentReference* pDepthStencilAttachment;
+        nullptr,                                         // const VkAttachmentReference* pResolveAttachments;
+        nullptr,                                         // const VkAttachmentReference* pDepthStencilAttachment;
         0u,                                              // uint32_t preserveAttachmentCount;
-        DE_NULL                                          // const uint32_t* pPreserveAttachments;
+        nullptr                                          // const uint32_t* pPreserveAttachments;
     }};
     const auto subpassDeps  = vector<VkSubpassDependency>{
         {
@@ -570,7 +570,7 @@ static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, cons
         }};
     const auto renderPassInfo = VkRenderPassCreateInfo{
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,          // VkStructureType                    sType
-        DE_NULL,                                            // const void*                        pNext
+        nullptr,                                            // const void*                        pNext
         static_cast<VkRenderPassCreateFlags>(0),            // VkRenderPassCreateFlags            flags
         static_cast<uint32_t>(colorAttachmentDescs.size()), // uint32_t                            attachmentCount
         colorAttachmentDescs.data(),                        // const VkAttachmentDescription*    pAttachments
@@ -579,7 +579,7 @@ static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, cons
         static_cast<uint32_t>(subpassDeps.size()),          // uint32_t                            dependencyCount
         subpassDeps.data()                                  // const VkSubpassDependency*        pDependencies
     };
-    const Unique<VkRenderPass> pass(createRenderPass(vk, device, &renderPassInfo, DE_NULL));
+    const Unique<VkRenderPass> pass(createRenderPass(vk, device, &renderPassInfo, nullptr));
 
     vector<Move<VkBuffer>> vertexBuffers;
     vector<MovePtr<Allocation>> vertexBufferAllocs;
@@ -616,7 +616,7 @@ static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, cons
         setLayouts.push_back(*descriptorSetLayout);
         VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             *descriptorPool,                                // VkDescriptorPool descriptorPool;
             1u,                                             // uint32_t setLayoutCount;
             &*descriptorSetLayout                           // const VkDescriptorSetLayout* pSetLayouts;
@@ -626,12 +626,12 @@ static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, cons
 
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             static_cast<uint32_t>(setLayouts.size()),      // uint32_t setLayoutCount;
             setLayouts.data(),                             // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
         auto pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 
@@ -675,7 +675,7 @@ static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, cons
         const auto &attributes           = input.vertexAttributes;
         const auto vertexInputCreateInfo = VkPipelineVertexInputStateCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
             static_cast<uint32_t>(bindings.size()),                    // uint32_t vertexBindingDescriptionCount;
             bindings.data(), // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -711,7 +711,7 @@ static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, cons
 
     const auto framebufferCreateInfo = VkFramebufferCreateInfo{
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,     // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         0u,                                            // VkFramebufferCreateFlags flags;
         *pass,                                         // VkRenderPass renderPass;
         static_cast<uint32_t>(attachmentViews.size()), // uint32_t attachmentCount;
@@ -735,7 +735,7 @@ static TestStatus robustness1TestFn(TestContext &testCtx, Context &context, cons
         vk.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelines[i]);
         vk.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayouts[i], 0,
                                  static_cast<uint32_t>(descriptorSetPtrs[i].size()), descriptorSetPtrs[i].data(), 0,
-                                 DE_NULL);
+                                 nullptr);
         vk.cmdBindVertexBuffers(*commandBuffer, 0, (uint32_t)vertexBufferPtrs[i].size(), vertexBufferPtrs[i].data(),
                                 vertexBufferOffsets[i].data());
         if (!input.indices.empty())

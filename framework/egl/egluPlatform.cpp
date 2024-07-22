@@ -42,7 +42,7 @@ tcu::FunctionLibrary *Platform::createDefaultGLFunctionLibrary(glu::ApiType apiT
     if (apiType.getProfile() == glu::PROFILE_ES)
         return createStaticESLibrary();
     else
-        return new tcu::StaticFunctionLibrary(DE_NULL, 0);
+        return new tcu::StaticFunctionLibrary(nullptr, 0);
 }
 
 } // namespace eglu

@@ -68,7 +68,7 @@ void freeSystemMem(const VkAllocationCallbacks *pAllocator, void *mem)
 template <typename Object, typename Handle, typename Parent, typename CreateInfo>
 Handle allocateHandle(Parent parent, const CreateInfo *pCreateInfo, const VkAllocationCallbacks *pAllocator)
 {
-    Object *obj = DE_NULL;
+    Object *obj = nullptr;
 
     if (pAllocator)
     {
@@ -93,7 +93,7 @@ Handle allocateHandle(Parent parent, const CreateInfo *pCreateInfo, const VkAllo
 template <typename Object, typename Handle, typename CreateInfo>
 Handle allocateHandle(const CreateInfo *pCreateInfo, const VkAllocationCallbacks *pAllocator)
 {
-    Object *obj = DE_NULL;
+    Object *obj = nullptr;
 
     if (pAllocator)
     {
@@ -118,7 +118,7 @@ Handle allocateHandle(const CreateInfo *pCreateInfo, const VkAllocationCallbacks
 template <typename Object, typename Handle, typename Parent>
 Handle allocateHandle(Parent parent, const VkAllocationCallbacks *pAllocator)
 {
-    Object *obj = DE_NULL;
+    Object *obj = nullptr;
 
     if (pAllocator)
     {
@@ -498,7 +498,7 @@ void *allocateHeap(const VkMemoryAllocateInfo *pAllocInfo)
         return heapPtr;
     }
     else
-        return DE_NULL;
+        return nullptr;
 }
 
 void freeHeap(void *ptr)
@@ -553,8 +553,8 @@ AHardwareBuffer *findOrCreateHwBuffer(const VkMemoryAllocateInfo *pAllocInfo)
         findStructure<VkImportAndroidHardwareBufferInfoANDROID>(pAllocInfo->pNext);
     const VkMemoryDedicatedAllocateInfo *const dedicatedInfo =
         findStructure<VkMemoryDedicatedAllocateInfo>(pAllocInfo->pNext);
-    const Image *const image  = dedicatedInfo && !!dedicatedInfo->image ? dedicatedInfo->image.as<Image>() : DE_NULL;
-    AHardwareBuffer *hwbuffer = DE_NULL;
+    const Image *const image  = dedicatedInfo && !!dedicatedInfo->image ? dedicatedInfo->image.as<Image>() : nullptr;
+    AHardwareBuffer *hwbuffer = nullptr;
 
     // Import and export aren't mutually exclusive; we can have both simultaneously.
     DE_ASSERT((importInfo && importInfo->buffer.internal) ||
@@ -1023,7 +1023,7 @@ extern "C"
             return enumerateExtensions((uint32_t)DE_LENGTH_OF_ARRAY(s_extensions), s_extensions, pPropertyCount,
                                        pProperties);
         else
-            return enumerateExtensions(0, DE_NULL, pPropertyCount, pProperties);
+            return enumerateExtensions(0, nullptr, pPropertyCount, pProperties);
     }
 
     VKAPI_ATTR VkResult VKAPI_CALL enumerateDeviceExtensionProperties(VkPhysicalDevice physicalDevice,
@@ -1047,7 +1047,7 @@ extern "C"
             return enumerateExtensions((uint32_t)DE_LENGTH_OF_ARRAY(s_extensions), s_extensions, pPropertyCount,
                                        pProperties);
         else
-            return enumerateExtensions(0, DE_NULL, pPropertyCount, pProperties);
+            return enumerateExtensions(0, nullptr, pPropertyCount, pProperties);
     }
 
     VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFeatures(VkPhysicalDevice physicalDevice,
@@ -1692,7 +1692,7 @@ extern "C"
             else if (name == "vkEnumerateInstanceLayerProperties")
                 return (PFN_vkVoidFunction)enumerateInstanceLayerProperties;
             else
-                return (PFN_vkVoidFunction)DE_NULL;
+                return nullptr;
         }
     }
 

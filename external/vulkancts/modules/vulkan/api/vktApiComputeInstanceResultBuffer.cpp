@@ -35,7 +35,7 @@ ComputeInstanceResultBuffer::ComputeInstanceResultBuffer(const DeviceInterface &
                                                          Allocator &allocator, float initValue)
     : m_vki(vki)
     , m_device(device)
-    , m_bufferMem(DE_NULL)
+    , m_bufferMem(nullptr)
     , m_buffer(createResultBuffer(m_vki, m_device, allocator, &m_bufferMem, initValue))
     , m_bufferBarrier(createResultBufferBarrier(*m_buffer))
 {
@@ -59,13 +59,13 @@ Move<VkBuffer> ComputeInstanceResultBuffer::createResultBuffer(const DeviceInter
 {
     const VkBufferCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,                                 // flags
         (VkDeviceSize)DATA_SIZE,            // size
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, // usage
         VK_SHARING_MODE_EXCLUSIVE,          // sharingMode
         0u,                                 // queueFamilyCount
-        DE_NULL,                            // pQueueFamilyIndices
+        nullptr,                            // pQueueFamilyIndices
     };
 
     Move<VkBuffer> buffer(createBuffer(vki, device, &createInfo));
@@ -91,7 +91,7 @@ VkBufferMemoryBarrier ComputeInstanceResultBuffer::createResultBufferBarrier(VkB
 {
     const VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-        DE_NULL,
+        nullptr,
         VK_ACCESS_SHADER_WRITE_BIT, // srcAccessMask
         VK_ACCESS_HOST_READ_BIT,    // dstAccessMask
         VK_QUEUE_FAMILY_IGNORED,    // srcQueueFamilyIndex

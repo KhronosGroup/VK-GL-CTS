@@ -179,7 +179,7 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::iterate(void)
 CustomInstance AcquireDrmDisplayTestInstance::createInstanceWithAcquireDrmDisplay(void)
 {
     vector<VkExtensionProperties> supportedExtensions =
-        enumerateInstanceExtensionProperties(m_context.getPlatformInterface(), DE_NULL);
+        enumerateInstanceExtensionProperties(m_context.getPlatformInterface(), nullptr);
     vector<string> requiredExtensions = {
         "VK_EXT_acquire_drm_display",
         "VK_EXT_direct_mode_display",
@@ -205,7 +205,7 @@ LibDrm::FdPtr AcquireDrmDisplayTestInstance::getDrmFdPtr(void)
 
     deMemset(&deviceDrmProperties, 0, sizeof(deviceDrmProperties));
     deviceDrmProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
-    deviceDrmProperties.pNext = DE_NULL;
+    deviceDrmProperties.pNext = nullptr;
 
     deMemset(&deviceProperties2, 0, sizeof(deviceProperties2));
     deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;

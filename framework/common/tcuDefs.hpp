@@ -160,7 +160,7 @@ public:
 
 #define TCU_THROW_EXPR(ERRCLASS, MSG, EXPR) throw tcu::ERRCLASS(MSG, EXPR, __FILE__, __LINE__)
 
-#define TCU_THROW(ERRCLASS, MSG) TCU_THROW_EXPR(ERRCLASS, MSG, DE_NULL)
+#define TCU_THROW(ERRCLASS, MSG) TCU_THROW_EXPR(ERRCLASS, MSG, nullptr)
 
 #define TCU_CHECK_AND_THROW(ERRCLASS, X, MSG)  \
     do                                         \
@@ -177,7 +177,7 @@ public:
     do                                                             \
     {                                                              \
         if (!(!false && (X)))                                      \
-            throw tcu::TestError(DE_NULL, #X, __FILE__, __LINE__); \
+            throw tcu::TestError(nullptr, #X, __FILE__, __LINE__); \
     } while (false)
 
 //! Throw TestError if condition X is not satisfied.
@@ -193,7 +193,7 @@ public:
     do                                                                 \
     {                                                                  \
         if (!(!false && (X)))                                          \
-            throw tcu::InternalError(DE_NULL, #X, __FILE__, __LINE__); \
+            throw tcu::InternalError(nullptr, #X, __FILE__, __LINE__); \
     } while (false)
 
 #endif // _TCUDEFS_HPP

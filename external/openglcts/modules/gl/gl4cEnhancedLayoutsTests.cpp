@@ -12661,29 +12661,29 @@ void VertexAttribLocationsTest::executeDrawCall(GLuint test_case_index)
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawArraysInstanced");
         break;
     case DRAWELEMENTS:
-        gl.drawElements(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, DE_NULL);
+        gl.drawElements(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, nullptr);
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElements");
         break;
     case DRAWELEMENTSBASEVERTEX:
-        gl.drawElementsBaseVertex(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, DE_NULL, m_base_vertex);
+        gl.drawElementsBaseVertex(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, nullptr, m_base_vertex);
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElementsBaseVertex");
         break;
     case DRAWELEMENTSINSTANCED:
-        gl.drawElementsInstanced(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, DE_NULL, m_n_instances);
+        gl.drawElementsInstanced(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, nullptr, m_n_instances);
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElementsInstanced");
         break;
     case DRAWELEMENTSINSTANCEDBASEINSTANCE:
-        gl.drawElementsInstancedBaseInstance(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, DE_NULL, m_n_instances,
+        gl.drawElementsInstancedBaseInstance(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, nullptr, m_n_instances,
                                              m_base_instance);
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElementsInstancedBaseInstance");
         break;
     case DRAWELEMENTSINSTANCEDBASEVERTEX:
-        gl.drawElementsInstancedBaseVertex(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, DE_NULL, m_n_instances,
+        gl.drawElementsInstancedBaseVertex(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, nullptr, m_n_instances,
                                            m_base_vertex);
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElementsInstancedBaseVertex");
         break;
     case DRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCE:
-        gl.drawElementsInstancedBaseVertexBaseInstance(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, DE_NULL,
+        gl.drawElementsInstancedBaseVertexBaseInstance(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, nullptr,
                                                        m_n_instances, m_base_vertex, m_base_instance);
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElementsInstancedBaseVertexBaseInstance");
         break;

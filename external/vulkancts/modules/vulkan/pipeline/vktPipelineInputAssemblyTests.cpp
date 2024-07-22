@@ -1141,7 +1141,7 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_colorFormat,                                                         // VkFormat format;
@@ -1171,7 +1171,7 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
     {
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkImageViewCreateFlags flags;
             *m_colorImage,                               // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
@@ -1190,7 +1190,7 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
     {
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             1u,                                        // uint32_t attachmentCount;
@@ -1207,12 +1207,12 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
@@ -1251,7 +1251,7 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t vertexBindingDescriptionCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -1261,7 +1261,7 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
 
         const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                     // const void* pNext;
+            nullptr,                                                     // const void* pNext;
             0u,                      // VkPipelineInputAssemblyStateCreateFlags flags;
             m_primitiveTopology,     // VkPrimitiveTopology topology;
             m_primitiveRestartEnable // VkBool32 primitiveRestartEnable;
@@ -1283,7 +1283,7 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             false,                                                    // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -1294,7 +1294,7 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
 
         VkPipelineDepthStencilStateCreateInfo depthStencilStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
             false,                                                      // VkBool32 depthTestEnable;
             false,                                                      // VkBool32 depthWriteEnable;
@@ -1329,7 +1329,7 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
             .setDefaultMultisampleState()
             .setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
             .setupPreRasterizationShaderState(viewport, scissor, m_pipelineLayout, *m_renderPass, 0u,
-                                              m_vertexShaderModule, DE_NULL, m_tcsShaderModule, m_tesShaderModule)
+                                              m_vertexShaderModule, nullptr, m_tcsShaderModule, m_tesShaderModule)
             .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule,
                                       &depthStencilStateParams)
             .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
@@ -1341,7 +1341,7 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
     {
         const VkBufferCreateInfo indexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_indices.size() * sizeof(uint32_t),  // VkDeviceSize size;
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,     // VkBufferUsageFlags usage;
@@ -1352,7 +1352,7 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
 
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,    // VkStructureType sType;
-            DE_NULL,                                 // const void* pNext;
+            nullptr,                                 // const void* pNext;
             0u,                                      // VkBufferCreateFlags flags;
             m_vertices.size() * sizeof(Vertex4RGBA), // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,       // VkBufferUsageFlags usage;
@@ -1405,7 +1405,7 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
 
         const VkImageMemoryBarrier attachmentLayoutBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,      // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkAccessFlags srcAccessMask;
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,        // VkAccessFlags dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout oldLayout;
@@ -1421,8 +1421,8 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
         beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u,
-                              DE_NULL, 1u, &attachmentLayoutBarrier);
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u,
+                              nullptr, 1u, &attachmentLayoutBarrier);
 
         m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
                            attachmentClearValue);

@@ -103,7 +103,7 @@ GridRenderCase::GridRenderCase(Context &context, const char *name, const char *d
     : TestCase(context, name, description)
     , m_description(description)
     , m_flags(flags)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_numLayers(1)
 {
     DE_ASSERT(((m_flags & FLAG_TESSELLATION_MAX_SPEC) == 0) || ((m_flags & FLAG_TESSELLATION_MAX_IMPLEMENTATION) == 0));
@@ -298,7 +298,7 @@ void GridRenderCase::init(void)
 void GridRenderCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 GridRenderCase::IterateResult GridRenderCase::iterate(void)

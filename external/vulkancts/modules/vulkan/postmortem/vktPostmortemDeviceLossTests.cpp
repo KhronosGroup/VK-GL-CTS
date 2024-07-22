@@ -51,7 +51,7 @@ Move<VkDevice> createPostmortemDevice(Context &context)
     // Create a universal queue that supports graphics and compute
     const VkDeviceQueueCreateInfo queueParams{
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         0u,                                         // VkDeviceQueueCreateFlags flags;
         context.getUniversalQueueFamilyIndex(),     // uint32_t queueFamilyIndex;
         1u,                                         // uint32_t queueCount;
@@ -81,10 +81,10 @@ Move<VkDevice> createPostmortemDevice(Context &context)
         1u,                                   // uint32_t queueCreateInfoCount;
         &queueParams,                         // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                   // uint32_t enabledLayerCount;
-        DE_NULL,                              // const char* const* ppEnabledLayerNames;
+        nullptr,                              // const char* const* ppEnabledLayerNames;
         (uint32_t)extensionPtrs.size(),       // uint32_t enabledExtensionCount;
         extensionPtrs.data(),                 // const char* const* ppEnabledExtensionNames;
-        DE_NULL                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
     return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
@@ -117,7 +117,7 @@ TestStatus DeviceLossInstance::iterate(void)
     // create query pool
     const VkQueryPoolCreateInfo queryPoolInfo{
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,                   // VkStructureType                    sType
-        DE_NULL,                                                    // const void*                        pNext
+        nullptr,                                                    // const void*                        pNext
         (VkQueryPoolCreateFlags)0,                                  // VkQueryPoolCreateFlags            flags
         VK_QUERY_TYPE_PIPELINE_STATISTICS,                          // VkQueryType                        queryType
         1u,                                                         // uint32_t                            entryCount
@@ -146,7 +146,7 @@ TestStatus DeviceLossInstance::iterate(void)
             .build(deviceDriver, *logicalDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
     // create and update descriptor set
-    const VkDescriptorSetAllocateInfo allocInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+    const VkDescriptorSetAllocateInfo allocInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                 *descriptorPool, 1u, &(*descriptorSetLayout)};
     auto descriptorSet = allocateDescriptorSet(deviceDriver, *logicalDevice, &allocInfo);
     const VkDescriptorBufferInfo descriptorInfo =
@@ -202,7 +202,7 @@ TestStatus DeviceLossInstance::iterate(void)
 
     VkSemaphoreWaitInfo waitInfo{
         VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO, // VkStructureType                sType
-        DE_NULL,                               // const void*                    pNext
+        nullptr,                               // const void*                    pNext
         VK_SEMAPHORE_WAIT_ANY_BIT,             // VkSemaphoreWaitFlags flags;
         1u,                                    // uint32_t semaphoreCount;
         &*semaphore[0],                        // const VkSemaphore* pSemaphores;
@@ -211,14 +211,14 @@ TestStatus DeviceLossInstance::iterate(void)
 
     const VkSubmitInfo submitInfo{
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-        DE_NULL,                       // const void* pNext;
+        nullptr,                       // const void* pNext;
         0u,                            // uint32_t waitSemaphoreCount;
-        DE_NULL,                       // const VkSemaphore* pWaitSemaphores;
-        DE_NULL,                       // const VkPipelineStageFlags* pWaitDstStageMask;
+        nullptr,                       // const VkSemaphore* pWaitSemaphores;
+        nullptr,                       // const VkPipelineStageFlags* pWaitDstStageMask;
         1u,                            // uint32_t commandBufferCount;
         &*cmdBuffer,                   // const VkCommandBuffer* pCommandBuffers;
         0u,                            // uint32_t signalSemaphoreCount;
-        DE_NULL,                       // const VkSemaphore* pSignalSemaphores;
+        nullptr,                       // const VkSemaphore* pSignalSemaphores;
     };
 
     // create vector containing lambdas with all functions that we need to check;

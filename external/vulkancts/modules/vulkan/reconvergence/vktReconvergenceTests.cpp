@@ -827,14 +827,14 @@ Move<VkPipeline> ReconvergenceTestInstance::createComputePipeline(const VkPipeli
 
     const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                                                        // void* pNext;
+        nullptr,                                                                        // void* pNext;
         m_subgroupSize // uint32_t requiredSubgroupSize;
     };
 
     const VkBool32 computeFullSubgroups =
         m_subgroupSize <= 64 && m_context.getSubgroupSizeControlFeatures().computeFullSubgroups;
 
-    const void *shaderPNext = computeFullSubgroups ? &subgroupSizeCreateInfo : DE_NULL;
+    const void *shaderPNext = computeFullSubgroups ? &subgroupSizeCreateInfo : nullptr;
     VkPipelineShaderStageCreateFlags pipelineShaderStageCreateFlags =
         (VkPipelineShaderStageCreateFlags)(computeFullSubgroups ?
                                                VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT :
@@ -852,7 +852,7 @@ Move<VkPipeline> ReconvergenceTestInstance::createComputePipeline(const VkPipeli
 
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,               // flags
         shaderCreateInfo, // cs
         pipelineLayout,   // layout
@@ -5167,7 +5167,7 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,
         1,                          // setLayoutCount
         &descriptorSetLayout.get(), // pSetLayouts
@@ -5201,7 +5201,7 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
 
     // compute "maxLoc", the maximum number of locations written
     beginCommandBuffer(vk, *cmdBuffer, 0u);
-    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
+    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, nullptr);
     vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
     vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, m_data.shaderStage, 0, sizeof(pc), &pc);
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
@@ -5265,7 +5265,7 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
 
     // run the actual shader
     beginCommandBuffer(vk, *cmdBuffer, 0u);
-    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
+    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, nullptr);
     vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
     vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, m_data.shaderStage, 0, sizeof(pc), &pc);
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
@@ -5685,7 +5685,7 @@ void ReconvergenceTestGraphicsInstance::recordDrawingAndSubmit(
     const VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
     beginCommandBuffer(vk, cmdBuffer, 0u);
-    vk.cmdBindDescriptorSets(cmdBuffer, bindPoint, pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
+    vk.cmdBindDescriptorSets(cmdBuffer, bindPoint, pipelineLayout, 0u, 1u, &descriptorSet, 0u, nullptr);
     vk.cmdBindPipeline(cmdBuffer, bindPoint, pipeline);
     vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &static_cast<const VkBuffer &>(vertexBuffer),
                             &static_cast<const VkDeviceSize &>(0u));
@@ -5969,7 +5969,7 @@ std::vector<uint32_t> ReconvergenceTestFragmentInstance::callAuxiliaryShader(tcu
     };
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,                // flags
         1u,                                            // setLayoutCount
         &descriptorSetLayout.get(),                    // pSetLayouts
@@ -6202,7 +6202,7 @@ tcu::TestStatus ReconvergenceTestFragmentInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,                // flags
         1u,                                            // setLayoutCount
         &descriptorSetLayout.get(),                    // pSetLayouts
@@ -6532,7 +6532,7 @@ tcu::TestStatus ReconvergenceTestVertexInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,                // flags
         1u,                                            // setLayoutCount
         &descriptorSetLayout.get(),                    // pSetLayouts
@@ -6909,7 +6909,7 @@ tcu::TestStatus ReconvergenceTestTessCtrlInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,                // flags
         1u,                                            // setLayoutCount
         &descriptorSetLayout.get(),                    // pSetLayouts
@@ -7235,7 +7235,7 @@ tcu::TestStatus ReconvergenceTestTessEvalInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,                // flags
         1u,                                            // setLayoutCount
         &descriptorSetLayout.get(),                    // pSetLayouts
@@ -7568,7 +7568,7 @@ tcu::TestStatus ReconvergenceTestGeometryInstance::iterate(void)
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,                // flags
         1u,                                            // setLayoutCount
         &descriptorSetLayout.get(),                    // pSetLayouts
