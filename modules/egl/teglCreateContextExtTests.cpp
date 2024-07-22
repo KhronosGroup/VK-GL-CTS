@@ -742,6 +742,7 @@ bool CreateContextExtCase::validateCurrentContext(const glw::Functions &gl)
 
         default:
             isOk = false;
+            break;
         }
     }
 
