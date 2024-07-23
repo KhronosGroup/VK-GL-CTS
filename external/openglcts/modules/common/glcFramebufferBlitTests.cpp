@@ -41,6 +41,8 @@
 #include "tcuRenderTarget.hpp"
 #include "tcuStringTemplate.hpp"
 
+#include <cmath>
+
 #define CHECK(actual, expected, info)                                                                          \
     {                                                                                                          \
         result &= ((actual) != (expected)) ? false : true;                                                     \

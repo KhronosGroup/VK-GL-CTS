@@ -39,6 +39,8 @@
 #include "tcuTestLog.hpp"
 #include "tcuStringTemplate.hpp"
 
+#include <cmath>
+
 using namespace glw;
 using namespace glu;
 
