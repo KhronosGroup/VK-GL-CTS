@@ -2400,9 +2400,24 @@ std::string createShaderAnnotations(POINTER_TEST_CASE testCase)
         break;
     }
     case PointerTestCases::OP_PTR_DIFF_VARIABLE_PTR:
+    {
+        annotations += std::string("OpDecorate       %array_${baseType}_32       ArrayStride ${alignment}\n"
+
+                                   "OpMemberDecorate %input_buffer             0             Offset 0\n"
+                                   "OpDecorate       %input_buffer             Block\n"
+                                   "OpDecorate       %input_data_untyped_var   DescriptorSet 0\n"
+                                   "OpDecorate       %input_data_untyped_var   Binding       0\n"
+
+                                   "OpMemberDecorate %output_buffer            0             Offset 0\n"
+                                   "OpDecorate       %output_buffer            Block\n"
+                                   "OpDecorate       %output_data_var          DescriptorSet 0\n"
+                                   "OpDecorate       %output_data_var          Binding       1\n");
+        break;
+    }
     case PointerTestCases::OP_PTR_ACCESS_CHAIN_VARIABLE_PTR:
     {
         annotations += std::string("OpDecorate       %array_${baseType}_${threadCount} ArrayStride ${alignment}\n"
+                                   "OpDecorate       %storage_buffer_untyped_ptr       ArrayStride ${alignment}\n"
 
                                    "OpMemberDecorate %input_buffer             0             Offset 0\n"
                                    "OpDecorate       %input_buffer             Block\n"
@@ -3732,13 +3747,13 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
     {
         variables += std::string(
             /* Contants */
-            "%c_uint32_${threadCount}          = OpConstant  %uint32      ${threadCount}\n"
+            "%c_uint32_32          = OpConstant  %uint32      32\n"
 
             /* Arrays */
-            "%array_${baseType}_${threadCount} = OpTypeArray %${baseType} %c_uint32_${threadCount}\n"
+            "%array_${baseType}_32 = OpTypeArray %${baseType} %c_uint32_32\n"
 
             /* Struct */
-            "%input_buffer                     = OpTypeStruct            %array_${baseType}_${threadCount}\n"
+            "%input_buffer                     = OpTypeStruct            %array_${baseType}_32\n"
             "%output_buffer                    = OpTypeStruct            %uint32\n"
 
             /* Pointers */
@@ -4895,12 +4910,10 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
     case PointerTestCases::OP_PTR_DIFF_VARIABLE_PTR:
     {
         main += std::string(
-            "%input_loc            = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr     %input_buffer         "
+            "%input_loc_first_ptr   = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr     %input_buffer         "
             "%input_data_untyped_var %c_uint32_0 %c_uint32_0\n"
-            "%input_loc_first_ptr  = OpUntypedPtrAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer         "
-            "%input_loc              %c_uint32_0\n"
-            "%input_loc_second_ptr = OpUntypedPtrAccessChainKHR %storage_buffer_untyped_ptr     %input_buffer         "
-            "%input_loc              %c_uint32_16\n"
+            "%input_loc_second_ptr =  OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr     %input_buffer         "
+            "%input_data_untyped_var %c_uint32_0 %c_uint32_16\n"
             "%output_loc           = OpAccessChain              %uint32_storage_buffer_ptr                            "
             "%output_data_var        %c_uint32_0\n"
 
@@ -4972,10 +4985,8 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
             "%selected_ptr\n"
             "%output_copy_loc_unty_ptr = OpLoad                     %storage_buffer_untyped_ptr              "
             "%output_copy_function_var\n"
-            "%output_copy_loc_ptr      = OpLoad                     %${baseType}_storage_buffer_ptr          "
-            "%output_copy_loc_unty_ptr\n"
             "%output_copy_loc          = OpLoad                     %${baseType}                             "
-            "%output_copy_loc_ptr\n"
+            "%output_copy_loc_unty_ptr\n"
             "                            OpStore                    %output_loc                              "
             "%output_copy_loc\n");
         break;
@@ -4996,10 +5007,8 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
                             "      %selected_ptr\n"
                             "%output_copy_loc_unty_ptr = OpLoad                     %storage_buffer_untyped_ptr        "
                             "      %output_copy_private_var\n"
-                            "%output_copy_loc_ptr      = OpLoad                     %${baseType}_storage_buffer_ptr    "
-                            "      %output_copy_loc_unty_ptr\n"
                             "%output_copy_loc          = OpLoad                     %${baseType}                       "
-                            "      %output_copy_loc_ptr\n"
+                            "      %output_copy_loc_unty_ptr\n"
                             "                            OpStore                    %output_loc                        "
                             "      %output_copy_loc\n");
         break;
@@ -7948,7 +7957,7 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
 
         FilledResourceDesc desc;
         desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = Constants::numThreads;
+        desc.elemCount      = 32;
         desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         desc.padding        = 0;
         desc.fillType       = FillingTypes::RANDOM;
@@ -7958,7 +7967,7 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
         desc.dataType   = DataTypes::UINT32;
         desc.elemCount  = 1;
         desc.fillType   = FillingTypes::VALUE;
-        desc.value      = 16;
+        desc.value      = 16 * getSizeInBytes(BASE_DATA_TYPE_CASES[i]);
         Resource output = createFilledResource(desc);
 
         spec.assembly      = shaderAsm;
@@ -8202,7 +8211,7 @@ void addPhysicalStorageOpPtrAccessChainTests(tcu::TestCaseGroup *testGroup, MEMO
 
         FilledResourceDesc desc;
         desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = Constants::numThreads;
+        desc.elemCount      = 1;
         desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         desc.padding        = 0;
         desc.fillType       = FillingTypes::RANDOM;
@@ -8264,7 +8273,7 @@ void addVariablePtrFunctionVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_M
 
         FilledResourceDesc desc;
         desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = Constants::numThreads;
+        desc.elemCount      = 1;
         desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         desc.padding        = 0;
         desc.fillType       = FillingTypes::VALUE;
@@ -8328,7 +8337,7 @@ void addVariablePtrPrivateVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_MO
 
         FilledResourceDesc desc;
         desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = Constants::numThreads;
+        desc.elemCount      = 1;
         desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         desc.padding        = 0;
         desc.fillType       = FillingTypes::VALUE;
