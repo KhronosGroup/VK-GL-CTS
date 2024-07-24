@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 6550e9b12e0b4f11182bda30ae2a8dd56d0b02c8.
+ * Generated from Khronos EGL API description (egl.xml) revision 682c662d48fbae076c5ed89a1bd5b2aa7e2e4449.
  */
 #define EGL_PBUFFER_BIT										0x0001
 #define EGL_PIXMAP_BIT										0x0002
@@ -294,3 +294,4 @@
 #define EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT		0x3490
 #define EGL_CONFIG_SELECT_GROUP_EXT							0x34C0
 #define EGL_GL_COLORSPACE_BT2020_HLG_EXT					0x3540
+#define EGL_TELEMETRY_HINT_ANDROID							0x3570
