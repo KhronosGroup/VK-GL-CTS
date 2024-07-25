@@ -3795,11 +3795,6 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR(const DeviceInterface &vk
         (VkPipeline)DE_NULL,            //  VkPipeline basePipelineHandle;
         0,                              //  int32_t basePipelineIndex;
     };
-    VkPipeline object = DE_NULL;
-    VkResult result   = vk.createRayTracingPipelinesKHR(device, deferredOperation.get(), pipelineCache, 1u,
-                                                        &pipelineCreateInfo, DE_NULL, &object);
-    const bool allowCompileRequired =
-        ((m_pipelineCreateFlags & VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT) != 0);
 
     VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
     if (m_pipelineCreateFlags2)
@@ -3808,6 +3803,12 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR(const DeviceInterface &vk
         pipelineCreateInfo.pNext       = &pipelineFlags2CreateInfo;
         pipelineCreateInfo.flags       = 0;
     }
+
+    VkPipeline object = DE_NULL;
+    VkResult result   = vk.createRayTracingPipelinesKHR(device, deferredOperation.get(), pipelineCache, 1u,
+                                                        &pipelineCreateInfo, DE_NULL, &object);
+    const bool allowCompileRequired =
+        ((m_pipelineCreateFlags & VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT) != 0);
 
     if (m_deferredOperation)
     {
