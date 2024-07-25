@@ -227,7 +227,7 @@ private:
     glw::GLuint m_stcil_type;
     glw::GLuint m_stcil_format;
 
-    static const glw::GLuint m_defaultFBO = 0;
+    glw::GLuint m_defaultFBO;
 
     blt::MultiColorTestSetup m_setup;
 
