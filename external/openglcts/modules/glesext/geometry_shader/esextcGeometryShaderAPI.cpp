@@ -27,6 +27,7 @@
 #include "glwFunctions.hpp"
 #include "tcuTestLog.hpp"
 #include <cstring>
+#include <memory>
 
 namespace glcts
 {
@@ -2282,8 +2283,8 @@ tcu::TestNode::IterateResult GeometryShaderMaxAtomicCountersTest::iterate()
                           "    gl_Position  = vec4(1.0, 0.0, 0.0, 1.0);\n"
                           "}\n";
 
-    bool has_shader_compilation_failed            = true;
-    glw::GLuint *initial_ac_data                  = DE_NULL;
+    bool has_shader_compilation_failed = true;
+    std::unique_ptr<glw::GLuint[]> initial_ac_data;
     const unsigned int n_draw_call_vertices       = 4;
     glw::GLint n_loop_iterations_uniform_location = -1;
     glw::GLuint *ptrACBO_data                     = DE_NULL;
@@ -2366,8 +2367,8 @@ tcu::TestNode::IterateResult GeometryShaderMaxAtomicCountersTest::iterate()
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGenBuffers() call failed.");
 
     /* Prepare initial data - zeroes - to fill the Atomic Counter Buffer Object. */
-    initial_ac_data = new glw::GLuint[m_gl_max_geometry_atomic_counters_ext_value];
-    memset(initial_ac_data, 0, sizeof(glw::GLuint) * m_gl_max_geometry_atomic_counters_ext_value);
+    initial_ac_data.reset(new glw::GLuint[m_gl_max_geometry_atomic_counters_ext_value]);
+    memset(initial_ac_data.get(), 0, sizeof(glw::GLuint) * m_gl_max_geometry_atomic_counters_ext_value);
 
     gl.bindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_acbo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed for GL_SHADER_STORAGE_BUFFER pname.");
@@ -2378,7 +2379,7 @@ tcu::TestNode::IterateResult GeometryShaderMaxAtomicCountersTest::iterate()
 
     gl.bufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0 /*offset*/,
                      sizeof(glw::GLuint) * m_gl_max_geometry_atomic_counters_ext_value,
-                     initial_ac_data /*initialize with zeroes*/);
+                     initial_ac_data.get() /*initialize with zeroes*/);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferSubData() call failed.");
 
     gl.bindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0 /*binding index*/, m_acbo_id /*buffer*/);
@@ -3369,6 +3370,7 @@ tcu::TestNode::IterateResult GeometryShaderIncompatibleDrawCallModeTest::iterate
 GeometryShaderInsufficientEmittedVerticesTest::GeometryShaderInsufficientEmittedVerticesTest(
     Context &context, const ExtParameters &extParams, const char *name, const char *description)
     : TestCaseBase(context, extParams, name, description)
+    , m_pixels(nullptr)
     , m_fbo_id(0)
     , m_fs_id(0)
     , m_gs_ids(NULL)
@@ -3381,9 +3383,6 @@ GeometryShaderInsufficientEmittedVerticesTest::GeometryShaderInsufficientEmitted
 {
     m_vao_id = 0;
     m_vs_id  = 0;
-
-    /* Allocate enough memory for glReadPixels() data which is respectively: width, height, RGBA components number. */
-    m_pixels = new glw::GLubyte[m_texture_height * m_texture_width * m_number_of_color_components];
 }
 
 /** Deinitializes GLES objects created during the test. */
@@ -3517,6 +3516,9 @@ tcu::TestNode::IterateResult GeometryShaderInsufficientEmittedVerticesTest::iter
 
     m_gs_ids = new glw::GLuint[m_number_of_gs];
     m_po_ids = new glw::GLuint[m_number_of_gs];
+
+    /* Allocate enough memory for glReadPixels() data which is respectively: width, height, RGBA components number. */
+    m_pixels = new glw::GLubyte[m_texture_height * m_texture_width * m_number_of_color_components];
 
     /* This test should only run if EXT_geometry_shader is supported. */
     if (!m_is_geometry_shader_extension_supported)
