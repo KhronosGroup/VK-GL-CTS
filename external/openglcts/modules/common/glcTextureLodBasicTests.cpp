@@ -650,12 +650,6 @@ bool TextureLodSelectionTestCase::doComparison(const int size, const float *cons
         return e;
     };
 
-    const auto calcMaxValue = [](int bits) { return (ldexp(1.0f, bits) - 1.0f); };
-
-    float maxValues[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    for (size_t i = 0; i < de::arrayLength(maxValues); ++i)
-        maxValues[i] = calcMaxValue(col_bits[i]);
-
     float epsilon[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     for (int i = 0; i < numChannels; ++i)
         epsilon[i] = calcEpsilon(col_bits[i]);
@@ -669,17 +663,18 @@ bool TextureLodSelectionTestCase::doComparison(const int size, const float *cons
         if (use10Bits)
         {
             // Note this is a strange way to store RGB10A2 but it matches what implementations do.
-            resultColor[0] = static_cast<float>(pixel & 0x3FF) / maxValues[0];
-            resultColor[1] = static_cast<float>((pixel >> 10) & 0x3FF) / maxValues[1];
-            resultColor[2] = static_cast<float>((pixel >> 20) & 0x3FF) / maxValues[2];
-            resultColor[3] = static_cast<float>((pixel >> 30) & 0x3) / maxValues[3];
+            resultColor[0] = static_cast<float>(pixel & 0x3FF) / 1023.0f;
+            resultColor[1] = static_cast<float>((pixel >> 10) & 0x3FF) / 1023.0f;
+            resultColor[2] = static_cast<float>((pixel >> 20) & 0x3FF) / 1023.0f;
+            resultColor[3] = static_cast<float>((pixel >> 30) & 0x3) / 3.0f;
         }
         else
         {
-            resultColor[0] = static_cast<float>(pxBytes[0]) / maxValues[0];
-            resultColor[1] = static_cast<float>(pxBytes[1]) / maxValues[1];
-            resultColor[2] = static_cast<float>(pxBytes[2]) / maxValues[2];
-            resultColor[3] = static_cast<float>(pxBytes[3]) / maxValues[3];
+            // If not 10-bit then we already converted to 8-bit (UNSIGNED_BYTE) in the ReadPixels call, above.
+            resultColor[0] = static_cast<float>(pxBytes[0]) / 255.0f;
+            resultColor[1] = static_cast<float>(pxBytes[1]) / 255.0f;
+            resultColor[2] = static_cast<float>(pxBytes[2]) / 255.0f;
+            resultColor[3] = static_cast<float>(pxBytes[3]) / 255.0f;
         }
 
         for (int j = 0; j < numChannels; ++j)
