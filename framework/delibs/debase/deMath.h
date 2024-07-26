@@ -25,11 +25,8 @@
 
 #include "deDefs.h"
 #include "deMemory.h"
-#if defined(__cplusplus)
-#include <cmath>
-#else
+
 #include <math.h>
-#endif
 #include <float.h>
 
 DE_BEGIN_EXTERN_C
