@@ -3026,6 +3026,12 @@ VKAPI_ATTR VkDeviceAddress VKAPI_CALL getPipelineIndirectDeviceAddressNV (VkDevi
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL antiLagUpdateAMD (VkDevice device, const VkAntiLagDataAMD* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(pData);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdSetCullMode (VkCommandBuffer commandBuffer, VkCullModeFlags cullMode)
 {
 	DE_UNREF(commandBuffer);
@@ -4214,6 +4220,23 @@ VKAPI_ATTR void VKAPI_CALL cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBu
 	DE_UNREF(pInputAttachmentIndexInfo);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryMetalHandleEXT (VkDevice device, const VkMemoryGetMetalHandleInfoEXT* pGetMetalHandleInfo, pt::MTLResource_id* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetMetalHandleInfo);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryMetalHandlePropertiesEXT (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::MTLResource_id handle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(handleType);
+	DE_UNREF(handle);
+	DE_UNREF(pMemoryMetalHandleProperties);
+	return VK_SUCCESS;
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -4638,6 +4661,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDeferredOperationJoinKHR,									deferredOperationJoinKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineIndirectMemoryRequirementsNV,					getPipelineIndirectMemoryRequirementsNV),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineIndirectDeviceAddressNV,						getPipelineIndirectDeviceAddressNV),
+	VK_NULL_FUNC_ENTRY(vkAntiLagUpdateAMD,											antiLagUpdateAMD),
 	VK_NULL_FUNC_ENTRY(vkCmdSetCullMode,											cmdSetCullMode),
 	VK_NULL_FUNC_ENTRY(vkCmdSetFrontFace,											cmdSetFrontFace),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveTopology,									cmdSetPrimitiveTopology),
@@ -4818,5 +4842,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkQueueNotifyOutOfBandNV,									queueNotifyOutOfBandNV),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRenderingAttachmentLocationsKHR,						cmdSetRenderingAttachmentLocationsKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRenderingInputAttachmentIndicesKHR,					cmdSetRenderingInputAttachmentIndicesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryMetalHandleEXT,									getMemoryMetalHandleEXT),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryMetalHandlePropertiesEXT,							getMemoryMetalHandlePropertiesEXT),
 };
 

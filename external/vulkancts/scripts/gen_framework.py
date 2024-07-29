@@ -128,6 +128,9 @@ PLATFORM_TYPES = [
     (["NvSciSyncFence"], ["NvSciSyncFence"], "int"),
     (["NvSciBufAttrList"], ["NvSciBufAttrList"], "int"),
     (["NvSciSyncAttrList"], ["NvSciSyncAttrList"], "int"),
+
+    # VK_EXT_external_memory_metal
+    (["MTLResource_id"], ["MTLResource_id"], "void*"),
 ]
 
 PLATFORM_TYPE_NAMESPACE = "pt"

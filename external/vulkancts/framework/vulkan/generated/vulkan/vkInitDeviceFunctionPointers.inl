@@ -550,6 +550,7 @@ m_vk.getDeferredOperationResultKHR = (GetDeferredOperationResultKHRFunc) GET_PRO
 m_vk.deferredOperationJoinKHR = (DeferredOperationJoinKHRFunc) GET_PROC_ADDR("vkDeferredOperationJoinKHR");
 m_vk.getPipelineIndirectMemoryRequirementsNV = (GetPipelineIndirectMemoryRequirementsNVFunc) GET_PROC_ADDR("vkGetPipelineIndirectMemoryRequirementsNV");
 m_vk.getPipelineIndirectDeviceAddressNV = (GetPipelineIndirectDeviceAddressNVFunc) GET_PROC_ADDR("vkGetPipelineIndirectDeviceAddressNV");
+m_vk.antiLagUpdateAMD = (AntiLagUpdateAMDFunc) GET_PROC_ADDR("vkAntiLagUpdateAMD");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.cmdSetCullMode = (CmdSetCullModeFunc) GET_PROC_ADDR("vkCmdSetCullMode");
 if (!m_vk.cmdSetCullMode)
@@ -831,3 +832,5 @@ m_vk.getLatencyTimingsNV = (GetLatencyTimingsNVFunc) GET_PROC_ADDR("vkGetLatency
 m_vk.queueNotifyOutOfBandNV = (QueueNotifyOutOfBandNVFunc) GET_PROC_ADDR("vkQueueNotifyOutOfBandNV");
 m_vk.cmdSetRenderingAttachmentLocationsKHR = (CmdSetRenderingAttachmentLocationsKHRFunc) GET_PROC_ADDR("vkCmdSetRenderingAttachmentLocationsKHR");
 m_vk.cmdSetRenderingInputAttachmentIndicesKHR = (CmdSetRenderingInputAttachmentIndicesKHRFunc) GET_PROC_ADDR("vkCmdSetRenderingInputAttachmentIndicesKHR");
+m_vk.getMemoryMetalHandleEXT = (GetMemoryMetalHandleEXTFunc) GET_PROC_ADDR("vkGetMemoryMetalHandleEXT");
+m_vk.getMemoryMetalHandlePropertiesEXT = (GetMemoryMetalHandlePropertiesEXTFunc) GET_PROC_ADDR("vkGetMemoryMetalHandlePropertiesEXT");

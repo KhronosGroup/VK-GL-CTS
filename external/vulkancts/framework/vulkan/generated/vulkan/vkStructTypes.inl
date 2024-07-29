@@ -2083,6 +2083,29 @@ struct VkWin32KeyedMutexAcquireReleaseInfoKHR
 	const uint64_t*			pReleaseKeys;
 };
 
+struct VkImportMemoryMetalHandleInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkExternalMemoryHandleTypeFlagBits	handleType;
+	pt::MTLResource_id					handle;
+};
+
+struct VkMemoryMetalHandlePropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		memoryTypeBits;
+};
+
+struct VkMemoryGetMetalHandleInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkDeviceMemory						memory;
+	VkExternalMemoryHandleTypeFlagBits	handleType;
+};
+
 struct VkPhysicalDeviceExternalSemaphoreInfo
 {
 	VkStructureType							sType;
@@ -9048,6 +9071,30 @@ struct VkDispatchGraphCountInfoAMDX
 	uint32_t						count;
 	VkDeviceOrHostAddressConstAMDX	infos;
 	uint64_t						stride;
+};
+
+struct VkPhysicalDeviceAntiLagFeaturesAMD
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		antiLag;
+};
+
+struct VkAntiLagPresentationInfoAMD
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkAntiLagStageAMD	stage;
+	uint64_t			frameIndex;
+};
+
+struct VkAntiLagDataAMD
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkAntiLagModeAMD					mode;
+	uint32_t							maxFPS;
+	const VkAntiLagPresentationInfoAMD*	pPresentationInfo;
 };
 
 struct VkBindMemoryStatusKHR

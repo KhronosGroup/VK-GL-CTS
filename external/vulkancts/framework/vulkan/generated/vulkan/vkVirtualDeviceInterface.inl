@@ -323,6 +323,7 @@ virtual VkResult			getDeferredOperationResultKHR							(VkDevice device, VkDefer
 virtual VkResult			deferredOperationJoinKHR								(VkDevice device, VkDeferredOperationKHR operation) const = 0;
 virtual void				getPipelineIndirectMemoryRequirementsNV					(VkDevice device, const VkComputePipelineCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements) const = 0;
 virtual VkDeviceAddress		getPipelineIndirectDeviceAddressNV						(VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo) const = 0;
+virtual void				antiLagUpdateAMD										(VkDevice device, const VkAntiLagDataAMD* pData) const = 0;
 virtual void				cmdSetCullMode											(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const = 0;
 virtual void				cmdSetFrontFace											(VkCommandBuffer commandBuffer, VkFrontFace frontFace) const = 0;
 virtual void				cmdSetPrimitiveTopology									(VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) const = 0;
@@ -503,3 +504,5 @@ virtual void				getLatencyTimingsNV										(VkDevice device, VkSwapchainKHR sw
 virtual void				queueNotifyOutOfBandNV									(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const = 0;
 virtual void				cmdSetRenderingAttachmentLocationsKHR					(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo) const = 0;
 virtual void				cmdSetRenderingInputAttachmentIndicesKHR				(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pInputAttachmentIndexInfo) const = 0;
+virtual VkResult			getMemoryMetalHandleEXT									(VkDevice device, const VkMemoryGetMetalHandleInfoEXT* pGetMetalHandleInfo, pt::MTLResource_id* pHandle) const = 0;
+virtual VkResult			getMemoryMetalHandlePropertiesEXT						(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::MTLResource_id handle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties) const = 0;

@@ -633,6 +633,21 @@ template<> VkStructureType getStructureType<VkWin32KeyedMutexAcquireReleaseInfoK
 	return VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkImportMemoryMetalHandleInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_MEMORY_METAL_HANDLE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMemoryMetalHandlePropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_METAL_HANDLE_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMemoryGetMetalHandleInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceExternalSemaphoreInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO;
@@ -4226,6 +4241,21 @@ template<> VkStructureType getStructureType<VkPipelineShaderStageNodeCreateInfoA
 template<> VkStructureType getStructureType<VkExecutionGraphPipelineScratchSizeAMDX> (void)
 {
 	return VK_STRUCTURE_TYPE_EXECUTION_GRAPH_PIPELINE_SCRATCH_SIZE_AMDX;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceAntiLagFeaturesAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD;
+}
+
+template<> VkStructureType getStructureType<VkAntiLagDataAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD;
+}
+
+template<> VkStructureType getStructureType<VkAntiLagPresentationInfoAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD;
 }
 
 template<> VkStructureType getStructureType<VkBindMemoryStatusKHR> (void)

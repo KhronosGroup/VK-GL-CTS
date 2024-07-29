@@ -92,6 +92,7 @@ std::ostream& operator<< (std::ostream& s, NvSciSyncObj					v) { return s << tcu
 std::ostream& operator<< (std::ostream& s, NvSciSyncFence				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, NvSciBufAttrList				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, NvSciSyncAttrList			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, MTLResource_id				v) { return s << tcu::toHex(v.internal); }
 }
 
 const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
@@ -2303,6 +2304,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEVICE_IMAGE_SUBRESOURCE_INFO_KHR:									return "VK_STRUCTURE_TYPE_DEVICE_IMAGE_SUBRESOURCE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD";
+		case VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD:													return "VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD";
+		case VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD:										return "VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT";
@@ -2387,6 +2391,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA";
 		case VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA:							return "VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA";
+		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_METAL_HANDLE_INFO_EXT:									return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_METAL_HANDLE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_MEMORY_METAL_HANDLE_PROPERTIES_EXT:									return "VK_STRUCTURE_TYPE_MEMORY_METAL_HANDLE_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT:									return "VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT";
 		default:																					return nullptr;
 	}
 }
@@ -3681,6 +3688,27 @@ const char* getDirectDriverLoadingModeLUNARGName (VkDirectDriverLoadingModeLUNAR
 	}
 }
 
+const char* getAntiLagModeAMDName (VkAntiLagModeAMD value)
+{
+	switch (value)
+	{
+		case VK_ANTI_LAG_MODE_DRIVER_CONTROL_AMD:	return "VK_ANTI_LAG_MODE_DRIVER_CONTROL_AMD";
+		case VK_ANTI_LAG_MODE_ON_AMD:				return "VK_ANTI_LAG_MODE_ON_AMD";
+		case VK_ANTI_LAG_MODE_OFF_AMD:				return "VK_ANTI_LAG_MODE_OFF_AMD";
+		default:									return nullptr;
+	}
+}
+
+const char* getAntiLagStageAMDName (VkAntiLagStageAMD value)
+{
+	switch (value)
+	{
+		case VK_ANTI_LAG_STAGE_INPUT_AMD:	return "VK_ANTI_LAG_STAGE_INPUT_AMD";
+		case VK_ANTI_LAG_STAGE_PRESENT_AMD:	return "VK_ANTI_LAG_STAGE_PRESENT_AMD";
+		default:							return nullptr;
+	}
+}
+
 tcu::Format::Bitfield<64> getPipelineCreateFlags2KHRStr (VkPipelineCreateFlags2KHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -4111,6 +4139,8 @@ tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsStr (VkExternalMemoryH
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA,					"VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV,					"VK_EXTERNAL_MEMORY_HANDLE_TYPE_RDMA_ADDRESS_BIT_NV"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCREEN_BUFFER_BIT_QNX,					"VK_EXTERNAL_MEMORY_HANDLE_TYPE_SCREEN_BUFFER_BIT_QNX"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT,						"VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT,						"VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -8572,6 +8602,38 @@ std::ostream& operator<< (std::ostream& s, const VkWin32KeyedMutexAcquireRelease
 	s << "\treleaseCount = " << value.releaseCount << '\n';
 	s << "\tpReleaseSyncs = " << value.pReleaseSyncs << '\n';
 	s << "\tpReleaseKeys = " << value.pReleaseKeys << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportMemoryMetalHandleInfoEXT& value)
+{
+	s << "VkImportMemoryMetalHandleInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
+	s << "\thandle = " << value.handle << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryMetalHandlePropertiesEXT& value)
+{
+	s << "VkMemoryMetalHandlePropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryTypeBits = " << value.memoryTypeBits << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryGetMetalHandleInfoEXT& value)
+{
+	s << "VkMemoryGetMetalHandleInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemory = " << value.memory << '\n';
+	s << "\thandleType = " << value.handleType << '\n';
 	s << '}';
 	return s;
 }
@@ -18070,6 +18132,39 @@ std::ostream& operator<< (std::ostream& s, const VkDispatchGraphCountInfoAMDX& v
 	s << "\tcount = " << value.count << '\n';
 	s << "\tinfos = " << value.infos << '\n';
 	s << "\tstride = " << value.stride << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAntiLagFeaturesAMD& value)
+{
+	s << "VkPhysicalDeviceAntiLagFeaturesAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tantiLag = " << value.antiLag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAntiLagDataAMD& value)
+{
+	s << "VkAntiLagDataAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmode = " << value.mode << '\n';
+	s << "\tmaxFPS = " << value.maxFPS << '\n';
+	s << "\tpPresentationInfo = " << value.pPresentationInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAntiLagPresentationInfoAMD& value)
+{
+	s << "VkAntiLagPresentationInfoAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstage = " << value.stage << '\n';
+	s << "\tframeIndex = " << value.frameIndex << '\n';
 	s << '}';
 	return s;
 }

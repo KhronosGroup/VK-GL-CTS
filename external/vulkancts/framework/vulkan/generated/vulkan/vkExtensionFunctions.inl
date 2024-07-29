@@ -1440,6 +1440,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_AMD_anti_lag")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_ray_tracing_position_fetch")
 	{
 		return;
@@ -1607,6 +1611,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_MESA_image_alignment_control")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_external_memory_metal")
 	{
 		return;
 	}
@@ -3439,6 +3447,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkGetImageSubresourceLayout2KHR");
 		return;
 	}
+	if (extName == "VK_AMD_anti_lag")
+	{
+		functions.push_back("vkAntiLagUpdateAMD");
+		return;
+	}
 	if (extName == "VK_KHR_ray_tracing_position_fetch")
 	{
 		return;
@@ -3726,6 +3739,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	}
 	if (extName == "VK_MESA_image_alignment_control")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_external_memory_metal")
+	{
+		functions.push_back("vkGetMemoryMetalHandleEXT");
+		functions.push_back("vkGetMemoryMetalHandlePropertiesEXT");
 		return;
 	}
 	if (extName == "vulkan_video_codecs_common")
@@ -4106,6 +4125,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_pipeline_protected_access",
 	"VK_ANDROID_external_format_resolve",
 	"VK_KHR_maintenance5",
+	"VK_AMD_anti_lag",
 	"VK_KHR_ray_tracing_position_fetch",
 	"VK_EXT_shader_object",
 	"VK_QCOM_tile_properties",
@@ -4147,4 +4167,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_shader_replicated_composites",
 	"VK_NV_ray_tracing_validation",
 	"VK_MESA_image_alignment_control",
+	"VK_EXT_external_memory_metal",
 };

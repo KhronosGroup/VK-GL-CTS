@@ -7434,6 +7434,48 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderEnqueueFeaturesAMDX
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestAntiLagFeaturesAMD (Context& context)
+{
+    const PlatformInterface&                vkp = context.getPlatformInterface();
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const InstanceDriver&                    instanceDriver            (instance.getDriver());
+    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
+    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
+
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceAntiLagFeaturesAMD>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceAntiLagFeaturesAMD, antiLag),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceAntiLagFeaturesAMD*>(featuresStruct);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCubicClampFeaturesQCOM (Context& context)
 {
     const PlatformInterface&                vkp = context.getPlatformInterface();
@@ -8536,6 +8578,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "external_memory_screen_buffer_features_qnx", createDeviceWithUnsupportedFeaturesTestExternalMemoryScreenBufferFeaturesQNX);
 	addFunctionCase(testGroup, "cooperative_matrix_features_khr", createDeviceWithUnsupportedFeaturesTestCooperativeMatrixFeaturesKHR);
 	addFunctionCase(testGroup, "shader_enqueue_features_amdx", createDeviceWithUnsupportedFeaturesTestShaderEnqueueFeaturesAMDX);
+	addFunctionCase(testGroup, "anti_lag_features_amd", createDeviceWithUnsupportedFeaturesTestAntiLagFeaturesAMD);
 	addFunctionCase(testGroup, "cubic_clamp_features_qcom", createDeviceWithUnsupportedFeaturesTestCubicClampFeaturesQCOM);
 	addFunctionCase(testGroup, "ycbcr_degamma_features_qcom", createDeviceWithUnsupportedFeaturesTestYcbcrDegammaFeaturesQCOM);
 	addFunctionCase(testGroup, "cubic_weights_features_qcom", createDeviceWithUnsupportedFeaturesTestCubicWeightsFeaturesQCOM);

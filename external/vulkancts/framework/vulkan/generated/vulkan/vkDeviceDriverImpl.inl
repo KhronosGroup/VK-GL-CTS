@@ -1671,6 +1671,11 @@ VkDeviceAddress DeviceDriver::getPipelineIndirectDeviceAddressNV (VkDevice devic
     return m_vk.getPipelineIndirectDeviceAddressNV(device, pInfo);
 }
 
+void DeviceDriver::antiLagUpdateAMD (VkDevice device, const VkAntiLagDataAMD* pData) const
+{
+    m_vk.antiLagUpdateAMD(device, pData);
+}
+
 void DeviceDriver::cmdSetCullMode (VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
@@ -2629,4 +2634,14 @@ void DeviceDriver::cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer com
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetRenderingInputAttachmentIndicesKHR(commandBuffer, pInputAttachmentIndexInfo);
+}
+
+VkResult DeviceDriver::getMemoryMetalHandleEXT (VkDevice device, const VkMemoryGetMetalHandleInfoEXT* pGetMetalHandleInfo, pt::MTLResource_id* pHandle) const
+{
+    return m_vk.getMemoryMetalHandleEXT(device, pGetMetalHandleInfo, pHandle);
+}
+
+VkResult DeviceDriver::getMemoryMetalHandlePropertiesEXT (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::MTLResource_id handle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties) const
+{
+    return m_vk.getMemoryMetalHandlePropertiesEXT(device, handleType, handle, pMemoryMetalHandleProperties);
 }

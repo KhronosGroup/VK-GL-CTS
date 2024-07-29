@@ -154,6 +154,7 @@ const vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT&						getLegacyDitheringFea
 const vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT&				getPipelineProtectedAccessFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID&				getExternalFormatResolveFeaturesANDROID				(void) const;
 const vk::VkPhysicalDeviceMaintenance5FeaturesKHR&							getMaintenance5Features								(void) const;
+const vk::VkPhysicalDeviceAntiLagFeaturesAMD&								getAntiLagFeaturesAMD								(void) const;
 const vk::VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR&				getRayTracingPositionFetchFeatures					(void) const;
 const vk::VkPhysicalDeviceShaderObjectFeaturesEXT&							getShaderObjectFeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceTilePropertiesFeaturesQCOM&						getTilePropertiesFeaturesQCOM						(void) const;

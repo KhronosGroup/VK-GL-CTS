@@ -505,6 +505,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetRenderingAreaGranularityKHR",
 		"vkGetDeviceImageSubresourceLayoutKHR",
 		"vkGetImageSubresourceLayout2KHR",
+		"vkAntiLagUpdateAMD",
 		"vkCreateShadersEXT",
 		"vkDestroyShaderEXT",
 		"vkGetShaderBinaryDataEXT",
@@ -577,6 +578,8 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdPushDescriptorSetWithTemplate2KHR",
 		"vkCmdSetDescriptorBufferOffsets2EXT",
 		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
+		"vkGetMemoryMetalHandleEXT",
+		"vkGetMemoryMetalHandlePropertiesEXT",
     };
 
     bool fail = false;
