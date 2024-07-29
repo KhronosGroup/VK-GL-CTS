@@ -859,6 +859,7 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
 
   --deqp-terminate-on-device-lost=[enable|disable]
     Terminate the run on first device lost error
+    default: 'enable'
 
   --deqp-compute-only=[enable|disable]
     Perform tests for devices implementing compute-only functionality
