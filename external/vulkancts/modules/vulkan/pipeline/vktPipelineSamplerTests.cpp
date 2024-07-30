@@ -1584,12 +1584,13 @@ tcu::TestStatus ExactSamplingInstance::iterate(void)
     float maxV = 1.0f;
 
     // When testing the edges, apply a texture offset of almost half a texel, so the sample location is very close to the texel border.
+    // Note that the spec only requires precision of about 1e-05, and texExtent.width can be 256
     if (m_params.offsetSign)
     {
         const float sign = m_params.offsetSign.get();
         DE_ASSERT(sign == 1.0f || sign == -1.0f);
-        const float offsetWidth  = 0.499f / static_cast<float>(texExtent.width);
-        const float offsetHeight = 0.499f / static_cast<float>(texExtent.height);
+        const float offsetWidth  = 0.498f / static_cast<float>(texExtent.width);
+        const float offsetHeight = 0.498f / static_cast<float>(texExtent.height);
 
         minU += sign * offsetWidth;
         maxU += sign * offsetWidth;
