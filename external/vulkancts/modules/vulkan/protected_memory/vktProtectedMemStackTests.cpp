@@ -340,6 +340,10 @@ tcu::TestStatus StackTestInstance::iterate(void)
     // Command buffer load is repeated 8 times () to avoid coincidental matches.
     for (int i = 0; (i < 8) && (result == true); i++)
     {
+        // Protected memory operations can take a long time, touch watchdog halfway through.
+        if (i == 4)
+            m_context.getTestContext().touchWatchdog();
+
         const vk::Unique<vk::VkFence> fence(vk::createFence(vk, device));
         vk::Unique<vk::VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *computeShader));
         vk::Unique<vk::VkCommandBuffer> cmdBuffer(
