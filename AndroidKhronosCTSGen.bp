@@ -1579,6 +1579,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/ray_query/vktRayQueryTraversalControlTests.cpp",
         "external/vulkancts/modules/vulkan/ray_query/vktRayQueryWatertightnessTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingAccelerationStructuresTests.cpp",
+        "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingAmberTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBarrierTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBarycentricCoordinatesTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBuildIndirectTests.cpp",

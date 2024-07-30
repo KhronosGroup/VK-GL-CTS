@@ -215,156 +215,205 @@ enum TestType
     TEST_TYPE_LAST
 };
 
+enum TestCodec
+{
+    TEST_CODEC_H264,
+    TEST_CODEC_H265,
+    TEST_CODEC_AV1,
+
+    TEST_CODEC_LAST
+};
+
 static const char *testTypeToStr(TestType type)
 {
     const char *testName;
     switch (type)
     {
     case TEST_TYPE_H264_DECODE_I:
-        testName = "h264_i";
+    case TEST_TYPE_H265_DECODE_I:
+    case TEST_TYPE_AV1_DECODE_I:
+        testName = "i";
         break;
     case TEST_TYPE_H264_DECODE_I_P:
-        testName = "h264_i_p";
+    case TEST_TYPE_H265_DECODE_I_P:
+    case TEST_TYPE_AV1_DECODE_I_P:
+        testName = "i_p";
         break;
     case TEST_TYPE_H264_DECODE_CLIP_A:
-        testName = "h264_420_8bit_high_176x144_30frames";
+        testName = "420_8bit_high_176x144_30frames";
         break;
     case TEST_TYPE_H264_DECODE_I_P_NOT_MATCHING_ORDER:
-        testName = "h264_i_p_not_matching_order";
+    case TEST_TYPE_H265_DECODE_I_P_NOT_MATCHING_ORDER:
+    case TEST_TYPE_AV1_DECODE_I_P_NOT_MATCHING_ORDER:
+        testName = "i_p_not_matching_order";
         break;
     case TEST_TYPE_H264_DECODE_I_P_B_13:
-        testName = "h264_i_p_b_13";
+    case TEST_TYPE_H265_DECODE_I_P_B_13:
+        testName = "i_p_b_13";
         break;
     case TEST_TYPE_H264_DECODE_I_P_B_13_NOT_MATCHING_ORDER:
-        testName = "h264_i_p_b_13_not_matching_order";
+    case TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER:
+        testName = "i_p_b_13_not_matching_order";
         break;
     case TEST_TYPE_H264_DECODE_QUERY_RESULT_WITH_STATUS:
-        testName = "h264_query_with_status";
+    case TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS:
+        testName = "query_with_status";
         break;
     case TEST_TYPE_H264_DECODE_INLINE_QUERY_RESULT_WITH_STATUS:
-        testName = "h264_inline_query_with_status";
+    case TEST_TYPE_H265_DECODE_INLINE_QUERY_RESULT_WITH_STATUS:
+        testName = "inline_query_with_status";
         break;
     case TEST_TYPE_H264_DECODE_RESOURCES_WITHOUT_PROFILES:
-        testName = "h264_resources_without_profiles";
+    case TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES:
+        testName = "resources_without_profiles";
         break;
     case TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE:
-        testName = "h264_resolution_change";
+        testName = "resolution_change";
         break;
     case TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE_DPB:
-        testName = "h264_resolution_change_dpb";
+        testName = "resolution_change_dpb";
         break;
     case TEST_TYPE_H264_DECODE_INTERLEAVED:
-        testName = "h264_interleaved";
+        testName = "interleaved";
         break;
     case TEST_TYPE_H264_H265_DECODE_INTERLEAVED:
-        testName = "h264_h265_interleaved";
-        break;
-    case TEST_TYPE_H265_DECODE_I:
-        testName = "h265_i";
-        break;
-    case TEST_TYPE_H265_DECODE_I_P:
-        testName = "h265_i_p";
+        testName = "h265_interleaved";
         break;
     case TEST_TYPE_H265_DECODE_CLIP_D:
-        testName = "h265_420_8bit_main_176x144_30frames";
-        break;
-    case TEST_TYPE_H265_DECODE_I_P_NOT_MATCHING_ORDER:
-        testName = "h265_i_p_not_matching_order";
-        break;
-    case TEST_TYPE_H265_DECODE_I_P_B_13:
-        testName = "h265_i_p_b_13";
-        break;
-    case TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER:
-        testName = "h265_i_p_b_13_not_matching_order";
-        break;
-    case TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS:
-        testName = "h265_query_with_status";
-        break;
-    case TEST_TYPE_H265_DECODE_INLINE_QUERY_RESULT_WITH_STATUS:
-        testName = "h265_inline_query_with_status";
-        break;
-    case TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES:
-        testName = "h265_resources_without_profiles";
+        testName = "420_8bit_main_176x144_30frames";
         break;
     case TEST_TYPE_H265_DECODE_SLIST_A:
-        testName = "h265_slist_a";
+        testName = "slist_a";
         break;
     case TEST_TYPE_H265_DECODE_SLIST_B:
-        testName = "h265_slist_b";
-        break;
-    case TEST_TYPE_AV1_DECODE_I:
-        testName = "av1_i";
-        break;
-    case TEST_TYPE_AV1_DECODE_I_P:
-        testName = "av1_i_p";
-        break;
-    case TEST_TYPE_AV1_DECODE_I_P_NOT_MATCHING_ORDER:
-        testName = "av1_i_p_not_matching_order";
+        testName = "slist_b";
         break;
     case TEST_TYPE_AV1_DECODE_BASIC_8:
-        testName = "av1_basic_8";
+        testName = "basic_8";
         break;
     case TEST_TYPE_AV1_DECODE_BASIC_8_NOT_MATCHING_ORDER:
-        testName = "av1_basic_8_not_matching_order";
+        testName = "basic_8_not_matching_order";
         break;
     case TEST_TYPE_AV1_DECODE_BASIC_10:
-        testName = "av1_basic_10";
+        testName = "basic_10";
         break;
     case TEST_TYPE_AV1_DECODE_ALLINTRA_8:
-        testName = "av1_allintra_8";
+        testName = "allintra_8";
         break;
     case TEST_TYPE_AV1_DECODE_ALLINTRA_NOSETUP_8:
-        testName = "av1_allintra_nosetup_8";
+        testName = "allintra_nosetup_8";
         break;
     case TEST_TYPE_AV1_DECODE_ALLINTRA_BC_8:
-        testName = "av1_allintrabc_8";
+        testName = "allintrabc_8";
         break;
     case TEST_TYPE_AV1_DECODE_CDFUPDATE_8:
-        testName = "av1_cdfupdate_8";
+        testName = "cdfupdate_8";
         break;
     case TEST_TYPE_AV1_DECODE_GLOBALMOTION_8:
-        testName = "av1_globalmotion_8";
+        testName = "globalmotion_8";
         break;
     case TEST_TYPE_AV1_DECODE_FILMGRAIN_8:
-        testName = "av1_filmgrain_8";
+        testName = "filmgrain_8";
         break;
     case TEST_TYPE_AV1_DECODE_SVCL1T2_8:
-        testName = "av1_svcl1t2_8";
+        testName = "svcl1t2_8";
         break;
     case TEST_TYPE_AV1_DECODE_SUPERRES_8:
-        testName = "av1_superres_8";
+        testName = "superres_8";
         break;
     case TEST_TYPE_AV1_DECODE_SIZEUP_8:
-        testName = "av1_sizeup_8";
+        testName = "sizeup_8";
         break;
     case TEST_TYPE_AV1_DECODE_ARGON_SEQCHANGE_AFFINE_8:
-        testName = "av1_argon_seqchange_affine_8";
+        testName = "argon_seqchange_affine_8";
         break;
     case TEST_TYPE_AV1_DECODE_ORDERHINT_10:
-        testName = "av1_orderhint_10";
+        testName = "orderhint_10";
         break;
     case TEST_TYPE_AV1_DECODE_FORWARDKEYFRAME_10:
-        testName = "av1_forwardkeyframe_10";
+        testName = "forwardkeyframe_10";
         break;
     case TEST_TYPE_AV1_DECODE_LOSSLESS_10:
-        testName = "av1_lossless_10";
+        testName = "lossless_10";
         break;
     case TEST_TYPE_AV1_DECODE_LOOPFILTER_10:
-        testName = "av1_loopfilter_10";
+        testName = "loopfilter_10";
         break;
     case TEST_TYPE_AV1_DECODE_CDEF_10:
-        testName = "av1_cdef_10";
+        testName = "cdef_10";
         break;
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
-        testName = "av1_argon_filmgrain_10_test1019";
+        testName = "argon_filmgrain_10_test1019";
         break;
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
-        testName = "av1_argon_test787";
+        testName = "argon_test787";
         break;
     default:
         TCU_THROW(InternalError, "Unknown TestType");
     }
     return testName;
+}
+
+enum TestCodec getTestCodec(const TestType testType)
+{
+    switch (testType)
+    {
+    case TEST_TYPE_H264_DECODE_I:
+    case TEST_TYPE_H264_DECODE_I_P:
+    case TEST_TYPE_H264_DECODE_CLIP_A:
+    case TEST_TYPE_H264_DECODE_I_P_NOT_MATCHING_ORDER:
+    case TEST_TYPE_H264_DECODE_I_P_B_13:
+    case TEST_TYPE_H264_DECODE_I_P_B_13_NOT_MATCHING_ORDER:
+    case TEST_TYPE_H264_DECODE_QUERY_RESULT_WITH_STATUS:
+    case TEST_TYPE_H264_DECODE_INLINE_QUERY_RESULT_WITH_STATUS:
+    case TEST_TYPE_H264_DECODE_RESOURCES_WITHOUT_PROFILES:
+    case TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE:
+    case TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE_DPB:
+    case TEST_TYPE_H264_DECODE_INTERLEAVED:
+    case TEST_TYPE_H264_H265_DECODE_INTERLEAVED:
+        return TEST_CODEC_H264;
+
+    case TEST_TYPE_H265_DECODE_I:
+    case TEST_TYPE_H265_DECODE_I_P:
+    case TEST_TYPE_H265_DECODE_CLIP_D:
+    case TEST_TYPE_H265_DECODE_I_P_NOT_MATCHING_ORDER:
+    case TEST_TYPE_H265_DECODE_I_P_B_13:
+    case TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER:
+    case TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS:
+    case TEST_TYPE_H265_DECODE_INLINE_QUERY_RESULT_WITH_STATUS:
+    case TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES:
+    case TEST_TYPE_H265_DECODE_SLIST_A:
+    case TEST_TYPE_H265_DECODE_SLIST_B:
+        return TEST_CODEC_H265;
+
+    case TEST_TYPE_AV1_DECODE_I:
+    case TEST_TYPE_AV1_DECODE_I_P:
+    case TEST_TYPE_AV1_DECODE_I_P_NOT_MATCHING_ORDER:
+    case TEST_TYPE_AV1_DECODE_BASIC_8:
+    case TEST_TYPE_AV1_DECODE_BASIC_8_NOT_MATCHING_ORDER:
+    case TEST_TYPE_AV1_DECODE_BASIC_10:
+    case TEST_TYPE_AV1_DECODE_ALLINTRA_8:
+    case TEST_TYPE_AV1_DECODE_ALLINTRA_NOSETUP_8:
+    case TEST_TYPE_AV1_DECODE_ALLINTRA_BC_8:
+    case TEST_TYPE_AV1_DECODE_CDFUPDATE_8:
+    case TEST_TYPE_AV1_DECODE_GLOBALMOTION_8:
+    case TEST_TYPE_AV1_DECODE_FILMGRAIN_8:
+    case TEST_TYPE_AV1_DECODE_SVCL1T2_8:
+    case TEST_TYPE_AV1_DECODE_SUPERRES_8:
+    case TEST_TYPE_AV1_DECODE_SIZEUP_8:
+    case TEST_TYPE_AV1_DECODE_ARGON_SEQCHANGE_AFFINE_8:
+    case TEST_TYPE_AV1_DECODE_ORDERHINT_10:
+    case TEST_TYPE_AV1_DECODE_FORWARDKEYFRAME_10:
+    case TEST_TYPE_AV1_DECODE_LOSSLESS_10:
+    case TEST_TYPE_AV1_DECODE_LOOPFILTER_10:
+    case TEST_TYPE_AV1_DECODE_CDEF_10:
+    case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
+    case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
+        return TEST_CODEC_AV1;
+
+    default:
+        TCU_THROW(InternalError, "Unknown TestType");
+    }
 }
 
 enum DecoderOption : uint32_t
@@ -1619,6 +1668,9 @@ tcu::TestCaseGroup *createVideoDecodeTests(tcu::TestContext &testCtx)
 {
     const uint32_t baseSeed = static_cast<uint32_t>(testCtx.getCommandLine().getBaseSeed());
     MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "decode"));
+    MovePtr<tcu::TestCaseGroup> h264Group(new tcu::TestCaseGroup(testCtx, "h264", "H.264 video codec"));
+    MovePtr<tcu::TestCaseGroup> h265Group(new tcu::TestCaseGroup(testCtx, "h265", "H.265 video codec"));
+    MovePtr<tcu::TestCaseGroup> av1Group(new tcu::TestCaseGroup(testCtx, "av1", "AV1 video codec"));
 
     for (bool layeredDpb : {true, false})
     {
@@ -1628,7 +1680,14 @@ tcu::TestCaseGroup *createVideoDecodeTests(tcu::TestContext &testCtx)
             const std::string testName = defn->getTestName();
             uint32_t rngSeed           = baseSeed ^ deStringHash(testName.c_str());
             defn->updateHash(rngSeed);
-            group->addChild(new VideoDecodeTestCase(testCtx, testName.c_str(), defn));
+
+            auto testCodec = getTestCodec(decodeTest.type);
+            if (testCodec == TEST_CODEC_H264)
+                h264Group->addChild(new VideoDecodeTestCase(testCtx, testName.c_str(), defn));
+            else if (testCodec == TEST_CODEC_H265)
+                h265Group->addChild(new VideoDecodeTestCase(testCtx, testName.c_str(), defn));
+            else
+                av1Group->addChild(new VideoDecodeTestCase(testCtx, testName.c_str(), defn));
         }
         for (const auto &interleavingTest : g_InterleavingTests)
         {
@@ -1640,9 +1699,21 @@ tcu::TestCaseGroup *createVideoDecodeTests(tcu::TestContext &testCtx)
             const std::string testName = defnA->getTestName();
             defns.push_back(std::move(defnA));
             defns.push_back(std::move(defnB));
-            group->addChild(new InterleavingDecodeTestCase(testCtx, testName.c_str(), std::move(defns)));
+
+            auto testCodec = getTestCodec(interleavingTest.type);
+            if (testCodec == TEST_CODEC_H264)
+                h264Group->addChild(new InterleavingDecodeTestCase(testCtx, testName.c_str(), std::move(defns)));
+            else if (testCodec == TEST_CODEC_H265)
+                h265Group->addChild(new InterleavingDecodeTestCase(testCtx, testName.c_str(), std::move(defns)));
+            else
+                av1Group->addChild(new InterleavingDecodeTestCase(testCtx, testName.c_str(), std::move(defns)));
         }
     } // layered true / false
+
+    group->addChild(h264Group.release());
+    group->addChild(h265Group.release());
+    group->addChild(av1Group.release());
+
     return group.release();
 }
 
