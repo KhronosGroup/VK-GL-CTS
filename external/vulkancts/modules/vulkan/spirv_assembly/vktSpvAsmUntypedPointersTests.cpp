@@ -1418,9 +1418,8 @@ static void adjustSpecForAtomicMinMaxOperations(ComputeShaderSpec &spec, std::ma
     }
 }
 
-static void adjustSpecForUntypedPointers(ComputeShaderSpec &spec, std::map<std::string, std::string> &specMap)
+static void adjustSpecForUntypedPointers(ComputeShaderSpec &spec)
 {
-    specMap["storageCap"]                                                       = "OpCapability UntypedPointersKHR";
     spec.requestedVulkanFeatures.extShaderUntypedPointers.shaderUntypedPointers = VK_TRUE;
 }
 
@@ -1988,7 +1987,6 @@ std::string createShaderHeader(const char *pInterfaces = "")
 {
     std::string header = std::string("OpCapability Shader\n"
                                      "OpCapability UntypedPointersKHR\n"
-                                     "${storageCap:opt}\n"
                                      "${smallStorageCap:opt}\n"
                                      "${additionalStorageCap:opt}\n"
                                      "${baseTypeCap:opt}\n"
@@ -2301,92 +2299,81 @@ std::string createShaderAnnotations(POINTER_TEST_CASE testCase)
     {
     case PointerTestCases::OP_FUNCTION_CALL_PHYSICAL_STORAGE:
     {
-        annotations += std::string("OpDecorate       %input_ptr                Restrict\n"
+        annotations += std::string("OpDecorate       %return_ptr       Restrict\n"
+                                   "OpDecorate       %untyped_phys_ptr ArrayStride ${alignment}\n"
 
-                                   "OpMemberDecorate %data_buffer              0             Offset 0\n"
-                                   "OpDecorate       %data_buffer              Block\n"
+                                   "OpDecorate       %data_buffer      Block\n"
+                                   "OpMemberDecorate %data_buffer      0 Offset 0\n"
 
-                                   "OpMemberDecorate %input_buffer             0             Offset 0\n"
-                                   "OpDecorate       %input_buffer             Block\n"
-                                   "OpDecorate       %input_data_untyped_var   DescriptorSet 0\n"
-                                   "OpDecorate       %input_data_untyped_var   Binding       0\n"
+                                   "OpDecorate       %phys_ptrs_struct Block\n"
+                                   "OpMemberDecorate %phys_ptrs_struct 0 Offset 0\n"
+                                   "OpMemberDecorate %phys_ptrs_struct 1 Offset 8\n"
 
-                                   "OpMemberDecorate %output_buffer            0             Offset 0\n"
-                                   "OpDecorate       %output_buffer            Block\n"
-                                   "OpDecorate       %output_data_var          DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_var          Binding       1\n");
+                                   "OpDecorate       %all_data_var     DescriptorSet 0\n"
+                                   "OpDecorate       %all_data_var     Binding       0\n");
         break;
     }
     case PointerTestCases::OP_BITCAST_FROM_UNTYPED_PHYSICAL_STORAGE:
     {
-        annotations += std::string("OpMemberDecorate %data_buffer              0             Offset 0\n"
-                                   "OpDecorate       %data_buffer              Block\n"
+        annotations += std::string("OpDecorate       %untyped_phys_ptr ArrayStride ${alignment}\n"
 
-                                   "OpMemberDecorate %input_buffer             0             Offset 0\n"
-                                   "OpDecorate       %input_buffer             Block\n"
-                                   "OpDecorate       %input_data_untyped_var   DescriptorSet 0\n"
-                                   "OpDecorate       %input_data_untyped_var   Binding       0\n"
+                                   "OpDecorate       %data_buffer      Block\n"
+                                   "OpMemberDecorate %data_buffer      0 Offset 0\n"
 
-                                   "OpMemberDecorate %output_buffer            0             Offset 0\n"
-                                   "OpDecorate       %output_buffer            Block\n"
-                                   "OpDecorate       %output_data_var          DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_var          Binding       1\n");
+                                   "OpDecorate       %phys_ptrs_struct Block\n"
+                                   "OpMemberDecorate %phys_ptrs_struct 0 Offset 0\n"
+                                   "OpMemberDecorate %phys_ptrs_struct 1 Offset 8\n"
+
+                                   "OpDecorate       %all_data_var     DescriptorSet 0\n"
+                                   "OpDecorate       %all_data_var     Binding       0\n");
         break;
     }
     case PointerTestCases::OP_BITCAST_TO_UNTYPED_PHYSICAL_STORAGE:
     {
-        annotations += std::string("OpMemberDecorate %data_buffer              0             Offset 0\n"
-                                   "OpDecorate       %data_buffer              Block\n"
+        annotations += std::string("OpDecorate       %untyped_phys_ptr ArrayStride ${alignment}\n"
 
-                                   "OpMemberDecorate %input_buffer             0             Offset 0\n"
-                                   "OpDecorate       %input_buffer             Block\n"
-                                   "OpDecorate       %input_data_var           DescriptorSet 0\n"
-                                   "OpDecorate       %input_data_var           Binding       0\n"
+                                   "OpDecorate       %data_buffer      Block\n"
+                                   "OpMemberDecorate %data_buffer      0 Offset 0\n"
 
-                                   "OpMemberDecorate %output_buffer            0             Offset 0\n"
-                                   "OpDecorate       %output_buffer            Block\n"
-                                   "OpDecorate       %output_data_untyped_var  DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_untyped_var  Binding       1\n");
+                                   "OpDecorate       %phys_ptrs_struct Block\n"
+                                   "OpMemberDecorate %phys_ptrs_struct 0 Offset 0\n"
+                                   "OpMemberDecorate %phys_ptrs_struct 1 Offset 8\n"
+
+                                   "OpDecorate       %all_data_var     DescriptorSet 0\n"
+                                   "OpDecorate       %all_data_var     Binding       0\n");
         break;
     }
     case PointerTestCases::OP_PHI_PHYSICAL_STORAGE:
     case PointerTestCases::OP_SELECT_PHYSICAL_STORAGE:
     {
-        annotations += std::string("OpMemberDecorate %data_buffer              0             Offset 0\n"
-                                   "OpDecorate       %data_buffer              Block\n"
+        annotations += std::string("OpDecorate       %untyped_phys_ptr ArrayStride ${alignment}\n"
 
-                                   "OpMemberDecorate %input_buffer_0           0             Offset 0\n"
-                                   "OpDecorate       %input_buffer_0           Block\n"
-                                   "OpDecorate       %input_data_0_untyped_var DescriptorSet 0\n"
-                                   "OpDecorate       %input_data_0_untyped_var Binding       0\n"
+                                   "OpDecorate       %data_buffer      Block\n"
+                                   "OpMemberDecorate %data_buffer      0 Offset 0\n"
 
-                                   "OpMemberDecorate %input_buffer_1           0             Offset 0\n"
-                                   "OpDecorate       %input_buffer_1           Block\n"
-                                   "OpDecorate       %input_data_1_untyped_var DescriptorSet 0\n"
-                                   "OpDecorate       %input_data_1_untyped_var Binding       1\n"
+                                   "OpDecorate       %phys_ptrs_struct Block\n"
+                                   "OpMemberDecorate %phys_ptrs_struct 0 Offset 0\n"
+                                   "OpMemberDecorate %phys_ptrs_struct 1 Offset 8\n"
+                                   "OpMemberDecorate %phys_ptrs_struct 2 Offset 16\n"
 
-                                   "OpMemberDecorate %output_buffer            0             Offset 0\n"
-                                   "OpDecorate       %output_buffer            Block\n"
-                                   "OpDecorate       %output_data_var          DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_var          Binding       2\n");
+                                   "OpDecorate       %all_data_var     DescriptorSet 0\n"
+                                   "OpDecorate       %all_data_var     Binding       0\n");
         break;
     }
     case PointerTestCases::OP_PTR_ACCESS_CHAIN_PHYSICAL_STORAGE:
     {
         annotations += std::string("OpDecorate       %array_${baseType}_${threadCount} ArrayStride ${alignment}\n"
+                                   "OpDecorate       %untyped_phys_ptr                 ArrayStride ${alignment}\n"
 
-                                   "OpMemberDecorate %data_buffer            0             Offset 0\n"
-                                   "OpDecorate       %data_buffer            Block\n"
+                                   "OpDecorate       %data_buffer      Block\n"
+                                   "OpMemberDecorate %data_buffer      0 Offset 0\n"
 
-                                   "OpMemberDecorate %input_buffer           0             Offset 0\n"
-                                   "OpDecorate       %input_buffer           Block\n"
-                                   "OpDecorate       %input_data_untyped_var DescriptorSet 0\n"
-                                   "OpDecorate       %input_data_untyped_var Binding       0\n"
+                                   "OpDecorate       %phys_ptrs_struct Block\n"
+                                   "OpMemberDecorate %phys_ptrs_struct 0 Offset 0\n"
+                                   "OpMemberDecorate %phys_ptrs_struct 1 Offset 8\n"
 
-                                   "OpMemberDecorate %output_buffer          0             Offset 0\n"
-                                   "OpDecorate       %output_buffer          Block\n"
-                                   "OpDecorate       %output_data_var        DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_var        Binding       1\n");
+                                   "OpDecorate       %all_data_var     DescriptorSet 0\n"
+                                   "OpDecorate       %all_data_var     Binding       0\n");
         break;
     }
     case PointerTestCases::OP_SELECT_VARIABLE_PTR:
@@ -3588,12 +3575,14 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
 
         /* Constants */
         "%c_uint32_0  = OpConstant %uint32 0\n"
+        "%c_uint32_1  = OpConstant %uint32 1\n"
+        "%c_uint32_2  = OpConstant %uint32 2\n"
         "%c_uint32_16 = OpConstant %uint32 16\n"
         "${boolConst:opt}\n"
 
         /* Pointers */
-        "%uint32_input_ptr                 = OpTypePointer Input %uint32\n"
-        "%vec3_uint32_input_ptr            = OpTypePointer Input %vec3_uint32\n");
+        "%uint32_input_ptr      = OpTypePointer Input %uint32\n"
+        "%vec3_uint32_input_ptr = OpTypePointer Input %vec3_uint32\n");
 
     switch (testCase)
     {
@@ -3601,87 +3590,67 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
     case PointerTestCases::OP_SELECT_PHYSICAL_STORAGE:
     {
         variables += std::string(
-            "%data_buffer                                                = OpTypeStruct            %${baseType}\n"
-            "%${baseType}_physical_storage_buffer_ptr                    = OpTypePointer           "
-            "PhysicalStorageBuffer                    %${baseType}\n"
-            "%data_buffer_physical_storage_buffer_ptr                    = OpTypePointer           "
-            "PhysicalStorageBuffer                    %data_buffer\n"
-            "%data_buffer_physical_storage_buffer_ptr_storage_buffer_ptr = OpTypePointer           StorageBuffer       "
-            "                     %data_buffer_physical_storage_buffer_ptr\n"
-            "%storage_buffer_untyped_ptr                                 = OpTypeUntypedPointerKHR StorageBuffer\n"
-            "%physical_storage_buffer_untyped_ptr                        = OpTypeUntypedPointerKHR "
-            "PhysicalStorageBuffer\n"
+            /* Structs */
+            "%data_buffer   = OpTypeStruct %${baseType}\n"
 
-            "%input_buffer_0                                             = OpTypeStruct            "
-            "%physical_storage_buffer_untyped_ptr\n"
-            "%input_buffer_1                                             = OpTypeStruct            "
-            "%physical_storage_buffer_untyped_ptr\n"
-            "%output_buffer                                              = OpTypeStruct            "
-            "%data_buffer_physical_storage_buffer_ptr\n"
-            "%output_buffer_storage_buffer_ptr                           = OpTypePointer           StorageBuffer "
-            "%output_buffer\n"
+            /* Pointers */
+            "%untyped_phys_ptr                 = OpTypeUntypedPointerKHR PhysicalStorageBuffer\n"
+            "%data_buffer_phys_ptr             = OpTypePointer           PhysicalStorageBuffer %data_buffer\n"
+            "%data_buffer_phys_ptr_ptr         = OpTypePointer           StorageBuffer         %data_buffer_phys_ptr\n"
 
-            "%input_data_0_untyped_var                                   = OpUntypedVariableKHR    "
-            "%storage_buffer_untyped_ptr              StorageBuffer %input_buffer_0\n"
-            "%input_data_1_untyped_var                                   = OpUntypedVariableKHR    "
-            "%storage_buffer_untyped_ptr              StorageBuffer %input_buffer_1\n"
-            "%output_data_var                                            = OpVariable              "
-            "%output_buffer_storage_buffer_ptr        StorageBuffer\n");
+            /* Structs cd. */
+            "%phys_ptrs_struct = OpTypeStruct %data_buffer_phys_ptr %data_buffer_phys_ptr %data_buffer_phys_ptr\n"
+
+            /* Pointers cd. */
+            "%phys_ptrs_struct_ptr = OpTypePointer StorageBuffer %phys_ptrs_struct\n"
+
+            /* Variables */
+            "%all_data_var = OpVariable %phys_ptrs_struct_ptr  StorageBuffer\n");
 
         break;
     }
     case PointerTestCases::OP_BITCAST_FROM_UNTYPED_PHYSICAL_STORAGE:
     {
         variables += std::string(
-            "%data_buffer                                                = OpTypeStruct            %${baseType}\n"
-            "%${baseType}_physical_storage_buffer_ptr                    = OpTypePointer           "
-            "PhysicalStorageBuffer                    %${baseType}\n"
-            "%data_buffer_physical_storage_buffer_ptr                    = OpTypePointer           "
-            "PhysicalStorageBuffer                    %data_buffer\n"
-            "%data_buffer_physical_storage_buffer_ptr_storage_buffer_ptr = OpTypePointer           StorageBuffer       "
-            "                     %data_buffer_physical_storage_buffer_ptr\n"
-            "%storage_buffer_untyped_ptr                                 = OpTypeUntypedPointerKHR StorageBuffer\n"
-            "%physical_storage_buffer_untyped_ptr                        = OpTypeUntypedPointerKHR "
-            "PhysicalStorageBuffer\n"
+            /* Structs */
+            "%data_buffer   = OpTypeStruct %${baseType}\n"
 
-            "%input_buffer                                               = OpTypeStruct            "
-            "%physical_storage_buffer_untyped_ptr\n"
-            "%output_buffer                                              = OpTypeStruct            "
-            "%data_buffer_physical_storage_buffer_ptr\n"
-            "%output_buffer_storage_buffer_ptr                           = OpTypePointer           StorageBuffer "
-            "%output_buffer\n"
+            /* Pointers */
+            "%untyped_phys_ptr                 = OpTypeUntypedPointerKHR PhysicalStorageBuffer\n"
+            "%${baseType}_phys_ptr             = OpTypePointer           PhysicalStorageBuffer %${baseType}\n"
+            "%data_buffer_phys_ptr             = OpTypePointer           PhysicalStorageBuffer %data_buffer\n"
+            "%data_buffer_phys_ptr_ptr         = OpTypePointer           StorageBuffer         %data_buffer_phys_ptr\n"
 
-            "%input_data_untyped_var                                     = OpUntypedVariableKHR    "
-            "%storage_buffer_untyped_ptr              StorageBuffer %input_buffer\n"
-            "%output_data_var                                            = OpVariable              "
-            "%output_buffer_storage_buffer_ptr        StorageBuffer\n");
+            /* Structs cd. */
+            "%phys_ptrs_struct = OpTypeStruct %data_buffer_phys_ptr %data_buffer_phys_ptr\n"
+
+            /* Pointers cd. */
+            "%phys_ptrs_struct_ptr = OpTypePointer StorageBuffer %phys_ptrs_struct\n"
+
+            /* Variables */
+            "%all_data_var = OpVariable %phys_ptrs_struct_ptr  StorageBuffer\n");
         break;
     }
     case PointerTestCases::OP_BITCAST_TO_UNTYPED_PHYSICAL_STORAGE:
     {
         variables += std::string(
-            "%data_buffer                                                = OpTypeStruct            %${baseType}\n"
-            "%${baseType}_physical_storage_buffer_ptr                    = OpTypePointer           "
-            "PhysicalStorageBuffer %${baseType}\n"
-            "%data_buffer_physical_storage_buffer_ptr                    = OpTypePointer           "
-            "PhysicalStorageBuffer %data_buffer\n"
-            "%data_buffer_physical_storage_buffer_ptr_storage_buffer_ptr = OpTypePointer           StorageBuffer       "
-            "  %data_buffer_physical_storage_buffer_ptr\n"
-            "%storage_buffer_untyped_ptr                                 = OpTypeUntypedPointerKHR StorageBuffer\n"
-            "%physical_storage_buffer_untyped_ptr                        = OpTypeUntypedPointerKHR "
-            "PhysicalStorageBuffer\n"
+            /* Structs */
+            "%data_buffer   = OpTypeStruct %${baseType}\n"
 
-            "%input_buffer                                               = OpTypeStruct            "
-            "%data_buffer_physical_storage_buffer_ptr\n"
-            "%output_buffer                                              = OpTypeStruct            "
-            "%physical_storage_buffer_untyped_ptr\n"
-            "%input_buffer_storage_buffer_ptr                            = OpTypePointer           StorageBuffer "
-            "%input_buffer\n"
+            /* Pointers */
+            "%untyped_phys_ptr                 = OpTypeUntypedPointerKHR PhysicalStorageBuffer\n"
+            "%${baseType}_phys_ptr             = OpTypePointer           PhysicalStorageBuffer %${baseType}\n"
+            "%data_buffer_phys_ptr             = OpTypePointer           PhysicalStorageBuffer %data_buffer\n"
+            "%data_buffer_phys_ptr_ptr         = OpTypePointer           StorageBuffer         %data_buffer_phys_ptr\n"
 
-            "%input_data_var                                             = OpVariable              "
-            "%input_buffer_storage_buffer_ptr         StorageBuffer\n"
-            "%output_data_untyped_var                                    = OpUntypedVariableKHR    "
-            "%storage_buffer_untyped_ptr              StorageBuffer %output_buffer\n");
+            /* Structs cd. */
+            "%phys_ptrs_struct = OpTypeStruct %data_buffer_phys_ptr %data_buffer_phys_ptr\n"
+
+            /* Pointers cd. */
+            "%phys_ptrs_struct_ptr = OpTypePointer StorageBuffer %phys_ptrs_struct\n"
+
+            /* Variables */
+            "%all_data_var = OpVariable %phys_ptrs_struct_ptr  StorageBuffer\n");
         break;
     }
     case PointerTestCases::OP_PTR_ACCESS_CHAIN_PHYSICAL_STORAGE:
@@ -3693,56 +3662,43 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
             /* Arrays */
             "%array_${baseType}_${threadCount} = OpTypeArray %${baseType} %c_uint32_${threadCount}\n"
 
-            "%data_buffer                                                = OpTypeStruct            "
-            "%array_${baseType}_${threadCount}\n"
-            "%${baseType}_physical_storage_buffer_ptr                    = OpTypePointer           "
-            "PhysicalStorageBuffer %${baseType}\n"
-            "%data_buffer_physical_storage_buffer_ptr                    = OpTypePointer           "
-            "PhysicalStorageBuffer %data_buffer\n"
-            "%data_buffer_physical_storage_buffer_ptr_storage_buffer_ptr = OpTypePointer           StorageBuffer       "
-            "  %data_buffer_physical_storage_buffer_ptr\n"
-            "%storage_buffer_untyped_ptr                                 = OpTypeUntypedPointerKHR StorageBuffer\n"
-            "%physical_storage_buffer_untyped_ptr                        = OpTypeUntypedPointerKHR "
-            "PhysicalStorageBuffer\n"
+            /* Structs */
+            "%data_buffer   = OpTypeStruct %array_${baseType}_${threadCount}\n"
 
-            "%input_buffer                                               = OpTypeStruct            "
-            "%physical_storage_buffer_untyped_ptr\n"
-            "%output_buffer                                              = OpTypeStruct            "
-            "%data_buffer_physical_storage_buffer_ptr\n"
-            "%output_buffer_storage_buffer_ptr                           = OpTypePointer           StorageBuffer "
-            "%output_buffer\n"
+            /* Pointers */
+            "%untyped_phys_ptr                 = OpTypeUntypedPointerKHR PhysicalStorageBuffer\n"
+            "%data_buffer_phys_ptr             = OpTypePointer           PhysicalStorageBuffer %data_buffer\n"
+            "%data_buffer_phys_ptr_ptr         = OpTypePointer           StorageBuffer         %data_buffer_phys_ptr\n"
 
-            "%input_data_untyped_var                                     = OpUntypedVariableKHR    "
-            "%storage_buffer_untyped_ptr              StorageBuffer %input_buffer\n"
-            "%output_data_var                                            = OpVariable              "
-            "%output_buffer_storage_buffer_ptr        StorageBuffer\n");
+            /* Structs cd. */
+            "%phys_ptrs_struct = OpTypeStruct %data_buffer_phys_ptr %data_buffer_phys_ptr\n"
+
+            /* Pointers cd. */
+            "%phys_ptrs_struct_ptr = OpTypePointer StorageBuffer %phys_ptrs_struct\n"
+
+            /* Variables */
+            "%all_data_var = OpVariable %phys_ptrs_struct_ptr  StorageBuffer\n");
         break;
     }
     case PointerTestCases::OP_FUNCTION_CALL_PHYSICAL_STORAGE:
     {
         variables += std::string(
-            "%data_buffer                                                = OpTypeStruct            %${baseType}\n"
-            "%${baseType}_physical_storage_buffer_ptr                    = OpTypePointer           "
-            "PhysicalStorageBuffer %${baseType}\n"
-            "%data_buffer_physical_storage_buffer_ptr                    = OpTypePointer           "
-            "PhysicalStorageBuffer %data_buffer\n"
-            "%data_buffer_physical_storage_buffer_ptr_storage_buffer_ptr = OpTypePointer           StorageBuffer       "
-            "  %data_buffer_physical_storage_buffer_ptr\n"
-            "%storage_buffer_untyped_ptr                                 = OpTypeUntypedPointerKHR StorageBuffer\n"
-            "%physical_storage_buffer_untyped_ptr                        = OpTypeUntypedPointerKHR "
-            "PhysicalStorageBuffer\n"
+            /* Structs */
+            "%data_buffer   = OpTypeStruct %${baseType}\n"
 
-            "%input_buffer                                               = OpTypeStruct            "
-            "%physical_storage_buffer_untyped_ptr\n"
-            "%output_buffer                                              = OpTypeStruct            "
-            "%data_buffer_physical_storage_buffer_ptr\n"
-            "%output_buffer_storage_buffer_ptr                           = OpTypePointer           StorageBuffer "
-            "%output_buffer\n"
+            /* Pointers */
+            "%untyped_phys_ptr                 = OpTypeUntypedPointerKHR PhysicalStorageBuffer\n"
+            "%data_buffer_phys_ptr             = OpTypePointer           PhysicalStorageBuffer %data_buffer\n"
+            "%data_buffer_phys_ptr_ptr         = OpTypePointer           StorageBuffer         %data_buffer_phys_ptr\n"
 
-            "%input_data_untyped_var                                     = OpUntypedVariableKHR    "
-            "%storage_buffer_untyped_ptr              StorageBuffer %input_buffer\n"
-            "%output_data_var                                            = OpVariable              "
-            "%output_buffer_storage_buffer_ptr        StorageBuffer\n");
+            /* Structs cd. */
+            "%phys_ptrs_struct = OpTypeStruct %data_buffer_phys_ptr %data_buffer_phys_ptr\n"
+
+            /* Pointers cd. */
+            "%phys_ptrs_struct_ptr = OpTypePointer StorageBuffer %phys_ptrs_struct\n"
+
+            /* Variables */
+            "%all_data_var = OpVariable %phys_ptrs_struct_ptr  StorageBuffer\n");
         break;
     }
     case PointerTestCases::OP_SELECT_VARIABLE_PTR:
@@ -4309,13 +4265,11 @@ std::string createSimpleFunction(POINTER_TEST_CASE opType)
 
     if (opType == PointerTestCases::OP_FUNCTION_CALL_PHYSICAL_STORAGE)
     {
-        function += std::string("%simple_function_type  = OpTypeFunction      %physical_storage_buffer_untyped_ptr "
-                                "%physical_storage_buffer_untyped_ptr\n"
-                                "%simple_function       = OpFunction          %physical_storage_buffer_untyped_ptr "
-                                "None %simple_function_type\n"
-                                "%input_ptr             = OpFunctionParameter %physical_storage_buffer_untyped_ptr\n"
+        function += std::string("%simple_function_type  = OpTypeFunction %untyped_phys_ptr %untyped_phys_ptr\n"
+                                "%simple_function       = OpFunction     %untyped_phys_ptr None %simple_function_type\n"
+                                "%return_ptr            = OpFunctionParameter %untyped_phys_ptr\n"
                                 "%label_simple_function = OpLabel\n"
-                                "                         OpReturnValue       %input_ptr\n"
+                                "                         OpReturnValue       %return_ptr\n"
                                 "                         OpFunctionEnd\n");
     }
     else // opType == PointerTestCases::FUNCTION_PARAMETERS_VARIABLE_PTR
@@ -4746,185 +4700,119 @@ std::string createShaderMain(POINTER_TEST_CASE testCase)
     case PointerTestCases::OP_BITCAST_FROM_UNTYPED_PHYSICAL_STORAGE:
     {
         main += std::string(
-            "%input_ptr_ptr_loc  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr              %data_buffer       "
-            "    %input_data_untyped_var %c_uint32_0\n"
-            "%output_ptr_ptr_loc = OpAccessChain           %data_buffer_physical_storage_buffer_ptr_storage_buffer_ptr "
-            "    %output_data_var        %c_uint32_0\n"
+            "%input_ptr  = OpAccessChain           %data_buffer_phys_ptr_ptr  %all_data_var %c_uint32_0\n"
+            "%input      = OpLoad                  %data_buffer_phys_ptr      %input_ptr\n"
+            "%input_loc  = OpUntypedAccessChainKHR %untyped_phys_ptr          %data_buffer  %input      %c_uint32_0\n"
 
-            "%input_ptr_loc      = OpLoad                  %physical_storage_buffer_untyped_ptr     "
-            "%input_ptr_ptr_loc\n"
-            "%output_ptr_loc     = OpLoad                  %data_buffer_physical_storage_buffer_ptr "
-            "%output_ptr_ptr_loc\n"
+            "%output_ptr = OpAccessChain            %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_1\n"
+            "%output     = OpLoad                   %data_buffer_phys_ptr     %output_ptr\n"
+            "%output_loc = OpAccessChain            %${baseType}_phys_ptr     %output       %c_uint32_0\n"
 
-            "%input_loc          = OpLoad                  %physical_storage_buffer_untyped_ptr     %input_ptr_loc     "
-            "    Aligned        ${alignment}\n"
-            "%output_loc         = OpAccessChain           %${baseType}_physical_storage_buffer_ptr %output_ptr_loc    "
-            "    %c_uint32_0\n"
-
-            "%bitcasted          = OpBitcast               %${baseType}_physical_storage_buffer_ptr %input_loc\n"
-            "%bitcasted_loc      = OpLoad                  %${baseType}                             %bitcasted         "
-            "    Aligned          ${alignment}\n"
-            "                      OpStore                 %output_loc                              %bitcasted_loc     "
-            "    Aligned          ${alignment}\n");
+            "%bitcasted     = OpBitcast %${baseType}_phys_ptr %input_loc\n"
+            "%bitcasted_val = OpLoad    %${baseType}          %bitcasted      Aligned ${alignment}\n"
+            "                 OpStore   %output_loc           %bitcasted_val  Aligned ${alignment}\n");
         break;
     }
     case PointerTestCases::OP_BITCAST_TO_UNTYPED_PHYSICAL_STORAGE:
     {
         main += std::string(
-            "%input_ptr_ptr_loc  = OpAccessChain           %data_buffer_physical_storage_buffer_ptr_storage_buffer_ptr "
-            "    %input_data_var          %c_uint32_0\n"
-            "%output_ptr_ptr_loc = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr              %data_buffer       "
-            "    %output_data_untyped_var %c_uint32_0\n"
+            "%input_ptr  = OpAccessChain           %data_buffer_phys_ptr_ptr  %all_data_var %c_uint32_0\n"
+            "%input      = OpLoad                  %data_buffer_phys_ptr      %input_ptr\n"
+            "%input_loc  = OpAccessChain           %${baseType}_phys_ptr      %input        %c_uint32_0\n"
 
-            "%input_ptr_loc      = OpLoad                  %data_buffer_physical_storage_buffer_ptr "
-            "%input_ptr_ptr_loc\n"
-            "%output_ptr_loc     = OpLoad                  %physical_storage_buffer_untyped_ptr     "
-            "%output_ptr_ptr_loc\n"
+            "%output_ptr = OpAccessChain            %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_1\n"
+            "%output     = OpLoad                   %data_buffer_phys_ptr     %output_ptr\n"
+            "%output_loc = OpUntypedAccessChainKHR  %untyped_phys_ptr         %data_buffer  %output     %c_uint32_0\n"
 
-            "%input_loc          = OpAccessChain           %${baseType}_physical_storage_buffer_ptr %input_ptr_loc     "
-            "    %c_uint32_0\n"
-            "%output_loc         = OpUntypedAccessChainKHR %physical_storage_buffer_untyped_ptr     %output_buffer     "
-            "    %output_ptr_loc %c_uint32_0\n"
-
-            "%bitcasted          = OpBitcast               %physical_storage_buffer_untyped_ptr     %input_loc\n"
-            "%bitcasted_loc      = OpLoad                  %${baseType}                             %bitcasted         "
-            "    Aligned          ${alignment}\n"
-            "                      OpStore                 %output_loc                              %bitcasted_loc     "
-            "    Aligned          ${alignment}\n");
+            "%bitcasted     = OpBitcast %untyped_phys_ptr     %input_loc\n"
+            "%bitcasted_val = OpLoad    %${baseType}          %bitcasted      Aligned ${alignment}\n"
+            "                 OpStore   %output_loc           %bitcasted_val  Aligned ${alignment}\n");
         break;
     }
     case PointerTestCases::OP_SELECT_PHYSICAL_STORAGE:
     {
         main += std::string(
-            "%input_ptr_ptr_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr              %data_buffer "
-            "             %input_data_0_untyped_var %c_uint32_0\n"
-            "%input_ptr_ptr_loc_second = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr              %data_buffer "
-            "             %input_data_1_untyped_var %c_uint32_0\n"
-            "%output_ptr_ptr_loc       = OpAccessChain           "
-            "%data_buffer_physical_storage_buffer_ptr_storage_buffer_ptr        %output_data_var          %c_uint32_0\n"
+            "%input_0_ptr = OpAccessChain           %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_0\n"
+            "%input_0     = OpLoad                  %data_buffer_phys_ptr     %input_0_ptr\n"
+            "%input_0_loc = OpUntypedAccessChainKHR %untyped_phys_ptr         %data_buffer  %input_0    %c_uint32_0\n"
 
-            "%input_ptr_loc_first      = OpLoad                  %physical_storage_buffer_untyped_ptr     "
-            "%input_ptr_ptr_loc_first\n"
-            "%input_ptr_loc_second     = OpLoad                  %physical_storage_buffer_untyped_ptr     "
-            "%input_ptr_ptr_loc_second\n"
-            "%output_ptr_loc           = OpLoad                  %data_buffer_physical_storage_buffer_ptr "
-            "%output_ptr_ptr_loc\n"
+            "%input_1_ptr = OpAccessChain           %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_1\n"
+            "%input_1     = OpLoad                  %data_buffer_phys_ptr     %input_1_ptr\n"
+            "%input_1_loc = OpUntypedAccessChainKHR %untyped_phys_ptr         %data_buffer  %input_1    %c_uint32_0\n"
 
-            "%input_loc_first          = OpLoad                  %physical_storage_buffer_untyped_ptr     "
-            "%input_ptr_loc_first      Aligned          ${alignment}\n"
-            "%input_loc_second         = OpLoad                  %physical_storage_buffer_untyped_ptr     "
-            "%input_ptr_loc_second     Aligned          ${alignment}\n"
-            "%output_loc               = OpAccessChain           %${baseType}_physical_storage_buffer_ptr "
-            "%output_ptr_loc           %c_uint32_0\n"
+            "%output_ptr = OpAccessChain            %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_2\n"
+            "%output     = OpLoad                   %data_buffer_phys_ptr     %output_ptr\n"
+            "%output_loc = OpUntypedAccessChainKHR  %untyped_phys_ptr         %data_buffer  %output     %c_uint32_0\n"
 
-            "%selected_ptr             = OpSelect                %physical_storage_buffer_untyped_ptr     ${condition} "
-            "             %input_loc_first %input_loc_second\n"
-
-            "%selected_ptr_loc         = OpLoad                  %${baseType}                             "
-            "%selected_ptr             Aligned          ${alignment}\n"
-            "                            OpStore                 %output_loc                              "
-            "%selected_ptr_loc         Aligned          ${alignment}\n");
+            "%selected_phys_ptr = OpSelect %untyped_phys_ptr ${condition}       %input_0_loc %input_1_loc\n"
+            "%selected_val      = OpLoad   %${baseType}      %selected_phys_ptr Aligned ${alignment}\n"
+            "                     OpStore  %output_loc       %selected_val      Aligned ${alignment}\n");
         break;
     }
     case PointerTestCases::OP_PHI_PHYSICAL_STORAGE:
     {
         main += std::string(
-            "%input_ptr_ptr_loc_first  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr              %data_buffer "
-            "             %input_data_0_untyped_var %c_uint32_0\n"
-            "%input_ptr_ptr_loc_second = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr              %data_buffer "
-            "             %input_data_1_untyped_var %c_uint32_0\n"
-            "%output_ptr_ptr_loc       = OpAccessChain           "
-            "%data_buffer_physical_storage_buffer_ptr_storage_buffer_ptr        %output_data_var          %c_uint32_0\n"
+            "%input_0_ptr = OpAccessChain           %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_0\n"
+            "%input_0     = OpLoad                  %data_buffer_phys_ptr     %input_0_ptr\n"
+            "%input_0_loc = OpUntypedAccessChainKHR %untyped_phys_ptr         %data_buffer  %input_0    %c_uint32_0\n"
 
-            "%input_ptr_loc_first      = OpLoad                  %physical_storage_buffer_untyped_ptr     "
-            "%input_ptr_ptr_loc_first\n"
-            "%input_ptr_loc_second     = OpLoad                  %physical_storage_buffer_untyped_ptr     "
-            "%input_ptr_ptr_loc_second\n"
-            "%output_ptr_loc           = OpLoad                  %data_buffer_physical_storage_buffer_ptr "
-            "%output_ptr_ptr_loc\n"
+            "%input_1_ptr = OpAccessChain           %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_1\n"
+            "%input_1     = OpLoad                  %data_buffer_phys_ptr     %input_1_ptr\n"
+            "%input_1_loc = OpUntypedAccessChainKHR %untyped_phys_ptr         %data_buffer  %input_1    %c_uint32_0\n"
 
-            "%input_loc_first          = OpLoad                  %physical_storage_buffer_untyped_ptr     "
-            "%input_ptr_loc_first      Aligned          ${alignment}\n"
-            "%input_loc_second         = OpLoad                  %physical_storage_buffer_untyped_ptr     "
-            "%input_ptr_loc_second     Aligned          ${alignment}\n"
-            "%output_loc               = OpAccessChain           %${baseType}_physical_storage_buffer_ptr "
-            "%output_ptr_loc           %c_uint32_0\n"
+            "%output_ptr = OpAccessChain            %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_2\n"
+            "%output     = OpLoad                   %data_buffer_phys_ptr     %output_ptr\n"
+            "%output_loc = OpUntypedAccessChainKHR  %untyped_phys_ptr         %data_buffer  %output     %c_uint32_0\n"
 
-            "                            OpSelectionMerge        %end_label                               None\n"
-            "                            OpBranchConditional     ${condition}                             "
-            "%take_input_0             %take_input_1\n"
-            "%take_input_0             = OpLabel\n"
-            "                            OpBranch                %end_label\n"
-            "%take_input_1             = OpLabel\n"
-            "                            OpBranch                %end_label\n"
-            "%end_label                = OpLabel\n"
+            "                OpSelectionMerge       %end_label   None\n"
+            "                OpBranchConditional    ${condition} %take_input_0 %take_input_1\n"
+            "%take_input_0 = OpLabel\n"
+            "                OpBranch               %end_label\n"
+            "%take_input_1 = OpLabel\n"
+            "                OpBranch               %end_label\n"
+            "%end_label    = OpLabel\n"
 
-            "%selected_ptr             = OpPhi                   %physical_storage_buffer_untyped_ptr   "
-            "%input_loc_first            %take_input_0    %input_loc_second   %take_input_1\n"
-            "%selected_ptr_loc         = OpLoad                  %${baseType}                           %selected_ptr  "
-            "             Aligned          ${alignment}\n"
-            "                            OpStore                 %output_loc                            "
-            "%selected_ptr_loc           Aligned          ${alignment}\n");
+            "%selected_phys_ptr = OpPhi    %untyped_phys_ptr %input_0_loc %take_input_0 %input_1_loc %take_input_1\n"
+            "%selected_val      = OpLoad   %${baseType}      %selected_phys_ptr Aligned ${alignment}\n"
+            "                     OpStore  %output_loc       %selected_val      Aligned ${alignment}\n");
         break;
     }
     case PointerTestCases::OP_FUNCTION_CALL_PHYSICAL_STORAGE:
     {
         main += std::string(
-            "%input_ptr_ptr_loc    = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr              %data_buffer  "
-            "            %input_data_untyped_var %c_uint32_0\n"
-            "%output_ptr_ptr_loc   = OpAccessChain              "
-            "%data_buffer_physical_storage_buffer_ptr_storage_buffer_ptr        %output_data_var        %c_uint32_0\n"
+            "%input_ptr  = OpAccessChain           %data_buffer_phys_ptr_ptr  %all_data_var %c_uint32_0\n"
+            "%input      = OpLoad                  %data_buffer_phys_ptr      %input_ptr\n"
+            "%input_loc  = OpUntypedAccessChainKHR %untyped_phys_ptr          %data_buffer  %input      %c_uint32_0\n"
 
-            "%input_ptr_loc        = OpLoad                     %physical_storage_buffer_untyped_ptr     "
-            "%input_ptr_ptr_loc\n"
-            "%output_ptr_loc       = OpLoad                     %data_buffer_physical_storage_buffer_ptr "
-            "%output_ptr_ptr_loc\n"
+            "%output_ptr = OpAccessChain            %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_1\n"
+            "%output     = OpLoad                   %data_buffer_phys_ptr     %output_ptr\n"
+            "%output_loc = OpUntypedAccessChainKHR  %untyped_phys_ptr         %data_buffer  %output     %c_uint32_0\n"
 
-            "%input_loc            = OpLoad                     %physical_storage_buffer_untyped_ptr     "
-            "%input_ptr_loc            Aligned                 ${alignment}\n"
-            "%output_loc           = OpAccessChain              %${baseType}_physical_storage_buffer_ptr "
-            "%output_ptr_loc           %c_uint32_0\n"
-
-            "%returned_ptr         = OpFunctionCall             %physical_storage_buffer_untyped_ptr     "
-            "%simple_function %input_loc\n"
-
-            "%returned_ptr_loc     = OpLoad                     %${baseType}                             %returned_ptr "
-            "            Aligned                 ${alignment}\n"
-            "                        OpStore                    %output_loc                              "
-            "%returned_ptr_loc         Aligned                 ${alignment}\n");
+            "%returned_phys_ptr = OpFunctionCall    %untyped_phys_ptr         %simple_function %input_loc\n"
+            "%returned_val      = OpLoad            %${baseType}      %returned_phys_ptr Aligned ${alignment}\n"
+            "                     OpStore           %output_loc       %returned_val      Aligned ${alignment}\n");
         break;
     }
     case PointerTestCases::OP_PTR_ACCESS_CHAIN_PHYSICAL_STORAGE:
     {
         main += std::string(
-            "%id_loc               = OpAccessChain              %uint32_input_ptr                                      "
-            "            %id                     %c_uint32_0\n"
-            "%x                    = OpLoad                     %uint32                                  %id_loc\n"
+            "%id_loc     = OpAccessChain            %uint32_input_ptr          %id     %c_uint32_0\n"
+            "%x          = OpLoad                   %uint32                    %id_loc\n"
 
-            "%input_ptr_ptr_loc    = OpUntypedAccessChainKHR    %storage_buffer_untyped_ptr              %data_buffer  "
-            "            %input_data_untyped_var %c_uint32_0\n"
-            "%output_ptr_ptr_loc   = OpAccessChain              "
-            "%data_buffer_physical_storage_buffer_ptr_storage_buffer_ptr        %output_data_var        %c_uint32_0\n"
+            "%input_ptr  = OpAccessChain            %data_buffer_phys_ptr_ptr  %all_data_var %c_uint32_0\n"
+            "%input      = OpLoad                   %data_buffer_phys_ptr      %input_ptr\n"
+            "%input_loc  = OpUntypedAccessChainKHR  %untyped_phys_ptr          %data_buffer  %input      %c_uint32_0\n"
 
-            "%input_ptr_loc        = OpLoad                     %physical_storage_buffer_untyped_ptr     "
-            "%input_ptr_ptr_loc\n"
-            "%output_ptr_loc       = OpLoad                     %data_buffer_physical_storage_buffer_ptr "
-            "%output_ptr_ptr_loc\n"
+            "%output_ptr = OpAccessChain            %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_1\n"
+            "%output     = OpLoad                   %data_buffer_phys_ptr     %output_ptr\n"
+            "%output_loc = OpUntypedAccessChainKHR  %untyped_phys_ptr         %data_buffer  %output      %c_uint32_0\n"
 
-            "%input_loc            = OpLoad                     %physical_storage_buffer_untyped_ptr     "
-            "%input_ptr_loc            Aligned                 ${alignment}\n"
-            "%output_loc           = OpAccessChain              %${baseType}_physical_storage_buffer_ptr "
-            "%output_ptr_loc           %c_uint32_0             %x\n"
+            "%input_loc_0 = OpUntypedAccessChainKHR      %untyped_phys_ptr    %data_buffer  %input_loc   %c_uint32_0   "
+            "%c_uint32_0\n"
+            "%input_loc_x = OpUntypedPtrAccessChainKHR   %untyped_phys_ptr    %data_buffer  %input_loc_0 %x\n"
 
-            "%input_loc_0          = OpUntypedAccessChainKHR    %physical_storage_buffer_untyped_ptr     %data_buffer  "
-            "            %input_loc              %c_uint32_0   %c_uint32_0\n"
-            "%input_loc_x          = OpUntypedPtrAccessChainKHR %physical_storage_buffer_untyped_ptr     %data_buffer  "
-            "            %input_loc_0            %x\n"
-
-            "%input_loc_x_ptr     = OpLoad                      %${baseType}                             %input_loc_x  "
-            "            Aligned                 ${alignment}\n"
-            "                       OpStore                     %output_loc                              "
-            "%input_loc_x_ptr          Aligned                 ${alignment}\n");
+            "%accessed_val = OpLoad            %${baseType}      %input_loc_x  Aligned ${alignment}\n"
+            "                OpStore           %output_loc       %accessed_val Aligned ${alignment}\n");
         break;
     }
     case PointerTestCases::OP_SELECT_VARIABLE_PTR:
@@ -5328,7 +5216,7 @@ void addOpArrayLengthTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
         }
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -5413,7 +5301,7 @@ void addLoadTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
             }
 
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec, specMap);
+            adjustSpecForUntypedPointers(spec);
             adjustSpecForMemoryModel(spec, specMap, memModel);
             adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -5509,7 +5397,7 @@ void addLoadAtomicTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMode
         }
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
         adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
@@ -5605,7 +5493,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                     }
 
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, specMap);
+                    adjustSpecForUntypedPointers(spec);
                     adjustSpecForMemoryModel(spec, specMap, memModel);
                     adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -5726,7 +5614,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                     }
 
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, specMap);
+                    adjustSpecForUntypedPointers(spec);
                     adjustSpecForMemoryModel(spec, specMap, memModel);
                     adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -5838,7 +5726,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                     }
 
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, specMap);
+                    adjustSpecForUntypedPointers(spec);
                     adjustSpecForMemoryModel(spec, specMap, memModel);
                     adjustSpecForDataTypes(spec, specMap, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
 
@@ -5920,7 +5808,6 @@ void addStoreTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
         specMap["baseType"]    = toString(BASE_DATA_TYPE_CASES[i]);
         specMap["storeOp"]     = STORE_OPERATION_CASES[0].pOperation;
         specMap["threadCount"] = std::to_string(Constants::numThreads);
-        specMap["storageCap"]  = "OpCapability UntypedPointersStorageBufferKHR\n";
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
@@ -5931,7 +5818,7 @@ void addStoreTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
         }
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -5982,7 +5869,6 @@ void addStoreAtomicTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMod
         specMap["baseType"]    = toString(ATOMIC_DATA_TYPE_CASES[i]);
         specMap["storeOp"]     = STORE_OPERATION_CASES[1].pOperation;
         specMap["threadCount"] = std::to_string(Constants::numThreads);
-        specMap["storageCap"]  = "OpCapability UntypedPointersStorageBufferKHR\n";
 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (ATOMIC_DATA_TYPE_CASES[i] != DataTypes::UINT32)
@@ -5991,7 +5877,7 @@ void addStoreAtomicTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMod
         }
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
         adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
@@ -6065,7 +5951,7 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                 }
 
                 ComputeShaderSpec spec;
-                adjustSpecForUntypedPointers(spec, specMap);
+                adjustSpecForUntypedPointers(spec);
                 adjustSpecForMemoryModel(spec, specMap, memModel);
                 adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -6142,7 +6028,7 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                 }
 
                 ComputeShaderSpec spec;
-                adjustSpecForUntypedPointers(spec, specMap);
+                adjustSpecForUntypedPointers(spec);
                 adjustSpecForMemoryModel(spec, specMap, memModel);
                 adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -6216,7 +6102,7 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                 }
 
                 ComputeShaderSpec spec;
-                adjustSpecForUntypedPointers(spec, specMap);
+                adjustSpecForUntypedPointers(spec);
                 adjustSpecForMemoryModel(spec, specMap, memModel);
                 adjustSpecForDataTypes(spec, specMap, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
 
@@ -6289,7 +6175,7 @@ void addCopyTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel, boo
             }
 
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec, specMap);
+            adjustSpecForUntypedPointers(spec);
             adjustSpecForMemoryModel(spec, specMap, memModel);
             adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
             adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i]);
@@ -6389,7 +6275,7 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
                     }
 
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, specMap);
+                    adjustSpecForUntypedPointers(spec);
                     adjustSpecForMemoryModel(spec, specMap, memModel);
                     adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
                     adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER,
@@ -6483,7 +6369,7 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
                     }
 
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, specMap);
+                    adjustSpecForUntypedPointers(spec);
                     adjustSpecForMemoryModel(spec, specMap, memModel);
                     adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
                     adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER,
@@ -6575,7 +6461,7 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
                     }
 
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, specMap);
+                    adjustSpecForUntypedPointers(spec);
                     adjustSpecForMemoryModel(spec, specMap, memModel);
                     adjustSpecForDataTypes(spec, specMap, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
                     adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER,
@@ -6672,7 +6558,7 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
                     }
 
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, specMap);
+                    adjustSpecForUntypedPointers(spec);
                     adjustSpecForMemoryModel(spec, specMap, memModel);
                     adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
                     adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER,
@@ -6765,7 +6651,7 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
                     }
 
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, specMap);
+                    adjustSpecForUntypedPointers(spec);
                     adjustSpecForMemoryModel(spec, specMap, memModel);
                     adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
                     adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER,
@@ -6857,7 +6743,7 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
                     }
 
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, specMap);
+                    adjustSpecForUntypedPointers(spec);
                     adjustSpecForMemoryModel(spec, specMap, memModel);
                     adjustSpecForDataTypes(spec, specMap, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
                     adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER,
@@ -6924,7 +6810,7 @@ void addAtomicAddTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel
         specMap["opValue"]  = std::to_string(16);
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
         adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
@@ -6988,7 +6874,7 @@ void addAtomicSubtractTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
         specMap["opValue"]  = std::to_string(16);
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
         adjustSpecForAtomicOperations(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
@@ -7059,7 +6945,7 @@ void addAtomicIncrementDecrementTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         specMap["opType"]   = opStr;
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
         adjustSpecForAtomicOperations(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
@@ -7126,7 +7012,7 @@ void addAtomicMinMaxTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         specMap["opValue"]  = std::to_string(getSignedUnsignedMinMaxTestValue(ATOMIC_DATA_TYPE_CASES[i]));
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
         adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
@@ -7229,7 +7115,7 @@ void addAtomicBooleanTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
         specMap["opValue"]  = std::to_string(1);
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
         adjustSpecForAtomicOperations(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
@@ -7292,7 +7178,7 @@ void addAtomicExchangeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
         specMap["opValue"]  = std::to_string(1);
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
         adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
@@ -7362,7 +7248,7 @@ void addAtomicCompareExchangeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
             specMap["opValue"]   = std::to_string(16);
 
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec, specMap);
+            adjustSpecForUntypedPointers(spec);
             adjustSpecForMemoryModel(spec, specMap, memModel);
             adjustSpecForDataTypes(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
             adjustSpecForAtomicOperations(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
@@ -7458,7 +7344,7 @@ void addVariablePtrOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYP
             specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
 
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec, specMap);
+            adjustSpecForUntypedPointers(spec);
             adjustSpecForMemoryModel(spec, specMap, memModel);
             adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
             adjustSpecForVariablePointers(spec, specMap);
@@ -7468,9 +7354,7 @@ void addVariablePtrOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYP
             std::string shaderVariablesStr = shaderVariables.specialize(specMap);
             if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
             {
-                shaderVariablesStr = "%uint32     = OpTypeInt 32 0\n"
-                                     "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                     shaderVariablesStr;
+                shaderVariablesStr = "%uint32     = OpTypeInt 32 0\n" + shaderVariablesStr;
             }
 
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -7532,8 +7416,7 @@ void addPhysicalStorageOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL
     de::MovePtr<tcu::TestCaseGroup> firstGroup(new tcu::TestCaseGroup(testCtx, "first", ""));
     de::MovePtr<tcu::TestCaseGroup> secondGroup(new tcu::TestCaseGroup(testCtx, "second", ""));
 
-    tcu::StringTemplate shaderHeader(
-        createShaderHeader("%input_data_0_untyped_var %input_data_1_untyped_var %output_data_var"));
+    tcu::StringTemplate shaderHeader(createShaderHeader("%all_data_var"));
 
     tcu::StringTemplate shaderAnnotations(createShaderAnnotations(PointerTestCases::OP_SELECT_PHYSICAL_STORAGE));
 
@@ -7564,7 +7447,7 @@ void addPhysicalStorageOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL
             specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec, specMap);
+            adjustSpecForUntypedPointers(spec);
             adjustSpecForMemoryModel(spec, specMap, memModel);
             adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
             adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
@@ -7574,9 +7457,7 @@ void addPhysicalStorageOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL
             std::string shaderVariablesStr = shaderVariables.specialize(specMap);
             if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
             {
-                shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n"
-                                     "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                     shaderVariablesStr;
+                shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
             }
 
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -7608,9 +7489,10 @@ void addPhysicalStorageOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL
                 spec.outputs.push_back(output);
             }
 
-            spec.assembly      = shaderAsm;
-            spec.numWorkGroups = tcu::IVec3(1, 1, 1);
-            spec.spirvVersion  = SPIRV_VERSION_1_4;
+            spec.assembly              = shaderAsm;
+            spec.numWorkGroups         = tcu::IVec3(1, 1, 1);
+            spec.spirvVersion          = SPIRV_VERSION_1_4;
+            spec.usesPhysStorageBuffer = true;
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -7670,7 +7552,7 @@ void addVariablePtrOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE m
             specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec, specMap);
+            adjustSpecForUntypedPointers(spec);
             adjustSpecForMemoryModel(spec, specMap, memModel);
             adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
             adjustSpecForVariablePointers(spec, specMap);
@@ -7680,9 +7562,7 @@ void addVariablePtrOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE m
             std::string shaderVariablesStr = shaderVariables.specialize(specMap);
             if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
             {
-                shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n"
-                                     "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                     shaderVariablesStr;
+                shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
             }
 
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -7745,8 +7625,7 @@ void addPhysicalStorageOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
     de::MovePtr<tcu::TestCaseGroup> firstGroup(new tcu::TestCaseGroup(testCtx, "first", ""));
     de::MovePtr<tcu::TestCaseGroup> secondGroup(new tcu::TestCaseGroup(testCtx, "second", ""));
 
-    tcu::StringTemplate shaderHeader(
-        createShaderHeader("%input_data_0_untyped_var %input_data_1_untyped_var %output_data_var"));
+    tcu::StringTemplate shaderHeader(createShaderHeader("%all_data_var"));
 
     tcu::StringTemplate shaderAnnotations(createShaderAnnotations(PointerTestCases::OP_PHI_PHYSICAL_STORAGE));
 
@@ -7777,7 +7656,7 @@ void addPhysicalStorageOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
             specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec, specMap);
+            adjustSpecForUntypedPointers(spec);
             adjustSpecForMemoryModel(spec, specMap, memModel);
             adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
             adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
@@ -7787,9 +7666,7 @@ void addPhysicalStorageOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
             std::string shaderVariablesStr = shaderVariables.specialize(specMap);
             if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
             {
-                shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n"
-                                     "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                     shaderVariablesStr;
+                shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
             }
 
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -7825,6 +7702,7 @@ void addPhysicalStorageOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
             spec.numWorkGroups = tcu::IVec3(1, 1, 1);
             spec.spirvVersion =
                 SPIRV_VERSION_1_4; // After spir-v version 1.6 OpBranchConditional labels nust not be the same.
+            spec.usesPhysStorageBuffer = true;
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -7872,7 +7750,7 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
             specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
 
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec, specMap);
+            adjustSpecForUntypedPointers(spec);
             adjustSpecForMemoryModel(spec, specMap, memModel);
             adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
             adjustSpecForVariablePointers(spec, specMap);
@@ -7882,9 +7760,7 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
             std::string shaderVariablesStr = shaderVariables.specialize(specMap);
             if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
             {
-                shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n"
-                                     "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                     shaderVariablesStr;
+                shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
             }
 
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -7966,7 +7842,7 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
             specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
 
             ComputeShaderSpec spec;
-            adjustSpecForUntypedPointers(spec, specMap);
+            adjustSpecForUntypedPointers(spec);
             adjustSpecForMemoryModel(spec, specMap, memModel);
             adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
             adjustSpecForVariablePointers(spec, specMap);
@@ -7976,9 +7852,7 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
             std::string shaderVariablesStr = shaderVariables.specialize(specMap);
             if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
             {
-                shaderVariablesStr = "%uint32 = OpTypeInt 32 0\n"
-                                     "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                     shaderVariablesStr;
+                shaderVariablesStr = "%uint32 = OpTypeInt 32 0\n" + shaderVariablesStr;
             }
 
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -8056,7 +7930,7 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
         specMap["alignment"]   = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
         adjustSpecForVariablePointers(spec, specMap);
@@ -8066,9 +7940,7 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
         {
-            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n"
-                                 "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                 shaderVariablesStr;
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
         }
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -8125,7 +7997,7 @@ void addVariablePtrOpFunctionCallTests(tcu::TestCaseGroup *testGroup, MEMORY_MOD
         specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
         adjustSpecForVariablePointers(spec, specMap);
@@ -8135,9 +8007,7 @@ void addVariablePtrOpFunctionCallTests(tcu::TestCaseGroup *testGroup, MEMORY_MOD
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
         {
-            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n"
-                                 "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                 shaderVariablesStr;
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
         }
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -8190,7 +8060,7 @@ void addPhysicalStorageOpFunctionCallTests(tcu::TestCaseGroup *testGroup, MEMORY
         specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
         adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
@@ -8200,9 +8070,7 @@ void addPhysicalStorageOpFunctionCallTests(tcu::TestCaseGroup *testGroup, MEMORY
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
         {
-            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n"
-                                 "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                 shaderVariablesStr;
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
         }
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -8219,8 +8087,9 @@ void addPhysicalStorageOpFunctionCallTests(tcu::TestCaseGroup *testGroup, MEMORY
         Resource input  = createFilledResource(desc);
         Resource output = createFilledResource(desc);
 
-        spec.assembly      = shaderAsm;
-        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.assembly              = shaderAsm;
+        spec.numWorkGroups         = tcu::IVec3(1, 1, 1);
+        spec.usesPhysStorageBuffer = true;
         spec.inputs.push_back(input);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -8253,7 +8122,7 @@ void addVariablePtrOpPtrAccessChain(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
         specMap["alignment"]   = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
         adjustSpecForVariablePointers(spec, specMap);
@@ -8263,9 +8132,7 @@ void addVariablePtrOpPtrAccessChain(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
         {
-            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n"
-                                 "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                 shaderVariablesStr;
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
         }
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -8273,7 +8140,7 @@ void addVariablePtrOpPtrAccessChain(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
 
         FilledResourceDesc desc;
         desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = Constants::numThreads;
+        desc.elemCount      = 1;
         desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         desc.padding        = 0;
         desc.fillType       = FillingTypes::RANDOM;
@@ -8283,7 +8150,7 @@ void addVariablePtrOpPtrAccessChain(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
         Resource output = createFilledResource(desc);
 
         spec.assembly      = shaderAsm;
-        spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
         spec.inputs.push_back(input);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -8317,7 +8184,7 @@ void addPhysicalStorageOpPtrAccessChainTests(tcu::TestCaseGroup *testGroup, MEMO
         specMap["alignment"]   = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
         adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
@@ -8327,9 +8194,7 @@ void addPhysicalStorageOpPtrAccessChainTests(tcu::TestCaseGroup *testGroup, MEMO
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
         {
-            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n"
-                                 "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                 shaderVariablesStr;
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
         }
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -8346,8 +8211,9 @@ void addPhysicalStorageOpPtrAccessChainTests(tcu::TestCaseGroup *testGroup, MEMO
         Resource input  = createFilledResource(desc);
         Resource output = createFilledResource(desc);
 
-        spec.assembly      = shaderAsm;
-        spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
+        spec.assembly              = shaderAsm;
+        spec.numWorkGroups         = tcu::IVec3(Constants::numThreads, 1, 1);
+        spec.usesPhysStorageBuffer = true;
         spec.inputs.push_back(input);
         spec.outputs.push_back(output);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -8380,7 +8246,7 @@ void addVariablePtrFunctionVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_M
         specMap["condition"] = "%c_bool_true";
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
         adjustSpecForVariablePointers(spec, specMap);
@@ -8390,9 +8256,7 @@ void addVariablePtrFunctionVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_M
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
         {
-            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n"
-                                 "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                 shaderVariablesStr;
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
         }
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -8446,7 +8310,7 @@ void addVariablePtrPrivateVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_MO
         specMap["condition"] = "%c_bool_true";
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
         adjustSpecForVariablePointers(spec, specMap);
@@ -8456,9 +8320,7 @@ void addVariablePtrPrivateVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_MO
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
         {
-            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n"
-                                 "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                 shaderVariablesStr;
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
         }
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -8514,7 +8376,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
 
         ComputeShaderSpec spec;
         adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariables.specialize(specMap) + shaderFunctions.specialize(specMap);
@@ -8569,7 +8431,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
         ComputeShaderSpec spec;
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, DataTypes::UINT8);
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariables.specialize(specMap) + shaderFunctions.specialize(specMap);
@@ -8628,7 +8490,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
 
         ComputeShaderSpec spec;
         adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForDataTypes(spec, specMap, DataTypes::FLOAT16);
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -8696,7 +8558,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
 
         ComputeShaderSpec spec;
         adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariables.specialize(specMap) + shaderFunctions.specialize(specMap);
@@ -8766,7 +8628,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
 
         ComputeShaderSpec spec;
         adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariables.specialize(specMap) + shaderFunctions.specialize(specMap);
@@ -8834,7 +8696,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
 
         ComputeShaderSpec spec;
         adjustSpecForMemoryModel(spec, specMap, memModel);
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariables.specialize(specMap) + shaderFunctions.specialize(specMap);
@@ -8907,7 +8769,7 @@ void addMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYP
         specMap["size"]     = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -8967,7 +8829,7 @@ void addVariablePointersMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, 
         specMap["size"]     = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
         adjustSpecForVariablePointers(spec, specMap);
@@ -8975,9 +8837,7 @@ void addVariablePointersMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, 
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
         {
-            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n"
-                                 "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                 shaderVariablesStr;
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
         }
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -9025,13 +8885,12 @@ void addPhysicalStorageOpBitcastTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
 
         std::map<std::string, std::string> specMap;
-        specMap["baseDecl"]    = getDeclaration(BASE_DATA_TYPE_CASES[i]);
-        specMap["baseType"]    = toString(BASE_DATA_TYPE_CASES[i]);
-        specMap["threadCount"] = std::to_string(Constants::numThreads);
-        specMap["alignment"]   = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+        specMap["baseDecl"]  = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseType"]  = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["alignment"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
         adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
@@ -9041,9 +8900,7 @@ void addPhysicalStorageOpBitcastTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         std::string shaderVariablesStr = shaderVariables.specialize(specMap);
         if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
         {
-            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n"
-                                 "%c_uint32_1 = OpConstant %uint32 1\n" +
-                                 shaderVariablesStr;
+            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
         }
 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
@@ -9051,7 +8908,7 @@ void addPhysicalStorageOpBitcastTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
 
         FilledResourceDesc desc;
         desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = Constants::numThreads;
+        desc.elemCount      = 1;
         desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         desc.padding        = 0;
         desc.fillType       = FillingTypes::VALUE;
@@ -9059,8 +8916,9 @@ void addPhysicalStorageOpBitcastTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
 
         Resource inputOutput = createFilledResource(desc);
 
-        spec.assembly      = shaderAsm;
-        spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
+        spec.assembly              = shaderAsm;
+        spec.numWorkGroups         = tcu::IVec3(1, 1, 1);
+        spec.usesPhysStorageBuffer = true;
         spec.inputs.push_back(inputOutput);
         spec.outputs.push_back(inputOutput);
         spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -9094,7 +8952,7 @@ void addWorkgroupMemoryExplicitLayoutInteractionTests(tcu::TestCaseGroup *testGr
         specMap["vecOffset"] = std::to_string(4 * getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
         ComputeShaderSpec spec;
-        adjustSpecForUntypedPointers(spec, specMap);
+        adjustSpecForUntypedPointers(spec);
         adjustSpecForMemoryModel(spec, specMap, memModel);
         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
         adjustSpecForWorkgroupMemoryExplicitLayout(spec, specMap, BASE_DATA_TYPE_CASES[i]);
@@ -9170,7 +9028,7 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup *testGroup, ME
                     specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, specMap);
+                    adjustSpecForUntypedPointers(spec);
                     adjustSpecForMemoryModel(spec, specMap, memModel);
                     adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
                     adjustSpecForCooperativeMatrix(spec, specMap);
@@ -9252,7 +9110,7 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup *testGroup, ME
                     specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, specMap);
+                    adjustSpecForUntypedPointers(spec);
                     adjustSpecForMemoryModel(spec, specMap, memModel);
                     adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
                     adjustSpecForCooperativeMatrix(spec, specMap);
@@ -9346,7 +9204,7 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup *testGro
                         specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
                         ComputeShaderSpec spec;
-                        adjustSpecForUntypedPointers(spec, specMap);
+                        adjustSpecForUntypedPointers(spec);
                         adjustSpecForMemoryModel(spec, specMap, memModel);
                         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
                         adjustSpecForCooperativeMatrix(spec, specMap);
@@ -9438,7 +9296,7 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup *testGro
                         specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
                         ComputeShaderSpec spec;
-                        adjustSpecForUntypedPointers(spec, specMap);
+                        adjustSpecForUntypedPointers(spec);
                         adjustSpecForMemoryModel(spec, specMap, memModel);
                         adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
                         adjustSpecForCooperativeMatrix(spec, specMap);
@@ -9531,7 +9389,7 @@ void addCooperativeMatrixInteractionMixedTests(tcu::TestCaseGroup *testGroup, ME
                     specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, specMap);
+                    adjustSpecForUntypedPointers(spec);
                     adjustSpecForMemoryModel(spec, specMap, memModel);
                     adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
                     adjustSpecForCooperativeMatrix(spec, specMap);
@@ -9616,7 +9474,7 @@ void addCooperativeMatrixInteractionMixedTests(tcu::TestCaseGroup *testGroup, ME
                     specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
                     ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, specMap);
+                    adjustSpecForUntypedPointers(spec);
                     adjustSpecForMemoryModel(spec, specMap, memModel);
                     adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
                     adjustSpecForCooperativeMatrix(spec, specMap);
