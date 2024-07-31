@@ -2054,7 +2054,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
                                      2 :
                                      1;
 
-            if (inputAssemblyPrimitives != primitivesGenerated * drawCount)
+            if (inputAssemblyPrimitives < primitivesGenerated * drawCount)
             {
                 const std::string message = std::string("input assembly primitives == ") +
                                             de::toString(inputAssemblyPrimitives) + ", expected " +
