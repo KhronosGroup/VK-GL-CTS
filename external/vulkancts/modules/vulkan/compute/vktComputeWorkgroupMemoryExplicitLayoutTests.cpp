@@ -27,12 +27,8 @@
 #include "vktComputeWorkgroupMemoryExplicitLayoutTests.hpp"
 #include "vktAmberTestCase.hpp"
 #include "vktTestCase.hpp"
-#include "vktTestCaseUtil.hpp"
-#include "vktTestGroupUtil.hpp"
 
 #include "vkBufferWithMemory.hpp"
-#include "vkImageWithMemory.hpp"
-#include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -40,14 +36,11 @@
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
 
-#include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
 
-#include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 
-#include <algorithm>
 #include <vector>
 #include <cassert>
 
@@ -1315,13 +1308,16 @@ tcu::TestCaseGroup *createWorkgroupMemoryExplicitLayoutTests(
     AddSizeTests(size, computePipelineConstructionType);
     tests->addChild(size);
 
-    tcu::TestCaseGroup *copy_memory = new tcu::TestCaseGroup(testCtx, "copy_memory");
-    AddCopyMemoryTests(copy_memory, computePipelineConstructionType);
-    tests->addChild(copy_memory);
+    if (!isComputePipelineConstructionTypeShaderObject(computePipelineConstructionType))
+    {
+        tcu::TestCaseGroup *copy_memory = new tcu::TestCaseGroup(testCtx, "copy_memory");
+        AddCopyMemoryTests(copy_memory, computePipelineConstructionType);
+        tests->addChild(copy_memory);
 
-    tcu::TestCaseGroup *zero_ext = new tcu::TestCaseGroup(testCtx, "zero_ext");
-    AddZeroInitializeExtensionTests(zero_ext, computePipelineConstructionType);
-    tests->addChild(zero_ext);
+        tcu::TestCaseGroup *zero_ext = new tcu::TestCaseGroup(testCtx, "zero_ext");
+        AddZeroInitializeExtensionTests(zero_ext, computePipelineConstructionType);
+        tests->addChild(zero_ext);
+    }
 
     return tests.release();
 }
