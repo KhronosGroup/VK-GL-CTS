@@ -811,7 +811,9 @@ public:
                         const MemoryRequirement &addMemoryRequirement = MemoryRequirement::Any,
                         const VkBuffer creationBuffer = VK_NULL_HANDLE, const VkDeviceSize creationBufferSize = 0u) = 0;
     virtual void build(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-                       BottomLevelAccelerationStructure *srcAccelerationStructure = nullptr)                        = 0;
+                       BottomLevelAccelerationStructure *srcAccelerationStructure = nullptr,
+                       VkPipelineStageFlags barrierDstStages =
+                           static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT))                   = 0;
     virtual void copyFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
                           BottomLevelAccelerationStructure *accelerationStructure, bool compactCopy)                = 0;
 
@@ -906,7 +908,7 @@ public:
      */
     void batchCreate(const DeviceInterface &vkd, const VkDevice device, Allocator &allocator);
     void batchCreateAdjust(const DeviceInterface &vkd, const VkDevice device, Allocator &allocator,
-                           const VkDeviceSize maxBufferSize);
+                           const VkDeviceSize maxBufferSize, bool scratchIsHostVisible = true);
     void batchBuild(const DeviceInterface &vk, const VkDevice device, VkCommandBuffer cmdBuffer);
     void batchBuild(const DeviceInterface &vk, const VkDevice device, VkCommandPool cmdPool, VkQueue queue,
                     qpWatchDog *watchDog);
