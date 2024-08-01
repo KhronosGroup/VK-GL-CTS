@@ -1271,7 +1271,8 @@ void AddCopyMemoryTests(tcu::TestCaseGroup *group, vk::ComputePipelineConstructi
     group->addChild(
         CreateAmberTestCase(testCtx, "two_invocations", "copy_memory_two_invocations.amber", {}, false, shaderObject));
     group->addChild(CreateAmberTestCase(testCtx, "variable_pointers", "copy_memory_variable_pointers.amber",
-                                        {"VariablePointerFeatures.variablePointers"}, false, shaderObject));
+                                        {"VariablePointerFeatures.variablePointers", "VK_EXT_descriptor_indexing"},
+                                        false, shaderObject));
 }
 
 void AddZeroInitializeExtensionTests(tcu::TestCaseGroup *group,
