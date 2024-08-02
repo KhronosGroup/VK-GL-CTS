@@ -1441,6 +1441,13 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
         vk::VK_IMAGE_LAYOUT_PREINITIALIZED // VkImageLayout            initialLayout
     };
 
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+        createInfo.usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
     de::MovePtr<ImageWithMemory> image = de::MovePtr<ImageWithMemory>(
         new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::HostVisible));
     de::MovePtr<ImageWithMemory> copyImage = de::MovePtr<ImageWithMemory>(
@@ -1756,13 +1763,22 @@ void PreinitializedTestCase::checkSupport(vkt::Context &context) const
         0u,                                                                       // uint32_t queueFamilyIndexCount;
         DE_NULL // const uint32_t* pQueueFamilyIndices;
     };
+
+    vk::VkImageUsageFlags usage = vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
     vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,                         // VkStructureType sType;
         m_tiling == vk::VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT ? &modifierInfo : DE_NULL, // const void* pNext;
         m_format,                                                                          // VkFormat format;
         imageType,                                                                         // VkImageType type;
         m_tiling,                                                                          // VkImageTiling tiling;
-        vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,    // VkImageUsageFlags usage;
+        usage,                                                                             // VkImageUsageFlags usage;
         (vk::VkImageCreateFlags)0u                                                         // VkImageCreateFlags flags;
     };
     if (vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageFormatProperties) ==
