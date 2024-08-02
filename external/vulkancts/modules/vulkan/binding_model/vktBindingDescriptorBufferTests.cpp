@@ -5795,6 +5795,289 @@ tcu::TestStatus testLimits(Context &context)
 #undef CHECK_MAX_LIMIT_NON_ZERO
 }
 
+enum class CaptureReplyTestMode
+{
+    Image = 0,
+    Sparse_Image,
+    Buffer,
+    Sparse_Buffer,
+};
+
+class CaptureReplyTestInstance : public TestInstance
+{
+public:
+    CaptureReplyTestInstance(Context &context, CaptureReplyTestMode mode);
+
+    tcu::TestStatus iterate() override;
+
+protected:
+    const CaptureReplyTestMode m_mode;
+};
+
+CaptureReplyTestInstance::CaptureReplyTestInstance(Context &context, CaptureReplyTestMode mode)
+    : TestInstance(context)
+    , m_mode(mode)
+{
+}
+
+tcu::TestStatus CaptureReplyTestInstance::iterate()
+{
+    const auto &vki           = m_context.getInstanceInterface();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    auto physicalDevice       = m_context.getPhysicalDevice();
+    MovePtr<Allocation> allocation;
+    const auto &dbProperties = m_context.getDescriptorBufferPropertiesEXT();
+    const bool useSparseImage(m_mode == CaptureReplyTestMode::Sparse_Image);
+    const bool useSparseBuffer(m_mode == CaptureReplyTestMode::Sparse_Buffer);
+
+    VkMemoryOpaqueCaptureAddressAllocateInfo opaqueCaptureAddressAllocateInfo = initVulkanStructure();
+    VkMemoryAllocateFlagsInfo allocFlagsInfo = initVulkanStructure(&opaqueCaptureAddressAllocateInfo);
+    uint64_t opaqueCaptureAddress{};
+    VkMemoryRequirements memoryRequirements;
+
+    if (useSparseImage || (m_mode == CaptureReplyTestMode::Image))
+    {
+        const VkImageCreateFlags sparseFlag =
+            useSparseImage * (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
+
+        VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+        imageCreateInfo.flags             = sparseFlag | VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
+        imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+        imageCreateInfo.format            = VK_FORMAT_R8G8B8A8_UNORM;
+        imageCreateInfo.extent            = {16, 16, 1};
+        imageCreateInfo.mipLevels         = 1;
+        imageCreateInfo.arrayLayers       = 1;
+        imageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+        imageCreateInfo.usage             = VK_IMAGE_USAGE_STORAGE_BIT;
+
+        // create image with VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT
+        auto image(createImage(vk, device, &imageCreateInfo));
+
+        if (!useSparseImage)
+        {
+            memoryRequirements = getImageMemoryRequirements(vk, device, *image);
+            allocFlagsInfo.flags =
+                VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT | VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
+            // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo
+            allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
+                                          MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
+
+            // get data from vkGetDeviceMemoryOpaqueCaptureAddressKHR
+            VkDeviceMemoryOpaqueCaptureAddressInfo memoryOpaqueCaptureAddressInfo = initVulkanStructure();
+            memoryOpaqueCaptureAddressInfo.memory                                 = allocation->getMemory();
+            opaqueCaptureAddress = vk.getDeviceMemoryOpaqueCaptureAddress(device, &memoryOpaqueCaptureAddressInfo);
+
+            // bind image & memory
+            VK_CHECK(vk.bindImageMemory(device, *image, allocation->getMemory(), allocation->getOffset()));
+        }
+
+        VkImageViewCreateInfo imageViewCreateInfo = initVulkanStructure();
+        imageViewCreateInfo.flags                 = VK_IMAGE_VIEW_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
+        imageViewCreateInfo.image                 = *image;
+        imageViewCreateInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewCreateInfo.format                = VK_FORMAT_R8G8B8A8_UNORM;
+        imageViewCreateInfo.components            = makeComponentMappingRGBA();
+        imageViewCreateInfo.subresourceRange      = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
+        auto imageView                            = createImageView(vk, device, &imageViewCreateInfo);
+
+        // get data from vkGetImageOpaqueCaptureDescriptorDataEXT
+        VkImageCaptureDescriptorDataInfoEXT imageCaptureDescriptorDataInfo = initVulkanStructure();
+        imageCaptureDescriptorDataInfo.image                               = *image;
+        std::vector<uint8_t> imageCaptureReplayData(
+            de::max(dbProperties.imageCaptureReplayDescriptorDataSize, std::size_t(64)));
+        VK_CHECK(vk.getImageOpaqueCaptureDescriptorDataEXT(device, &imageCaptureDescriptorDataInfo,
+                                                           imageCaptureReplayData.data()));
+
+        // get data from vkGetImageViewOpaqueCaptureDescriptorDataEXT
+        VkImageViewCaptureDescriptorDataInfoEXT imageViewCaptureDescriptorDataInfo = initVulkanStructure();
+        imageViewCaptureDescriptorDataInfo.imageView                               = *imageView;
+        std::vector<uint8_t> imageViewCaptureReplayData(
+            de::max(dbProperties.imageViewCaptureReplayDescriptorDataSize, std::size_t(64)));
+        VK_CHECK(vk.getImageViewOpaqueCaptureDescriptorDataEXT(device, &imageViewCaptureDescriptorDataInfo,
+                                                               imageViewCaptureReplayData.data()));
+
+        // call vkGetDescriptorEXT() with the image and store the write descriptor data
+        const auto descriptorSize = de::max(dbProperties.storageImageDescriptorSize, std::size_t(256));
+        std::vector<uint8_t> firstDescriptorData(descriptorSize);
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageView                = *imageView;
+        VkDescriptorGetInfoEXT descGetInfo = initVulkanStructure();
+        descGetInfo.type                   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        descGetInfo.data.pStorageImage     = &imageInfo;
+        vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, firstDescriptorData.data());
+
+        // destroy image and free memory
+        imageView = Move<VkImageView>();
+        if (!useSparseImage)
+            allocation = MovePtr<Allocation>();
+        image = Move<VkImage>();
+
+        // recreate image with VkOpaqueCaptureDescriptorDataCreateInfoEXT with data from imageCaptureDescriptorDataInfo
+        VkOpaqueCaptureDescriptorDataCreateInfoEXT opaqueCaptureDescriptorDataCreateInfo = initVulkanStructure();
+        opaqueCaptureDescriptorDataCreateInfo.opaqueCaptureDescriptorData = imageCaptureReplayData.data();
+        imageCreateInfo.pNext                                             = &opaqueCaptureDescriptorDataCreateInfo;
+        image                                                             = createImage(vk, device, &imageCreateInfo);
+
+        if (!useSparseImage)
+        {
+            // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo with data from opaqueCaptureAddress
+            opaqueCaptureAddressAllocateInfo.opaqueCaptureAddress = opaqueCaptureAddress;
+            allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
+                                          MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
+
+            // bind image & memory
+            VK_CHECK(vk.bindImageMemory(device, *image, allocation->getMemory(), allocation->getOffset()));
+        }
+
+        // recreate imageView with VkOpaqueCaptureDescriptorDataCreateInfoEXT with data from imageViewCaptureDescriptorDataInfo
+        opaqueCaptureDescriptorDataCreateInfo.opaqueCaptureDescriptorData = imageViewCaptureReplayData.data();
+        imageViewCreateInfo.pNext                                         = &opaqueCaptureDescriptorDataCreateInfo;
+        imageViewCreateInfo.image                                         = *image;
+        imageView = createImageView(vk, device, &imageViewCreateInfo);
+
+        // call vkGetDescriptorEXT() for the second time
+        std::vector<uint8_t> secondDescriptorData(descriptorSize);
+        imageInfo.imageView = *imageView;
+        vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, secondDescriptorData.data());
+
+        if (deMemCmp(firstDescriptorData.data(), secondDescriptorData.data(), descriptorSize) == 0)
+            return tcu::TestStatus::pass("Pass");
+    }
+    else
+    {
+        auto bufferCreateInfo =
+            makeBufferCreateInfo(64, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+        const VkBufferCreateFlags sparseFlag =
+            useSparseBuffer * (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT);
+        bufferCreateInfo.flags = sparseFlag | VK_BUFFER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
+
+        // create buffer with VK_BUFFER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT
+        auto buffer(createBuffer(vk, device, &bufferCreateInfo));
+
+        if (!useSparseBuffer)
+        {
+            memoryRequirements = getBufferMemoryRequirements(vk, device, *buffer);
+            allocFlagsInfo.flags =
+                VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT | VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
+            // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo
+            allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
+                                          MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
+
+            // get data from vkGetDeviceMemoryOpaqueCaptureAddressKHR
+            VkDeviceMemoryOpaqueCaptureAddressInfo memoryOpaqueCaptureAddressInfo = initVulkanStructure();
+            memoryOpaqueCaptureAddressInfo.memory                                 = allocation->getMemory();
+            opaqueCaptureAddress = vk.getDeviceMemoryOpaqueCaptureAddress(device, &memoryOpaqueCaptureAddressInfo);
+
+            // bind buffer & memory
+            VK_CHECK(vk.bindBufferMemory(device, *buffer, allocation->getMemory(), allocation->getOffset()));
+        }
+
+        // get data from vkGetBufferOpaqueCaptureDescriptorDataEXT
+        VkBufferCaptureDescriptorDataInfoEXT captureDescriptorDataInfo = initVulkanStructure();
+        captureDescriptorDataInfo.buffer                               = *buffer;
+        std::vector<uint8_t> captureReplayData(
+            de::max(dbProperties.bufferCaptureReplayDescriptorDataSize, std::size_t(64)));
+        VK_CHECK(
+            vk.getBufferOpaqueCaptureDescriptorDataEXT(device, &captureDescriptorDataInfo, captureReplayData.data()));
+
+        // call vkGetDescriptorEXT() with the buffer and store the write descriptor data
+        const auto descriptorSize = dbProperties.storageBufferDescriptorSize;
+        std::vector<uint8_t> firstDescriptorData(descriptorSize);
+        VkBufferDeviceAddressInfo bdaInfo                = initVulkanStructure();
+        bdaInfo.buffer                                   = *buffer;
+        VkDescriptorAddressInfoEXT descriptorAddressInfo = initVulkanStructure();
+        descriptorAddressInfo.address                    = vk.getBufferDeviceAddress(device, &bdaInfo);
+        descriptorAddressInfo.range                      = 64;
+        VkDescriptorGetInfoEXT descGetInfo               = initVulkanStructure();
+        descGetInfo.type                                 = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descGetInfo.data.pStorageBuffer                  = &descriptorAddressInfo;
+        vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, firstDescriptorData.data());
+
+        // destroy buffer and free memory
+        buffer = Move<VkBuffer>();
+        if (!useSparseBuffer)
+            allocation = MovePtr<Allocation>();
+
+        // recreate buffer with VkOpaqueCaptureDescriptorDataCreateInfoEXT with data from captureDescriptorDataInfo
+        VkOpaqueCaptureDescriptorDataCreateInfoEXT opaqueCaptureDescriptorDataCreateInfo = initVulkanStructure();
+        opaqueCaptureDescriptorDataCreateInfo.opaqueCaptureDescriptorData                = captureReplayData.data();
+        bufferCreateInfo.pNext = &opaqueCaptureDescriptorDataCreateInfo;
+        buffer                 = createBuffer(vk, device, &bufferCreateInfo);
+
+        if (!useSparseBuffer)
+        {
+            // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo with data from opaqueCaptureAddress
+            opaqueCaptureAddressAllocateInfo.opaqueCaptureAddress = opaqueCaptureAddress;
+            allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
+                                          MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
+
+            // bind image & memory
+            VK_CHECK(vk.bindBufferMemory(device, *buffer, allocation->getMemory(), allocation->getOffset()));
+        }
+
+        // call vkGetDescriptorEXT() for the second time
+        std::vector<uint8_t> secondDescriptorData(descriptorSize);
+        bdaInfo.buffer                = *buffer;
+        descriptorAddressInfo.address = vk.getBufferDeviceAddress(device, &bdaInfo);
+        vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, secondDescriptorData.data());
+
+        if (deMemCmp(firstDescriptorData.data(), secondDescriptorData.data(), descriptorSize) == 0)
+            return tcu::TestStatus::pass("Pass");
+    }
+
+    return tcu::TestStatus::fail("descriptor data is not the same between both getDescriptorEXT calls");
+}
+
+class CaptureReplyTestCase : public TestCase
+{
+public:
+    CaptureReplyTestCase(tcu::TestContext &testCtx, const std::string &name, CaptureReplyTestMode mode);
+
+    TestInstance *createInstance(Context &context) const override;
+    void checkSupport(Context &context) const override;
+
+private:
+    const CaptureReplyTestMode m_mode;
+};
+
+CaptureReplyTestCase::CaptureReplyTestCase(tcu::TestContext &testCtx, const std::string &name,
+                                           CaptureReplyTestMode mode)
+    : TestCase(testCtx, name)
+    , m_mode(mode)
+{
+}
+
+TestInstance *CaptureReplyTestCase::createInstance(Context &context) const
+{
+    return new CaptureReplyTestInstance(context, m_mode);
+}
+
+void CaptureReplyTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_EXT_descriptor_buffer");
+
+    const auto &vki     = context.getInstanceInterface();
+    auto physicalDevice = context.getPhysicalDevice();
+
+    const auto &descriptorBufferFeatures = context.getDescriptorBufferFeaturesEXT();
+    if (!descriptorBufferFeatures.descriptorBufferCaptureReplay)
+        TCU_THROW(NotSupportedError, "descriptorBufferCaptureReplay feature is not supported");
+
+    if (m_mode == CaptureReplyTestMode::Sparse_Image)
+    {
+        const auto sparseImageFormatPropVec = getPhysicalDeviceSparseImageFormatProperties(
+            vki, physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TYPE_2D, VK_SAMPLE_COUNT_1_BIT,
+            VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL);
+        if (sparseImageFormatPropVec.size() == 0)
+            TCU_THROW(NotSupportedError, "Format does not support sparse operations.");
+    }
+    else if (m_mode == CaptureReplyTestMode::Sparse_Buffer)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+}
+
 void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
@@ -6265,6 +6548,19 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                             new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
                     }
                 }
+
+        std::pair<std::string, CaptureReplyTestMode> captureReplyModes[]{
+            {"image", CaptureReplyTestMode::Image},
+            {"sparse_image", CaptureReplyTestMode::Sparse_Image},
+            {"buffer", CaptureReplyTestMode::Buffer},
+            {"sparse_buffer", CaptureReplyTestMode::Sparse_Buffer},
+        };
+
+        for (const auto &captureReplyMode : captureReplyModes)
+        {
+            std::string name = captureReplyMode.first + "_descriptor_data_consistency";
+            subGroup->addChild(new CaptureReplyTestCase(testCtx, name, captureReplyMode.second));
+        }
 
         topGroup->addChild(subGroup.release());
     }
