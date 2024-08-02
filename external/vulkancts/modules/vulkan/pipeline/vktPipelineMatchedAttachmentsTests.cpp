@@ -91,32 +91,32 @@ tcu::TestStatus testMatchedAttachments(Context &context, const MatchedAttachment
         VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, // VkDescriptorType      descriptorType;
         1u,                                  // uint32_t              descriptorCount;
         VK_SHADER_STAGE_FRAGMENT_BIT,        // VkShaderStageFlags    stageFlags;
-        DE_NULL                              // const VkSampler*      pImmutableSamplers;
+        nullptr                              // const VkSampler*      pImmutableSamplers;
     };
 
     const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType                        sType;
-        DE_NULL,                                             // const void*                            pNext;
+        nullptr,                                             // const void*                            pNext;
         0u,                                                  // VkDescriptorSetLayoutCreateFlags       flags;
         1u,                                                  // uint32_t                               bindingCount;
         &descriptorSetLayoutBinding                          // const VkDescriptorSetLayoutBinding*    pBindings;
     };
 
     const Unique<VkDescriptorSetLayout> descriptorSetLayout(
-        createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, DE_NULL));
+        createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, nullptr));
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                 sType;
-        DE_NULL,                                       // const void*                     pNext;
+        nullptr,                                       // const void*                     pNext;
         0u,                                            // VkPipelineLayoutCreateFlags     flags;
         1u,                                            // uint32_t                        setLayoutCount;
         &(*descriptorSetLayout),                       // const VkDescriptorSetLayout*    pSetLayouts;
         0u,                                            // uint32_t                        pushConstantRangeCount;
-        DE_NULL                                        // const VkPushConstantRange*      pPushConstantRanges;
+        nullptr                                        // const VkPushConstantRange*      pPushConstantRanges;
     };
 
     const PipelineLayoutWrapper pipelineLayout(params.pipelineConstructionType, vk, vkDevice, &pipelineLayoutCreateInfo,
-                                               DE_NULL);
+                                               nullptr);
 
     const VkAttachmentDescription descs[2] = {
         {
@@ -159,33 +159,33 @@ tcu::TestStatus testMatchedAttachments(Context &context, const MatchedAttachment
         &input,                          // const VkAttachmentReference*    pInputAttachments;
         1u,                              // uint32_t                        colorAttachmentCount;
         &color,                          // const VkAttachmentReference*    pColorAttachments;
-        DE_NULL,                         // const VkAttachmentReference*    pResolveAttachments;
-        DE_NULL,                         // const VkAttachmentReference*    pDepthStencilAttachment;
+        nullptr,                         // const VkAttachmentReference*    pResolveAttachments;
+        nullptr,                         // const VkAttachmentReference*    pDepthStencilAttachment;
         0u,                              // uint32_t                        preserveAttachmentCount;
-        DE_NULL                          // const uint32_t*                 pPreserveAttachments;
+        nullptr                          // const uint32_t*                 pPreserveAttachments;
     };
 
     const VkRenderPassCreateInfo renderPassCreateInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                   sType;
-        DE_NULL,                                   // const void*                       pNext;
+        nullptr,                                   // const void*                       pNext;
         0u,                                        // VkRenderPassCreateFlags           flags;
         2u,                                        // uint32_t                          attachmentCount;
         descs,                                     // const VkAttachmentDescription*    pAttachments;
         1u,                                        // uint32_t                          subpassCount;
         &subpassDescription,                       // const VkSubpassDescription*       pSubpasses;
         0u,                                        // uint32_t                          dependencyCount;
-        DE_NULL                                    // const VkSubpassDependency*        pDependencies;
+        nullptr                                    // const VkSubpassDependency*        pDependencies;
     };
 
     RenderPassWrapper renderPass(params.pipelineConstructionType, vk, vkDevice, &renderPassCreateInfo);
 
     const VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType               sType;
-        DE_NULL,                                      // const void*                   pNext;
+        nullptr,                                      // const void*                   pNext;
 #ifndef CTS_USES_VULKANSC
         (VkPipelineCacheCreateFlags)0u, // VkPipelineCacheCreateFlags    flags;
         0u,                             // size_t                        initialDataSize;
-        DE_NULL                         // const void*                   pInitialData;
+        nullptr                         // const void*                   pInitialData;
 #else
         VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
             VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags        flags;
@@ -198,19 +198,19 @@ tcu::TestStatus testMatchedAttachments(Context &context, const MatchedAttachment
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         0u,                                                        // VkPipelineVertexInputStateCreateFlags       flags;
         0u,      // uint32_t                                    vertexBindingDescriptionCount;
-        DE_NULL, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+        nullptr, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
         0u,      // uint32_t                                    vertexAttributeDescriptionCount;
-        DE_NULL  // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+        nullptr  // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
     };
 
     const VkDynamicState dynamicState[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
     const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType                      sType;
-        DE_NULL,                                              // const void*                          pNext;
+        nullptr,                                              // const void*                          pNext;
         0u,                                                   // VkPipelineDynamicStateCreateFlags    flags;
         2u,                                                   // uint32_t                             dynamicStateCount;
         dynamicState                                          // const VkDynamicState*                pDynamicStates;

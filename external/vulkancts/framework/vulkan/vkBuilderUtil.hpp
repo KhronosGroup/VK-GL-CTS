@@ -50,17 +50,17 @@ public:
 
     inline DescriptorSetLayoutBuilder &addSingleBinding(VkDescriptorType descriptorType, VkShaderStageFlags stageFlags)
     {
-        return addBinding(descriptorType, 1u, stageFlags, (VkSampler *)DE_NULL);
+        return addBinding(descriptorType, 1u, stageFlags, nullptr);
     }
     inline DescriptorSetLayoutBuilder &addSingleIndexedBinding(VkDescriptorType descriptorType,
                                                                VkShaderStageFlags stageFlags, uint32_t dstBinding)
     {
-        return addIndexedBinding(descriptorType, 1u, stageFlags, dstBinding, (VkSampler *)DE_NULL);
+        return addIndexedBinding(descriptorType, 1u, stageFlags, dstBinding, nullptr);
     }
     inline DescriptorSetLayoutBuilder &addArrayBinding(VkDescriptorType descriptorType, uint32_t descriptorCount,
                                                        VkShaderStageFlags stageFlags)
     {
-        return addBinding(descriptorType, descriptorCount, stageFlags, (VkSampler *)DE_NULL);
+        return addBinding(descriptorType, descriptorCount, stageFlags, nullptr);
     }
     inline DescriptorSetLayoutBuilder &addSingleSamplerBinding(
         VkDescriptorType descriptorType, VkShaderStageFlags stageFlags,
@@ -108,7 +108,7 @@ public:
 
     DescriptorPoolBuilder &addType(VkDescriptorType type, uint32_t numDescriptors = 1u);
     Move<VkDescriptorPool> build(const DeviceInterface &vk, VkDevice device, VkDescriptorPoolCreateFlags flags,
-                                 uint32_t maxSets, const void *pNext = DE_NULL) const;
+                                 uint32_t maxSets, const void *pNext = nullptr) const;
 
 private:
     DescriptorPoolBuilder(const DescriptorPoolBuilder &);            // delete
@@ -151,7 +151,7 @@ public:
                                       uint32_t count, VkDescriptorType descriptorType,
                                       const VkDescriptorImageInfo *pImageInfo,
                                       const VkDescriptorBufferInfo *pBufferInfo, const VkBufferView *pTexelBufferView,
-                                      const void *pNext = DE_NULL);
+                                      const void *pNext = nullptr);
 
     DescriptorSetUpdateBuilder &copy(VkDescriptorSet srcSet, uint32_t srcBinding, uint32_t srcArrayElement,
                                      VkDescriptorSet destSet, uint32_t destBinding, uint32_t destArrayElement,
@@ -170,22 +170,22 @@ public:
                                                    const VkDescriptorImageInfo *pImageInfo)
     {
         return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, pImageInfo,
-                     DE_NULL, DE_NULL);
+                     nullptr, nullptr);
     }
 
     inline DescriptorSetUpdateBuilder &writeSingle(VkDescriptorSet destSet, const Location &destLocation,
                                                    VkDescriptorType descriptorType,
                                                    const VkDescriptorBufferInfo *pBufferInfo)
     {
-        return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, DE_NULL,
-                     pBufferInfo, DE_NULL);
+        return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, nullptr,
+                     pBufferInfo, nullptr);
     }
 
     inline DescriptorSetUpdateBuilder &writeSingle(VkDescriptorSet destSet, const Location &destLocation,
                                                    VkDescriptorType descriptorType,
                                                    const VkBufferView *pTexelBufferView)
     {
-        return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, DE_NULL, DE_NULL,
+        return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, nullptr, nullptr,
                      pTexelBufferView);
     }
 
@@ -194,8 +194,8 @@ public:
         VkDescriptorSet destSet, const Location &destLocation, VkDescriptorType descriptorType,
         const VkWriteDescriptorSetAccelerationStructureKHR *pAccelerationStructure)
     {
-        return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, DE_NULL, DE_NULL,
-                     DE_NULL, pAccelerationStructure);
+        return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, nullptr, nullptr,
+                     nullptr, pAccelerationStructure);
     }
 #endif // CTS_USES_VULKANSC
 
@@ -204,7 +204,7 @@ public:
                                                   const VkDescriptorImageInfo *pImageInfo)
     {
         return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType,
-                     pImageInfo, DE_NULL, DE_NULL);
+                     pImageInfo, nullptr, nullptr);
     }
 
     inline DescriptorSetUpdateBuilder &writeArray(VkDescriptorSet destSet, const Location &destLocation,
@@ -212,7 +212,7 @@ public:
                                                   const VkDescriptorBufferInfo *pBufferInfo)
     {
         return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType,
-                     DE_NULL, pBufferInfo, DE_NULL);
+                     nullptr, pBufferInfo, nullptr);
     }
 
     inline DescriptorSetUpdateBuilder &writeArray(VkDescriptorSet destSet, const Location &destLocation,
@@ -220,7 +220,7 @@ public:
                                                   const VkBufferView *pTexelBufferView)
     {
         return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType,
-                     DE_NULL, DE_NULL, pTexelBufferView);
+                     nullptr, nullptr, pTexelBufferView);
     }
 
 #ifndef CTS_USES_VULKANSC
@@ -229,7 +229,7 @@ public:
         const VkWriteDescriptorSetAccelerationStructureKHR *pAccelerationStructure)
     {
         return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType,
-                     DE_NULL, DE_NULL, DE_NULL, pAccelerationStructure);
+                     nullptr, nullptr, nullptr, pAccelerationStructure);
     }
 #endif // CTS_USES_VULKANSC
 

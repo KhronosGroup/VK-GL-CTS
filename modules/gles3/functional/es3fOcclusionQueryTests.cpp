@@ -110,7 +110,7 @@ OcclusionQueryCase::OcclusionQueryCase(Context &context, const char *name, const
     , m_queryMode(queryMode)
     , m_occluderTypes(occluderTypes)
     , m_renderCtx(context.getRenderContext())
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_iterNdx(0)
     , m_rnd(deStringHash(name))
 {
@@ -176,7 +176,7 @@ void OcclusionQueryCase::init(void)
     {
         m_testCtx.getLog() << *m_program;
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
         TCU_FAIL("Failed to compile shader program");
     }
 
@@ -187,7 +187,7 @@ void OcclusionQueryCase::init(void)
 void OcclusionQueryCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 OcclusionQueryCase::IterateResult OcclusionQueryCase::iterate(void)

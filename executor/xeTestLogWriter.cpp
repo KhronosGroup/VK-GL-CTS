@@ -142,7 +142,7 @@ static const char *getImageFormatName(ri::Image::Format format)
         return "RGBA8888";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -156,7 +156,7 @@ static const char *getImageCompressionName(ri::Image::Compression compression)
         return "PNG";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -170,7 +170,7 @@ static const char *getSampleValueTagName(ri::ValueInfo::ValueTag tag)
         return "Response";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -294,7 +294,7 @@ static void writeResultItem(const ri::Item &item, xml::Writer &dst)
     case ri::TYPE_SHADER:
     {
         const ri::Shader &shader = static_cast<const ri::Shader &>(item);
-        const char *tagName      = DE_NULL;
+        const char *tagName      = nullptr;
 
         switch (shader.shaderType)
         {

@@ -276,7 +276,7 @@ LogicOpTestInstance::LogicOpTestInstance(Context &ctx, const TestParams &testPar
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_params.format,                                                       // VkFormat format;
@@ -299,7 +299,7 @@ LogicOpTestInstance::LogicOpTestInstance(Context &ctx, const TestParams &testPar
         // create color attachment view
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             m_colorImage->get(),                      // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -335,12 +335,12 @@ LogicOpTestInstance::LogicOpTestInstance(Context &ctx, const TestParams &testPar
 
         VkPipelineLayoutCreateInfo pipelineLayoutParams{
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             pipelineLayoutFlags,                           // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL,                                       // const VkPushConstantRange* pPushConstantRanges;
+            nullptr,                                       // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_preRasterizationStatePipelineLayout =
@@ -377,8 +377,8 @@ LogicOpTestInstance::LogicOpTestInstance(Context &ctx, const TestParams &testPar
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
-            DE_NULL,                                                  // VkPipelineColorBlendStateCreateFlags flags;
+            nullptr,                                                  // const void* pNext;
+            0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             VK_TRUE,                                                  // VkBool32 logicOpEnable;
             m_params.logicOp,                                         // VkLogicOp logicOp;
             1u,                                                       // uint32_t attachmentCount;

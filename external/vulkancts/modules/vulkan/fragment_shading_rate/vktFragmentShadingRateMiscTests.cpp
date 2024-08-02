@@ -807,7 +807,7 @@ Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
     // Create a universal queue that supports graphics and compute
     const VkDeviceQueueCreateInfo queueParams = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType              sType;
-        DE_NULL,                                    // const void*                  pNext;
+        nullptr,                                    // const void*                  pNext;
         0u,                                         // VkDeviceQueueCreateFlags     flags;
         context.getUniversalQueueFamilyIndex(),     // uint32_t                     queueFamilyIndex;
         1u,                                         // uint32_t                     queueCount;
@@ -845,7 +845,7 @@ Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
         {
             pcCI = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType              sType;
-                DE_NULL,                                      // const void*                  pNext;
+                nullptr,                                      // const void*                  pNext;
                 VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                     VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags   flags;
                 context.getResourceInterface()->getCacheDataSize(), // uintptr_t                    initialDataSize;

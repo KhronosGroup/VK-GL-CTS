@@ -631,7 +631,7 @@ static const char *getFaceDesc(const tcu::CubeFace face)
         return "+Z";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

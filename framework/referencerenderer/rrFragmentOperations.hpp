@@ -70,7 +70,7 @@ struct Fragment
     {
     }
 
-    Fragment(void) : pixelCoord(0), value(), coverage(0), sampleDepths(DE_NULL)
+    Fragment(void) : pixelCoord(0), value(), coverage(0), sampleDepths(nullptr)
     {
     }
 } DE_WARN_UNUSED_TYPE;

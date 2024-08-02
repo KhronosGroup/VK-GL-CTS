@@ -113,7 +113,7 @@ private:
         const glu::InterfaceBlock *block;
         const glu::VariableDeclaration *declaration;
 
-        Data(void) : type(DE_NULL)
+        Data(void) : type(nullptr)
         {
         }
     } m_data;

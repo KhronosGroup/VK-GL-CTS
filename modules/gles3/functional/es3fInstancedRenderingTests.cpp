@@ -156,7 +156,7 @@ InstancedRenderingCase::InstancedRenderingCase(Context &context, const char *nam
     , m_instancingType(instancingType)
     , m_rgbAttrType(rgbAttrType)
     , m_numInstances(numInstances)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -454,7 +454,7 @@ void InstancedRenderingCase::init(void)
 void InstancedRenderingCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 InstancedRenderingCase::IterateResult InstancedRenderingCase::iterate(void)
@@ -667,16 +667,16 @@ void InstancedRenderingTests::init(void)
         const char *functionName =
             function == (int)InstancedRenderingCase::FUNCTION_DRAW_ARRAYS_INSTANCED   ? "draw_arrays_instanced" :
             function == (int)InstancedRenderingCase::FUNCTION_DRAW_ELEMENTS_INSTANCED ? "draw_elements_instanced" :
-                                                                                        DE_NULL;
+                                                                                        nullptr;
 
         const char *functionDesc = function == (int)InstancedRenderingCase::FUNCTION_DRAW_ARRAYS_INSTANCED ?
                                        "Use glDrawArraysInstanced()" :
                                    function == (int)InstancedRenderingCase::FUNCTION_DRAW_ELEMENTS_INSTANCED ?
                                        "Use glDrawElementsInstanced()" :
-                                       DE_NULL;
+                                       nullptr;
 
-        DE_ASSERT(functionName != DE_NULL);
-        DE_ASSERT(functionDesc != DE_NULL);
+        DE_ASSERT(functionName != nullptr);
+        DE_ASSERT(functionDesc != nullptr);
 
         TestCaseGroup *functionGroup = new TestCaseGroup(m_context, functionName, functionDesc);
         addChild(functionGroup);
@@ -687,7 +687,7 @@ void InstancedRenderingTests::init(void)
                 instancingType == (int)InstancedRenderingCase::TYPE_INSTANCE_ID    ? "instance_id" :
                 instancingType == (int)InstancedRenderingCase::TYPE_ATTRIB_DIVISOR ? "attribute_divisor" :
                 instancingType == (int)InstancedRenderingCase::TYPE_MIXED          ? "mixed" :
-                                                                                     DE_NULL;
+                                                                                     nullptr;
 
             const char *instancingTypeDesc = instancingType == (int)InstancedRenderingCase::TYPE_INSTANCE_ID ?
                                                  "Use gl_InstanceID for instancing" :
@@ -695,10 +695,10 @@ void InstancedRenderingTests::init(void)
                                                  "Use vertex attribute divisors for instancing" :
                                              instancingType == (int)InstancedRenderingCase::TYPE_MIXED ?
                                                  "Use both gl_InstanceID and vertex attribute divisors for instancing" :
-                                                 DE_NULL;
+                                                 nullptr;
 
-            DE_ASSERT(instancingTypeName != DE_NULL);
-            DE_ASSERT(instancingTypeDesc != DE_NULL);
+            DE_ASSERT(instancingTypeName != nullptr);
+            DE_ASSERT(instancingTypeDesc != nullptr);
 
             TestCaseGroup *instancingTypeGroup = new TestCaseGroup(m_context, instancingTypeName, instancingTypeDesc);
             functionGroup->addChild(instancingTypeGroup);

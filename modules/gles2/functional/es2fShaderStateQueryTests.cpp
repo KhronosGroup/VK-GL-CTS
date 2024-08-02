@@ -452,8 +452,8 @@ public:
         verifyShaderParam(m_testCtx, *this, shaderVert, GL_COMPILE_STATUS, GL_FALSE);
         verifyShaderParam(m_testCtx, *this, shaderFrag, GL_COMPILE_STATUS, GL_FALSE);
 
-        glShaderSource(shaderVert, 1, &commonTestVertSource, DE_NULL);
-        glShaderSource(shaderFrag, 1, &commonTestFragSource, DE_NULL);
+        glShaderSource(shaderVert, 1, &commonTestVertSource, nullptr);
+        glShaderSource(shaderFrag, 1, &commonTestFragSource, nullptr);
 
         glCompileShader(shaderVert);
         glCompileShader(shaderFrag);
@@ -485,7 +485,7 @@ public:
         const GLuint shader = glCreateShader(GL_VERTEX_SHADER);
         verifyShaderParam(m_testCtx, *this, shader, GL_INFO_LOG_LENGTH, 0);
 
-        glShaderSource(shader, 1, &brokenShader, DE_NULL);
+        glShaderSource(shader, 1, &brokenShader, nullptr);
         glCompileShader(shader);
         expectError(GL_NO_ERROR);
 
@@ -583,7 +583,7 @@ public:
 
         // check the SHADER_SOURCE_LENGTH
         {
-            glShaderSource(shader, 1, &brokenShader, DE_NULL);
+            glShaderSource(shader, 1, &brokenShader, nullptr);
             expectError(GL_NO_ERROR);
 
             StateQueryMemoryWriteGuard<GLint> sourceLength;
@@ -605,7 +605,7 @@ public:
         // check the concat source SHADER_SOURCE_LENGTH
         {
             const char *shaders[] = {brokenShader, brokenShader};
-            glShaderSource(shader, 2, shaders, DE_NULL);
+            glShaderSource(shader, 2, shaders, nullptr);
             expectError(GL_NO_ERROR);
 
             StateQueryMemoryWriteGuard<GLint> sourceLength;
@@ -693,8 +693,8 @@ public:
         GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
         GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
 
-        glShaderSource(shaderVert, 1, &commonTestVertSource, DE_NULL);
-        glShaderSource(shaderFrag, 1, &commonTestFragSource, DE_NULL);
+        glShaderSource(shaderVert, 1, &commonTestVertSource, nullptr);
+        glShaderSource(shaderFrag, 1, &commonTestFragSource, nullptr);
 
         glCompileShader(shaderVert);
         glCompileShader(shaderFrag);
@@ -907,8 +907,8 @@ public:
         GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
         GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
 
-        glShaderSource(shaderVert, 1, &brokenShader, DE_NULL);
-        glShaderSource(shaderFrag, 1, &brokenShader, DE_NULL);
+        glShaderSource(shaderVert, 1, &brokenShader, nullptr);
+        glShaderSource(shaderFrag, 1, &brokenShader, nullptr);
 
         glCompileShader(shaderVert);
         glCompileShader(shaderFrag);
@@ -977,8 +977,8 @@ public:
             GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
             GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
 
-            glShaderSource(shaderVert, 1, &commonTestVertSource, DE_NULL);
-            glShaderSource(shaderFrag, 1, &commonTestFragSource, DE_NULL);
+            glShaderSource(shaderVert, 1, &commonTestVertSource, nullptr);
+            glShaderSource(shaderFrag, 1, &commonTestFragSource, nullptr);
 
             glCompileShader(shaderVert);
             glCompileShader(shaderFrag);
@@ -1008,8 +1008,8 @@ public:
             GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
             GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
 
-            glShaderSource(shaderVert, 1, &commonTestVertSource, DE_NULL);
-            glShaderSource(shaderFrag, 1, &brokenShader, DE_NULL);
+            glShaderSource(shaderVert, 1, &commonTestVertSource, nullptr);
+            glShaderSource(shaderFrag, 1, &brokenShader, nullptr);
 
             glCompileShader(shaderVert);
             glCompileShader(shaderFrag);
@@ -1051,8 +1051,8 @@ public:
         GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
         GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
 
-        glShaderSource(shaderVert, 1, &commonTestVertSource, DE_NULL);
-        glShaderSource(shaderFrag, 1, &commonTestFragSource, DE_NULL);
+        glShaderSource(shaderVert, 1, &commonTestVertSource, nullptr);
+        glShaderSource(shaderFrag, 1, &commonTestFragSource, nullptr);
 
         glCompileShader(shaderVert);
         glCompileShader(shaderFrag);
@@ -1155,8 +1155,8 @@ public:
         GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
         GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
 
-        glShaderSource(shaderVert, 1, &testVertSource, DE_NULL);
-        glShaderSource(shaderFrag, 1, &testFragSource, DE_NULL);
+        glShaderSource(shaderVert, 1, &testVertSource, nullptr);
+        glShaderSource(shaderFrag, 1, &testFragSource, nullptr);
 
         glCompileShader(shaderVert);
         glCompileShader(shaderFrag);
@@ -1286,7 +1286,7 @@ public:
         glAttachShader(program, shaderVert);
         glAttachShader(program, shaderFrag);
 
-        glShaderSource(shaderVert, 1, &vertSource, DE_NULL);
+        glShaderSource(shaderVert, 1, &vertSource, nullptr);
         glCompileShader(shaderVert);
         expectError(GL_NO_ERROR);
 
@@ -1309,7 +1309,7 @@ public:
             {
                 std::string fragmentSource     = frag.str();
                 const char *fragmentSourceCStr = fragmentSource.c_str();
-                glShaderSource(shaderFrag, 1, &fragmentSourceCStr, DE_NULL);
+                glShaderSource(shaderFrag, 1, &fragmentSourceCStr, nullptr);
             }
 
             // compile & link
@@ -1366,8 +1366,8 @@ public:
         GLuint shaderVert = glCreateShader(GL_VERTEX_SHADER);
         GLuint shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
 
-        glShaderSource(shaderVert, 1, &testVertSource, DE_NULL);
-        glShaderSource(shaderFrag, 1, &testFragSource, DE_NULL);
+        glShaderSource(shaderVert, 1, &testVertSource, nullptr);
+        glShaderSource(shaderFrag, 1, &testFragSource, nullptr);
 
         glCompileShader(shaderVert);
         glCompileShader(shaderFrag);
@@ -1620,7 +1620,7 @@ public:
         glBindBuffer(GL_ARRAY_BUFFER, bufferID);
         expectError(GL_NO_ERROR);
 
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
         expectError(GL_NO_ERROR);
 
         verifyVertexAttrib(m_testCtx, *this, 0, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, bufferID);

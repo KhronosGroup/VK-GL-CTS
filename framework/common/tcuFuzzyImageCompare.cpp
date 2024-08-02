@@ -270,7 +270,7 @@ float fuzzyCompare(const FuzzyCompareParams &params, const ConstPixelBufferAcces
     DE_ASSERT(errorMask.getWidth() == ref.getWidth() && errorMask.getHeight() == ref.getHeight());
 
     if (!isFormatSupported(ref.getFormat()) || !isFormatSupported(cmp.getFormat()))
-        throw InternalError("Unsupported format in fuzzy comparison", DE_NULL, __FILE__, __LINE__);
+        throw InternalError("Unsupported format in fuzzy comparison", nullptr, __FILE__, __LINE__);
 
     int width  = ref.getWidth();
     int height = ref.getHeight();

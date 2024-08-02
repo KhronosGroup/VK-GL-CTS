@@ -373,7 +373,7 @@ void ConditionalCase::setupProgram(uint32_t program)
         gl.bufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(m_comparisonValueArray.size() * sizeof(float)),
                       &m_comparisonValueArray[0], GL_STATIC_DRAW);
         gl.enableVertexAttribArray(compareAttribLocation);
-        gl.vertexAttribPointer(compareAttribLocation, (GLint)numComponents, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        gl.vertexAttribPointer(compareAttribLocation, (GLint)numComponents, GL_FLOAT, GL_FALSE, 0, nullptr);
     }
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "Setup program state");
@@ -650,7 +650,7 @@ void LoopCase::setupProgram(uint32_t program)
         gl.bufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(m_boundArray.size() * sizeof(float)), &m_boundArray[0],
                       GL_STATIC_DRAW);
         gl.enableVertexAttribArray(boundAttribLocation);
-        gl.vertexAttribPointer(boundAttribLocation, (GLint)numComponents, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        gl.vertexAttribPointer(boundAttribLocation, (GLint)numComponents, GL_FLOAT, GL_FALSE, 0, nullptr);
     }
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "Setup program state");
@@ -882,8 +882,8 @@ void ShaderControlStatementTests::init(void)
             const char *decisionName = decisionType == (int)DECISION_STATIC    ? "static" :
                                        decisionType == (int)DECISION_UNIFORM   ? "uniform" :
                                        decisionType == (int)DECISION_ATTRIBUTE ? (isVertex ? "attribute" : "varying") :
-                                                                                 DE_NULL;
-            DE_ASSERT(decisionName != DE_NULL);
+                                                                                 nullptr;
+            DE_ASSERT(decisionName != nullptr);
 
             for (int workloadDivision = 0; workloadDivision < ConditionalCase::WORKLOAD_DIVISION_LAST;
                  workloadDivision++)
@@ -892,8 +892,8 @@ void ShaderControlStatementTests::init(void)
                     workloadDivision == (int)ConditionalCase::WORKLOAD_DIVISION_EVEN        ? "" :
                     workloadDivision == (int)ConditionalCase::WORKLOAD_DIVISION_TRUE_HEAVY  ? "_with_heavier_true" :
                     workloadDivision == (int)ConditionalCase::WORKLOAD_DIVISION_FALSE_HEAVY ? "_with_heavier_false" :
-                                                                                              DE_NULL;
-                DE_ASSERT(workloadDivisionSuffix != DE_NULL);
+                                                                                              nullptr;
+                DE_ASSERT(workloadDivisionSuffix != nullptr);
 
                 DE_STATIC_ASSERT(ConditionalCase::BRANCH_TRUE == 0);
                 for (int branchResult = (int)ConditionalCase::BRANCH_TRUE;
@@ -905,8 +905,8 @@ void ShaderControlStatementTests::init(void)
                     const char *branchResultName = branchResult == (int)ConditionalCase::BRANCH_TRUE  ? "true" :
                                                    branchResult == (int)ConditionalCase::BRANCH_FALSE ? "false" :
                                                    branchResult == (int)ConditionalCase::BRANCH_MIXED ? "mixed" :
-                                                                                                        DE_NULL;
-                    DE_ASSERT(branchResultName != DE_NULL);
+                                                                                                        nullptr;
+                    DE_ASSERT(branchResultName != nullptr);
 
                     string caseName = string("") + decisionName + "_" + branchResultName + workloadDivisionSuffix;
 
@@ -964,8 +964,8 @@ void ShaderControlStatementTests::init(void)
                     decisionType == (int)DECISION_STATIC    ? "static" :
                     decisionType == (int)DECISION_UNIFORM   ? "uniform" :
                     decisionType == (int)DECISION_ATTRIBUTE ? (isVertex ? "attribute" : "varying") :
-                                                              DE_NULL;
-                DE_ASSERT(decisionName != DE_NULL);
+                                                              nullptr;
+                DE_ASSERT(decisionName != nullptr);
 
                 if (decisionType == (int)DECISION_ATTRIBUTE)
                 {

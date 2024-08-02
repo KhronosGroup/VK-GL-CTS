@@ -175,7 +175,7 @@ public:
         const tcu::Texture2DArray *tex2DArray;
         const tcu::Texture3D *tex3D;
 
-        inline ShaderSampler(void) : tex2D(DE_NULL), texCube(DE_NULL), tex2DArray(DE_NULL), tex3D(DE_NULL)
+        inline ShaderSampler(void) : tex2D(nullptr), texCube(nullptr), tex2DArray(nullptr), tex3D(nullptr)
         {
         }
     };
@@ -279,7 +279,7 @@ protected:
     {
     public:
         inline CompileFailed(const char *file, int line)
-            : tcu::TestError("Failed to compile shader program", DE_NULL, file, line)
+            : tcu::TestError("Failed to compile shader program", nullptr, file, line)
         {
         }
     };

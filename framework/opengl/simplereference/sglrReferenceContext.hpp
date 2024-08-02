@@ -569,11 +569,11 @@ public:
     }
     const uint8_t *getData(void) const
     {
-        return m_data.empty() ? DE_NULL : &m_data[0];
+        return m_data.empty() ? nullptr : &m_data[0];
     }
     uint8_t *getData(void)
     {
-        return m_data.empty() ? DE_NULL : &m_data[0];
+        return m_data.empty() ? nullptr : &m_data[0];
     }
 
 private:
@@ -694,7 +694,7 @@ T *ObjectManager<T>::find(uint32_t name)
     if (it != m_objects.end())
         return it->second;
     else
-        return DE_NULL;
+        return nullptr;
 }
 
 template <typename T>
@@ -1106,12 +1106,12 @@ private:
         rc::TextureCubeArray defaultCubeArrayTex;
 
         TextureUnit(void)
-            : tex1DBinding(DE_NULL)
-            , tex2DBinding(DE_NULL)
-            , texCubeBinding(DE_NULL)
-            , tex2DArrayBinding(DE_NULL)
-            , tex3DBinding(DE_NULL)
-            , texCubeArrayBinding(DE_NULL)
+            : tex1DBinding(nullptr)
+            , tex2DBinding(nullptr)
+            , texCubeBinding(nullptr)
+            , tex2DArrayBinding(nullptr)
+            , tex3DBinding(nullptr)
+            , texCubeArrayBinding(nullptr)
             , default1DTex(0)
             , default2DTex(0)
             , defaultCubeTex(0)

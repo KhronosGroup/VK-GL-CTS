@@ -162,7 +162,7 @@ bool ImageValidator::validateImage(ProtectedContext &ctx, const ValidationData &
     vk::Unique<vk::VkSampler> sampler(makeSampler(vk, device));
     const vk::VkImageViewCreateInfo viewParams = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // sType
-        DE_NULL,                                      // pNext
+        nullptr,                                      // pNext
         0u,                                           // flags
         image,                                        // image
         vk::VK_IMAGE_VIEW_TYPE_2D,                    // viewType
@@ -182,7 +182,7 @@ bool ImageValidator::validateImage(ProtectedContext &ctx, const ValidationData &
     vk::Unique<vk::VkDescriptorSetLayout> descriptorSetLayout(
         vk::DescriptorSetLayoutBuilder()
             .addSingleSamplerBinding(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vk::VK_SHADER_STAGE_COMPUTE_BIT,
-                                     DE_NULL)
+                                     nullptr)
             .addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT)
             .addSingleBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT)
             .build(vk, device));
@@ -226,7 +226,7 @@ bool ImageValidator::validateImage(ProtectedContext &ctx, const ValidationData &
 
         vk.cmdBindPipeline(*resetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *resetSSBOPipeline);
         vk.cmdBindDescriptorSets(*resetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                 &*descriptorSet, 0u, DE_NULL);
+                                 &*descriptorSet, 0u, nullptr);
         vk.cmdDispatch(*resetCmdBuffer, 1u, 1u, 1u);
 
         endCommandBuffer(vk, *resetCmdBuffer);
@@ -246,7 +246,7 @@ bool ImageValidator::validateImage(ProtectedContext &ctx, const ValidationData &
 
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *validationPipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                 &*descriptorSet, 0u, DE_NULL);
+                                 &*descriptorSet, 0u, nullptr);
         vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
 
         endCommandBuffer(vk, *cmdBuffer);

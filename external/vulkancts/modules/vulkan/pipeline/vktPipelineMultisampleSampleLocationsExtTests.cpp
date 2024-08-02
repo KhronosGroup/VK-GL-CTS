@@ -82,13 +82,13 @@ static const VkDeviceSize ZERO          = 0u;
 template <typename T>
 inline const T *dataOrNullPtr(const std::vector<T> &v)
 {
-    return (v.empty() ? DE_NULL : &v[0]);
+    return (v.empty() ? nullptr : &v[0]);
 }
 
 template <typename T>
 inline T *dataOrNullPtr(std::vector<T> &v)
 {
-    return (v.empty() ? DE_NULL : &v[0]);
+    return (v.empty() ? nullptr : &v[0]);
 }
 
 template <typename T>
@@ -196,11 +196,11 @@ void checkFragmentShadingRateRequirements(Context &context, uint32_t sampleCount
 
     // Fetch information about supported fragment shading rates
     uint32_t supportedFragmentShadingRateCount = 0;
-    vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, DE_NULL);
+    vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, nullptr);
 
     std::vector<vk::VkPhysicalDeviceFragmentShadingRateKHR> supportedFragmentShadingRates(
         supportedFragmentShadingRateCount,
-        {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR, DE_NULL, vk::VK_SAMPLE_COUNT_1_BIT, {1, 1}});
+        {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR, nullptr, vk::VK_SAMPLE_COUNT_1_BIT, {1, 1}});
     vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount,
                                                  supportedFragmentShadingRates.data());
 
@@ -242,7 +242,7 @@ VkPhysicalDeviceSampleLocationsPropertiesEXT getSampleLocationsPropertiesEXT(Con
     deMemset(&sampleLocationsProperties, 0, sizeof(sampleLocationsProperties));
 
     sampleLocationsProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLE_LOCATIONS_PROPERTIES_EXT;
-    sampleLocationsProperties.pNext = DE_NULL;
+    sampleLocationsProperties.pNext = nullptr;
 
     VkPhysicalDeviceProperties2 properties = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, // VkStructureType               sType;
@@ -264,11 +264,11 @@ inline VkSampleLocationsInfoEXT makeEmptySampleLocationsInfo()
 {
     const VkSampleLocationsInfoEXT info = {
         VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT, // VkStructureType               sType;
-        DE_NULL,                                     // const void*                   pNext;
+        nullptr,                                     // const void*                   pNext;
         (VkSampleCountFlagBits)0,                    // VkSampleCountFlagBits         sampleLocationsPerPixel;
         makeExtent2D(0, 0),                          // VkExtent2D                    sampleLocationGridSize;
         0,                                           // uint32_t                      sampleLocationsCount;
-        DE_NULL,                                     // const VkSampleLocationEXT*    pSampleLocations;
+        nullptr,                                     // const VkSampleLocationEXT*    pSampleLocations;
     };
     return info;
 }
@@ -433,7 +433,7 @@ Move<VkImage> makeImage(const DeviceInterface &vk, const VkDevice device, const 
 {
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         flags,                               // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -445,7 +445,7 @@ Move<VkImage> makeImage(const DeviceInterface &vk, const VkDevice device, const 
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
     return createImage(vk, device, &imageParams);
@@ -455,7 +455,7 @@ Move<VkEvent> makeEvent(const DeviceInterface &vk, const VkDevice device)
 {
     const VkEventCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_EVENT_CREATE_INFO, // VkStructureType       sType;
-        DE_NULL,                             // const void*           pNext;
+        nullptr,                             // const void*           pNext;
         (VkEventCreateFlags)0,               // VkEventCreateFlags    flags;
     };
     return createEvent(vk, device, &createInfo);
@@ -604,7 +604,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const std::vector<VkDy
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,    // VkStructureType sType;
-        DE_NULL,                                                      // const void* pNext;
+        nullptr,                                                      // const void* pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                     // VkPipelineVertexInputStateCreateFlags flags;
         static_cast<uint32_t>(vertexInputBindingDescriptions.size()), // uint32_t vertexBindingDescriptionCount;
         dataOrNullPtr(
@@ -616,7 +616,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const std::vector<VkDy
 
     const VkPipelineSampleLocationsStateCreateInfoEXT pipelineSampleLocationsCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SAMPLE_LOCATIONS_STATE_CREATE_INFO_EXT, // VkStructureType             sType;
-        DE_NULL,                                                           // const void*                 pNext;
+        nullptr,                                                           // const void*                 pNext;
         useSampleLocations,  // VkBool32                    sampleLocationsEnable;
         sampleLocationsInfo, // VkSampleLocationsInfoEXT    sampleLocationsInfo;
     };
@@ -628,14 +628,14 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const std::vector<VkDy
         numSamples,                                               // VkSampleCountFlagBits rasterizationSamples;
         VK_TRUE,                                                  // VkBool32 sampleShadingEnable;
         1.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE                                                  // VkBool32 alphaToOneEnable;
     };
 
     VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         (VkPipelineDepthStencilStateCreateFlags)0,                  // VkPipelineDepthStencilStateCreateFlags flags;
         useDepth,                                                   // VkBool32 depthTestEnable;
         true,                                                       // VkBool32 depthWriteEnable;
@@ -650,7 +650,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const std::vector<VkDy
 
     const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                              // const void* pNext;
+        nullptr,                                              // const void* pNext;
         (VkPipelineDynamicStateCreateFlags)0,                 // VkPipelineDynamicStateCreateFlags flags;
         static_cast<uint32_t>(dynamicState.size()),           // uint32_t dynamicStateCount;
         dataOrNullPtr(dynamicState),                          // const VkDynamicState* pDynamicStates;
@@ -676,7 +676,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const std::vector<VkDy
 
     VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                                // const void* pNext;
+        nullptr,                                                                // const void* pNext;
         {2, 2},                                                                 // VkExtent2D fragmentSize;
         {VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
          VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR}, // VkFragmentShadingRateCombinerOpKHR combinerOps[2];
@@ -687,7 +687,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const std::vector<VkDy
         .setDefaultRasterizationState()
         .setupVertexInputState(&vertexInputStateInfo)
         .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass, subpassIndex, vertexModule,
-                                          nullptr, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), DE_NULL,
+                                          nullptr, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr,
                                           (useFragmentShadingRate ? &shadingRateStateCreateInfo : nullptr))
         .setupFragmentShaderState(pipelineLayout, renderPass, subpassIndex, fragmentModule,
                                   &pipelineDepthStencilStateInfo, &pipelineMultisampleStateInfo)
@@ -730,7 +730,7 @@ public:
                            const VkAttachmentLoadOp stencilLoadOp, const VkAttachmentStoreOp stencilStoreOp,
                            const VkImageLayout initialLayout, const VkImageLayout finalLayout,
                            const VkClearValue clearValue,
-                           const VkSampleLocationsInfoEXT *pInitialSampleLocations = DE_NULL)
+                           const VkSampleLocationsInfoEXT *pInitialSampleLocations = nullptr)
     {
         const uint32_t index = static_cast<uint32_t>(m_attachments.size());
 
@@ -772,7 +772,7 @@ public:
                                               const VkImageLayout colorSubpassLayout,
                                               const uint32_t resolveAttachmentIndex,
                                               const VkImageLayout resolveSubpassLayout,
-                                              const VkSampleLocationsInfoEXT *pSampleLocations = DE_NULL)
+                                              const VkSampleLocationsInfoEXT *pSampleLocations = nullptr)
     {
         m_subpasses.back().colorAttachmentReferences.push_back(
             makeAttachmentReference(colorAttachmentIndex, colorSubpassLayout));
@@ -790,7 +790,7 @@ public:
     }
 
     void addSubpassDepthStencilAttachment(const uint32_t attachmentIndex, const VkImageLayout subpassLayout,
-                                          const VkSampleLocationsInfoEXT *pSampleLocations = DE_NULL)
+                                          const VkSampleLocationsInfoEXT *pSampleLocations = nullptr)
     {
         m_subpasses.back().depthStencilAttachmentReferences.push_back(
             makeAttachmentReference(attachmentIndex, subpassLayout));
@@ -881,7 +881,7 @@ public:
 
         const VkRenderPassCreateInfo renderPassInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,              // VkStructureType sType;
-            DE_NULL,                                                // const void* pNext;
+            nullptr,                                                // const void* pNext;
             (VkRenderPassCreateFlags)0,                             // VkRenderPassCreateFlags flags;
             static_cast<uint32_t>(m_attachmentDescriptions.size()), // uint32_t attachmentCount;
             dataOrNullPtr(m_attachmentDescriptions),                // const VkAttachmentDescription* pAttachments;
@@ -916,7 +916,7 @@ public:
     {
         const VkRenderPassSampleLocationsBeginInfoEXT renderPassSampleLocationsBeginInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT, // VkStructureType                          sType;
-            DE_NULL, // const void*                              pNext;
+            nullptr, // const void*                              pNext;
             static_cast<uint32_t>(
                 m_attachmentSampleLocations
                     .size()), // uint32_t                                 attachmentInitialSampleLocationsCount;
@@ -971,7 +971,7 @@ void recordImageBarrier(const DeviceInterface &vk, const VkCommandBuffer cmdBuff
                         const VkImageAspectFlags aspect, const VkPipelineStageFlags srcStageMask,
                         const VkPipelineStageFlags dstStageMask, const VkAccessFlags srcAccessMask,
                         const VkAccessFlags dstAccessMask, const VkImageLayout oldLayout, const VkImageLayout newLayout,
-                        const VkSampleLocationsInfoEXT *pSampleLocationsInfo = DE_NULL)
+                        const VkSampleLocationsInfoEXT *pSampleLocationsInfo = nullptr)
 {
     const VkImageMemoryBarrier barrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,            // VkStructureType            sType;
@@ -986,7 +986,7 @@ void recordImageBarrier(const DeviceInterface &vk, const VkCommandBuffer cmdBuff
         makeImageSubresourceRange(aspect, 0u, 1u, 0u, 1u), // VkImageSubresourceRange    subresourceRange;
     };
 
-    vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, 1u,
+    vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, 1u,
                           &barrier);
 }
 
@@ -995,7 +995,7 @@ void recordWaitEventWithImage(const DeviceInterface &vk, const VkCommandBuffer c
                               const VkPipelineStageFlags srcStageMask, const VkPipelineStageFlags dstStageMask,
                               const VkAccessFlags srcAccessMask, const VkAccessFlags dstAccessMask,
                               const VkImageLayout oldLayout, const VkImageLayout newLayout,
-                              const VkSampleLocationsInfoEXT *pSampleLocationsInfo = DE_NULL)
+                              const VkSampleLocationsInfoEXT *pSampleLocationsInfo = nullptr)
 {
     const VkImageMemoryBarrier barrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,            // VkStructureType            sType;
@@ -1016,9 +1016,9 @@ void recordWaitEventWithImage(const DeviceInterface &vk, const VkCommandBuffer c
                      srcStageMask, // VkPipelineStageFlags                        srcStageMask,
                      dstStageMask, // VkPipelineStageFlags                        dstStageMask,
                      0u,           // uint32_t                                    memoryBarrierCount,
-                     DE_NULL,      // const VkMemoryBarrier*                      pMemoryBarriers,
+                     nullptr,      // const VkMemoryBarrier*                      pMemoryBarriers,
                      0u,           // uint32_t                                    bufferMemoryBarrierCount,
-                     DE_NULL,      // const VkBufferMemoryBarrier*                pBufferMemoryBarriers,
+                     nullptr,      // const VkBufferMemoryBarrier*                pBufferMemoryBarriers,
                      1u,           // uint32_t                                    imageMemoryBarrierCount,
                      &barrier);    // const VkImageMemoryBarrier*                 pImageMemoryBarriers);
 }
@@ -1044,7 +1044,7 @@ void recordCopyImageToBuffer(const DeviceInterface &vk, const VkCommandBuffer cm
     {
         const VkBufferMemoryBarrier barrier = {
             VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType;
-            DE_NULL,                                 // const void*        pNext;
+            nullptr,                                 // const void*        pNext;
             VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags      srcAccessMask;
             VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags      dstAccessMask;
             VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           srcQueueFamilyIndex;
@@ -1055,7 +1055,7 @@ void recordCopyImageToBuffer(const DeviceInterface &vk, const VkCommandBuffer cm
         };
 
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, DE_NULL, 0u);
+                              (VkDependencyFlags)0, 0u, nullptr, 1u, &barrier, 0u, nullptr);
     }
 }
 
@@ -1103,7 +1103,7 @@ void beginSecondaryCommandBuffer(const DeviceInterface &vk, const VkCommandBuffe
     DE_UNREF(pct);
     VkCommandBufferInheritanceInfo inheritanceInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType                  sType;
-        DE_NULL,                                           // const void*                      pNext;
+        nullptr,                                           // const void*                      pNext;
         *renderPass,                                       // VkRenderPass                     renderPass;
         subpass,                                           // uint32_t                         subpass;
         renderPass.getFramebuffer(),                       // VkFramebuffer                    framebuffer;
@@ -1114,7 +1114,7 @@ void beginSecondaryCommandBuffer(const DeviceInterface &vk, const VkCommandBuffe
 
     const VkCommandBufferBeginInfo beginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType                          sType;
-        DE_NULL,                                     // const void*                              pNext;
+        nullptr,                                     // const void*                              pNext;
         (VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT |
          VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT), // VkCommandBufferUsageFlags                flags;
         &inheritanceInfo, // const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
@@ -1210,7 +1210,7 @@ tcu::TestStatus testQueryMultisampleProperties(Context &context)
     {
         VkMultisamplePropertiesEXT multisampleProperties = {
             VK_STRUCTURE_TYPE_MULTISAMPLE_PROPERTIES_EXT, // VkStructureType    sType;
-            DE_NULL,                                      // void*              pNext;
+            nullptr,                                      // void*              pNext;
             VkExtent2D(),                                 // VkExtent2D         maxSampleLocationGridSize;
         };
 
@@ -1446,7 +1446,7 @@ public:
     {
         VkMultisamplePropertiesEXT multisampleProperties = {
             VK_STRUCTURE_TYPE_MULTISAMPLE_PROPERTIES_EXT, // VkStructureType    sType;
-            DE_NULL,                                      // void*              pNext;
+            nullptr,                                      // void*              pNext;
             VkExtent2D(),                                 // VkExtent2D         maxSampleLocationGridSize;
         };
 
@@ -1640,7 +1640,7 @@ protected:
 
         if (m_descriptorSet)
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                     &m_descriptorSet.get(), 0u, DE_NULL);
+                                     &m_descriptorSet.get(), 0u, nullptr);
 
         vk.cmdDraw(*cmdBuffer, m_numVertices, 1u, 0u, 0u);
         rt.endRenderPass(vk, *cmdBuffer);
@@ -1967,7 +1967,7 @@ const char *getString(const TestImageAspect aspect)
         return "stencil";
     }
     DE_ASSERT(0);
-    return DE_NULL;
+    return nullptr;
 }
 
 const char *getString(const TestDrawIn drawIn)
@@ -1982,7 +1982,7 @@ const char *getString(const TestDrawIn drawIn)
         return "same_subpass";
     }
     DE_ASSERT(0);
-    return DE_NULL;
+    return nullptr;
 }
 
 const char *getString(const TestClears clears)
@@ -1999,7 +1999,7 @@ const char *getString(const TestClears clears)
         return "clear_image";
     }
     DE_ASSERT(0);
-    return DE_NULL;
+    return nullptr;
 }
 
 std::string getTestOptionFlagsString(const uint32_t flags)
@@ -2086,7 +2086,7 @@ public:
     {
         VkMultisamplePropertiesEXT multisampleProperties = {
             VK_STRUCTURE_TYPE_MULTISAMPLE_PROPERTIES_EXT, // VkStructureType    sType;
-            DE_NULL,                                      // void*              pNext;
+            nullptr,                                      // void*              pNext;
             VkExtent2D(),                                 // VkExtent2D         maxSampleLocationGridSize;
         };
 
@@ -2837,14 +2837,14 @@ protected:
 
             const VkSubmitInfo submitInfo = {
                 VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType                sType;
-                DE_NULL,                       // const void*                    pNext;
+                nullptr,                       // const void*                    pNext;
                 0u,                            // uint32_t                       waitSemaphoreCount;
-                DE_NULL,                       // const VkSemaphore*             pWaitSemaphores;
-                DE_NULL,                       // const VkPipelineStageFlags*    pWaitDstStageMask;
+                nullptr,                       // const VkSemaphore*             pWaitSemaphores;
+                nullptr,                       // const VkPipelineStageFlags*    pWaitDstStageMask;
                 DE_LENGTH_OF_ARRAY(buffers),   // uint32_t                       commandBufferCount;
                 buffers,                       // const VkCommandBuffer*         pCommandBuffers;
                 0u,                            // uint32_t                       signalSemaphoreCount;
-                DE_NULL,                       // const VkSemaphore*             pSignalSemaphores;
+                nullptr,                       // const VkSemaphore*             pSignalSemaphores;
             };
             VK_CHECK(vk.queueSubmit(m_context.getUniversalQueue(), 1u, &submitInfo, *fence));
             VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), true, ~0ull));

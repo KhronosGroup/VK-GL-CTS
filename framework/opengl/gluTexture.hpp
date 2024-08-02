@@ -369,7 +369,7 @@ class TextureBuffer
 public:
     TextureBuffer(const RenderContext &context, uint32_t internalFormat, size_t bufferSize);
     TextureBuffer(const RenderContext &context, uint32_t internalFormat, size_t bufferSize, size_t offset, size_t size,
-                  const void *data = DE_NULL);
+                  const void *data = nullptr);
 
     ~TextureBuffer(void);
 

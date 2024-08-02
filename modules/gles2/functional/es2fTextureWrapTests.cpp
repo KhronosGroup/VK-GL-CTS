@@ -109,7 +109,7 @@ TextureWrapCase::TextureWrapCase(tcu::TestContext &testCtx, glu::RenderContext &
     , m_magFilter(magFilter)
     , m_width(width)
     , m_height(height)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
     , m_enableRelaxedRef(enableRelaxedRef)
 {
@@ -131,7 +131,7 @@ TextureWrapCase::TextureWrapCase(tcu::TestContext &testCtx, glu::RenderContext &
     , m_width(0)
     , m_height(0)
     , m_filenames(filenames)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
     , m_enableRelaxedRef(enableRelaxedRef)
 {
@@ -178,7 +178,7 @@ void TextureWrapCase::init(void)
 void TextureWrapCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }

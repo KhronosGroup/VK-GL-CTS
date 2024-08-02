@@ -599,19 +599,19 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     switch (caseDef.shaderStage)
     {
     case VK_SHADER_STAGE_VERTEX_BIT:
-        return subgroups::makeVertexFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData,
+        return subgroups::makeVertexFrameBufferTestRequiredSubgroupSize(context, format, nullptr, 0, &internalData,
                                                                         checkVertexPipelineStages, flags, 0u);
     case VK_SHADER_STAGE_GEOMETRY_BIT:
-        return subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData,
+        return subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize(context, format, nullptr, 0, &internalData,
                                                                           checkVertexPipelineStages, flags, 0u);
     case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
         return subgroups::makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize(
-            context, format, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, flags, 0u);
+            context, format, nullptr, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, flags, 0u);
     case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
         return subgroups::makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize(
-            context, format, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, flags, 0u);
+            context, format, nullptr, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, flags, 0u);
     case VK_SHADER_STAGE_FRAGMENT_BIT:
-        return subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData,
+        return subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize(context, format, nullptr, 0, &internalData,
                                                                           checkFragmentPipelineStages, flags, 0u);
     default:
         TCU_THROW(InternalError, "Unhandled shader stage");
@@ -656,7 +656,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         };
 
         return subgroups::makeComputeTestRequiredSubgroupSize(
-            context, VK_FORMAT_R32_UINT, DE_NULL, 0, &internalData, checkCompute,
+            context, VK_FORMAT_R32_UINT, nullptr, 0, &internalData, checkCompute,
             caseDef.pipelineShaderStageCreateFlags, numWorkgroups, makeDeBool(internalData.isRequiredSubgroupSize),
             subgroupSize, localSizesToTest, localSizesToTestCount);
     }
@@ -899,7 +899,7 @@ TestStatus testRequireSubgroupSize(Context &context, const CaseDefinition caseDe
         };
 
         return subgroups::allStagesRequiredSubgroupSize(
-            context, VK_FORMAT_R32_UINT, DE_NULL, 0, &internalData, checkVertexPipelineStages, stages,
+            context, VK_FORMAT_R32_UINT, nullptr, 0, &internalData, checkVertexPipelineStages, stages,
             caseDef.pipelineShaderStageCreateFlags, caseDef.pipelineShaderStageCreateFlags,
             caseDef.pipelineShaderStageCreateFlags, caseDef.pipelineShaderStageCreateFlags,
             caseDef.pipelineShaderStageCreateFlags, requiredSubgroupSizes);
@@ -921,7 +921,7 @@ TestStatus testRequireSubgroupSize(Context &context, const CaseDefinition caseDe
             true,                 //  bool isRequiredSubgroupSize;
         };
 
-        return subgroups::allRayTracingStagesRequiredSubgroupSize(context, VK_FORMAT_R32_UINT, DE_NULL, 0,
+        return subgroups::allRayTracingStagesRequiredSubgroupSize(context, VK_FORMAT_R32_UINT, nullptr, 0,
                                                                   &internalData, checkVertexPipelineStages, stages,
                                                                   flags.data(), requiredSubgroupSizes.data());
     }
@@ -948,19 +948,19 @@ TestStatus noSSBOtestRequireSubgroupSize(Context &context, const CaseDefinition 
     switch (caseDef.shaderStage)
     {
     case VK_SHADER_STAGE_VERTEX_BIT:
-        return subgroups::makeVertexFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData,
+        return subgroups::makeVertexFrameBufferTestRequiredSubgroupSize(context, format, nullptr, 0, &internalData,
                                                                         checkVertexPipelineStages, flags, size);
     case VK_SHADER_STAGE_GEOMETRY_BIT:
-        return subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData,
+        return subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize(context, format, nullptr, 0, &internalData,
                                                                           checkVertexPipelineStages, flags, size);
     case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
         return subgroups::makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize(
-            context, format, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, flags, size);
+            context, format, nullptr, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, flags, size);
     case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
         return subgroups::makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize(
-            context, format, DE_NULL, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, flags, size);
+            context, format, nullptr, 0, &internalData, checkVertexPipelineStages, caseDef.shaderStage, flags, size);
     case VK_SHADER_STAGE_FRAGMENT_BIT:
-        return subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize(context, format, DE_NULL, 0, &internalData,
+        return subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize(context, format, nullptr, 0, &internalData,
                                                                           checkFragmentPipelineStages, flags, size);
     default:
         TCU_THROW(InternalError, "Unhandled shader stage");
@@ -977,7 +977,7 @@ TestStatus testSanitySubgroupSizeProperties(Context &context)
     subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
 #endif // CTS_USES_VULKANSC
 
-    subgroupSizeControlProperties.pNext = DE_NULL;
+    subgroupSizeControlProperties.pNext = nullptr;
 
     VkPhysicalDeviceSubgroupProperties subgroupProperties;
     subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;

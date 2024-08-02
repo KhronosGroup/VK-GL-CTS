@@ -87,7 +87,7 @@ static tcu::TestStatus testDeviceDrmProperties(Context &context, const TestType 
 
     deMemset(&deviceDrmProperties, 0, sizeof(deviceDrmProperties));
     deviceDrmProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
-    deviceDrmProperties.pNext = DE_NULL;
+    deviceDrmProperties.pNext = nullptr;
 
     deMemset(&deviceProperties2, memsetPattern, sizeof(deviceProperties2));
     deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;

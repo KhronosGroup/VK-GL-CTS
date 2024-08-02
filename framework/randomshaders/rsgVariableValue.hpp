@@ -162,7 +162,7 @@ template <int Stride>
 class ConstStridedValueAccess
 {
 public:
-    ConstStridedValueAccess(void) : m_type(DE_NULL), m_value(DE_NULL)
+    ConstStridedValueAccess(void) : m_type(nullptr), m_value(nullptr)
     {
     }
     ConstStridedValueAccess(const VariableType &type, const Scalar *valuePtr)
@@ -399,7 +399,7 @@ typedef StridedValueAccess<1> ValueAccess;
 class ConstValueRangeAccess
 {
 public:
-    ConstValueRangeAccess(void) : m_type(DE_NULL), m_min(DE_NULL), m_max(DE_NULL)
+    ConstValueRangeAccess(void) : m_type(nullptr), m_min(nullptr), m_max(nullptr)
     {
     }
     ConstValueRangeAccess(const VariableType &type, const Scalar *minVal, const Scalar *maxVal)
@@ -552,20 +552,20 @@ public:
 private:
     const Scalar *getMinPtr(void) const
     {
-        return m_min.empty() ? DE_NULL : &m_min[0];
+        return m_min.empty() ? nullptr : &m_min[0];
     }
     const Scalar *getMaxPtr(void) const
     {
-        return m_max.empty() ? DE_NULL : &m_max[0];
+        return m_max.empty() ? nullptr : &m_max[0];
     }
 
     Scalar *getMinPtr(void)
     {
-        return m_min.empty() ? DE_NULL : &m_min[0];
+        return m_min.empty() ? nullptr : &m_min[0];
     }
     Scalar *getMaxPtr(void)
     {
-        return m_max.empty() ? DE_NULL : &m_max[0];
+        return m_max.empty() ? nullptr : &m_max[0];
     }
 
     VariableType m_type;

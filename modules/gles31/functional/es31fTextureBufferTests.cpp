@@ -380,7 +380,7 @@ TextureBufferDataStoreQueryCase::IterateResult TextureBufferDataStoreQueryCase::
 
         gl.glGenBuffers(1, &buffer);
         gl.glBindBuffer(GL_TEXTURE_BUFFER, buffer);
-        gl.glBufferData(GL_TEXTURE_BUFFER, 32, DE_NULL, GL_STATIC_DRAW);
+        gl.glBufferData(GL_TEXTURE_BUFFER, 32, nullptr, GL_STATIC_DRAW);
         GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "bind buf");
 
         gl.glTexBuffer(GL_TEXTURE_BUFFER, GL_R32UI, buffer);
@@ -453,7 +453,7 @@ TextureBufferOffsetQueryCase::IterateResult TextureBufferOffsetQueryCase::iterat
 
         gl.glGenBuffers(1, &buffer);
         gl.glBindBuffer(GL_TEXTURE_BUFFER, buffer);
-        gl.glBufferData(GL_TEXTURE_BUFFER, 1024, DE_NULL, GL_STATIC_DRAW);
+        gl.glBufferData(GL_TEXTURE_BUFFER, 1024, nullptr, GL_STATIC_DRAW);
         GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "bind buf");
 
         {
@@ -535,7 +535,7 @@ TextureBufferSizeQueryCase::IterateResult TextureBufferSizeQueryCase::iterate(vo
 
         gl.glGenBuffers(1, &buffer);
         gl.glBindBuffer(GL_TEXTURE_BUFFER, buffer);
-        gl.glBufferData(GL_TEXTURE_BUFFER, 1024, DE_NULL, GL_STATIC_DRAW);
+        gl.glBufferData(GL_TEXTURE_BUFFER, 1024, nullptr, GL_STATIC_DRAW);
         GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "bind buf");
 
         {

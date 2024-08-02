@@ -38,7 +38,23 @@
 #define VKAPI_CALL
 #endif
 
-#define VK_NULL_HANDLE 0
+// A helper to make sure VK_NULL_HANDLE is not accidentally used where it doesn't make sense.  When
+// assigned to a handle defined by VK_DEFINE_HANDLE below (a pointer), it is automatically cast to
+// nullptr.  When assigned to a Handle object, a special constructor that accepts this type sets it
+// internal value to 0.
+struct VkNullHandleType
+{
+    template <typename T>
+    operator T *()
+    {
+        return nullptr;
+    }
+};
+
+#define VK_NULL_HANDLE \
+    VkNullHandleType   \
+    {                  \
+    }
 #define VK_DEFINE_HANDLE(NAME, TYPE) typedef struct NAME##_s *NAME
 #define VK_DEFINE_NON_DISPATCHABLE_HANDLE(NAME, TYPE) typedef Handle<TYPE> NAME
 
@@ -96,13 +112,24 @@ public:
     Handle(void)
     {
     } // \note Left uninitialized on purpose
-    Handle(uint64_t internal) : m_internal(internal)
+    Handle(VkNullHandleType) : m_internal(0)
     {
     }
 
-    Handle &operator=(uint64_t internal)
+    // Helpers for vkNullDriver (an internal implementation of a Vulkan driver).
+    template <typename T>
+    Handle(const T *obj) : m_internal(reinterpret_cast<uintptr_t>(obj))
     {
-        m_internal = internal;
+    }
+    template <typename T>
+    T *as() const
+    {
+        return reinterpret_cast<T *>(m_internal);
+    }
+
+    Handle &operator=(VkNullHandleType)
+    {
+        m_internal = 0;
         return *this;
     }
 

@@ -108,7 +108,7 @@ RasterizerDiscardCase::RasterizerDiscardCase(Context &context, const char *name,
     , m_caseType(caseType)
     , m_caseOptions(caseOptions)
     , m_drawMode(drawMode)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_fbo(0)
     , m_colorBuf(0)
     , m_depthStencilBuf(0)
@@ -183,7 +183,7 @@ void RasterizerDiscardCase::setupFramebufferObject(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     // Create depth and stencil buffers
 
@@ -251,7 +251,7 @@ void RasterizerDiscardCase::deinit(void)
 {
     deleteFramebufferObject();
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 RasterizerDiscardCase::IterateResult RasterizerDiscardCase::iterate(void)

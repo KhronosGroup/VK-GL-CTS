@@ -135,7 +135,7 @@ tcu::TestStatus ClearColorImageTestInstance::iterate()
         ctx, PROTECTION_ENABLED, queueFamilyIndex, RENDER_WIDTH, RENDER_HEIGHT, vk::VK_FORMAT_R8G8B8A8_UNORM,
         vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT | vk::VK_IMAGE_USAGE_SAMPLED_BIT);
 
-    vk::Unique<vk::VkPipelineLayout> pipelineLayout(createPipelineLayout(ctx, 0u, DE_NULL));
+    vk::Unique<vk::VkPipelineLayout> pipelineLayout(createPipelineLayout(ctx, 0u, nullptr));
 
     vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(vk, device, PROTECTION_ENABLED, queueFamilyIndex));
     vk::Unique<vk::VkCommandBuffer> cmdBuffer(
@@ -159,7 +159,7 @@ tcu::TestStatus ClearColorImageTestInstance::iterate()
         // Begin secondary command buffer
         const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo = {
             vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // sType
-            DE_NULL,                                               // pNext
+            nullptr,                                               // pNext
             VK_NULL_HANDLE,                                        // renderPass
             0u,                                                    // subpass
             VK_NULL_HANDLE,                                        // framebuffer
@@ -174,7 +174,7 @@ tcu::TestStatus ClearColorImageTestInstance::iterate()
     {
         const vk::VkImageMemoryBarrier initializeBarrier = {
             vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
-            DE_NULL,                                    // pNext
+            nullptr,                                    // pNext
             0,                                          // srcAccessMask
             vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // dstAccessMask
             vk::VK_IMAGE_LAYOUT_UNDEFINED,              // oldLayout
@@ -185,14 +185,13 @@ tcu::TestStatus ClearColorImageTestInstance::iterate()
             subresourceRange,                           // subresourceRange
         };
 
-        vk.cmdPipelineBarrier(
-            targetCmdBuffer,                               // commandBuffer
-            vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,         // srcStageMask
-            vk::VK_PIPELINE_STAGE_TRANSFER_BIT,            // dstStageMask
-            (vk::VkDependencyFlags)0,                      // dependencyFlags
-            0, (const vk::VkMemoryBarrier *)DE_NULL,       // memoryBarrierCount, pMemoryBarriers
-            0, (const vk::VkBufferMemoryBarrier *)DE_NULL, // bufferMemoryBarrierCount, pBufferMemoryBarriers
-            1, &initializeBarrier);                        // imageMemoryBarrierCount, pImageMemoryBarriers
+        vk.cmdPipelineBarrier(targetCmdBuffer,                       // commandBuffer
+                              vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // srcStageMask
+                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT,    // dstStageMask
+                              (vk::VkDependencyFlags)0,              // dependencyFlags
+                              0, nullptr,                            // memoryBarrierCount, pMemoryBarriers
+                              0, nullptr,                            // bufferMemoryBarrierCount, pBufferMemoryBarriers
+                              1, &initializeBarrier);                // imageMemoryBarrierCount, pImageMemoryBarriers
     }
 
     // Image clear
@@ -203,7 +202,7 @@ tcu::TestStatus ClearColorImageTestInstance::iterate()
     {
         const vk::VkImageMemoryBarrier initializeBarrier = {
             vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // sType
-            DE_NULL,                                      // pNext
+            nullptr,                                      // pNext
             vk::VK_ACCESS_TRANSFER_WRITE_BIT,             // srcAccessMask
             vk::VK_ACCESS_SHADER_READ_BIT,                // dstAccessMask
             vk::VK_IMAGE_LAYOUT_GENERAL,                  // oldLayout
@@ -216,8 +215,7 @@ tcu::TestStatus ClearColorImageTestInstance::iterate()
         vk.cmdPipelineBarrier(targetCmdBuffer,
                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT,     // srcStageMask
                               vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, // dstStageMask
-                              (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &initializeBarrier);
+                              (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &initializeBarrier);
     }
 
     if (m_cmdBufferType == CMD_BUFFER_SECONDARY)

@@ -30,7 +30,7 @@ namespace xs
 namespace posix
 {
 
-FileReader::FileReader(int blockSize, int numBlocks) : m_file(DE_NULL), m_buf(blockSize, numBlocks), m_isRunning(false)
+FileReader::FileReader(int blockSize, int numBlocks) : m_file(nullptr), m_buf(blockSize, numBlocks), m_isRunning(false)
 {
 }
 
@@ -50,7 +50,7 @@ void FileReader::start(const char *filename)
     if (!deFile_setFlags(m_file, DE_FILE_NONBLOCKING))
     {
         deFile_destroy(m_file);
-        m_file = DE_NULL;
+        m_file = nullptr;
         XS_FAIL("Failed to set non-blocking mode");
     }
 #endif
@@ -105,7 +105,7 @@ void FileReader::stop(void)
 
     // Destroy file.
     deFile_destroy(m_file);
-    m_file = DE_NULL;
+    m_file = nullptr;
 
     // Reset buffer.
     m_buf.clear();

@@ -285,7 +285,7 @@ const TestParams tests[] = {
         {                                // vector<TestStep>            initialSteps
          {[](TestContext &context) { context.bindFramebuffer(GL_FRAMEBUFFER, context.fboIds[0]); },
           expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)}},
-        DE_NULL, // StepsGeneratorFn            stepsGenerator
+        nullptr, // StepsGeneratorFn            stepsGenerator
     },
     {
         "incomplete_image_zero_width", // string                    name
@@ -300,11 +300,11 @@ const TestParams tests[] = {
          {[](TestContext &context)
           {
               context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 0, TEXTURE_HEIGHT, 0,
-                                 GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, DE_NULL);
+                                 GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
               context.framebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, context.texIds[0], 0);
           },
           expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)}},
-        DE_NULL, // StepsGeneratorFn            stepsGenerator
+        nullptr, // StepsGeneratorFn            stepsGenerator
     },
     {
         "incomplete_image_zero_height", // string                    name
@@ -319,11 +319,11 @@ const TestParams tests[] = {
          {[](TestContext &context)
           {
               context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 0, TEXTURE_WIDTH, 0,
-                                 GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, DE_NULL);
+                                 GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
               context.framebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, context.texIds[0], 0);
           },
           expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)}},
-        DE_NULL, // StepsGeneratorFn            stepsGenerator
+        nullptr, // StepsGeneratorFn            stepsGenerator
     },
     {
         "incomplete_texture_3d_layer_oob", // string                    name
@@ -338,12 +338,12 @@ const TestParams tests[] = {
          {[](TestContext &context)
           {
               context.texImage3D(context.texIds[0], GL_TEXTURE_3D, 0, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT,
-                                 TEXTURE_DEPTH, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                 TEXTURE_DEPTH, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
               context.framebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, context.texIds[0], 0,
                                               TEXTURE_DEPTH + 1);
           },
           expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)}},
-        DE_NULL, // StepsGeneratorFn            stepsGenerator
+        nullptr, // StepsGeneratorFn            stepsGenerator
     },
     {
         "incomplete_texture_2d_layer_oob", // string                    name
@@ -358,11 +358,11 @@ const TestParams tests[] = {
          {[](TestContext &context)
           {
               context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0,
-                                 GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                 GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
               context.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, context.texIds[0], 1);
           },
           expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)}},
-        DE_NULL, // StepsGeneratorFn            stepsGenerator
+        nullptr, // StepsGeneratorFn            stepsGenerator
     },
     {
         "incomplete_texture_2d_mm_layer_oob",       // string                    name
@@ -379,7 +379,7 @@ const TestParams tests[] = {
                                        GL_LINEAR_MIPMAP_LINEAR);
                  context.texParameteri(context.texIds[0], GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
                  context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 1, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0,
-                                    GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                    GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
                  context.bindFramebuffer(GL_FRAMEBUFFER, context.fboIds[0]);
              },
              expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)},
@@ -401,7 +401,7 @@ const TestParams tests[] = {
              },
              expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)},
         },
-        DE_NULL, // StepsGeneratorFn            stepsGenerator
+        nullptr, // StepsGeneratorFn            stepsGenerator
     },
     {
         "mutable_nbl_texture_expect_mipmap_complete", // string                    name
@@ -416,11 +416,11 @@ const TestParams tests[] = {
               DE_ASSERT(TEXTURE_WIDTH >= 8 && TEXTURE_HEIGHT >= 8);
 
               context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0,
-                                 GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                 GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
               context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 1, GL_RGBA8, TEXTURE_WIDTH >> 1, TEXTURE_HEIGHT >> 1,
-                                 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
               context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 3, GL_RGBA8, TEXTURE_WIDTH >> 3, TEXTURE_HEIGHT >> 3,
-                                 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
               context.texParameteri(context.texIds[0], GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);
               context.texParameteri(context.texIds[0], GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
               context.bindFramebuffer(GL_FRAMEBUFFER, context.fboIds[0]);
@@ -432,10 +432,10 @@ const TestParams tests[] = {
          {[](TestContext &context)
           {
               context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 2, GL_RGBA8, TEXTURE_WIDTH >> 2, TEXTURE_HEIGHT >> 2,
-                                 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
           },
           expectedStatusConstant(GL_FRAMEBUFFER_COMPLETE)}},
-        DE_NULL, // StepsGeneratorFn            stepsGenerator
+        nullptr, // StepsGeneratorFn            stepsGenerator
     },
     {
         "mutable_nbl_texture_expect_cube_complete", // string                    name
@@ -459,9 +459,9 @@ const TestParams tests[] = {
                   if (i % 2)
                       continue;
                   context.texImage2D(cubemapTextureTargets[i], 0, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,
-                                     GL_UNSIGNED_BYTE, DE_NULL);
+                                     GL_UNSIGNED_BYTE, nullptr);
                   context.texImage2D(cubemapTextureTargets[i], 1, GL_RGBA8, TEXTURE_WIDTH >> 1, TEXTURE_HEIGHT >> 1, 0,
-                                     GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                     GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
               }
               context.bindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
@@ -477,14 +477,14 @@ const TestParams tests[] = {
                   if (i % 2 == 0)
                       continue;
                   context.texImage2D(cubemapTextureTargets[i], 0, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,
-                                     GL_UNSIGNED_BYTE, DE_NULL);
+                                     GL_UNSIGNED_BYTE, nullptr);
                   context.texImage2D(cubemapTextureTargets[i], 1, GL_RGBA8, TEXTURE_WIDTH >> 1, TEXTURE_HEIGHT >> 1, 0,
-                                     GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                     GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
               }
               context.bindTexture(GL_TEXTURE_CUBE_MAP, 0);
           },
           expectedStatusConstant(GL_FRAMEBUFFER_COMPLETE)}},
-        DE_NULL, // StepsGeneratorFn            stepsGenerator
+        nullptr, // StepsGeneratorFn            stepsGenerator
     },
     {
         "expect_renderable_internal_format",                                     // string                    name
@@ -498,11 +498,11 @@ const TestParams tests[] = {
          {[](TestContext &context)
           {
               context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0,
-                                 GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                 GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
               context.texImage2D(context.texIds[1], GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, TEXTURE_WIDTH,
-                                 TEXTURE_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, DE_NULL);
+                                 TEXTURE_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
               context.texImage2D(context.texIds[2], GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, TEXTURE_WIDTH,
-                                 TEXTURE_HEIGHT, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, DE_NULL);
+                                 TEXTURE_HEIGHT, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
               context.bindFramebuffer(GL_FRAMEBUFFER, context.fboIds[0]);
           },
           expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)},
@@ -599,7 +599,7 @@ const TestParams tests[] = {
           {
               context.renderbufferStorage(context.rboIds[0], GL_RENDERBUFFER, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT);
               context.texImage2D(context.texIds[1], GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, TEXTURE_WIDTH,
-                                 TEXTURE_HEIGHT, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, DE_NULL);
+                                 TEXTURE_HEIGHT, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
 
               context.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, context.rboIds[0]);
               context.framebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D,
@@ -611,7 +611,7 @@ const TestParams tests[] = {
               context.renderbufferStorage(context.rboIds[1], GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, TEXTURE_WIDTH,
                                           TEXTURE_HEIGHT);
               context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0,
-                                 GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                 GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
               context.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, context.texIds[0], 0);
               context.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,
@@ -641,7 +641,7 @@ const TestParams tests[] = {
                                                      TEXTURE_HEIGHT);
           },
           expectedStatusConstant(GL_FRAMEBUFFER_COMPLETE)}},
-        DE_NULL, // StepsGeneratorFn            stepsGenerator
+        nullptr, // StepsGeneratorFn            stepsGenerator
     },
     {
         "expect_equal_numsamples",                                     // string                    name
@@ -762,7 +762,7 @@ const TestParams tests[] = {
           [](TestContext &context)
           {
               context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0,
-                                 GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                 GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
               context.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, context.texIds[0], 0);
           },
           expectedStatusConstant(GL_FRAMEBUFFER_COMPLETE)},
@@ -792,7 +792,7 @@ const TestParams tests[] = {
           [](TestContext &context)
           {
               context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, TEXTURE_WIDTH,
-                                 TEXTURE_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, DE_NULL);
+                                 TEXTURE_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
           },
           expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)},
          {// Change image format (tex storage) -> complete
@@ -823,7 +823,7 @@ const TestParams tests[] = {
 
               context.bindFramebuffer(GL_FRAMEBUFFER, context.fboIds[0]);
               context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, TEXTURE_WIDTH,
-                                 TEXTURE_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, DE_NULL);
+                                 TEXTURE_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
               context.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, context.texIds[0], 0);
           },
           expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)},
@@ -895,7 +895,7 @@ const TestParams tests[] = {
               context.rboIds.erase(context.rboIds.begin());
           },
           expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)}},
-        DE_NULL, // StepsGeneratorFn            stepsGenerator
+        nullptr, // StepsGeneratorFn            stepsGenerator
     },
     {"mutable_texture_missing_attachment_level", // string                    name
      "Attaching a mutable texture with undefined image for attachment level"
@@ -916,11 +916,11 @@ const TestParams tests[] = {
                  context.texParameteri(context.texIds[0], GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                                        GL_LINEAR_MIPMAP_LINEAR);
                  context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0,
-                                    GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                    GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
                  context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 1, GL_RGBA8, TEXTURE_WIDTH >> 1,
-                                    TEXTURE_HEIGHT >> 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                    TEXTURE_HEIGHT >> 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
                  context.texImage2D(context.texIds[0], GL_TEXTURE_2D, 3, GL_RGBA8, TEXTURE_WIDTH >> 3,
-                                    TEXTURE_HEIGHT >> 3, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+                                    TEXTURE_HEIGHT >> 3, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
                  context.texParameteri(context.texIds[0], GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
 
@@ -998,7 +998,7 @@ const TestParams tests[] = {
              },
              expectedStatusConstant(GL_FRAMEBUFFER_COMPLETE),
          }},
-        DE_NULL, // StepsGeneratorFn            stepsGenerator
+        nullptr, // StepsGeneratorFn            stepsGenerator
     },
     {
         "cube_map_layered_attachment_different_formats", // string                    name
@@ -1039,7 +1039,7 @@ const TestParams tests[] = {
              },
              expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT),
          }},
-        DE_NULL, // StepsGeneratorFn            stepsGenerator
+        nullptr, // StepsGeneratorFn            stepsGenerator
     },
     {
         "cube_map_layered_attachment_different_sizes", // string                    name
@@ -1068,7 +1068,7 @@ const TestParams tests[] = {
                 expectedStatusConstant(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT),
             },
         },
-        DE_NULL, // StepsGeneratorFn            stepsGenerator
+        nullptr, // StepsGeneratorFn            stepsGenerator
     }};
 
 class FramebufferCompletenessTestCase : public deqp::TestCase
@@ -1163,7 +1163,7 @@ tcu::TestNode::IterateResult FramebufferCompletenessTestCase::iterate(void)
         m_rboIds       // vector<GLuint>&                rboIds
     };
     auto steps = vector<TestStep>(m_params.initialSteps);
-    if (m_params.stepsGenerator != DE_NULL)
+    if (m_params.stepsGenerator != nullptr)
         m_params.stepsGenerator(steps, context);
 
     if (steps.empty())

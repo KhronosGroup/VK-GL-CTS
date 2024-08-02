@@ -213,7 +213,7 @@ std::ostream &operator<<(std::ostream &str, const Array<Iterator> &fmt)
 template <typename T>
 std::ostream &operator<<(std::ostream &str, const ArrayPointer<T> &fmt)
 {
-    if (fmt.arr != DE_NULL)
+    if (fmt.arr != nullptr)
         return str << Array<const T *>(fmt.arr, fmt.arr + fmt.size);
     else
         return str << "(null)";

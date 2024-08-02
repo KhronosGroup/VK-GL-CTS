@@ -10295,7 +10295,7 @@ bool RequiredCase::getRawDataFromPixelData(std::vector<char> &result, PixelData 
     unsigned int n_bytes_per_pixel = 0;
     unsigned int n_pixel           = 0;
     const PixelData *pixels[]      = {&bottomleft, &bottomright, &topleft, &topright};
-    char *result_traveller         = DE_NULL;
+    char *result_traveller         = nullptr;
     GLenum type                    = topleft.data_type;
 
     // Quick checks

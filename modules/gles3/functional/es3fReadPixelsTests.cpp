@@ -204,7 +204,7 @@ void ReadPixelsTest::getFormatInfo(tcu::TextureFormat &format, int &pixelSize)
             TCU_THROW(NotSupportedError, ("Unsupported IMPLEMENTATION_COLOR_READ_FORMAT: " +
                                           de::toString(glu::getTextureFormatStr(m_format)))
                                              .c_str());
-        if (glu::getTypeName(m_type) == DE_NULL)
+        if (glu::getTypeName(m_type) == nullptr)
             TCU_THROW(NotSupportedError,
                       ("Unsupported GL_IMPLEMENTATION_COLOR_READ_TYPE: " + de::toString(tcu::Format::Hex<4>(m_type)))
                           .c_str());

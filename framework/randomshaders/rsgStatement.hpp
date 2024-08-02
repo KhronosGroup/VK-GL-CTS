@@ -61,7 +61,7 @@ public:
     Statement *createNextChild(GeneratorState &state)
     {
         DE_UNREF(state);
-        return DE_NULL;
+        return nullptr;
     }
     void tokenize(GeneratorState &state, TokenStream &str) const;
     void execute(ExecutionContext &execCtx) const;
@@ -75,13 +75,13 @@ protected:
 class DeclarationStatement : public Statement
 {
 public:
-    DeclarationStatement(GeneratorState &state, Variable *variable = DE_NULL);
+    DeclarationStatement(GeneratorState &state, Variable *variable = nullptr);
     virtual ~DeclarationStatement(void);
 
     Statement *createNextChild(GeneratorState &state)
     {
         DE_UNREF(state);
-        return DE_NULL;
+        return nullptr;
     }
     void tokenize(GeneratorState &state, TokenStream &str) const;
     void execute(ExecutionContext &execCtx) const;
@@ -154,7 +154,7 @@ public:
     Statement *createNextChild(GeneratorState &state)
     {
         DE_UNREF(state);
-        return DE_NULL;
+        return nullptr;
     }
     void tokenize(GeneratorState &state, TokenStream &str) const;
     void execute(ExecutionContext &execCtx) const;

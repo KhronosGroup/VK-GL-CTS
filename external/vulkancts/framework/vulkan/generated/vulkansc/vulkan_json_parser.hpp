@@ -6855,7 +6855,7 @@ static void parse_VkPipelineShaderStageCreateInfo(const char *s, Json::Value &ob
 
     uint64_t moduleInternal = 0;
     parse_uint64_t("module", obj["module"], moduleInternal);
-    o.module = VkShaderModule(moduleInternal);
+    o.module = VkShaderModule(reinterpret_cast<void *>(moduleInternal));
 
     (o.pName) = (const char *)s_globalMem.allocate(255);
     parse_char("pName", obj["pName"], &(o.pName));
@@ -6889,7 +6889,7 @@ static void parse_VkComputePipelineCreateInfo(const char *s, Json::Value &obj, V
 
     uint64_t layoutInternal = 0;
     parse_uint64_t("layout", obj["layout"], layoutInternal);
-    o.layout = VkPipelineLayout(layoutInternal);
+    o.layout = VkPipelineLayout(reinterpret_cast<void *>(layoutInternal));
 
     parse_int32_t("basePipelineIndex", obj["basePipelineIndex"], (o.basePipelineIndex));
 }
@@ -7419,11 +7419,11 @@ static void parse_VkGraphicsPipelineCreateInfo(const char *s, Json::Value &obj, 
 
     uint64_t layoutInternal = 0;
     parse_uint64_t("layout", obj["layout"], layoutInternal);
-    o.layout = VkPipelineLayout(layoutInternal);
+    o.layout = VkPipelineLayout(reinterpret_cast<void *>(layoutInternal));
 
     uint64_t renderPassInternal = 0;
     parse_uint64_t("renderPass", obj["renderPass"], renderPassInternal);
-    o.renderPass = VkRenderPass(renderPassInternal);
+    o.renderPass = VkRenderPass(reinterpret_cast<void *>(renderPassInternal));
 
     parse_uint32_t("subpass", obj["subpass"], (o.subpass));
 
@@ -7458,7 +7458,7 @@ static void parse_VkPipelineLayoutCreateInfo(const char *s, Json::Value &obj, Vk
     {
         uint64_t pSetLayoutsInternal = 0;
         parse_uint64_t("pSetLayouts", obj_pSetLayouts_arr[i], pSetLayoutsInternal);
-        pSetLayoutsTab[i] = VkDescriptorSetLayout(pSetLayoutsInternal);
+        pSetLayoutsTab[i] = VkDescriptorSetLayout(reinterpret_cast<void *>(pSetLayoutsInternal));
     }
     o.pSetLayouts = pSetLayoutsTab;
 
@@ -7627,7 +7627,7 @@ static void parse_VkDescriptorSetLayoutBinding(const char *s, Json::Value &obj, 
         {
             uint64_t sInternal = 0;
             parse_uint64_t("pImmutableSamplers", obj_pImmutableSamplers[i], sInternal);
-            samplers[i] = VkSampler(sInternal);
+            samplers[i] = VkSampler(reinterpret_cast<void *>(sInternal));
         }
         o.pImmutableSamplers = samplers;
     }
@@ -7751,7 +7751,7 @@ static void parse_VkFramebufferCreateInfo(const char *s, Json::Value &obj, VkFra
 
     uint64_t renderPassInternal = 0;
     parse_uint64_t("renderPass", obj["renderPass"], renderPassInternal);
-    o.renderPass = VkRenderPass(renderPassInternal);
+    o.renderPass = VkRenderPass(reinterpret_cast<void *>(renderPassInternal));
 
     parse_uint32_t("attachmentCount", obj["attachmentCount"], (o.attachmentCount));
 
@@ -7956,7 +7956,7 @@ static void parse_VkCommandBufferInheritanceInfo(const char *s, Json::Value &obj
 
     uint64_t renderPassInternal = 0;
     parse_uint64_t("renderPass", obj["renderPass"], renderPassInternal);
-    o.renderPass = VkRenderPass(renderPassInternal);
+    o.renderPass = VkRenderPass(reinterpret_cast<void *>(renderPassInternal));
 
     parse_uint32_t("subpass", obj["subpass"], (o.subpass));
 
@@ -8146,7 +8146,7 @@ static void parse_VkRenderPassBeginInfo(const char *s, Json::Value &obj, VkRende
 
     uint64_t renderPassInternal = 0;
     parse_uint64_t("renderPass", obj["renderPass"], renderPassInternal);
-    o.renderPass = VkRenderPass(renderPassInternal);
+    o.renderPass = VkRenderPass(reinterpret_cast<void *>(renderPassInternal));
 
     parse_VkRect2D("renderArea", obj["renderArea"], (o.renderArea));
 
@@ -9146,7 +9146,7 @@ static void parse_VkSamplerYcbcrConversionInfo(const char *s, Json::Value &obj, 
 
     uint64_t conversionInternal = 0;
     parse_uint64_t("conversion", obj["conversion"], conversionInternal);
-    o.conversion = VkSamplerYcbcrConversion(conversionInternal);
+    o.conversion = VkSamplerYcbcrConversion(reinterpret_cast<void *>(conversionInternal));
 }
 
 static void parse_VkBindImagePlaneMemoryInfo(const char *s, Json::Value &obj, VkBindImagePlaneMemoryInfo &o)

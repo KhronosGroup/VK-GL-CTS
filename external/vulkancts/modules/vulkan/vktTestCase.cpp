@@ -285,7 +285,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
 
     // Always create the universal queue.
     queueInfo[0].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueInfo[0].pNext            = DE_NULL;
+    queueInfo[0].pNext            = nullptr;
     queueInfo[0].flags            = (VkDeviceQueueCreateFlags)0u;
     queueInfo[0].queueFamilyIndex = universalQueueIndex;
     queueInfo[0].queueCount       = 1u;
@@ -295,7 +295,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
     if (enabledFeatures.features.sparseBinding && (universalQueueIndex != sparseQueueIndex))
     {
         queueInfo[numQueues].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueInfo[numQueues].pNext            = DE_NULL;
+        queueInfo[numQueues].pNext            = nullptr;
         queueInfo[numQueues].flags            = (VkDeviceQueueCreateFlags)0u;
         queueInfo[numQueues].queueFamilyIndex = sparseQueueIndex;
         queueInfo[numQueues].queueCount       = 1u;
@@ -305,7 +305,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
     if (computeQueueIndex != -1 && (universalQueueIndex != (uint32_t)computeQueueIndex))
     {
         queueInfo[numQueues].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueInfo[numQueues].pNext            = DE_NULL;
+        queueInfo[numQueues].pNext            = nullptr;
         queueInfo[numQueues].flags            = (VkDeviceQueueCreateFlags)0u;
         queueInfo[numQueues].queueFamilyIndex = computeQueueIndex;
         queueInfo[numQueues].queueCount       = 1u;
@@ -315,7 +315,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
     if (transferQueueIndex != -1 && (universalQueueIndex != (uint32_t)transferQueueIndex))
     {
         queueInfo[numQueues].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueInfo[numQueues].pNext            = DE_NULL;
+        queueInfo[numQueues].pNext            = nullptr;
         queueInfo[numQueues].flags            = (VkDeviceQueueCreateFlags)0u;
         queueInfo[numQueues].queueFamilyIndex = transferQueueIndex;
         queueInfo[numQueues].queueCount       = 1u;
@@ -347,11 +347,11 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
     VkDeviceObjectReservationCreateInfo dmrCI = resetDeviceObjectReservationCreateInfo();
     VkPipelineCacheCreateInfo pcCI            = {
         VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
             VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
         0U,                                                       // uintptr_t initialDataSize;
-        DE_NULL                                                   // const void* pInitialData;
+        nullptr                                                   // const void* pInitialData;
     };
 
     std::vector<VkPipelinePoolSize> poolSizes;
@@ -396,7 +396,7 @@ Move<VkDevice> createDefaultDevice(const PlatformInterface &vkp, VkInstance inst
 
     VkFaultCallbackInfo faultCallbackInfo = {
         VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO, // VkStructureType sType;
-        DE_NULL,                               // void* pNext;
+        nullptr,                               // void* pNext;
         0U,                                    // uint32_t faultCount;
         nullptr,                               // VkFaultData* pFaults;
         Context::faultCallbackFunction         // PFN_vkFaultCallbackFunction pfnFaultCallback;
@@ -721,7 +721,7 @@ DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::Com
                                 de::MovePtr<vk::DebugReportRecorder>())
 #endif // CTS_USES_VULKANSC
     , m_instanceExtensions(addCoreInstanceExtensions(
-          filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, DE_NULL)), m_usedApiVersion))
+          filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, nullptr)), m_usedApiVersion))
 #ifndef CTS_USES_VULKANSC
     , m_instance(
           createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions, cmdLine, m_debugReportRecorder.get()))
@@ -742,7 +742,7 @@ DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::Com
     , m_deviceVersion(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice).apiVersion)
 
     , m_deviceExtensions(addCoreDeviceExtensions(
-          filterExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, DE_NULL)),
+          filterExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, nullptr)),
           m_usedApiVersion))
     , m_deviceFeatures(m_instanceInterface, m_usedApiVersion, m_physicalDevice, m_instanceExtensions,
                        m_deviceExtensions)
@@ -1394,7 +1394,7 @@ vk::VkFormatProperties3 Context::getRequiredFormatProperties(const vk::VkFormat 
 {
     vk::VkFormatProperties3 p;
     p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
-    p.pNext = DE_NULL;
+    p.pNext = nullptr;
 
     vk::VkFormatProperties properties;
     getInstanceInterface().getPhysicalDeviceFormatProperties(getPhysicalDevice(), format, &properties);
@@ -1451,7 +1451,7 @@ vk::VkFormatProperties3 Context::getFormatProperties(const vk::VkFormat &format)
     {
         vk::VkFormatProperties3 p;
         p.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
-        p.pNext = DE_NULL;
+        p.pNext = nullptr;
 
         vk::VkFormatProperties2 properties;
         properties.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
@@ -1525,7 +1525,7 @@ void Context::faultCallbackFunction(VkBool32 unrecordedFaults, uint32_t faultCou
     for (uint32_t i = 0; i < faultCount; ++i)
     {
         VkFaultData faultData = pFaults[i];
-        faultData.pNext       = DE_NULL;
+        faultData.pNext       = nullptr;
 
         m_faultData.push_back(faultData);
     }

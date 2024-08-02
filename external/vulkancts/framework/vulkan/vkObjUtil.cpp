@@ -46,7 +46,7 @@ Move<VkPipeline> makeComputePipeline(const DeviceInterface &vk, const VkDevice d
 {
     const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                                                        // void* pNext;
+        nullptr,                                                                        // void* pNext;
         subgroupSize // uint32_t requiredSubgroupSize;
     };
     const VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
@@ -73,8 +73,8 @@ Move<VkPipeline> makeComputePipeline(const DeviceInterface &vk, const VkDevice d
 Move<VkPipeline> makeComputePipeline(const DeviceInterface &vk, const VkDevice device,
                                      const VkPipelineLayout pipelineLayout, const VkShaderModule shaderModule)
 {
-    return makeComputePipeline(vk, device, pipelineLayout, static_cast<VkPipelineCreateFlags>(0u), DE_NULL,
-                               shaderModule, static_cast<VkPipelineShaderStageCreateFlags>(0u), DE_NULL);
+    return makeComputePipeline(vk, device, pipelineLayout, static_cast<VkPipelineCreateFlags>(0u), nullptr,
+                               shaderModule, static_cast<VkPipelineShaderStageCreateFlags>(0u), nullptr);
 }
 
 Move<VkPipeline> makeGraphicsPipeline(
@@ -93,7 +93,7 @@ Move<VkPipeline> makeGraphicsPipeline(
 {
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                     // const void*                                pNext
+        nullptr,                                                     // const void*                                pNext
         0u,                                                          // VkPipelineInputAssemblyStateCreateFlags    flags
         topology, // VkPrimitiveTopology                        topology
         VK_FALSE  // VkBool32                                   primitiveRestartEnable
@@ -101,20 +101,20 @@ Move<VkPipeline> makeGraphicsPipeline(
 
     const VkPipelineTessellationStateCreateInfo tessStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, // VkStructureType                           sType
-        DE_NULL,                                                   // const void*                               pNext
+        nullptr,                                                   // const void*                               pNext
         0u,                                                        // VkPipelineTessellationStateCreateFlags    flags
         patchControlPoints // uint32_t                                  patchControlPoints
     };
 
     const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType
-        DE_NULL,                                               // const void*                                 pNext
+        nullptr,                                               // const void*                                 pNext
         (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags          flags
         viewports.empty() ? 1u :
                             (uint32_t)viewports.size(),     // uint32_t                                    viewportCount
-        viewports.empty() ? DE_NULL : &viewports[0],        // const VkViewport*                           pViewports
+        viewports.empty() ? nullptr : &viewports[0],        // const VkViewport*                           pViewports
         viewports.empty() ? 1u : (uint32_t)scissors.size(), // uint32_t                                    scissorCount
-        scissors.empty() ? DE_NULL : &scissors[0]           // const VkRect2D*                             pScissors
+        scissors.empty() ? nullptr : &scissors[0]           // const VkRect2D*                             pScissors
     };
 
     std::vector<VkDynamicState> dynamicStates;
@@ -126,14 +126,14 @@ Move<VkPipeline> makeGraphicsPipeline(
 
     const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfoDefault = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType                      sType
-        DE_NULL,                                              // const void*                          pNext
+        nullptr,                                              // const void*                          pNext
         0u,                                                   // VkPipelineDynamicStateCreateFlags    flags
         (uint32_t)dynamicStates.size(),                       // uint32_t                             dynamicStateCount
-        dynamicStates.empty() ? DE_NULL : &dynamicStates[0]   // const VkDynamicState*                pDynamicStates
+        dynamicStates.empty() ? nullptr : &dynamicStates[0]   // const VkDynamicState*                pDynamicStates
     };
 
     const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfoDefaultPtr =
-        dynamicStates.empty() ? DE_NULL : &dynamicStateCreateInfoDefault;
+        dynamicStates.empty() ? nullptr : &dynamicStateCreateInfoDefault;
 
     return makeGraphicsPipeline(
         vk, device, pipelineLayout, vertexShaderModule, tessellationControlShaderModule, tessellationEvalShaderModule,
@@ -168,12 +168,12 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     VkPipelineShaderStageCreateInfo stageCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType
-        DE_NULL,                                             // const void*                         pNext
+        nullptr,                                             // const void*                         pNext
         0u,                                                  // VkPipelineShaderStageCreateFlags    flags
         VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits               stage
         VK_NULL_HANDLE,                                      // VkShaderModule                      module
         "main",                                              // const char*                         pName
-        DE_NULL                                              // const VkSpecializationInfo*         pSpecializationInfo
+        nullptr                                              // const VkSpecializationInfo*         pSpecializationInfo
     };
 
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageParams;
@@ -227,7 +227,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfoDefault = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType
-        DE_NULL,                                                   // const void*                                 pNext
+        nullptr,                                                   // const void*                                 pNext
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags
         1u,                              // uint32_t                                    vertexBindingDescriptionCount
         &vertexInputBindingDescription,  // const VkVertexInputBindingDescription*      pVertexBindingDescriptions
@@ -237,7 +237,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfoDefault = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                     // const void*                                pNext
+        nullptr,                                                     // const void*                                pNext
         0u,                                                          // VkPipelineInputAssemblyStateCreateFlags    flags
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // VkPrimitiveTopology                        topology
         VK_FALSE                             // VkBool32                                   primitiveRestartEnable
@@ -248,7 +248,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineViewportStateCreateInfo viewportStateCreateInfoDefault = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType
-        DE_NULL,                                               // const void*                                 pNext
+        nullptr,                                               // const void*                                 pNext
         (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags          flags
         1u,        // uint32_t                                    viewportCount
         &viewport, // const VkViewport*                           pViewports
@@ -258,7 +258,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfoDefault = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                    // const void*                                pNext
+        nullptr,                                                    // const void*                                pNext
         0u,                                                         // VkPipelineRasterizationStateCreateFlags    flags
         VK_FALSE,                        // VkBool32                                   depthClampEnable
         disableRasterization,            // VkBool32                                   rasterizerDiscardEnable
@@ -274,12 +274,12 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfoDefault = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                          sType
-        DE_NULL,                                                  // const void*                              pNext
+        nullptr,                                                  // const void*                              pNext
         0u,                                                       // VkPipelineMultisampleStateCreateFlags    flags
         VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                    rasterizationSamples
         VK_FALSE,              // VkBool32                                 sampleShadingEnable
         1.0f,                  // float                                    minSampleShading
-        DE_NULL,               // const VkSampleMask*                      pSampleMask
+        nullptr,               // const VkSampleMask*                      pSampleMask
         VK_FALSE,              // VkBool32                                 alphaToCoverageEnable
         VK_FALSE               // VkBool32                                 alphaToOneEnable
     };
@@ -296,7 +296,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfoDefault = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                          sType
-        DE_NULL,                                                    // const void*                              pNext
+        nullptr,                                                    // const void*                              pNext
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags   flags
         VK_FALSE,                    // VkBool32                                 depthTestEnable
         VK_FALSE,                    // VkBool32                                 depthWriteEnable
@@ -322,7 +322,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfoDefault = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                               sType
-        DE_NULL,                                                  // const void*                                   pNext
+        nullptr,                                                  // const void*                                   pNext
         0u,                                                       // VkPipelineColorBlendStateCreateFlags          flags
         VK_FALSE,                   // VkBool32                                      logicOpEnable
         VK_LOGIC_OP_CLEAR,          // VkLogicOp                                     logicOp
@@ -360,7 +360,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
             colorBlendStateCreateInfo :
             &colorBlendStateCreateInfoDefault, // const VkPipelineColorBlendStateCreateInfo*       pColorBlendState
         dynamicStateCreateInfo ? dynamicStateCreateInfo :
-                                 DE_NULL, // const VkPipelineDynamicStateCreateInfo*          pDynamicState
+                                 nullptr, // const VkPipelineDynamicStateCreateInfo*          pDynamicState
         pipelineLayout,                   // VkPipelineLayout                                 layout
         renderPass,                       // VkRenderPass                                     renderPass
         subpass,                          // uint32_t                                         subpass
@@ -587,14 +587,14 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
         (VkSubpassDescriptionFlags)0,             // VkSubpassDescriptionFlags       flags
         VK_PIPELINE_BIND_POINT_GRAPHICS,          // VkPipelineBindPoint             pipelineBindPoint
         0u,                                       // uint32_t                        inputAttachmentCount
-        DE_NULL,                                  // const VkAttachmentReference*    pInputAttachments
+        nullptr,                                  // const VkAttachmentReference*    pInputAttachments
         hasColor ? 1u : 0u,                       // uint32_t                        colorAttachmentCount
-        hasColor ? &colorAttachmentRef : DE_NULL, // const VkAttachmentReference*    pColorAttachments
-        DE_NULL,                                  // const VkAttachmentReference*    pResolveAttachments
+        hasColor ? &colorAttachmentRef : nullptr, // const VkAttachmentReference*    pColorAttachments
+        nullptr,                                  // const VkAttachmentReference*    pResolveAttachments
         hasDepthStencil ? &depthStencilAttachmentRef :
-                          DE_NULL, // const VkAttachmentReference*    pDepthStencilAttachment
+                          nullptr, // const VkAttachmentReference*    pDepthStencilAttachment
         0u,                        // uint32_t                        preserveAttachmentCount
-        DE_NULL                    // const uint32_t*                 pPreserveAttachments
+        nullptr                    // const uint32_t*                 pPreserveAttachments
     };
 
     const VkRenderPassCreateInfo renderPassInfo = {
@@ -603,11 +603,11 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
         (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags           flags
         (uint32_t)attachmentDescriptions.size(),   // uint32_t                          attachmentCount
         attachmentDescriptions.size() > 0 ? &attachmentDescriptions[0] :
-                                            DE_NULL, // const VkAttachmentDescription*    pAttachments
+                                            nullptr, // const VkAttachmentDescription*    pAttachments
         1u,                                          // uint32_t                          subpassCount
         &subpassDescription,                         // const VkSubpassDescription*       pSubpasses
         0u,                                          // uint32_t                          dependencyCount
-        DE_NULL                                      // const VkSubpassDependency*        pDependencies
+        nullptr                                      // const VkSubpassDependency*        pDependencies
     };
 
     return createRenderPass(vk, device, &renderPassInfo, allocationCallbacks);
@@ -636,7 +636,7 @@ Move<VkBufferView> makeBufferView(const DeviceInterface &vk, const VkDevice vkDe
 {
     const VkBufferViewCreateInfo bufferViewParams = {
         VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         0u,                                        // VkBufferViewCreateFlags flags;
         buffer,                                    // VkBuffer buffer;
         format,                                    // VkFormat format;
@@ -664,13 +664,13 @@ VkBufferCreateInfo makeBufferCreateInfo(const VkDeviceSize size, const VkBufferU
 {
     const VkBufferCreateInfo bufferCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         (VkBufferCreateFlags)0,               // VkBufferCreateFlags flags;
         size,                                 // VkDeviceSize size;
         usage,                                // VkBufferUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
         0u,                                   // uint32_t queueFamilyIndexCount;
-        DE_NULL,                              // const uint32_t* pQueueFamilyIndices;
+        nullptr,                              // const uint32_t* pQueueFamilyIndices;
     };
     return bufferCreateInfo;
 }
@@ -709,7 +709,7 @@ Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDev
 {
     const uint32_t setLayoutCount = descriptorSetLayouts.empty() ? 0u : (uint32_t)descriptorSetLayouts.size();
     const VkDescriptorSetLayout *descriptorSetLayout =
-        descriptorSetLayouts.empty() ? DE_NULL : descriptorSetLayouts.data();
+        descriptorSetLayouts.empty() ? nullptr : descriptorSetLayouts.data();
 
     return makePipelineLayout(vk, device, setLayoutCount, descriptorSetLayout);
 }
@@ -734,12 +734,12 @@ Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDev
 {
     const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         flags,                                         // VkPipelineLayoutCreateFlags flags;
         setLayoutCount,                                // uint32_t setLayoutCount;
         descriptorSetLayout,                           // const VkDescriptorSetLayout* pSetLayouts;
         0u,                                            // uint32_t pushConstantRangeCount;
-        DE_NULL,                                       // const VkPushConstantRange* pPushConstantRanges;
+        nullptr,                                       // const VkPushConstantRange* pPushConstantRanges;
     };
 
     return createPipelineLayout(vk, device, &pipelineLayoutParams);
@@ -754,7 +754,7 @@ Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDev
 {
     const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         flags,                                         // VkPipelineLayoutCreateFlags flags;
         setLayoutCount,                                // uint32_t setLayoutCount;
         descriptorSetLayout,                           // const VkDescriptorSetLayout* pSetLayouts;
@@ -778,7 +778,7 @@ Move<VkFramebuffer> makeFramebuffer(const DeviceInterface &vk, const VkDevice de
 {
     const VkFramebufferCreateInfo framebufferInfo = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         (VkFramebufferCreateFlags)0,               // VkFramebufferCreateFlags flags;
         renderPass,                                // VkRenderPass renderPass;
         attachmentCount,                           // uint32_t attachmentCount;
@@ -795,7 +795,7 @@ Move<VkCommandPool> makeCommandPool(const DeviceInterface &vk, const VkDevice de
 {
     const VkCommandPoolCreateInfo commandPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };

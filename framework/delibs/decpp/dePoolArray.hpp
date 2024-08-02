@@ -438,7 +438,7 @@ inline void PoolArray<T, Alignment>::reserve(uintptr_t capacity)
 {
     if (capacity >= m_capacity)
     {
-        void *oldPageTable         = DE_NULL;
+        void *oldPageTable         = nullptr;
         uintptr_t oldPageTableSize = 0;
 
         uintptr_t newCapacity          = (uintptr_t)deAlignPtr((void *)capacity, 1 << ELEMENTS_PER_PAGE_LOG2);
@@ -454,7 +454,7 @@ inline void PoolArray<T, Alignment>::reserve(uintptr_t capacity)
                 newPageTable[i] = m_pageTable[i];
 
             for (; i < newPageTableCapacity; i++)
-                newPageTable[i] = DE_NULL;
+                newPageTable[i] = nullptr;
 
             // Grab information about old page table for recycling purposes.
             oldPageTable     = m_pageTable;
@@ -572,7 +572,7 @@ inline bool operator>=(const PoolArrayIteratorBase<T, Alignment> &a, const PoolA
 template <typename T, uint32_t Alignment>
 inline PoolArrayConstIterator<T, Alignment>::PoolArrayConstIterator(void)
     : PoolArrayIteratorBase<T, Alignment>(0)
-    , m_array(DE_NULL)
+    , m_array(nullptr)
 {
 }
 
@@ -626,7 +626,7 @@ intptr_t operator-(const PoolArrayConstIterator<T, Alignment> &iter, const PoolA
 template <typename T, uint32_t Alignment>
 inline PoolArrayIterator<T, Alignment>::PoolArrayIterator(void)
     : PoolArrayIteratorBase<T, Alignment>(0)
-    , m_array(DE_NULL)
+    , m_array(nullptr)
 {
 }
 

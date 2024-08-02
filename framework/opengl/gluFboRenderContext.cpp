@@ -148,7 +148,7 @@ FboRenderContext::FboRenderContext(RenderContext *context, const RenderConfig &c
 
 FboRenderContext::FboRenderContext(const ContextFactory &factory, const RenderConfig &config,
                                    const tcu::CommandLine &cmdLine)
-    : m_context(DE_NULL)
+    : m_context(nullptr)
     , m_framebuffer(0)
     , m_colorBuffer(0)
     , m_depthStencilBuffer(0)
@@ -160,7 +160,7 @@ FboRenderContext::FboRenderContext(const ContextFactory &factory, const RenderCo
         nativeRenderConfig.type             = config.type;
         nativeRenderConfig.windowVisibility = config.windowVisibility;
         // \note All other properties are defaults, mostly DONT_CARE
-        m_context = factory.createContext(nativeRenderConfig, cmdLine, DE_NULL);
+        m_context = factory.createContext(nativeRenderConfig, cmdLine, nullptr);
         createFramebuffer(config);
     }
     catch (...)

@@ -106,7 +106,7 @@ ShaderAtomicOpCase::ShaderAtomicOpCase(Context &context, const char *name, const
     , m_workGroupSize(workGroupSize)
     , m_numWorkGroups(4, 4, 4)
     , m_initialValue(0)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -183,7 +183,7 @@ void ShaderAtomicOpCase::init(void)
     if (!m_program->isOk())
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
         throw tcu::TestError("Compile failed");
     }
 }
@@ -191,7 +191,7 @@ void ShaderAtomicOpCase::init(void)
 void ShaderAtomicOpCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 ShaderAtomicOpCase::IterateResult ShaderAtomicOpCase::iterate(void)
@@ -928,7 +928,7 @@ ShaderAtomicCompSwapCase::ShaderAtomicCompSwapCase(Context &context, const char 
     , m_precision(precision)
     , m_workGroupSize(3, 2, 1)
     , m_numWorkGroups(4, 4, 4)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -1013,7 +1013,7 @@ void ShaderAtomicCompSwapCase::init(void)
     if (!m_program->isOk())
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
         throw tcu::TestError("Compile failed");
     }
 }
@@ -1021,7 +1021,7 @@ void ShaderAtomicCompSwapCase::init(void)
 void ShaderAtomicCompSwapCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 ShaderAtomicOpCase::IterateResult ShaderAtomicCompSwapCase::iterate(void)

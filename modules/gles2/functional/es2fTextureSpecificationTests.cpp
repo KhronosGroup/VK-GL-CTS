@@ -1148,7 +1148,7 @@ protected:
             int levelW = de::max(1, m_width >> ndx);
             int levelH = de::max(1, m_height >> ndx);
 
-            glTexImage2D(GL_TEXTURE_2D, ndx, m_format, levelW, levelH, 0, m_format, m_dataType, DE_NULL);
+            glTexImage2D(GL_TEXTURE_2D, ndx, m_format, levelW, levelH, 0, m_format, m_dataType, nullptr);
         }
 
         // Specify pixel data to all levels using glTexSubImage2D()
@@ -1209,7 +1209,7 @@ protected:
             int levelH = de::max(1, m_height >> ndx);
 
             for (int face = 0; face < DE_LENGTH_OF_ARRAY(s_cubeMapFaces); face++)
-                glTexImage2D(s_cubeMapFaces[face], ndx, m_format, levelW, levelH, 0, m_format, m_dataType, DE_NULL);
+                glTexImage2D(s_cubeMapFaces[face], ndx, m_format, levelW, levelH, 0, m_format, m_dataType, nullptr);
         }
 
         // Specify data using glTexSubImage2D()

@@ -204,7 +204,7 @@ IntegerFunctionCase::IntegerFunctionCase(Context &context, const char *name, con
     : TestCase(context, name, description)
     , m_shaderType(shaderType)
     , m_numValues(100)
-    , m_executor(DE_NULL)
+    , m_executor(nullptr)
 {
     m_spec.version = glu::getContextTypeGLSLVersion(context.getRenderContext().getType());
 }
@@ -228,7 +228,7 @@ void IntegerFunctionCase::init(void)
 void IntegerFunctionCase::deinit(void)
 {
     delete m_executor;
-    m_executor = DE_NULL;
+    m_executor = nullptr;
 }
 
 static vector<int> getScalarSizes(const vector<Symbol> &symbols)

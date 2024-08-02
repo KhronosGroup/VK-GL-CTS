@@ -205,7 +205,7 @@ const TextureParameters *TextureBufferActiveUniformValidation::getParamsForType(
             return &m_texture_params[i];
         }
     }
-    return DE_NULL;
+    return nullptr;
 }
 
 /** Executes the test.

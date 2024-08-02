@@ -275,7 +275,7 @@ public:
             SurfaceConfig::compareCaveat,
             SurfaceConfig::compareColorComponentType,
             SurfaceConfig::compareColorBufferType,
-            DE_NULL, // SurfaceConfig::compareColorBufferBits,
+            nullptr, // SurfaceConfig::compareColorBufferBits,
             SurfaceConfig::compareAttributeSmaller<EGL_BUFFER_SIZE>,
             SurfaceConfig::compareAttributeSmaller<EGL_SAMPLE_BUFFERS>,
             SurfaceConfig::compareAttributeSmaller<EGL_SAMPLES>,

@@ -785,7 +785,7 @@ bool VideoBaseDecoder::AllocPictureBuffer(VkPicIf **ppNvidiaVulkanPicture, uint3
 
     if (!result)
     {
-        *ppNvidiaVulkanPicture = (VkPicIf *)nullptr;
+        *ppNvidiaVulkanPicture = nullptr;
     }
 
     return result;
@@ -1950,7 +1950,7 @@ bool VideoBaseDecoder::DisplayPicture(VkPicIf *pNvidiaVulkanPicture, int64_t /*l
 {
     vkPicBuffBase *pVkPicBuff = GetPic(pNvidiaVulkanPicture);
 
-    DE_ASSERT(pVkPicBuff != DE_NULL);
+    DE_ASSERT(pVkPicBuff != nullptr);
     int32_t picIdx = pVkPicBuff ? pVkPicBuff->m_picIdx : -1;
     DE_ASSERT(picIdx != -1);
     DE_ASSERT(m_videoFrameBuffer != nullptr);

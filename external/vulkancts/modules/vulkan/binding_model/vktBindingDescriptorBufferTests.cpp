@@ -152,7 +152,7 @@ uint32_t getShaderGroupBaseAlignment(const InstanceInterface &vki, const VkPhysi
 
 VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 {
-    VkBuffer result = (buffer.get() == DE_NULL) ? VK_NULL_HANDLE : buffer->get();
+    VkBuffer result = (buffer.get() == nullptr) ? VK_NULL_HANDLE : buffer->get();
 
     return result;
 }
@@ -170,12 +170,12 @@ VkDeviceAddress getAccelerationStructureDeviceAddress(DeviceDriver &deviceDriver
 {
     const VkAccelerationStructureDeviceAddressInfoKHR addressInfo = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR, // VkStructureType                sType
-        DE_NULL,                                                          // const void*                    pNext
+        nullptr,                                                          // const void*                    pNext
         accelerationStructure // VkAccelerationStructureKHR    accelerationStructure
     };
     const VkDeviceAddress deviceAddress = deviceDriver.getAccelerationStructureDeviceAddressKHR(device, &addressInfo);
 
-    DE_ASSERT(deviceAddress != DE_NULL);
+    DE_ASSERT(deviceAddress != 0);
 
     return deviceAddress;
 }
@@ -2644,7 +2644,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     , m_deviceInterface()
     , m_queue()
     , m_queueFamilyIndex()
-    , m_allocatorPtr(DE_NULL)
+    , m_allocatorPtr(nullptr)
     , m_memoryProperties()
     , m_descriptorBufferFeatures()
     , m_descriptorBufferProperties()
@@ -2664,7 +2664,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     , m_hitShaderGroup(~0u)
     , m_callableShaderGroup(~0u)
     , m_shaderGroupCount(0)
-    , m_rayTracingPipeline(DE_NULL)
+    , m_rayTracingPipeline(nullptr)
     , m_raygenShaderBindingTable()
     , m_hitShaderBindingTable()
     , m_missShaderBindingTable()
@@ -3009,7 +3009,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     m_descriptorBufferProperties.pNext = nullptr;
 
     VkDeviceCreateInfo createInfo      = initVulkanStructure(&features2);
-    createInfo.pEnabledFeatures        = DE_NULL;
+    createInfo.pEnabledFeatures        = nullptr;
     createInfo.enabledExtensionCount   = u32(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
     createInfo.queueCreateInfoCount    = 1;
@@ -3455,7 +3455,7 @@ void DescriptorBufferTestInstance::bindDescriptorBuffers(VkCommandBuffer cmdBuf,
                 {
                     vk::VkBindDescriptorBufferEmbeddedSamplersInfoEXT bindDescriptorBufferEmbeddedSamplersInfo = {
                         VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT, // VkStructureType sType;
-                        DE_NULL,                                                             // const void* pNext;
+                        nullptr,                                                             // const void* pNext;
                         (VkShaderStageFlags)m_params.stage, // VkShaderStageFlags stageFlags;
                         *m_pipelineLayout,                  // VkPipelineLayout layout;
                         setIndex                            // uint32_t set;
@@ -3526,7 +3526,7 @@ void DescriptorBufferTestInstance::bindDescriptorBuffers(VkCommandBuffer cmdBuf,
             {
                 vk::VkSetDescriptorBufferOffsetsInfoEXT setDescriptorBufferOffsetInfo = {
                     VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT, // VkStructureType sType;
-                    DE_NULL,                                                  // const void* pNext;
+                    nullptr,                                                  // const void* pNext;
                     (VkShaderStageFlags)m_params.stage,                       // VkShaderStageFlags stageFlags;
                     *m_pipelineLayout,                                        // VkPipelineLayout layout;
                     firstSet,                                                 // uint32_t firstSet;
@@ -3665,7 +3665,7 @@ void DescriptorBufferTestInstance::createRayTracingPipeline()
 
 void DescriptorBufferTestInstance::addRayTracingShader(const VkShaderStageFlagBits stage, const uint32_t group)
 {
-    DE_ASSERT(m_rayTracingPipeline != DE_NULL);
+    DE_ASSERT(m_rayTracingPipeline);
 
     m_rayTracingPipeline->addShader(stage, createShaderModule(*m_deviceInterface, *m_device, getShaderBinary(stage), 0),
                                     group);
@@ -4459,7 +4459,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                     MemoryRequirement::DeviceAddressCaptureReplay :
                     MemoryRequirement::Any;
             VkOpaqueCaptureDescriptorDataCreateInfoEXT infos[]     = {initVulkanStructure(), initVulkanStructure()};
-            VkOpaqueCaptureDescriptorDataCreateInfoEXT *infoPtrs[] = {DE_NULL, DE_NULL};
+            VkOpaqueCaptureDescriptorDataCreateInfoEXT *infoPtrs[] = {nullptr, nullptr};
 
             if (isReplayDescriptor(binding.descriptorType) && replayableBinding)
             {
@@ -4480,7 +4480,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
             }
 
             {
-                DE_ASSERT(resources.rtBlas.get() == DE_NULL);
+                DE_ASSERT(resources.rtBlas.get() == nullptr);
 
                 resources.rtBlas =
                     de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
@@ -4493,7 +4493,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
             }
 
             {
-                DE_ASSERT(resources.rtTlas.get() == DE_NULL);
+                DE_ASSERT(resources.rtTlas.get() == nullptr);
 
                 resources.rtTlas = makeTopLevelAccelerationStructure();
                 resources.rtTlas->addInstance(resources.rtBlas);
@@ -4514,7 +4514,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                     const VkAccelerationStructureKHR *accelerationStructure  = accelerationStructures[ndx];
                     std::vector<uint8_t> &captureReplayData                  = *captureReplayDatas[ndx];
 
-                    DE_ASSERT(accelerationStructure != DE_NULL && *accelerationStructure != VK_NULL_HANDLE);
+                    DE_ASSERT(accelerationStructure != nullptr && *accelerationStructure != VK_NULL_HANDLE);
                     DE_ASSERT(captureReplayData.empty());
 
                     info.accelerationStructure = *accelerationStructure;
@@ -4530,7 +4530,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
             descGetInfo.type = binding.descriptorType;
             descGetInfo.data.accelerationStructure =
                 isNullDescriptor ?
-                    DE_NULL :
+                    0 :
                     getAccelerationStructureDeviceAddress(*m_deviceInterface, *m_device, *resources.rtTlas->getPtr());
         }
         else
@@ -4736,7 +4736,7 @@ void DescriptorBufferTestInstance::pushDescriptorSet(VkCommandBuffer cmdBuf, VkP
                 const ResourceHolder &resources = **m_resources[binding.perBindingResourceIndex[arrayIndex]];
                 const VkAccelerationStructureKHR *accelerationStructurePtr = resources.rtTlas.get()->getPtr();
 
-                DE_ASSERT(accelerationStructurePtr != DE_NULL && *accelerationStructurePtr != VK_NULL_HANDLE);
+                DE_ASSERT(accelerationStructurePtr != nullptr && *accelerationStructurePtr != VK_NULL_HANDLE);
 
                 descriptorData[bindingIndex].accelerationStructures[arrayIndex] = *accelerationStructurePtr;
 
@@ -4773,7 +4773,7 @@ void DescriptorBufferTestInstance::pushDescriptorSet(VkCommandBuffer cmdBuf, VkP
         {
             vk::VkPushDescriptorSetInfoKHR pushDescriptorSetInfo = {
                 VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO_KHR, // VkStructureType sType;
-                DE_NULL,                                        // const void* pNext;
+                nullptr,                                        // const void* pNext;
                 (VkShaderStageFlags)m_params.stage,             // VkShaderStageFlags stageFlags;
                 *m_pipelineLayout,                              // VkPipelineLayout layout;
                 setIndex,                                       // uint32_t set;
@@ -4854,7 +4854,7 @@ void DescriptorBufferTestInstance::pushDescriptorSet(VkCommandBuffer cmdBuf, VkP
         {
             vk::VkPushDescriptorSetWithTemplateInfoKHR pushDescriptorSetWithTemplateInfo = {
                 VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO_KHR, // VkStructureType sType;
-                DE_NULL,                                                      // const void* pNext;
+                nullptr,                                                      // const void* pNext;
                 *descriptorUpdateTemplate, // VkDescriptorUpdateTemplate descriptorUpdateTemplate;
                 *m_pipelineLayout,         // VkPipelineLayout layout;
                 setIndex,                  // uint32_t set;

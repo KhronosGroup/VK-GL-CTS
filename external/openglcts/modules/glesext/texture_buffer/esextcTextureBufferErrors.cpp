@@ -106,7 +106,7 @@ void TextureBufferErrors::initTest(void)
     gl.bindBuffer(m_glExtTokens.TEXTURE_BUFFER, m_bo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Could not bind buffer object!");
 
-    gl.bufferData(m_glExtTokens.TEXTURE_BUFFER, m_bo_size, DE_NULL, GL_STATIC_READ);
+    gl.bufferData(m_glExtTokens.TEXTURE_BUFFER, m_bo_size, nullptr, GL_STATIC_READ);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Could not allocate buffer object's data store");
 
     m_texture_targets.push_back(GL_TEXTURE_2D);

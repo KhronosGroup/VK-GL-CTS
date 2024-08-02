@@ -53,7 +53,7 @@ deFunctionPtr StaticFunctionLibrary::getFunction(const char *funcName) const
     std::map<std::string, deFunctionPtr>::const_iterator iter = m_functions.find(funcName);
 
     if (iter == m_functions.end())
-        return DE_NULL;
+        return nullptr;
     else
         return iter->second;
 }
@@ -93,7 +93,7 @@ deFunctionPtr CompositeFunctionLibrary::getFunction(const char *name) const
         if (ptr)
             return ptr;
     }
-    return DE_NULL;
+    return nullptr;
 }
 
 } // namespace tcu

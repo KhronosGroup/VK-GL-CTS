@@ -111,7 +111,7 @@ inline std::size_t sizeInBytes(const std::vector<T> &vec)
 template <typename T>
 inline const T *dataPointer(const std::vector<T> &vec)
 {
-    return (vec.size() != 0 ? &vec[0] : DE_NULL);
+    return (vec.size() != 0 ? &vec[0] : nullptr);
 }
 
 } // namespace multisample

@@ -94,13 +94,13 @@ Move<VkBuffer> createBuffer(const DeviceInterface &vkd, VkDevice device, VkDevic
                             VkBufferUsageFlags usageFlags)
 {
     const VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                                           DE_NULL,
+                                           nullptr,
                                            (VkBufferCreateFlags)0,
                                            size,
                                            usageFlags,
                                            VK_SHARING_MODE_EXCLUSIVE,
                                            0u,
-                                           DE_NULL};
+                                           nullptr};
     return createBuffer(vkd, device, &createInfo);
 }
 
@@ -524,7 +524,7 @@ Move<VkImage> createTestImage(const DeviceInterface &vkd, VkDevice device, Textu
                               tcu::TextureFormat format)
 {
     const VkImageCreateInfo createInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                          DE_NULL,
+                                          nullptr,
                                           (texType == TEXTURE_TYPE_CUBE ?
                                                (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT :
                                                (VkImageCreateFlags)0),
@@ -538,7 +538,7 @@ Move<VkImage> createTestImage(const DeviceInterface &vkd, VkDevice device, Textu
                                           VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                                           VK_SHARING_MODE_EXCLUSIVE,
                                           0u,
-                                          DE_NULL,
+                                          nullptr,
                                           VK_IMAGE_LAYOUT_UNDEFINED};
 
     return createImage(vkd, device, &createInfo);
@@ -561,7 +561,7 @@ Move<VkImageView> createTestImageView(const DeviceInterface &vkd, VkDevice devic
     const bool isDepthImage                = format.order == tcu::TextureFormat::D;
     const VkImageViewCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkImageViewCreateFlags)0,
         image,
         getVkImageViewType(texType),
@@ -594,13 +594,13 @@ TestImage::TestImage(Context &context, TextureType texType, tcu::TextureFormat f
 
     const VkBufferCreateInfo stagingBufferInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkBufferCreateFlags)0u,
         (VkDeviceSize)stagingBufferSize,
         (VkBufferCreateFlags)VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        DE_NULL,
+        nullptr,
     };
     const Unique<VkBuffer> stagingBuffer(createBuffer(vkd, device, &stagingBufferInfo));
     const UniquePtr<Allocation> alloc(context.getDefaultAllocator().allocate(
@@ -620,7 +620,7 @@ TestImage::TestImage(Context &context, TextureType texType, tcu::TextureFormat f
         const VkBufferImageCopy copyInfo = {0u, 1u, 1u, {imageAspect, 0u, 0u, numLayers}, {0u, 0u, 0u}, {1u, 1u, 1u}};
 
         copyBufferToImage(vkd, device, context.getUniversalQueue(), context.getUniversalQueueFamilyIndex(),
-                          *stagingBuffer, stagingBufferSize, vector<VkBufferImageCopy>(1, copyInfo), DE_NULL,
+                          *stagingBuffer, stagingBufferSize, vector<VkBufferImageCopy>(1, copyInfo), nullptr,
                           imageAspect, 1u, numLayers, *m_image);
     }
 }
@@ -769,11 +769,11 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate(void)
 
     {
         const VkDescriptorSetLayoutBinding bindings[] = {
-            {0u, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (uint32_t)numSamplers, VK_SHADER_STAGE_ALL, DE_NULL},
-            {(uint32_t)numSamplers, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_ALL, DE_NULL}};
+            {0u, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (uint32_t)numSamplers, VK_SHADER_STAGE_ALL, nullptr},
+            {(uint32_t)numSamplers, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_ALL, nullptr}};
         const VkDescriptorSetLayoutCreateInfo layoutInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             (VkDescriptorSetLayoutCreateFlags)0u,
             DE_LENGTH_OF_ARRAY(bindings),
             bindings,
@@ -790,7 +790,7 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate(void)
                                                   }};
         const VkDescriptorPoolCreateInfo poolInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             (VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
             1u, // maxSets
             DE_LENGTH_OF_ARRAY(poolSizes),
@@ -803,7 +803,7 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate(void)
     {
         const VkDescriptorSetAllocateInfo allocInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            DE_NULL,
+            nullptr,
             *extraResourcesSetPool,
             1u,
             &extraResourcesLayout.get(),
@@ -816,15 +816,15 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate(void)
         vector<VkDescriptorImageInfo> imageInfos(numSamplers);
         const VkWriteDescriptorSet descriptorWrite = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            DE_NULL,
+            nullptr,
             *extraResourcesSet,
             0u, // dstBinding
             0u, // dstArrayElement
             (uint32_t)numSamplers,
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             &imageInfos[0],
-            (const VkDescriptorBufferInfo *)DE_NULL,
-            (const VkBufferView *)DE_NULL,
+            nullptr,
+            nullptr,
         };
 
         for (int ndx = 0; ndx < numSamplers; ++ndx)
@@ -834,7 +834,7 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate(void)
             imageInfos[ndx].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         }
 
-        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, nullptr);
     }
 
     if (indexBuffer)
@@ -842,18 +842,18 @@ tcu::TestStatus SamplerIndexingCaseInstance::iterate(void)
         const VkDescriptorBufferInfo bufferInfo    = {indexBuffer->getBuffer(), 0u, VK_WHOLE_SIZE};
         const VkWriteDescriptorSet descriptorWrite = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            DE_NULL,
+            nullptr,
             *extraResourcesSet,
             (uint32_t)numSamplers, // dstBinding
             0u,                    // dstArrayElement
             1u,
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            (const VkDescriptorImageInfo *)DE_NULL,
+            nullptr,
             &bufferInfo,
-            (const VkBufferView *)DE_NULL,
+            nullptr,
         };
 
-        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, nullptr);
     }
 
     {
@@ -1205,11 +1205,11 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate(void)
 
     {
         const VkDescriptorSetLayoutBinding bindings[] = {
-            {0u, descriptorType, (uint32_t)m_inValues.size(), VK_SHADER_STAGE_ALL, DE_NULL},
-            {(uint32_t)m_inValues.size(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_ALL, DE_NULL}};
+            {0u, descriptorType, (uint32_t)m_inValues.size(), VK_SHADER_STAGE_ALL, nullptr},
+            {(uint32_t)m_inValues.size(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_ALL, nullptr}};
         const VkDescriptorSetLayoutCreateInfo layoutInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             (VkDescriptorSetLayoutCreateFlags)0u,
             DE_LENGTH_OF_ARRAY(bindings),
             bindings,
@@ -1226,7 +1226,7 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate(void)
                                                   }};
         const VkDescriptorPoolCreateInfo poolInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             (VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
             1u, // maxSets
             DE_LENGTH_OF_ARRAY(poolSizes),
@@ -1239,7 +1239,7 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate(void)
     {
         const VkDescriptorSetAllocateInfo allocInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            DE_NULL,
+            nullptr,
             *extraResourcesSetPool,
             1u,
             &extraResourcesLayout.get(),
@@ -1252,15 +1252,15 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate(void)
         vector<VkDescriptorBufferInfo> bufferInfos(m_inValues.size());
         const VkWriteDescriptorSet descriptorWrite = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            DE_NULL,
+            nullptr,
             *extraResourcesSet,
             0u, // dstBinding
             0u, // dstArrayElement
             (uint32_t)m_inValues.size(),
             descriptorType,
-            (const VkDescriptorImageInfo *)DE_NULL,
+            nullptr,
             &bufferInfos[0],
-            (const VkBufferView *)DE_NULL,
+            nullptr,
         };
 
         for (size_t ndx = 0; ndx < m_inValues.size(); ++ndx)
@@ -1270,7 +1270,7 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate(void)
             bufferInfos[ndx].range  = VK_WHOLE_SIZE;
         }
 
-        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, nullptr);
     }
 
     if (indexBuffer)
@@ -1278,18 +1278,18 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate(void)
         const VkDescriptorBufferInfo bufferInfo    = {indexBuffer->getBuffer(), 0u, VK_WHOLE_SIZE};
         const VkWriteDescriptorSet descriptorWrite = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            DE_NULL,
+            nullptr,
             *extraResourcesSet,
             (uint32_t)m_inValues.size(), // dstBinding
             0u,                          // dstArrayElement
             1u,
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            (const VkDescriptorImageInfo *)DE_NULL,
+            nullptr,
             &bufferInfo,
-            (const VkBufferView *)DE_NULL,
+            nullptr,
         };
 
-        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, nullptr);
     }
 
     if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
@@ -1313,7 +1313,7 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate(void)
         UniquePtr<ShaderExecutor> executor(
             createExecutor(m_context, m_shaderType, m_shaderSpec, *extraResourcesLayout));
 
-        executor->execute(numInvocations, inputs.empty() ? DE_NULL : &inputs[0], &outputs[0], *extraResourcesSet);
+        executor->execute(numInvocations, inputs.empty() ? nullptr : &inputs[0], &outputs[0], *extraResourcesSet);
     }
 
     for (int invocationNdx = 0; invocationNdx < numInvocations; invocationNdx++)
@@ -1569,11 +1569,11 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate(void)
 
     {
         const VkDescriptorSetLayoutBinding bindings[] = {
-            {0u, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u, VK_SHADER_STAGE_ALL, DE_NULL},
-            {1u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_ALL, DE_NULL}};
+            {0u, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u, VK_SHADER_STAGE_ALL, nullptr},
+            {1u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_ALL, nullptr}};
         const VkDescriptorSetLayoutCreateInfo layoutInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             (VkDescriptorSetLayoutCreateFlags)0u,
             DE_LENGTH_OF_ARRAY(bindings),
             bindings,
@@ -1593,7 +1593,7 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate(void)
                                                   }};
         const VkDescriptorPoolCreateInfo poolInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             (VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
             1u, // maxSets
             DE_LENGTH_OF_ARRAY(poolSizes),
@@ -1606,7 +1606,7 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate(void)
     {
         const VkDescriptorSetAllocateInfo allocInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            DE_NULL,
+            nullptr,
             *extraResourcesSetPool,
             1u,
             &extraResourcesLayout.get(),
@@ -1619,18 +1619,18 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate(void)
         const VkDescriptorBufferInfo bufferInfo    = {atomicOpBuffer.getBuffer(), 0u, VK_WHOLE_SIZE};
         const VkWriteDescriptorSet descriptorWrite = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            DE_NULL,
+            nullptr,
             *extraResourcesSet,
             0u, // dstBinding
             0u, // dstArrayElement
             1u,
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            (const VkDescriptorImageInfo *)DE_NULL,
+            nullptr,
             &bufferInfo,
-            (const VkBufferView *)DE_NULL,
+            nullptr,
         };
 
-        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, nullptr);
     }
 
     if (indexBuffer)
@@ -1638,18 +1638,18 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate(void)
         const VkDescriptorBufferInfo bufferInfo    = {indexBuffer->getBuffer(), 0u, VK_WHOLE_SIZE};
         const VkWriteDescriptorSet descriptorWrite = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            DE_NULL,
+            nullptr,
             *extraResourcesSet,
             1u, // dstBinding
             0u, // dstArrayElement
             1u,
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            (const VkDescriptorImageInfo *)DE_NULL,
+            nullptr,
             &bufferInfo,
-            (const VkBufferView *)DE_NULL,
+            nullptr,
         };
 
-        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, nullptr);
     }
 
     if (m_indexExprType == INDEX_EXPR_TYPE_DYNAMIC_UNIFORM)
@@ -1673,7 +1673,7 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate(void)
         UniquePtr<ShaderExecutor> executor(
             createExecutor(m_context, m_shaderType, m_shaderSpec, *extraResourcesLayout));
 
-        executor->execute(numInvocations, inputs.empty() ? DE_NULL : &inputs[0], &outputs[0], *extraResourcesSet);
+        executor->execute(numInvocations, inputs.empty() ? nullptr : &inputs[0], &outputs[0], *extraResourcesSet);
     }
 
     {
@@ -1689,7 +1689,7 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate(void)
         // Read counter values
         {
             const void *mapPtr = atomicOpBuffer.getHostPtr();
-            DE_ASSERT(mapPtr != DE_NULL);
+            DE_ASSERT(mapPtr != nullptr);
             atomicOpBuffer.invalidate();
             std::copy((const uint32_t *)mapPtr, (const uint32_t *)mapPtr + numCounters, &counterValues[0]);
         }

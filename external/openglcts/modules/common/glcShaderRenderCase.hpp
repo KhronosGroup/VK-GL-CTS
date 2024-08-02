@@ -186,11 +186,11 @@ public:
         const tcu::TextureCubeArray *texCubeArray;
 
         inline ShaderSampler(void)
-            : tex2D(DE_NULL)
-            , texCube(DE_NULL)
-            , tex2DArray(DE_NULL)
-            , tex3D(DE_NULL)
-            , texCubeArray(DE_NULL)
+            : tex2D(nullptr)
+            , texCube(nullptr)
+            , tex2DArray(nullptr)
+            , tex3D(nullptr)
+            , texCubeArray(nullptr)
         {
         }
     };

@@ -453,7 +453,7 @@ tcu::TestStatus MismatchedFormatTestInstance::iterate(void)
                           nullptr, 0u, nullptr, 1u, &layoutBarrier);
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(),
-                             0u, DE_NULL);
+                             0u, nullptr);
     vk.cmdDispatch(*cmdBuffer, 8, 8, 1);
     endCommandBuffer(vk, *cmdBuffer);
 

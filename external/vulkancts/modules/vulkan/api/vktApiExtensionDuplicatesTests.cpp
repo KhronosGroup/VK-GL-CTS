@@ -303,7 +303,7 @@ tcu::TestStatus DeviceExtensionDuplicatesInstance::iterate(void)
         &qpr                                        // const float* pQueuePriorities;
     };
 
-    void *pNext = DE_NULL;
+    void *pNext = nullptr;
 #ifdef CTS_USES_VULKANSC
     VkDeviceObjectReservationCreateInfo memReservationInfo =
         m_context.getTestContext().getCommandLine().isSubProcess() ? m_context.getResourceInterface()->getStatMax() :
@@ -340,7 +340,7 @@ tcu::TestStatus DeviceExtensionDuplicatesInstance::iterate(void)
 #ifdef CTS_USES_VULKANSC
         DeviceDriver deviceDriver(m_context.getPlatformInterface(), customInstance, device,
                                   m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine());
-        deviceDriver.destroyDevice(device, DE_NULL /*pAllocator*/);
+        deviceDriver.destroyDevice(device, nullptr /*pAllocator*/);
 #else
         vkd.destroyDevice(device, nullptr);
 #endif

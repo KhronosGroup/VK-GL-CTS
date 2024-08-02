@@ -87,7 +87,7 @@ vector<string> getClientExtensions(const Library &egl)
 {
     const char *const extensionStr = egl.queryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
     const EGLint eglError          = egl.getError();
-    if (eglError == EGL_BAD_DISPLAY && extensionStr == DE_NULL)
+    if (eglError == EGL_BAD_DISPLAY && extensionStr == nullptr)
     {
         // We do not support client extensions
         TCU_THROW(NotSupportedError, "EGL_EXT_client_extensions not supported");
@@ -109,7 +109,7 @@ vector<EGLConfig> getConfigs(const Library &egl, EGLDisplay display)
 {
     vector<EGLConfig> configs;
     EGLint configCount = 0;
-    EGLU_CHECK_CALL(egl, getConfigs(display, DE_NULL, 0, &configCount));
+    EGLU_CHECK_CALL(egl, getConfigs(display, nullptr, 0, &configCount));
 
     if (configCount > 0)
     {
@@ -124,7 +124,7 @@ vector<EGLConfig> chooseConfigs(const Library &egl, EGLDisplay display, const EG
 {
     EGLint numConfigs = 0;
 
-    EGLU_CHECK_CALL(egl, chooseConfig(display, attribList, DE_NULL, 0, &numConfigs));
+    EGLU_CHECK_CALL(egl, chooseConfig(display, attribList, nullptr, 0, &numConfigs));
 
     {
         vector<EGLConfig> configs(numConfigs);
@@ -290,7 +290,7 @@ EGLDisplay getDisplay(NativeDisplay &nativeDisplay)
         TCU_CHECK(display != EGL_NO_DISPLAY);
     }
     else
-        throw tcu::InternalError("No supported way to get EGL display", DE_NULL, __FILE__, __LINE__);
+        throw tcu::InternalError("No supported way to get EGL display", nullptr, __FILE__, __LINE__);
 
     DE_ASSERT(display != EGL_NO_DISPLAY);
     return display;
@@ -370,7 +370,7 @@ EGLSurface createWindowSurface(NativeDisplay &nativeDisplay, NativeWindow &windo
         TCU_CHECK(surface != EGL_NO_SURFACE);
     }
     else
-        throw tcu::InternalError("No supported way to create EGL window surface", DE_NULL, __FILE__, __LINE__);
+        throw tcu::InternalError("No supported way to create EGL window surface", nullptr, __FILE__, __LINE__);
 
     DE_ASSERT(surface != EGL_NO_SURFACE);
     return surface;
@@ -432,7 +432,7 @@ EGLSurface createPixmapSurface(NativeDisplay &nativeDisplay, NativePixmap &pixma
         TCU_CHECK(surface != EGL_NO_SURFACE);
     }
     else
-        throw tcu::InternalError("No supported way to create EGL pixmap surface", DE_NULL, __FILE__, __LINE__);
+        throw tcu::InternalError("No supported way to create EGL pixmap surface", nullptr, __FILE__, __LINE__);
 
     DE_ASSERT(surface != EGL_NO_SURFACE);
     return surface;
@@ -509,7 +509,7 @@ vector<EGLint> toLegacyAttribList(const EGLAttrib *attribs)
         for (const EGLAttrib *attrib = attribs; *attrib != EGL_NONE; attrib += 2)
         {
             if ((attrib[0] & ~attribMask) || (attrib[1] & ~attribMask))
-                throw tcu::InternalError("Failed to translate EGLAttrib to EGLint", DE_NULL, __FILE__, __LINE__);
+                throw tcu::InternalError("Failed to translate EGLAttrib to EGLint", nullptr, __FILE__, __LINE__);
 
             legacyAttribs.push_back((EGLint)attrib[0]);
             legacyAttribs.push_back((EGLint)attrib[1]);

@@ -651,7 +651,7 @@ public:
         // Create a universal queue that supports graphics and compute.
         const VkDeviceQueueCreateInfo queueParams = {
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0u,                                         // VkDeviceQueueCreateFlags flags;
             m_queueFamilyIndex,                         // uint32_t queueFamilyIndex;
             1u,                                         // uint32_t queueCount;
@@ -675,7 +675,7 @@ public:
 #ifndef CTS_USES_VULKANSC
             &features2, //pNext;
 #else
-            DE_NULL,
+            nullptr,
 #endif                                                          // CTS_USES_VULKANSC
             0u,                                                 //flags
             1u,                                                 //queueRecordCount;

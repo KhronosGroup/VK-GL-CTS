@@ -225,9 +225,9 @@ protected:
         const vk::VkAttachmentReference depthAttachmentReference = {
             1, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 
-        renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, 1,
-                                                           &colorAttachmentReference, DE_NULL, depthAttachmentReference,
-                                                           0, DE_NULL));
+        renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1,
+                                                           &colorAttachmentReference, nullptr, depthAttachmentReference,
+                                                           0, nullptr));
 
         m_renderPass = vk::RenderPassWrapper(m_pipelineConstructionType, m_vk, device, &renderPassCreateInfo);
 
@@ -698,9 +698,9 @@ void DepthBoundsTestInstance::initRenderPass(const vk::VkDevice device)
 
     const vk::VkAttachmentReference depthAttachmentReference = {1, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL};
 
-    renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, 1,
-                                                       &colorAttachmentReference, DE_NULL, depthAttachmentReference, 0,
-                                                       DE_NULL));
+    renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1,
+                                                       &colorAttachmentReference, nullptr, depthAttachmentReference, 0,
+                                                       nullptr));
 
     m_renderPass = vk::RenderPassWrapper(m_pipelineConstructionType, m_vk, device, &renderPassCreateInfo);
 }

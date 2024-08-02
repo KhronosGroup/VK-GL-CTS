@@ -112,7 +112,7 @@ void createDeviceWithExtension(Context &context, WorkingDevice &wd, VkQueueFlagB
             queueFamilyProperties[familyIdx].queueCount > 0)
         {
             queueCreateInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueCreateInfo.pNext            = DE_NULL;
+            queueCreateInfo.pNext            = nullptr;
             queueCreateInfo.pQueuePriorities = &queuePriority;
             queueCreateInfo.queueCount       = 1;
             queueCreateInfo.queueFamilyIndex = familyIdx;
@@ -135,12 +135,12 @@ void createDeviceWithExtension(Context &context, WorkingDevice &wd, VkQueueFlagB
 
     const VkDeviceCreateInfo deviceInfo = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,               // VkStructureType sType;
-        DE_NULL,                                            // const void* pNext;
+        nullptr,                                            // const void* pNext;
         0u,                                                 // VkDeviceCreateFlags flags;
         1,                                                  // uint32_t queueCreateInfoCount;
         &queueCreateInfo,                                   // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                                 // uint32_t enabledLayerCount;
-        DE_NULL,                                            // const char* const* ppEnabledLayerNames;
+        nullptr,                                            // const char* const* ppEnabledLayerNames;
         static_cast<uint32_t>(cstrDeviceExtensions.size()), // uint32_t enabledExtensionCount;
         de::dataOrNull(cstrDeviceExtensions),               // const char* const* ppEnabledExtensionNames;
         &context.getDeviceFeatures(),                       // const VkPhysicalDeviceFeatures* pEnabledFeatures;
@@ -218,7 +218,7 @@ uint32_t chooseExternalMarkerMemoryType(const DeviceInterface &vkd, VkDevice dev
 {
     VkMemoryHostPointerPropertiesEXT props = {
         vk::VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT,
-        DE_NULL,
+        nullptr,
         0u,
     };
 
@@ -273,7 +273,7 @@ void createMarkerBufferMemory(const InstanceInterface &vki, const DeviceInterfac
         }
 
         const VkImportMemoryHostPointerInfoEXT importInfo = {VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
-                                                             DE_NULL, externalType, hostMemory->data};
+                                                             nullptr, externalType, hostMemory->data};
 
         const VkMemoryAllocateInfo info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, (const void *)&importInfo,
                                            hostMemory->size, externalMemType};
@@ -295,7 +295,7 @@ tcu::TestStatus bufferMarkerSequential(Context &context, BaseTestParams params)
     const VkDevice device(*wd.logicalDevice);
     const VkDeviceSize markerBufferSize(params.size * sizeof(uint32_t));
     VkExternalMemoryBufferCreateInfo externalMemoryBufferCreateInfo = {
-        VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, DE_NULL,
+        VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, nullptr,
         VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT};
     VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(markerBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
     if (params.useHostPtr)
@@ -340,13 +340,13 @@ tcu::TestStatus bufferMarkerSequential(Context &context, BaseTestParams params)
 
     const VkMemoryBarrier memoryDep = {
         VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-        DE_NULL,
+        nullptr,
         VK_ACCESS_TRANSFER_WRITE_BIT,
         VK_ACCESS_HOST_READ_BIT,
     };
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &memoryDep, 0,
-                          DE_NULL, 0, DE_NULL);
+                          nullptr, 0, nullptr);
 
     VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
@@ -369,7 +369,7 @@ tcu::TestStatus bufferMarkerOverwrite(Context &context, BaseTestParams params)
     const VkDevice device(*wd.logicalDevice);
     const VkDeviceSize markerBufferSize(params.size * sizeof(uint32_t));
     VkExternalMemoryBufferCreateInfo externalMemoryBufferCreateInfo = {
-        VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, DE_NULL,
+        VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, nullptr,
         VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT};
     VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(markerBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
     if (params.useHostPtr)
@@ -420,13 +420,13 @@ tcu::TestStatus bufferMarkerOverwrite(Context &context, BaseTestParams params)
 
     const VkMemoryBarrier memoryDep = {
         VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-        DE_NULL,
+        nullptr,
         VK_ACCESS_TRANSFER_WRITE_BIT,
         VK_ACCESS_HOST_READ_BIT,
     };
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &memoryDep, 0,
-                          DE_NULL, 0, DE_NULL);
+                          nullptr, 0, nullptr);
 
     VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
@@ -510,7 +510,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
     const uint32_t size(params.base.size);
     const VkDeviceSize markerBufferSize(params.base.size * sizeof(uint32_t));
     VkExternalMemoryBufferCreateInfo externalMemoryBufferCreateInfo = {
-        VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, DE_NULL,
+        VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, nullptr,
         VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT};
     VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(markerBufferSize, usageFlags);
     if (params.base.useHostPtr)
@@ -546,7 +546,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
 
         const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             *descriptorPool,                                // VkDescriptorPool descriptorPool;
             1u,                                             // uint32_t setLayoutCount;
             &descriptorSetLayout.get()                      // const VkDescriptorSetLayout* pSetLayouts;
@@ -558,18 +558,18 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
 
         VkWriteDescriptorSet writeSet[] = {{
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType                  sType;
-            DE_NULL,                                // const void*                      pNext;
+            nullptr,                                // const void*                      pNext;
             descriptorSet.get(),                    // VkDescriptorSet                  dstSet;
             0,                                      // uint32_t                         dstBinding;
             0,                                      // uint32_t                         dstArrayElement;
             1,                                      // uint32_t                         descriptorCount;
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,      // VkDescriptorType                 descriptorType;
-            DE_NULL,                                // const VkDescriptorImageInfo*     pImageInfo;
+            nullptr,                                // const VkDescriptorImageInfo*     pImageInfo;
             &markerBufferInfo,                      // const VkDescriptorBufferInfo*    pBufferInfo;
-            DE_NULL                                 // const VkBufferView*              pTexelBufferViev
+            nullptr                                 // const VkBufferView*              pTexelBufferViev
         }};
 
-        vk.updateDescriptorSets(device, DE_LENGTH_OF_ARRAY(writeSet), writeSet, 0, DE_NULL);
+        vk.updateDescriptorSets(device, DE_LENGTH_OF_ARRAY(writeSet), writeSet, 0, nullptr);
 
         VkDescriptorSetLayout setLayout = descriptorSetLayout.get();
 
@@ -584,7 +584,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
 
         const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             (VkPipelineLayoutCreateFlags)0,                // VkPipelineLayoutCreateFlags flags;
             1u,                                            // uint32_t setLayoutCount;
             &setLayout,                                    // const VkDescriptorSetLayout* pSetLayouts;
@@ -608,36 +608,36 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
             0,                               // VkSubpassDescriptionFlags       flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint             pipelineBindPoint;
             0,                               // uint32_t                        inputAttachmentCount;
-            DE_NULL,                         // const VkAttachmentReference*    pInputAttachments;
+            nullptr,                         // const VkAttachmentReference*    pInputAttachments;
             0,                               // uint32_t                        colorAttachmentCount;
-            DE_NULL,                         // const VkAttachmentReference*    pColorAttachments;
+            nullptr,                         // const VkAttachmentReference*    pColorAttachments;
             0,                               // const VkAttachmentReference*    pResolveAttachments;
-            DE_NULL,                         // const VkAttachmentReference*    pDepthStencilAttachment;
+            nullptr,                         // const VkAttachmentReference*    pDepthStencilAttachment;
             0,                               // uint32_t                        preserveAttachmentCount;
-            DE_NULL                          // const uint32_t*                 pPreserveAttachments;
+            nullptr                          // const uint32_t*                 pPreserveAttachments;
         };
 
         const VkRenderPassCreateInfo renderPassInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                   sType;
-            DE_NULL,                                   // const void*                       pNext;
+            nullptr,                                   // const void*                       pNext;
             0,                                         // VkRenderPassCreateFlags           flags;
             0,                                         // uint32_t                          attachmentCount;
-            DE_NULL,                                   // const VkAttachmentDescription*    pAttachments;
+            nullptr,                                   // const VkAttachmentDescription*    pAttachments;
             1,                                         // uint32_t                          subpassCount;
             &subpassInfo,                              // const VkSubpassDescription*       pSubpasses;
             0u,                                        // uint32_t                          dependencyCount;
-            DE_NULL                                    // const VkSubpassDependency*        pDependencies
+            nullptr                                    // const VkSubpassDependency*        pDependencies
         };
 
         renderPass = createRenderPass(vk, device, &renderPassInfo);
 
         const VkFramebufferCreateInfo framebufferInfo = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType             sType;
-            DE_NULL,                                   // const void*                 pNext;
+            nullptr,                                   // const void*                 pNext;
             0,                                         // VkFramebufferCreateFlags    flags;
             renderPass.get(),                          // VkRenderPass                renderPass;
             0,                                         // uint32_t                    attachmentCount;
-            DE_NULL,                                   // const VkImageView*          pAttachments;
+            nullptr,                                   // const VkImageView*          pAttachments;
             1,                                         // uint32_t                    width;
             1,                                         // uint32_t                    height;
             1,                                         // uint32_t                    layers;
@@ -650,17 +650,17 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags flags;
             0,                                                         // uint32_t vertexBindingDescriptionCount;
-            DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+            nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
             0,       // uint32_t vertexAttributeDescriptionCount;
-            DE_NULL, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+            nullptr, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
         };
 
         const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                     // const void* pNext;
+            nullptr,                                                     // const void* pNext;
             (VkPipelineInputAssemblyStateCreateFlags)0, // VkPipelineInputAssemblyStateCreateFlags flags;
             VK_PRIMITIVE_TOPOLOGY_POINT_LIST,           // VkPrimitiveTopology topology;
             VK_FALSE,                                   // VkBool32 primitiveRestartEnable;
@@ -671,12 +671,12 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
         {
             const VkPipelineShaderStageCreateInfo createInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                             // const void* pNext;
+                nullptr,                                             // const void* pNext;
                 (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
                 VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits stage;
                 vertexModule.get(),                                  // VkShaderModule module;
                 "main",                                              // const char* pName;
-                DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+                nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
             };
 
             shaderStages.push_back(createInfo);
@@ -685,12 +685,12 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
         {
             const VkPipelineShaderStageCreateInfo createInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                             // const void* pNext;
+                nullptr,                                             // const void* pNext;
                 (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
                 VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits stage;
                 fragmentModule.get(),                                // VkShaderModule module;
                 "main",                                              // const char* pName;
-                DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+                nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
             };
 
             shaderStages.push_back(createInfo);
@@ -714,7 +714,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
 
         const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                               // const void* pNext;
+            nullptr,                                               // const void* pNext;
             (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags flags;
             1u,                                                    // uint32_t viewportCount;
             &viewport,                                             // const VkViewport* pViewports;
@@ -724,7 +724,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
 
         const VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             (VkPipelineRasterizationStateCreateFlags)0, // VkPipelineRasterizationStateCreateFlags flags;
             VK_FALSE,                                   // VkBool32 depthClampEnable;
             VK_FALSE,                                   // VkBool32 rasterizerDiscardEnable;
@@ -741,12 +741,12 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
         const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo = {
 
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             (VkPipelineMultisampleStateCreateFlags)0,                 // VkPipelineMultisampleStateCreateFlags flags;
             VK_SAMPLE_COUNT_1_BIT,                                    // VkSampleCountFlagBits rasterizationSamples;
             VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
             1.0f,                                                     // float minSampleShading;
-            DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+            nullptr,                                                  // const VkSampleMask* pSampleMask;
             VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
             VK_FALSE,                                                 // VkBool32 alphaToOneEnable;
         };
@@ -763,7 +763,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
 
         VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             (VkPipelineDepthStencilStateCreateFlags)0,                  // VkPipelineDepthStencilStateCreateFlags flags;
             VK_FALSE,                                                   // VkBool32 depthTestEnable;
             VK_FALSE,                                                   // VkBool32 depthWriteEnable;
@@ -778,30 +778,30 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
 
         const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             (VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags flags;
             VK_FALSE,                                                 // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
             0,                                                        // uint32_t attachmentCount;
-            DE_NULL,                  // const VkPipelineColorBlendAttachmentState* pAttachments;
+            nullptr,                  // const VkPipelineColorBlendAttachmentState* pAttachments;
             {0.0f, 0.0f, 0.0f, 0.0f}, // float blendConstants[4];
         };
 
         const VkGraphicsPipelineCreateInfo graphicsPipelineInfo = {
             VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                         // const void* pNext;
+            nullptr,                                         // const void* pNext;
             (VkPipelineCreateFlags)0,                        // VkPipelineCreateFlags flags;
             static_cast<uint32_t>(shaderStages.size()),      // uint32_t stageCount;
             de::dataOrNull(shaderStages),                    // const VkPipelineShaderStageCreateInfo* pStages;
             &vertexInputStateInfo,           // const VkPipelineVertexInputStateCreateInfo* pVertexInputState;
             &pipelineInputAssemblyStateInfo, // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
-            DE_NULL,                         // const VkPipelineTessellationStateCreateInfo* pTessellationState;
+            nullptr,                         // const VkPipelineTessellationStateCreateInfo* pTessellationState;
             &pipelineViewportStateInfo,      // const VkPipelineViewportStateCreateInfo* pViewportState;
             &pipelineRasterizationStateInfo, // const VkPipelineRasterizationStateCreateInfo* pRasterizationState;
             &pipelineMultisampleStateInfo,   // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
             &pipelineDepthStencilStateInfo,  // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
             &pipelineColorBlendStateInfo,    // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
-            DE_NULL,                         // const VkPipelineDynamicStateCreateInfo* pDynamicState;
+            nullptr,                         // const VkPipelineDynamicStateCreateInfo* pDynamicState;
             pipelineLayout.get(),            // VkPipelineLayout layout;
             renderPass.get(),                // VkRenderPass renderPass;
             0,                               // uint32_t subpass;
@@ -817,17 +817,17 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
 
         const VkPipelineShaderStageCreateInfo shaderStageInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             computeModule.get(),                                 // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL                                              // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr                                              // const VkSpecializationInfo* pSpecializationInfo;
         };
 
         const VkComputePipelineCreateInfo computePipelineInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType                    sType;
-            DE_NULL,                                        // const void*                        pNext;
+            nullptr,                                        // const void*                        pNext;
             0u,                                             // VkPipelineCreateFlags              flags;
             shaderStageInfo,                                // VkPipelineShaderStageCreateInfo    stage;
             pipelineLayout.get(),                           // VkPipelineLayout                   layout;
@@ -864,13 +864,13 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
     {
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, 1, &setHandle, 0,
-                                 DE_NULL);
+                                 nullptr);
     }
     else if (params.method == MEMORY_DEP_DISPATCH)
     {
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &setHandle, 0,
-                                 DE_NULL);
+                                 nullptr);
     }
 
     if (params.base.useHostPtr)
@@ -901,7 +901,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
         {
             VkBufferMemoryBarrier memoryDep = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType;
-                DE_NULL,                                 // const void*        pNext;
+                nullptr,                                 // const void*        pNext;
                 0,                                       // VkAccessFlags      srcAccessMask;
                 0,                                       // VkAccessFlags      dstAccessMask;
                 wd.queueFamilyIdx,                       // uint32_t           srcQueueFamilyIndex;
@@ -917,14 +917,14 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
             computeMemoryDepBarrier(params, oldOwner, &memoryDep.srcAccessMask, &srcStageMask);
             computeMemoryDepBarrier(params, newOwner, &memoryDep.dstAccessMask, &dstStageMask);
 
-            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 1, &memoryDep, 0, DE_NULL);
+            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 0, nullptr, 1, &memoryDep, 0, nullptr);
         }
 
         if (params.method == MEMORY_DEP_DRAW)
         {
             const VkRenderPassBeginInfo beginInfo = {
                 VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType        sType;
-                DE_NULL,                                  // const void*            pNext;
+                nullptr,                                  // const void*            pNext;
                 renderPass.get(),                         // VkRenderPass           renderPass;
                 fbo.get(),                                // VkFramebuffer          framebuffer;
                 {{
@@ -933,7 +933,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
                  },
                  {1, 1}}, // VkRect2D               renderArea;
                 0,        // uint32_t               clearValueCount;
-                DE_NULL   // const VkClearValue*    pClearValues;
+                nullptr   // const VkClearValue*    pClearValues;
             };
 
             vk.cmdBeginRenderPass(*cmdBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -992,13 +992,13 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
 
     const VkMemoryBarrier memoryDep = {
         VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-        DE_NULL,
+        nullptr,
         writeAccess,
         VK_ACCESS_HOST_READ_BIT,
     };
 
-    vk.cmdPipelineBarrier(*cmdBuffer, writeStages, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &memoryDep, 0, DE_NULL, 0,
-                          DE_NULL);
+    vk.cmdPipelineBarrier(*cmdBuffer, writeStages, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &memoryDep, 0, nullptr, 0,
+                          nullptr);
 
     VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 

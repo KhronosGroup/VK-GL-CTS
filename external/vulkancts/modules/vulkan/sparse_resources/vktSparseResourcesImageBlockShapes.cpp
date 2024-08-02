@@ -145,7 +145,7 @@ tcu::TestStatus ImageBlockShapesInstance::iterate(void)
     const PlanarFormatDescription formatDescription         = getPlanarFormatDescription(m_format);
 
     imageCreateInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageCreateInfo.pNext                 = DE_NULL;
+    imageCreateInfo.pNext                 = nullptr;
     imageCreateInfo.flags                 = VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
     imageCreateInfo.imageType             = mapImageType(m_imageType);
     imageCreateInfo.format                = m_format;
@@ -158,7 +158,7 @@ tcu::TestStatus ImageBlockShapesInstance::iterate(void)
     imageCreateInfo.usage                 = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     imageCreateInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.queueFamilyIndexCount = 0u;
-    imageCreateInfo.pQueueFamilyIndices   = DE_NULL;
+    imageCreateInfo.pQueueFamilyIndices   = nullptr;
 
     if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
     {

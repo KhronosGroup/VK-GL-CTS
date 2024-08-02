@@ -286,7 +286,7 @@ template <>
 const char *dataTypeNameOf<Void>(void)
 {
     DE_FATAL("Impossible");
-    return DE_NULL;
+    return nullptr;
 }
 
 template <typename T>

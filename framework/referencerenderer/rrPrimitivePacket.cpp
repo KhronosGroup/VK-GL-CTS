@@ -61,7 +61,7 @@ void GeometryEmitter::EmitVertex(const tcu::Vec4 &position, float pointSize, con
 void GeometryEmitter::EndPrimitive(void)
 {
     m_numEmitted = 0;
-    m_emitted.push_back(DE_NULL);
+    m_emitted.push_back(nullptr);
 }
 
 void GeometryEmitter::moveEmittedTo(std::vector<VertexPacket *> &output)

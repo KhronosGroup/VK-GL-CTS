@@ -48,7 +48,7 @@ namespace cts_amber
 AmberTestCase::AmberTestCase(tcu::TestContext &testCtx, const char *name, const char *description,
                              const std::string &readFilename)
     : TestCase(testCtx, name)
-    , m_recipe(DE_NULL)
+    , m_recipe(nullptr)
     , m_readFilename(readFilename)
 {
     (void)description;
@@ -392,7 +392,7 @@ bool AmberTestCase::parse(const std::string &readFilename)
                                   << r.Error() << "\n"
                                   << tcu::TestLog::EndMessage;
         // TODO(dneto): Enhance Amber to not require this.
-        m_recipe->SetImpl(DE_NULL);
+        m_recipe->SetImpl(nullptr);
         return false;
     }
     return true;
@@ -511,7 +511,7 @@ void AmberTestCase::initPrograms(vk::SourceCollections &programCollection) const
 
 tcu::TestStatus AmberTestInstance::iterate(void)
 {
-    amber::Amber am(DE_NULL);
+    amber::Amber am(nullptr);
     amber::Options amber_options;
     amber::ShaderMap shaderMap;
     amber::Result r;

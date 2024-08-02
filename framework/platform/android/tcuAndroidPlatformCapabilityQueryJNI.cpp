@@ -94,8 +94,8 @@ void GLConfigParser::registerExtendedOptions(de::cmdline::Parser &parser)
 {
     using de::cmdline::Option;
 
-    parser << Option<opt::GLMajorVersion>(DE_NULL, "deqp-gl-major-version", "OpenGL ES Major version")
-           << Option<opt::GLMinorVersion>(DE_NULL, "deqp-gl-minor-version", "OpenGL ES Minor version");
+    parser << Option<opt::GLMajorVersion>(nullptr, "deqp-gl-major-version", "OpenGL ES Major version")
+           << Option<opt::GLMinorVersion>(nullptr, "deqp-gl-minor-version", "OpenGL ES Minor version");
 }
 
 glu::RenderConfig parseRenderConfig(const std::string &argsStr)
@@ -177,9 +177,9 @@ Java_com_drawelements_deqp_platformutil_DeqpPlatformCapabilityQueryInstrumentati
     };
 
     std::string cmdLine;
-    const char *const cmdLineBytes = env->GetStringUTFChars(jCmdLine, DE_NULL);
+    const char *const cmdLineBytes = env->GetStringUTFChars(jCmdLine, nullptr);
 
-    if (cmdLineBytes == DE_NULL)
+    if (cmdLineBytes == nullptr)
     {
         // no command line is not executable
         tcu::print("no command line supplied");

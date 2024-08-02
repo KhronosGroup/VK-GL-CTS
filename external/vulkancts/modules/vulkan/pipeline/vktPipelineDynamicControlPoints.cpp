@@ -340,7 +340,7 @@ tcu::TestStatus DynamicControlPointsTestInstance::iterate(void)
 
     vk::VkPipelineRasterizationStateCreateInfo raster = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                                sType
-        DE_NULL,                             // const void*                                    pNext
+        nullptr,                             // const void*                                    pNext
         0u,                                  // VkPipelineRasterizationStateCreateFlags        flags
         VK_FALSE,                            // VkBool32                                        depthClampEnable
         VK_FALSE,                            // VkBool32                                        rasterizerDiscardEnable

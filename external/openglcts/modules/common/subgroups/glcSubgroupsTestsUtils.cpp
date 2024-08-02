@@ -240,7 +240,7 @@ de::MovePtr<glu::ShaderProgram> makeGraphicsPipeline(glc::Context &context, cons
         fragSource = shaderSource;
     }
 
-    glu::ShaderProgram *program = DE_NULL;
+    glu::ShaderProgram *program = nullptr;
     if (context.getShaderType() == SHADER_TYPE_GLSL)
     {
         glu::ProgramSources sources;
@@ -329,7 +329,7 @@ de::MovePtr<glu::ShaderProgram> makeComputePipeline(glc::Context &context, const
             << cshader.source << "\n:end:" << tcu::TestLog::EndMessage;
     }
 
-    glu::ShaderProgram *program = DE_NULL;
+    glu::ShaderProgram *program = nullptr;
     if (context.getShaderType() == SHADER_TYPE_GLSL)
     {
         glu::ProgramSources sources;
@@ -1138,7 +1138,7 @@ tcu::TestStatus glc::subgroups::makeTessellationEvaluationFrameBufferTest(
         makeGraphicsPipeline(context,
                              (ShaderStageFlags)(SHADER_STAGE_VERTEX_BIT | SHADER_STAGE_FRAGMENT_BIT |
                                                 SHADER_STAGE_TESS_CONTROL_BIT | SHADER_STAGE_TESS_EVALUATION_BIT),
-                             &vshader, &fshader, DE_NULL, &tcshader, &teshader));
+                             &vshader, &fshader, nullptr, &tcshader, &teshader));
     if (!pipeline->isOk())
     {
         return tcu::TestStatus::fail("tese graphics program build failed");
@@ -1323,7 +1323,7 @@ tcu::TestStatus glc::subgroups::makeGeometryFrameBufferTest(Context &context, Fo
 
     de::MovePtr<glu::ShaderProgram> pipeline(makeGraphicsPipeline(
         context, (ShaderStageFlags)(SHADER_STAGE_VERTEX_BIT | SHADER_STAGE_FRAGMENT_BIT | SHADER_STAGE_GEOMETRY_BIT),
-        &vshader, &fshader, &gshader, DE_NULL, DE_NULL));
+        &vshader, &fshader, &gshader, nullptr, nullptr));
     if (!pipeline->isOk())
     {
         return tcu::TestStatus::fail("geom graphics program build failed");
@@ -1499,10 +1499,10 @@ tcu::TestStatus glc::subgroups::allStages(Context &context, Format format, SSBOD
     shaderStageRequired = (ShaderStageFlags)(shaderStageTested | shaderStageRequired);
 
     const GlslSource *vshader  = &context.getSourceCollection().get(vert);
-    const GlslSource *fshader  = DE_NULL;
-    const GlslSource *gshader  = DE_NULL;
-    const GlslSource *tcshader = DE_NULL;
-    const GlslSource *teshader = DE_NULL;
+    const GlslSource *fshader  = nullptr;
+    const GlslSource *gshader  = nullptr;
+    const GlslSource *tcshader = nullptr;
+    const GlslSource *teshader = nullptr;
 
     if (shaderStageRequired & SHADER_STAGE_TESS_CONTROL_BIT)
     {
@@ -1798,7 +1798,7 @@ tcu::TestStatus glc::subgroups::makeVertexFrameBufferTest(Context &context, Form
 
     de::MovePtr<glu::ShaderProgram> pipeline(
         makeGraphicsPipeline(context, (ShaderStageFlags)(SHADER_STAGE_VERTEX_BIT | SHADER_STAGE_FRAGMENT_BIT), &vshader,
-                             &fshader, DE_NULL, DE_NULL, DE_NULL));
+                             &fshader, nullptr, nullptr, nullptr));
 
     if (!pipeline->isOk())
     {
@@ -1972,7 +1972,7 @@ tcu::TestStatus glc::subgroups::makeFragmentFrameBufferTest(
 
     de::MovePtr<glu::ShaderProgram> pipeline(
         makeGraphicsPipeline(context, (ShaderStageFlags)(SHADER_STAGE_VERTEX_BIT | SHADER_STAGE_FRAGMENT_BIT), &vshader,
-                             &fshader, DE_NULL, DE_NULL, DE_NULL));
+                             &fshader, nullptr, nullptr, nullptr));
 
     if (!pipeline->isOk())
     {

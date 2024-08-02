@@ -760,7 +760,7 @@ VkImageCreateInfo PipelineFlagsInstance::makeImageCreateInfo() const
     const uint32_t familyIndex              = m_context.getUniversalQueueFamilyIndex();
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,               // VkStructureType sType;
-        DE_NULL,                                           // const void* pNext;
+        nullptr,                                           // const void* pNext;
         (VkImageCreateFlags)0u,                            // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                  // VkImageType imageType;
         m_format,                                          // VkFormat format;
@@ -1386,7 +1386,7 @@ tcu::TestStatus PipelineFlagsInstance::iterate(void)
 
     VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-        DE_NULL,                                                           //  const void* pNext;
+        nullptr,                                                           //  const void* pNext;
         1u,                                                                //  uint32_t accelerationStructureCount;
         tlasPtr->getPtr() //  const VkAccelerationStructureKHR* pAccelerationStructures;
     };
@@ -1399,7 +1399,7 @@ tcu::TestStatus PipelineFlagsInstance::iterate(void)
         .update(vkd, device);
 
     vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                              &descriptorSet.get(), 0, DE_NULL);
+                              &descriptorSet.get(), 0, nullptr);
 
     vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 

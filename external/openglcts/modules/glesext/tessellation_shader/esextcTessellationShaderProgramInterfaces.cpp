@@ -354,8 +354,8 @@ tcu::TestNode::IterateResult TessellationShaderProgramInterfaces::iterate(void)
          * the test should fail; if it's recognized, we should verify it's referenced
          * by both TC and TE shaders
          */
-        const char *tc_resource_name = DE_NULL;
-        const char *te_resource_name = DE_NULL;
+        const char *tc_resource_name = nullptr;
+        const char *te_resource_name = nullptr;
 
         switch (interface)
         {
@@ -399,16 +399,16 @@ tcu::TestNode::IterateResult TessellationShaderProgramInterfaces::iterate(void)
 
         case GL_PROGRAM_INPUT:
         {
-            tc_resource_name = DE_NULL;
-            te_resource_name = DE_NULL;
+            tc_resource_name = nullptr;
+            te_resource_name = nullptr;
 
             break;
         }
 
         case GL_PROGRAM_OUTPUT:
         {
-            tc_resource_name = DE_NULL;
-            te_resource_name = DE_NULL;
+            tc_resource_name = nullptr;
+            te_resource_name = nullptr;
 
             break;
         }
@@ -510,7 +510,7 @@ tcu::TestNode::IterateResult TessellationShaderProgramInterfaces::iterate(void)
                  **/
                 const char *resource_name = (n_iteration == 0) ? tc_resource_name : te_resource_name;
 
-                if (resource_name == DE_NULL)
+                if (resource_name == nullptr)
                 {
                     /* Make sure the property has GL_FALSE value for any resources
                      * reported for this interface. */

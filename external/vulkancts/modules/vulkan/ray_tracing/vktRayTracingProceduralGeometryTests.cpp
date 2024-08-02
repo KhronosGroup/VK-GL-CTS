@@ -274,12 +274,12 @@ tcu::TestStatus RayTracingProceduralGeometryTestBase::iterate(void)
 
         // generate reference
         vkd.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipelineLayout, 0, 1,
-                                  &referenceDescriptorSet.get(), 0, DE_NULL);
+                                  &referenceDescriptorSet.get(), 0, nullptr);
         cmdTraceRays(vkd, *m_cmdBuffer, &rgenSBTR, &missSBTR, &chitSBTR, &callableSBTR, imageSize, imageSize, 1);
 
         // generate result
         vkd.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipelineLayout, 0, 1,
-                                  &resultDescriptorSet.get(), 0, DE_NULL);
+                                  &resultDescriptorSet.get(), 0, nullptr);
         cmdTraceRays(vkd, *m_cmdBuffer, &rgenSBTR, &missSBTR, &chitSBTR, &callableSBTR, imageSize, imageSize, 1);
 
         const VkMemoryBarrier postTraceMemoryBarrier =
@@ -315,7 +315,7 @@ VkWriteDescriptorSetAccelerationStructureKHR RayTracingProceduralGeometryTestBas
 {
     return {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, // VkStructureType                        sType
-        DE_NULL,               // const void*                            pNext
+        nullptr,               // const void*                            pNext
         1u,                    // uint32_t                                accelerationStructureCount
         pAccelerationStructure // const VkAccelerationStructureKHR*    pAccelerationStructures
     };

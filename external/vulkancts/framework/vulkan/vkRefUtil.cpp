@@ -107,7 +107,7 @@ Move<VkDescriptorSet> allocateDescriptorSet(const DeviceInterface &vk, VkDevice 
 Move<VkSemaphore> createSemaphore(const DeviceInterface &vk, VkDevice device, VkSemaphoreCreateFlags flags,
                                   const VkAllocationCallbacks *pAllocator)
 {
-    const VkSemaphoreCreateInfo createInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, DE_NULL, flags};
+    const VkSemaphoreCreateInfo createInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, flags};
 
     return createSemaphore(vk, device, &createInfo, pAllocator);
 }
@@ -118,7 +118,7 @@ Move<VkSemaphore> createSemaphoreType(const DeviceInterface &vk, VkDevice device
 {
     const VkSemaphoreTypeCreateInfo createTypeInfo = {
         VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
 
         type,
         initialValue,
@@ -133,7 +133,7 @@ Move<VkSemaphore> createSemaphoreType(const DeviceInterface &vk, VkDevice device
 Move<VkFence> createFence(const DeviceInterface &vk, VkDevice device, VkFenceCreateFlags flags,
                           const VkAllocationCallbacks *pAllocator)
 {
-    const VkFenceCreateInfo createInfo = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, DE_NULL,
+    const VkFenceCreateInfo createInfo = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr,
 
                                           flags};
 
@@ -143,7 +143,7 @@ Move<VkFence> createFence(const DeviceInterface &vk, VkDevice device, VkFenceCre
 Move<VkCommandPool> createCommandPool(const DeviceInterface &vk, VkDevice device, VkCommandPoolCreateFlags flags,
                                       uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator)
 {
-    const VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, DE_NULL,
+    const VkCommandPoolCreateInfo createInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr,
 
                                                 flags, queueFamilyIndex};
 
@@ -153,7 +153,7 @@ Move<VkCommandPool> createCommandPool(const DeviceInterface &vk, VkDevice device
 Move<VkCommandBuffer> allocateCommandBuffer(const DeviceInterface &vk, VkDevice device, VkCommandPool commandPool,
                                             VkCommandBufferLevel level)
 {
-    const VkCommandBufferAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, DE_NULL,
+    const VkCommandBufferAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr,
 
                                                    commandPool, level, 1};
 
@@ -163,7 +163,7 @@ Move<VkCommandBuffer> allocateCommandBuffer(const DeviceInterface &vk, VkDevice 
 Move<VkEvent> createEvent(const DeviceInterface &vk, VkDevice device, VkEventCreateFlags flags,
                           const VkAllocationCallbacks *pAllocateInfo)
 {
-    const VkEventCreateInfo createInfo = {VK_STRUCTURE_TYPE_EVENT_CREATE_INFO, DE_NULL,
+    const VkEventCreateInfo createInfo = {VK_STRUCTURE_TYPE_EVENT_CREATE_INFO, nullptr,
 
                                           flags};
 

@@ -907,12 +907,12 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineLayoutCreateFlags)0,
         1,                          // setLayoutCount,
         &descriptorSetLayout.get(), // pSetLayouts
         0,                          // pushConstantRangeCount
-        DE_NULL,                    // pPushConstantRanges
+        nullptr,                    // pPushConstantRanges
     };
     const Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, device, &pipelineLayoutCreateInfo));
 
@@ -921,17 +921,17 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
 
     const VkPipelineShaderStageCreateInfo shaderCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineShaderStageCreateFlags)0,
         VK_SHADER_STAGE_COMPUTE_BIT, // stage
         *computeModule,              // shader
         "main",
-        DE_NULL, // pSpecializationInfo
+        nullptr, // pSpecializationInfo
     };
 
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,               // flags
         shaderCreateInfo, // cs
         *pipelineLayout,  // layout
@@ -944,13 +944,13 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
     // Input buffer
     const VkBufferCreateInfo inputBufferCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0,                                  // flags
         (VkDeviceSize)params.bufferSize,    // size
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, // usage TODO: also test _DYNAMIC case.
         VK_SHARING_MODE_EXCLUSIVE,
         0u,      // queueFamilyCount
-        DE_NULL, // pQueueFamilyIndices
+        nullptr, // pQueueFamilyIndices
     };
     const Unique<VkBuffer> inputBuffer(createBuffer(vk, device, &inputBufferCreateInfo));
     const VkMemoryRequirements inputBufferRequirements = getBufferMemoryRequirements(vk, device, *inputBuffer);
@@ -963,13 +963,13 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
     // Output buffer
     const VkBufferCreateInfo outputBufferCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0,
         (VkDeviceSize)4,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        DE_NULL,
+        nullptr,
     };
     const Unique<VkBuffer> outputBuffer(createBuffer(vk, device, &outputBufferCreateInfo));
     const VkMemoryRequirements outputBufferRequirements = getBufferMemoryRequirements(vk, device, *outputBuffer);
@@ -982,7 +982,7 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
     // Initialize output buffer contents
     const VkMappedMemoryRange range = {
         VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, // sType
-        DE_NULL,                               // pNext
+        nullptr,                               // pNext
         outputBufferMemory->getMemory(),       // memory
         0,                                     // offset
         VK_WHOLE_SIZE,                         // size
@@ -1006,7 +1006,7 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
 
     const VkDescriptorSetAllocateInfo descAllocInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        DE_NULL,
+        nullptr,
         *descriptorPool,            // pool
         1u,                         // setLayoutCount
         &descriptorSetLayout.get(), // pSetLayouts
@@ -1022,7 +1022,7 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType
-        DE_NULL,                                         // pNext
+        nullptr,                                         // pNext
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags
         context.getUniversalQueueFamilyIndex(),          // queueFamilyIndex
     };
@@ -1031,7 +1031,7 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
-        DE_NULL,                                        // pNext
+        nullptr,                                        // pNext
         *cmdPool,                                       // pool
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level
         1u,                                             // bufferCount
@@ -1043,17 +1043,17 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
 
     vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descSet.get(), 0u,
-                             DE_NULL);
+                             nullptr);
     vk.cmdDispatch(*cmdBuf, 1, 1, 1);
 
     const VkMemoryBarrier barrier = {
         VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
-        DE_NULL,                          // pNext
+        nullptr,                          // pNext
         VK_ACCESS_SHADER_WRITE_BIT,       // srcAccessMask
         VK_ACCESS_HOST_READ_BIT,          // dstAccessMask
     };
     vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
-                          1, &barrier, 0, DE_NULL, 0, DE_NULL);
+                          1, &barrier, 0, nullptr, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuf);
 

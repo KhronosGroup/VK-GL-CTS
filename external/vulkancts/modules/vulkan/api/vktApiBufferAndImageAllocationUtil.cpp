@@ -47,7 +47,7 @@ void BufferSuballocation::createTestBuffer(const DeviceInterface &vk, VkDevice v
 
     const VkBufferCreateInfo bufferParams{
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         size,                                 // VkDeviceSize size;
         usage,                                // VkBufferUsageFlags usage;
@@ -56,7 +56,7 @@ void BufferSuballocation::createTestBuffer(const DeviceInterface &vk, VkDevice v
         &queueFamilyIndex,                    // const uint32_t* pQueueFamilyIndices;
     };
 
-    buffer = vk::createBuffer(vk, vkDevice, &bufferParams, (const VkAllocationCallbacks *)DE_NULL);
+    buffer = vk::createBuffer(vk, vkDevice, &bufferParams, nullptr);
     memory = allocator.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), requirement);
     VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, memory->getMemory(), 0));
 }
@@ -76,7 +76,7 @@ void BufferDedicatedAllocation::createTestBuffer(const DeviceInterface &vk, VkDe
 
     const VkBufferCreateInfo bufferParams{
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         size,                                 // VkDeviceSize size;
         usage,                                // VkBufferUsageFlags usage;
@@ -85,7 +85,7 @@ void BufferDedicatedAllocation::createTestBuffer(const DeviceInterface &vk, VkDe
         &queueFamilyIndex,                    // const uint32_t* pQueueFamilyIndices;
     };
 
-    buffer = vk::createBuffer(vk, vkDevice, &bufferParams, (const VkAllocationCallbacks *)DE_NULL);
+    buffer = vk::createBuffer(vk, vkDevice, &bufferParams, nullptr);
     memory = allocateDedicated(vkInstance, vk, vkPhysicalDevice, vkDevice, buffer.get(), requirement);
     VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, memory->getMemory(), memory->getOffset()));
 }
@@ -100,7 +100,7 @@ void ImageSuballocation::createTestImage(tcu::IVec2 size, VkFormat format, Conte
 
     const VkImageCreateInfo colorImageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,          // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         0u,                                           // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                             // VkImageType imageType;
         format,                                       // VkFormat format;
@@ -140,7 +140,7 @@ void ImageDedicatedAllocation::createTestImage(tcu::IVec2 size, VkFormat format,
 
     const VkImageCreateInfo colorImageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,          // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         0u,                                           // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                             // VkImageType imageType;
         format,                                       // VkFormat format;

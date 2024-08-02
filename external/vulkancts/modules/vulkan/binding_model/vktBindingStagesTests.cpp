@@ -44,7 +44,7 @@ vk::VkImageCreateInfo makeImageCreateInfo(const vk::VkFormat format, const tcu::
 {
     const vk::VkImageCreateInfo imageParams = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         (vk::VkImageCreateFlags)0,               // VkImageCreateFlags flags;
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                                  // VkFormat format;
@@ -56,7 +56,7 @@ vk::VkImageCreateInfo makeImageCreateInfo(const vk::VkFormat format, const tcu::
         usage,                                   // VkImageUsageFlags usage;
         vk::VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                      // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                 // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                 // const uint32_t* pQueueFamilyIndices;
         vk::VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
     return imageParams;
@@ -119,7 +119,7 @@ tcu::TestStatus StagesTestInstance::iterate(void)
 
     const vk::VkSamplerCreateInfo samplerCreateInfo = {
         vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         0u,                                          // VkSamplerCreateFlags flags;
         vk::VK_FILTER_LINEAR,                        // VkFilter magFilter;
         vk::VK_FILTER_LINEAR,                        // VkFilter minFilter;
@@ -149,13 +149,13 @@ tcu::TestStatus StagesTestInstance::iterate(void)
 
         vk::VkBufferCreateInfo readBufferCreateInfo = {
             vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             (vk::VkBufferCreateFlags)0u,              // VkBufferCreateFlags flags;
             sizeof(float) * 4u,                       // VkDeviceSize size;
             usage,                                    // VkBufferUsageFlags usage;
             vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                       // uint32_t queueFamilyIndexCount;
-            DE_NULL,                                  // const uint32_t* pQueueFamilyIndices;
+            nullptr,                                  // const uint32_t* pQueueFamilyIndices;
         };
         readBuffer = de::MovePtr<vk::BufferWithMemory>(
             new vk::BufferWithMemory(vk, device, allocator, readBufferCreateInfo, vk::MemoryRequirement::HostVisible));
@@ -168,17 +168,17 @@ tcu::TestStatus StagesTestInstance::iterate(void)
 
         vk::VkWriteDescriptorSet readDescriptorWrite = {
             vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             *readDescriptorSet,                         // VkDescriptorSet dstSet;
             0u,                                         // uint32_t dstBinding;
             0u,                                         // uint32_t dstArrayElement;
             1u,                                         // uint32_t descriptorCount;
             m_descriptorType,                           // VkDescriptorType descriptorType;
-            DE_NULL,                                    // const VkDescriptorImageInfo* pImageInfo;
+            nullptr,                                    // const VkDescriptorImageInfo* pImageInfo;
             &readBufferInfo,                            // const VkDescriptorBufferInfo* pBufferInfo;
-            DE_NULL,                                    // const VkBufferView* pTexelBufferView;
+            nullptr,                                    // const VkBufferView* pTexelBufferView;
         };
-        vk.updateDescriptorSets(device, 1u, &readDescriptorWrite, 0u, DE_NULL);
+        vk.updateDescriptorSets(device, 1u, &readDescriptorWrite, 0u, nullptr);
 
         const auto &readAlloc  = readBuffer->getAllocation();
         const auto readDataPtr = reinterpret_cast<float *>(readAlloc.getHostPtr()) + readAlloc.getOffset();
@@ -190,7 +190,7 @@ tcu::TestStatus StagesTestInstance::iterate(void)
     {
         vk::VkImageCreateInfo imageCreateInfo = {
             vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                              // VkStructureType sType;
-            DE_NULL,                                                              // const void* pNext;
+            nullptr,                                                              // const void* pNext;
             (vk::VkImageCreateFlags)0u,                                           // VkImageCreateFlags flags;
             vk::VK_IMAGE_TYPE_2D,                                                 // VkImageType imageType;
             vk::VK_FORMAT_R8G8B8A8_UNORM,                                         // VkFormat format;
@@ -202,7 +202,7 @@ tcu::TestStatus StagesTestInstance::iterate(void)
             vk::VK_IMAGE_USAGE_SAMPLED_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
             vk::VK_SHARING_MODE_EXCLUSIVE,                                        // VkSharingMode sharingMode;
             0u,                                                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL,                       // const uint32_t* pQueueFamilyIndices;
+            nullptr,                       // const uint32_t* pQueueFamilyIndices;
             vk::VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout initialLayout;
         };
         readImage = de::MovePtr<vk::ImageWithMemory>(
@@ -210,7 +210,7 @@ tcu::TestStatus StagesTestInstance::iterate(void)
 
         vk::VkImageViewCreateInfo imageViewCreateInfo = {
             vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             (vk::VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags flags;
             **readImage,                                  // VkImage image;
             vk::VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -239,29 +239,29 @@ tcu::TestStatus StagesTestInstance::iterate(void)
 
         vk::VkWriteDescriptorSet readDescriptorWrite = {
             vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             *readDescriptorSet,                         // VkDescriptorSet dstSet;
             0u,                                         // uint32_t dstBinding;
             0u,                                         // uint32_t dstArrayElement;
             1u,                                         // uint32_t descriptorCount;
             m_descriptorType,                           // VkDescriptorType descriptorType;
             &readImageInfo,                             // const VkDescriptorImageInfo* pImageInfo;
-            DE_NULL,                                    // const VkDescriptorBufferInfo* pBufferInfo;
-            DE_NULL,                                    // const VkBufferView* pTexelBufferView;
+            nullptr,                                    // const VkDescriptorBufferInfo* pBufferInfo;
+            nullptr,                                    // const VkBufferView* pTexelBufferView;
         };
-        vk.updateDescriptorSets(device, 1u, &readDescriptorWrite, 0u, DE_NULL);
+        vk.updateDescriptorSets(device, 1u, &readDescriptorWrite, 0u, nullptr);
 
         vk::VkDeviceSize bufferSize = 4u * 4u * 4u;
 
         vk::VkBufferCreateInfo readBufferCreateInfo = {
             vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             (vk::VkBufferCreateFlags)0u,              // VkBufferCreateFlags flags;
             bufferSize,                               // VkDeviceSize size;
             vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags usage;
             vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                       // uint32_t queueFamilyIndexCount;
-            DE_NULL,                                  // const uint32_t* pQueueFamilyIndices;
+            nullptr,                                  // const uint32_t* pQueueFamilyIndices;
         };
         readBuffer = de::MovePtr<vk::BufferWithMemory>(
             new vk::BufferWithMemory(vk, device, allocator, readBufferCreateInfo, vk::MemoryRequirement::HostVisible));
@@ -290,25 +290,25 @@ tcu::TestStatus StagesTestInstance::iterate(void)
             vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, **readImage, subresourceRange);
         vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &preImageMemoryBarrier);
+                              0u, 0u, nullptr, 0u, nullptr, 1u, &preImageMemoryBarrier);
         vk.cmdCopyBufferToImage(*copyCmdBuffer, **readBuffer, **readImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u,
                                 &region);
         vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                               vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u,
-                              0u, DE_NULL, 0u, DE_NULL, 1u, &postImageMemoryBarrier);
+                              0u, nullptr, 0u, nullptr, 1u, &postImageMemoryBarrier);
         vk::endCommandBuffer(vk, *copyCmdBuffer);
         vk::submitCommandsAndWait(vk, device, queue, *copyCmdBuffer);
     }
 
     vk::VkBufferCreateInfo writeBufferCreateInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         (vk::VkBufferCreateFlags)0u,              // VkBufferCreateFlags flags;
         sizeof(float) * 4u,                       // VkDeviceSize size;
         vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,   // VkBufferUsageFlags usage;
         vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
         0u,                                       // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                  // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                  // const uint32_t* pQueueFamilyIndices;
     };
     const auto writeBuffer = de::MovePtr<vk::BufferWithMemory>(
         new vk::BufferWithMemory(vk, device, allocator, writeBufferCreateInfo, vk::MemoryRequirement::HostVisible));
@@ -322,17 +322,17 @@ tcu::TestStatus StagesTestInstance::iterate(void)
 
     vk::VkWriteDescriptorSet writeDescriptorWrite = {
         vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         *writeDescriptorSet,                        // VkDescriptorSet dstSet;
         0u,                                         // uint32_t dstBinding;
         0u,                                         // uint32_t dstArrayElement;
         1u,                                         // uint32_t descriptorCount;
         vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,      // VkDescriptorType descriptorType;
-        DE_NULL,                                    // const VkDescriptorImageInfo* pImageInfo;
+        nullptr,                                    // const VkDescriptorImageInfo* pImageInfo;
         &writeBufferInfo,                           // const VkDescriptorBufferInfo* pBufferInfo;
-        DE_NULL,                                    // const VkBufferView* pTexelBufferView;
+        nullptr,                                    // const VkBufferView* pTexelBufferView;
     };
-    vk.updateDescriptorSets(device, 1u, &writeDescriptorWrite, 0u, DE_NULL);
+    vk.updateDescriptorSets(device, 1u, &writeDescriptorWrite, 0u, nullptr);
 
     const auto renderSize            = tcu::IVec2(32, 32);
     const auto colorFormat           = vk::VK_FORMAT_R8G8B8A8_UNORM;
@@ -357,12 +357,12 @@ tcu::TestStatus StagesTestInstance::iterate(void)
     std::vector<vk::VkRect2D> scissors = {vk::VkRect2D{{0, 0}, {(uint32_t)renderSize.x(), (uint32_t)renderSize.y()}}};
     vk::VkPipelineVertexInputStateCreateInfo vertexInputState = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                       // const void* pNext;
+        nullptr,                                                       // const void* pNext;
         (vk::VkPipelineVertexInputStateCreateFlags)0u,                 // VkPipelineVertexInputStateCreateFlags flags;
         0u,                                                            // uint32_t vertexBindingDescriptionCount;
-        DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
         0u,      // uint32_t vertexAttributeDescriptionCount;
-        DE_NULL, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+        nullptr, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
     const auto pipeline =
         vk::makeGraphicsPipeline(vk, device, *pipelineLayout, *vertexModule, VK_NULL_HANDLE, VK_NULL_HANDLE,
@@ -373,14 +373,14 @@ tcu::TestStatus StagesTestInstance::iterate(void)
 
     vk::VkBindDescriptorSetsInfoKHR bindDescriptorSetsInfo = {
         vk::VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO_KHR,                // VkStructureType sType;
-        DE_NULL,                                                            // const void* pNext;
+        nullptr,                                                            // const void* pNext;
         vk::VK_SHADER_STAGE_FRAGMENT_BIT | vk::VK_SHADER_STAGE_COMPUTE_BIT, // VkShaderStageFlags stageFlags;
         *pipelineLayout,                                                    // VkPipelineLayout layout;
         0u,                                                                 // uint32_t firstSet;
         2u,                                                                 // uint32_t descriptorSetCount;
         descriptorSets,                                                     // const VkDescriptorSet* pDescriptorSets;
         0u,                                                                 // uint32_t dynamicOffsetCount;
-        DE_NULL,                                                            // const uint32_t* pDynamicOffsets;
+        nullptr,                                                            // const uint32_t* pDynamicOffsets;
     };
 
     const vk::VkDeviceSize colorOutputBufferSize =
@@ -393,7 +393,7 @@ tcu::TestStatus StagesTestInstance::iterate(void)
 
     vk::VkRenderPassBeginInfo renderPassBegin = {
         vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,                   // VkStructureType sType;
-        DE_NULL,                                                        // const void* pNext;
+        nullptr,                                                        // const void* pNext;
         *renderPass,                                                    // VkRenderPass renderPass;
         *framebuffer,                                                   // VkFramebuffer framebuffer;
         {{0, 0}, {(uint32_t)renderSize.x(), (uint32_t)renderSize.y()}}, // VkRect2D renderArea;
@@ -416,7 +416,7 @@ tcu::TestStatus StagesTestInstance::iterate(void)
                                    vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                                    vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorImage, subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageMemoryBarrier);
+                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &imageMemoryBarrier);
 
     vk::VkBufferImageCopy region = {
         0u,                                                       // VkDeviceSize bufferOffset;

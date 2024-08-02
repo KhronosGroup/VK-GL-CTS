@@ -873,25 +873,25 @@ RenderPassWrapper makeTestRenderPass(BlendOperationAdvancedParam param, const De
         (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags        flags
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint                pipelineBindPoint
         0u,                              // uint32_t                            inputAttachmentCount
-        DE_NULL,                         // const VkAttachmentReference*        pInputAttachments
+        nullptr,                         // const VkAttachmentReference*        pInputAttachments
         param.colorAttachmentsCount,     // uint32_t                            colorAttachmentCount
         colorAttachmentRefs.data(),      // const VkAttachmentReference*        pColorAttachments
-        DE_NULL,                         // const VkAttachmentReference*        pResolveAttachments
-        DE_NULL,                         // const VkAttachmentReference*        pDepthStencilAttachment
+        nullptr,                         // const VkAttachmentReference*        pResolveAttachments
+        nullptr,                         // const VkAttachmentReference*        pDepthStencilAttachment
         0u,                              // uint32_t                            preserveAttachmentCount
-        DE_NULL                          // const uint32_t*                    pPreserveAttachments
+        nullptr                          // const uint32_t*                    pPreserveAttachments
     };
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                    sType
-        DE_NULL,                                   // const void*                        pNext
+        nullptr,                                   // const void*                        pNext
         (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags            flags
         (uint32_t)attachmentDescriptions.size(),   // uint32_t                            attachmentCount
         attachmentDescriptions.data(),             // const VkAttachmentDescription*    pAttachments
         1u,                                        // uint32_t                            subpassCount
         &subpassDescription,                       // const VkSubpassDescription*        pSubpasses
         0u,                                        // uint32_t                            dependencyCount
-        DE_NULL                                    // const VkSubpassDependency*        pDependencies
+        nullptr                                    // const VkSubpassDependency*        pDependencies
     };
 
     return RenderPassWrapper(param.pipelineConstructionType, vk, device, &renderPassInfo);
@@ -906,7 +906,7 @@ Move<VkBuffer> createBufferAndBindMemory(Context &context, VkDeviceSize size, Vk
 
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         size,                                 // VkDeviceSize size;
         usage,                                // VkBufferUsageFlags usage;
@@ -934,7 +934,7 @@ Move<VkImage> createImage2DAndBindMemory(Context &context, VkFormat format, uint
 
     const VkImageCreateInfo colorImageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -1005,7 +1005,7 @@ void BlendOperationAdvancedTestInstance::buildPipeline(VkBool32 srcPremultiplied
 
     const VkPipelineColorBlendAdvancedStateCreateInfoEXT blendAdvancedStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ADVANCED_STATE_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                                               // const void* pNext;
+        nullptr,                                                               // const void* pNext;
         srcPremultiplied,                                                      // VkBool32 srcPremultiplied;
         dstPremultiplied,                                                      // VkBool32 dstPremultiplied;
         m_param.overlap,                                                       // VkBlendOverlapEXT blendOverlap;
@@ -1042,19 +1042,19 @@ void BlendOperationAdvancedTestInstance::buildPipeline(VkBool32 srcPremultiplied
 
     const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
         VK_SAMPLE_COUNT_1_BIT,                                    // VkSampleCountFlagBits rasterizationSamples;
         VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE,                                                 // VkBool32 alphaToOneEnable;
     };
 
     VkPipelineDepthStencilStateCreateInfo depthStencilStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
         VK_FALSE,                                                   // VkBool32 depthTestEnable;
         VK_FALSE,                                                   // VkBool32 depthWriteEnable;
@@ -1088,7 +1088,7 @@ void BlendOperationAdvancedTestInstance::buildPipeline(VkBool32 srcPremultiplied
     const VkDynamicState dynamicState                         = VK_DYNAMIC_STATE_SCISSOR;
     const VkPipelineDynamicStateCreateInfo dynamicStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                              // const void* pNext;
+        nullptr,                                              // const void* pNext;
         0u,                                                   // VkPipelineDynamicStateCreateFlags flags;
         1u,                                                   // uint32_t dynamicStateCount;
         &dynamicState                                         // const VkDynamicState* pDynamicStates;
@@ -1210,7 +1210,7 @@ void BlendOperationAdvancedTestInstance::prepareCommandBuffer() const
 
     vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                          (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, (uint32_t)m_imageLayoutBarriers.size(),
+                          (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, (uint32_t)m_imageLayoutBarriers.size(),
                           m_imageLayoutBarriers.data());
 
     prepareRenderPass(m_pipeline);
@@ -1265,7 +1265,7 @@ BlendOperationAdvancedTestInstance::BlendOperationAdvancedTestInstance(Context &
         {
             VkImageMemoryBarrier colorImageBarrier = {
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-                DE_NULL,                                // const void* pNext;
+                nullptr,                                // const void* pNext;
                 0u,                                     // VkAccessFlags srcAccessMask;
                 (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
                  VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT), // VkAccessFlags dstAccessMask;
@@ -1284,7 +1284,7 @@ BlendOperationAdvancedTestInstance::BlendOperationAdvancedTestInstance(Context &
         {
             VkImageViewCreateInfo colorAttachmentViewParams = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
-                DE_NULL,                                     // const void* pNext;
+                nullptr,                                     // const void* pNext;
                 0u,                                          // VkImageViewCreateFlags flags;
                 *m_colorImages.back(),                       // VkImage image;
                 VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
@@ -1310,7 +1310,7 @@ BlendOperationAdvancedTestInstance::BlendOperationAdvancedTestInstance(Context &
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             (uint32_t)imageViews.size(),               // uint32_t attachmentCount;
@@ -1333,10 +1333,10 @@ BlendOperationAdvancedTestInstance::BlendOperationAdvancedTestInstance(Context &
 
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             1u,                                            // uint32_t pushConstantRangeCount;
             &pushConstantRange                             // const VkPushConstantRange* pPushConstantRanges;
         };
@@ -1528,7 +1528,7 @@ void BlendOperationAdvancedTest::checkSupport(Context &context) const
 
     VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT blendProperties;
     blendProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BLEND_OPERATION_ADVANCED_PROPERTIES_EXT;
-    blendProperties.pNext = DE_NULL;
+    blendProperties.pNext = nullptr;
 
     VkPhysicalDeviceProperties2 properties2;
     properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -1677,7 +1677,7 @@ void BlendOperationAdvancedTestCoherentInstance::buildPipeline()
 
     const VkPipelineColorBlendAdvancedStateCreateInfoEXT blendAdvancedStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ADVANCED_STATE_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                                               // const void* pNext;
+        nullptr,                                                               // const void* pNext;
         VK_TRUE,                                                               // VkBool32 srcPremultiplied;
         VK_TRUE,                                                               // VkBool32 dstPremultiplied;
         m_param.overlap,                                                       // VkBlendOverlapEXT blendOverlap;
@@ -1721,19 +1721,19 @@ void BlendOperationAdvancedTestCoherentInstance::buildPipeline()
 
     const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
         VK_SAMPLE_COUNT_1_BIT,                                    // VkSampleCountFlagBits rasterizationSamples;
         VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE,                                                 // VkBool32 alphaToOneEnable;
     };
 
     VkPipelineDepthStencilStateCreateInfo depthStencilStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
         VK_FALSE,                                                   // VkBool32 depthTestEnable;
         VK_FALSE,                                                   // VkBool32 depthWriteEnable;
@@ -1767,7 +1767,7 @@ void BlendOperationAdvancedTestCoherentInstance::buildPipeline()
     const VkDynamicState dynamicState                         = VK_DYNAMIC_STATE_SCISSOR;
     const VkPipelineDynamicStateCreateInfo dynamicStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                              // const void* pNext;
+        nullptr,                                              // const void* pNext;
         0u,                                                   // VkPipelineDynamicStateCreateFlags flags;
         1u,                                                   // uint32_t dynamicStateCount;
         &dynamicState                                         // const VkDynamicState* pDynamicStates;
@@ -1817,7 +1817,7 @@ void BlendOperationAdvancedTestCoherentInstance::prepareRenderPass(GraphicsPipel
     VkClearValue attachmentClearValue = makeClearValueColor(clearColorVec4);
 
     renderpass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (secondDraw ? 0u : 1u),
-                     (secondDraw ? DE_NULL : &attachmentClearValue));
+                     (secondDraw ? nullptr : &attachmentClearValue));
 
     pipeline.bind(*m_cmdBuffer);
     VkDeviceSize offsets = 0u;
@@ -1908,7 +1908,7 @@ void BlendOperationAdvancedTestCoherentInstance::prepareCommandBuffer()
 
     vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                          (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, (uint32_t)m_imageLayoutBarriers.size(),
+                          (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, (uint32_t)m_imageLayoutBarriers.size(),
                           m_imageLayoutBarriers.data());
 
     prepareRenderPass(m_pipelines[0], m_renderPasses[0], false);
@@ -1917,7 +1917,7 @@ void BlendOperationAdvancedTestCoherentInstance::prepareCommandBuffer()
     {
         const VkImageMemoryBarrier colorImageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-            DE_NULL,                                // const void* pNext;
+            nullptr,                                // const void* pNext;
             (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
              VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT), // VkAccessFlags srcAccessMask;
             (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
@@ -1932,7 +1932,7 @@ void BlendOperationAdvancedTestCoherentInstance::prepareCommandBuffer()
         vk.cmdPipelineBarrier(*m_cmdBuffer,
                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                              (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, 1u, &colorImageBarrier);
+                              (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, 1u, &colorImageBarrier);
     }
 
     prepareRenderPass(m_pipelines[1], m_renderPasses[1], true);
@@ -1979,7 +1979,7 @@ BlendOperationAdvancedTestCoherentInstance::BlendOperationAdvancedTestCoherentIn
     {
         VkImageMemoryBarrier colorImageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-            DE_NULL,                                // const void* pNext;
+            nullptr,                                // const void* pNext;
             0u,                                     // VkAccessFlags srcAccessMask;
             (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
              VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT), // VkAccessFlags dstAccessMask;
@@ -1998,7 +1998,7 @@ BlendOperationAdvancedTestCoherentInstance::BlendOperationAdvancedTestCoherentIn
     {
         VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkImageViewCreateFlags flags;
             *m_colorImage,                               // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
@@ -2014,7 +2014,7 @@ BlendOperationAdvancedTestCoherentInstance::BlendOperationAdvancedTestCoherentIn
     {
         VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             m_renderPasses[0].get(),                   // VkRenderPass renderPass;
             1u,                                        // uint32_t attachmentCount;
@@ -2039,10 +2039,10 @@ BlendOperationAdvancedTestCoherentInstance::BlendOperationAdvancedTestCoherentIn
 
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             1u,                                            // uint32_t pushConstantRangeCount;
             &pushConstantRange                             // const VkPushConstantRange* pPushConstantRanges;
         };

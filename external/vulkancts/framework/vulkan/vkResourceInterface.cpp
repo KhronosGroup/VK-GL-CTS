@@ -85,11 +85,6 @@ bool ResourceInterface::isVulkanSC(void) const
     return m_vulkanSC.get();
 }
 
-uint64_t ResourceInterface::incResourceCounter()
-{
-    return ++m_resourceCounter;
-}
-
 std::mutex &ResourceInterface::getStatMutex()
 {
     return m_mutex;
@@ -223,7 +218,7 @@ void ResourceInterface::removeRedundantObjects()
             deMemset(&sCI, 0, sizeof(sCI));
             readJSON_VkSamplerCreateInfo(jsonReader, it->second, sCI);
 
-            if (sCI.pNext != DE_NULL)
+            if (sCI.pNext != nullptr)
             {
                 VkSamplerYcbcrConversionInfo *info = (VkSamplerYcbcrConversionInfo *)(sCI.pNext);
                 if (info->sType == VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO)
@@ -353,7 +348,7 @@ void ResourceInterface::preparePipelinePoolSizes()
     {
         VkPipelinePoolSize poolSize = {
             VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             ppsi.size,                            // VkDeviceSize poolEntrySize;
             ppsi.maxTestCount                     // uint32_t poolEntryCount;
         };
@@ -431,14 +426,14 @@ void ResourceInterfaceStandard::initDevice(DeviceInterface &deviceInterface, VkD
         {
             VkPipelineCacheCreateInfo pCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                     VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                 m_cacheData.size(),                                       // uintptr_t initialDataSize;
                 m_cacheData.data()                                        // const void* pInitialData;
             };
             m_pipelineCache[device] = de::SharedPtr<Move<VkPipelineCache>>(
-                new Move<VkPipelineCache>(createPipelineCache(deviceInterface, device, &pCreateInfo, DE_NULL)));
+                new Move<VkPipelineCache>(createPipelineCache(deviceInterface, device, &pCreateInfo, nullptr)));
         }
     }
 #endif // CTS_USES_VULKANSC
@@ -496,7 +491,7 @@ VkResult ResourceInterfaceStandard::createShaderModule(VkDevice device, const Vk
     {
         if (isVulkanSC())
         {
-            *pShaderModule = VkShaderModule(++m_resourceCounter);
+            *pShaderModule = incResourceCounter<VkShaderModule>();
             registerObjectHash(pShaderModule->getInternal(),
                                calculateShaderModuleHash(*pCreateInfo, getObjectHashes()));
             return VK_SUCCESS;
@@ -516,7 +511,7 @@ VkResult ResourceInterfaceStandard::createShaderModule(VkDevice device, const Vk
     }
 
     // main process: store VkShaderModuleCreateInfo in JSON format. Shaders will be sent later for m_pipelineCache creation ( and sent through file to another process )
-    *pShaderModule = VkShaderModule(++m_resourceCounter);
+    *pShaderModule = incResourceCounter<VkShaderModule>();
     registerObjectHash(pShaderModule->getInternal(), calculateShaderModuleHash(*pCreateInfo, getObjectHashes()));
     m_pipelineInput.shaderModules.insert({*pShaderModule, writeJSON_VkShaderModuleCreateInfo(*pCreateInfo)});
     return VK_SUCCESS;
@@ -564,7 +559,7 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
         // Check if test added pipeline identifier on its own
         VkPipelineOfflineCreateInfo *idInfo = (VkPipelineOfflineCreateInfo *)findStructureInChain(
             pCreateInfos[i].pNext, VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO);
-        if (idInfo == DE_NULL)
+        if (idInfo == nullptr)
         {
             pipelineIDs.push_back(
                 makeGraphicsPipelineIdentifier(m_currentTestPath, pCreateInfos[i], getObjectHashes()));
@@ -596,7 +591,7 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
             bool depthStencilStateRequired      = false;
             bool colorBlendStateRequired        = false;
 
-            if (pCreateInfoCopies[i].pStages != DE_NULL)
+            if (pCreateInfoCopies[i].pStages != nullptr)
             {
                 for (uint32_t j = 0; j < pCreateInfoCopies[i].stageCount; ++j)
                 {
@@ -611,9 +606,9 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
                     }
                 }
             }
-            if (pCreateInfoCopies[i].pDynamicState != DE_NULL)
+            if (pCreateInfoCopies[i].pDynamicState != nullptr)
             {
-                if (pCreateInfoCopies[i].pDynamicState->pDynamicStates != DE_NULL)
+                if (pCreateInfoCopies[i].pDynamicState->pDynamicStates != nullptr)
                     for (uint32_t j = 0; j < pCreateInfoCopies[i].pDynamicState->dynamicStateCount; ++j)
                     {
                         if (pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] == VK_DYNAMIC_STATE_VIEWPORT ||
@@ -635,7 +630,7 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
                             viewportStateRequired = true;
                     }
             }
-            if (pCreateInfoCopies[i].pRasterizationState != DE_NULL)
+            if (pCreateInfoCopies[i].pRasterizationState != nullptr)
             {
                 if (pCreateInfoCopies[i].pRasterizationState->rasterizerDiscardEnable == VK_FALSE)
                 {
@@ -647,27 +642,27 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
                     colorBlendStateRequired        = true;
                 }
             }
-            if (pCreateInfoCopies[i].pVertexInputState != DE_NULL && !vertexInputStateRequired)
-                pCreateInfoCopies[i].pVertexInputState = DE_NULL;
-            if (pCreateInfoCopies[i].pInputAssemblyState != DE_NULL && !inputAssemblyStateRequired)
-                pCreateInfoCopies[i].pInputAssemblyState = DE_NULL;
-            if (pCreateInfoCopies[i].pTessellationState != DE_NULL && !tessellationStateRequired)
-                pCreateInfoCopies[i].pTessellationState = DE_NULL;
-            if (pCreateInfoCopies[i].pViewportState != DE_NULL)
+            if (pCreateInfoCopies[i].pVertexInputState != nullptr && !vertexInputStateRequired)
+                pCreateInfoCopies[i].pVertexInputState = nullptr;
+            if (pCreateInfoCopies[i].pInputAssemblyState != nullptr && !inputAssemblyStateRequired)
+                pCreateInfoCopies[i].pInputAssemblyState = nullptr;
+            if (pCreateInfoCopies[i].pTessellationState != nullptr && !tessellationStateRequired)
+                pCreateInfoCopies[i].pTessellationState = nullptr;
+            if (pCreateInfoCopies[i].pViewportState != nullptr)
             {
                 if (viewportStateRequired)
                 {
                     viewportStateCopies[i] = *(pCreateInfoCopies[i].pViewportState);
                     bool exchangeVP        = false;
-                    if (pCreateInfoCopies[i].pViewportState->pViewports != DE_NULL && !viewportStateViewportsRequired)
+                    if (pCreateInfoCopies[i].pViewportState->pViewports != nullptr && !viewportStateViewportsRequired)
                     {
-                        viewportStateCopies[i].pViewports    = DE_NULL;
+                        viewportStateCopies[i].pViewports    = nullptr;
                         viewportStateCopies[i].viewportCount = 0u;
                         exchangeVP                           = true;
                     }
-                    if (pCreateInfoCopies[i].pViewportState->pScissors != DE_NULL && !viewportStateScissorsRequired)
+                    if (pCreateInfoCopies[i].pViewportState->pScissors != nullptr && !viewportStateScissorsRequired)
                     {
-                        viewportStateCopies[i].pScissors    = DE_NULL;
+                        viewportStateCopies[i].pScissors    = nullptr;
                         viewportStateCopies[i].scissorCount = 0u;
                         exchangeVP                          = true;
                     }
@@ -675,14 +670,14 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
                         pCreateInfoCopies[i].pViewportState = &(viewportStateCopies[i]);
                 }
                 else
-                    pCreateInfoCopies[i].pViewportState = DE_NULL;
+                    pCreateInfoCopies[i].pViewportState = nullptr;
             }
-            if (pCreateInfoCopies[i].pMultisampleState != DE_NULL && !multiSampleStateRequired)
-                pCreateInfoCopies[i].pMultisampleState = DE_NULL;
-            if (pCreateInfoCopies[i].pDepthStencilState != DE_NULL && !depthStencilStateRequired)
-                pCreateInfoCopies[i].pDepthStencilState = DE_NULL;
-            if (pCreateInfoCopies[i].pColorBlendState != DE_NULL && !colorBlendStateRequired)
-                pCreateInfoCopies[i].pColorBlendState = DE_NULL;
+            if (pCreateInfoCopies[i].pMultisampleState != nullptr && !multiSampleStateRequired)
+                pCreateInfoCopies[i].pMultisampleState = nullptr;
+            if (pCreateInfoCopies[i].pDepthStencilState != nullptr && !depthStencilStateRequired)
+                pCreateInfoCopies[i].pDepthStencilState = nullptr;
+            if (pCreateInfoCopies[i].pColorBlendState != nullptr && !colorBlendStateRequired)
+                pCreateInfoCopies[i].pColorBlendState = nullptr;
         }
     }
 
@@ -720,7 +715,7 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
 
         auto it              = std::find_if(begin(m_pipelineInput.pipelines), end(m_pipelineInput.pipelines),
                                             vksc_server::PipelineIdentifierEqual(pipelineIDs[i]));
-        pipelineIDs[i].pNext = DE_NULL;
+        pipelineIDs[i].pNext = nullptr;
         if (it == end(m_pipelineInput.pipelines))
         {
             const auto &featIt = m_deviceFeatures.find(device);
@@ -760,7 +755,7 @@ VkResult ResourceInterfaceStandard::createComputePipelines(VkDevice device, VkPi
         // Check if test added pipeline identifier on its own
         VkPipelineOfflineCreateInfo *idInfo = (VkPipelineOfflineCreateInfo *)findStructureInChain(
             pCreateInfos[i].pNext, VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO);
-        if (idInfo == DE_NULL)
+        if (idInfo == nullptr)
         {
             pipelineIDs.push_back(makeComputePipelineIdentifier(m_currentTestPath, pCreateInfos[i], getObjectHashes()));
             idInPNextChain.push_back(0);
@@ -809,7 +804,7 @@ VkResult ResourceInterfaceStandard::createComputePipelines(VkDevice device, VkPi
 
         auto it              = std::find_if(begin(m_pipelineInput.pipelines), end(m_pipelineInput.pipelines),
                                             vksc_server::PipelineIdentifierEqual(pipelineIDs[i]));
-        pipelineIDs[i].pNext = DE_NULL;
+        pipelineIDs[i].pNext = nullptr;
         if (it == end(m_pipelineInput.pipelines))
         {
             const auto &featIt = m_deviceFeatures.find(device);
@@ -1128,7 +1123,7 @@ VkResult ResourceInterfaceVKSC::createShaderModule(VkDevice device, const VkShad
     // - server exists
     // - subprocess asks for creation of VkShaderModule which will be later ignored, because it will receive the whole pipeline from server
     // ( Are there any tests which receive VkShaderModule and do not use it in any pipeline ? )
-    *pShaderModule = VkShaderModule(++m_resourceCounter);
+    *pShaderModule = incResourceCounter<VkShaderModule>();
     registerObjectHash(pShaderModule->getInternal(), calculateShaderModuleHash(*pCreateInfo, getObjectHashes()));
     return VK_SUCCESS;
 }
@@ -1174,13 +1169,13 @@ void ResourceInterfaceVKSC::importPipelineCacheData(const PlatformInterface &vkp
 MultithreadedDestroyGuard::MultithreadedDestroyGuard(de::SharedPtr<vk::ResourceInterface> resourceInterface)
     : m_resourceInterface{resourceInterface}
 {
-    if (m_resourceInterface.get() != DE_NULL)
+    if (m_resourceInterface.get() != nullptr)
         m_resourceInterface->setHandleDestroy(false);
 }
 
 MultithreadedDestroyGuard::~MultithreadedDestroyGuard()
 {
-    if (m_resourceInterface.get() != DE_NULL)
+    if (m_resourceInterface.get() != nullptr)
         m_resourceInterface->setHandleDestroy(true);
 }
 

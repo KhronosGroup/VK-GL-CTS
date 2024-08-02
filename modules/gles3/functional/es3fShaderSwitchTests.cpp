@@ -172,7 +172,7 @@ static tcu::TestCase *makeSwitchCase(Context &context, const char *name, const c
                                 type == SWITCHTYPE_STATIC  ? evalSwitchStatic :
                                 type == SWITCHTYPE_UNIFORM ? evalSwitchUniform :
                                 type == SWITCHTYPE_DYNAMIC ? evalSwitchDynamic :
-                                                             (ShaderEvalFunc)DE_NULL);
+                                                             nullptr);
 }
 
 static void makeSwitchCases(TestCaseGroup *group, const char *name, const char *desc, const LineStream &switchBody,

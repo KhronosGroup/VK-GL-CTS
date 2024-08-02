@@ -28,6 +28,7 @@ KHR-GL45.transform_feedback.draw_xfb_stream_test
 KHR-GL45.transform_feedback.capture_special_interleaved_test
 KHR-GL45.transform_feedback.draw_xfb_instanced_test
 KHR-GL45.transform_feedback.draw_xfb_stream_instanced_test
+KHR-GL45.transform_feedback.geometry
 KHR-GL45.transform_feedback3.multiple_streams
 KHR-GL45.transform_feedback3.skip_components
 KHR-GL45.transform_feedback3.skip_multiple_buffers

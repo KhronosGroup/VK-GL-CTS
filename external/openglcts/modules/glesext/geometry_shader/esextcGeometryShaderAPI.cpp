@@ -735,7 +735,7 @@ bool GeometryShaderGetProgramiv3Test::buildShader(glw::GLuint so_id, const char 
     bool result               = false;
 
     gl.shaderSource(so_id, 1,           /* count */
-                    &so_body, DE_NULL); /* length */
+                    &so_body, nullptr); /* length */
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call failed.");
 
     gl.compileShader(so_id);
@@ -1534,16 +1534,16 @@ tcu::TestNode::IterateResult GeometryShaderMaxImageUniformsTest::iterate()
     glw::GLint counter                    = 0;
     glw::GLint expectedValue              = 0;
     bool has_shader_compilation_failed    = true;
-    glw::GLfloat *ptr                     = DE_NULL;
+    glw::GLfloat *ptr                     = nullptr;
     bool result                           = true;
     const glw::GLchar *feedbackVaryings[] = {"gl_Position"};
 
     std::string fs_code_specialized     = "";
-    const char *fs_code_specialized_raw = DE_NULL;
+    const char *fs_code_specialized_raw = nullptr;
     std::string gs_code_specialized     = "";
-    const char *gs_code_specialized_raw = DE_NULL;
+    const char *gs_code_specialized_raw = nullptr;
     std::string vs_code_specialized     = "";
-    const char *vs_code_specialized_raw = DE_NULL;
+    const char *vs_code_specialized_raw = nullptr;
 
     /* This test should only run if EXT_geometry_shader is supported. */
     if (!m_is_geometry_shader_extension_supported)
@@ -1886,19 +1886,19 @@ tcu::TestNode::IterateResult GeometryShaderMaxShaderStorageBlocksTest::iterate()
     const glw::GLfloat initial_buffer_data[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     glw::GLint int_alignment                  = 0;
     const glw::GLint int_size                 = sizeof(glw::GLint);
-    glw::GLint *ptrSSBO_data                  = DE_NULL;
-    glw::GLfloat *ptrTF_data                  = DE_NULL;
+    glw::GLint *ptrSSBO_data                  = nullptr;
+    glw::GLfloat *ptrTF_data                  = nullptr;
     bool result                               = true;
     glw::GLint ssbo_alignment                 = 0;
-    glw::GLint *ssbo_data                     = DE_NULL;
+    glw::GLint *ssbo_data                     = nullptr;
     glw::GLint ssbo_data_size                 = 0;
 
     std::string fs_code_specialized     = "";
-    const char *fs_code_specialized_raw = DE_NULL;
+    const char *fs_code_specialized_raw = nullptr;
     std::string gs_code_specialized     = "";
-    const char *gs_code_specialized_raw = DE_NULL;
+    const char *gs_code_specialized_raw = nullptr;
     std::string vs_code_specialized     = "";
-    const char *vs_code_specialized_raw = DE_NULL;
+    const char *vs_code_specialized_raw = nullptr;
 
     /* This test should only run if EXT_geometry_shader is supported. */
     if (!m_is_geometry_shader_extension_supported)
@@ -2283,18 +2283,18 @@ tcu::TestNode::IterateResult GeometryShaderMaxAtomicCountersTest::iterate()
                           "}\n";
 
     bool has_shader_compilation_failed            = true;
-    glw::GLuint *initial_ac_data                  = DE_NULL;
+    glw::GLuint *initial_ac_data                  = nullptr;
     const unsigned int n_draw_call_vertices       = 4;
     glw::GLint n_loop_iterations_uniform_location = -1;
-    glw::GLuint *ptrACBO_data                     = DE_NULL;
+    glw::GLuint *ptrACBO_data                     = nullptr;
     bool result                                   = true;
 
     std::string fs_code_specialized     = "";
-    const char *fs_code_specialized_raw = DE_NULL;
+    const char *fs_code_specialized_raw = nullptr;
     std::string gs_code_specialized     = "";
-    const char *gs_code_specialized_raw = DE_NULL;
+    const char *gs_code_specialized_raw = nullptr;
     std::string vs_code_specialized     = "";
-    const char *vs_code_specialized_raw = DE_NULL;
+    const char *vs_code_specialized_raw = nullptr;
 
     /* This test should only run if EXT_geometry_shader is supported. */
     if (!m_is_geometry_shader_extension_supported)
@@ -2609,11 +2609,11 @@ tcu::TestNode::IterateResult GeometryShaderMaxAtomicCounterBuffersTest::iterate(
     bool result                         = true;
 
     std::string fs_code_specialized     = "";
-    const char *fs_code_specialized_raw = DE_NULL;
+    const char *fs_code_specialized_raw = nullptr;
     std::string gs_code_specialized     = "";
-    const char *gs_code_specialized_raw = DE_NULL;
+    const char *gs_code_specialized_raw = nullptr;
     std::string vs_code_specialized     = "";
-    const char *vs_code_specialized_raw = DE_NULL;
+    const char *vs_code_specialized_raw = nullptr;
 
     /* This test should only run if EXT_geometry_shader is supported. */
     if (!m_is_geometry_shader_extension_supported)

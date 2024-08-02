@@ -793,9 +793,8 @@ private:
             barrier.subresourceRange.baseArrayLayer = 0;
             barrier.subresourceRange.layerCount     = 1;
 
-            vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (vk::VkDependencyFlags)0, 0,
-                                  (const vk::VkMemoryBarrier *)nullptr, 0, (const vk::VkBufferMemoryBarrier *)nullptr,
-                                  1, &barrier);
+            vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (vk::VkDependencyFlags)0, 0, nullptr, 0,
+                                  nullptr, 1, &barrier);
         };
 
         transition2DImage(m_vk, *m_cmdBuffer, *m_imageColor, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED,

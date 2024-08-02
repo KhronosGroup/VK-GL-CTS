@@ -349,7 +349,7 @@ void IndexGroup::init(void)
         const IndexTest &indexTest = tests[testNdx];
         tcu::TestCaseGroup *group  = (indexTest.storage == gls::DrawTestSpec::STORAGE_USER) ?
                                          ((indexTest.aligned) ? (userPtrGroup) : (unalignedUserPtrGroup)) :
-                                         ((indexTest.aligned) ? (bufferGroup) : (DE_NULL));
+                                         ((indexTest.aligned) ? (bufferGroup) : (nullptr));
 
         const std::string name = std::string("index_") + gls::DrawTestSpec::indexTypeToString(indexTest.type);
         const std::string desc = std::string("index ") + gls::DrawTestSpec::indexTypeToString(indexTest.type) + " in " +

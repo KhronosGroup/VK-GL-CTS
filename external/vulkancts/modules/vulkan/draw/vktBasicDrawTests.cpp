@@ -426,9 +426,9 @@ void DrawTestInstanceBase::initialize(const DrawParamsBase &data)
 
         const vk::VkAttachmentReference colorAttachmentReference{0, vk::VK_IMAGE_LAYOUT_GENERAL};
 
-        renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, 1,
-                                                           &colorAttachmentReference, DE_NULL, AttachmentReference(), 0,
-                                                           DE_NULL));
+        renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1,
+                                                           &colorAttachmentReference, nullptr, AttachmentReference(), 0,
+                                                           nullptr));
 
         m_renderPass = vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
 
@@ -518,7 +518,7 @@ void DrawTestInstanceBase::initPipeline(const vk::VkDevice device)
 
 #ifndef CTS_USES_VULKANSC
     vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo{vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              0u,
                                                              1u,
                                                              &m_colorAttachmentFormat,
@@ -557,12 +557,12 @@ void DrawTestInstanceBase::preRenderBarriers(void)
                             1, &subresourceRange);
 
     const vk::VkMemoryBarrier memBarrier{
-        vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+        vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, vk::VK_ACCESS_TRANSFER_WRITE_BIT,
         vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT};
 
     m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                            vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0,
-                            DE_NULL);
+                            vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, nullptr, 0,
+                            nullptr);
 }
 
 void DrawTestInstanceBase::beginRenderPass(vk::VkCommandBuffer cmdBuffer)
@@ -584,7 +584,7 @@ void DrawTestInstanceBase::beginSecondaryCmdBuffer(const vk::DeviceInterface &vk
 {
     const vk::VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                             // const void* pNext;
+        nullptr,                                                             // const void* pNext;
         renderingFlags,                                                      // VkRenderingFlagsKHR flags;
         0u,                                                                  // uint32_t viewMask;
         1u,                                                                  // uint32_t colorAttachmentCount;
@@ -611,7 +611,7 @@ void DrawTestInstanceBase::beginSecondaryCmdBuffer(const vk::DeviceInterface &vk
 
     const vk::VkCommandBufferBeginInfo commandBufBeginParams{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         usageFlags,                                      // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
@@ -622,7 +622,7 @@ void DrawTestInstanceBase::beginNestedCmdBuffer(const vk::DeviceInterface &vk, v
 {
     const vk::VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                             // const void* pNext;
+        nullptr,                                                             // const void* pNext;
         renderingFlags,                                                      // VkRenderingFlagsKHR flags;
         0u,                                                                  // uint32_t viewMask;
         1u,                                                                  // uint32_t colorAttachmentCount;
@@ -649,7 +649,7 @@ void DrawTestInstanceBase::beginNestedCmdBuffer(const vk::DeviceInterface &vk, v
 
     const vk::VkCommandBufferBeginInfo commandBufBeginParams{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         usageFlags,                                      // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
@@ -1085,7 +1085,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedParams>::iterate(void)
 
     const vk::VkBufferCreateInfo bufferCreateInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         0u,                                       // VkBufferCreateFlags flags;
         bufferSize,                               // VkDeviceSize size;
         vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT,     // VkBufferUsageFlags usage;
@@ -1283,7 +1283,7 @@ tcu::TestStatus DrawTestInstance<DrawIndirectParams>::iterate(void)
 
         const vk::VkBufferCreateInfo indirectCreateInfo = {
             vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkBufferCreateFlags flags;
             indirectInfoSize,                         // VkDeviceSize size;
             vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,  // VkBufferUsageFlags usage;
@@ -1504,7 +1504,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate(void)
 
         vk::VkBufferCreateInfo indirectCreateInfo{
             vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkBufferCreateFlags flags;
             indirectInfoSize,                         // VkDeviceSize size;
             vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,  // VkBufferUsageFlags usage;
@@ -1540,7 +1540,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate(void)
 
     vk::VkBufferCreateInfo bufferCreateInfo{
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         0u,                                       // VkBufferCreateFlags flags;
         bufferSize,                               // VkDeviceSize size;
         vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT,     // VkBufferUsageFlags usage;

@@ -116,8 +116,8 @@ BlockBuffer<T>::BlockBuffer(int blockSize, int numBlocks)
     , m_readPos(0)
     , m_blockSize(blockSize)
     , m_numBlocks(numBlocks)
-    , m_elements(DE_NULL)
-    , m_numUsedInBlock(DE_NULL)
+    , m_elements(nullptr)
+    , m_numUsedInBlock(nullptr)
     , m_writeLock()
     , m_readLock()
     , m_canceled(false)
@@ -137,8 +137,8 @@ BlockBuffer<T>::BlockBuffer(int blockSize, int numBlocks)
         throw;
     }
 
-    m_fill  = deSemaphore_create(0, DE_NULL);
-    m_empty = deSemaphore_create(numBlocks, DE_NULL);
+    m_fill  = deSemaphore_create(0, nullptr);
+    m_empty = deSemaphore_create(numBlocks, nullptr);
     DE_ASSERT(m_fill && m_empty);
 }
 
@@ -161,8 +161,8 @@ void BlockBuffer<T>::clear(void)
     deSemaphore_destroy(m_fill);
     deSemaphore_destroy(m_empty);
 
-    m_fill       = deSemaphore_create(0, DE_NULL);
-    m_empty      = deSemaphore_create(m_numBlocks, DE_NULL);
+    m_fill       = deSemaphore_create(0, nullptr);
+    m_empty      = deSemaphore_create(m_numBlocks, nullptr);
     m_writeBlock = 0;
     m_writePos   = 0;
     m_readBlock  = 0;
@@ -185,7 +185,7 @@ void BlockBuffer<T>::cancel(void)
 template <typename T>
 int BlockBuffer<T>::writeToCurrentBlock(int numElements, const T *elements, bool blocking)
 {
-    DE_ASSERT(numElements > 0 && elements != DE_NULL);
+    DE_ASSERT(numElements > 0 && elements != nullptr);
 
     if (m_writePos == 0)
     {
@@ -228,7 +228,7 @@ int BlockBuffer<T>::writeToCurrentBlock(int numElements, const T *elements, bool
 template <typename T>
 int BlockBuffer<T>::readFromCurrentBlock(int numElements, T *elements, bool blocking)
 {
-    DE_ASSERT(numElements > 0 && elements != DE_NULL);
+    DE_ASSERT(numElements > 0 && elements != nullptr);
 
     if (m_readPos == 0)
     {
@@ -279,7 +279,7 @@ int BlockBuffer<T>::tryWrite(int numElements, const T *elements)
 {
     int numWritten = 0;
 
-    DE_ASSERT(numElements > 0 && elements != DE_NULL);
+    DE_ASSERT(numElements > 0 && elements != nullptr);
 
     if (m_canceled)
         throw CanceledException();
@@ -305,7 +305,7 @@ int BlockBuffer<T>::tryWrite(int numElements, const T *elements)
 template <typename T>
 void BlockBuffer<T>::write(int numElements, const T *elements)
 {
-    DE_ASSERT(numElements > 0 && elements != DE_NULL);
+    DE_ASSERT(numElements > 0 && elements != nullptr);
 
     if (m_canceled)
         throw CanceledException();
@@ -384,7 +384,7 @@ int BlockBuffer<T>::tryRead(int numElements, T *elements)
 template <typename T>
 void BlockBuffer<T>::read(int numElements, T *elements)
 {
-    DE_ASSERT(numElements > 0 && elements != DE_NULL);
+    DE_ASSERT(numElements > 0 && elements != nullptr);
 
     if (m_canceled)
         throw CanceledException();

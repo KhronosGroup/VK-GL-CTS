@@ -746,7 +746,7 @@ static void copyAllPlanesToBuffers(const DeviceDriver &vkd, const DecodedFrame &
 
             const VkImageMemoryBarrier preCopyBarrier = {
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                DE_NULL,
+                nullptr,
                 0u,
                 VK_ACCESS_TRANSFER_READ_BIT,
                 VK_IMAGE_LAYOUT_GENERAL,
@@ -758,8 +758,7 @@ static void copyAllPlanesToBuffers(const DeviceDriver &vkd, const DecodedFrame &
 
             vkd.cmdPipelineBarrier(cmdbuf, (VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                                    (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0u, 0u,
-                                   (const VkMemoryBarrier *)DE_NULL, 0u, (const VkBufferMemoryBarrier *)DE_NULL, 1u,
-                                   &preCopyBarrier);
+                                   nullptr, 0u, nullptr, 1u, &preCopyBarrier);
         }
         {
             const VkBufferImageCopy copy = {0u, // bufferOffset
@@ -773,7 +772,7 @@ static void copyAllPlanesToBuffers(const DeviceDriver &vkd, const DecodedFrame &
         }
         {
             const VkBufferMemoryBarrier postCopyBarrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            VK_ACCESS_TRANSFER_WRITE_BIT,
                                                            VK_ACCESS_HOST_READ_BIT,
                                                            VK_QUEUE_FAMILY_IGNORED,
@@ -783,9 +782,8 @@ static void copyAllPlanesToBuffers(const DeviceDriver &vkd, const DecodedFrame &
                                                            VK_WHOLE_SIZE};
 
             vkd.cmdPipelineBarrier(cmdbuf, (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0u, 0u,
-                                   (const VkMemoryBarrier *)DE_NULL, 1u, &postCopyBarrier, 0u,
-                                   (const VkImageMemoryBarrier *)DE_NULL);
+                                   (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0u, 0u, nullptr,
+                                   1u, &postCopyBarrier, 0u, nullptr);
         }
     }
 }
@@ -847,13 +845,13 @@ DownloadedFrame getDecodedImage(DeviceContext &devctx, VkImageLayout originalLay
     {
         const VkBufferCreateInfo bufferInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             (VkBufferCreateFlags)0u,
             computePlaneSize(imageExtent, planarDescription, plane),
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             VK_SHARING_MODE_EXCLUSIVE,
             0u,
-            (const uint32_t *)DE_NULL,
+            nullptr,
         };
         planeBuffers.emplace_back(new BufferWithMemory(vkd, device, devctx.allocator(), bufferInfo,
                                                        MemoryRequirement::HostVisible | MemoryRequirement::Any));
@@ -908,7 +906,7 @@ DownloadedFrame getDecodedImage(DeviceContext &devctx, VkImageLayout originalLay
 
     const VkSubmitInfo transferSubmitInfo{
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType                              sType;
-        DE_NULL,                       // const void*                                  pNext;
+        nullptr,                       // const void*                                  pNext;
         1u,                            // uint32_t                                             waitSemaphoreCount;
         &*semaphore,                   // const VkSemaphore*                   pWaitSemaphores;
         &waitDstStageMask,             // const VkPipelineStageFlags*  pWaitDstStageMask;
@@ -1051,7 +1049,7 @@ DownloadedFrame getDecodedImage(DeviceContext &devctx, VkImageLayout originalLay
 
     const VkSubmitInfo transferSubmitInfo2{
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType                              sType;
-        DE_NULL,                       // const void*                                  pNext;
+        nullptr,                       // const void*                                  pNext;
         1u,                            // uint32_t                                             waitSemaphoreCount;
         &*semaphore,                   // const VkSemaphore*                   pWaitSemaphores;
         &waitDstStageMask,             // const VkPipelineStageFlags*  pWaitDstStageMask;
@@ -1069,14 +1067,14 @@ DownloadedFrame getDecodedImage(DeviceContext &devctx, VkImageLayout originalLay
 
     const VkSubmitInfo decodeSubmitInfo2{
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType                              sType;
-        DE_NULL,                       // const void*                                  pNext;
+        nullptr,                       // const void*                                  pNext;
         1u,                            // uint32_t                                             waitSemaphoreCount;
         &*semaphore,                   // const VkSemaphore*                   pWaitSemaphores;
         &waitDstStageMask,             // const VkPipelineStageFlags*  pWaitDstStageMask;
         1u,                            // uint32_t                                             commandBufferCount;
         &*cmdDecodeBuffer,             // const VkCommandBuffer*               pCommandBuffers;
         0u,                            // uint32_t                                             signalSemaphoreCount;
-        DE_NULL,                       // const VkSemaphore*                   pSignalSemaphores;
+        nullptr,                       // const VkSemaphore*                   pSignalSemaphores;
     };
     VK_CHECK(vkd.queueSubmit(queueDecode, 1u, &decodeSubmitInfo2, *decodeFence));
     VK_CHECK(vkd.waitForFences(device, 1, &*decodeFence, true, ~0ull));

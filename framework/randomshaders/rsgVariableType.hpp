@@ -63,7 +63,7 @@ public:
     class Member
     {
     public:
-        Member(void) : m_type(DE_NULL), m_name()
+        Member(void) : m_type(nullptr), m_name()
         {
         }
 
@@ -76,7 +76,7 @@ public:
             delete m_type;
         }
 
-        Member(const Member &other) : m_type(DE_NULL), m_name(other.m_name)
+        Member(const Member &other) : m_type(nullptr), m_name(other.m_name)
         {
             if (other.m_type)
                 m_type = new VariableType(*other.m_type);
@@ -89,7 +89,7 @@ public:
 
             delete m_type;
 
-            m_type = DE_NULL;
+            m_type = nullptr;
             m_name = other.m_name;
 
             if (other.m_type)
@@ -218,7 +218,7 @@ inline VariableType::VariableType(void)
     , m_precision(PRECISION_NONE)
     , m_typeName()
     , m_numElements(0)
-    , m_elementType(DE_NULL)
+    , m_elementType(nullptr)
 {
 }
 
@@ -227,7 +227,7 @@ inline VariableType::VariableType(Type baseType, int numElements)
     , m_precision(PRECISION_NONE)
     , m_typeName()
     , m_numElements(numElements)
-    , m_elementType(DE_NULL)
+    , m_elementType(nullptr)
 {
     DE_ASSERT(baseType != TYPE_ARRAY && baseType != TYPE_STRUCT);
 }
@@ -247,7 +247,7 @@ inline VariableType::VariableType(Type baseType, const char *typeName)
     , m_precision(PRECISION_NONE)
     , m_typeName(typeName)
     , m_numElements(0)
-    , m_elementType(DE_NULL)
+    , m_elementType(nullptr)
 {
     DE_ASSERT(baseType == TYPE_STRUCT);
 }

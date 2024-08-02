@@ -35,7 +35,7 @@ TestContext::TestContext(Platform &platform, Archive &rootArchive, TestLog &log,
     , m_log(log)
     , m_cmdLine(cmdLine)
     , m_watchDog(watchDog)
-    , m_curArchive(DE_NULL)
+    , m_curArchive(nullptr)
     , m_testResult(QP_TEST_RESULT_LAST)
     , m_terminateAfter(false)
 {

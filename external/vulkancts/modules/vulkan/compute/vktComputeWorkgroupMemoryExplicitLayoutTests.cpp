@@ -91,7 +91,7 @@ void checkSupportWithParams(Context &context, const CheckSupportParams &params)
     VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR layout_features;
     deMemset(&layout_features, 0, sizeof(layout_features));
     layout_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR;
-    layout_features.pNext = DE_NULL;
+    layout_features.pNext = nullptr;
 
     VkPhysicalDeviceShaderFloat16Int8Features f16_i8_features;
     deMemset(&f16_i8_features, 0, sizeof(f16_i8_features));
@@ -201,7 +201,7 @@ tcu::TestStatus runCompute(Context &context, uint32_t workgroupSize,
 
     beginCommandBuffer(vk, *cmdBuffer, 0);
 
-    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u, DE_NULL);
+    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u, nullptr);
     pipeline.bind(*cmdBuffer);
 
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);

@@ -345,7 +345,7 @@ public:
         glBindBuffer(m_target, buf);
 
         // Initialize storage with glBufferData()
-        glBufferData(m_target, m_size, DE_NULL, m_usage);
+        glBufferData(m_target, m_size, nullptr, m_usage);
         checkError();
 
         // Fill specified ranges with glBufferSubData()
@@ -387,7 +387,7 @@ public:
     RandomBufferWriteCase(Context &context, const char *name, const char *desc, uint32_t seed)
         : BufferCase(context.getTestContext(), context.getRenderContext(), name, desc)
         , m_seed(seed)
-        , m_verifier(DE_NULL)
+        , m_verifier(nullptr)
         , m_buffer(0)
         , m_curSize(0)
         , m_iterNdx(0)
@@ -417,7 +417,7 @@ public:
         m_refBuffer.setSize(0);
 
         delete m_verifier;
-        m_verifier = DE_NULL;
+        m_verifier = nullptr;
 
         BufferCase::deinit();
     }
@@ -469,7 +469,7 @@ public:
                 if (fillWithData)
                     fillWithRandomBytes(m_refBuffer.getPtr(), size, rnd.getUint32());
 
-                glBufferData(target, size, fillWithData ? m_refBuffer.getPtr() : DE_NULL, hint);
+                glBufferData(target, size, fillWithData ? m_refBuffer.getPtr() : nullptr, hint);
 
                 m_validRanges.clear();
                 if (fillWithData)

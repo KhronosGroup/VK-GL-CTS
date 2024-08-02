@@ -1,0 +1,111 @@
+#!amber
+
+DEVICE_EXTENSION VK_KHR_acceleration_structure
+DEVICE_EXTENSION VK_KHR_ray_tracing_pipeline
+DEVICE_EXTENSION VK_KHR_buffer_device_address
+DEVICE_FEATURE   RayTracingPipelineFeaturesKHR.rayTracingPipeline
+DEVICE_FEATURE   AccelerationStructureFeaturesKHR.accelerationStructure
+DEVICE_FEATURE   BufferDeviceAddressFeatures.bufferDeviceAddress
+
+SHADER ray_generation raygeneration1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(push_constant) uniform block1 {
+    uint width;
+  };
+
+  layout(location = 0) rayPayloadEXT float payload;
+  layout(set = 0, binding = 0) uniform accelerationStructureEXT gScene;
+  layout(set = 0, binding = 1, r32f) uniform image1D result;
+
+  // Launch a set of rays 0.0...1.0 in screen space
+  void main()
+  {
+    uvec2 dims = gl_LaunchSizeEXT.xy;
+    uvec2 index = gl_LaunchIDEXT.xy;
+    payload = -1.0;
+    // Screen position for the ray
+    vec2 fragCoord = ((index.xy + vec2(0.5f)) / dims) * 2.0f - 1.0f;
+
+    // Should show part of the triangle. Trianlge should be centered at 0, 0, 1.0s
+    float TMin      = 1.0e-4f;
+    float TMax      = 1.0e+38f;
+    vec3  Origin    = vec3(fragCoord.x, fragCoord.y, 0.0);
+    vec3  Direction = vec3(0, 0, 1);
+    traceRayEXT(gScene, gl_RayFlagsNoneEXT, 0xff, 0, 0, 0, Origin, TMin, Direction, TMax, 0);
+    imageStore(result, int(index.y * width + index.x), vec4(payload, 0, 0, 0));
+}
+END
+
+SHADER miss miss1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) rayPayloadInEXT float payload;
+
+  void main() {
+    payload = 0.0; // Miss is 0.0
+  }
+END
+
+SHADER closest_hit closesthit1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  hitAttributeEXT vec2 barycentrics;
+  layout(location = 0) rayPayloadInEXT float payload;
+
+  void main()
+  {
+    // Hit is 1.0
+    // First two digits of the x barycentrics
+    payload = round(barycentrics.x * 100);
+  }
+END
+
+ACCELERATION_STRUCTURE BOTTOM_LEVEL triangle_blas
+  GEOMETRY TRIANGLES
+    0.0 -0.75 1.0
+    -0.75 0.75 1.0
+    0.75 0.75 1.0
+  END
+END
+ACCELERATION_STRUCTURE TOP_LEVEL triangle_tlas
+  BOTTOM_LEVEL_INSTANCE triangle_blas END
+END
+
+# Buffer to hold output
+IMAGE outbuf FORMAT R32_SFLOAT DIM_1D WIDTH 64 FILL 0
+
+BUFFER push_const_buf DATA_TYPE uint32 DATA 8 END
+
+PIPELINE raytracing my_rtpipeline
+  MAX_RAY_PAYLOAD_SIZE 16
+  MAX_RAY_HIT_ATTRIBUTE_SIZE 8
+  MAX_RAY_RECURSION_DEPTH 1
+  BIND ACCELERATION_STRUCTURE triangle_tlas DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER outbuf AS storage_image DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER push_const_buf AS push_constant
+  SHADER_GROUP group_rgen raygeneration1
+  SHADER_GROUP group_miss1 miss1
+  SHADER_GROUP group_hits closesthit1
+  # Build shader tables
+  SHADER_BINDING_TABLE sbt_raygen
+    group_rgen
+  END
+  SHADER_BINDING_TABLE sbt_miss
+    group_miss1
+  END
+  SHADER_BINDING_TABLE sbt_hit
+    group_hits
+  END
+END
+
+RUN my_rtpipeline RAYGEN sbt_raygen MISS sbt_miss HIT sbt_hit 8 8 1
+
+EXPECT outbuf IDX 0 EQ 0 0 0 0 0 0 0 0
+EXPECT outbuf IDX 32 EQ 0 0 0 0 0 0 0 0
+EXPECT outbuf IDX 64 EQ 0 0 0 21 4 0 0 0
+EXPECT outbuf IDX 96 EQ 0 0 0 29 12 0 0 0
+EXPECT outbuf IDX 128 EQ 0 0 54 38 21 4 0 0
+EXPECT outbuf IDX 160 EQ 0 0 62 46 29 12 0 0
+EXPECT outbuf IDX 192 EQ 0  88 71 54 38 21 4 0
+EXPECT outbuf IDX 224 EQ 0 0 0 0 0 0 0 0

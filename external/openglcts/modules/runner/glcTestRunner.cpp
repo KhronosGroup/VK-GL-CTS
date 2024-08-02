@@ -641,7 +641,7 @@ static const char *getRunTypeName(glu::ApiType type)
     else if (type == glu::ApiType::core(4, 6))
         return "gl46";
     else
-        return DE_NULL;
+        return nullptr;
 }
 
 static void generateTestSessionParams(tcu::Platform &platform, glu::ApiType type,
@@ -780,7 +780,7 @@ TestRunner::TestRunner(tcu::Platform &platform, tcu::Archive &archive, const cha
     , m_type(type)
     , m_flags(flags)
     , m_iterState(ITERATE_INIT)
-    , m_curSession(DE_NULL)
+    , m_curSession(nullptr)
     , m_sessionsExecuted(0)
     , m_sessionsPassed(0)
     , m_sessionsFailed(0)
@@ -920,7 +920,7 @@ void TestRunner::deinitSession(void)
     m_summary.results.push_back(result);
 
     delete m_curSession;
-    m_curSession = DE_NULL;
+    m_curSession = nullptr;
 }
 
 inline bool TestRunner::iterateSession(void)

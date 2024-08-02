@@ -215,7 +215,7 @@ private:
 VertexIDCase::VertexIDCase(Context &context, gls::DrawTestSpec::DrawMethod drawMethod)
     : TestCase(context, "vertex_id", "gl_VertexID Test")
     , m_gl(m_context.getRenderContext().getFunctions())
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_vao(0)
     , m_coordinatesBuffer(0)
     , m_elementsBuffer(0)
@@ -274,7 +274,7 @@ void VertexIDCase::init(void)
     if (!m_program->isOk())
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
         TCU_FAIL("Failed to compile shader program");
     }
 
@@ -290,7 +290,7 @@ void VertexIDCase::init(void)
 void VertexIDCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     if (m_elementsBuffer)
     {
@@ -439,7 +439,7 @@ VertexIDCase::IterateResult VertexIDCase::iterate(void)
     if (m_vao)
         GLU_CHECK_GLW_CALL(m_gl, bindVertexArray(m_vao));
     GLU_CHECK_GLW_CALL(m_gl, enableVertexAttribArray(coordLocation));
-    GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(coordLocation, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL));
+    GLU_CHECK_GLW_CALL(m_gl, vertexAttribPointer(coordLocation, 2, GL_FLOAT, GL_FALSE, 0, nullptr));
 
     if (m_iterNdx == 0)
     {
@@ -453,7 +453,7 @@ VertexIDCase::IterateResult VertexIDCase::iterate(void)
         GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_elementsBuffer));
         GLU_CHECK_GLW_CALL(
             m_gl, bufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)sizeof(indices), &indices[0], GL_STATIC_DRAW));
-        draw(GL_TRIANGLES, drawCount, GL_UNSIGNED_SHORT, DE_NULL, baseVertex);
+        draw(GL_TRIANGLES, drawCount, GL_UNSIGNED_SHORT, nullptr, baseVertex);
     }
 
     glu::readPixels(m_context.getRenderContext(), 0, 0, surface.getAccess());

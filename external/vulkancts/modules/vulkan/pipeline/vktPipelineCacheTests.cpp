@@ -148,7 +148,7 @@ Move<VkBuffer> createBufferAndBindMemory(Context &context, VkDeviceSize size, Vk
 
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType      sType;
-        DE_NULL,                              // const void*          pNext;
+        nullptr,                              // const void*          pNext;
         0u,                                   // VkBufferCreateFlags  flags;
         size,                                 // VkDeviceSize         size;
         usage,                                // VkBufferUsageFlags   usage;
@@ -176,7 +176,7 @@ Move<VkImage> createImage2DAndBindMemory(Context &context, VkFormat format, uint
 
     const VkImageCreateInfo colorImageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType      sType;
-        DE_NULL,                             // const void*          pNext;
+        nullptr,                             // const void*          pNext;
         0u,                                  // VkImageCreateFlags   flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType          imageType;
         format,                              // VkFormat             format;
@@ -260,10 +260,10 @@ CacheTestInstance::CacheTestInstance(Context &context, const CacheTestParam *par
     {
         const VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType             sType;
-            DE_NULL,                                      // const void*                 pNext;
+            nullptr,                                      // const void*                 pNext;
             m_param->getPipelineCacheCreateFlags(),       // VkPipelineCacheCreateFlags  flags;
             0u,                                           // uintptr_t                   initialDataSize;
-            DE_NULL,                                      // const void*                 pInitialData;
+            nullptr,                                      // const void*                 pInitialData;
         };
 
         m_cache = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
@@ -535,7 +535,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance(Context &context, const Cac
     {
         VkImageMemoryBarrier colorImageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,      // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkAccessFlags srcAccessMask;
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,        // VkAccessFlags dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout oldLayout;
@@ -553,7 +553,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance(Context &context, const Cac
 
         const VkImageMemoryBarrier depthImageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType sType;
-            DE_NULL,                                          // const void* pNext;
+            nullptr,                                          // const void* pNext;
             0u,                                               // VkAccessFlags srcAccessMask;
             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout oldLayout;
@@ -570,7 +570,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance(Context &context, const Cac
     {
         VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType          sType;
-            DE_NULL,                                     // const void*              pNext;
+            nullptr,                                     // const void*              pNext;
             0u,                                          // VkImageViewCreateFlags   flags;
             *m_colorImage[PIPELINE_CACHE_NDX_NO_CACHE],  // VkImage                  image;
             VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType          viewType;
@@ -589,7 +589,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance(Context &context, const Cac
     {
         const VkImageViewCreateInfo depthAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType          sType;
-            DE_NULL,                                     // const void*              pNext;
+            nullptr,                                     // const void*              pNext;
             0u,                                          // VkImageViewCreateFlags   flags;
             *m_depthImage,                               // VkImage                  image;
             VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType          viewType;
@@ -614,7 +614,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance(Context &context, const Cac
 
         VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,           // VkStructureType              sType;
-            DE_NULL,                                             // const void*                  pNext;
+            nullptr,                                             // const void*                  pNext;
             0u,                                                  // VkFramebufferCreateFlags     flags;
             *m_renderPassFramebuffer[PIPELINE_CACHE_NDX_CACHED], // VkRenderPass                 renderPass;
             2u,                                                  // uint32_t                     attachmentCount;
@@ -637,12 +637,12 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance(Context &context, const Cac
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout =
@@ -659,7 +659,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper &
 {
     static const VkPipelineDepthStencilStateCreateInfo defaultDepthStencilState{
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
         VK_TRUE,                                                    // VkBool32 depthTestEnable;
         VK_TRUE,                                                    // VkBool32 depthWriteEnable;
@@ -712,7 +712,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper &
 
     static const VkPipelineVertexInputStateCreateInfo defaultVertexInputStateParams{
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
         1u,                                                        // uint32_t vertexBindingDescriptionCount;
         &defaultVertexInputBindingDescription,   // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -752,7 +752,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper &
         .setDefaultMultisampleState()
         .setupVertexInputState(&defaultVertexInputStateParams)
         .setupPreRasterizationShaderState(viewport, scissor, m_pipelineLayout, *m_renderPassFramebuffer[0], 0u,
-                                          vertShaderModule, DE_NULL, tescShaderModule, teseShaderModule,
+                                          vertShaderModule, nullptr, tescShaderModule, teseShaderModule,
                                           geomShaderModule)
         .setupFragmentShaderState(m_pipelineLayout, *m_renderPassFramebuffer[0], 0u, fragShaderModule,
                                   &defaultDepthStencilState)
@@ -798,7 +798,7 @@ void GraphicsCacheTestInstance::prepareCommandBuffer(void)
 
     vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                          (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers),
+                          (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers),
                           m_imageLayoutBarriers);
 
     prepareRenderPass(m_renderPassFramebuffer[PIPELINE_CACHE_NDX_NO_CACHE], m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE]);
@@ -962,7 +962,7 @@ void ComputeCacheTestInstance::buildDescriptorSets(uint32_t ndx)
     // Create descriptor set
     const VkDescriptorSetAllocateInfo descriptorSetAllocInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                 sType;
-        DE_NULL,                                        // const void*                     pNext;
+        nullptr,                                        // const void*                     pNext;
         *m_descriptorPool[ndx],                         // VkDescriptorPool                descriptorPool;
         1u,                                             // uint32_t                        setLayoutCount;
         &m_descriptorSetLayout[ndx].get(),              // const VkDescriptorSetLayout*    pSetLayouts;
@@ -986,7 +986,7 @@ void ComputeCacheTestInstance::buildShader(void)
     // Create compute shader
     VkShaderModuleCreateInfo shaderModuleCreateInfo = {
         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,                    // VkStructureType             sType;
-        DE_NULL,                                                        // const void*                 pNext;
+        nullptr,                                                        // const void*                 pNext;
         0u,                                                             // VkShaderModuleCreateFlags   flags;
         m_context.getBinaryCollection().get("basic_compute").getSize(), // uintptr_t                   codeSize;
         (uint32_t *)m_context.getBinaryCollection()
@@ -1004,29 +1004,29 @@ void ComputeCacheTestInstance::buildPipeline(uint32_t ndx)
     // Create compute pipeline layout
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                 sType;
-        DE_NULL,                                       // const void*                     pNext;
+        nullptr,                                       // const void*                     pNext;
         0u,                                            // VkPipelineLayoutCreateFlags     flags;
         1u,                                            // uint32_t                        setLayoutCount;
         &m_descriptorSetLayout[ndx].get(),             // const VkDescriptorSetLayout*    pSetLayouts;
         0u,                                            // uint32_t                        pushConstantRangeCount;
-        DE_NULL,                                       // const VkPushConstantRange*      pPushConstantRanges;
+        nullptr,                                       // const VkPushConstantRange*      pPushConstantRanges;
     };
 
     m_pipelineLayout[ndx] = createPipelineLayout(vk, vkDevice, &pipelineLayoutCreateInfo);
 
     const VkPipelineShaderStageCreateInfo stageCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType;
-        DE_NULL,                                             // const void*                         pNext;
+        nullptr,                                             // const void*                         pNext;
         0u,                                                  // VkPipelineShaderStageCreateFlags    flags;
         VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits               stage;
         *m_computeShaderModule,                              // VkShaderModule                      module;
         "main",                                              // const char*                         pName;
-        DE_NULL,                                             // const VkSpecializationInfo*         pSpecializationInfo;
+        nullptr,                                             // const VkSpecializationInfo*         pSpecializationInfo;
     };
 
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType                 sType;
-        DE_NULL,                                        // const void*                     pNext;
+        nullptr,                                        // const void*                     pNext;
         0u,                                             // VkPipelineCreateFlags           flags;
         stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
         *m_pipelineLayout[ndx],                         // VkPipelineLayout                layout;
@@ -1067,7 +1067,7 @@ void ComputeCacheTestInstance::prepareCommandBuffer(void)
     {
         vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipeline[ndx]);
         vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout[ndx], 0u, 1u,
-                                 &m_descriptorSet[ndx].get(), 0u, DE_NULL);
+                                 &m_descriptorSet[ndx].get(), 0u, nullptr);
         vk.cmdDispatch(*m_cmdBuffer, 128u, 1u, 1u);
     }
 
@@ -1134,7 +1134,7 @@ TestInstance *PipelineFromCacheTest::createInstance(Context &context) const
 
 PipelineFromCacheTestInstance::PipelineFromCacheTestInstance(Context &context, const CacheTestParam *param)
     : GraphicsCacheTestInstance(context, param)
-    , m_data(DE_NULL)
+    , m_data(nullptr)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();
@@ -1143,7 +1143,7 @@ PipelineFromCacheTestInstance::PipelineFromCacheTestInstance(Context &context, c
     {
         size_t dataSize = 0u;
 
-        VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (uintptr_t *)&dataSize, DE_NULL));
+        VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (uintptr_t *)&dataSize, nullptr));
 
         m_data = new uint8_t[dataSize];
         DE_ASSERT(m_data);
@@ -1151,7 +1151,7 @@ PipelineFromCacheTestInstance::PipelineFromCacheTestInstance(Context &context, c
 
         const VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType             sType;
-            DE_NULL,                                      // const void*                 pNext;
+            nullptr,                                      // const void*                 pNext;
             0u,                                           // VkPipelineCacheCreateFlags  flags;
             dataSize,                                     // uintptr_t                   initialDataSize;
             m_data,                                       // const void*                 pInitialData;
@@ -1210,7 +1210,7 @@ TestInstance *PipelineFromIncompleteCacheTest::createInstance(Context &context) 
 PipelineFromIncompleteCacheTestInstance::PipelineFromIncompleteCacheTestInstance(Context &context,
                                                                                  const CacheTestParam *param)
     : GraphicsCacheTestInstance(context, param)
-    , m_data(DE_NULL)
+    , m_data(nullptr)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();
@@ -1218,7 +1218,7 @@ PipelineFromIncompleteCacheTestInstance::PipelineFromIncompleteCacheTestInstance
     // Create more pipeline caches
     {
         size_t dataSize = 0u;
-        VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (uintptr_t *)&dataSize, DE_NULL));
+        VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (uintptr_t *)&dataSize, nullptr));
 
         if (dataSize == 0)
             TCU_THROW(NotSupportedError, "Empty pipeline cache - unable to test");
@@ -1232,7 +1232,7 @@ PipelineFromIncompleteCacheTestInstance::PipelineFromIncompleteCacheTestInstance
 
         const VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType             sType;
-            DE_NULL,                                      // const void*                 pNext;
+            nullptr,                                      // const void*                 pNext;
             0u,                                           // VkPipelineCacheCreateFlags  flags;
             dataSize,                                     // uintptr_t                   initialDataSize;
             m_data,                                       // const void*                 pInitialData;
@@ -1383,10 +1383,10 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache(const Instance
 {
     VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType             sType;
-        DE_NULL,                                      // const void*                 pNext;
+        nullptr,                                      // const void*                 pNext;
         0u,                                           // VkPipelineCacheCreateFlags  flags;
         0u,                                           // uintptr_t                   initialDataSize;
-        DE_NULL,                                      // const void*                 pInitialData;
+        nullptr,                                      // const void*                 pInitialData;
     };
 
     GraphicsPipelineWrapper localPipeline(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(),
@@ -1404,7 +1404,7 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache(const Instance
     {
         // Create a cache with init data from m_cache
         size_t dataSize = 0u;
-        VK_CHECK(vk.getPipelineCacheData(device, *m_cache, (uintptr_t *)&dataSize, DE_NULL));
+        VK_CHECK(vk.getPipelineCacheData(device, *m_cache, (uintptr_t *)&dataSize, nullptr));
 
         std::vector<uint8_t> data(dataSize);
         VK_CHECK(vk.getPipelineCacheData(device, *m_cache, (uintptr_t *)&dataSize, &data[0]));
@@ -1504,7 +1504,7 @@ TestInstance *CacheHeaderTest::createInstance(Context &context) const
 
 CacheHeaderTestInstance::CacheHeaderTestInstance(Context &context, const CacheTestParam *param)
     : GraphicsCacheTestInstance(context, param)
-    , m_data(DE_NULL)
+    , m_data(nullptr)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();
@@ -1513,7 +1513,7 @@ CacheHeaderTestInstance::CacheHeaderTestInstance(Context &context, const CacheTe
     {
         // Create a cache with init data from m_cache
         size_t dataSize = 0u;
-        VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (uintptr_t *)&dataSize, DE_NULL));
+        VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (uintptr_t *)&dataSize, nullptr));
 
         if (dataSize < sizeof(m_header))
             TCU_THROW(TestError, "Pipeline cache size is smaller than header size");
@@ -1580,8 +1580,8 @@ TestInstance *InvalidSizeTest::createInstance(Context &context) const
 
 InvalidSizeTestInstance::InvalidSizeTestInstance(Context &context, const CacheTestParam *param)
     : GraphicsCacheTestInstance(context, param)
-    , m_data(DE_NULL)
-    , m_zeroBlock(DE_NULL)
+    , m_data(nullptr)
+    , m_zeroBlock(nullptr)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();
@@ -1592,7 +1592,7 @@ InvalidSizeTestInstance::InvalidSizeTestInstance(Context &context, const CacheTe
         // Create a cache with init data from m_cache
         size_t dataSize      = 0u;
         size_t savedDataSize = 0u;
-        VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (uintptr_t *)&dataSize, DE_NULL));
+        VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (uintptr_t *)&dataSize, nullptr));
         savedDataSize = dataSize;
 
         // If the value of dataSize is less than the maximum size that can be retrieved by the pipeline cache,
@@ -1606,7 +1606,7 @@ InvalidSizeTestInstance::InvalidSizeTestInstance(Context &context, const CacheTe
             TCU_THROW(TestError, "GetPipelineCacheData should return VK_INCOMPLETE state!");
 
         delete[] m_data;
-        m_data = DE_NULL;
+        m_data = nullptr;
 
         // If the value of dataSize is less than what is necessary to store the header,
         // nothing will be written to pData and zero will be written to dataSize.
@@ -1671,8 +1671,8 @@ TestInstance *ZeroSizeTest::createInstance(Context &context) const
 
 ZeroSizeTestInstance::ZeroSizeTestInstance(Context &context, const CacheTestParam *param)
     : GraphicsCacheTestInstance(context, param)
-    , m_data(DE_NULL)
-    , m_zeroBlock(DE_NULL)
+    , m_data(nullptr)
+    , m_zeroBlock(nullptr)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();
@@ -1683,7 +1683,7 @@ ZeroSizeTestInstance::ZeroSizeTestInstance(Context &context, const CacheTestPara
         // Create a cache with init data from m_cache
         size_t dataSize = 0u;
 
-        VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (uintptr_t *)&dataSize, DE_NULL));
+        VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (uintptr_t *)&dataSize, nullptr));
 
         m_data = new uint8_t[dataSize];
         deMemset(m_data, 0, dataSize);
@@ -1695,7 +1695,7 @@ ZeroSizeTestInstance::ZeroSizeTestInstance(Context &context, const CacheTestPara
             // Create a cache with initialDataSize = 0 & pInitialData != NULL
             const VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType             sType;
-                DE_NULL,                                      // const void*                 pNext;
+                nullptr,                                      // const void*                 pNext;
                 0u,                                           // VkPipelineCacheCreateFlags  flags;
                 0u,                                           // uintptr_t                   initialDataSize;
                 m_data,                                       // const void*                 pInitialData;
@@ -1751,8 +1751,8 @@ TestInstance *InvalidBlobTest::createInstance(Context &context) const
 
 InvalidBlobTestInstance::InvalidBlobTestInstance(Context &context, const CacheTestParam *param)
     : GraphicsCacheTestInstance(context, param)
-    , m_data(DE_NULL)
-    , m_zeroBlock(DE_NULL)
+    , m_data(nullptr)
+    , m_zeroBlock(nullptr)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();
@@ -1763,7 +1763,7 @@ InvalidBlobTestInstance::InvalidBlobTestInstance(Context &context, const CacheTe
         // Create a cache with init data from m_cache
         size_t dataSize = 0u;
 
-        VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (uintptr_t *)&dataSize, DE_NULL));
+        VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (uintptr_t *)&dataSize, nullptr));
 
         m_data = new uint8_t[dataSize];
         deMemset(m_data, 0, dataSize);
@@ -1789,7 +1789,7 @@ InvalidBlobTestInstance::InvalidBlobTestInstance(Context &context, const CacheTe
 
             const VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType             sType;
-                DE_NULL,                                      // const void*                 pNext;
+                nullptr,                                      // const void*                 pNext;
                 0u,                                           // VkPipelineCacheCreateFlags  flags;
                 dataSize,                                     // uintptr_t                   initialDataSize;
                 m_data,                                       // const void*                 pInitialData;

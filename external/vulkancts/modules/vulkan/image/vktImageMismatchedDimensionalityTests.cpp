@@ -155,7 +155,7 @@ tcu::TestStatus MismatchedDimensionalityTestInstance::iterate(void)
                                   .addType(descriptorType)
                                   .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
     const auto descriptorSetLayout(DescriptorSetLayoutBuilder()
-                                       .addBinding(descriptorType, 1u, VK_SHADER_STAGE_FRAGMENT_BIT, DE_NULL)
+                                       .addBinding(descriptorType, 1u, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr)
                                        .build(vk, device));
     const auto descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 

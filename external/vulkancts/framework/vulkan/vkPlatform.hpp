@@ -152,8 +152,8 @@ protected:
         m_resourceInterface->getStatMax().VAR_NAME =                                                             \
             de::max(m_resourceInterface->getStatMax().VAR_NAME, m_resourceInterface->getStatCurrent().VAR_NAME); \
     } while (0)
-#define DDSTAT_HANDLE_DESTROY_IF(VAR_VARIABLE, VAR_NAME, VAR_VALUE)                                    \
-    if (VAR_VARIABLE.getInternal() != VK_NULL_HANDLE && m_resourceInterface->isEnabledHandleDestroy()) \
+#define DDSTAT_HANDLE_DESTROY_IF(VAR_VARIABLE, VAR_NAME, VAR_VALUE)                      \
+    if (VAR_VARIABLE != VK_NULL_HANDLE && m_resourceInterface->isEnabledHandleDestroy()) \
     m_resourceInterface->getStatCurrent().VAR_NAME -= (VAR_VALUE)
 #define DDSTAT_HANDLE_DESTROY(VAR_NAME, VAR_VALUE)     \
     if (m_resourceInterface->isEnabledHandleDestroy()) \
@@ -292,13 +292,13 @@ public:
         , m_device(device)
     {
     }
-    DeinitDeviceDeleter(void) : m_resourceInterface(DE_NULL), m_device(VK_NULL_HANDLE)
+    DeinitDeviceDeleter(void) : m_resourceInterface(nullptr), m_device(VK_NULL_HANDLE)
     {
     }
 
     void operator()(DeviceDriverSC *obj) const
     {
-        if (m_resourceInterface != DE_NULL)
+        if (m_resourceInterface != nullptr)
             m_resourceInterface->deinitDevice(m_device);
         delete obj;
     }
@@ -344,9 +344,9 @@ public:
     }
 #ifdef DE_PLATFORM_USE_LIBRARY_TYPE
     virtual Library *createLibrary(LibraryType libraryType = LIBRARY_TYPE_VULKAN,
-                                   const char *libraryPath = DE_NULL) const = 0;
+                                   const char *libraryPath = nullptr) const = 0;
 #else
-    virtual Library *createLibrary(const char *libraryPath = DE_NULL) const = 0;
+    virtual Library *createLibrary(const char *libraryPath = nullptr) const = 0;
 #endif
 
     virtual wsi::Display *createWsiDisplay(wsi::Type wsiType) const;

@@ -91,7 +91,7 @@ private:
             memset(inner_tess_levels, 0, sizeof(inner_tess_levels));
             memset(outer_tess_levels, 0, sizeof(outer_tess_levels));
 
-            data                  = DE_NULL;
+            data                  = nullptr;
             is_point_mode_enabled = false;
             n_vertices            = 0;
             primitive_mode        = TESSELLATION_SHADER_PRIMITIVE_MODE_UNKNOWN;

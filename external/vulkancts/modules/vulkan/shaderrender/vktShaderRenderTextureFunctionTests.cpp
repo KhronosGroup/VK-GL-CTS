@@ -1479,7 +1479,7 @@ ShaderTextureFunctionInstance::ShaderTextureFunctionInstance(
     Context &context, const bool isVertexCase, const ShaderEvaluator &evaluator, const UniformSetup &uniformSetup,
     const TextureLookupSpec &lookupSpec, const TextureSpec &textureSpec, const TexLookupParams &lookupParams,
     const ImageBackingMode imageBackingMode)
-    : ShaderRenderCaseInstance(context, isVertexCase, evaluator, uniformSetup, DE_NULL, imageBackingMode,
+    : ShaderRenderCaseInstance(context, isVertexCase, evaluator, uniformSetup, nullptr, imageBackingMode,
                                (isVertexCase ? 92 : GRID_SIZE_DEFAULT_FRAGMENT))
     , m_lookupSpec(lookupSpec)
     , m_textureSpec(textureSpec)
@@ -1952,8 +1952,8 @@ ShaderTextureFunctionCase::~ShaderTextureFunctionCase(void)
 
 TestInstance *ShaderTextureFunctionCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_evaluator != DE_NULL);
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_evaluator);
+    DE_ASSERT(m_uniformSetup);
     return new ShaderTextureFunctionInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_lookupSpec,
                                              m_textureSpec, m_lookupParams);
 }
@@ -1998,7 +1998,7 @@ void ShaderTextureFunctionCase::initShaderSources(void)
                                        glu::TYPE_FLOAT_VEC3 :
                                        glu::TYPE_FLOAT_VEC2;
     const char *gradTypeName     = glu::getDataTypeName(gradType);
-    const char *baseFuncName     = DE_NULL;
+    const char *baseFuncName     = nullptr;
 
     DE_ASSERT(!isGrad || !hasLodBias);
 
@@ -2267,7 +2267,7 @@ protected:
 };
 
 TextureQueryInstance::TextureQueryInstance(Context &context, const bool isVertexCase, const TextureSpec &textureSpec)
-    : ShaderRenderCaseInstance(context, isVertexCase, DE_NULL, DE_NULL, DE_NULL)
+    : ShaderRenderCaseInstance(context, isVertexCase, nullptr, nullptr, nullptr)
     , m_textureSpec(textureSpec)
 {
     m_colorFormat = vk::VK_FORMAT_R32G32B32A32_SFLOAT;
@@ -3686,7 +3686,7 @@ protected:
 
 TextureQueryCase::TextureQueryCase(tcu::TestContext &testCtx, const std::string &name, const std::string &samplerType,
                                    const TextureSpec &texture, bool isVertexCase, QueryFunction function, TestMode mode)
-    : ShaderRenderCase(testCtx, name, isVertexCase, (ShaderEvaluator *)DE_NULL, DE_NULL, DE_NULL)
+    : ShaderRenderCase(testCtx, name, isVertexCase, (ShaderEvaluator *)nullptr, nullptr, nullptr)
     , m_samplerTypeStr(samplerType)
     , m_textureSpec(texture)
     , m_function(function)
@@ -3715,7 +3715,7 @@ TestInstance *TextureQueryCase::createInstance(Context &context) const
         return new TextureSamplesInstance(context, m_isVertexCase, m_textureSpec);
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -3888,7 +3888,7 @@ tcu::TestStatus textureSizeOOBTest(Context &context)
     // create image, we do not need to fill it with data for this test
     const VkImageCreateInfo imageCreateInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                          // VkStructureType sType;
-        DE_NULL,                                                      // const void* pNext;
+        nullptr,                                                      // const void* pNext;
         0u,                                                           // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                             // VkImageType imageType;
         VK_FORMAT_R8G8B8A8_UNORM,                                     // VkFormat format;
@@ -3900,7 +3900,7 @@ tcu::TestStatus textureSizeOOBTest(Context &context)
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,                                    // VkSharingMode sharingMode;
         0u,                                                           // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                                      // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                                      // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout initialLayout;
     };
     const ImageWithMemory image(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any);
@@ -3958,13 +3958,13 @@ tcu::TestStatus textureSizeOOBTest(Context &context)
     beginCommandBuffer(vk, *cmdBuffer);
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, DE_NULL, 0, DE_NULL, 1, &layoutBarrier);
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &layoutBarrier);
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(),
-                             0u, DE_NULL);
+                             0u, nullptr);
     vk.cmdDispatch(*cmdBuffer, DE_LENGTH_OF_ARRAY(testedLods), 1, 1);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, DE_NULL, 1, &outBarrier, 0, DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &outBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -4157,7 +4157,7 @@ void SparseShaderTextureFunctionCase::initShaderSources(void)
         (m_textureSpec.type == TEXTURETYPE_CUBE_MAP || m_textureSpec.type == TEXTURETYPE_3D) ? glu::TYPE_FLOAT_VEC3 :
                                                                                                glu::TYPE_FLOAT_VEC2;
     const char *gradTypeName = glu::getDataTypeName(gradType);
-    const char *baseFuncName = DE_NULL;
+    const char *baseFuncName = nullptr;
 
     DE_ASSERT(!isGrad || !hasLodBias);
 
@@ -4376,8 +4376,8 @@ SparseShaderTextureFunctionCase::~SparseShaderTextureFunctionCase()
 
 TestInstance *SparseShaderTextureFunctionCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_evaluator != DE_NULL);
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_evaluator);
+    DE_ASSERT(m_uniformSetup);
     return new SparseShaderTextureFunctionInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_lookupSpec,
                                                    m_textureSpec, m_lookupParams);
 }

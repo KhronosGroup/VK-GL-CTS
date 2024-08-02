@@ -27,7 +27,7 @@
 namespace sglr
 {
 
-ContextWrapper::ContextWrapper(void) : m_curCtx(DE_NULL)
+ContextWrapper::ContextWrapper(void) : m_curCtx(nullptr)
 {
 }
 

@@ -389,13 +389,13 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
         VkFormat resolvedBufferFormat                       = VK_FORMAT_R32_SFLOAT;
         const VkBufferCreateInfo validationBufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                     // VkStructureType        sType
-            DE_NULL,                                                                  // const void*            pNext
+            nullptr,                                                                  // const void*            pNext
             (VkBufferCreateFlags)0,                                                   // VkBufferCreateFlags    flags
             m_samples * pixelCount * getPixelSize(mapVkFormat(resolvedBufferFormat)), // VkDeviceSize            size
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,                                         // VkBufferUsageFlags    usage
             VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode        sharingMode
             0u,                        // uint32_t                queueFamilyIndexCount,
-            DE_NULL                    // const uint32_t*        pQueueFamilyIndices
+            nullptr                    // const uint32_t*        pQueueFamilyIndices
         };
 
         validationBuffer = createBuffer(vk, device, &validationBufferCreateInfo);
@@ -406,7 +406,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
 
         const VkImageCreateInfo depthResolveImageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                              // VkStructureType            sType
-            DE_NULL,                                                          // const void*                pNext
+            nullptr,                                                          // const void*                pNext
             (VkImageCreateFlags)0,                                            // VkImageCreateFlags        flags
             VK_IMAGE_TYPE_2D,                                                 // VkIMageType                imageType
             resolvedBufferFormat,                                             // VkFormat                    format
@@ -419,11 +419,11 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
                 VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
             VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
             0u,                        // uint32_t                    queueFamilyIndexCount
-            DE_NULL,                   // const uint32_t            pQueueFamilyIndices
+            nullptr,                   // const uint32_t            pQueueFamilyIndices
             VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
         };
 
-        depthResolveImage = createImage(vk, device, &depthResolveImageCreateInfo, DE_NULL);
+        depthResolveImage = createImage(vk, device, &depthResolveImageCreateInfo, nullptr);
         depthResolveAllocation =
             allocator.allocate(getImageMemoryRequirements(vk, device, *depthResolveImage), MemoryRequirement::Any);
         VK_CHECK(vk.bindImageMemory(device, *depthResolveImage, depthResolveAllocation->getMemory(),
@@ -431,7 +431,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
 
         const VkImageViewCreateInfo depthResolveImageViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                                  // const void*                pNext
+            nullptr,                                  // const void*                pNext
             (VkImageViewCreateFlags)0,                // VkImageViewCreateFlags    flags
             *depthResolveImage,                       // VkImage                    image
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType            type
@@ -441,7 +441,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
                                       1u) // VkImageSUbresourceRange    subresourceRange
         };
 
-        depthResolveImageView = createImageView(vk, device, &depthResolveImageViewCreateInfo, DE_NULL);
+        depthResolveImageView = createImageView(vk, device, &depthResolveImageViewCreateInfo, nullptr);
     }
 
     // Marker Buffer
@@ -451,16 +451,16 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
 
         const VkBufferCreateInfo markerBufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                              // const void*                pNext
+            nullptr,                              // const void*                pNext
             (VkBufferCreateFlags)0,               // VkBufferCreateFlags        flags
             size,                                 // VkDeviceSize                size
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags        usage
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode            sharingMode
             0u,                                   // uint32_t                    queueFamilyIndexCount
-            DE_NULL                               // const uint32_t*            pQueueFamilyIndices
+            nullptr                               // const uint32_t*            pQueueFamilyIndices
         };
 
-        markerBuffer = createBuffer(vk, device, &markerBufferCreateInfo, DE_NULL);
+        markerBuffer = createBuffer(vk, device, &markerBufferCreateInfo, nullptr);
         markerBufferAllocation =
             allocator.allocate(getBufferMemoryRequirements(vk, device, *markerBuffer), MemoryRequirement::HostVisible);
         VK_CHECK(vk.bindBufferMemory(device, *markerBuffer, markerBufferAllocation->getMemory(),
@@ -468,7 +468,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
 
         const VkImageCreateInfo markerImageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                             // VkStructureType            sType
-            DE_NULL,                                                         // const void*                pNext
+            nullptr,                                                         // const void*                pNext
             (VkImageCreateFlags)0,                                           // VkImageCreateFlags        flags
             VK_IMAGE_TYPE_2D,                                                // VkImageType                imageType
             VK_FORMAT_R8G8B8A8_UINT,                                         // VkFormat                    format
@@ -481,11 +481,11 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
             VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharing
             0u,                        // uint32_t                    queueFamilyIndexCount
-            DE_NULL,                   // const uint32_t*            pQueueFamilyIndices
+            nullptr,                   // const uint32_t*            pQueueFamilyIndices
             VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
         };
 
-        markerImage = createImage(vk, device, &markerImageCreateInfo, DE_NULL);
+        markerImage = createImage(vk, device, &markerImageCreateInfo, nullptr);
         markerImageAllocation =
             allocator.allocate(getImageMemoryRequirements(vk, device, *markerImage), MemoryRequirement::Any);
         VK_CHECK(vk.bindImageMemory(device, *markerImage, markerImageAllocation->getMemory(),
@@ -493,7 +493,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
 
         const VkImageViewCreateInfo markerViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                                  // const void*                pNext
+            nullptr,                                  // const void*                pNext
             (VkImageViewCreateFlags)0,                // VkImageViewCreateFlags    flags
             *markerImage,                             // VkImage                    image
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType            viewType
@@ -501,24 +501,24 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
             makeComponentMappingRGBA(),               // VkComponentMapping        components
             makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u)};
 
-        markerImageView = createImageView(vk, device, &markerViewCreateInfo, DE_NULL);
+        markerImageView = createImageView(vk, device, &markerViewCreateInfo, nullptr);
     }
 
     // Control Buffer
     {
         const VkBufferCreateInfo controlBufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
-            DE_NULL,                              // const void*            pNext
+            nullptr,                              // const void*            pNext
             (VkBufferCreateFlags)0,               // VkBufferCreateFlags    flags
             pixelCount * sizeof(float) * scale,   // VkDeviceSize            size
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,   // VkBufferUsageFlags    usage
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
             0u,                                   // uint32_t                queueFamilyIndexCount
 
-            DE_NULL // pQueueFamilyIndices
+            nullptr // pQueueFamilyIndices
         };
 
-        controlBuffer = createBuffer(vk, device, &controlBufferCreateInfo, DE_NULL);
+        controlBuffer = createBuffer(vk, device, &controlBufferCreateInfo, nullptr);
         controlBufferAllocation =
             allocator.allocate(getBufferMemoryRequirements(vk, device, *controlBuffer), MemoryRequirement::HostVisible);
         VK_CHECK(vk.bindBufferMemory(device, *controlBuffer, controlBufferAllocation->getMemory(),
@@ -534,7 +534,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
                     bufferData[ndx * scale] += m_largeDepthBase;
             }
 
-            const VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, DE_NULL,
+            const VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, nullptr,
                                                controlBufferAllocation->getMemory(), 0u, VK_WHOLE_SIZE};
 
             VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
@@ -547,7 +547,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
             makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
         const VkImageCreateInfo depthImageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                  // VkStructureType            sType
-            DE_NULL,                                              // const void*                pNext
+            nullptr,                                              // const void*                pNext
             (VkImageCreateFlags)0,                                // VkImageCreateFlags        flags
             VK_IMAGE_TYPE_2D,                                     // VkImageType                imageType
             m_format,                                             // VkFormat                    format
@@ -560,11 +560,11 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, // VkImageUsageFlags        usage
             VK_SHARING_MODE_EXCLUSIVE,                       // VkShaderingMode            sharingMode
             0u,                                              // uint32_t                    queueFamilyIndexCount
-            DE_NULL,                                         // const uint32_t*            pQueueFamilyIndices
+            nullptr,                                         // const uint32_t*            pQueueFamilyIndices
             VK_IMAGE_LAYOUT_UNDEFINED                        // VkImageLayout            initialLayout
         };
 
-        depthImage = createImage(vk, device, &depthImageCreateInfo, DE_NULL);
+        depthImage = createImage(vk, device, &depthImageCreateInfo, nullptr);
         depthImageAllocation =
             allocator.allocate(getImageMemoryRequirements(vk, device, *depthImage), MemoryRequirement::Any);
         VK_CHECK(vk.bindImageMemory(device, *depthImage, depthImageAllocation->getMemory(),
@@ -572,7 +572,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
 
         const VkImageViewCreateInfo imageViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             (VkImageViewCreateFlags)0,                // VkImageViewCreateFlags flags;
             *depthImage,                              // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -584,7 +584,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
 
         const VkSamplerCreateInfo depthSamplerCreateInfo = {
             VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType            sType
-            DE_NULL,                                 // const void*                pNext
+            nullptr,                                 // const void*                pNext
             (VkSamplerCreateFlags)0,                 // VkSamplerCreateFlags        flags
             VK_FILTER_NEAREST,                       // VkFilter                    minFilter
             VK_FILTER_NEAREST,                       // VkFilter                    magFilter
@@ -603,14 +603,14 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
             VK_FALSE                                 // VkBool32                    unnormalizedCoordinates
         };
 
-        depthSampler = createSampler(vk, device, &depthSamplerCreateInfo, DE_NULL);
+        depthSampler = createSampler(vk, device, &depthSamplerCreateInfo, nullptr);
     }
 
     // Command Pool
     {
         const VkCommandPoolCreateInfo cmdPoolCreateInfo = {
             VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType            sType
-            DE_NULL,                                         // const void*                pNext
+            nullptr,                                         // const void*                pNext
             VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags    flags
             queueFamilyIndex                                 // uint32_t                    queueFamilyIndex
         };
@@ -622,7 +622,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
     {
         const VkCommandBufferAllocateInfo cmdBufferAllocInfo = {
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType        sType,
-            DE_NULL,                                        // const void*            pNext
+            nullptr,                                        // const void*            pNext
             *cmdPool,                                       // VkCommandPool        commandPool
             VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel    level
             1u                                              // uint32_t                bufferCount
@@ -635,7 +635,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
     {
         const VkImageMemoryBarrier imageBarrier[] = {
             {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
-             DE_NULL,                                // const void*            pNext
+             nullptr,                                // const void*            pNext
              0,                                      // VkAccessMask            srcAccessMask
              VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessMask            dstAccessMask
              VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout        oldLayout
@@ -654,7 +654,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
 
         const VkImageMemoryBarrier imagePostBarrier[] = {
             {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
-             DE_NULL,                                // const void*            pNext
+             nullptr,                                // const void*            pNext
              VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlagBits        srcAccessMask
              VK_ACCESS_SHADER_WRITE_BIT,             // VkAccessFlagBits        dstAccessMask
              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout        oldLayout
@@ -673,8 +673,8 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
 
         beginCommandBuffer(vk, *transferCmdBuffer);
         vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                              (const VkBufferMemoryBarrier *)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarrier), imageBarrier);
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, DE_LENGTH_OF_ARRAY(imageBarrier),
+                              imageBarrier);
 
         const VkClearValue colorClearValue = makeClearValueColor(Vec4(0.0f, 0.0f, 0.0f, 0.0f));
         const VkImageSubresourceRange colorClearRange =
@@ -684,8 +684,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
                               &colorClearValue.color, 1u, &colorClearRange);
 
         vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                              (const VkBufferMemoryBarrier *)DE_NULL, DE_LENGTH_OF_ARRAY(imagePostBarrier),
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, DE_LENGTH_OF_ARRAY(imagePostBarrier),
                               imagePostBarrier);
 
         endCommandBuffer(vk, *transferCmdBuffer);
@@ -714,7 +713,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
                                  .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
             const VkDescriptorSetAllocateInfo descriptorSetAllocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                                        DE_NULL, *descriptorPool, 1u,
+                                                                        nullptr, *descriptorPool, 1u,
                                                                         &descriptorSetLayout.get()};
 
             descriptorSet = allocateDescriptorSet(vk, device, &descriptorSetAllocInfo);
@@ -773,7 +772,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
     {
         const VkImageMemoryBarrier imageBarrier[] = {
             {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType        sType
-             DE_NULL,                                          // const void*            pNext
+             nullptr,                                          // const void*            pNext
              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags        srcAccessMask
              VK_ACCESS_SHADER_READ_BIT,                        // VkAccessFlags        dstAccessMask
              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout        oldLayout
@@ -789,7 +788,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
                  1u                         // uint32_t                    layerCount
              }},
             {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
-             DE_NULL,                                // const void*            pNext
+             nullptr,                                // const void*            pNext
              0u,                                     // VkAccessFlags        srcAccessMask
              VK_ACCESS_HOST_READ_BIT,                // VkAccessFlags        dstAccessMask
              VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout        oldLayout
@@ -809,8 +808,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
         beginCommandBuffer(vk, *transferCmdBuffer);
         vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
                               VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0,
-                              (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL,
-                              DE_LENGTH_OF_ARRAY(imageBarrier), imageBarrier);
+                              nullptr, 0, nullptr, DE_LENGTH_OF_ARRAY(imageBarrier), imageBarrier);
         endCommandBuffer(vk, *transferCmdBuffer);
 
         submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
@@ -837,7 +835,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
                                  .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
             const VkDescriptorSetAllocateInfo descriptorSetAllocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                                        DE_NULL, *descriptorPool, 1u,
+                                                                        nullptr, *descriptorPool, 1u,
                                                                         &descriptorSetLayout.get()};
 
             descriptorSet = allocateDescriptorSet(vk, device, &descriptorSetAllocInfo);
@@ -1070,7 +1068,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate(void)
     {
         const VkImageCreateInfo outputImageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                             // const void*                pNext
+            nullptr,                             // const void*                pNext
             (VkImageCreateFlags)0,               // VkImageCreateFlags        flags
             VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
             VK_FORMAT_R32G32B32A32_SFLOAT,       // VkFormat                    format
@@ -1083,11 +1081,11 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate(void)
                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
             VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
             0u,                        // uint32_t                    queueFamilyIndexCount
-            DE_NULL,                   // const uint32_t*            pQueueFamilyIndices
+            nullptr,                   // const uint32_t*            pQueueFamilyIndices
             VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
         };
 
-        outputImage = createImage(vk, device, &outputImageCreateInfo, DE_NULL);
+        outputImage = createImage(vk, device, &outputImageCreateInfo, nullptr);
         outputImageAllocation =
             allocator.allocate(getImageMemoryRequirements(vk, device, *outputImage), MemoryRequirement::Any);
         vk.bindImageMemory(device, *outputImage, outputImageAllocation->getMemory(),
@@ -1097,7 +1095,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate(void)
             makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
         const VkImageViewCreateInfo outputImageViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                                  // const void*                pNext
+            nullptr,                                  // const void*                pNext
             (VkImageViewCreateFlags)0,                // VkImageViewCreateFlags    flags
             *outputImage,                             // VkImage                    image
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType            viewType
@@ -1114,16 +1112,16 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate(void)
         VkDeviceSize pixelSize = getPixelSize(mapVkFormat(VK_FORMAT_R32G32B32A32_SFLOAT));
         const VkBufferCreateInfo sampleLocationBufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                            // VkStructureType        sType
-            DE_NULL,                                                         // const void*            pNext
+            nullptr,                                                         // const void*            pNext
             (VkBufferCreateFlags)0,                                          // VkBufferCreateFlags    flags
             m_sampleCount * m_renderSize.x() * m_renderSize.y() * pixelSize, // VkDeviceSize            size
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,                                // VkBufferUsageFlags    usage
             VK_SHARING_MODE_EXCLUSIVE,                                       // VkSharingMode        mode
             0u,     // uint32_t                queueFamilyIndexCount
-            DE_NULL // const uint32_t*        pQueueFamilyIndices
+            nullptr // const uint32_t*        pQueueFamilyIndices
         };
 
-        sampleLocationBuffer           = createBuffer(vk, device, &sampleLocationBufferCreateInfo, DE_NULL);
+        sampleLocationBuffer           = createBuffer(vk, device, &sampleLocationBufferCreateInfo, nullptr);
         sampleLocationBufferAllocation = allocator.allocate(
             getBufferMemoryRequirements(vk, device, *sampleLocationBuffer), MemoryRequirement::HostVisible);
         vk.bindBufferMemory(device, *sampleLocationBuffer, sampleLocationBufferAllocation->getMemory(),
@@ -1140,7 +1138,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate(void)
                              .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
         const VkDescriptorSetAllocateInfo descriptorSetAllocInfo = {
-            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL, *descriptorPool, 1u, &*descriptorSetLayout};
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, *descriptorPool, 1u, &*descriptorSetLayout};
 
         descriptorSet = allocateDescriptorSet(vk, device, &descriptorSetAllocInfo);
 
@@ -1156,7 +1154,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate(void)
     {
         const VkCommandPoolCreateInfo cmdPoolCreateInfo = {
             VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType            sType
-            DE_NULL,                                         // const void*                pNext
+            nullptr,                                         // const void*                pNext
             VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags    flags
             queueFamilyIndex                                 // uint32_t                    queueFamilyIndex
         };
@@ -1168,7 +1166,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate(void)
     {
         const VkCommandBufferAllocateInfo cmdBufferAllocInfo = {
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType        sType,
-            DE_NULL,                                        // const void*            pNext
+            nullptr,                                        // const void*            pNext
             *cmdPool,                                       // VkCommandPool        commandPool
             VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel    level
             1u                                              // uint32_t                bufferCount
@@ -1180,7 +1178,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate(void)
     // Transition the output image to LAYOUT_GENERAL
     {
         const VkImageMemoryBarrier barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
-                                              DE_NULL,                                // const void*            pNext
+                                              nullptr,                                // const void*            pNext
                                               0u,                         // VkAccessFlags        srcAccessMask
                                               VK_ACCESS_SHADER_WRITE_BIT, // VkAccessFlags        dstAccessMask
                                               VK_IMAGE_LAYOUT_UNDEFINED,  // VkImageLayout        oldLayout
@@ -1198,8 +1196,8 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate(void)
 
         beginCommandBuffer(vk, *transferCmdBuffer);
         vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0,
-                              (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1, &barrier);
+                              VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
+                              &barrier);
 
         endCommandBuffer(vk, *transferCmdBuffer);
 
@@ -2011,7 +2009,7 @@ TestStatus BuiltinGlPointCoordCaseInstance::iterate(void)
         addUniform(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, scale);
 
     addAttribute(0u, VK_FORMAT_R32G32B32_SFLOAT, uint32_t(sizeof(Vec3)), numPoints, &coords[0]);
-    render(numPoints, 0, DE_NULL, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+    render(numPoints, 0, nullptr, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
     copy(resImage.getAccess(), getResultImage().getAccess());
 
     // Draw reference

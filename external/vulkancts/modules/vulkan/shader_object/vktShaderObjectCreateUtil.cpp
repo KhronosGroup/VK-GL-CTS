@@ -100,7 +100,7 @@ Move<VkShaderEXT> createShaderFromBinary(const DeviceInterface &vk, VkDevice dev
 {
     vk::VkShaderCreateInfoEXT pCreateInfo = {
         vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         0u,                                           // VkShaderCreateFlagsEXT flags;
         shaderStage,                                  // VkShaderStageFlagBits stage;
         getShaderObjectNextStages(shaderStage, tessellationShaderFeature,
@@ -110,10 +110,10 @@ Move<VkShaderEXT> createShaderFromBinary(const DeviceInterface &vk, VkDevice dev
         pCode,                                                                    // const void* pCode;
         "main",                                                                   // const char* pName;
         (descriptorSetLayout != VK_NULL_HANDLE) ? 1u : 0u,                        // uint32_t setLayoutCount;
-        (descriptorSetLayout != VK_NULL_HANDLE) ? &descriptorSetLayout : DE_NULL, // VkDescriptorSetLayout* pSetLayouts;
+        (descriptorSetLayout != VK_NULL_HANDLE) ? &descriptorSetLayout : nullptr, // VkDescriptorSetLayout* pSetLayouts;
         0u,                                                                       // uint32_t pushConstantRangeCount;
-        DE_NULL, // const VkPushConstantRange* pPushConstantRanges;
-        DE_NULL, // const VkSpecializationInfo* pSpecializationInfo;
+        nullptr, // const VkPushConstantRange* pPushConstantRanges;
+        nullptr, // const VkSpecializationInfo* pSpecializationInfo;
     };
 
     return createShader(vk, device, pCreateInfo);
@@ -123,8 +123,8 @@ Move<VkShaderEXT> createShader(const DeviceInterface &vk, VkDevice device,
                                const vk::VkShaderCreateInfoEXT &shaderCreateInfo)
 {
     VkShaderEXT object = VK_NULL_HANDLE;
-    VK_CHECK(vk.createShadersEXT(device, 1u, &shaderCreateInfo, DE_NULL, &object));
-    return Move<VkShaderEXT>(check<VkShaderEXT>(object), Deleter<VkShaderEXT>(vk, device, DE_NULL));
+    VK_CHECK(vk.createShadersEXT(device, 1u, &shaderCreateInfo, nullptr, &object));
+    return Move<VkShaderEXT>(check<VkShaderEXT>(object), Deleter<VkShaderEXT>(vk, device, nullptr));
 }
 
 void addBasicShaderObjectShaders(vk::SourceCollections &programCollection)
@@ -224,7 +224,7 @@ vk::VkShaderCreateInfoEXT makeShaderCreateInfo(vk::VkShaderStageFlagBits stage, 
 {
     vk::VkShaderCreateInfoEXT shaderCreateInfo = {
         vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         0u,                                           // VkShaderCreateFlagsEXT flags;
         stage,                                        // VkShaderStageFlagBits stage;
         vk::getShaderObjectNextStages(stage, tessellationShaderFeature,
@@ -233,11 +233,11 @@ vk::VkShaderCreateInfoEXT makeShaderCreateInfo(vk::VkShaderStageFlagBits stage, 
         programBinary.getSize(),                                          // size_t codeSize;
         programBinary.getBinary(),                                        // const void* pCode;
         "main",                                                           // const char* pName;
-        (descriptorSetLayout != DE_NULL) ? 1u : 0u,                       // uint32_t setLayoutCount;
-        (descriptorSetLayout != DE_NULL) ? descriptorSetLayout : DE_NULL, // VkDescriptorSetLayout* pSetLayouts;
+        (descriptorSetLayout != nullptr) ? 1u : 0u,                       // uint32_t setLayoutCount;
+        (descriptorSetLayout != nullptr) ? descriptorSetLayout : nullptr, // VkDescriptorSetLayout* pSetLayouts;
         0u,                                                               // uint32_t pushConstantRangeCount;
-        DE_NULL, // const VkPushConstantRange* pPushConstantRanges;
-        DE_NULL, // const VkSpecializationInfo* pSpecializationInfo;
+        nullptr, // const VkPushConstantRange* pPushConstantRanges;
+        nullptr, // const VkSpecializationInfo* pSpecializationInfo;
     };
 
     return shaderCreateInfo;
@@ -279,7 +279,7 @@ void setDefaultShaderObjectDynamicStates(const vk::DeviceInterface &vk, vk::VkCo
     vk.cmdSetStencilCompareMask(cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xFFFFFFFF);
     vk.cmdSetStencilWriteMask(cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xFFFFFFFF);
     vk.cmdSetStencilReference(cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xFFFFFFFF);
-    vk.cmdBindVertexBuffers2(cmdBuffer, 0, 0, DE_NULL, DE_NULL, DE_NULL, DE_NULL);
+    vk.cmdBindVertexBuffers2(cmdBuffer, 0, 0, nullptr, nullptr, nullptr, nullptr);
     vk.cmdSetCullMode(cmdBuffer, vk::VK_CULL_MODE_NONE);
     vk.cmdSetDepthBoundsTestEnable(cmdBuffer, VK_FALSE);
     vk.cmdSetDepthCompareOp(cmdBuffer, vk::VK_COMPARE_OP_NEVER);
@@ -297,7 +297,7 @@ void setDefaultShaderObjectDynamicStates(const vk::DeviceInterface &vk, vk::VkCo
     vk.cmdSetRasterizerDiscardEnable(cmdBuffer, VK_FALSE);
     if (!meshShader && (extensionEnabled(deviceExtensions, "VK_EXT_shader_object") ||
                         extensionEnabled(deviceExtensions, "VK_EXT_vertex_input_dynamic_state")))
-        vk.cmdSetVertexInputEXT(cmdBuffer, 0u, DE_NULL, 0u, DE_NULL);
+        vk.cmdSetVertexInputEXT(cmdBuffer, 0u, nullptr, 0u, nullptr);
     vk.cmdSetLogicOpEXT(cmdBuffer, vk::VK_LOGIC_OP_AND);
     if (!meshShader)
         vk.cmdSetPatchControlPointsEXT(cmdBuffer, 4u);
@@ -342,7 +342,7 @@ void setDefaultShaderObjectDynamicStates(const vk::DeviceInterface &vk, vk::VkCo
     VkSampleLocationEXT sampleLocation                 = {0.5f, 0.5f};
     const vk::VkSampleLocationsInfoEXT sampleLocations = {
         vk::VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT, // VkStructureType               sType;
-        DE_NULL,                                         // const void*                   pNext;
+        nullptr,                                         // const void*                   pNext;
         VK_SAMPLE_COUNT_1_BIT,                           // VkSampleCountFlagBits         sampleLocationsPerPixel;
         {1u, 1u},                                        // VkExtent2D                    sampleLocationGridSize;
         1,                                               // uint32_t                      sampleLocationsCount;

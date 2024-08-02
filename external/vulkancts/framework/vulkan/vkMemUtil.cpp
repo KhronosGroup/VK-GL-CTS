@@ -182,7 +182,7 @@ private:
 };
 
 SimpleAllocation::SimpleAllocation(Move<VkDeviceMemory> mem, MovePtr<HostPtr> hostPtr, size_t offset)
-    : Allocation(*mem, offset, hostPtr ? hostPtr->get() : DE_NULL)
+    : Allocation(*mem, offset, hostPtr ? hostPtr->get() : nullptr)
     , m_memHolder(mem)
     , m_hostPtr(hostPtr)
 {
@@ -241,14 +241,14 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
 
     VkMemoryAllocateInfo allocInfo = {
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         memReqs.size + offset,                  // VkDeviceSize allocationSize;
         memoryTypeNdx,                          // uint32_t memoryTypeIndex;
     };
 
     VkMemoryAllocateFlagsInfo allocFlagsInfo = {
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO, //    VkStructureType            sType
-        DE_NULL,                                      //    const void*                pNext
+        nullptr,                                      //    const void*                pNext
         0,                                            //    VkMemoryAllocateFlags    flags
         0,                                            //    uint32_t                deviceMask
     };
@@ -306,7 +306,7 @@ de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const De
     const VkMemoryRequirements memoryRequirements               = getBufferMemoryRequirements(vkd, device, buffer);
     const VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType        sType
-        DE_NULL,                                          // const void*            pNext
+        nullptr,                                          // const void*            pNext
         VK_NULL_HANDLE,                                   // VkImage                image
         buffer                                            // VkBuffer                buffer
     };
@@ -321,7 +321,7 @@ de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const De
     const VkMemoryRequirements memoryRequirements               = getImageMemoryRequirements(vkd, device, image);
     const VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType        sType
-        DE_NULL,                                          // const void*            pNext
+        nullptr,                                          // const void*            pNext
         image,                                            // VkImage                image
         VK_NULL_HANDLE                                    // VkBuffer                buffer
     };
@@ -332,7 +332,7 @@ de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const De
 void *mapMemory(const DeviceInterface &vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size,
                 VkMemoryMapFlags flags)
 {
-    void *hostPtr = DE_NULL;
+    void *hostPtr = nullptr;
     VK_CHECK(vkd.mapMemory(device, mem, offset, size, flags, &hostPtr));
     TCU_CHECK(hostPtr);
     return hostPtr;
@@ -341,7 +341,7 @@ void *mapMemory(const DeviceInterface &vkd, VkDevice device, VkDeviceMemory mem,
 void flushMappedMemoryRange(const DeviceInterface &vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset,
                             VkDeviceSize size)
 {
-    const VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, DE_NULL, memory, offset, size};
+    const VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, nullptr, memory, offset, size};
 
     VK_CHECK(vkd.flushMappedMemoryRanges(device, 1u, &range));
 }
@@ -349,7 +349,7 @@ void flushMappedMemoryRange(const DeviceInterface &vkd, VkDevice device, VkDevic
 void invalidateMappedMemoryRange(const DeviceInterface &vkd, VkDevice device, VkDeviceMemory memory,
                                  VkDeviceSize offset, VkDeviceSize size)
 {
-    const VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, DE_NULL, memory, offset, size};
+    const VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, nullptr, memory, offset, size};
 
     VK_CHECK(vkd.invalidateMappedMemoryRanges(device, 1u, &range));
 }
@@ -419,7 +419,7 @@ void bindImagePlanesMemory(const DeviceInterface &vkd, const VkDevice device, co
 
         allocations.push_back(AllocationSp(allocator.allocate(reqs, requirement).release()));
 
-        VkBindImagePlaneMemoryInfo planeInfo = {VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO, DE_NULL, planeAspect};
+        VkBindImagePlaneMemoryInfo planeInfo = {VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO, nullptr, planeAspect};
         planeInfos.push_back(planeInfo);
 
         VkBindImageMemoryInfo coreInfo = {

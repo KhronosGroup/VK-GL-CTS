@@ -104,7 +104,7 @@ VarType &VarType::operator=(const VarType &other)
     if (this == &other)
         return *this; // Self-assignment.
 
-    VarType *oldElementType = m_type == TYPE_ARRAY ? m_data.array.elementType : DE_NULL;
+    VarType *oldElementType = m_type == TYPE_ARRAY ? m_data.array.elementType : nullptr;
 
     m_type  = other.m_type;
     m_flags = other.m_flags;
@@ -281,7 +281,7 @@ struct PrecisionFlagsFmt
 };
 
 void dumpBytes(std::ostream &str, const std::string &msg, const void *dataBytes, size_t size,
-               const void *dataMask = DE_NULL)
+               const void *dataMask = nullptr)
 {
     const uint8_t *data = (const uint8_t *)dataBytes;
     const uint8_t *mask = (const uint8_t *)dataMask;
@@ -302,7 +302,7 @@ void dumpBytes(std::ostream &str, const std::string &msg, const void *dataBytes,
 
             str << " " << std::setfill('0') << std::setw(2);
 
-            if (mask == DE_NULL || mask[i] != 0)
+            if (mask == nullptr || mask[i] != 0)
                 str << (uint32_t)data[i];
             else
                 str << "__";
@@ -1182,7 +1182,7 @@ public:
         if (m_next != m_elements.end())
             return *m_next++;
         else
-            return DE_NULL;
+            return nullptr;
     }
 
 private:
@@ -1627,12 +1627,12 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
     const std::vector<VkRect2D> scissors(1, makeRect2D(renderSize));
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                                sType
-        DE_NULL,                                  // const void*                                    pNext
+        nullptr,                                  // const void*                                    pNext
         (VkPipelineVertexInputStateCreateFlags)0, // VkPipelineVertexInputStateCreateFlags        flags
         0u,      // uint32_t                                        vertexBindingDescriptionCount
-        DE_NULL, // const VkVertexInputBindingDescription*        pVertexBindingDescriptions
+        nullptr, // const VkVertexInputBindingDescription*        pVertexBindingDescriptions
         0u,      // uint32_t                                        vertexAttributeDescriptionCount
-        DE_NULL, // const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
+        nullptr, // const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
     };
 
     return makeGraphicsPipeline(
@@ -1727,7 +1727,7 @@ InterfaceBlockCaseInstance::InterfaceBlockCaseInstance(Context &ctx, const Inter
     deviceProperties2.pNext = &transformFeedbackProperties;
 
     transformFeedbackProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_PROPERTIES_EXT;
-    transformFeedbackProperties.pNext = DE_NULL;
+    transformFeedbackProperties.pNext = nullptr;
 
     vki.getPhysicalDeviceProperties2(physDevice, &deviceProperties2);
 
@@ -1798,7 +1798,7 @@ tcu::TestStatus InterfaceBlockCaseInstance::iterate(void)
     const Move<VkShaderModule> geomModule(getGeometryShaderModule(vk, device));
     const Move<VkRenderPass> renderPass(makeRenderPass(vk, device, VK_FORMAT_UNDEFINED));
     const Move<VkFramebuffer> framebuffer(
-        makeFramebuffer(vk, device, *renderPass, 0u, DE_NULL, m_imageExtent2D.width, m_imageExtent2D.height));
+        makeFramebuffer(vk, device, *renderPass, 0u, nullptr, m_imageExtent2D.width, m_imageExtent2D.height));
     const Move<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device));
     const Move<VkPipeline> pipeline(
         makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertModule, *geomModule, m_imageExtent2D));
@@ -1830,22 +1830,22 @@ tcu::TestStatus InterfaceBlockCaseInstance::iterate(void)
             vk.cmdBindTransformFeedbackBuffersEXT(*cmdBuffer, 0, tfBufBindingCount, &tfBufBindings[0],
                                                   &m_tfBufBindingOffsets[0], &m_tfBufBindingSizes[0]);
 
-            vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0, DE_NULL, DE_NULL);
+            vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0, nullptr, nullptr);
             {
                 vk.cmdDraw(*cmdBuffer, 1u, 1u, 0u, 0u);
             }
-            vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0, DE_NULL, DE_NULL);
+            vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0, nullptr, nullptr);
         }
         endRenderPass(vk, *cmdBuffer);
 
         const VkMemoryBarrier tfMemoryBarrier = {
             VK_STRUCTURE_TYPE_MEMORY_BARRIER,           // VkStructureType      sType;
-            DE_NULL,                                    // const void*          pNext;
+            nullptr,                                    // const void*          pNext;
             VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT, // VkAccessFlags        outputMask;
             VK_ACCESS_HOST_READ_BIT                     // VkAccessFlags        inputMask;
         };
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT, VK_PIPELINE_STAGE_HOST_BIT, 0u,
-                              1u, &tfMemoryBarrier, 0u, DE_NULL, 0u, DE_NULL);
+                              1u, &tfMemoryBarrier, 0u, nullptr, 0u, nullptr);
     }
     endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);

@@ -111,7 +111,7 @@ ImageWithMemorySp createImage(Context &context, uint32_t renderSize, VkFormat fo
 
     const VkImageCreateInfo imageCreateInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -123,7 +123,7 @@ ImageWithMemorySp createImage(Context &context, uint32_t renderSize, VkFormat fo
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
 
@@ -483,7 +483,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
                                VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR, VK_NULL_HANDLE, dsSRR);
     VkRenderingAttachmentInfo depthStencilAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         VK_NULL_HANDLE,                              // VkImageView imageView;
         VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,    // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits resolveMode;
@@ -616,7 +616,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     // create components for pipelines
     const VkPushConstantRange pushConstantRange             = {VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4};
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {*descriptorSetLayoutA, *descriptorSetLayoutB};
-    Move<VkPipelineLayout> writePipelineLayout = makePipelineLayout(vk, device, 0, DE_NULL, 1u, &pushConstantRange);
+    Move<VkPipelineLayout> writePipelineLayout = makePipelineLayout(vk, device, 0, nullptr, 1u, &pushConstantRange);
     Move<VkPipelineLayout> readPipelineLayout  = makePipelineLayout(vk, device, descriptorSetLayouts);
     Move<VkShaderModule> vertShaderModule =
         createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
@@ -661,7 +661,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     };
     VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                        sType
-        DE_NULL,                                                    // const void*                            pNext
+        nullptr,                                                    // const void*                            pNext
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags
         VK_TRUE,               // VkBool32                               depthTestEnable
         VK_TRUE,               // VkBool32                               depthWriteEnable
@@ -679,7 +679,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         dynamicState = VK_DYNAMIC_STATE_RASTERIZATION_SAMPLES_EXT;
     VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType                      sType
-        DE_NULL,                                              // const void*                          pNext
+        nullptr,                                              // const void*                          pNext
         0u,                                                   // VkPipelineDynamicStateCreateFlags    flags
         1u,                                                   // uint32_t                             dynamicStateCount
         &dynamicState                                         // const VkDynamicState*                pDynamicStates
@@ -716,7 +716,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         writeGraphicsPipelines[pipelineIndex]                     = makeGraphicsPipeline(
             vk, device, *writePipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
             *writeFragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
-            &vertexInputState, DE_NULL, &multisampleStateCreateInfo, &depthStencilStateCreateInfo,
+            &vertexInputState, nullptr, &multisampleStateCreateInfo, &depthStencilStateCreateInfo,
             &colorBlendStateCreateInfo, writeDynamicStateCreateInfo, &renderingCreateInfo);
 
         // writte to depth and stencil only in first pipeline
@@ -747,7 +747,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         readGraphicsPipelines[pipelineIndex] = makeGraphicsPipeline(
             vk, device, *readPipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
             *readFragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 1, 0,
-            &vertexInputState, DE_NULL, DE_NULL, DE_NULL, &colorBlendStateCreateInfo, DE_NULL, &renderingCreateInfo);
+            &vertexInputState, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &renderingCreateInfo);
     }
 
     Move<VkCommandPool> commandPool =
@@ -758,7 +758,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
 
     VkRenderingInfo renderingInfo{
         VK_STRUCTURE_TYPE_RENDERING_INFO,
-        DE_NULL,
+        nullptr,
         0u,                                // VkRenderingFlags                        flags
         scissors[0],                       // VkRect2D                                renderArea
         1u,                                // uint32_t                                layerCount
@@ -773,9 +773,9 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     beginCommandBuffer(vk, cmdBuffer);
 
     // transition all images to proper layouts
-    vk.cmdPipelineBarrier(cmdBuffer, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL,
+    vk.cmdPipelineBarrier(cmdBuffer, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr,
                           (uint32_t)colorImageBarriers.size(), colorImageBarriers.data());
-    vk.cmdPipelineBarrier(cmdBuffer, 0, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u,
+    vk.cmdPipelineBarrier(cmdBuffer, 0, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0, 0, nullptr, 0, nullptr, 1u,
                           &dsImageBarrier);
 
     vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
@@ -811,10 +811,10 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         barrier.dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
     }
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0, DE_NULL, 0, DE_NULL,
+                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr,
                           (uint32_t)colorImageBarriers.size(), colorImageBarriers.data());
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                          VK_DEPENDENCY_BY_REGION_BIT, 0, DE_NULL, 0, DE_NULL, 1u, &dsImageBarrier);
+                          VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1u, &dsImageBarrier);
 
     // draw using read pipelines
     for (uint32_t pipelineIndex = 0; pipelineIndex < m_outputDrawsCount; ++pipelineIndex)
@@ -826,7 +826,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
 
         vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *readGraphicsPipelines[pipelineIndex]);
         vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *readPipelineLayout, 0u, 2u,
-                                 descriptorSets, 0u, DE_NULL);
+                                 descriptorSets, 0u, nullptr);
 
         if (m_useMapping)
             vk.cmdSetRenderingInputAttachmentIndices(cmdBuffer, &renderingInputAttachmentIndexInfo);
@@ -976,7 +976,7 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
 
     VkRenderingAttachmentInfo colorAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,           // VkStructureType sType;
-        DE_NULL,                                               // const void* pNext;
+        nullptr,                                               // const void* pNext;
         VK_NULL_HANDLE,                                        // VkImageView imageView;
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,              // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                                  // VkResolveModeFlagBits resolveMode;
@@ -1033,7 +1033,7 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
     colorBlendStateCreateInfo.pAttachments                        = colorBlendAttachmentStates;
 
     VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocations{
-        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO_KHR, DE_NULL, colorAttachmentCount,
+        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO_KHR, nullptr, colorAttachmentCount,
         colorAttachmentLocations};
     VkPipelineRenderingCreateInfo renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
                                                       &renderingAttachmentLocations,
@@ -1046,19 +1046,19 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
     Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
         vk, device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
         *fragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
-        &vertexInputState, DE_NULL, DE_NULL, DE_NULL, &colorBlendStateCreateInfo, DE_NULL, &renderingCreateInfo);
+        &vertexInputState, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &renderingCreateInfo);
 
     VkRenderingInfo renderingInfo{
         VK_STRUCTURE_TYPE_RENDERING_INFO,
-        DE_NULL,
+        nullptr,
         0u,                      // VkRenderingFlags                        flags
         scissors[0],             // VkRect2D                                renderArea
         1u,                      // uint32_t                                layerCount
         0u,                      // uint32_t                                viewMask
         colorAttachmentCount,    // uint32_t                                colorAttachmentCount
         colorAttachments.data(), // const VkRenderingAttachmentInfo*        pColorAttachments
-        DE_NULL,                 // const VkRenderingAttachmentInfo*        pDepthAttachment
-        DE_NULL                  // const VkRenderingAttachmentInfo*        pStencilAttachment
+        nullptr,                 // const VkRenderingAttachmentInfo*        pDepthAttachment
+        nullptr                  // const VkRenderingAttachmentInfo*        pStencilAttachment
     };
 
     // record primary command buffer
@@ -1382,7 +1382,7 @@ tcu::TestStatus MappingWithGraphicsPipelineLibraryTestInstance::iterate()
     vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1, &*descriptorSet, 0u,
-                             DE_NULL);
+                             nullptr);
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
     vk.cmdEndRendering(*cmdBuffer);
 

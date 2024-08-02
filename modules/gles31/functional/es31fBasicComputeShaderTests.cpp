@@ -53,7 +53,7 @@ public:
     BufferMemMap(const glw::Functions &gl, uint32_t target, int offset, int size, uint32_t access)
         : m_gl(gl)
         , m_target(target)
-        , m_ptr(DE_NULL)
+        , m_ptr(nullptr)
     {
         m_ptr = gl.mapBufferRange(target, offset, size, access);
         GLU_EXPECT_NO_ERROR(gl.getError(), "glMapBufferRange()");
@@ -192,7 +192,7 @@ public:
                 getProgramInterfaceVariableInfo(gl, program.getProgram(), GL_UNIFORM, valueIndex);
 
             gl.bindBuffer(GL_UNIFORM_BUFFER, *inputBuffer);
-            gl.bufferData(GL_UNIFORM_BUFFER, (glw::GLsizeiptr)blockInfo.dataSize, DE_NULL, GL_STATIC_DRAW);
+            gl.bufferData(GL_UNIFORM_BUFFER, (glw::GLsizeiptr)blockInfo.dataSize, nullptr, GL_STATIC_DRAW);
 
             {
                 const BufferMemMap bufMap(gl, GL_UNIFORM_BUFFER, 0, (int)blockInfo.dataSize, GL_MAP_WRITE_BIT);
@@ -215,7 +215,7 @@ public:
                                                         GL_BUFFER_DATA_SIZE);
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, DE_NULL, GL_STREAM_READ);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, nullptr, GL_STREAM_READ);
             gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, *outputBuffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "Output buffer setup failed");
         }
@@ -332,7 +332,7 @@ public:
                 getProgramInterfaceVariableInfo(gl, program.getProgram(), GL_BUFFER_VARIABLE, valueIndex);
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *inputBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, (glw::GLsizeiptr)blockInfo.dataSize, DE_NULL, GL_STATIC_DRAW);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, (glw::GLsizeiptr)blockInfo.dataSize, nullptr, GL_STATIC_DRAW);
 
             TCU_CHECK(valueInfo.arraySize == (uint32_t)inputValues.size());
 
@@ -356,7 +356,7 @@ public:
                 getProgramInterfaceBlockInfo(gl, program.getProgram(), GL_SHADER_STORAGE_BLOCK, blockIndex);
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockInfo.dataSize, DE_NULL, GL_STREAM_READ);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockInfo.dataSize, nullptr, GL_STREAM_READ);
             gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, blockInfo.bufferBinding, *outputBuffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "Output buffer setup failed");
         }
@@ -469,7 +469,7 @@ public:
         // Output buffer setup
         {
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, DE_NULL, GL_STREAM_DRAW);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, nullptr, GL_STREAM_DRAW);
 
             {
                 const BufferMemMap bufMap(gl, GL_SHADER_STORAGE_BUFFER, 0, (int)blockSize, GL_MAP_WRITE_BIT);
@@ -596,14 +596,14 @@ public:
         // Output buffer setup
         {
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer0);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, block0Size, DE_NULL, GL_STREAM_DRAW);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, block0Size, nullptr, GL_STREAM_DRAW);
 
             gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, *outputBuffer0);
             GLU_EXPECT_NO_ERROR(gl.getError(), "Buffer setup failed");
         }
         {
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer1);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, block1Size, DE_NULL, GL_STREAM_DRAW);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, block1Size, nullptr, GL_STREAM_DRAW);
 
             gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, *outputBuffer1);
             GLU_EXPECT_NO_ERROR(gl.getError(), "Buffer setup failed");
@@ -719,7 +719,7 @@ public:
                                                         GL_BUFFER_DATA_SIZE);
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, DE_NULL, GL_STREAM_READ);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, nullptr, GL_STREAM_READ);
             gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, *outputBuffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "Output buffer setup failed");
         }
@@ -836,7 +836,7 @@ public:
             const uint32_t bufferSize = valueInfo.arrayStride * m_workSize[0] * m_workSize[1] * m_workSize[2];
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *tempBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, (glw::GLsizeiptr)bufferSize, DE_NULL, GL_STATIC_DRAW);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, (glw::GLsizeiptr)bufferSize, nullptr, GL_STATIC_DRAW);
             gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, *tempBuffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "Temp buffer setup failed");
         }
@@ -849,7 +849,7 @@ public:
                                                         GL_BUFFER_DATA_SIZE);
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, DE_NULL, GL_STREAM_READ);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, nullptr, GL_STREAM_READ);
 
             {
                 const BufferMemMap bufMap(gl, GL_SHADER_STORAGE_BUFFER, 0, blockSize, GL_MAP_WRITE_BIT);
@@ -963,7 +963,7 @@ public:
                                                         GL_BUFFER_DATA_SIZE);
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, DE_NULL, GL_STREAM_READ);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, nullptr, GL_STREAM_READ);
             gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, *outputBuffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "Output buffer setup failed");
         }
@@ -1070,7 +1070,7 @@ public:
                                                         GL_BUFFER_DATA_SIZE);
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, DE_NULL, GL_STREAM_READ);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, nullptr, GL_STREAM_READ);
             gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, *outputBuffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "Output buffer setup failed");
         }
@@ -1188,7 +1188,7 @@ public:
                                                         GL_BUFFER_DATA_SIZE);
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, DE_NULL, GL_STREAM_READ);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, nullptr, GL_STREAM_READ);
             gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, *outputBuffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "Output buffer setup failed");
         }
@@ -1294,7 +1294,7 @@ public:
                 getProgramInterfaceVariableInfo(gl, program.getProgram(), GL_BUFFER_VARIABLE, valueIndex);
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *inputBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, (glw::GLsizeiptr)blockInfo.dataSize, DE_NULL, GL_STATIC_DRAW);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, (glw::GLsizeiptr)blockInfo.dataSize, nullptr, GL_STATIC_DRAW);
 
             TCU_CHECK(valueInfo.arraySize == (uint32_t)inputValues.size());
 
@@ -1435,7 +1435,7 @@ public:
                 getProgramInterfaceVariableInfo(gl, program.getProgram(), GL_BUFFER_VARIABLE, valueIndex);
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *inputBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, (glw::GLsizeiptr)blockInfo.dataSize, DE_NULL, GL_STATIC_DRAW);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, (glw::GLsizeiptr)blockInfo.dataSize, nullptr, GL_STATIC_DRAW);
 
             TCU_CHECK(valueInfo.arraySize == (uint32_t)inputValues.size());
 
@@ -1572,7 +1572,7 @@ public:
                                                         GL_BUFFER_DATA_SIZE);
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, DE_NULL, GL_STREAM_READ);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, nullptr, GL_STREAM_READ);
 
             {
                 const BufferMemMap bufMap(gl, GL_SHADER_STORAGE_BUFFER, 0, blockSize, GL_MAP_WRITE_BIT);
@@ -1686,7 +1686,7 @@ public:
                                                                  bufferIndex, GL_BUFFER_DATA_SIZE);
 
             gl.bindBuffer(GL_ATOMIC_COUNTER_BUFFER, *counterBuffer);
-            gl.bufferData(GL_ATOMIC_COUNTER_BUFFER, bufferSize, DE_NULL, GL_STREAM_READ);
+            gl.bufferData(GL_ATOMIC_COUNTER_BUFFER, bufferSize, nullptr, GL_STREAM_READ);
 
             {
                 const BufferMemMap memMap(gl, GL_ATOMIC_COUNTER_BUFFER, 0, bufferSize, GL_MAP_WRITE_BIT);
@@ -1705,7 +1705,7 @@ public:
                                                         GL_BUFFER_DATA_SIZE);
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, *outputBuffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, DE_NULL, GL_STREAM_READ);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, blockSize, nullptr, GL_STREAM_READ);
             gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, *outputBuffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "Output buffer setup failed");
         }

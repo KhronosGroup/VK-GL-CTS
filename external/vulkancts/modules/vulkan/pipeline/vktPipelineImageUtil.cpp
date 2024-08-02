@@ -260,13 +260,13 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment(const vk::DeviceInterface &vk
     {
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             pixelDataSize,                        // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL                               // const uint32_t* pQueueFamilyIndices;
+            nullptr                               // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -340,13 +340,13 @@ de::MovePtr<tcu::TextureLevel> readDepthAttachment(const vk::DeviceInterface &vk
     {
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             pixelDataSize,                        // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL                               // const uint32_t* pQueueFamilyIndices;
+            nullptr                               // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -398,13 +398,13 @@ de::MovePtr<tcu::TextureLevel> readStencilAttachment(const vk::DeviceInterface &
     {
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             pixelDataSize,                        // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL                               // const uint32_t* pQueueFamilyIndices;
+            nullptr                               // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -449,9 +449,9 @@ void uploadTestTextureInternal(const DeviceInterface &vk, VkDevice device, VkQue
 
     // Stencil-only texture should be provided if (and only if) the image has a combined DS format
     DE_ASSERT((tcu::hasDepthComponent(format.order) && tcu::hasStencilComponent(format.order)) ==
-              (srcStencilTexture != DE_NULL));
+              (srcStencilTexture != nullptr));
 
-    if (srcStencilTexture != DE_NULL)
+    if (srcStencilTexture != nullptr)
     {
         stencilOffset = static_cast<uint32_t>(deAlign32(static_cast<int32_t>(bufferSize), 4));
         bufferSize    = stencilOffset + srcStencilTexture->getSize();
@@ -461,13 +461,13 @@ void uploadTestTextureInternal(const DeviceInterface &vk, VkDevice device, VkQue
     {
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType      sType;
-            DE_NULL,                              // const void*          pNext;
+            nullptr,                              // const void*          pNext;
             0u,                                   // VkBufferCreateFlags  flags;
             bufferSize,                           // VkDeviceSize         size;
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags   usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode;
             0u,                                   // uint32_t             queueFamilyIndexCount;
-            DE_NULL,                              // const uint32_t*      pQueueFamilyIndices;
+            nullptr,                              // const uint32_t*      pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -480,7 +480,7 @@ void uploadTestTextureInternal(const DeviceInterface &vk, VkDevice device, VkQue
     {
         srcTexture.write(reinterpret_cast<uint8_t *>(bufferAlloc->getHostPtr()));
 
-        if (srcStencilTexture != DE_NULL)
+        if (srcStencilTexture != nullptr)
         {
             DE_ASSERT(stencilOffset != 0u);
 
@@ -499,7 +499,7 @@ void uploadTestTextureInternal(const DeviceInterface &vk, VkDevice device, VkQue
         flushAlloc(vk, device, *bufferAlloc);
     }
 
-    copyBufferToImage(vk, device, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, DE_NULL, imageAspectFlags,
+    copyBufferToImage(vk, device, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, nullptr, imageAspectFlags,
                       srcTexture.getNumLevels(), srcTexture.getArraySize(), destImage, destImageLayout);
 }
 
@@ -542,9 +542,9 @@ void uploadTestTextureInternalSparse(const DeviceInterface &vk, VkDevice device,
 
     // Stencil-only texture should be provided if (and only if) the image has a combined DS format
     DE_ASSERT((tcu::hasDepthComponent(format.order) && tcu::hasStencilComponent(format.order)) ==
-              (srcStencilTexture != DE_NULL));
+              (srcStencilTexture != nullptr));
 
-    if (srcStencilTexture != DE_NULL)
+    if (srcStencilTexture != nullptr)
     {
         stencilOffset = static_cast<uint32_t>(deAlign32(static_cast<int32_t>(bufferSize), 4));
         bufferSize    = stencilOffset + srcStencilTexture->getSize();
@@ -564,13 +564,13 @@ void uploadTestTextureInternalSparse(const DeviceInterface &vk, VkDevice device,
         // Create source buffer
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             bufferSize,                           // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL,                              // const uint32_t* pQueueFamilyIndices;
+            nullptr,                              // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(vk, device, &bufferParams);
@@ -584,7 +584,7 @@ void uploadTestTextureInternalSparse(const DeviceInterface &vk, VkDevice device,
         // Write buffer data
         srcTexture.write(reinterpret_cast<uint8_t *>(bufferAlloc->getHostPtr()));
 
-        if (srcStencilTexture != DE_NULL)
+        if (srcStencilTexture != nullptr)
         {
             DE_ASSERT(stencilOffset != 0u);
 
@@ -646,7 +646,7 @@ void uploadTestTexture(const DeviceInterface &vk, VkDevice device, VkQueue queue
                                   srcStencilTexture.get(), srcTexture.getTextureFormat(), destImage, destImageLayout);
     }
     else
-        uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, srcTexture, DE_NULL,
+        uploadTestTextureInternal(vk, device, queue, queueFamilyIndex, allocator, srcTexture, nullptr,
                                   srcTexture.getTextureFormat(), destImage, destImageLayout);
 }
 
@@ -695,7 +695,7 @@ void uploadTestTextureSparse(const DeviceInterface &vk, VkDevice device, const V
     {
         uploadTestTextureInternalSparse(vk, device, physicalDevice, instance, imageCreateInfo, universalQueue,
                                         universalQueueFamilyIndex, sparseQueue, allocator, allocations, srcTexture,
-                                        DE_NULL, srcTexture.getTextureFormat(), destImage);
+                                        nullptr, srcTexture.getTextureFormat(), destImage);
     }
 }
 

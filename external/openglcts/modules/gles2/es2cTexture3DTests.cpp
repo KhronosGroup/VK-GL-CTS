@@ -490,7 +490,7 @@ private:
         tcu::Vec3 lod;
         tcu::Vec3 offset;
 
-        FilterCase(void) : texture(DE_NULL)
+        FilterCase(void) : texture(nullptr)
         {
         }
 
@@ -519,8 +519,8 @@ Texture3DFilteringCase::Texture3DFilteringCase(deqp::Context &context, const cha
                                                const FilteringData &data)
     : Texture3DBase(context, name, desc)
     , m_filteringData(data)
-    , m_gradientTex(DE_NULL)
-    , m_gridTex(DE_NULL)
+    , m_gradientTex(nullptr)
+    , m_gridTex(nullptr)
     , m_caseNdx(0)
 {
 }
@@ -592,8 +592,8 @@ void Texture3DFilteringCase::deinit(void)
     delete m_gradientTex;
     delete m_gridTex;
 
-    m_gradientTex = DE_NULL;
-    m_gridTex     = DE_NULL;
+    m_gradientTex = nullptr;
+    m_gridTex     = nullptr;
 
     m_cases.clear();
 }

@@ -83,7 +83,7 @@ void ProgramLibrary::clear(void)
     for (map<Program, glu::ShaderProgram *>::iterator i = m_programs.begin(); i != m_programs.end(); i++)
     {
         delete i->second;
-        i->second = DE_NULL;
+        i->second = nullptr;
     }
     m_programs.clear();
 }
@@ -146,7 +146,7 @@ glu::ShaderProgram *ProgramLibrary::getProgram(Program program)
              m_glslVersion == glu::GLSL_VERSION_320_ES || m_glslVersion > glu::GLSL_VERSION_330)
     {
         const string version = glu::getGLSLVersionDeclaration(m_glslVersion);
-        const char *ext      = DE_NULL;
+        const char *ext      = nullptr;
 
         if (glu::glslVersionIsES(m_glslVersion) && m_glslVersion != glu::GLSL_VERSION_320_ES)
         {
@@ -180,8 +180,8 @@ glu::ShaderProgram *ProgramLibrary::getProgram(Program program)
     else
         DE_ASSERT(false);
 
-    const char *sampler = DE_NULL;
-    const char *lookup  = DE_NULL;
+    const char *sampler = nullptr;
+    const char *lookup  = nullptr;
 
     if (m_glslVersion == glu::GLSL_VERSION_300_ES || m_glslVersion == glu::GLSL_VERSION_310_ES ||
         m_glslVersion == glu::GLSL_VERSION_320_ES || m_glslVersion > glu::GLSL_VERSION_330)

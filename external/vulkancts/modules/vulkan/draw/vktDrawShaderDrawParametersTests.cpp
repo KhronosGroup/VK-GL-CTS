@@ -338,7 +338,7 @@ void DrawTest::beginSecondaryCmdBuffer(vk::VkRenderingFlagsKHR renderingFlags)
 {
     vk::VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                             // const void* pNext;
+        nullptr,                                                             // const void* pNext;
         renderingFlags,                                                      // VkRenderingFlagsKHR flags;
         0u,                                                                  // uint32_t viewMask;
         1u,                                                                  // uint32_t colorAttachmentCount;
@@ -355,7 +355,7 @@ void DrawTest::beginSecondaryCmdBuffer(vk::VkRenderingFlagsKHR renderingFlags)
 
     const vk::VkCommandBufferBeginInfo commandBufBeginParams{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         usageFlags,                                      // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
@@ -433,7 +433,7 @@ void checkSupport(Context &context, DrawTest::TestSpec testSpec)
         // Check if shader draw parameters is supported on the physical device.
         vk::VkPhysicalDeviceShaderDrawParametersFeatures drawParameters = {
             vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES, // sType
-            DE_NULL,                                                               // pNext
+            nullptr,                                                               // pNext
             VK_FALSE                                                               // shaderDrawParameters
         };
 

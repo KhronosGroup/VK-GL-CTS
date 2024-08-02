@@ -636,7 +636,7 @@ tcu::TestStatus test(Context &context, TestParams testParams)
     // Pipeline
 
     const Unique<VkRenderPass> renderPass(makeRenderPassWithoutAttachments(vk, device));
-    const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, 0u, DE_NULL, 1u, 1u));
+    const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, 0u, nullptr, 1u, 1u));
     const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
     const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(
@@ -644,11 +644,11 @@ tcu::TestStatus test(Context &context, TestParams testParams)
 
     const Unique<VkPipeline> pipeline(
         GraphicsPipelineBuilder()
-            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert"), DE_NULL)
+            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert"), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, context.getBinaryCollection().get("tesc"),
-                       DE_NULL)
+                       nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-                       context.getBinaryCollection().get(tessGeomPointSize ? "tese_point_size" : "tese"), DE_NULL)
+                       context.getBinaryCollection().get(tessGeomPointSize ? "tese_point_size" : "tese"), nullptr)
             .build(vk, device, *pipelineLayout, *renderPass));
 
     // Data that will be verified across all cases
@@ -692,7 +692,7 @@ tcu::TestStatus test(Context &context, TestParams testParams)
 
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
 
         vk.cmdDraw(*cmdBuffer, 1u, 1u, 0u, 0u);
         endRenderPass(vk, *cmdBuffer);
@@ -702,7 +702,7 @@ tcu::TestStatus test(Context &context, TestParams testParams)
                 VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *resultBuffer, 0ull, resultBufferSizeBytes);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &shaderWriteBarrier, 0u, DE_NULL);
+                                  nullptr, 1u, &shaderWriteBarrier, 0u, nullptr);
         }
 
         endCommandBuffer(vk, *cmdBuffer);

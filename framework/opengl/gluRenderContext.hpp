@@ -310,7 +310,7 @@ private:
 // Utilities
 
 RenderContext *createRenderContext(tcu::Platform &platform, const tcu::CommandLine &cmdLine, const RenderConfig &config,
-                                   const RenderContext *sharedContext = DE_NULL);
+                                   const RenderContext *sharedContext = nullptr);
 RenderContext *createDefaultRenderContext(tcu::Platform &platform, const tcu::CommandLine &cmdLine, ApiType apiType);
 
 void initCoreFunctions(glw::Functions *dst, const glw::FunctionLoader *loader, ApiType apiType);

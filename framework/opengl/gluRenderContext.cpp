@@ -41,7 +41,7 @@ namespace glu
 
 glw::GenericFuncType RenderContext::getProcAddress(const char *) const
 {
-    return (glw::GenericFuncType)DE_NULL;
+    return nullptr;
 }
 
 void RenderContext::makeCurrent(void)
@@ -119,7 +119,7 @@ static ContextFlags parseContextFlags(const std::string &flagsStr)
             for (ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_flagMap); ndx++)
                 tcu::print("  %s\n", s_flagMap[ndx].name);
 
-            throw tcu::NotSupportedError((std::string("Unknown GL context flag '") + *flagIter + "'").c_str(), DE_NULL,
+            throw tcu::NotSupportedError((std::string("Unknown GL context flag '") + *flagIter + "'").c_str(), nullptr,
                                          __FILE__, __LINE__);
         }
     }
@@ -132,10 +132,10 @@ RenderContext *createRenderContext(tcu::Platform &platform, const tcu::CommandLi
 {
     const ContextFactoryRegistry &registry = platform.getGLPlatform().getContextFactoryRegistry();
     const char *factoryName                = cmdLine.getGLContextType();
-    const ContextFactory *factory          = DE_NULL;
+    const ContextFactory *factory          = nullptr;
 
     if (registry.empty())
-        throw tcu::NotSupportedError("OpenGL is not supported", DE_NULL, __FILE__, __LINE__);
+        throw tcu::NotSupportedError("OpenGL is not supported", nullptr, __FILE__, __LINE__);
 
     if (factoryName)
     {
@@ -153,7 +153,7 @@ RenderContext *createRenderContext(tcu::Platform &platform, const tcu::CommandLi
             }
 
             throw tcu::NotSupportedError((std::string("Unknown GL context type '") + factoryName + "'").c_str(),
-                                         DE_NULL, __FILE__, __LINE__);
+                                         nullptr, __FILE__, __LINE__);
         }
     }
     else
@@ -198,7 +198,7 @@ static std::vector<std::string> getExtensions(const glw::Functions &gl, ApiType 
         if (extStr)
             return de::splitString(extStr);
         else
-            throw tcu::TestError("glGetString(GL_EXTENSIONS) returned null pointer", DE_NULL, __FILE__, __LINE__);
+            throw tcu::TestError("glGetString(GL_EXTENSIONS) returned null pointer", nullptr, __FILE__, __LINE__);
     }
     else
     {
@@ -222,7 +222,7 @@ static std::vector<std::string> getExtensions(const glw::Functions &gl, ApiType 
                 if (ext)
                     extensions[ndx] = ext;
                 else
-                    throw tcu::TestError("glGetStringi(GL_EXTENSIONS) returned null pointer", DE_NULL, __FILE__,
+                    throw tcu::TestError("glGetStringi(GL_EXTENSIONS) returned null pointer", nullptr, __FILE__,
                                          __LINE__);
             }
         }
@@ -365,7 +365,7 @@ const char *getApiTypeDescription(ApiType type)
     else if (type == glu::ApiType::compatibility(4, 6))
         return "OpenGL 4.6 compatibility";
     else
-        return DE_NULL;
+        return nullptr;
 }
 
 } // namespace glu

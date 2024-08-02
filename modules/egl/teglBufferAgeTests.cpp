@@ -358,11 +358,11 @@ BufferAgeTest::BufferAgeTest(EglTestContext &eglTestCtx, bool preserveColorBuffe
     , m_evenFrameDrawType(evenFrameDrawType)
     , m_resizeType(resizeType)
     , m_eglDisplay(EGL_NO_DISPLAY)
-    , m_window(DE_NULL)
+    , m_window(nullptr)
     , m_eglSurface(EGL_NO_SURFACE)
     , m_eglContext(EGL_NO_CONTEXT)
-    , m_gles2Renderer(DE_NULL)
-    , m_refRenderer(DE_NULL)
+    , m_gles2Renderer(nullptr)
+    , m_refRenderer(nullptr)
 {
 }
 
@@ -386,7 +386,7 @@ void BufferAgeTest::init(void)
 
     m_eglConfig = getEGLConfig(m_eglTestCtx.getLibrary(), m_eglDisplay, m_preserveColorBuffer);
 
-    if (m_eglConfig == DE_NULL)
+    if (m_eglConfig == nullptr)
         TCU_THROW(NotSupportedError, "No supported config found");
 
     //create surface and context and make them current
@@ -404,10 +404,10 @@ void BufferAgeTest::deinit(void)
     const Library &egl = m_eglTestCtx.getLibrary();
 
     delete m_refRenderer;
-    m_refRenderer = DE_NULL;
+    m_refRenderer = nullptr;
 
     delete m_gles2Renderer;
-    m_gles2Renderer = DE_NULL;
+    m_gles2Renderer = nullptr;
 
     if (m_eglContext != EGL_NO_CONTEXT)
     {
@@ -429,7 +429,7 @@ void BufferAgeTest::deinit(void)
     }
 
     delete m_window;
-    m_window = DE_NULL;
+    m_window = nullptr;
 }
 
 void BufferAgeTest::initEGLSurface(EGLConfig config)
@@ -437,9 +437,9 @@ void BufferAgeTest::initEGLSurface(EGLConfig config)
     const eglu::NativeWindowFactory &factory =
         eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
     m_window =
-        factory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, config, DE_NULL,
+        factory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, config, nullptr,
                              eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
-    m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, config, DE_NULL);
+    m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, config, nullptr);
 }
 
 void BufferAgeTest::initEGLContext(EGLConfig config)

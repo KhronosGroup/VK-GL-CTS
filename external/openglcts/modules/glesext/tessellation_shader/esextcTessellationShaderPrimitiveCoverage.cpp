@@ -213,7 +213,7 @@ TessellationShaderPrimitiveCoverage::TessellationShaderPrimitiveCoverage(Context
     , m_fbo_id(0)
     , m_color_rbo_id(0)
     , m_stencil_rbo_id(0)
-    , m_rendered_data_buffer(DE_NULL)
+    , m_rendered_data_buffer(nullptr)
 {
     /* Nothing to be done here */
 }
@@ -245,11 +245,11 @@ void TessellationShaderPrimitiveCoverage::deinit(void)
     GLU_EXPECT_NO_ERROR(gl.getError(), "glPatchParameteriEXT() failed!");
 
     /* Delete buffers */
-    if (m_rendered_data_buffer != DE_NULL)
+    if (m_rendered_data_buffer != nullptr)
     {
         free(m_rendered_data_buffer);
 
-        m_rendered_data_buffer = DE_NULL;
+        m_rendered_data_buffer = nullptr;
     }
 
     /* Delete program and shader objects */

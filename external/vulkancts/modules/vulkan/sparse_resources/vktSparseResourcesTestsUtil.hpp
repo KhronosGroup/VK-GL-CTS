@@ -169,16 +169,16 @@ vk::VkSparseMemoryBind makeSparseMemoryBind(const vk::DeviceInterface &vk, const
                                             const vk::VkSparseMemoryBindFlags flags = 0u);
 
 void submitCommands(const vk::DeviceInterface &vk, const vk::VkQueue queue, const vk::VkCommandBuffer cmdBuffer,
-                    const uint32_t waitSemaphoreCount = 0, const vk::VkSemaphore *pWaitSemaphores = DE_NULL,
-                    const vk::VkPipelineStageFlags *pWaitDstStageMask = DE_NULL,
-                    const uint32_t signalSemaphoreCount = 0, const vk::VkSemaphore *pSignalSemaphores = DE_NULL,
+                    const uint32_t waitSemaphoreCount = 0, const vk::VkSemaphore *pWaitSemaphores = nullptr,
+                    const vk::VkPipelineStageFlags *pWaitDstStageMask = nullptr,
+                    const uint32_t signalSemaphoreCount = 0, const vk::VkSemaphore *pSignalSemaphores = nullptr,
                     const bool useDeviceGroups = false, const uint32_t physicalDeviceID = 0);
 
 void submitCommandsAndWait(const vk::DeviceInterface &vk, const vk::VkDevice device, const vk::VkQueue queue,
                            const vk::VkCommandBuffer cmdBuffer, const uint32_t waitSemaphoreCount = 0,
-                           const vk::VkSemaphore *pWaitSemaphores            = DE_NULL,
-                           const vk::VkPipelineStageFlags *pWaitDstStageMask = DE_NULL,
-                           const uint32_t signalSemaphoreCount = 0, const vk::VkSemaphore *pSignalSemaphores = DE_NULL,
+                           const vk::VkSemaphore *pWaitSemaphores            = nullptr,
+                           const vk::VkPipelineStageFlags *pWaitDstStageMask = nullptr,
+                           const uint32_t signalSemaphoreCount = 0, const vk::VkSemaphore *pSignalSemaphores = nullptr,
                            const bool useDeviceGroups = false, const uint32_t physicalDeviceID = 0);
 
 void requireFeatures(const vk::InstanceInterface &vki, const vk::VkPhysicalDevice physicalDevice,
@@ -230,7 +230,7 @@ inline std::size_t sizeInBytes(const std::vector<T> &vec)
 template <typename T>
 inline const T *getDataOrNullptr(const std::vector<T> &vec, const std::size_t index = 0u)
 {
-    return (index < vec.size() ? &vec[index] : DE_NULL);
+    return (index < vec.size() ? &vec[index] : nullptr);
 }
 
 } // namespace sparse

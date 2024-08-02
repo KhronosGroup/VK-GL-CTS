@@ -366,7 +366,7 @@ LayoutBindingRenderCase::LayoutBindingRenderCase(Context &context, const char *n
                                                  glw::GLenum maxFragmentUnitsEnum, glw::GLenum maxCombinedUnitsEnum,
                                                  const std::string &uniformName)
     : TestCase(context, name, desc)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_shaderType(shaderType)
     , m_testType(testType)
     , m_uniformName(uniformName)
@@ -534,7 +534,7 @@ void LayoutBindingRenderCase::init(void)
         gl.bufferData(GL_ARRAY_BUFFER, (DE_LENGTH_OF_ARRAY(vertices) * (glw::GLsizeiptr)sizeof(vertices[0])),
                       &vertices[0], GL_STATIC_DRAW);
         gl.enableVertexAttribArray(m_shaderProgramPosLoc);
-        gl.vertexAttribPointer(m_shaderProgramPosLoc, 3, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+        gl.vertexAttribPointer(m_shaderProgramPosLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
         GLU_EXPECT_NO_ERROR(gl.getError(), "Vertex buffer setup failed");
     }
 }
@@ -544,7 +544,7 @@ void LayoutBindingRenderCase::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 
     if (m_shaderProgramPosLoc)
@@ -662,7 +662,7 @@ bool LayoutBindingRenderCase::drawAndVerifyResult(const Vec4 &expectedColor)
     gl.clear(GL_COLOR_BUFFER_BIT);
 
     // Draw
-    gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, DE_NULL);
+    gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Drawing failed");
 
     // Verify
@@ -746,7 +746,7 @@ LayoutBindingNegativeCase::LayoutBindingNegativeCase(Context &context, const cha
                                                      glw::GLenum maxFragmentUnitsEnum, glw::GLenum maxCombinedUnitsEnum,
                                                      const std::string &uniformName)
     : TestCase(context, name, desc)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_shaderType(shaderType)
     , m_testType(testType)
     , m_errorType(errorType)
@@ -924,7 +924,7 @@ void LayoutBindingNegativeCase::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 }
 
@@ -1787,7 +1787,7 @@ TestCase::IterateResult UBOBindingRenderCase::iterate(void)
 
         gl.getProgramResourceiv(m_program->getProgram(), GL_UNIFORM_BLOCK,
                                 gl.getProgramResourceIndex(m_program->getProgram(), GL_UNIFORM_BLOCK, name.c_str()), 1,
-                                &prop, 1, DE_NULL, &val);
+                                &prop, 1, nullptr, &val);
         m_testCtx.getLog() << tcu::TestLog::Message << "Querying binding point for " << name << ": " << val
                            << " == " << binding << tcu::TestLog::EndMessage;
         GLU_EXPECT_NO_ERROR(gl.getError(), "Binding point query failed");
@@ -2066,7 +2066,7 @@ TestCase::IterateResult SSBOBindingRenderCase::iterate(void)
         gl.getProgramResourceiv(
             m_program->getProgram(), GL_SHADER_STORAGE_BLOCK,
             gl.getProgramResourceIndex(m_program->getProgram(), GL_SHADER_STORAGE_BLOCK, name.c_str()), 1, &prop, 1,
-            DE_NULL, &val);
+            nullptr, &val);
         m_testCtx.getLog() << tcu::TestLog::Message << "Querying binding point for " << name << ": " << val
                            << " == " << binding << tcu::TestLog::EndMessage;
         GLU_EXPECT_NO_ERROR(gl.getError(), "Binding point query failed");

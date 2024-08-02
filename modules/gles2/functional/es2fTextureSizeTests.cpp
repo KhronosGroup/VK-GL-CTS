@@ -85,7 +85,7 @@ Texture2DSizeCase::Texture2DSizeCase(tcu::TestContext &testCtx, glu::RenderConte
     , m_width(width)
     , m_height(height)
     , m_useMipmaps(mipmaps)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
 {
 }
@@ -114,7 +114,7 @@ void Texture2DSizeCase::init(void)
 void Texture2DSizeCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -218,7 +218,7 @@ TextureCubeSizeCase::TextureCubeSizeCase(tcu::TestContext &testCtx, glu::RenderC
     , m_width(width)
     , m_height(height)
     , m_useMipmaps(mipmaps)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
     , m_curFace(0)
     , m_isOk(false)
@@ -269,7 +269,7 @@ void TextureCubeSizeCase::init(void)
 void TextureCubeSizeCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }

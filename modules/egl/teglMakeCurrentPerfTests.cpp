@@ -160,7 +160,7 @@ MakeCurrentPerfCase::MakeCurrentPerfCase(EglTestContext &eglTestCtx, const Spec 
     , m_spec(spec)
     , m_rnd(deStringHash(name))
     , m_display(EGL_NO_DISPLAY)
-    , m_config(DE_NULL)
+    , m_config(nullptr)
 {
 }
 
@@ -271,16 +271,16 @@ void MakeCurrentPerfCase::createWindow(void)
     const eglu::NativeWindowFactory &windowFactory =
         eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
-    eglu::NativeWindow *window = DE_NULL;
+    eglu::NativeWindow *window = nullptr;
     EGLSurface surface         = EGL_NO_SURFACE;
 
     try
     {
         window = windowFactory.createWindow(
-            &m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL,
+            &m_eglTestCtx.getNativeDisplay(), m_display, m_config, nullptr,
             eglu::WindowParams(width, height,
                                eglu::parseWindowVisibility(m_eglTestCtx.getTestContext().getCommandLine())));
-        surface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, m_display, m_config, DE_NULL);
+        surface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, m_display, m_config, nullptr);
     }
     catch (...)
     {
@@ -304,14 +304,14 @@ void MakeCurrentPerfCase::createPixmap(void)
     const eglu::NativePixmapFactory &pixmapFactory =
         eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
-    eglu::NativePixmap *pixmap = DE_NULL;
+    eglu::NativePixmap *pixmap = nullptr;
     EGLSurface surface         = EGL_NO_SURFACE;
 
     try
     {
         pixmap =
-            pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL, width, height);
-        surface = eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, m_display, m_config, DE_NULL);
+            pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, nullptr, width, height);
+        surface = eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, m_display, m_config, nullptr);
     }
     catch (...)
     {

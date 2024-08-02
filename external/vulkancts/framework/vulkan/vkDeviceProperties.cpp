@@ -45,7 +45,7 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
     if (isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
     {
         const std::vector<VkExtensionProperties> deviceExtensionProperties =
-            enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+            enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
         void **nextPtr = &m_coreProperties2.pNext;
         std::vector<PropertyStructWrapperBase *> propertiesToFillFromBlob;
         std::vector<PropertyStructWrapperBase *> propertiesAddedWithVK;
@@ -112,7 +112,7 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
                 std::string(propertyName) == "core_property")
             {
                 PropertyStructWrapperBase *p = (*propertyStructCreationData.creatorFunction)();
-                if (p == DE_NULL)
+                if (p == nullptr)
                     continue;
 
 #ifdef CTS_USES_VULKANSC
@@ -186,7 +186,7 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
 
 void DeviceProperties::addToChainStructWrapper(void ***chainPNextPtr, PropertyStructWrapperBase *structWrapper)
 {
-    DE_ASSERT(chainPNextPtr != DE_NULL);
+    DE_ASSERT(chainPNextPtr != nullptr);
 
     (**chainPNextPtr) = structWrapper->getPropertyTypeRaw();
     (*chainPNextPtr)  = structWrapper->getPropertyTypeNext();

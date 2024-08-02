@@ -474,7 +474,7 @@ void TextureLodSelectionTestCase::setBuffers(const glu::ShaderProgram &program)
 
             GLuint strideSize = sizeof(fs_quad) / 4;
 
-            gl.vertexAttribPointer(locVertices, 4, GL_FLOAT, GL_FALSE, strideSize, DE_NULL);
+            gl.vertexAttribPointer(locVertices, 4, GL_FLOAT, GL_FALSE, strideSize, nullptr);
             GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
         }
 

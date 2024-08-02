@@ -362,19 +362,19 @@ tcu::TestStatus test(Context &context, const Flags flags)
     pipelineBuilder.setPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
         .setRenderSize(renderSize)
         .setPatchControlPoints(1)
-        .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert"), DE_NULL)
-        .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag"), DE_NULL);
+        .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert"), nullptr)
+        .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag"), nullptr);
 
     if (isTessellationStage(flags))
         pipelineBuilder
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, context.getBinaryCollection().get("tesc"),
-                       DE_NULL)
+                       nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-                       context.getBinaryCollection().get("tese"), DE_NULL);
+                       context.getBinaryCollection().get("tese"), nullptr);
 
     if (isGeometryStage(flags))
         pipelineBuilder.setShader(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT, context.getBinaryCollection().get("geom"),
-                                  DE_NULL);
+                                  nullptr);
 
     const Unique<VkPipeline> pipeline(pipelineBuilder.build(vk, device, *pipelineLayout, *renderPass));
 
@@ -388,7 +388,7 @@ tcu::TestStatus test(Context &context, const Flags flags)
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *colorAttachmentImage, colorImageSubresourceRange);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                               &colorAttachmentLayoutBarrier);
     }
 

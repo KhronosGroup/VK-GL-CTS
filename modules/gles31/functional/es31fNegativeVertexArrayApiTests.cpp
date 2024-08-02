@@ -600,7 +600,7 @@ void draw_elements(NegativeTestContext &ctx)
         ctx.glLinkProgram(program.getProgram());
         ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID);
         ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-        ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+        ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
         ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
         ctx.glBeginTransformFeedback(GL_POINTS);
         ctx.expectError(GL_NO_ERROR);
@@ -719,7 +719,7 @@ void draw_elements_incomplete_primitive(NegativeTestContext &ctx)
         ctx.glLinkProgram(program.getProgram());
         ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID);
         ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-        ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+        ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
         ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
         ctx.glBeginTransformFeedback(GL_TRIANGLES);
         ctx.expectError(GL_NO_ERROR);
@@ -993,7 +993,7 @@ void draw_elements_instanced(NegativeTestContext &ctx)
         ctx.glLinkProgram(program.getProgram());
         ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID);
         ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-        ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+        ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
         ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
         ctx.glBeginTransformFeedback(GL_POINTS);
         ctx.expectError(GL_NO_ERROR);
@@ -1121,7 +1121,7 @@ void draw_elements_instanced_incomplete_primitive(NegativeTestContext &ctx)
         ctx.glLinkProgram(program.getProgram());
         ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID);
         ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-        ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+        ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
         ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
         ctx.glBeginTransformFeedback(GL_TRIANGLES);
         ctx.expectError(GL_NO_ERROR);
@@ -1286,7 +1286,7 @@ void draw_range_elements(NegativeTestContext &ctx)
         ctx.glLinkProgram(program.getProgram());
         ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID);
         ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-        ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+        ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
         ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
         ctx.glBeginTransformFeedback(GL_POINTS);
         ctx.expectError(GL_NO_ERROR);
@@ -1417,7 +1417,7 @@ void draw_range_elements_incomplete_primitive(NegativeTestContext &ctx)
         ctx.glLinkProgram(program.getProgram());
         ctx.glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfID);
         ctx.glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf);
-        ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, DE_NULL, GL_DYNAMIC_DRAW);
+        ctx.glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 32, nullptr, GL_DYNAMIC_DRAW);
         ctx.glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf);
         ctx.glBeginTransformFeedback(GL_TRIANGLES);
         ctx.expectError(GL_NO_ERROR);

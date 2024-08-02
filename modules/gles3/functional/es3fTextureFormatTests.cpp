@@ -121,7 +121,7 @@ Texture2DFormatCase::Texture2DFormatCase(tcu::TestContext &testCtx, Context &con
     , m_dataType(dataType)
     , m_width(width)
     , m_height(height)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
@@ -135,7 +135,7 @@ Texture2DFormatCase::Texture2DFormatCase(tcu::TestContext &testCtx, Context &con
     , m_dataType(GL_NONE)
     , m_width(width)
     , m_height(height)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
@@ -177,7 +177,7 @@ void Texture2DFormatCase::init(void)
 void Texture2DFormatCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -296,7 +296,7 @@ TextureCubeFormatCase::TextureCubeFormatCase(tcu::TestContext &testCtx, Context 
     , m_dataType(dataType)
     , m_width(width)
     , m_height(height)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
     , m_curFace(0)
     , m_isOk(false)
@@ -312,7 +312,7 @@ TextureCubeFormatCase::TextureCubeFormatCase(tcu::TestContext &testCtx, Context 
     , m_dataType(GL_NONE)
     , m_width(width)
     , m_height(height)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
     , m_curFace(0)
     , m_isOk(false)
@@ -398,7 +398,7 @@ void TextureCubeFormatCase::init(void)
 void TextureCubeFormatCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -523,7 +523,7 @@ Texture2DArrayFormatCase::Texture2DArrayFormatCase(tcu::TestContext &testCtx, Co
     , m_width(width)
     , m_height(height)
     , m_numLayers(numLayers)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
     , m_curLayer(0)
 {
@@ -540,7 +540,7 @@ Texture2DArrayFormatCase::Texture2DArrayFormatCase(tcu::TestContext &testCtx, Co
     , m_width(width)
     , m_height(height)
     , m_numLayers(numLayers)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
     , m_curLayer(0)
 {
@@ -575,7 +575,7 @@ void Texture2DArrayFormatCase::init(void)
 void Texture2DArrayFormatCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -691,7 +691,7 @@ Texture3DFormatCase::Texture3DFormatCase(tcu::TestContext &testCtx, Context &con
     , m_width(width)
     , m_height(height)
     , m_depth(depth)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
     , m_curSlice(0)
 {
@@ -708,7 +708,7 @@ Texture3DFormatCase::Texture3DFormatCase(tcu::TestContext &testCtx, Context &con
     , m_width(width)
     , m_height(height)
     , m_depth(depth)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context.getRenderContext(), testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
     , m_curSlice(0)
 {
@@ -743,7 +743,7 @@ void Texture3DFormatCase::init(void)
 void Texture3DFormatCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -855,7 +855,7 @@ Compressed2DFormatCase::Compressed2DFormatCase(tcu::TestContext &testCtx, glu::R
     , m_randomSeed(randomSeed)
     , m_width(width)
     , m_height(height)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
@@ -882,7 +882,7 @@ void Compressed2DFormatCase::init(void)
 void Compressed2DFormatCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -988,7 +988,7 @@ CompressedCubeFormatCase::CompressedCubeFormatCase(tcu::TestContext &testCtx, gl
     , m_randomSeed(randomSeed)
     , m_width(width)
     , m_height(height)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
     , m_curFace(0)
     , m_isOk(false)
@@ -1025,7 +1025,7 @@ void CompressedCubeFormatCase::init(void)
 void CompressedCubeFormatCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -1131,7 +1131,7 @@ Texture2DFileCase::Texture2DFileCase(tcu::TestContext &testCtx, glu::RenderConte
     , m_renderCtx(renderCtx)
     , m_renderCtxInfo(renderCtxInfo)
     , m_filenames(filenames)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
@@ -1151,7 +1151,7 @@ void Texture2DFileCase::init(void)
 void Texture2DFileCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -1243,7 +1243,7 @@ TextureCubeFileCase::TextureCubeFileCase(tcu::TestContext &testCtx, glu::RenderC
     , m_renderCtx(renderCtx)
     , m_renderCtxInfo(renderCtxInfo)
     , m_filenames(filenames)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
     , m_curFace(0)
     , m_isOk(false)
@@ -1269,7 +1269,7 @@ void TextureCubeFileCase::init(void)
 void TextureCubeFileCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -1358,17 +1358,17 @@ vector<string> toStringVector(const char *const *str, int numStr)
 
 void TextureFormatTests::init(void)
 {
-    tcu::TestCaseGroup *unsizedGroup    = DE_NULL;
-    tcu::TestCaseGroup *sizedGroup      = DE_NULL;
-    tcu::TestCaseGroup *compressedGroup = DE_NULL;
+    tcu::TestCaseGroup *unsizedGroup    = nullptr;
+    tcu::TestCaseGroup *sizedGroup      = nullptr;
+    tcu::TestCaseGroup *compressedGroup = nullptr;
     addChild((unsizedGroup = new tcu::TestCaseGroup(m_testCtx, "unsized", "Unsized formats")));
     addChild((sizedGroup = new tcu::TestCaseGroup(m_testCtx, "sized", "Sized formats")));
     addChild((compressedGroup = new tcu::TestCaseGroup(m_testCtx, "compressed", "Compressed formats")));
 
-    tcu::TestCaseGroup *sized2DGroup      = DE_NULL;
-    tcu::TestCaseGroup *sizedCubeGroup    = DE_NULL;
-    tcu::TestCaseGroup *sized2DArrayGroup = DE_NULL;
-    tcu::TestCaseGroup *sized3DGroup      = DE_NULL;
+    tcu::TestCaseGroup *sized2DGroup      = nullptr;
+    tcu::TestCaseGroup *sizedCubeGroup    = nullptr;
+    tcu::TestCaseGroup *sized2DArrayGroup = nullptr;
+    tcu::TestCaseGroup *sized3DGroup      = nullptr;
     sizedGroup->addChild((sized2DGroup = new tcu::TestCaseGroup(m_testCtx, "2d", "Sized formats (2D)")));
     sizedGroup->addChild((sizedCubeGroup = new tcu::TestCaseGroup(m_testCtx, "cube", "Sized formats (Cubemap)")));
     sizedGroup->addChild(

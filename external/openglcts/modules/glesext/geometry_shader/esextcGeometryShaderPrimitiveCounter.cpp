@@ -804,7 +804,7 @@ tcu::TestNode::IterateResult GeometryShaderPrimitiveCounter::iterate(void)
     {
         delete[] feedbackResult;
 
-        feedbackResult = DE_NULL;
+        feedbackResult = nullptr;
     }
 
     return STOP;
@@ -855,7 +855,7 @@ void GeometryShaderPrimitiveCounter::prepareBufferObjects()
 
     gl.genBuffers(1, &m_tbo);
     gl.bindBuffer(GL_ARRAY_BUFFER, m_tbo);
-    gl.bufferData(GL_ARRAY_BUFFER, m_sizeOfFeedbackBuffer, DE_NULL, GL_STATIC_COPY);
+    gl.bufferData(GL_ARRAY_BUFFER, m_sizeOfFeedbackBuffer, nullptr, GL_STATIC_COPY);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Could not set up a buffer object to hold transform feedback data!");
 
     gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0 /* index */, m_tbo);
@@ -993,7 +993,7 @@ void GeometryShaderPrimitiveCounterRestartingPrimitive::setUpVertexAttributeArra
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
     /* Create a buffer object to hold the element data */
-    glw::GLuint *indices = DE_NULL;
+    glw::GLuint *indices = nullptr;
     const unsigned int nIndices =
         m_testConfiguration.m_numberOfDrawnPrimitives * m_testConfiguration.m_numberOfVerticesPerOneInputPrimitive +
         m_numberOfRestarts;
@@ -1286,7 +1286,7 @@ tcu::TestNode::IterateResult GeometryShaderPrimitiveIDFromFragmentShader::iterat
 
     gl.genBuffers(1, &m_vbo_id);
     gl.bindBuffer(GL_ARRAY_BUFFER, m_vbo_id);
-    gl.bufferData(GL_ARRAY_BUFFER, sizeOfDataArray, DE_NULL, GL_STATIC_DRAW);
+    gl.bufferData(GL_ARRAY_BUFFER, sizeOfDataArray, nullptr, GL_STATIC_DRAW);
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "Could not set up a buffer object to hold vertex_position attribute data!");
 

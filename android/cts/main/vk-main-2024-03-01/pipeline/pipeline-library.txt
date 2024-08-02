@@ -10428,6 +10428,8 @@ dEQP-VK.pipeline.pipeline_library.extended_dynamic_state.two_draws_static.vertex
 dEQP-VK.pipeline.pipeline_library.graphics_library.fast.maintenance5
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.common_frag_pipeline_library
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.null_rendering_create_info
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.view_index_from_device_index_in_all_stages
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.other.view_index_from_device_index_in_mesh_stages
 dEQP-VK.pipeline.pipeline_library.image_2d_view_3d_image.fragment.combined_image_sampler.mip0_layer0_sparse
 dEQP-VK.pipeline.pipeline_library.image_2d_view_3d_image.fragment.combined_image_sampler.mip0_layer63_sparse
 dEQP-VK.pipeline.pipeline_library.image_2d_view_3d_image.fragment.combined_image_sampler.mip2_layer0_sparse

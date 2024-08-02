@@ -487,6 +487,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceMaintenance6FeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDeviceMaintenance7FeaturesKHR physicalDeviceMaintenance7FeaturesKHR;
+	deMemset(&physicalDeviceMaintenance7FeaturesKHR, 0, sizeof(physicalDeviceMaintenance7FeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_maintenance7") )
+	{
+		physicalDeviceMaintenance7FeaturesKHR.sType = getStructureType<VkPhysicalDeviceMaintenance7FeaturesKHR>();
+		*nextPtr = &physicalDeviceMaintenance7FeaturesKHR;
+		nextPtr  = &physicalDeviceMaintenance7FeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT physicalDeviceMemoryPriorityFeaturesEXT;
 	deMemset(&physicalDeviceMemoryPriorityFeaturesEXT, 0, sizeof(physicalDeviceMemoryPriorityFeaturesEXT));
 
@@ -2336,6 +2346,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceMaintenance6FeaturesKHR.maintenance6 == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature maintenance6 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_maintenance7")) )
+	{
+		if ( physicalDeviceMaintenance7FeaturesKHR.maintenance7 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature maintenance7 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

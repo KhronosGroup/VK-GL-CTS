@@ -161,7 +161,7 @@ DepthStencilClearCase::DepthStencilClearCase(Context &context, const char *name,
     , m_numIters(numIters)
     , m_numClears(numClears)
     , m_curIter(0)
-    , m_visProgram(DE_NULL)
+    , m_visProgram(nullptr)
 {
 }
 
@@ -193,7 +193,7 @@ void DepthStencilClearCase::init(void)
     {
         log << *m_visProgram;
         delete m_visProgram;
-        m_visProgram = DE_NULL;
+        m_visProgram = nullptr;
         TCU_FAIL("Compile failed");
     }
 
@@ -203,7 +203,7 @@ void DepthStencilClearCase::init(void)
 void DepthStencilClearCase::deinit(void)
 {
     delete m_visProgram;
-    m_visProgram = DE_NULL;
+    m_visProgram = nullptr;
 }
 
 DepthStencilClearCase::IterateResult DepthStencilClearCase::iterate(void)

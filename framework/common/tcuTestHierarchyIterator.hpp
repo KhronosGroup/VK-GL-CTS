@@ -140,7 +140,7 @@ private:
             NISTATE_LAST
         };
 
-        NodeIter(void) : node(DE_NULL), curChildNdx(-1), m_state(NISTATE_LAST)
+        NodeIter(void) : node(nullptr), curChildNdx(-1), m_state(NISTATE_LAST)
         {
         }
 

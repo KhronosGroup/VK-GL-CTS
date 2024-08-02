@@ -357,7 +357,7 @@ void SamplerTest::initPrograms(SourceCollections &sourceCollections) const
 {
     std::ostringstream vertexSrc;
     std::ostringstream fragmentSrc;
-    const char *texCoordSwizzle = DE_NULL;
+    const char *texCoordSwizzle = nullptr;
     tcu::TextureFormat format   = (isCompressedFormat(m_imageFormat)) ?
                                       tcu::getUncompressedFormat(mapVkCompressedFormat(m_imageFormat)) :
                                       mapVkFormat(m_imageFormat);
@@ -473,7 +473,7 @@ VkSamplerCreateInfo SamplerTest::getSamplerCreateInfo(void) const
 {
     const VkSamplerCreateInfo defaultSamplerParams = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,           // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         0u,                                              // VkSamplerCreateFlags flags;
         VK_FILTER_NEAREST,                               // VkFilter magFilter;
         VK_FILTER_NEAREST,                               // VkFilter minFilter;
@@ -636,7 +636,7 @@ VkSamplerReductionModeCreateInfo getSamplerReductionCreateInfo(VkSamplerReductio
 {
     const VkSamplerReductionModeCreateInfo ret = {
         VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO, // VkStructureType                sType
-        DE_NULL,                                              // const void*                    pNext
+        nullptr,                                              // const void*                    pNext
         reductionMode                                         // VkSamplerReductionMode        reductionMode
     };
     return ret;
@@ -808,7 +808,7 @@ VkSamplerCustomBorderColorCreateInfoEXT SamplerAddressModesTest::getSamplerCusto
     VkFormat format, rr::GenericVec4 customBorderColorValue, bool customBorderColorFormatless) const
 {
     const VkSamplerCustomBorderColorCreateInfoEXT defaultSamplerCustomBorderColorParams = {
-        VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT, DE_NULL, mapVkColor(customBorderColorValue),
+        VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT, nullptr, mapVkColor(customBorderColorValue),
         customBorderColorFormatless ? VK_FORMAT_UNDEFINED : format};
 
     return defaultSamplerCustomBorderColorParams;

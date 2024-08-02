@@ -42,6 +42,14 @@ tcu::TestCaseGroup *createAmberTests(tcu::TestContext &testCtx)
                                        "VK_KHR_buffer_device_address",
                                        "VK_KHR_ray_tracing_pipeline",
                                        ""};
+    const char *libRayTracingList[] = {"AccelerationStructureFeaturesKHR.accelerationStructure",
+                                       "BufferDeviceAddressFeatures.bufferDeviceAddress",
+                                       "RayTracingPipelineFeaturesKHR.rayTracingPipeline",
+                                       "VK_KHR_acceleration_structure",
+                                       "VK_KHR_buffer_device_address",
+                                       "VK_KHR_ray_tracing_pipeline",
+                                       "VK_KHR_pipeline_library",
+                                       ""};
     const char *extRayTracingList[] = {"AccelerationStructureFeaturesKHR.accelerationStructure",
                                        "BufferDeviceAddressFeatures.bufferDeviceAddress",
                                        "RayTracingPipelineFeaturesKHR.rayTracingPipeline",
@@ -58,6 +66,15 @@ tcu::TestCaseGroup *createAmberTests(tcu::TestContext &testCtx)
         {"basic", stdRayTracingList},
         {"basic2", stdRayTracingList},
         {"rt-sample", extRayTracingList},
+        {"basic_lib", libRayTracingList},
+        {"barycentrics", stdRayTracingList},
+        {"flags-accept-first", stdRayTracingList},
+        {"flags-force-opaque", stdRayTracingList},
+        {"flags-force-non-opaque", stdRayTracingList},
+        {"flags-skip-chit", stdRayTracingList},
+        {"flags-culling", stdRayTracingList},
+        {"different-payload-sizes", libRayTracingList},
+        {"divergent-as", libRayTracingList},
     };
 
     const char *dataDir = "ray_tracing";

@@ -764,7 +764,7 @@ static const char *getCaseShaderTypeName(const CaseShaderType type)
         return "both";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -827,13 +827,13 @@ protected:
         int rootSize; //!< If this is a member of a basic-typed array, rootSize is the size of that array. Otherwise 1.
 
         BasicUniform(const char *const name_, const glu::DataType type_, const bool isUsedInShader_,
-                     const VarValue &finalValue_, const char *const rootName_ = DE_NULL, const int elemNdx_ = -1,
+                     const VarValue &finalValue_, const char *const rootName_ = nullptr, const int elemNdx_ = -1,
                      const int rootSize_ = 1)
             : name(name_)
             , type(type_)
             , isUsedInShader(isUsedInShader_)
             , finalValue(finalValue_)
-            , rootName(rootName_ == DE_NULL ? name_ : rootName_)
+            , rootName(rootName_ == nullptr ? name_ : rootName_)
             , elemNdx(elemNdx_)
             , rootSize(rootSize_)
         {
@@ -2020,7 +2020,7 @@ const char *UniformValueCase::getValueToCheckName(const ValueToCheck valueToChec
         return "assigned";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -2034,7 +2034,7 @@ const char *UniformValueCase::getValueToCheckDescription(const ValueToCheck valu
         return "Check assigned uniform values";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -2048,7 +2048,7 @@ const char *UniformValueCase::getCheckMethodName(const CheckMethod checkMethod)
         return "render";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -2062,7 +2062,7 @@ const char *UniformValueCase::getCheckMethodDescription(const CheckMethod checkM
         return "Verify values by rendering";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -2076,7 +2076,7 @@ const char *UniformValueCase::getAssignMethodName(const AssignMethod assignMetho
         return "by_value";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -2090,7 +2090,7 @@ const char *UniformValueCase::getAssignMethodDescription(const AssignMethod assi
         return "Assign values by-value";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -2356,11 +2356,11 @@ void UniformApiTests::init(void)
         }
     }
     defaultUniformCollections[UNIFORMCOLLECTIONS_MULTIPLE_BASIC].cases.push_back(
-        UniformCollectionCase(DE_NULL, UniformCollection::multipleBasic()));
+        UniformCollectionCase(nullptr, UniformCollection::multipleBasic()));
     defaultUniformCollections[UNIFORMCOLLECTIONS_MULTIPLE_BASIC_ARRAY].cases.push_back(
-        UniformCollectionCase(DE_NULL, UniformCollection::multipleBasicArray()));
+        UniformCollectionCase(nullptr, UniformCollection::multipleBasicArray()));
     defaultUniformCollections[UNIFORMCOLLECTIONS_MULTIPLE_NESTED_STRUCTS_ARRAYS].cases.push_back(
-        UniformCollectionCase(DE_NULL, UniformCollection::multipleNestedArraysStructs()));
+        UniformCollectionCase(nullptr, UniformCollection::multipleNestedArraysStructs()));
 
     // Info-query cases (check info returned by e.g. glGetActiveUniforms()).
 
@@ -2528,7 +2528,7 @@ void UniformApiTests::init(void)
                             const string collectionGroupName =
                                 collectionGroup.name +
                                 (referToFirstArrayElemWithoutIndexI == 0 ? "" : "_first_elem_without_brackets");
-                            TestCaseGroup *collectionTestGroup = DE_NULL;
+                            TestCaseGroup *collectionTestGroup = nullptr;
 
                             for (int collectionNdx = 0; collectionNdx < (int)collectionGroup.cases.size();
                                  collectionNdx++)

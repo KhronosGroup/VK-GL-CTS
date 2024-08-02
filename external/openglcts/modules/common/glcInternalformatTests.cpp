@@ -86,8 +86,8 @@ struct TextureFormat
     {
     }
 
-    TextureFormat(GLenum aFormat, GLenum aType, GLint aInternalFormat, const char *aRequiredExtension = DE_NULL,
-                  const char *aSecondReqiredExtension = DE_NULL, GLint aMinFilter = GL_NEAREST,
+    TextureFormat(GLenum aFormat, GLenum aType, GLint aInternalFormat, const char *aRequiredExtension = nullptr,
+                  const char *aSecondReqiredExtension = nullptr, GLint aMinFilter = GL_NEAREST,
                   GLint aMagFilter = GL_NEAREST)
         : format(aFormat)
         , type(aType)
@@ -108,8 +108,8 @@ struct CopyTexImageFormat
     GLint minFilter;
     GLint magFilter;
 
-    CopyTexImageFormat(GLenum aInternalFormat, const char *aRequiredExtension = DE_NULL,
-                       const char *aSecondReqiredExtension = DE_NULL, GLint aMinFilter = GL_NEAREST,
+    CopyTexImageFormat(GLenum aInternalFormat, const char *aRequiredExtension = nullptr,
+                       const char *aSecondReqiredExtension = nullptr, GLint aMinFilter = GL_NEAREST,
                        GLint aMagFilter = GL_NEAREST)
         : internalFormat(aInternalFormat)
         , requiredExtension(aRequiredExtension)
@@ -135,8 +135,8 @@ struct RenderbufferFormat
     const char *requiredExtension;
     const char *secondReqiredExtension;
 
-    RenderbufferFormat(GLenum aFormat, RenderBufferType aType, const char *aRequiredExtension = DE_NULL,
-                       const char *aSecondReqiredExtension = DE_NULL)
+    RenderbufferFormat(GLenum aFormat, RenderBufferType aType, const char *aRequiredExtension = nullptr,
+                       const char *aSecondReqiredExtension = nullptr)
         : format(aFormat)
         , type(aType)
         , requiredExtension(aRequiredExtension)
@@ -226,7 +226,7 @@ GLuint InternalformatCaseBase::createTexture(GLint internalFormat, GLenum format
     const Functions &gl = m_context.getRenderContext().getFunctions();
     GLuint textureName;
     std::vector<unsigned char> textureData;
-    GLvoid *textureDataPtr = DE_NULL;
+    GLvoid *textureDataPtr = nullptr;
 
     if (generateData)
     {
@@ -1584,12 +1584,12 @@ void InternalformatTests::getESTestData(TestData &testData, glu::ContextType &co
         TF(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH_STENCIL, OES_packed_depth_stencil, OES_depth_texture),
         TF(GL_RGB, GL_HALF_FLOAT_OES, GL_RGB, OES_texture_half_float),
         TF(GL_RGBA, GL_HALF_FLOAT_OES, GL_RGBA, OES_texture_half_float),
-        TF(GL_RGB, GL_HALF_FLOAT_OES, GL_RGB, OES_texture_half_float_linear, DE_NULL, GL_LINEAR, GL_LINEAR),
-        TF(GL_RGBA, GL_HALF_FLOAT_OES, GL_RGBA, OES_texture_half_float_linear, DE_NULL, GL_LINEAR, GL_LINEAR),
+        TF(GL_RGB, GL_HALF_FLOAT_OES, GL_RGB, OES_texture_half_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
+        TF(GL_RGBA, GL_HALF_FLOAT_OES, GL_RGBA, OES_texture_half_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
         TF(GL_RGB, GL_FLOAT, GL_RGB32F, OES_texture_float),
         TF(GL_RGBA, GL_FLOAT, GL_RGBA32F, OES_texture_float),
-        TF(GL_RGB, GL_FLOAT, GL_RGB32F, OES_texture_float_linear, DE_NULL, GL_LINEAR, GL_LINEAR),
-        TF(GL_RGBA, GL_FLOAT, GL_RGBA32F, OES_texture_float_linear, DE_NULL, GL_LINEAR, GL_LINEAR),
+        TF(GL_RGB, GL_FLOAT, GL_RGB32F, OES_texture_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
+        TF(GL_RGBA, GL_FLOAT, GL_RGBA32F, OES_texture_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
     };
 
     CopyTexImageFormat commonCopyTexImageFormats[] = {

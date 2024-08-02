@@ -335,7 +335,7 @@ protected:
         }
         VkAttachmentReference *getDepthStencilAttachment()
         {
-            return (getColorAttachmentNum() == getInputAttachmentNum()) ? DE_NULL :
+            return (getColorAttachmentNum() == getInputAttachmentNum()) ? nullptr :
                                                                           &m_attachmentReferences[m_colorAttNum];
         }
     };
@@ -977,7 +977,7 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createAttachments(int sub
         }
         const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             1u,                                            // uint32_t descriptorSetCount;
             pDsetLayout,                                   // const VkDescriptorSetLayout* pSetLayouts;
@@ -995,7 +995,7 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createAttachments(int sub
 
     VkImageCreateInfo colorImageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
         imageType,                           // VkImageType imageType;
         attFormat,                           // VkFormat format;
@@ -1025,10 +1025,10 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createAttachments(int sub
             aspect                      = m_testCase->getDSAspect();
         }
 
-        m_inputAtt.push_back(createImage(vk, device, &colorImageCreateInfo, DE_NULL));
+        m_inputAtt.push_back(createImage(vk, device, &colorImageCreateInfo, nullptr));
         VkImageViewCreateInfo colorTargetViewInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             *m_inputAtt.back(),                       // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -1078,7 +1078,7 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createPipeline(VkRenderPa
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         0,                                                         // VkPipelineVertexInputStateCreateFlags flags;
         1u,                                                        // uint32_t bindingCount;
         &vertexInputBindingDescription,   // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -1090,7 +1090,7 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createPipeline(VkRenderPa
     const std::vector<VkRect2D> scissors(1, {{0, 0}, {WIDTH, HEIGHT}});
     const VkPipelineRasterizationStateCreateInfo rasterizationStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         0u,                                                         // VkPipelineRasterizationStateCreateFlags flags;
         VK_FALSE,                                                   // VkBool32 depthClampEnable;
         VK_FALSE,                                                   // VkBool32 rasterizerDiscardEnable;
@@ -1105,12 +1105,12 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createPipeline(VkRenderPa
     };
     const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
         m_sampleCount,                                            // VkSampleCountFlagBits rasterizationSamples;
         VK_TRUE,                                                  // VkBool32 sampleShadingEnable;
         1.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE                                                  // VkBool32 alphaToOneEnable;
     };
@@ -1129,7 +1129,7 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createPipeline(VkRenderPa
 
     const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         /* always needed */
         m_testCase->getBlendStateFlags(),           // VkPipelineColorBlendStateCreateFlags flags;
         false,                                      // VkBool32 logicOpEnable;
@@ -1151,7 +1151,7 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createPipeline(VkRenderPa
     VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         // VkStructureType sType;
-        DE_NULL, // const void* pNext;
+        nullptr, // const void* pNext;
         m_testCase->getDSStateFlags(),
         // VkPipelineDepthStencilStateCreateFlags flags;
         VK_TRUE,              // VkBool32 depthTestEnable;
@@ -1185,14 +1185,14 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createPipeline(VkRenderPa
         &multisampleStateParams,      // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
         &depthStencilStateCreateInfo, // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo,
         &colorBlendStateParams,       // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo,
-        DE_NULL);                     // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
+        nullptr);                     // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
 }
 
 static Move<VkSampler> makeSampler(const DeviceInterface &vk, const VkDevice &device)
 {
     const VkSamplerCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         0u,                                      // VkSamplerCreateFlags flags;
         VK_FILTER_NEAREST,                       // VkFilter magFilter;
         VK_FILTER_NEAREST,                       // VkFilter minFilter;
@@ -1223,7 +1223,7 @@ static Move<VkDescriptorSetLayout> makeDescriptorSetLayout(const DeviceInterface
                                                       VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, // descriptorType
                                                       1u,                                  // descriptorCount
                                                       VK_SHADER_STAGE_FRAGMENT_BIT,        // stageFlags
-                                                      DE_NULL,                             // pImmutableSamplers
+                                                      nullptr,                             // pImmutableSamplers
                                                   });
     for (uint32_t i = 0; i < attNum; i++)
     {
@@ -1232,7 +1232,7 @@ static Move<VkDescriptorSetLayout> makeDescriptorSetLayout(const DeviceInterface
 
     const VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        DE_NULL,         // pNext
+        nullptr,         // pNext
         0u,              // flags
         attNum,          // bindingCount
         bindings.data(), // pBindings
@@ -1259,7 +1259,7 @@ void AttachmentAccessOrderTestInstance::writeDescriptorSets()
         write.descriptorType       = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
         write.pImageInfo           = &img_info;
 
-        m_vk.updateDescriptorSets(m_context.getDevice(), 1u, &write, 0u, DE_NULL);
+        m_vk.updateDescriptorSets(m_context.getDevice(), 1u, &write, 0u, nullptr);
     }
 }
 
@@ -1387,7 +1387,7 @@ void AttachmentAccessOrderTestInstance::createVertexBuffer()
     {
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             dataSize,                             // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -1416,7 +1416,7 @@ void AttachmentAccessOrderTestInstance::createResultBuffer()
     /* result buffer */
     const VkBufferCreateInfo resultBufferInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         WIDTH * HEIGHT * sizeof(tcu::UVec2),  // VkDeviceSize size;
         VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
@@ -1489,7 +1489,7 @@ void AttachmentAccessOrderTestInstance::addPipelineBarrier(VkCommandBuffer cmdBu
 {
     VkImageMemoryBarrier barrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         srcAccessMask,                          // VkAccessFlags srcAccessMask;
         dstAccessMask,                          // VkAccessFlags dstAccessMask;
         oldLayout,                              // VkImageLayout oldLayout;
@@ -1581,7 +1581,7 @@ tcu::TestStatus AttachmentAccessOrderTestInstance::iterate(void)
     const vk::VkAccessFlags dstAccessMask =
         m_testCase->hasDepthStencil() ? depthStencilColorAccessMask : colorOnlyAccessMask;
 
-    const VkMemoryBarrier memBarrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, VK_ACCESS_TRANSFER_WRITE_BIT,
+    const VkMemoryBarrier memBarrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_TRANSFER_WRITE_BIT,
                                         dstAccessMask};
 
     const vk::VkPipelineStageFlags colorOnlyStageFlags =
@@ -1590,8 +1590,8 @@ tcu::TestStatus AttachmentAccessOrderTestInstance::iterate(void)
         colorOnlyStageFlags | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
     const vk::VkPipelineStageFlags dstStageFlags =
         m_testCase->hasDepthStencil() ? depthStencilColorStageFlags : colorOnlyStageFlags;
-    m_vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageFlags, 0, 1, &memBarrier, 0, DE_NULL,
-                            0, DE_NULL);
+    m_vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageFlags, 0, 1, &memBarrier, 0, nullptr,
+                            0, nullptr);
 
     const VkRect2D renderArea = makeRect2D(WIDTH, HEIGHT);
     beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
@@ -1603,7 +1603,7 @@ tcu::TestStatus AttachmentAccessOrderTestInstance::iterate(void)
     m_vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpasses[0].m_pipeline);
     VkDescriptorSet dset = *m_descSet;
     m_vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpasses[0].m_pipelineLayout, 0, 1,
-                               &dset, 0, DE_NULL);
+                               &dset, 0, nullptr);
 
     uint32_t numDraws      = m_testCase->m_overlapDraws ? AttachmentAccessOrderTestCase::ELEM_NUM : 1;
     uint32_t numPrimitives = m_testCase->m_overlapPrimitives ? 2 * AttachmentAccessOrderTestCase::ELEM_NUM : 2;
@@ -1639,7 +1639,7 @@ tcu::TestStatus AttachmentAccessOrderTestInstance::iterate(void)
     m_vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpasses[1].m_pipeline);
 
     m_vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpasses[1].m_pipelineLayout, 0, 1,
-                               &dset, 0, DE_NULL);
+                               &dset, 0, nullptr);
 
     m_vk.cmdDraw(*m_cmdBuffer, 6, 1, 0, 0);
 

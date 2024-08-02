@@ -58,7 +58,7 @@ static std::string formatErrMsg(DWORD error, const char *msg)
 #endif
 
     if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-                      error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&msgBuf, 0, DE_NULL) > 0)
+                      error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&msgBuf, 0, nullptr) > 0)
         str << msg << ", error " << error << ": " << msgBuf;
     else
         str << msg << ", error " << error;
@@ -354,8 +354,8 @@ void TestLogReader::start(const char *filename)
 {
     DE_ASSERT(m_logFile == INVALID_HANDLE_VALUE && !m_reader.isStarted());
 
-    m_logFile = CreateFile(filename, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, DE_NULL,
-                           OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, DE_NULL);
+    m_logFile = CreateFile(filename, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                           OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
 
     if (m_logFile == INVALID_HANDLE_VALUE)
         throw Error(GetLastError(), "Failed to open log file");
@@ -463,7 +463,7 @@ static void createPipeWithOverlappedIO(HANDLE *readHandleOut, HANDLE *writeHandl
                              0,                                 /* No sharing.                */
                              securityAttr, OPEN_EXISTING,       /* Assume existing object.    */
                              FILE_ATTRIBUTE_NORMAL | writeMode, /* Open mode / flags.        */
-                             DE_NULL /* Template file.            */);
+                             nullptr /* Template file.            */);
 
     if (writeHandle == INVALID_HANDLE_VALUE)
     {
@@ -507,7 +507,7 @@ void Process::start(const char *commandLine, const char *workingDirectory)
         // Security attributes for inheriting handle.
         securityAttr.nLength              = sizeof(SECURITY_ATTRIBUTES);
         securityAttr.bInheritHandle       = TRUE;
-        securityAttr.lpSecurityDescriptor = DE_NULL;
+        securityAttr.lpSecurityDescriptor = nullptr;
 
         createPipeWithOverlappedIO(&stdInRead, &stdInWrite, 0, FILE_FLAG_OVERLAPPED, &securityAttr);
         createPipeWithOverlappedIO(&stdOutRead, &stdOutWrite, FILE_FLAG_OVERLAPPED, 0, &securityAttr);
@@ -525,7 +525,7 @@ void Process::start(const char *commandLine, const char *workingDirectory)
         startInfo.hStdInput  = stdInRead;
         startInfo.dwFlags |= STARTF_USESTDHANDLES;
 
-        if (!CreateProcess(DE_NULL, (LPTSTR)commandLine, DE_NULL, DE_NULL, TRUE /* inherit handles */, 0, DE_NULL,
+        if (!CreateProcess(nullptr, (LPTSTR)commandLine, nullptr, nullptr, TRUE /* inherit handles */, 0, nullptr,
                            workingDirectory, &startInfo, &m_procInfo))
             throw Error(GetLastError(), "CreateProcess() failed");
     }
@@ -621,7 +621,7 @@ void Process::kill(void)
 } // namespace win32
 
 Win32TestProcess::Win32TestProcess(void)
-    : m_process(DE_NULL)
+    : m_process(nullptr)
     , m_processStartTime(0)
     , m_infoBuffer(INFO_BUFFER_BLOCK_SIZE, INFO_BUFFER_NUM_BLOCKS)
     , m_stdOutReader(&m_infoBuffer)
@@ -677,12 +677,12 @@ void Win32TestProcess::start(const char *name, const char *params, const char *w
 
     try
     {
-        m_process->start(cmdLine.c_str(), strlen(workingDir) > 0 ? workingDir : DE_NULL);
+        m_process->start(cmdLine.c_str(), strlen(workingDir) > 0 ? workingDir : nullptr);
     }
     catch (const std::exception &e)
     {
         delete m_process;
-        m_process = DE_NULL;
+        m_process = nullptr;
         throw TestProcessException(e.what());
     }
 
@@ -742,7 +742,7 @@ void Win32TestProcess::cleanup(void)
         }
 
         delete m_process;
-        m_process = DE_NULL;
+        m_process = nullptr;
     }
 }
 

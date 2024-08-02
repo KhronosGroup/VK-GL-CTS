@@ -71,7 +71,7 @@ ImageHandleAlloc::ImageHandleAlloc(Move<VkImage> &image_, AllocMv &alloc_, const
 std::string buildShaderName(VkShaderStageFlagBits stage, VkDescriptorType descriptorType, bool updateAfterBind,
                             bool calculateInLoop, bool minNonUniform, bool performWritesInVertex)
 {
-    const char *stageName = DE_NULL;
+    const char *stageName = nullptr;
     switch (stage)
     {
     case VK_SHADER_STAGE_VERTEX_BIT:
@@ -215,7 +215,7 @@ void createImageAndBind(ut::ImageHandleAllocSp &output, const vkt::Context &ctx,
     const uint32_t mipLevels           = withMipMaps ? computeMipMapCount(extent) : 1;
     const VkImageCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
-        DE_NULL,                             // pNext
+        nullptr,                             // pNext
         (VkImageCreateFlags)0,               // flags
         imageType,                           // imageType
         colorFormat,                         // format
@@ -227,7 +227,7 @@ void createImageAndBind(ut::ImageHandleAllocSp &output, const vkt::Context &ctx,
         imageUsageFlags,                     // usage
         VK_SHARING_MODE_EXCLUSIVE,           // sharingMode
         (uint32_t)0,                         // queueFamilyCount
-        DE_NULL,                             // pQueueFamilyIndices
+        nullptr,                             // pQueueFamilyIndices
         initialLayout                        // initialLayout
     };
 
@@ -297,7 +297,7 @@ void recordCopyBufferToImage(VkCommandBuffer cmd, const DeviceInterface &interfa
 
     const VkImageMemoryBarrier barrierBefore = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType;
-        DE_NULL,                                // pNext;
+        nullptr,                                // pNext;
         0,                                      // srcAccessMask;
         VK_ACCESS_TRANSFER_WRITE_BIT,           // dstAccessMask;
         oldImageLayout,                         // oldLayout;
@@ -310,7 +310,7 @@ void recordCopyBufferToImage(VkCommandBuffer cmd, const DeviceInterface &interfa
 
     const VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,      // sType;
-        DE_NULL,                                      // pNext;
+        nullptr,                                      // pNext;
         pipelineAccessFromStage(srcStageMask, false), // srcAccessMask;
         VK_ACCESS_TRANSFER_READ_BIT,                  // dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                      // srcQueueFamilyIndex;
@@ -322,7 +322,7 @@ void recordCopyBufferToImage(VkCommandBuffer cmd, const DeviceInterface &interfa
 
     const VkImageMemoryBarrier barrierAfter = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,                                                     // sType;
-        DE_NULL,                                                                                    // pNext;
+        nullptr,                                                                                    // pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,                                                               // srcAccessMask;
         pipelineAccessFromStage(dstStageMask, true) | pipelineAccessFromStage(dstStageMask, false), // dstAccessMask;
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,                                                       // oldLayout;
@@ -335,7 +335,7 @@ void recordCopyBufferToImage(VkCommandBuffer cmd, const DeviceInterface &interfa
 
     interface.cmdPipelineBarrier(cmd, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, // srcStageMask, dstStageMask
                                  (VkDependencyFlags)0,                              // dependencyFlags
-                                 0u, DE_NULL,         // memoryBarrierCount, pMemoryBarriers
+                                 0u, nullptr,         // memoryBarrierCount, pMemoryBarriers
                                  1u, &bufferBarrier,  // bufferBarrierCount, pBufferBarriers
                                  1u, &barrierBefore); // imageBarrierCount, pImageBarriers
 
@@ -344,8 +344,8 @@ void recordCopyBufferToImage(VkCommandBuffer cmd, const DeviceInterface &interfa
 
     interface.cmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageMask, // srcStageMask, dstStageMask
                                  (VkDependencyFlags)0,                              // dependencyFlags
-                                 0u, DE_NULL,        // memoryBarrierCount, pMemoryBarriers
-                                 0u, DE_NULL,        // bufferBarrierCount, pBufferBarriers
+                                 0u, nullptr,        // memoryBarrierCount, pMemoryBarriers
+                                 0u, nullptr,        // bufferBarrierCount, pBufferBarriers
                                  1u, &barrierAfter); // imageBarrierCount, pImageBarriers
 }
 
@@ -382,7 +382,7 @@ void recordCopyImageToBuffer(VkCommandBuffer cmd, const DeviceInterface &interfa
 
     const VkImageMemoryBarrier barrierBefore = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,       // sType;
-        DE_NULL,                                      // pNext;
+        nullptr,                                      // pNext;
         pipelineAccessFromStage(srcStageMask, false), // srcAccessMask;
         VK_ACCESS_TRANSFER_READ_BIT,                  // dstAccessMask;
         oldImageLayout,                               // oldLayout
@@ -395,7 +395,7 @@ void recordCopyImageToBuffer(VkCommandBuffer cmd, const DeviceInterface &interfa
 
     const VkImageMemoryBarrier barrierAfter = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,                                                     // sType;
-        DE_NULL,                                                                                    // pNext;
+        nullptr,                                                                                    // pNext;
         VK_ACCESS_TRANSFER_READ_BIT,                                                                // srcAccessMask;
         pipelineAccessFromStage(dstStageMask, true) | pipelineAccessFromStage(dstStageMask, false), // dstAccessMask;
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,                                                       // oldLayout;
@@ -409,15 +409,15 @@ void recordCopyImageToBuffer(VkCommandBuffer cmd, const DeviceInterface &interfa
     interface.cmdPipelineBarrier(cmd,                                          // commandBuffer
                                  srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, // srcStageMask, dstStageMask
                                  (VkDependencyFlags)0,                         // dependencyFlags
-                                 0u, DE_NULL,                                  // memoryBarrierCount, pMemoryBarriers
-                                 0u, DE_NULL,                                  // bufferBarrierCount, pBufferBarriers
+                                 0u, nullptr,                                  // memoryBarrierCount, pMemoryBarriers
+                                 0u, nullptr,                                  // bufferBarrierCount, pBufferBarriers
                                  1u, &barrierBefore);                          // imageBarrierCount, pImageBarriers
 
     interface.cmdCopyImageToBuffer(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, bufferInfo.buffer, 1u,
                                    &copyRegion);
 
-    interface.cmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageMask, (VkDependencyFlags)0, 0u, DE_NULL,
-                                 0u, DE_NULL, 0u, &barrierAfter);
+    interface.cmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageMask, (VkDependencyFlags)0, 0u, nullptr,
+                                 0u, nullptr, 0u, &barrierAfter);
 }
 
 VkAccessFlags pipelineAccessFromStage(VkPipelineStageFlagBits stage, bool readORwrite)
@@ -500,7 +500,7 @@ void createFrameBuffer(FrameBufferSp &outputFB, const vkt::Context &context, con
     {
         const VkImageViewCreateInfo viewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // sType
-            DE_NULL,                                  // pNext
+            nullptr,                                  // pNext
             (VkImageViewCreateFlags)0,                // flags
             *outputFB->image->image,                  // image
             VK_IMAGE_VIEW_TYPE_2D,                    // viewType
@@ -532,7 +532,7 @@ void createFrameBuffer(FrameBufferSp &outputFB, const vkt::Context &context, con
 
         const VkFramebufferCreateInfo framebufferCreateInfo = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-            DE_NULL,                                   // pNext
+            nullptr,                                   // pNext
             (VkFramebufferCreateFlags)0,               // flags
             renderpass,                                // renderPass
             static_cast<uint32_t>(attachments.size()), // attachmentCount
@@ -557,13 +557,13 @@ VkDeviceSize createBufferAndBind(ut::BufferHandleAllocSp &output, const vkt::Con
 
     const VkBufferCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-        DE_NULL,                              // pNext
+        nullptr,                              // pNext
         (VkBufferCreateFlags)0,               // flags
         roundedSize,                          // size
         usage,                                // usage
         VK_SHARING_MODE_EXCLUSIVE,            // sharingMode
         0u,                                   // queueFamilyIndexCount
-        DE_NULL,                              // pQueueFamilyIndices
+        nullptr,                              // pQueueFamilyIndices
     };
 
     Move<VkBuffer> buffer = vk::createBuffer(interface, device, &createInfo);
@@ -632,7 +632,7 @@ DeviceProperties::DeviceProperties(const vkt::Context &testContext)
 
     deMemset(&m_descriptorIndexingFeatures, 0, sizeof(m_descriptorIndexingFeatures));
     m_descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-    m_descriptorIndexingFeatures.pNext = DE_NULL;
+    m_descriptorIndexingFeatures.pNext = nullptr;
 
     deMemset(&m_features2, 0, sizeof(m_features2));
     m_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -642,7 +642,7 @@ DeviceProperties::DeviceProperties(const vkt::Context &testContext)
 
     deMemset(&m_descriptorIndexingProperties, 0, sizeof(m_descriptorIndexingProperties));
     m_descriptorIndexingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
-    m_descriptorIndexingProperties.pNext = DE_NULL;
+    m_descriptorIndexingProperties.pNext = nullptr;
 
     deMemset(&m_properties2, 0, sizeof(m_properties2));
     m_properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;

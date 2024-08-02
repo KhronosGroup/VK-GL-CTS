@@ -86,7 +86,7 @@ bool GeometryShaderLayeredFBOShared::checkFBOCompleteness(tcu::TestContext &test
  */
 void GeometryShaderLayeredFBOShared::deinitFBOs(const glw::Functions &gl, const glw::GLuint *fbo_ids)
 {
-    if (fbo_ids != DE_NULL)
+    if (fbo_ids != nullptr)
     {
         gl.deleteFramebuffers(GeometryShaderLayeredFBOShared::n_shared_fbo_ids, fbo_ids);
     }
@@ -100,7 +100,7 @@ void GeometryShaderLayeredFBOShared::deinitFBOs(const glw::Functions &gl, const 
  */
 void GeometryShaderLayeredFBOShared::deinitTOs(const glw::Functions &gl, const glw::GLuint *to_ids)
 {
-    if (to_ids != DE_NULL)
+    if (to_ids != nullptr)
     {
         gl.deleteTextures(GeometryShaderLayeredFBOShared::n_shared_to_ids, to_ids);
     }
@@ -290,8 +290,8 @@ GeometryShaderIncompleteLayeredFBOTest::GeometryShaderIncompleteLayeredFBOTest(C
                                                                                const char *name,
                                                                                const char *description)
     : TestCaseBase(context, extParams, name, description)
-    , m_fbo_ids(DE_NULL)
-    , m_to_ids(DE_NULL)
+    , m_fbo_ids(nullptr)
+    , m_to_ids(nullptr)
 {
     // left blank intentionally
 }
@@ -304,21 +304,21 @@ void GeometryShaderIncompleteLayeredFBOTest::deinit()
     /* Release framebuffer objects */
     GeometryShaderLayeredFBOShared::deinitFBOs(gl, m_fbo_ids);
 
-    if (m_fbo_ids != DE_NULL)
+    if (m_fbo_ids != nullptr)
     {
         delete[] m_fbo_ids;
 
-        m_fbo_ids = DE_NULL;
+        m_fbo_ids = nullptr;
     }
 
     /* Release texture objects */
     GeometryShaderLayeredFBOShared::deinitTOs(gl, m_to_ids);
 
-    if (m_to_ids != DE_NULL)
+    if (m_to_ids != nullptr)
     {
         delete[] m_to_ids;
 
-        m_to_ids = DE_NULL;
+        m_to_ids = nullptr;
     }
 
     /* Release base class */
@@ -385,8 +385,8 @@ tcu::TestNode::IterateResult GeometryShaderIncompleteLayeredFBOTest::iterate()
 GeometryShaderIncompleteLayeredAttachmentsTest::GeometryShaderIncompleteLayeredAttachmentsTest(
     Context &context, const ExtParameters &extParams, const char *name, const char *description)
     : TestCaseBase(context, extParams, name, description)
-    , m_fbo_ids(DE_NULL)
-    , m_to_ids(DE_NULL)
+    , m_fbo_ids(nullptr)
+    , m_to_ids(nullptr)
 {
     // left blank intentionally
 }
@@ -399,21 +399,21 @@ void GeometryShaderIncompleteLayeredAttachmentsTest::deinit()
     /* Release framebuffer objects */
     GeometryShaderLayeredFBOShared::deinitFBOs(gl, m_fbo_ids);
 
-    if (m_fbo_ids != DE_NULL)
+    if (m_fbo_ids != nullptr)
     {
         delete[] m_fbo_ids;
 
-        m_fbo_ids = DE_NULL;
+        m_fbo_ids = nullptr;
     }
 
     /* Release texture objects */
     GeometryShaderLayeredFBOShared::deinitTOs(gl, m_to_ids);
 
-    if (m_to_ids != DE_NULL)
+    if (m_to_ids != nullptr)
     {
         delete[] m_to_ids;
 
-        m_to_ids = DE_NULL;
+        m_to_ids = nullptr;
     }
 
     /* Release base class */

@@ -677,18 +677,18 @@ CallbackErrorCase::IterateResult CallbackErrorCase::iterate(void)
 
     gl.enable(GL_DEBUG_OUTPUT);
     gl.enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, false); // disable all
-    gl.debugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_ERROR, GL_DONT_CARE, 0, DE_NULL,
+    gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, false); // disable all
+    gl.debugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_ERROR, GL_DONT_CARE, 0, nullptr,
                            true); // enable API errors
-    gl.debugMessageControl(GL_DEBUG_SOURCE_APPLICATION, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL,
+    gl.debugMessageControl(GL_DEBUG_SOURCE_APPLICATION, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr,
                            true); // enable application messages
-    gl.debugMessageControl(GL_DEBUG_SOURCE_THIRD_PARTY, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL,
+    gl.debugMessageControl(GL_DEBUG_SOURCE_THIRD_PARTY, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr,
                            true); // enable third party messages
     gl.debugMessageCallback(callbackHandle, this);
 
     m_errorFunc.call(context);
 
-    gl.debugMessageCallback(DE_NULL, DE_NULL);
+    gl.debugMessageCallback(nullptr, nullptr);
     gl.disable(GL_DEBUG_OUTPUT);
 
     m_results.setTestContextResult(m_testCtx);
@@ -747,12 +747,12 @@ LogErrorCase::IterateResult LogErrorCase::iterate(void)
 
     gl.enable(GL_DEBUG_OUTPUT);
     gl.enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, false); // disable all
-    gl.debugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_ERROR, GL_DONT_CARE, 0, DE_NULL,
+    gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, false); // disable all
+    gl.debugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_ERROR, GL_DONT_CARE, 0, nullptr,
                            true);              // enable API errors
-    gl.debugMessageCallback(DE_NULL, DE_NULL); // enable logging
+    gl.debugMessageCallback(nullptr, nullptr); // enable logging
     gl.getIntegerv(GL_DEBUG_LOGGED_MESSAGES, &numMsg);
-    gl.getDebugMessageLog(numMsg, 0, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL); // clear log
+    gl.getDebugMessageLog(numMsg, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr); // clear log
 
     m_errorFunc.call(context);
 
@@ -799,8 +799,8 @@ void LogErrorCase::expectMessage(GLenum source, GLenum type)
     // since calls that produce an error should not change GL state the implementation
     // should have nothing else to report.
     if (numMsg > 1)
-        gl.getDebugMessageLog(numMsg - 1, 0, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL,
-                              DE_NULL); // Clear all but last
+        gl.getDebugMessageLog(numMsg - 1, 0, nullptr, nullptr, nullptr, nullptr, nullptr,
+                              nullptr); // Clear all but last
 
     {
         int msgLen = 0;
@@ -942,7 +942,7 @@ protected:
 FilterCase::FilterCase(Context &ctx, const char *name, const char *desc, const vector<TestFunctionWrapper> &errorFuncs)
     : BaseCase(ctx, name, desc)
     , m_errorFuncs(errorFuncs)
-    , m_currentErrors(DE_NULL)
+    , m_currentErrors(nullptr)
 {
 }
 
@@ -958,7 +958,7 @@ FilterCase::IterateResult FilterCase::iterate(void)
 
     try
     {
-        gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, true);
+        gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
 
         {
             const vector<MessageData> refMessages = genMessages(true, "Reference run");
@@ -984,12 +984,12 @@ FilterCase::IterateResult FilterCase::iterate(void)
     catch (...)
     {
         gl.disable(GL_DEBUG_OUTPUT);
-        gl.debugMessageCallback(DE_NULL, DE_NULL);
+        gl.debugMessageCallback(nullptr, nullptr);
         throw;
     }
 
     gl.disable(GL_DEBUG_OUTPUT);
-    gl.debugMessageCallback(DE_NULL, DE_NULL);
+    gl.debugMessageCallback(nullptr, nullptr);
     m_results.setTestContextResult(m_testCtx);
 
     return STOP;
@@ -1020,7 +1020,7 @@ vector<MessageData> FilterCase::genMessages(bool uselog, const string &desc)
     for (int ndx = 0; ndx < int(m_errorFuncs.size()); ndx++)
         m_errorFuncs[ndx].call(context);
 
-    m_currentErrors = DE_NULL;
+    m_currentErrors = nullptr;
 
     return messages;
 }
@@ -1133,7 +1133,7 @@ void FilterCase::applyFilters(const vector<MessageFilter> &filters) const
         }
 
         gl.debugMessageControl(filter.source, filter.type, filter.severity, GLsizei(filter.ids.size()),
-                               filter.ids.empty() ? DE_NULL : &filter.ids[0], filter.enabled);
+                               filter.ids.empty() ? nullptr : &filter.ids[0], filter.enabled);
     }
 }
 
@@ -1291,7 +1291,7 @@ GroupFilterCase::IterateResult GroupFilterCase::iterate(void)
 
     try
     {
-        gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, true);
+        gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
 
         {
 
@@ -1362,12 +1362,12 @@ GroupFilterCase::IterateResult GroupFilterCase::iterate(void)
     catch (...)
     {
         gl.disable(GL_DEBUG_OUTPUT);
-        gl.debugMessageCallback(DE_NULL, DE_NULL);
+        gl.debugMessageCallback(nullptr, nullptr);
         throw;
     }
 
     gl.disable(GL_DEBUG_OUTPUT);
-    gl.debugMessageCallback(DE_NULL, DE_NULL);
+    gl.debugMessageCallback(nullptr, nullptr);
     m_results.setTestContextResult(m_testCtx);
     return STOP;
 }
@@ -1403,12 +1403,12 @@ GroupCase::IterateResult GroupCase::iterate(void)
 
     gl.enable(GL_DEBUG_OUTPUT);
     gl.enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, false); // disable all
-    gl.debugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_ERROR, GL_DONT_CARE, 0, DE_NULL,
+    gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, false); // disable all
+    gl.debugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_ERROR, GL_DONT_CARE, 0, nullptr,
                            true); // enable API errors
-    gl.debugMessageControl(GL_DEBUG_SOURCE_APPLICATION, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL,
+    gl.debugMessageControl(GL_DEBUG_SOURCE_APPLICATION, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr,
                            true); // enable application messages
-    gl.debugMessageControl(GL_DEBUG_SOURCE_THIRD_PARTY, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL,
+    gl.debugMessageControl(GL_DEBUG_SOURCE_THIRD_PARTY, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr,
                            true); // enable third party messages
     gl.debugMessageCallback(callbackHandle, this);
 
@@ -1427,7 +1427,7 @@ GroupCase::IterateResult GroupCase::iterate(void)
     verifyMessage(m_lastMessage, GL_DEBUG_SOURCE_THIRD_PARTY, GL_DEBUG_TYPE_POP_GROUP, 4231,
                   GL_DEBUG_SEVERITY_NOTIFICATION);
 
-    gl.debugMessageCallback(DE_NULL, DE_NULL);
+    gl.debugMessageCallback(nullptr, nullptr);
     gl.disable(GL_DEBUG_OUTPUT);
 
     m_results.setTestContextResult(m_testCtx);
@@ -1511,20 +1511,20 @@ AsyncCase::IterateResult AsyncCase::iterate(void)
     {
         GLint numMessages = 0;
         gl.getIntegerv(GL_DEBUG_LOGGED_MESSAGES, &numMessages);
-        gl.getDebugMessageLog(numMessages, 0, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL);
+        gl.getDebugMessageLog(numMessages, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
     }
 
     gl.enable(GL_DEBUG_OUTPUT);
     gl.enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, DE_NULL, false);
+    gl.debugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, false);
 
     // Some messages could be dependent on the value of DEBUG_OUTPUT_SYNCHRONOUS so only use API errors which should be generated in all cases
-    gl.debugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_ERROR, GL_DONT_CARE, 0, DE_NULL, true);
+    gl.debugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_ERROR, GL_DONT_CARE, 0, nullptr, true);
 
     if (m_useCallbacks) // will use log otherwise
         gl.debugMessageCallback(callbackHandle, this);
     else
-        gl.debugMessageCallback(DE_NULL, DE_NULL);
+        gl.debugMessageCallback(nullptr, nullptr);
 
     // Reference run (synchoronous)
     {
@@ -1542,7 +1542,7 @@ AsyncCase::IterateResult AsyncCase::iterate(void)
 
         log << TestLog::Message << "Reference run produced no messages, nothing to verify" << TestLog::EndMessage;
 
-        gl.debugMessageCallback(DE_NULL, DE_NULL);
+        gl.debugMessageCallback(nullptr, nullptr);
         gl.disable(GL_DEBUG_OUTPUT);
 
         m_results.setTestContextResult(m_testCtx);
@@ -1607,7 +1607,7 @@ AsyncCase::IterateResult AsyncCase::iterate(void)
         }
     }
 
-    gl.debugMessageCallback(DE_NULL, DE_NULL);
+    gl.debugMessageCallback(nullptr, nullptr);
 
     gl.disable(GL_DEBUG_OUTPUT);
     m_results.setTestContextResult(m_testCtx);
@@ -2035,7 +2035,7 @@ ClearLabelCase::IterateResult ClearLabelCase::iterate(void)
 
             m_testCtx.getLog() << TestLog::Message << "Clearing label " << s_clearMethods[methodNdx].description
                                << TestLog::EndMessage;
-            gl.objectLabel(GL_SHADER, shader, s_clearMethods[methodNdx].length, DE_NULL);
+            gl.objectLabel(GL_SHADER, shader, s_clearMethods[methodNdx].length, nullptr);
             GLS_COLLECT_GL_ERROR(result, gl.getError(), "objectLabel");
 
             m_testCtx.getLog() << TestLog::Message << "Querying label" << TestLog::EndMessage;
@@ -2065,7 +2065,7 @@ ClearLabelCase::IterateResult ClearLabelCase::iterate(void)
 
             m_testCtx.getLog() << TestLog::Message << "Clearing label " << s_clearMethods[methodNdx].description
                                << TestLog::EndMessage;
-            gl.objectPtrLabel(sync, s_clearMethods[methodNdx].length, DE_NULL);
+            gl.objectPtrLabel(sync, s_clearMethods[methodNdx].length, nullptr);
             GLS_COLLECT_GL_ERROR(result, gl.getError(), "objectPtrLabel");
 
             m_testCtx.getLog() << TestLog::Message << "Querying label" << TestLog::EndMessage;
@@ -2274,7 +2274,7 @@ BufferLimitedLabelCase::IterateResult BufferLimitedLabelCase::iterate(void)
 
             m_testCtx.getLog() << TestLog::Message << "Querying whole label, buffer size = 22" << TestLog::EndMessage;
             deMemset(buffer, 'X', sizeof(buffer));
-            gl.getObjectLabel(GL_SHADER, shader, 22, DE_NULL, buffer);
+            gl.getObjectLabel(GL_SHADER, shader, 22, nullptr, buffer);
             GLS_COLLECT_GL_ERROR(result, gl.getError(), "getObjectLabel");
 
             buffer[63] = '\0'; // make sure buffer is null terminated before strlen
@@ -2377,7 +2377,7 @@ BufferLimitedLabelCase::IterateResult BufferLimitedLabelCase::iterate(void)
 
             m_testCtx.getLog() << TestLog::Message << "Querying whole label, buffer size = 22" << TestLog::EndMessage;
             deMemset(buffer, 'X', sizeof(buffer));
-            gl.getObjectPtrLabel(sync, 22, DE_NULL, buffer);
+            gl.getObjectPtrLabel(sync, 22, nullptr, buffer);
             GLS_COLLECT_GL_ERROR(result, gl.getError(), "getObjectPtrLabel");
 
             buffer[63] = '\0'; // make sure buffer is null terminated before strlen
@@ -2615,7 +2615,7 @@ LabelLengthCase::IterateResult LabelLengthCase::iterate(void)
 
         m_testCtx.getLog() << TestLog::Message << "Querying label length" << TestLog::EndMessage;
         outlen = -1;
-        gl.getObjectLabel(GL_SHADER, shader, 0, &outlen, DE_NULL);
+        gl.getObjectLabel(GL_SHADER, shader, 0, &outlen, nullptr);
         GLS_COLLECT_GL_ERROR(result, gl.getError(), "getObjectLabel");
 
         if (outlen != 0)
@@ -2629,7 +2629,7 @@ LabelLengthCase::IterateResult LabelLengthCase::iterate(void)
 
         m_testCtx.getLog() << TestLog::Message << "Querying label length" << TestLog::EndMessage;
         outlen = -1;
-        gl.getObjectLabel(GL_SHADER, shader, 0, &outlen, DE_NULL);
+        gl.getObjectLabel(GL_SHADER, shader, 0, &outlen, nullptr);
         GLS_COLLECT_GL_ERROR(result, gl.getError(), "getObjectLabel");
 
         if (outlen != 21)
@@ -2643,7 +2643,7 @@ LabelLengthCase::IterateResult LabelLengthCase::iterate(void)
 
         m_testCtx.getLog() << TestLog::Message << "Querying label length" << TestLog::EndMessage;
         outlen = -1;
-        gl.getObjectPtrLabel(sync, 0, &outlen, DE_NULL);
+        gl.getObjectPtrLabel(sync, 0, &outlen, nullptr);
         GLS_COLLECT_GL_ERROR(result, gl.getError(), "getObjectPtrLabel");
 
         if (outlen != 0)
@@ -2657,7 +2657,7 @@ LabelLengthCase::IterateResult LabelLengthCase::iterate(void)
 
         m_testCtx.getLog() << TestLog::Message << "Querying label length" << TestLog::EndMessage;
         outlen = -1;
-        gl.getObjectPtrLabel(sync, 0, &outlen, DE_NULL);
+        gl.getObjectPtrLabel(sync, 0, &outlen, nullptr);
         GLS_COLLECT_GL_ERROR(result, gl.getError(), "getObjectPtrLabel");
 
         if (outlen != 21)
@@ -2893,7 +2893,7 @@ DebugCallbackFunctionCase::IterateResult DebugCallbackFunctionCase::iterate(void
     {
         const tcu::ScopedLogSection section(m_testCtx.getLog(), "Set", "Set");
 
-        gl.glDebugMessageCallback(emptyCallback, DE_NULL);
+        gl.glDebugMessageCallback(emptyCallback, nullptr);
         verifyStatePointer(result, gl, GL_DEBUG_CALLBACK_FUNCTION, (const void *)emptyCallback, QUERY_POINTER);
     }
 
@@ -2972,7 +2972,7 @@ tcu::TestNode *createCase(CaseType type, Context &ctx, const char *name, const c
         DE_FATAL("Invalid type");
     }
 
-    return DE_NULL;
+    return nullptr;
 }
 
 tcu::TestCaseGroup *createChildCases(CaseType type, Context &ctx, const char *name, const char *desc,

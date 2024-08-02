@@ -162,7 +162,7 @@ void WindowRegistry::destroyWindow(ANativeWindow *rawHandle)
         }
     }
 
-    throw tcu::InternalError("Window not registered", DE_NULL, __FILE__, __LINE__);
+    throw tcu::InternalError("Window not registered", nullptr, __FILE__, __LINE__);
 }
 
 Window *WindowRegistry::tryAcquireWindow(void)
@@ -175,7 +175,7 @@ Window *WindowRegistry::tryAcquireWindow(void)
             return window;
     }
 
-    return DE_NULL;
+    return nullptr;
 }
 
 void WindowRegistry::garbageCollect(void)

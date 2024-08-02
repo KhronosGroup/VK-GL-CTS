@@ -906,7 +906,7 @@ static ShaderEvalFunc getMatrixSubscriptEvalFunc(DataType dataType)
 
     default:
         DE_FATAL("Invalid data type.");
-        return DE_NULL;
+        return nullptr;
     }
 }
 

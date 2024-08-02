@@ -238,11 +238,11 @@ RandomFragmentOpCase::RandomFragmentOpCase(Context &context, const char *name, c
     : TestCase(context, name, desc)
     , m_seed(seed)
     , m_callLogWrapper(context.getRenderContext().getFunctions(), context.getTestContext().getLog())
-    , m_renderer(DE_NULL)
-    , m_refColorBuffer(DE_NULL)
-    , m_refDepthBuffer(DE_NULL)
-    , m_refStencilBuffer(DE_NULL)
-    , m_refRenderer(DE_NULL)
+    , m_renderer(nullptr)
+    , m_refColorBuffer(nullptr)
+    , m_refDepthBuffer(nullptr)
+    , m_refStencilBuffer(nullptr)
+    , m_refRenderer(nullptr)
     , m_iterNdx(0)
 {
     m_callLogWrapper.enableLogging(ENABLE_CALL_LOG);
@@ -287,11 +287,11 @@ void RandomFragmentOpCase::deinit(void)
     delete m_refStencilBuffer;
     delete m_refRenderer;
 
-    m_renderer         = DE_NULL;
-    m_refColorBuffer   = DE_NULL;
-    m_refDepthBuffer   = DE_NULL;
-    m_refStencilBuffer = DE_NULL;
-    m_refRenderer      = DE_NULL;
+    m_renderer         = nullptr;
+    m_refColorBuffer   = nullptr;
+    m_refDepthBuffer   = nullptr;
+    m_refStencilBuffer = nullptr;
+    m_refRenderer      = nullptr;
 }
 
 RandomFragmentOpCase::IterateResult RandomFragmentOpCase::iterate(void)

@@ -119,7 +119,7 @@ static uint32_t getShaderGroupBaseAlignment(const InstanceInterface &vki, const 
 
 static VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 {
-    VkBuffer result = (buffer.get() == DE_NULL) ? VK_NULL_HANDLE : buffer->get();
+    VkBuffer result = (buffer.get() == VK_NULL_HANDLE) ? VK_NULL_HANDLE : buffer->get();
 
     return result;
 }
@@ -159,7 +159,7 @@ static VkWriteDescriptorSetAccelerationStructureKHR makeWriteDescriptorSetAccele
 {
     const VkWriteDescriptorSetAccelerationStructureKHR result = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-        DE_NULL,                                                           //  const void* pNext;
+        nullptr,                                                           //  const void* pNext;
         1u,                                                                //  uint32_t accelerationStructureCount;
         accelerationStructureKHR //  const VkAccelerationStructureKHR* pAccelerationStructures;
     };
@@ -208,7 +208,7 @@ static Move<VkDescriptorSet> makeDescriptorSet(const DeviceInterface &vki, const
     const bool pushUpdateMethod         = isPushUpdateMethod(updateMethod);
     Move<VkDescriptorSet> descriptorSet = pushUpdateMethod ?
                                               vk::Move<vk::VkDescriptorSet>() :
-                                              vk::makeDescriptorSet(vki, device, descriptorPool, setLayout, DE_NULL);
+                                              vk::makeDescriptorSet(vki, device, descriptorPool, setLayout, nullptr);
 
     return descriptorSet;
 }
@@ -221,7 +221,7 @@ static VkImageCreateInfo makeImageCreateInfo(VkFormat format, uint32_t width, ui
 {
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         imageType,                           // VkImageType imageType;
         format,                              // VkFormat format;
@@ -233,7 +233,7 @@ static VkImageCreateInfo makeImageCreateInfo(VkFormat format, uint32_t width, ui
         usageFlags,                          // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -463,7 +463,7 @@ tcu::TestStatus BindingAcceleratioStructureTestInstance::iterate(void)
         };
         const VkDescriptorUpdateTemplateCreateInfo templateCreateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR, //  VkStructureType sType;
-            DE_NULL,                                                      //  const void* pNext;
+            nullptr,                                                      //  const void* pNext;
             0,                        //  VkDescriptorUpdateTemplateCreateFlags flags;
             1,                        //  uint32_t descriptorUpdateEntryCount;
             &updateTemplateEntry,     //  const VkDescriptorUpdateTemplateEntry* pDescriptorUpdateEntries;
@@ -505,7 +505,7 @@ tcu::TestStatus BindingAcceleratioStructureTestInstance::iterate(void)
                                           VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
 
             vkd.cmdBindDescriptorSets(*commandBuffer, getPipelineBindPoint(), *m_pipelineLayout, 1, 1,
-                                      &m_descriptorSetImg.get(), 0, DE_NULL);
+                                      &m_descriptorSetImg.get(), 0, nullptr);
         }
 
         switch (m_testParams.updateMethod)
@@ -514,7 +514,7 @@ tcu::TestStatus BindingAcceleratioStructureTestInstance::iterate(void)
         case UPDATE_METHOD_WITH_TEMPLATE:
         {
             vkd.cmdBindDescriptorSets(*commandBuffer, getPipelineBindPoint(), *m_pipelineLayout, 0, 1,
-                                      &m_descriptorSetAS.get(), 0, DE_NULL);
+                                      &m_descriptorSetAS.get(), 0, nullptr);
 
             break;
         }
@@ -1807,7 +1807,7 @@ void BindingAcceleratioStructureRayTracingTestInstance::fillCommandBuffer(VkComm
         .update(vkd, device);
 
     vkd.cmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipelineLayout, 2, 1,
-                              &m_descriptorSetSvc.get(), 0, DE_NULL);
+                              &m_descriptorSetSvc.get(), 0, nullptr);
 
     vkd.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_pipeline.get());
 
@@ -2243,7 +2243,7 @@ void BindingAcceleratioStructureRayTracingRayTracingTestInstance::fillCommandBuf
         .update(vkd, device);
 
     vkd.cmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipelineLayout, 2, 1,
-                              &m_descriptorSetSvc.get(), 0, DE_NULL);
+                              &m_descriptorSetSvc.get(), 0, nullptr);
 
     vkd.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, m_pipeline.get());
 

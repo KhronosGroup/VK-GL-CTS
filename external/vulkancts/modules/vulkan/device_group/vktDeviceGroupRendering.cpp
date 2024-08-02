@@ -294,7 +294,7 @@ void DeviceGroupTestInstance::init(void)
 
         const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, //type
-            DE_NULL,                                    //pNext
+            nullptr,                                    //pNext
             (VkDeviceQueueCreateFlags)0u,               //flags
             queueFamilyIndex,                           //queueFamilyIndex;
             1u,                                         //queueCount;
@@ -302,7 +302,7 @@ void DeviceGroupTestInstance::init(void)
         };
         VkDeviceGroupDeviceCreateInfo deviceGroupInfo = {
             VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO, //stype
-            DE_NULL,                                           //pNext
+            nullptr,                                           //pNext
             properties[kGroupIndex].physicalDeviceCount,       //physicalDeviceCount
             properties[kGroupIndex].physicalDevices            //physicalDevices
         };
@@ -348,7 +348,7 @@ void DeviceGroupTestInstance::init(void)
             {
                 pcCI = {
                     VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                    DE_NULL,                                      // const void* pNext;
+                    nullptr,                                      // const void* pNext;
                     VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                         VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                     m_context.getResourceInterface()->getCacheDataSize(),     // uintptr_t initialDataSize;
@@ -374,9 +374,9 @@ void DeviceGroupTestInstance::init(void)
             1,                                                     //queueRecordCount;
             &deviceQueueCreateInfo,                                //pRequestedQueues;
             0u,                                                    //layerCount;
-            DE_NULL,                                               //ppEnabledLayerNames;
+            nullptr,                                               //ppEnabledLayerNames;
             (uint32_t)extensionPtrs.size(),                        //extensionCount;
-            (extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]), //ppEnabledExtensionNames;
+            (extensionPtrs.empty() ? nullptr : &extensionPtrs[0]), //ppEnabledExtensionNames;
             &enabledDeviceFeatures,                                //pEnabledFeatures;
         };
         m_deviceGroup = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
@@ -497,14 +497,14 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
         VkMemoryDedicatedAllocateInfo dedicatedAllocInfo = {
             VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // sType
-            DE_NULL,                                          // pNext
+            nullptr,                                          // pNext
             VK_NULL_HANDLE,                                   // image
             VK_NULL_HANDLE                                    // buffer
         };
 
         VkMemoryAllocateFlagsInfo allocDeviceMaskInfo = {
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,   // sType
-            m_useDedicated ? &dedicatedAllocInfo : DE_NULL, // pNext
+            m_useDedicated ? &dedicatedAllocInfo : nullptr, // pNext
             VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT,             // flags
             allocDeviceMask,                                // deviceMask
         };
@@ -520,7 +520,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
         {
             const VkBufferCreateInfo stagingVertexBufferParams = {
                 VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-                DE_NULL,                              // pNext
+                nullptr,                              // pNext
                 0u,                                   // flags
                 (VkDeviceSize)verticesSize,           // size
                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // usage
@@ -542,7 +542,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
         {
             const VkBufferCreateInfo vertexBufferParams = {
                 VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                 // sType
-                DE_NULL,                                                              // pNext
+                nullptr,                                                              // pNext
                 0u,                                                                   // flags
                 (VkDeviceSize)verticesSize,                                           // size
                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // usage
@@ -568,7 +568,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
             {
                 VkBindBufferMemoryDeviceGroupInfo devGroupBindInfo = {
                     VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_DEVICE_GROUP_INFO, // sType
-                    DE_NULL,                                                // pNext
+                    nullptr,                                                // pNext
                     m_physicalDeviceCount,                                  // deviceIndexCount
                     &deviceIndices[0],                                      // pDeviceIndices
                 };
@@ -590,7 +590,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
         {
             const VkBufferCreateInfo stagingIndexBufferParams = {
                 VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-                DE_NULL,                              // pNext
+                nullptr,                              // pNext
                 0u,                                   // flags
                 (VkDeviceSize)indicesSize,            // size
                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // usage
@@ -612,7 +612,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
         {
             const VkBufferCreateInfo indexBufferParams = {
                 VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                // sType
-                DE_NULL,                                                             // pNext
+                nullptr,                                                             // pNext
                 0u,                                                                  // flags
                 (VkDeviceSize)indicesSize,                                           // size
                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // usage
@@ -638,7 +638,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
             {
                 VkBindBufferMemoryDeviceGroupInfo devGroupBindInfo = {
                     VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_DEVICE_GROUP_INFO, // sType
-                    DE_NULL,                                                // pNext
+                    nullptr,                                                // pNext
                     m_physicalDeviceCount,                                  // deviceIndexCount
                     &deviceIndices[0],                                      // pDeviceIndices
                 };
@@ -660,7 +660,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
         {
             const VkBufferCreateInfo stagingUniformBufferParams = {
                 VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-                DE_NULL,                              // pNext
+                nullptr,                              // pNext
                 0u,                                   // flags
                 (VkDeviceSize)sizeof(drawColor),      // size
                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // usage
@@ -682,7 +682,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
         {
             const VkBufferCreateInfo uniformBufferParams = {
                 VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                  // sType
-                DE_NULL,                                                               // pNext
+                nullptr,                                                               // pNext
                 0u,                                                                    // flags
                 (VkDeviceSize)sizeof(drawColor),                                       // size
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // usage
@@ -707,7 +707,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
             {
                 VkBindBufferMemoryDeviceGroupInfo devGroupBindInfo = {
                     VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_DEVICE_GROUP_INFO, // sType
-                    DE_NULL,                                                // pNext
+                    nullptr,                                                // pNext
                     m_physicalDeviceCount,                                  // deviceIndexCount
                     &deviceIndices[0],                                      // pDeviceIndices
                 };
@@ -729,7 +729,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
         {
             const VkBufferCreateInfo stagingSboBufferParams = {
                 VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-                DE_NULL,                              // pNext
+                nullptr,                              // pNext
                 0u,                                   // flags
                 (VkDeviceSize)sizeof(tessLevel),      // size
                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // usage
@@ -751,7 +751,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
         {
             const VkBufferCreateInfo sboBufferParams = {
                 VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                  // sType
-                DE_NULL,                                                               // pNext
+                nullptr,                                                               // pNext
                 0u,                                                                    // flags
                 (VkDeviceSize)sizeof(tessLevel),                                       // size
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // usage
@@ -776,7 +776,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
             {
                 VkBindBufferMemoryDeviceGroupInfo devGroupBindInfo = {
                     VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_DEVICE_GROUP_INFO, // sType
-                    DE_NULL,                                                // pNext
+                    nullptr,                                                // pNext
                     m_physicalDeviceCount,                                  // deviceIndexCount
                     &deviceIndices[0],                                      // pDeviceIndices
                 };
@@ -822,7 +822,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
             const VkImageCreateInfo imageParams = {
                 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
-                DE_NULL,                             // pNext
+                nullptr,                             // pNext
                 imageCreateFlags,                    // flags
                 VK_IMAGE_TYPE_2D,                    // imageType
                 colorFormat,                         // format
@@ -886,28 +886,28 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
                 (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags       flags
                 VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint             pipelineBindPoint
                 0u,                              // uint32_t                        inputAttachmentCount
-                DE_NULL,                         // const VkAttachmentReference*    pInputAttachments
+                nullptr,                         // const VkAttachmentReference*    pInputAttachments
                 1u,                              // uint32_t                        colorAttachmentCount
                 &colorAttachmentRef,             // const VkAttachmentReference*    pColorAttachments
-                DE_NULL,                         // const VkAttachmentReference*    pResolveAttachments
-                DE_NULL,                         // const VkAttachmentReference*    pDepthStencilAttachment
+                nullptr,                         // const VkAttachmentReference*    pResolveAttachments
+                nullptr,                         // const VkAttachmentReference*    pDepthStencilAttachment
                 0u,                              // uint32_t                        preserveAttachmentCount
-                DE_NULL                          // const uint32_t*                 pPreserveAttachments
+                nullptr                          // const uint32_t*                 pPreserveAttachments
             };
 
             const VkRenderPassCreateInfo renderPassInfo = {
                 VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                   sType
-                DE_NULL,                                   // const void*                       pNext
+                nullptr,                                   // const void*                       pNext
                 (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags           flags
                 1,                                         // uint32_t                          attachmentCount
                 &colorAttachmentDescription,               // const VkAttachmentDescription*    pAttachments
                 1u,                                        // uint32_t                          subpassCount
                 &subpassDescription,                       // const VkSubpassDescription*       pSubpasses
                 0u,                                        // uint32_t                          dependencyCount
-                DE_NULL                                    // const VkSubpassDependency*        pDependencies
+                nullptr                                    // const VkSubpassDependency*        pDependencies
             };
 
-            renderPass = createRenderPass(vk, *m_deviceGroup, &renderPassInfo, DE_NULL);
+            renderPass = createRenderPass(vk, *m_deviceGroup, &renderPassInfo, nullptr);
         }
 
         // Create descriptors
@@ -921,14 +921,14 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // VkDescriptorType descriptorType;
                 1u,                                // uint32_t descriptorCount;
                 VK_SHADER_STAGE_FRAGMENT_BIT,      // VkShaderStageFlags stageFlags;
-                DE_NULL                            // const VkSampler* pImmutableSamplers;
+                nullptr                            // const VkSampler* pImmutableSamplers;
             };
             const VkDescriptorSetLayoutBinding layoutBindingSBO = {
                 1u,                                       // uint32_t binding;
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,        // VkDescriptorType descriptorType;
                 1u,                                       // uint32_t descriptorCount;
                 VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, // VkShaderStageFlags stageFlags;
-                DE_NULL                                   // const VkSampler* pImmutableSamplers;
+                nullptr                                   // const VkSampler* pImmutableSamplers;
             };
 
             layoutBindings.push_back(layoutBindingUBO);
@@ -937,7 +937,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
             const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                             // cost void* pNext;
+                nullptr,                                             // cost void* pNext;
                 (VkDescriptorSetLayoutCreateFlags)0,                 // VkDescriptorSetLayoutCreateFlags        flags
                 uint32_t(layoutBindings.size()),                     // uint32_t count;
                 layoutBindings.data()                                // const VkDescriptorSetLayoutBinding pBinding;
@@ -958,7 +958,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
             const VkDescriptorPoolCreateInfo descriptorPoolParams = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,     // VkStructureType sType;
-                DE_NULL,                                           // void* pNext;
+                nullptr,                                           // void* pNext;
                 VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, // VkDescriptorPoolCreateFlags flags;
                 1u,                                                // uint32_t maxSets;
                 uint32_t(descriptorTypes.size()),                  // uint32_t count;
@@ -968,7 +968,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
             const VkDescriptorSetAllocateInfo descriptorSetParams = {
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                DE_NULL,
+                nullptr,
                 *descriptorPool,
                 1u,
                 &descriptorSetLayout.get(),
@@ -979,35 +979,35 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
             const VkDescriptorBufferInfo sboDescriptorInfo = {sboBuffer.get(), 0, (VkDeviceSize)sizeof(tessLevel)};
             const VkWriteDescriptorSet writeDescritporSetUBO = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
-                DE_NULL,                                // const void* pNext;
+                nullptr,                                // const void* pNext;
                 *descriptorSet,                         // VkDescriptorSet destSet;
                 0,                                      // uint32_t destBinding;
                 0,                                      // uint32_t destArrayElement;
                 1u,                                     // uint32_t count;
                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,      // VkDescriptorType descriptorType;
-                (const VkDescriptorImageInfo *)DE_NULL, // VkDescriptorImageInfo* pImageInfo;
+                nullptr,                                // VkDescriptorImageInfo* pImageInfo;
                 &uboDescriptorInfo,                     // VkDescriptorBufferInfo* pBufferInfo;
-                (const VkBufferView *)DE_NULL           // VkBufferView* pTexelBufferView;
+                nullptr                                 // VkBufferView* pTexelBufferView;
             };
 
             const VkWriteDescriptorSet writeDescritporSetSBO = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
-                DE_NULL,                                // const void* pNext;
+                nullptr,                                // const void* pNext;
                 *descriptorSet,                         // VkDescriptorSet destSet;
                 1,                                      // uint32_t destBinding;
                 0,                                      // uint32_t destArrayElement;
                 1u,                                     // uint32_t count;
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,      // VkDescriptorType descriptorType;
-                (const VkDescriptorImageInfo *)DE_NULL, // VkDescriptorImageInfo* pImageInfo;
+                nullptr,                                // VkDescriptorImageInfo* pImageInfo;
                 &sboDescriptorInfo,                     // VkDescriptorBufferInfo* pBufferInfo;
-                (const VkBufferView *)DE_NULL           // VkBufferView* pTexelBufferView;
+                nullptr                                 // VkBufferView* pTexelBufferView;
             };
             writeDescritporSets.push_back(writeDescritporSetUBO);
             if (m_drawTessellatedSphere)
                 writeDescritporSets.push_back(writeDescritporSetSBO);
 
             vk.updateDescriptorSets(*m_deviceGroup, uint32_t(writeDescritporSets.size()), writeDescritporSets.data(),
-                                    0u, DE_NULL);
+                                    0u, nullptr);
         }
 
         // Create Pipeline
@@ -1020,12 +1020,12 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
             const VkDescriptorSetLayout descset                   = descriptorSetLayout.get();
             const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
                 VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-                DE_NULL,                                       // pNext
+                nullptr,                                       // pNext
                 (vk::VkPipelineLayoutCreateFlags)0,            // flags
                 1u,                                            // setLayoutCount
                 &descset,                                      // pSetLayouts
                 0u,                                            // pushConstantRangeCount
-                DE_NULL,                                       // pPushConstantRanges
+                nullptr,                                       // pPushConstantRanges
             };
             pipelineLayout = createPipelineLayout(vk, *m_deviceGroup, &pipelineLayoutParams);
 
@@ -1046,7 +1046,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
             const VkPipelineRasterizationStateCreateInfo rasterParams = {
                 VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,       // sType
-                DE_NULL,                                                          // pNext
+                nullptr,                                                          // pNext
                 0u,                                                               // flags
                 VK_FALSE,                                                         // depthClampEnable
                 VK_FALSE,                                                         // rasterizerDiscardEnable
@@ -1082,7 +1082,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
                 topology,           // const VkPrimitiveTopology                     topology
                 0u,                 // const uint32_t                                subpass
                 3u,                 // const uint32_t                                patchControlPoints
-                DE_NULL,            // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+                nullptr,            // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
                 &rasterParams);     // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
         }
 
@@ -1090,7 +1090,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
         {
             const VkImageViewCreateInfo colorAttViewParams = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // sType
-                DE_NULL,                                  // pNext
+                nullptr,                                  // pNext
                 0u,                                       // flags
                 *renderImage,                             // image
                 VK_IMAGE_VIEW_TYPE_2D,                    // viewType
@@ -1109,7 +1109,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
             const VkFramebufferCreateInfo framebufferParams = {
                 VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-                DE_NULL,                                   // pNext
+                nullptr,                                   // pNext
                 0u,                                        // flags
                 *renderPass,                               // renderPass
                 1u,                                        // attachmentCount
@@ -1125,7 +1125,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
         {
             const VkCommandPoolCreateInfo cmdPoolParams = {
                 VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType
-                DE_NULL,                                         // pNext
+                nullptr,                                         // pNext
                 VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags
                 queueFamilyIndex,                                // queueFamilyIndex
             };
@@ -1133,7 +1133,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
             const VkCommandBufferAllocateInfo cmdBufParams = {
                 VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
-                DE_NULL,                                        // pNext
+                nullptr,                                        // pNext
                 *cmdPool,                                       // pool
                 VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level
                 1u,                                             // bufferCount
@@ -1146,7 +1146,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
             beginCommandBuffer(vk, *cmdBuffer);
             const VkImageMemoryBarrier colorAttBarrier = {
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,                                       // sType
-                DE_NULL,                                                                      // pNext
+                nullptr,                                                                      // pNext
                 0u,                                                                           // srcAccessMask
                 (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT), // dstAccessMask
                 VK_IMAGE_LAYOUT_UNDEFINED,                                                    // oldLayout
@@ -1163,9 +1163,8 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
                 }                              // subresourceRange
             };
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0,
-                                  (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                                  &colorAttBarrier);
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
+                                  nullptr, 1, &colorAttBarrier);
 
             endCommandBuffer(vk, *cmdBuffer);
             const uint32_t deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
@@ -1221,9 +1220,9 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
             VkBindImageMemoryDeviceGroupInfo devGroupBindInfo = {
                 VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO, // sType
-                DE_NULL,                                               // pNext
+                nullptr,                                               // pNext
                 0u,                                                    // deviceIndexCount
-                DE_NULL,                                               // pDeviceIndices
+                nullptr,                                               // pDeviceIndices
                 m_physicalDeviceCount * m_physicalDeviceCount,         // SFRRectCount
                 &sfrRects[0],                                          // pSFRRects
             };
@@ -1245,7 +1244,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
         {
             const VkBufferMemoryBarrier stagingVertexBufferUpdateBarrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-                DE_NULL,                                 // const void* pNext;
+                nullptr,                                 // const void* pNext;
                 VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags srcAccessMask;
                 VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -1257,7 +1256,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
             const VkBufferMemoryBarrier vertexBufferUpdateBarrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-                DE_NULL,                                 // const void* pNext;
+                nullptr,                                 // const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
                 VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,     // VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -1269,7 +1268,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
             const VkBufferMemoryBarrier stagingIndexBufferUpdateBarrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-                DE_NULL,                                 // const void* pNext;
+                nullptr,                                 // const void* pNext;
                 VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags srcAccessMask;
                 VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -1281,7 +1280,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
             const VkBufferMemoryBarrier indexBufferUpdateBarrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-                DE_NULL,                                 // const void* pNext;
+                nullptr,                                 // const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
                 VK_ACCESS_INDEX_READ_BIT,                // VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -1293,7 +1292,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
             const VkBufferMemoryBarrier stagingUboBufferUpdateBarrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-                DE_NULL,                                 // const void* pNext;
+                nullptr,                                 // const void* pNext;
                 VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags srcAccessMask;
                 VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -1305,7 +1304,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
             const VkBufferMemoryBarrier uboUpdateBarrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-                DE_NULL,                                 // const void* pNext;
+                nullptr,                                 // const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
                 VK_ACCESS_UNIFORM_READ_BIT,              // VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -1316,37 +1315,31 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
             };
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1,
-                                  &stagingVertexBufferUpdateBarrier, 0, (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &stagingVertexBufferUpdateBarrier, 0, nullptr);
             VkBufferCopy vertexBufferCopy = {0u, 0u, verticesSize};
             vk.cmdCopyBuffer(*cmdBuffer, stagingVertexBuffer.get(), vertexBuffer.get(), 1u, &vertexBufferCopy);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1,
-                                  &vertexBufferUpdateBarrier, 0, (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &vertexBufferUpdateBarrier, 0, nullptr);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1,
-                                  &stagingIndexBufferUpdateBarrier, 0, (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &stagingIndexBufferUpdateBarrier, 0, nullptr);
             VkBufferCopy indexBufferCopy = {0u, 0u, indicesSize};
             vk.cmdCopyBuffer(*cmdBuffer, stagingIndexBuffer.get(), indexBuffer.get(), 1u, &indexBufferCopy);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1,
-                                  &indexBufferUpdateBarrier, 0, (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &indexBufferUpdateBarrier, 0, nullptr);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1,
-                                  &stagingUboBufferUpdateBarrier, 0, (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &stagingUboBufferUpdateBarrier, 0, nullptr);
             VkBufferCopy uboBufferCopy = {0u, 0u, sizeof(drawColor)};
             vk.cmdCopyBuffer(*cmdBuffer, stagingUniformBuffer.get(), uniformBuffer.get(), 1u, &uboBufferCopy);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &uboUpdateBarrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &uboUpdateBarrier, 0, nullptr);
 
             if (m_drawTessellatedSphere)
             {
                 const VkBufferMemoryBarrier stagingsboUpdateBarrier = {
                     VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-                    DE_NULL,                                 // const void* pNext;
+                    nullptr,                                 // const void* pNext;
                     VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags srcAccessMask;
                     VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags dstAccessMask;
                     VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -1358,7 +1351,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
                 const VkBufferMemoryBarrier sboUpdateBarrier = {
                     VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-                    DE_NULL,                                 // const void* pNext;
+                    nullptr,                                 // const void* pNext;
                     VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
                     VK_ACCESS_SHADER_READ_BIT,               // VkAccessFlags dstAccessMask;
                     VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -1369,19 +1362,17 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
                 };
 
                 vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                      (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1,
-                                      &stagingsboUpdateBarrier, 0, (const VkImageMemoryBarrier *)DE_NULL);
+                                      (VkDependencyFlags)0, 0, nullptr, 1, &stagingsboUpdateBarrier, 0, nullptr);
                 VkBufferCopy sboBufferCopy = {0u, 0u, sizeof(tessLevel)};
                 vk.cmdCopyBuffer(*cmdBuffer, stagingSboBuffer.get(), sboBuffer.get(), 1u, &sboBufferCopy);
                 vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                       VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT, (VkDependencyFlags)0, 0,
-                                      (const VkMemoryBarrier *)DE_NULL, 1, &sboUpdateBarrier, 0,
-                                      (const VkImageMemoryBarrier *)DE_NULL);
+                                      nullptr, 1, &sboUpdateBarrier, 0, nullptr);
             }
 
             vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1,
-                                     &*descriptorSet, 0u, DE_NULL);
+                                     &*descriptorSet, 0u, nullptr);
             {
                 const VkDeviceSize bindingOffset = 0;
                 vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &bindingOffset);
@@ -1422,12 +1413,12 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
             }
 
             const VkDeviceGroupRenderPassBeginInfo deviceGroupRPBeginInfo = {
-                VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO, DE_NULL,
+                VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO, nullptr,
                 (uint32_t)((1 << m_physicalDeviceCount) - 1), m_physicalDeviceCount, &renderAreas[0]};
 
             const VkRenderPassBeginInfo passBeginParams = {
                 VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,                         // sType
-                (m_testMode & TEST_MODE_SFR) ? &deviceGroupRPBeginInfo : DE_NULL, // pNext
+                (m_testMode & TEST_MODE_SFR) ? &deviceGroupRPBeginInfo : nullptr, // pNext
                 *renderPass,                                                      // renderPass
                 *framebuffer,                                                     // framebuffer
                 {{0, 0}, {renderSize.x(), renderSize.y()}},                       // renderArea
@@ -1454,7 +1445,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
         {
             const VkImageMemoryBarrier renderFinishBarrier = {
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // sType
-                DE_NULL,                                  // pNext
+                nullptr,                                  // pNext
                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // outputMask
                 VK_ACCESS_TRANSFER_READ_BIT,              // inputMask
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // oldLayout
@@ -1471,8 +1462,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
                 }                              // subresourceRange
             };
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                                  (const VkBufferMemoryBarrier *)DE_NULL, 1, &renderFinishBarrier);
+                                  (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &renderFinishBarrier);
         }
 
         endCommandBuffer(vk, *cmdBuffer);
@@ -1493,7 +1483,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
             {
                 const VkImageCreateInfo peerImageParams = {
                     VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
-                    DE_NULL,                             // pNext
+                    nullptr,                             // pNext
                     VK_IMAGE_CREATE_ALIAS_BIT,           // flags
                     VK_IMAGE_TYPE_2D,                    // imageType
                     colorFormat,                         // format
@@ -1512,11 +1502,11 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
                 VkBindImageMemoryDeviceGroupInfo devGroupBindInfo = {
                     VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO, // sType
-                    DE_NULL,                                               // pNext
+                    nullptr,                                               // pNext
                     m_physicalDeviceCount,                                 // deviceIndexCount
                     &deviceIndices[0],                                     // pDeviceIndices
                     0u,                                                    // SFRRectCount
-                    DE_NULL,                                               // pSFRRects
+                    nullptr,                                               // pSFRRects
                 };
 
                 VkBindImageMemoryInfo bindInfo = {
@@ -1535,7 +1525,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
                 {
                     const VkImageMemoryBarrier preCopyBarrier = {
                         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType  sType;
-                        DE_NULL,                                // const void*  pNext;
+                        nullptr,                                // const void*  pNext;
                         0,                                      // VkAccessFlags  srcAccessMask;
                         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags  dstAccessMask;
                         VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout  oldLayout;
@@ -1555,8 +1545,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
                     beginCommandBuffer(vk, *cmdBuffer);
                     vk.cmdSetDeviceMask(*cmdBuffer, 1 << firstDeviceID);
                     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                                          (const VkBufferMemoryBarrier *)DE_NULL, 1u, &preCopyBarrier);
+                                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1u, &preCopyBarrier);
                     endCommandBuffer(vk, *cmdBuffer);
 
                     const uint32_t deviceMask = 1 << firstDeviceID;
@@ -1604,7 +1593,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
                 {
                     const VkImageMemoryBarrier postCopyBarrier = {
                         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-                        DE_NULL,                                // const void* pNext;
+                        nullptr,                                // const void* pNext;
                         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
                         VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags dstAccessMask;
                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
@@ -1624,9 +1613,8 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
                     beginCommandBuffer(vk, *cmdBuffer);
                     vk.cmdSetDeviceMask(*cmdBuffer, 1 << firstDeviceID);
                     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, (VkDependencyFlags)0, 0,
-                                          (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL,
-                                          1u, &postCopyBarrier);
+                                          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
+                                          nullptr, 1u, &postCopyBarrier);
                     endCommandBuffer(vk, *cmdBuffer);
 
                     const uint32_t deviceMask = 1 << firstDeviceID;
@@ -1641,7 +1629,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
             const VkDeviceSize imageSizeBytes = (VkDeviceSize)(sizeof(uint32_t) * renderSize.x() * renderSize.y());
             const VkBufferCreateInfo readImageBufferParams = {
                 VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-                DE_NULL,                              // pNext
+                nullptr,                              // pNext
                 (VkBufferCreateFlags)0u,              // flags
                 imageSizeBytes,                       // size
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // usage
@@ -1679,7 +1667,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 
                 const VkBufferMemoryBarrier copyFinishBarrier = {
                     VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // sType
-                    DE_NULL,                                 // pNext
+                    nullptr,                                 // pNext
                     VK_ACCESS_TRANSFER_WRITE_BIT,            // srcAccessMask
                     VK_ACCESS_HOST_READ_BIT,                 // dstAccessMask
                     queueFamilyIndex,                        // srcQueueFamilyIndex
@@ -1689,8 +1677,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate(void)
                     imageSizeBytes                           // size
                 };
                 vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                      (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &copyFinishBarrier,
-                                      0, (const VkImageMemoryBarrier *)DE_NULL);
+                                      (VkDependencyFlags)0, 0, nullptr, 1, &copyFinishBarrier, 0, nullptr);
             }
             endCommandBuffer(vk, *cmdBuffer);
 

@@ -89,7 +89,7 @@ inline VkImageCreateInfo make2DImageCreateInfo(const tcu::IVec2 &imageSize, cons
 {
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,               // VkStructureType sType;
-        DE_NULL,                                           // const void* pNext;
+        nullptr,                                           // const void* pNext;
         0u,                                                // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                  // VkImageType imageType;
         VK_FORMAT_R32_UINT,                                // VkFormat format;
@@ -101,7 +101,7 @@ inline VkImageCreateInfo make2DImageCreateInfo(const tcu::IVec2 &imageSize, cons
         usage,                                             // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,                         // VkSharingMode sharingMode;
         0u,                                                // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                           // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                           // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,                         // VkImageLayout initialLayout;
     };
     return imageParams;
@@ -268,13 +268,12 @@ tcu::TestStatus SharedVarTestInstance::iterate(void)
 
     pipeline.bind(*cmdBuffer);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &computeFinishBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &computeFinishBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -458,13 +457,12 @@ tcu::TestStatus SharedVarAtomicOpTestInstance::iterate(void)
 
     pipeline.bind(*cmdBuffer);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &computeFinishBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1u, &computeFinishBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -651,13 +649,12 @@ tcu::TestStatus SSBOLocalBarrierTestInstance::iterate(void)
 
     pipeline.bind(*cmdBuffer);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &computeFinishBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &computeFinishBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -874,7 +871,7 @@ tcu::TestStatus CopyImageToSSBOTestInstance::iterate(void)
 
         pipeline.bind(*cmdBuffer);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
 
         const std::vector<VkBufferImageCopy> bufferImageCopy(1, makeBufferImageCopy(m_imageSize));
         copyBufferToImage(vk, *cmdBuffer, *stagingBuffer, bufferSizeBytes, bufferImageCopy, VK_IMAGE_ASPECT_COLOR_BIT,
@@ -882,8 +879,7 @@ tcu::TestStatus CopyImageToSSBOTestInstance::iterate(void)
 
         vk.cmdDispatch(*cmdBuffer, workSize.x(), workSize.y(), 1u);
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &computeFinishBarrier, 0,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &computeFinishBarrier, 0, nullptr);
 
         endCommandBuffer(vk, *cmdBuffer);
 
@@ -1084,11 +1080,11 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate(void)
 
         pipeline.bind(*cmdBuffer);
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                                  &descriptorSet.get(), 0u, DE_NULL);
+                                  &descriptorSet.get(), 0u, nullptr);
 
         vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                               (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1,
-                               &inputBufferPostHostWriteBarrier, 1, &imageLayoutBarrier);
+                               (VkDependencyFlags)0, 0, nullptr, 1, &inputBufferPostHostWriteBarrier, 1,
+                               &imageLayoutBarrier);
         vkd.cmdDispatch(*cmdBuffer, workSize.x(), workSize.y(), 1u);
 
         copyImageToBuffer(vkd, *cmdBuffer, imageWithBuffer.getImage(), imageWithBuffer.getBuffer(), m_imageSize,
@@ -1364,15 +1360,13 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate(void)
 
     pipeline.bind(*cmdBuffer);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &hostWriteBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier, 0, nullptr);
     vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &shaderWriteBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -1571,15 +1565,13 @@ tcu::TestStatus InvertSSBOInPlaceTestInstance::iterate(void)
 
     pipeline.bind(*cmdBuffer);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &hostWriteBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier, 0, nullptr);
     vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &shaderWriteBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -1780,13 +1772,12 @@ tcu::TestStatus WriteToMultipleSSBOTestInstance::iterate(void)
 
     pipeline.bind(*cmdBuffer);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL,
-                          DE_LENGTH_OF_ARRAY(shaderWriteBarriers), shaderWriteBarriers, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, DE_LENGTH_OF_ARRAY(shaderWriteBarriers),
+                          shaderWriteBarriers, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -2036,24 +2027,21 @@ tcu::TestStatus SSBOBarrierTestInstance::iterate(void)
 
     pipeline0.bind(*cmdBuffer);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline0.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &writeUniformConstantsBarrier,
-                          0, (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &writeUniformConstantsBarrier, 0, nullptr);
 
     vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &betweenShadersBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &betweenShadersBarrier, 0, nullptr);
 
     // Switch to the second shader program
     pipeline1.bind(*cmdBuffer);
 
     vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &afterComputeBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &afterComputeBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -2271,11 +2259,11 @@ tcu::TestStatus ImageAtomicOpTestInstance::iterate(void)
 
         pipeline.bind(*cmdBuffer);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1,
-                              &inputBufferPostHostWriteBarrier, 1, &imageLayoutBarrier);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &inputBufferPostHostWriteBarrier, 1,
+                              &imageLayoutBarrier);
         vk.cmdDispatch(*cmdBuffer, m_imageSize.x(), m_imageSize.y(), 1u);
 
         copyImageToBuffer(vk, *cmdBuffer, *image, *outputBuffer, m_imageSize, VK_ACCESS_SHADER_WRITE_BIT,
@@ -2516,24 +2504,21 @@ tcu::TestStatus ImageBarrierTestInstance::iterate(void)
 
     pipeline0.bind(*cmdBuffer);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline0.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &writeUniformConstantsBarrier,
-                          1, &imageLayoutBarrier);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &writeUniformConstantsBarrier, 1, &imageLayoutBarrier);
 
     vk.cmdDispatch(*cmdBuffer, m_imageSize.x(), m_imageSize.y(), 1u);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                          (const VkBufferMemoryBarrier *)DE_NULL, 1, &imageBarrierBetweenShaders);
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrierBetweenShaders);
 
     // Switch to the second shader program
     pipeline1.bind(*cmdBuffer);
 
     vk.cmdDispatch(*cmdBuffer, m_imageSize.x(), m_imageSize.y(), 1u);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &afterComputeBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &afterComputeBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -2639,7 +2624,7 @@ void ComputeTestInstance::createDeviceGroup(void)
 
     VkDeviceGroupDeviceCreateInfo deviceGroupInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO,   //stype
-        DE_NULL,                                             //pNext
+        nullptr,                                             //pNext
         devGroupProperties[devGroupIdx].physicalDeviceCount, //physicalDeviceCount
         devGroupProperties[devGroupIdx].physicalDevices      //physicalDevices
     };
@@ -2676,7 +2661,7 @@ void ComputeTestInstance::createDeviceGroup(void)
 
     VkDeviceQueueCreateInfo queueInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         (VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags flags;
         m_queueFamilyIndex,                         // uint32_t queueFamilyIndex;
         1u,                                         // uint32_t queueCount;
@@ -2684,7 +2669,7 @@ void ComputeTestInstance::createDeviceGroup(void)
     };
 
     void *pNext = &deviceGroupInfo;
-    if (deviceFeatures2.pNext != DE_NULL)
+    if (deviceFeatures2.pNext != nullptr)
         deviceGroupInfo.pNext = &deviceFeatures2;
 
 #ifdef CTS_USES_VULKANSC
@@ -2705,7 +2690,7 @@ void ComputeTestInstance::createDeviceGroup(void)
         {
             pcCI = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                     VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                 m_context.getResourceInterface()->getCacheDataSize(),     // uintptr_t initialDataSize;
@@ -2732,11 +2717,11 @@ void ComputeTestInstance::createDeviceGroup(void)
         1u,                                   // uint32_t queueCreateInfoCount;
         &queueInfo,                           // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                   // uint32_t enabledLayerCount;
-        DE_NULL,                              // const char* const* ppEnabledLayerNames;
+        nullptr,                              // const char* const* ppEnabledLayerNames;
         uint32_t(deviceExtensions.size()),    // uint32_t enabledExtensionCount;
-        (deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0]), // const char* const* ppEnabledExtensionNames;
-        deviceFeatures2.pNext == DE_NULL ? &deviceFeatures :
-                                           DE_NULL, // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        (deviceExtensions.empty() ? nullptr : &deviceExtensions[0]), // const char* const* ppEnabledExtensionNames;
+        deviceFeatures2.pNext == nullptr ? &deviceFeatures :
+                                           nullptr, // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
     m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
@@ -2999,15 +2984,13 @@ tcu::TestStatus DispatchBaseTestInstance::iterate(void)
 
     pipeline.bind(*cmdBuffer);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &hostUniformWriteBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &hostUniformWriteBarrier, 0, nullptr);
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &hostWriteBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier, 0, nullptr);
 
     // Split the workload across all physical devices based on m_splitWorkSize.x()
     for (uint32_t physDevIdx = 0; physDevIdx < m_numPhysDevices; physDevIdx++)
@@ -3037,8 +3020,7 @@ tcu::TestStatus DispatchBaseTestInstance::iterate(void)
     }
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &shaderWriteBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -3190,7 +3172,7 @@ tcu::TestStatus DeviceIndexTestInstance::iterate(void)
     {
         const VkBufferCreateInfo sboBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                  // sType
-            DE_NULL,                                                               // pNext
+            nullptr,                                                               // pNext
             0u,                                                                    // flags
             (VkDeviceSize)bufferSizeBytes,                                         // size
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // usage
@@ -3216,7 +3198,7 @@ tcu::TestStatus DeviceIndexTestInstance::iterate(void)
 
         const VkMemoryAllocateFlagsInfo allocDeviceMaskInfo = {
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO, // sType
-            DE_NULL,                                      // pNext
+            nullptr,                                      // pNext
             VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT,           // flags
             allocDeviceMask,                              // deviceMask
         };
@@ -3299,17 +3281,15 @@ tcu::TestStatus DeviceIndexTestInstance::iterate(void)
 
         pipeline.bind(*cmdBuffer);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &hostUniformWriteBarrier, 0,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &hostUniformWriteBarrier, 0, nullptr);
 
         vk.cmdSetDeviceMask(*cmdBuffer, physDevMask);
         vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &shaderWriteBarrier, 0,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier, 0, nullptr);
 
         endCommandBuffer(vk, *cmdBuffer);
         submitCommandsAndWait(vk, device, queue, *cmdBuffer, true, physDevMask);
@@ -3336,12 +3316,10 @@ tcu::TestStatus DeviceIndexTestInstance::iterate(void)
             beginCommandBuffer(vk, *cmdBuffer);
             vk.cmdSetDeviceMask(*cmdBuffer, deviceMask);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &srcBufferBarrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &srcBufferBarrier, 0, nullptr);
             vk.cmdCopyBuffer(*cmdBuffer, *sboBuffer, *checkBuffer, 1, &copyParams);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &dstBufferBarrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &dstBufferBarrier, 0, nullptr);
 
             endCommandBuffer(vk, *cmdBuffer);
             submitCommandsAndWait(vk, device, queue, *cmdBuffer, true, deviceMask);
@@ -3471,7 +3449,7 @@ tcu::TestStatus ConcurrentComputeInstance::iterate(void)
     VkPhysicalDeviceFeatures deviceFeatures;
     const float queuePriorities[2] = {1.0f, 0.0f};
     VkDeviceQueueCreateInfo queueInfos[2];
-    Queues queues[2] = {{DE_NULL, (uint32_t)NO_MATCH_FOUND}, {DE_NULL, (uint32_t)NO_MATCH_FOUND}};
+    Queues queues[2] = {{nullptr, (uint32_t)NO_MATCH_FOUND}, {nullptr, (uint32_t)NO_MATCH_FOUND}};
 
     queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
@@ -3499,7 +3477,7 @@ tcu::TestStatus ConcurrentComputeInstance::iterate(void)
         deMemset(&queueInfo, 0, sizeof(queueInfo));
 
         queueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueInfo.pNext            = DE_NULL;
+        queueInfo.pNext            = nullptr;
         queueInfo.flags            = (VkDeviceQueueCreateFlags)0u;
         queueInfo.queueFamilyIndex = queues[queueNdx].queueFamilyIndex;
         queueInfo.queueCount       = (queues[0].queueFamilyIndex == queues[1].queueFamilyIndex) ? 2 : 1;
@@ -3511,7 +3489,7 @@ tcu::TestStatus ConcurrentComputeInstance::iterate(void)
             break;
     }
 
-    void *pNext = DE_NULL;
+    void *pNext = nullptr;
 
     deMemset(&deviceInfo, 0, sizeof(deviceInfo));
     instanceDriver.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
@@ -3553,7 +3531,7 @@ tcu::TestStatus ConcurrentComputeInstance::iterate(void)
         {
             pcCI = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                     VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                 m_context.getResourceInterface()->getCacheDataSize(),     // uintptr_t initialDataSize;
@@ -3577,8 +3555,8 @@ tcu::TestStatus ConcurrentComputeInstance::iterate(void)
     deviceInfo.enabledExtensionCount   = (uint32_t)deviceExtensions.size();
     deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
     deviceInfo.enabledLayerCount       = 0u;
-    deviceInfo.ppEnabledLayerNames     = DE_NULL;
-    deviceInfo.pEnabledFeatures        = (deviceFeatures2.pNext == DE_NULL) ? &deviceFeatures : DE_NULL;
+    deviceInfo.ppEnabledLayerNames     = nullptr;
+    deviceInfo.pEnabledFeatures        = (deviceFeatures2.pNext == nullptr) ? &deviceFeatures : nullptr;
     deviceInfo.queueCreateInfoCount    = (queues[0].queueFamilyIndex == queues[1].queueFamilyIndex) ? 1 : 2;
     deviceInfo.pQueueCreateInfos       = queueInfos;
 
@@ -3722,14 +3700,12 @@ tcu::TestStatus ConcurrentComputeInstance::iterate(void)
     beginCommandBuffer(vk, *cmdBuffer1);
     pipeline1.bind(*cmdBuffer1);
     vk.cmdBindDescriptorSets(*cmdBuffer1, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline1.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet1.get(), 0u, DE_NULL);
+                             &descriptorSet1.get(), 0u, nullptr);
     vk.cmdPipelineBarrier(*cmdBuffer1, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &hostWriteBarrier1, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier1, 0, nullptr);
     vk.cmdDispatch(*cmdBuffer1, 1, 1, 1);
     vk.cmdPipelineBarrier(*cmdBuffer1, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &shaderWriteBarrier1, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier1, 0, nullptr);
     endCommandBuffer(vk, *cmdBuffer1);
 
     // Command buffer 2
@@ -3737,38 +3713,36 @@ tcu::TestStatus ConcurrentComputeInstance::iterate(void)
     beginCommandBuffer(vk, *cmdBuffer2);
     pipeline2.bind(*cmdBuffer2);
     vk.cmdBindDescriptorSets(*cmdBuffer2, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline2.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet2.get(), 0u, DE_NULL);
+                             &descriptorSet2.get(), 0u, nullptr);
     vk.cmdPipelineBarrier(*cmdBuffer2, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &hostWriteBarrier2, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier2, 0, nullptr);
     vk.cmdDispatch(*cmdBuffer2, 1, 1, 1);
     vk.cmdPipelineBarrier(*cmdBuffer2, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &shaderWriteBarrier2, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier2, 0, nullptr);
     endCommandBuffer(vk, *cmdBuffer2);
 
     VkSubmitInfo submitInfo1 = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-        DE_NULL,                               // pNext
-        0u,                                    // waitSemaphoreCount
-        DE_NULL,                               // pWaitSemaphores
-        (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-        1u,                                    // commandBufferCount
-        &cmdBuffer1.get(),                     // pCommandBuffers
-        0u,                                    // signalSemaphoreCount
-        DE_NULL                                // pSignalSemaphores
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+        nullptr,                       // pNext
+        0u,                            // waitSemaphoreCount
+        nullptr,                       // pWaitSemaphores
+        nullptr,                       // pWaitDstStageMask
+        1u,                            // commandBufferCount
+        &cmdBuffer1.get(),             // pCommandBuffers
+        0u,                            // signalSemaphoreCount
+        nullptr                        // pSignalSemaphores
     };
 
     VkSubmitInfo submitInfo2 = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-        DE_NULL,                               // pNext
-        0u,                                    // waitSemaphoreCount
-        DE_NULL,                               // pWaitSemaphores
-        (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-        1u,                                    // commandBufferCount
-        &cmdBuffer2.get(),                     // pCommandBuffers
-        0u,                                    // signalSemaphoreCount
-        DE_NULL                                // pSignalSemaphores
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+        nullptr,                       // pNext
+        0u,                            // waitSemaphoreCount
+        nullptr,                       // pWaitSemaphores
+        nullptr,                       // pWaitDstStageMask
+        1u,                            // commandBufferCount
+        &cmdBuffer2.get(),             // pCommandBuffers
+        0u,                            // signalSemaphoreCount
+        nullptr                        // pSignalSemaphores
     };
 
     // Wait for completion
@@ -4685,7 +4659,7 @@ void ReplicatedCompositesTest::checkSupport(Context &context) const
         uint32_t propertyCount = 0;
 
         VK_CHECK(
-            vki.getPhysicalDeviceCooperativeMatrixPropertiesKHR(context.getPhysicalDevice(), &propertyCount, DE_NULL));
+            vki.getPhysicalDeviceCooperativeMatrixPropertiesKHR(context.getPhysicalDevice(), &propertyCount, nullptr));
 
         const VkCooperativeMatrixPropertiesKHR initStruct = initVulkanStructureConst();
 
@@ -4988,7 +4962,7 @@ tcu::TestStatus ReplicatedCompositesTestInstance::iterate(void)
         uint32_t propertyCount       = 0;
 
         VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixPropertiesKHR(m_context.getPhysicalDevice(), &propertyCount,
-                                                                     DE_NULL));
+                                                                     nullptr));
 
         const VkCooperativeMatrixPropertiesKHR initStruct = initVulkanStructureConst();
 
@@ -5057,13 +5031,12 @@ tcu::TestStatus ReplicatedCompositesTestInstance::iterate(void)
 
     pipeline.bind(*cmdBuffer);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &computeFinishBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &computeFinishBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -5092,7 +5065,7 @@ tcu::TestStatus ReplicatedCompositesTestInstance::iterate(void)
         uint32_t strRef[3]    = {strElem, strElem, strElem};
         uint32_t strstrRef[6] = {strElem, strElem, strElem, strElem, strElem, strElem};
 
-        const void *ref  = DE_NULL;
+        const void *ref  = nullptr;
         size_t sizeofref = 0;
 
         switch (m_compositeType)

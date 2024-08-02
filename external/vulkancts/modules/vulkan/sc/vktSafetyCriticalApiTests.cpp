@@ -69,7 +69,7 @@ tcu::TestStatus forbiddenCoreCommands(Context &context)
     for (const auto &commandName : commands)
     {
         void *commandPointer = (void *)vkd.getDeviceProcAddr(device, commandName.c_str());
-        if (commandPointer != DE_NULL)
+        if (commandPointer != nullptr)
             TCU_THROW(TestError, commandName + std::string(" should not be accessible"));
     }
 
@@ -195,7 +195,7 @@ tcu::TestStatus forbiddenPromotedCommands(Context &context)
     for (const auto &commandName : commands)
     {
         void *commandPointer = (void *)vkd.getDeviceProcAddr(device, commandName.c_str());
-        if (commandPointer != DE_NULL)
+        if (commandPointer != nullptr)
             TCU_THROW(TestError, commandName + std::string(" should not be accessible"));
     }
 

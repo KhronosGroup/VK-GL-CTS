@@ -45,7 +45,10 @@ typedef int deBool;
 #define DE_FALSE 0 /*!< False value for deBool. */
 #endif             /* DEQP_GTF_AVAILABLE */
 
-#if !defined(__cplusplus)
+/* Null pointer.  DEPRECATED: use NULL in C and nullptr in C++. */
+#if defined(__cplusplus)
+#define DE_NULL 0
+#else
 #define DE_NULL ((void *)0)
 #endif
 

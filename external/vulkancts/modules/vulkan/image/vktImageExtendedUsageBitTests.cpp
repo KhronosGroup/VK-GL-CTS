@@ -159,7 +159,7 @@ public:
         VkImageFormatProperties2 formatProperties2        = initVulkanStructure();
         VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2 = {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2, // VkStructureType        sType
-            DE_NULL,                                               // const void*            pNext
+            nullptr,                                               // const void*            pNext
             viewFormat,                                            // VkFormat                format
             VK_IMAGE_TYPE_2D,                                      // VkImageType            type
             tiling,                                                // VkImageTiling        tiling
@@ -179,7 +179,7 @@ public:
     {
         vk::VkImageFormatListCreateInfo imageFormatList = {
             vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             1u,                                                  // uint32_t viewFormatCount;
             &viewFormat,                                         // const VkFormat* pViewFormats;
         };

@@ -51,7 +51,7 @@ static const char *getOsName(int os)
     case DE_OS_IOS:
         return "DE_OS_IOS";
     default:
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -68,7 +68,7 @@ static const char *getCompilerName(int compiler)
     case DE_COMPILER_CLANG:
         return "DE_COMPILER_CLANG";
     default:
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -95,7 +95,7 @@ static const char *getCpuName(int cpu)
     case DE_CPU_RISCV_64:
         return "DE_CPU_RISCV_64";
     default:
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -108,7 +108,7 @@ static const char *getEndiannessName(int endianness)
     case DE_LITTLE_ENDIAN:
         return "DE_LITTLE_ENDIAN";
     default:
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -150,7 +150,7 @@ public:
     IterateResult iterate(void)
     {
         const char *valueName = m_getString(m_value);
-        const bool isOk       = valueName != DE_NULL;
+        const bool isOk       = valueName != nullptr;
         std::string logValue  = valueName ? std::string(valueName) : de::toString(m_value);
 
         m_testCtx.getLog() << TestLog::Message << m_varName << " = " << logValue << TestLog::EndMessage;
