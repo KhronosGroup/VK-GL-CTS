@@ -905,7 +905,8 @@ tcu::TestStatus testSemaphoreWin32Create(Context &context, const SemaphoreTestCo
         const vk::VkExportSemaphoreWin32HandleInfoKHR win32ExportInfo = {
             vk::VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR, nullptr,
 
-            nullptr, DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE, nullptr};
+            (vk::pt::Win32SecurityAttributesPtr) nullptr, DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
+            (vk::pt::Win32LPCWSTR) nullptr};
         const vk::VkExportSemaphoreCreateInfo exportCreateInfo = {
             vk::VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO, &win32ExportInfo,
             (vk::VkExternalMemoryHandleTypeFlags)config.externalType};
@@ -1987,7 +1988,8 @@ tcu::TestStatus testFenceWin32Create(Context &context, const FenceTestConfig con
         const vk::VkExportFenceWin32HandleInfoKHR win32ExportInfo = {
             vk::VK_STRUCTURE_TYPE_EXPORT_FENCE_WIN32_HANDLE_INFO_KHR, nullptr,
 
-            nullptr, DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE, nullptr};
+            (vk::pt::Win32SecurityAttributesPtr) nullptr, DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
+            (vk::pt::Win32LPCWSTR) nullptr};
         const vk::VkExportFenceCreateInfo exportCreateInfo = {vk::VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO,
                                                               &win32ExportInfo,
                                                               (vk::VkExternalFenceHandleTypeFlags)config.externalType};
@@ -3304,7 +3306,8 @@ tcu::TestStatus testMemoryWin32Create(Context &context, MemoryTestConfig config)
     const vk::VkExportMemoryWin32HandleInfoKHR win32Info = {
         vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR, nullptr,
 
-        nullptr, DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE, nullptr};
+        (vk::pt::Win32SecurityAttributesPtr) nullptr, DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
+        (vk::pt::Win32LPCWSTR) nullptr};
     const vk::VkExportMemoryAllocateInfo exportInfo = {vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO, &win32Info,
                                                        (vk::VkExternalMemoryHandleTypeFlags)config.externalType};
 
