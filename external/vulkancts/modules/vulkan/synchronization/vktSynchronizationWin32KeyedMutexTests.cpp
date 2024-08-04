@@ -259,7 +259,7 @@ vk::Move<vk::VkDeviceMemory> importMemory(const vk::DeviceInterface &vkd, vk::Vk
     };
     const vk::VkImportMemoryWin32HandleInfoKHR importInfo = {
         vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR, (requiresDedicated) ? &dedicatedInfo : nullptr,
-        externalType, handle.getWin32Handle(), (vk::pt::Win32LPCWSTR)NULL};
+        externalType, handle.getWin32Handle(), (vk::pt::Win32LPCWSTR) nullptr};
 
     uint32_t handleCompatibleMemoryTypeBits = ~0u;
     if (!isOpaqueHandleType(externalType))

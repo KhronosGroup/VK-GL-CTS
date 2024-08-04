@@ -24,6 +24,8 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
+#include <cstddef>
+#include <type_traits>
 
 #if (DE_OS == DE_OS_ANDROID) && defined(__ARM_ARCH) && defined(__ARM_32BIT_STATE)
 #define VKAPI_ATTR __attribute__((pcs("aapcs-vfp")))
@@ -65,6 +67,9 @@ struct VkNullHandleType
     {                                                             \
         COMPATIBLE internal;                                      \
         explicit NAME(COMPATIBLE internal_) : internal(internal_) \
+        {                                                         \
+        }                                                         \
+        NAME(std::nullptr_t) : internal()                         \
         {                                                         \
         }                                                         \
     };                                                            \
