@@ -30,6 +30,8 @@
 #include "tcuVector.hpp"
 #include "tcuMatrix.hpp"
 
+#include <string>
+
 namespace glu
 {
 
@@ -687,6 +689,9 @@ inline DataType dataTypeOf(void)
 {
     return DataType(DataTypeTraits<T>::DATATYPE);
 }
+
+// Miscellaneous
+bool saveShader(const std::string &name, const std::string &code);
 
 } // namespace glu
 
