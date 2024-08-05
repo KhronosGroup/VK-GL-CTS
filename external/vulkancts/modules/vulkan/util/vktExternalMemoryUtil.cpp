@@ -59,7 +59,7 @@ constexpr int kInvalidFd = std::numeric_limits<int>::min();
 
 NativeHandle::NativeHandle(void)
     : m_fd(kInvalidFd)
-    , m_zirconHandle(0)
+    , m_zirconHandle(0u)
     , m_win32HandleType(WIN32HANDLETYPE_LAST)
     , m_win32Handle(nullptr)
     , m_androidHardwareBuffer(nullptr)
@@ -69,7 +69,7 @@ NativeHandle::NativeHandle(void)
 
 NativeHandle::NativeHandle(const NativeHandle &other)
     : m_fd(kInvalidFd)
-    , m_zirconHandle(0)
+    , m_zirconHandle(0u)
     , m_win32HandleType(WIN32HANDLETYPE_LAST)
     , m_win32Handle(nullptr)
     , m_androidHardwareBuffer(nullptr)
@@ -144,7 +144,7 @@ NativeHandle::NativeHandle(const NativeHandle &other)
 
 NativeHandle::NativeHandle(int fd)
     : m_fd(fd)
-    , m_zirconHandle(0)
+    , m_zirconHandle(0u)
     , m_win32HandleType(WIN32HANDLETYPE_LAST)
     , m_win32Handle(nullptr)
     , m_androidHardwareBuffer(nullptr)
@@ -154,7 +154,7 @@ NativeHandle::NativeHandle(int fd)
 
 NativeHandle::NativeHandle(Win32HandleType handleType, vk::pt::Win32Handle handle)
     : m_fd(kInvalidFd)
-    , m_zirconHandle(0)
+    , m_zirconHandle(0u)
     , m_win32HandleType(handleType)
     , m_win32Handle(handle)
     , m_androidHardwareBuffer(nullptr)
@@ -164,7 +164,7 @@ NativeHandle::NativeHandle(Win32HandleType handleType, vk::pt::Win32Handle handl
 
 NativeHandle::NativeHandle(vk::pt::AndroidHardwareBufferPtr buffer)
     : m_fd(kInvalidFd)
-    , m_zirconHandle(0)
+    , m_zirconHandle(0u)
     , m_win32HandleType(WIN32HANDLETYPE_LAST)
     , m_win32Handle(nullptr)
     , m_androidHardwareBuffer(buffer)
@@ -190,7 +190,7 @@ void NativeHandle::reset(void)
 #endif
     }
 
-    if (m_zirconHandle.internal != 0)
+    if (m_zirconHandle.internal != 0u)
     {
 #if (DE_OS == DE_OS_FUCHSIA)
         zx_handle_close(m_zirconHandle.internal);
@@ -231,7 +231,7 @@ void NativeHandle::reset(void)
             DE_FATAL("Platform doesn't support Android Hardware Buffer handles");
     }
     m_fd                    = kInvalidFd;
-    m_zirconHandle          = vk::pt::zx_handle_t(0);
+    m_zirconHandle          = vk::pt::zx_handle_t(0u);
     m_win32Handle           = vk::pt::Win32Handle(nullptr);
     m_win32HandleType       = WIN32HANDLETYPE_LAST;
     m_androidHardwareBuffer = vk::pt::AndroidHardwareBufferPtr(nullptr);
@@ -281,7 +281,7 @@ void NativeHandle::setHostPtr(void *hostPtr)
 void NativeHandle::disown(void)
 {
     m_fd                    = kInvalidFd;
-    m_zirconHandle          = vk::pt::zx_handle_t(0);
+    m_zirconHandle          = vk::pt::zx_handle_t(0u);
     m_win32Handle           = vk::pt::Win32Handle(nullptr);
     m_androidHardwareBuffer = vk::pt::AndroidHardwareBufferPtr(nullptr);
     m_hostPtr               = nullptr;
@@ -546,7 +546,7 @@ void getMemoryNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::Vk
             vk::VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA, nullptr,
 
             memory, externalType};
-        vk::pt::zx_handle_t handle(0);
+        vk::pt::zx_handle_t handle(0u);
 
         VK_CHECK(vkd.getMemoryZirconHandleFUCHSIA(device, &info, &handle));
         nativeHandle.setZirconHandle(handle);
@@ -696,7 +696,7 @@ void importFence(const vk::DeviceInterface &vkd, const vk::VkDevice device, cons
             flags,
             externalType,
             handle.getWin32Handle(),
-            (vk::pt::Win32LPCWSTR)0};
+            (vk::pt::Win32LPCWSTR) nullptr};
 
         VK_CHECK(vkd.importFenceWin32HandleKHR(device, &importInfo));
         // \note Importing a fence payload from Windows handles does not transfer ownership of the handle to the Vulkan implementation,
@@ -786,7 +786,7 @@ void getSemaphoreNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk:
             vk::VK_STRUCTURE_TYPE_SEMAPHORE_GET_ZIRCON_HANDLE_INFO_FUCHSIA, nullptr,
 
             semaphore, externalType};
-        vk::pt::zx_handle_t zirconHandle(0);
+        vk::pt::zx_handle_t zirconHandle(0u);
 
         VK_CHECK(vkd.getSemaphoreZirconHandleFUCHSIA(device, &info, &zirconHandle));
         nativeHandle.setZirconHandle(zirconHandle);
@@ -860,7 +860,7 @@ void importSemaphore(const vk::DeviceInterface &vkd, const vk::VkDevice device, 
             flags,
             externalType,
             handle.getWin32Handle(),
-            (vk::pt::Win32LPCWSTR)0};
+            (vk::pt::Win32LPCWSTR) nullptr};
 
         VK_CHECK(vkd.importSemaphoreWin32HandleKHR(device, &importInfo));
         // \note Importing a semaphore payload from Windows handles does not transfer ownership of the handle to the Vulkan implementation,
@@ -1016,7 +1016,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory(const vk::DeviceInterface &vkd,
     {
         const vk::VkImportMemoryWin32HandleInfoKHR importInfo = {
             vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR, nullptr, externalType, handle.getWin32Handle(),
-            (vk::pt::Win32LPCWSTR)0};
+            (vk::pt::Win32LPCWSTR) nullptr};
         const vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
             vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
             &importInfo,

@@ -333,7 +333,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
     VkSurfaceFullScreenExclusiveWin32InfoEXT fseWin32Info = {
         VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT, // VkStructureType    sType;
         nullptr,                                                        // const void*        pNext;
-        pt::Win32MonitorHandle(0)                                       // HMONITOR           hmonitor;
+        pt::Win32MonitorHandle(nullptr)                                 // HMONITOR           hmonitor;
     };
     if (testParams.wsiType == TYPE_WIN32)
     {
