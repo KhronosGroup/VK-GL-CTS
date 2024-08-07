@@ -53,11 +53,13 @@ public:
     NativeHandle(int fd);
     NativeHandle(Win32HandleType type, vk::pt::Win32Handle handle);
     NativeHandle(vk::pt::AndroidHardwareBufferPtr buffer);
+    NativeHandle(vk::pt::MTLResource_id handle);
     ~NativeHandle(void);
 
     NativeHandle &operator=(int fd);
     NativeHandle &operator=(vk::pt::AndroidHardwareBufferPtr buffer);
 
+    void setMetalHandle(vk::pt::MTLResource_id metalHandle);
     void setZirconHandle(vk::pt::zx_handle_t zirconHandle);
     void setWin32Handle(Win32HandleType type, vk::pt::Win32Handle handle);
     vk::pt::Win32Handle getWin32Handle(void) const;
@@ -67,6 +69,7 @@ public:
     int getFd(void) const;
     vk::pt::AndroidHardwareBufferPtr getAndroidHardwareBuffer(void) const;
     vk::pt::zx_handle_t getZirconHandle(void) const;
+    vk::pt::MTLResource_id getMetalHandle(void) const;
     void disown(void);
     void reset(void);
 
@@ -77,6 +80,7 @@ private:
     vk::pt::Win32Handle m_win32Handle;
     vk::pt::AndroidHardwareBufferPtr m_androidHardwareBuffer;
     void *m_hostPtr;
+    vk::pt::MTLResource_id m_metalHandle = vk::pt::MTLResource_id(nullptr);
 
     // Disabled
     NativeHandle &operator=(const NativeHandle &);
