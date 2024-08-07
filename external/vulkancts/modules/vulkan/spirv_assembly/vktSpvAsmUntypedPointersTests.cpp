@@ -154,6 +154,7 @@ enum class BaseTestCases : uint8_t
     COPY_FROM,
     COPY_TO,
     ARRAY_LENGTH,
+    DESCRIPTOR_ARRAY,
     _ENUM_COUNT,
 };
 using BASE_TEST_CASE = BaseTestCases;
@@ -2284,6 +2285,31 @@ std::string createShaderAnnotations(BASE_TEST_CASE testCase)
 
     switch (testCase)
     {
+    case BaseTestCases::DESCRIPTOR_ARRAY:
+    {
+        annotations += std::string("OpDecorate       %array                  ArrayStride   ${stride}\n"
+
+                                   "OpMemberDecorate %block_data             0             Offset       ${offset0}\n"
+                                   "OpMemberDecorate %block_data             1             Offset       ${offset1}\n"
+                                   "OpMemberDecorate %block_data             2             Offset       ${offset2}\n"
+                                   "OpMemberDecorate %block_data             3             Offset       ${offset3}\n"
+                                   "OpDecorate       %block_data             Block\n"
+
+                                   "OpMemberDecorate %data                   0             Offset       ${offset0}\n"
+                                   "OpMemberDecorate %data                   1             Offset       ${offset1}\n"
+                                   "OpMemberDecorate %data                   2             Offset       ${offset2}\n"
+                                   "OpMemberDecorate %data                   3             Offset       ${offset3}\n"
+
+                                   "OpDecorate       %input_data_untyped_var DescriptorSet 0\n"
+                                   "OpDecorate       %input_data_untyped_var Binding       0\n"
+
+                                   "OpMemberDecorate %output_buffer          0             Offset       0\n"
+                                   "OpDecorate       %output_buffer          Block\n"
+                                   "OpDecorate       %output_data_var        DescriptorSet 0\n"
+                                   "OpDecorate       %output_data_var        Binding       1\n");
+
+        break;
+    }
     case BaseTestCases::ARRAY_LENGTH:
     {
         annotations += std::string("OpDecorate       %${baseType}_rta        ArrayStride   ${alignment}\n"
@@ -2971,6 +2997,50 @@ std::string createShaderVariables(BASE_TEST_CASE testCase)
 
     switch (testCase)
     {
+    case BaseTestCases::DESCRIPTOR_ARRAY:
+    {
+        variables += std::string(
+            /* Base types */
+            "%void             = OpTypeVoid\n"
+            "%${baseType}      = ${baseDecl}\n"
+            "%vec3_uint32      = OpTypeVector %uint32      3\n"
+
+            /* Function types*/
+            "%void_func   = OpTypeFunction %void\n"
+
+            /* Constants */
+            "%c_uint32_0      = OpConstant %uint32      0\n"
+            "%c_uint32_16     = OpConstant %uint32      16\n"
+            "%c_uint32_64     = OpConstant %uint32      64\n"
+
+            /* Structs */
+            "%block_data      = OpTypeStruct %${baseType} %${baseType} %${baseType} %${baseType}\n"
+            "%data            = OpTypeStruct %${baseType} %${baseType} %${baseType} %${baseType}\n"
+
+            /* Arrays */
+            "%array_of_blocks  = OpTypeArray %block_data %c_uint32_16\n"
+            "%array            = OpTypeArray %data       %c_uint32_16\n"
+
+            /* Structs */
+            "%output_buffer   = OpTypeStruct %array\n"
+
+            /* Pointers */
+            "%uint32_input_ptr                 = OpTypePointer           Input         %uint32\n"
+            "%vec3_uint32_input_ptr            = OpTypePointer           Input         %vec3_uint32\n"
+            "%${baseType}_storage_buffer_ptr   = OpTypePointer           StorageBuffer %${baseType}\n"
+            "%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR StorageBuffer\n"
+            "%output_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer %output_buffer\n"
+            "%data_storage_buffer_ptr          = OpTypePointer           StorageBuffer %data\n"
+
+            /* Objects */
+            "%id                                 = OpVariable              %vec3_uint32_input_ptr            Input\n"
+            "%input_data_untyped_var             = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       "
+            "StorageBuffer %array_of_blocks\n"
+            "%output_data_var                    = OpVariable              %output_buffer_storage_buffer_ptr "
+            "StorageBuffer\n");
+
+        break;
+    }
     case BaseTestCases::ARRAY_LENGTH:
     {
         variables += std::string(
@@ -4737,6 +4807,20 @@ std::string createShaderMain(BASE_TEST_CASE testCase)
 
     switch (testCase)
     {
+    case BaseTestCases::DESCRIPTOR_ARRAY:
+    {
+        main +=
+            std::string("%id_loc = OpAccessChain %uint32_input_ptr %id      %c_uint32_0\n"
+                        "%ndx    = OpLoad        %uint32           %id_loc\n"
+
+                        "%block_loc_x = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr %array_of_blocks "
+                        "%input_data_untyped_var %ndx\n"
+                        "%temp_loc        = OpLoad        %data                    %block_loc_x\n"
+                        "%output_elem_loc = OpAccessChain %data_storage_buffer_ptr %output_data_var %c_uint32_0 %ndx\n"
+                        "                   OpStore       %output_elem_loc         %temp_loc\n");
+
+        break;
+    }
     case BaseTestCases::ARRAY_LENGTH:
     {
         main += std::string(
@@ -5656,6 +5740,73 @@ std::string createShaderMain(COOPERATIVE_MATRIX_TEST_CASE testCase)
                         "                OpFunctionEnd\n");
 
     return main;
+}
+
+void addDescriptorArrayTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
+{
+    tcu::TestContext &testCtx = testGroup->getTestContext();
+
+    const tcu::StringTemplate shaderHeader(createShaderHeader());
+
+    const tcu::StringTemplate shaderAnnotations(createShaderAnnotations(BaseTestCases::DESCRIPTOR_ARRAY));
+
+    const tcu::StringTemplate shaderVariables(createShaderVariables(BaseTestCases::DESCRIPTOR_ARRAY));
+
+    const tcu::StringTemplate shaderFunctions(createShaderMain(BaseTestCases::DESCRIPTOR_ARRAY));
+
+    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+    {
+        std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
+
+        std::map<std::string, std::string> specMap;
+        specMap["stride"]   = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]) * 4);
+        specMap["offset0"]  = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]) * 0);
+        specMap["offset1"]  = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]) * 1);
+        specMap["offset2"]  = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]) * 2);
+        specMap["offset3"]  = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]) * 3);
+        specMap["baseType"] = toString(BASE_DATA_TYPE_CASES[i]);
+        specMap["baseDecl"] = getDeclaration(BASE_DATA_TYPE_CASES[i]);
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[i], spec, spvExts, spvCaps);
+        adjustSpecForVariablePointers(spec, spvExts, spvCaps);
+
+        specMap["memModelOp"]   = memModelOp;
+        specMap["extensions"]   = toString(spvExts);
+        specMap["capabilities"] = toString(spvCaps);
+
+        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+        if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+        {
+            shaderVariablesStr = "%uint32                    = OpTypeInt     32            0\n" + shaderVariablesStr;
+        }
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariablesStr + shaderFunctions.specialize(specMap);
+
+        FilledResourceDesc desc;
+        desc.dataType       = BASE_DATA_TYPE_CASES[i];
+        desc.value          = 1;
+        desc.elemCount      = 4;
+        desc.fillType       = FillingTypes::VALUE;
+        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        desc.padding        = 0;
+
+        Resource inputOutput = createFilledResource(desc);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
+        spec.inputs.push_back(inputOutput);
+        spec.outputs.push_back(inputOutput);
+        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+
+        testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
 }
 
 void addOpArrayLengthTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
@@ -11317,6 +11468,7 @@ void addBasicUsecaseTestGroup(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE m
     addTestGroup(testGroup, "copy", addCopyTestGroup, memModel);
     addTestGroup(testGroup, "array_length", addOpArrayLengthTests, memModel);
     addTestGroup(testGroup, "atomics", addAtomicsTestGroup, memModel);
+    addTestGroup(testGroup, "descriptor_array", addDescriptorArrayTests, memModel);
 }
 
 void addDataReinterpretTestGroup(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
