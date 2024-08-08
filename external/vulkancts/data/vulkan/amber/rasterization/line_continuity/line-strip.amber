@@ -80,6 +80,7 @@ void main ()
         // Use this to break the lines and verify the checker is correct.
         //for (int x = 0; x < w; x++)
         //    imageStore(img, ivec2(x, 128), bg);
+        //memoryBarrierImage();
     }
 
     barrier();
@@ -92,6 +93,7 @@ void main ()
     if (c != bg)
         stack[0] = p;
 
+    memoryBarrierImage();
     barrier();
 
     if (gl_LocalInvocationIndex == 0 && stack[0] != ivec2(-1))
@@ -100,6 +102,7 @@ void main ()
         stackPtr++;
     }
 
+    memoryBarrierImage();
     barrier();
 
     while (!done)
@@ -107,6 +110,7 @@ void main ()
         if (gl_LocalInvocationIndex == 0 && stackPtr != 0)
             pixel = popMarkedPixel();
 
+        memoryBarrierImage();
         barrier();
 
         if (gl_LocalInvocationID.x < 3 && gl_LocalInvocationID.y < 3)
@@ -122,6 +126,7 @@ void main ()
             }
         }
 
+        memoryBarrierImage();
         barrier();
 
         if (gl_LocalInvocationIndex == 0 && stackPtr < 1)
@@ -132,16 +137,16 @@ void main ()
 }
 END
 
-BUFFER position DATA_TYPE R8G8_SNORM DATA
--120 -120
--119  120
- 120  119
-  10   20
- -80   20
- -80   95
- -83   95
- -83  -95
- -85   95
+BUFFER position DATA_TYPE R8G8B8A8_SNORM DATA
+-120 -120   0 127
+-119  120   0 127
+ 120  119   0 127
+  10   20   0 127
+ -80   20   0 127
+ -80   95   0 127
+ -83   95   0 127
+ -83  -95   0 127
+ -85   95   0 127
 END
 
 BUFFER texture FORMAT R8G8B8A8_UNORM

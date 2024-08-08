@@ -36,20 +36,21 @@ namespace SpirVAssembly
 class SpvAsmFloatControlsExtensionlessCase : public TestCase
 {
 public:
-					SpvAsmFloatControlsExtensionlessCase	(tcu::TestContext& testCtx, const char* name, const char* description, const char* featureName, const int fpWideness, const bool spirv14);
-	void			initPrograms							(vk::SourceCollections& programCollection) const;
-	TestInstance*	createInstance							(Context& context) const;
-	virtual void	checkSupport							(Context& context) const;
+    SpvAsmFloatControlsExtensionlessCase(tcu::TestContext &testCtx, const char *name, const char *featureName,
+                                         const int fpWideness, const bool spirv14);
+    void initPrograms(vk::SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &context) const;
+    virtual void checkSupport(Context &context) const;
 
 protected:
-	const char*		m_featureName;
-	const int		m_fpWideness;
-	const bool		m_spirv14;
+    const char *m_featureName;
+    const int m_fpWideness;
+    const bool m_spirv14;
 };
 
-tcu::TestCaseGroup* createFloatControlsExtensionlessGroup (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createFloatControlsExtensionlessGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMFLOATCONTROLSEXTENSIONLESSTESTS_HPP

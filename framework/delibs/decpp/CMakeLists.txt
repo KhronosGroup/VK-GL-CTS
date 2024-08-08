@@ -23,6 +23,7 @@ set(DECPP_SRCS
 	deDynamicLibrary.hpp
 	deFilePath.cpp
 	deFilePath.hpp
+	deMath.hpp
 	deMemPool.cpp
 	deMemPool.hpp
 	deMeta.cpp
@@ -61,6 +62,7 @@ set(DECPP_SRCS
 	deSpinBarrier.hpp
 	deSha1.cpp
 	deSha1.hpp
+	deModularCounter.hpp
 	)
 
 set(DECPP_LIBS

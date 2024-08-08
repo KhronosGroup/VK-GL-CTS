@@ -37,30 +37,28 @@ namespace geometry
 class GeometryExpanderRenderTestInstance : public TestInstance
 {
 public:
-									GeometryExpanderRenderTestInstance	(Context&						context,
-																		 const vk::VkPrimitiveTopology	primitiveType,
-																		 const char*					name);
+    GeometryExpanderRenderTestInstance(Context &context, const vk::VkPrimitiveTopology primitiveType, const char *name);
 
-	tcu::TestStatus					iterate								(void);
+    tcu::TestStatus iterate(void);
 
 protected:
-	virtual vk::Move<vk::VkPipelineLayout>	createPipelineLayout		(const vk::DeviceInterface& vk, const vk::VkDevice device);
-	virtual void							bindDescriptorSets			(const vk::DeviceInterface&		/*vk*/,
-																		 const vk::VkDevice				/*device*/,
-																		 vk::Allocator&					/*memAlloc*/,
-																		 const vk::VkCommandBuffer&		/*cmdBuffer*/,
-																		 const vk::VkPipelineLayout&	/*pipelineLayout*/){};
-	virtual void						drawCommand						(const vk::VkCommandBuffer&		cmdBuffer);
+    virtual vk::Move<vk::VkPipelineLayout> createPipelineLayout(const vk::DeviceInterface &vk,
+                                                                const vk::VkDevice device);
+    virtual void bindDescriptorSets(const vk::DeviceInterface & /*vk*/, const vk::VkDevice /*device*/,
+                                    vk::Allocator & /*memAlloc*/, const vk::VkCommandBuffer & /*cmdBuffer*/,
+                                    const vk::VkPipelineLayout & /*pipelineLayout*/)
+    {
+    }
+    virtual void drawCommand(const vk::VkCommandBuffer &cmdBuffer);
 
-	const vk::VkPrimitiveTopology	m_primitiveType;
-	const std::string				m_name;
-	int								m_numDrawVertices;
-	std::vector<tcu::Vec4>			m_vertexPosData;
-	std::vector<tcu::Vec4>			m_vertexAttrData;
-
+    const vk::VkPrimitiveTopology m_primitiveType;
+    const std::string m_name;
+    int m_numDrawVertices;
+    std::vector<tcu::Vec4> m_vertexPosData;
+    std::vector<tcu::Vec4> m_vertexAttrData;
 };
 
-} // geometry
-} // vkt
+} // namespace geometry
+} // namespace vkt
 
 #endif // _VKTGEOMETRYBASICCLASS_HPP

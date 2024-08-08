@@ -32,9 +32,9 @@ namespace vkt
 namespace ProtectedMem
 {
 
-tcu::TestCaseGroup*		createAttachmentLoadTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createAttachmentLoadTests(tcu::TestContext &testCtx);
 
-} // ProtectedMem
-} // vkt
+} // namespace ProtectedMem
+} // namespace vkt
 
 #endif // _VKTPROTECTEDMEMATTACHMENTLOADTESTS_HPP

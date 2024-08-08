@@ -25,15 +25,17 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createPushConstantTests(tcu::TestContext &testCtx,
+                                            vk::PipelineConstructionType pipelineConstructionType);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEPUSHCONSTANTTESTS_HPP

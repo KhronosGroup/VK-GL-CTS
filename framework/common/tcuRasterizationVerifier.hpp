@@ -35,103 +35,113 @@ namespace tcu
 
 enum CoverageType
 {
-	COVERAGE_FULL = 0,		// !< primitive fully covers the queried area
-	COVERAGE_PARTIAL,		// !< primitive coverage is either partial, or could be full, partial or none depending on rounding and/or fill rules
-	COVERAGE_NONE,			// !< primitive does not cover area at all
+    COVERAGE_FULL = 0, // !< primitive fully covers the queried area
+    COVERAGE_PARTIAL, // !< primitive coverage is either partial, or could be full, partial or none depending on rounding and/or fill rules
+    COVERAGE_NONE, // !< primitive does not cover area at all
 
-	COVERAGE_LAST
+    COVERAGE_LAST
 };
 
 enum VerificationMode
 {
-	VERIFICATIONMODE_STRICT = 0,	// !< do not allow even a single bad pixel
-	VERIFICATIONMODE_WEAK,			// !< allow some bad pixels
-	VERIFICATIONMODE_WEAKER,		// !< allow more bad pixels
-	VERIFICATIONMODE_SMOOTH,		// !< allow no missing pixels
+    VERIFICATIONMODE_STRICT = 0, // !< do not allow even a single bad pixel
+    VERIFICATIONMODE_WEAK,       // !< allow some bad pixels
+    VERIFICATIONMODE_WEAKER,     // !< allow more bad pixels
+    VERIFICATIONMODE_SMOOTH,     // !< allow no missing pixels
 
-	VERIFICATIONMODE_LAST
+    VERIFICATIONMODE_LAST
 };
 
 enum LineInterpolationMethod
 {
-	LINEINTERPOLATION_STRICTLY_CORRECT = 0,	// !< line interpolation matches the specification
-	LINEINTERPOLATION_PROJECTED,			// !< line interpolation weights are otherwise correct, but they are projected onto major axis
-	LINEINTERPOLATION_INCORRECT				// !< line interpolation is incorrect
+    LINEINTERPOLATION_STRICTLY_CORRECT = 0, // !< line interpolation matches the specification
+    LINEINTERPOLATION_PROJECTED, // !< line interpolation weights are otherwise correct, but they are projected onto major axis
+    LINEINTERPOLATION_INCORRECT // !< line interpolation is incorrect
 };
 
 struct TriangleSceneSpec
 {
-	struct SceneTriangle
-	{
-		tcu::Vec4	positions[3];
-		tcu::Vec4	colors[3];
-		bool		sharedEdge[3]; // !< is the edge i -> i+1 shared with another scene triangle
-	};
+    struct SceneTriangle
+    {
+        tcu::Vec4 positions[3];
+        tcu::Vec4 colors[3];
+        bool sharedEdge[3]; // !< is the edge i -> i+1 shared with another scene triangle
+        SceneTriangle()
+        {
+            // Other members are initialized in Vector constructor
+            for (int i = 0; i < 3; i++)
+                sharedEdge[i] = false;
+        }
+    };
 
-	std::vector<SceneTriangle> triangles;
+    std::vector<SceneTriangle> triangles;
 };
 
 struct LineSceneSpec
 {
-	LineSceneSpec()
-		: isStrip(false)
-		, isSmooth(false)
-		, stippleEnable(false)
-		, verificationMode(VERIFICATIONMODE_STRICT)
-	{}
+    LineSceneSpec()
+        : isStrip(false)
+        , isSmooth(false)
+        , isRectangular(false)
+        , stippleEnable(false)
+        , verificationMode(VERIFICATIONMODE_STRICT)
+    {
+    }
 
-	struct SceneLine
-	{
-		tcu::Vec4	positions[2];
-		tcu::Vec4	colors[2];
-	};
+    struct SceneLine
+    {
+        tcu::Vec4 positions[2];
+        tcu::Vec4 colors[2];
+    };
 
-	std::vector<SceneLine>	lines;
-	float					lineWidth;
-	bool					isStrip;
-	bool					isSmooth;
-	bool					stippleEnable;
-	deUint32				stippleFactor;
-	deUint16				stipplePattern;
-	VerificationMode		verificationMode;
+    std::vector<SceneLine> lines;
+    float lineWidth;
+    bool isStrip;
+    bool isSmooth;
+    bool isRectangular;
+    bool allowNonProjectedInterpolation;
+    bool stippleEnable;
+    uint32_t stippleFactor;
+    uint16_t stipplePattern;
+    VerificationMode verificationMode;
 };
 
 struct PointSceneSpec
 {
-	struct ScenePoint
-	{
-		tcu::Vec4	position;
-		tcu::Vec4	color;
-		float		pointSize;
-	};
+    struct ScenePoint
+    {
+        tcu::Vec4 position;
+        tcu::Vec4 color;
+        float pointSize;
+    };
 
-	std::vector<ScenePoint> points;
+    std::vector<ScenePoint> points;
 };
 
 struct RasterizationArguments
 {
-	int numSamples;
-	int subpixelBits;
-	int redBits;
-	int greenBits;
-	int blueBits;
+    int numSamples;
+    int subpixelBits;
+    int redBits;
+    int greenBits;
+    int blueBits;
 };
 
 struct VerifyTriangleGroupRasterizationLogStash
 {
-	std::vector<std::string>	messages;
-	int							missingPixels;
-	int							unexpectedPixels;
-	tcu::Surface				errorMask;
-	bool						result;
+    std::vector<std::string> messages;
+    int missingPixels;
+    int unexpectedPixels;
+    tcu::Surface errorMask;
+    bool result;
 };
 
 struct VerifyTriangleGroupInterpolationLogStash
 {
-	std::vector<std::string>	messages;
-	int							invalidPixels;
-	tcu::Surface				errorMask;
-	bool						success;
+    std::vector<std::string> messages;
+    int invalidPixels;
+    tcu::Surface errorMask;
+    bool success;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -141,19 +151,24 @@ struct VerifyTriangleGroupInterpolationLogStash
  * center is compared against the triangle. If multisample is true, the
  * whole pixel area is compared.
  *//*--------------------------------------------------------------------*/
-CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1, const tcu::Vec4& p2, const tcu::IVec2& pixel, const tcu::IVec2& viewportSize, int subpixelBits, bool multisample);
+CoverageType calculateTriangleCoverage(const tcu::Vec4 &p0, const tcu::Vec4 &p1, const tcu::Vec4 &p2,
+                                       const tcu::IVec2 &pixel, const tcu::IVec2 &viewportSize, int subpixelBits,
+                                       bool multisample);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Calculates line coverage at given pixel
  * Calculates the coverage of a reactangle given by line coordinates and width.
  *//*--------------------------------------------------------------------*/
-CoverageType calculateUnderestimateLineCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1, const float lineWidth, const tcu::IVec2& pixel, const tcu::IVec2& viewportSize);
+CoverageType calculateUnderestimateLineCoverage(const tcu::Vec4 &p0, const tcu::Vec4 &p1, const float lineWidth,
+                                                const tcu::IVec2 &pixel, const tcu::IVec2 &viewportSize);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Calculates triangle coverage at given pixel
  * Calculates the coverage of a triangle given by by three vertices.
  *//*--------------------------------------------------------------------*/
-CoverageType calculateUnderestimateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1, const tcu::Vec4& p2, const tcu::IVec2& pixel, int subpixelBits, const tcu::IVec2& viewportSize);
+CoverageType calculateUnderestimateTriangleCoverage(const tcu::Vec4 &p0, const tcu::Vec4 &p1, const tcu::Vec4 &p2,
+                                                    const tcu::IVec2 &pixel, int subpixelBits,
+                                                    const tcu::IVec2 &viewportSize);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify triangle rasterization result
@@ -165,7 +180,11 @@ CoverageType calculateUnderestimateTriangleCoverage (const tcu::Vec4& p0, const 
  *
  * Returns false if invalid rasterization is found.
  *//*--------------------------------------------------------------------*/
-bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const TriangleSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, VerificationMode mode = VERIFICATIONMODE_STRICT, VerifyTriangleGroupRasterizationLogStash* logStash = DE_NULL, const bool vulkanLinesTest = false);
+bool verifyTriangleGroupRasterization(const tcu::Surface &surface, const TriangleSceneSpec &scene,
+                                      const RasterizationArguments &args, tcu::TestLog &log,
+                                      VerificationMode mode                              = VERIFICATIONMODE_STRICT,
+                                      VerifyTriangleGroupRasterizationLogStash *logStash = nullptr,
+                                      const bool vulkanLinesTest                         = false);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify line rasterization result
@@ -176,7 +195,8 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
  *
  * Returns false if invalid rasterization is found.
  *//*--------------------------------------------------------------------*/
-bool verifyLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
+bool verifyLineGroupRasterization(const tcu::Surface &surface, const LineSceneSpec &scene,
+                                  const RasterizationArguments &args, tcu::TestLog &log);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify clipped line rasterization result
@@ -189,7 +209,8 @@ bool verifyLineGroupRasterization (const tcu::Surface& surface, const LineSceneS
  *
  * Returns false if invalid rasterization is found.
  *//*--------------------------------------------------------------------*/
-bool verifyClippedTriangulatedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
+bool verifyClippedTriangulatedLineGroupRasterization(const tcu::Surface &surface, const LineSceneSpec &scene,
+                                                     const RasterizationArguments &args, tcu::TestLog &log);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify line rasterization result both clipped and non-clipped
@@ -199,7 +220,9 @@ bool verifyClippedTriangulatedLineGroupRasterization (const tcu::Surface& surfac
  *
  * Returns false if both rasterizations are invalid.
  *//*--------------------------------------------------------------------*/
-bool verifyRelaxedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, const bool vulkanLinesTest = false, const bool strict = true);
+bool verifyRelaxedLineGroupRasterization(const tcu::Surface &surface, const LineSceneSpec &scene,
+                                         const RasterizationArguments &args, tcu::TestLog &log,
+                                         const bool vulkanLinesTest = false, const bool strict = true);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify point rasterization result
@@ -210,7 +233,8 @@ bool verifyRelaxedLineGroupRasterization (const tcu::Surface& surface, const Lin
  *
  * Returns false if invalid rasterization is found.
  *//*--------------------------------------------------------------------*/
-bool verifyPointGroupRasterization (const tcu::Surface& surface, const PointSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
+bool verifyPointGroupRasterization(const tcu::Surface &surface, const PointSceneSpec &scene,
+                                   const RasterizationArguments &args, tcu::TestLog &log);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify triangle color interpolation is valid
@@ -221,7 +245,8 @@ bool verifyPointGroupRasterization (const tcu::Surface& surface, const PointScen
  *
  * Returns false if invalid rasterization interpolation is found.
  *//*--------------------------------------------------------------------*/
-bool verifyTriangleGroupInterpolation (const tcu::Surface& surface, const TriangleSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
+bool verifyTriangleGroupInterpolation(const tcu::Surface &surface, const TriangleSceneSpec &scene,
+                                      const RasterizationArguments &args, tcu::TestLog &log);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify line color interpolation is valid
@@ -232,7 +257,8 @@ bool verifyTriangleGroupInterpolation (const tcu::Surface& surface, const Triang
  *
  * Returns the detected interpolation method of the input image.
  *//*--------------------------------------------------------------------*/
-LineInterpolationMethod verifyLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
+LineInterpolationMethod verifyLineGroupInterpolation(const tcu::Surface &surface, const LineSceneSpec &scene,
+                                                     const RasterizationArguments &args, tcu::TestLog &log);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify line color interpolation is valid
@@ -244,8 +270,11 @@ LineInterpolationMethod verifyLineGroupInterpolation (const tcu::Surface& surfac
  *
  * Returns false if invalid rasterization interpolation is found.
  *//*--------------------------------------------------------------------*/
-bool verifyTriangulatedLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, const bool strictMode = true, const bool allowBresenhamForNonStrictLines = false);
+bool verifyTriangulatedLineGroupInterpolation(const tcu::Surface &surface, const LineSceneSpec &scene,
+                                              const RasterizationArguments &args, tcu::TestLog &log,
+                                              const bool strictMode                      = true,
+                                              const bool allowBresenhamForNonStrictLines = false);
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCURASTERIZATIONVERIFIER_HPP

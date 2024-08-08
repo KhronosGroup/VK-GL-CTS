@@ -34,43 +34,44 @@ namespace deqp
 namespace gles3
 {
 
-Context::Context (tcu::TestContext& testCtx)
-	: m_testCtx		(testCtx)
-	, m_renderCtx	(DE_NULL)
-	, m_contextInfo	(DE_NULL)
+Context::Context(tcu::TestContext &testCtx, glu::ApiType apiType)
+    : m_testCtx(testCtx)
+    , m_renderCtx(nullptr)
+    , m_contextInfo(nullptr)
+    , m_apiType(apiType)
 {
-	try
-	{
-		m_renderCtx		= glu::createDefaultRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), glu::ApiType::es(3,0));
-		m_contextInfo	= glu::ContextInfo::create(*m_renderCtx);
+    try
+    {
+        m_renderCtx   = glu::createDefaultRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), m_apiType);
+        m_contextInfo = glu::ContextInfo::create(*m_renderCtx);
 
-		// Set up function table for transparent wrapper.
-		glw::setCurrentThreadFunctions(&m_renderCtx->getFunctions());
-	}
-	catch (...)
-	{
-		glw::setCurrentThreadFunctions(DE_NULL);
+        // Set up function table for transparent wrapper.
+        glw::setCurrentThreadFunctions(&m_renderCtx->getFunctions());
+    }
+    catch (...)
+    {
+        glw::setCurrentThreadFunctions(nullptr);
 
-		delete m_contextInfo;
-		delete m_renderCtx;
+        delete m_contextInfo;
+        delete m_renderCtx;
 
-		throw;
-	}
+        throw;
+    }
 }
 
-Context::~Context (void)
+Context::~Context(void)
 {
-	// Remove functions from wrapper.
-	glw::setCurrentThreadFunctions(DE_NULL);
+    // Remove functions from wrapper.
+    glw::setCurrentThreadFunctions(nullptr);
 
-	delete m_contextInfo;
-	delete m_renderCtx;
+    delete m_contextInfo;
+    delete m_renderCtx;
 }
 
-const tcu::RenderTarget& Context::getRenderTarget (void) const
+const tcu::RenderTarget &Context::getRenderTarget(void) const
 {
-	return m_renderCtx->getRenderTarget();
+    return m_renderCtx->getRenderTarget();
 }
 
-} // gles3
-} // deqp
+} // namespace gles3
+} // namespace deqp

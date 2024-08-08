@@ -27,243 +27,244 @@
 namespace eglu
 {
 
-std::ostream& operator<< (std::ostream& str, const ConfigAttribValueFmt& attribFmt)
+std::ostream &operator<<(std::ostream &str, const ConfigAttribValueFmt &attribFmt)
 {
-	switch (attribFmt.attribute)
-	{
-		case EGL_COLOR_BUFFER_TYPE:
-			return str << getColorBufferTypeStr(attribFmt.value);
+    switch (attribFmt.attribute)
+    {
+    case EGL_COLOR_BUFFER_TYPE:
+        return str << getColorBufferTypeStr(attribFmt.value);
 
-		case EGL_CONFIG_CAVEAT:
-			return str << getConfigCaveatStr(attribFmt.value);
+    case EGL_CONFIG_CAVEAT:
+        return str << getConfigCaveatStr(attribFmt.value);
 
-		case EGL_CONFORMANT:
-		case EGL_RENDERABLE_TYPE:
-			return str << getAPIBitsStr(attribFmt.value);
+    case EGL_CONFORMANT:
+    case EGL_RENDERABLE_TYPE:
+        return str << getAPIBitsStr(attribFmt.value);
 
-		case EGL_SURFACE_TYPE:
-			return str << getSurfaceBitsStr(attribFmt.value);
+    case EGL_SURFACE_TYPE:
+        return str << getSurfaceBitsStr(attribFmt.value);
 
-		case EGL_MATCH_NATIVE_PIXMAP:
-			if (attribFmt.value == EGL_NONE)
-				return str << "EGL_NONE";
-			else
-				return str << tcu::toHex(attribFmt.value);
+    case EGL_MATCH_NATIVE_PIXMAP:
+        if (attribFmt.value == EGL_NONE)
+            return str << "EGL_NONE";
+        else
+            return str << tcu::toHex(attribFmt.value);
 
-		case EGL_TRANSPARENT_TYPE:
-			return str << getTransparentTypeStr(attribFmt.value);
+    case EGL_TRANSPARENT_TYPE:
+        return str << getTransparentTypeStr(attribFmt.value);
 
-		case EGL_BIND_TO_TEXTURE_RGB:
-		case EGL_BIND_TO_TEXTURE_RGBA:
-		case EGL_NATIVE_RENDERABLE:
-			return str << getBoolDontCareStr(attribFmt.value);
+    case EGL_BIND_TO_TEXTURE_RGB:
+    case EGL_BIND_TO_TEXTURE_RGBA:
+    case EGL_NATIVE_RENDERABLE:
+    case EGL_RECORDABLE_ANDROID:
+        return str << getBoolDontCareStr(attribFmt.value);
 
-		case EGL_ALPHA_MASK_SIZE:
-		case EGL_ALPHA_SIZE:
-		case EGL_BLUE_SIZE:
-		case EGL_BUFFER_SIZE:
-		case EGL_CONFIG_ID:
-		case EGL_DEPTH_SIZE:
-		case EGL_GREEN_SIZE:
-		case EGL_LEVEL:
-		case EGL_LUMINANCE_SIZE:
-		case EGL_MAX_SWAP_INTERVAL:
-		case EGL_MIN_SWAP_INTERVAL:
-		case EGL_RED_SIZE:
-		case EGL_SAMPLE_BUFFERS:
-		case EGL_SAMPLES:
-		case EGL_STENCIL_SIZE:
-		case EGL_TRANSPARENT_RED_VALUE:
-		case EGL_TRANSPARENT_GREEN_VALUE:
-		case EGL_TRANSPARENT_BLUE_VALUE:
-			return str << (int)attribFmt.value;
+    case EGL_ALPHA_MASK_SIZE:
+    case EGL_ALPHA_SIZE:
+    case EGL_BLUE_SIZE:
+    case EGL_BUFFER_SIZE:
+    case EGL_CONFIG_ID:
+    case EGL_DEPTH_SIZE:
+    case EGL_GREEN_SIZE:
+    case EGL_LEVEL:
+    case EGL_LUMINANCE_SIZE:
+    case EGL_MAX_SWAP_INTERVAL:
+    case EGL_MIN_SWAP_INTERVAL:
+    case EGL_RED_SIZE:
+    case EGL_SAMPLE_BUFFERS:
+    case EGL_SAMPLES:
+    case EGL_STENCIL_SIZE:
+    case EGL_TRANSPARENT_RED_VALUE:
+    case EGL_TRANSPARENT_GREEN_VALUE:
+    case EGL_TRANSPARENT_BLUE_VALUE:
+        return str << (int)attribFmt.value;
 
-		default:
-			return str << tcu::toHex(attribFmt.value);
-	}
+    default:
+        return str << tcu::toHex(attribFmt.value);
+    }
 }
 
-std::ostream& operator<< (std::ostream& str, const ContextAttribValueFmt& attribFmt)
+std::ostream &operator<<(std::ostream &str, const ContextAttribValueFmt &attribFmt)
 {
-	switch (attribFmt.attribute)
-	{
-		case EGL_CONFIG_ID:
-		case EGL_CONTEXT_CLIENT_VERSION:
-			return str << (int)attribFmt.value;
+    switch (attribFmt.attribute)
+    {
+    case EGL_CONFIG_ID:
+    case EGL_CONTEXT_CLIENT_VERSION:
+        return str << (int)attribFmt.value;
 
-		case EGL_CONTEXT_CLIENT_TYPE:
-			return str << getAPIStr(attribFmt.value);
+    case EGL_CONTEXT_CLIENT_TYPE:
+        return str << getAPIStr(attribFmt.value);
 
-		case EGL_RENDER_BUFFER:
-			return str << getRenderBufferStr(attribFmt.value);
+    case EGL_RENDER_BUFFER:
+        return str << getRenderBufferStr(attribFmt.value);
 
-		default:
-			return str << tcu::toHex(attribFmt.value);
-	}
+    default:
+        return str << tcu::toHex(attribFmt.value);
+    }
 }
 
-std::ostream& operator<< (std::ostream& str, const SurfaceAttribValueFmt& attribFmt)
+std::ostream &operator<<(std::ostream &str, const SurfaceAttribValueFmt &attribFmt)
 {
-	switch (attribFmt.attribute)
-	{
-		case EGL_CONFIG_ID:
-		case EGL_WIDTH:
-		case EGL_HEIGHT:
-		case EGL_HORIZONTAL_RESOLUTION:
-		case EGL_VERTICAL_RESOLUTION:
-		case EGL_PIXEL_ASPECT_RATIO:
-			return str << (int)attribFmt.value;
+    switch (attribFmt.attribute)
+    {
+    case EGL_CONFIG_ID:
+    case EGL_WIDTH:
+    case EGL_HEIGHT:
+    case EGL_HORIZONTAL_RESOLUTION:
+    case EGL_VERTICAL_RESOLUTION:
+    case EGL_PIXEL_ASPECT_RATIO:
+        return str << (int)attribFmt.value;
 
-		case EGL_LARGEST_PBUFFER:
-		case EGL_MIPMAP_TEXTURE:
-			return str << getBoolDontCareStr(attribFmt.value);
+    case EGL_LARGEST_PBUFFER:
+    case EGL_MIPMAP_TEXTURE:
+        return str << getBoolDontCareStr(attribFmt.value);
 
-		case EGL_MULTISAMPLE_RESOLVE:
-			return str << getMultisampleResolveStr(attribFmt.value);
+    case EGL_MULTISAMPLE_RESOLVE:
+        return str << getMultisampleResolveStr(attribFmt.value);
 
-		case EGL_RENDER_BUFFER:
-			return str << getRenderBufferStr(attribFmt.value);
+    case EGL_RENDER_BUFFER:
+        return str << getRenderBufferStr(attribFmt.value);
 
-		case EGL_SWAP_BEHAVIOR:
-			return str << getSwapBehaviorStr(attribFmt.value);
+    case EGL_SWAP_BEHAVIOR:
+        return str << getSwapBehaviorStr(attribFmt.value);
 
-		case EGL_TEXTURE_FORMAT:
-			return str << getTextureFormatStr(attribFmt.value);
+    case EGL_TEXTURE_FORMAT:
+        return str << getTextureFormatStr(attribFmt.value);
 
-		case EGL_TEXTURE_TARGET:
-			return str << getTextureTargetStr(attribFmt.value);
+    case EGL_TEXTURE_TARGET:
+        return str << getTextureTargetStr(attribFmt.value);
 
-		case EGL_ALPHA_FORMAT:
-			return str << getAlphaFormatStr(attribFmt.value);
+    case EGL_ALPHA_FORMAT:
+        return str << getAlphaFormatStr(attribFmt.value);
 
-		case EGL_COLORSPACE:
-			return str << getColorspaceStr(attribFmt.value);
+    case EGL_COLORSPACE:
+        return str << getColorspaceStr(attribFmt.value);
 
-		default:
-			return str << tcu::toHex(attribFmt.value);
-	}
+    default:
+        return str << tcu::toHex(attribFmt.value);
+    }
 }
 
-std::ostream& operator<< (std::ostream& str, const ConfigAttribListFmt& fmt)
+std::ostream &operator<<(std::ostream &str, const ConfigAttribListFmt &fmt)
 {
-	int pos = 0;
+    int pos = 0;
 
-	str << "{ ";
+    str << "{ ";
 
-	for (;;)
-	{
-		int attrib = fmt.attribs[pos];
+    for (;;)
+    {
+        int attrib = fmt.attribs[pos];
 
-		if (pos != 0)
-			str << ", ";
+        if (pos != 0)
+            str << ", ";
 
-		if (attrib == EGL_NONE)
-		{
-			// Terminate.
-			str << "EGL_NONE";
-			break;
-		}
+        if (attrib == EGL_NONE)
+        {
+            // Terminate.
+            str << "EGL_NONE";
+            break;
+        }
 
-		const char*	attribName = getConfigAttribName(attrib);
+        const char *attribName = getConfigAttribName(attrib);
 
-		if (attribName)
-		{
-			// Valid attribute, print value.
-			str << attribName << ", " << getConfigAttribValueStr(attrib, fmt.attribs[pos+1]);
-			pos += 2;
-		}
-		else
-		{
-			// Invalid attribute. Terminate parsing.
-			str << tcu::toHex(attrib) << ", ???";
-			break;
-		}
-	}
+        if (attribName)
+        {
+            // Valid attribute, print value.
+            str << attribName << ", " << getConfigAttribValueStr(attrib, fmt.attribs[pos + 1]);
+            pos += 2;
+        }
+        else
+        {
+            // Invalid attribute. Terminate parsing.
+            str << tcu::toHex(attrib) << ", ???";
+            break;
+        }
+    }
 
-	str << " }";
-	return str;
+    str << " }";
+    return str;
 }
 
-std::ostream& operator<< (std::ostream& str, const SurfaceAttribListFmt& fmt)
+std::ostream &operator<<(std::ostream &str, const SurfaceAttribListFmt &fmt)
 {
-	int pos = 0;
+    int pos = 0;
 
-	str << "{ ";
+    str << "{ ";
 
-	for (;;)
-	{
-		int attrib = fmt.attribs[pos];
+    for (;;)
+    {
+        int attrib = fmt.attribs[pos];
 
-		if (pos != 0)
-			str << ", ";
+        if (pos != 0)
+            str << ", ";
 
-		if (attrib == EGL_NONE)
-		{
-			// Terminate.
-			str << "EGL_NONE";
-			break;
-		}
+        if (attrib == EGL_NONE)
+        {
+            // Terminate.
+            str << "EGL_NONE";
+            break;
+        }
 
-		const char*	attribName = getSurfaceAttribName(attrib);
+        const char *attribName = getSurfaceAttribName(attrib);
 
-		if (attribName)
-		{
-			// Valid attribute, print value.
-			str << attribName << ", " << getSurfaceAttribValueStr(attrib, fmt.attribs[pos+1]);
-			pos += 2;
-		}
-		else
-		{
-			// Invalid attribute. Terminate parsing.
-			str << tcu::toHex(attrib) << ", ???";
-			break;
-		}
-	}
+        if (attribName)
+        {
+            // Valid attribute, print value.
+            str << attribName << ", " << getSurfaceAttribValueStr(attrib, fmt.attribs[pos + 1]);
+            pos += 2;
+        }
+        else
+        {
+            // Invalid attribute. Terminate parsing.
+            str << tcu::toHex(attrib) << ", ???";
+            break;
+        }
+    }
 
-	str << " }";
-	return str;
+    str << " }";
+    return str;
 }
 
-std::ostream& operator<< (std::ostream& str, const ContextAttribListFmt& fmt)
+std::ostream &operator<<(std::ostream &str, const ContextAttribListFmt &fmt)
 {
-	int pos = 0;
+    int pos = 0;
 
-	str << "{ ";
+    str << "{ ";
 
-	for (;;)
-	{
-		int attrib = fmt.attribs[pos];
+    for (;;)
+    {
+        int attrib = fmt.attribs[pos];
 
-		if (pos != 0)
-			str << ", ";
+        if (pos != 0)
+            str << ", ";
 
-		if (attrib == EGL_NONE)
-		{
-			// Terminate.
-			str << "EGL_NONE";
-			break;
-		}
+        if (attrib == EGL_NONE)
+        {
+            // Terminate.
+            str << "EGL_NONE";
+            break;
+        }
 
-		const char*	attribName = getContextAttribName(attrib);
+        const char *attribName = getContextAttribName(attrib);
 
-		if (attribName)
-		{
-			// Valid attribute, print value.
-			str << attribName << ", " << getContextAttribValueStr(attrib, fmt.attribs[pos+1]);
-			pos += 2;
-		}
-		else
-		{
-			// Invalid attribute. Terminate parsing.
-			str << tcu::toHex(attrib) << ", ???";
-			break;
-		}
-	}
+        if (attribName)
+        {
+            // Valid attribute, print value.
+            str << attribName << ", " << getContextAttribValueStr(attrib, fmt.attribs[pos + 1]);
+            pos += 2;
+        }
+        else
+        {
+            // Invalid attribute. Terminate parsing.
+            str << tcu::toHex(attrib) << ", ???";
+            break;
+        }
+    }
 
-	str << " }";
-	return str;
+    str << " }";
+    return str;
 }
 
 #include "egluStrUtil.inl"
 
-} // eglu
+} // namespace eglu

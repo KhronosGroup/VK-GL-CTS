@@ -35,20 +35,24 @@ namespace BindingModel
 namespace
 {
 
-void populateDynamicOffsetTests (tcu::TestCaseGroup* group)
+void populateDynamicOffsetTests(tcu::TestCaseGroup *group)
 {
-	tcu::TestContext& testCtx = group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	group->addChild(cts_amber::createAmberTestCase(testCtx, "shader_reuse_differing_layout_compute", "", "binding_model/dynamic_offset", "shader_reuse_differing_layout_compute.amber"));
-	group->addChild(cts_amber::createAmberTestCase(testCtx, "shader_reuse_differing_layout_graphics", "", "binding_model/dynamic_offset", "shader_reuse_differing_layout_graphics.amber"));
+    group->addChild(cts_amber::createAmberTestCase(testCtx, "shader_reuse_differing_layout_compute",
+                                                   "binding_model/dynamic_offset",
+                                                   "shader_reuse_differing_layout_compute.amber"));
+    group->addChild(cts_amber::createAmberTestCase(testCtx, "shader_reuse_differing_layout_graphics",
+                                                   "binding_model/dynamic_offset",
+                                                   "shader_reuse_differing_layout_graphics.amber"));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createDynamicOffsetTests(tcu::TestContext &testCtx)
 {
-	return createTestGroup(testCtx, "dynamic_offset", "Dynamic offset tests.", populateDynamicOffsetTests);
+    return createTestGroup(testCtx, "dynamic_offset", populateDynamicOffsetTests);
 }
 
-} // BindingModel
-} // vkt
+} // namespace BindingModel
+} // namespace vkt

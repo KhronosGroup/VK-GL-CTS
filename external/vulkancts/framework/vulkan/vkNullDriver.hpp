@@ -20,7 +20,7 @@
  *
  *//*!
  * \file
- * \brief Null (dummy) Vulkan implementation.
+ * \brief Null (do-nothing) Vulkan implementation.
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
@@ -30,8 +30,8 @@ namespace vk
 
 class Library;
 
-Library*	createNullDriver	(void);
+Library *createNullDriver(void);
 
-} // vk
+} // namespace vk
 
 #endif // _VKNULLDRIVER_HPP

@@ -31,28 +31,28 @@ namespace glw
 
 // Verify typedefs
 
-DE_STATIC_ASSERT(sizeof(GLbyte)		== 1);
-DE_STATIC_ASSERT(sizeof(GLubyte)	== 1);
-DE_STATIC_ASSERT(sizeof(GLshort)	== 2);
-DE_STATIC_ASSERT(sizeof(GLushort)	== 2);
-DE_STATIC_ASSERT(sizeof(GLint)		== 4);
-DE_STATIC_ASSERT(sizeof(GLuint)		== 4);
-DE_STATIC_ASSERT(sizeof(GLint64)	== 8);
-DE_STATIC_ASSERT(sizeof(GLuint64)	== 8);
+DE_STATIC_ASSERT(sizeof(GLbyte) == 1);
+DE_STATIC_ASSERT(sizeof(GLubyte) == 1);
+DE_STATIC_ASSERT(sizeof(GLshort) == 2);
+DE_STATIC_ASSERT(sizeof(GLushort) == 2);
+DE_STATIC_ASSERT(sizeof(GLint) == 4);
+DE_STATIC_ASSERT(sizeof(GLuint) == 4);
+DE_STATIC_ASSERT(sizeof(GLint64) == 8);
+DE_STATIC_ASSERT(sizeof(GLuint64) == 8);
 
-DE_STATIC_ASSERT(sizeof(GLhalf)		== 2);
-DE_STATIC_ASSERT(sizeof(GLfloat)	== 4);
-DE_STATIC_ASSERT(sizeof(GLclampf)	== 4);
-DE_STATIC_ASSERT(sizeof(GLdouble)	== 8);
-DE_STATIC_ASSERT(sizeof(GLclampd)	== 8);
+DE_STATIC_ASSERT(sizeof(GLhalf) == 2);
+DE_STATIC_ASSERT(sizeof(GLfloat) == 4);
+DE_STATIC_ASSERT(sizeof(GLclampf) == 4);
+DE_STATIC_ASSERT(sizeof(GLdouble) == 8);
+DE_STATIC_ASSERT(sizeof(GLclampd) == 8);
 
-DE_STATIC_ASSERT(sizeof(GLchar)		== 1);
-DE_STATIC_ASSERT(sizeof(GLboolean)	== 1);
-DE_STATIC_ASSERT(sizeof(GLenum)		== 4);
-DE_STATIC_ASSERT(sizeof(GLbitfield)	== 4);
-DE_STATIC_ASSERT(sizeof(GLsizei)	== 4);
-DE_STATIC_ASSERT(sizeof(GLfixed)	== 4);
-DE_STATIC_ASSERT(sizeof(GLintptr)	== sizeof(void*));
-DE_STATIC_ASSERT(sizeof(GLsizeiptr)	== sizeof(void*));
+DE_STATIC_ASSERT(sizeof(GLchar) == 1);
+DE_STATIC_ASSERT(sizeof(GLboolean) == 1);
+DE_STATIC_ASSERT(sizeof(GLenum) == 4);
+DE_STATIC_ASSERT(sizeof(GLbitfield) == 4);
+DE_STATIC_ASSERT(sizeof(GLsizei) == 4);
+DE_STATIC_ASSERT(sizeof(GLfixed) == 4);
+DE_STATIC_ASSERT(sizeof(GLintptr) == sizeof(void *));
+DE_STATIC_ASSERT(sizeof(GLsizeiptr) == sizeof(void *));
 
-} // glw
+} // namespace glw

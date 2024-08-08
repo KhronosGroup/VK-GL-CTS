@@ -44,75 +44,84 @@ namespace tcu
 class Surface
 {
 public:
-							Surface				(void);
-							Surface				(int width, int height);
-							~Surface			(void);
+    Surface(void);
+    Surface(int width, int height);
+    ~Surface(void);
 
-	void					setSize				(int width, int height);
+    void setSize(int width, int height);
 
-	int						getWidth			(void) const { return m_width;  }
-	int						getHeight			(void) const { return m_height; }
+    int getWidth(void) const
+    {
+        return m_width;
+    }
+    int getHeight(void) const
+    {
+        return m_height;
+    }
 
-	void					setPixel			(int x, int y, RGBA col);
-	RGBA					getPixel			(int x, int y) const;
+    void setPixel(int x, int y, RGBA col);
+    RGBA getPixel(int x, int y) const;
 
-	ConstPixelBufferAccess	getAccess			(void) const;
-	PixelBufferAccess		getAccess			(void);
+    ConstPixelBufferAccess getAccess(void) const;
+    PixelBufferAccess getAccess(void);
 
 private:
-	// \note Copy constructor and assignment operators are public and auto-generated
+    // \note Copy constructor and assignment operators are public and auto-generated
 
-	int							m_width;
-	int							m_height;
-	de::ArrayBuffer<deUint32>	m_pixels;
+    int m_width;
+    int m_height;
+    de::ArrayBuffer<uint32_t> m_pixels;
 } DE_WARN_UNUSED_TYPE;
 
-inline void Surface::setPixel (int x, int y, RGBA col)
+inline void Surface::setPixel(int x, int y, RGBA col)
 {
-	DE_ASSERT(de::inBounds(x, 0, m_width) && de::inBounds(y, 0, m_height));
+    DE_ASSERT(de::inBounds(x, 0, m_width) && de::inBounds(y, 0, m_height));
 
-	const int		pixOffset	= y*m_width + x;
-	deUint32*		pixAddr		= m_pixels.getElementPtr(pixOffset);
+    const int pixOffset = y * m_width + x;
+    uint32_t *pixAddr   = m_pixels.getElementPtr(pixOffset);
 
 #if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
-	*pixAddr = col.getPacked();
+    *pixAddr = col.getPacked();
 #else
-	*((deUint8*)pixAddr + 0) = (deUint8)col.getRed();
-	*((deUint8*)pixAddr + 1) = (deUint8)col.getGreen();
-	*((deUint8*)pixAddr + 2) = (deUint8)col.getBlue();
-	*((deUint8*)pixAddr + 3) = (deUint8)col.getAlpha();
+    *((uint8_t *)pixAddr + 0) = (uint8_t)col.getRed();
+    *((uint8_t *)pixAddr + 1) = (uint8_t)col.getGreen();
+    *((uint8_t *)pixAddr + 2) = (uint8_t)col.getBlue();
+    *((uint8_t *)pixAddr + 3) = (uint8_t)col.getAlpha();
 #endif
 }
 
-inline RGBA Surface::getPixel (int x, int y) const
+inline RGBA Surface::getPixel(int x, int y) const
 {
-	DE_ASSERT(de::inBounds(x, 0, m_width) && de::inBounds(y, 0, m_height));
+    DE_ASSERT(de::inBounds(x, 0, m_width) && de::inBounds(y, 0, m_height));
 
-	const int		pixOffset	= y*m_width + x;
-	const deUint32*	pixAddr		= m_pixels.getElementPtr(pixOffset);
+    const int pixOffset     = y * m_width + x;
+    const uint32_t *pixAddr = m_pixels.getElementPtr(pixOffset);
 
-	DE_STATIC_ASSERT(RGBA::RED_SHIFT == 0 && RGBA::GREEN_SHIFT == 8 && RGBA::BLUE_SHIFT == 16 && RGBA::ALPHA_SHIFT == 24);
+    DE_STATIC_ASSERT(RGBA::RED_SHIFT == 0 && RGBA::GREEN_SHIFT == 8 && RGBA::BLUE_SHIFT == 16 &&
+                     RGBA::ALPHA_SHIFT == 24);
 
 #if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
-	return RGBA(*pixAddr);
+    return RGBA(*pixAddr);
 #else
-	const deUint8*	byteAddr	= (const deUint8*)pixAddr;
-	return RGBA(byteAddr[0], byteAddr[1], byteAddr[2], byteAddr[3]);
+    const uint8_t *byteAddr   = (const uint8_t *)pixAddr;
+    return RGBA(byteAddr[0], byteAddr[1], byteAddr[2], byteAddr[3]);
 #endif
 }
 
 /** Get pixel buffer access from surface. */
-inline ConstPixelBufferAccess Surface::getAccess (void) const
+inline ConstPixelBufferAccess Surface::getAccess(void) const
 {
-	return ConstPixelBufferAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_width, m_height, 1, m_pixels.empty() ? DE_NULL : m_pixels.getPtr());
+    return ConstPixelBufferAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_width, m_height, 1,
+                                  m_pixels.empty() ? nullptr : m_pixels.getPtr());
 }
 
 /** Get pixel buffer access from surface. */
-inline PixelBufferAccess Surface::getAccess (void)
+inline PixelBufferAccess Surface::getAccess(void)
 {
-	return PixelBufferAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_width, m_height, 1, m_pixels.empty() ? DE_NULL : m_pixels.getPtr());
+    return PixelBufferAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_width, m_height, 1,
+                             m_pixels.empty() ? nullptr : m_pixels.getPtr());
 }
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUSURFACE_HPP

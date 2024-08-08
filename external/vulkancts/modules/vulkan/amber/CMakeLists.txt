@@ -12,14 +12,14 @@ set(DEQP_VK_AMBER_SRCS
 	vktAmberGraphicsFuzzTests.cpp
 	vktAmberGlslTests.hpp
 	vktAmberGlslTests.cpp
+	vktAmberDepthTests.hpp
+	vktAmberDepthTests.cpp
 	)
 
 set(DEQP_VK_AMBER_LIBS
 	tcutil
 	libamber
 	)
-
-add_definitions(-DAMBER_CTS_VULKAN_HEADER=1)
 
 if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
@@ -30,8 +30,12 @@ elseif (DE_COMPILER_IS_MSC)
 	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} /wd4068")
 endif ()
 
-include_directories("../../../../amber/src/include")
+include_directories(${DEQP_INL_DIR})
+
 add_library(deqp-vk-amber STATIC ${DEQP_VK_AMBER_SRCS})
+target_include_directories(deqp-vk-amber PUBLIC ${PROJECT_SOURCE_DIR}/external/amber/src/include)
+target_include_directories(deqp-vk-amber PUBLIC ${PROJECT_SOURCE_DIR}/external/vulkancts/framework/vulkan ${PROJECT_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkan)
+target_compile_definitions(deqp-vk-amber PUBLIC AMBER_CTS_VULKAN_HEADER=1)
 target_link_libraries(deqp-vk-amber ${DEQP_VK_AMBER_LIBS})
 
 add_custom_target(deqp-vk-amber-data)

@@ -38,950 +38,749 @@ namespace
 {
 enum OpType
 {
-	OPTYPE_ALL = 0,
-	OPTYPE_ANY = 1,
-	OPTYPE_ALLEQUAL = 2,
-	OPTYPE_LAST_NON_ARB = 3,
-	OPTYPE_ALL_ARB = 4,
-	OPTYPE_ANY_ARB = 5,
-	OPTYPE_ALLEQUAL_ARB = 6,
-	OPTYPE_LAST
+    OPTYPE_ALL          = 0,
+    OPTYPE_ANY          = 1,
+    OPTYPE_ALLEQUAL     = 2,
+    OPTYPE_LAST_NON_ARB = 3,
+    OPTYPE_ALL_ARB      = 4,
+    OPTYPE_ANY_ARB      = 5,
+    OPTYPE_ALLEQUAL_ARB = 6,
+    OPTYPE_LAST
 };
-
-static bool checkVertexPipelineStages(const void* internalData, std::vector<const void*> datas,
-									  deUint32 width, deUint32)
-{
-	DE_UNREF(internalData);
-	return vkt::subgroups::check(datas, width, 0x1F);
-}
-
-static bool checkFragmentPipelineStages(const void* internalData, std::vector<const void*> datas,
-									  deUint32 width, deUint32 height, deUint32)
-{
-	DE_UNREF(internalData);
-	const deUint32* data =
-		reinterpret_cast<const deUint32*>(datas[0]);
-	for (deUint32 x = 0u; x < width; ++x)
-	{
-		for (deUint32 y = 0u; y < height; ++y)
-		{
-			const deUint32 ndx = (x * height + y);
-			deUint32 val = data[ndx] & 0x1F;
-
-			if (data[ndx] & 0x40) //Helper fragment shader invocation was executed
-			{
-				if(val != 0x1F)
-					return false;
-			}
-			else //Helper fragment shader invocation was not executed yet
-			{
-				if (val != 0x1E)
-					return false;
-			}
-		}
-	}
-	return true;
-}
-
-static bool checkCompute(const void* internalData, std::vector<const void*> datas,
-						 const deUint32 numWorkgroups[3], const deUint32 localSize[3],
-						 deUint32)
-{
-	DE_UNREF(internalData);
-	return vkt::subgroups::checkCompute(datas, numWorkgroups, localSize, 0x1F);
-}
-
-std::string getOpTypeName(int opType)
-{
-	switch (opType)
-	{
-		default:
-			DE_FATAL("Unsupported op type");
-			return "";
-		case OPTYPE_ALL:
-			return "subgroupAll";
-		case OPTYPE_ANY:
-			return "subgroupAny";
-		case OPTYPE_ALLEQUAL:
-			return "subgroupAllEqual";
-		case OPTYPE_ALL_ARB:
-			return "allInvocationsARB";
-		case OPTYPE_ANY_ARB:
-			return "anyInvocationARB";
-		case OPTYPE_ALLEQUAL_ARB:
-			return "allInvocationsEqualARB";
-	}
-}
 
 struct CaseDefinition
 {
-	int					opType;
-	VkShaderStageFlags	shaderStage;
-	VkFormat			format;
-	de::SharedPtr<bool>	geometryPointSizeSupported;
-	deBool				requiredSubgroupSize;
-	deBool              requires8BitUniformBuffer;
-	deBool              requires16BitUniformBuffer;
+    OpType opType;
+    VkShaderStageFlags shaderStage;
+    VkFormat format;
+    de::SharedPtr<bool> geometryPointSizeSupported;
+    bool requiredSubgroupSize;
+    bool requires8BitUniformBuffer;
+    bool requires16BitUniformBuffer;
 };
+
+static bool checkVertexPipelineStages(const void *internalData, vector<const void *> datas, uint32_t width, uint32_t)
+{
+    DE_UNREF(internalData);
+
+    return subgroups::check(datas, width, 0x1F);
+}
+
+static bool checkFragmentPipelineStages(const void *internalData, vector<const void *> datas, uint32_t width,
+                                        uint32_t height, uint32_t)
+{
+    DE_UNREF(internalData);
+
+    const uint32_t *data = reinterpret_cast<const uint32_t *>(datas[0]);
+
+    for (uint32_t x = 0u; x < width; ++x)
+    {
+        for (uint32_t y = 0u; y < height; ++y)
+        {
+            const uint32_t ndx = (x * height + y);
+            const uint32_t val = data[ndx] & 0x1F;
+
+            if (data[ndx] & 0x40) //Helper fragment shader invocation was executed
+            {
+                if (val != 0x1F)
+                    return false;
+            }
+            else //Helper fragment shader invocation was not executed yet
+            {
+                if (val != 0x1E)
+                    return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+static bool checkComputeOrMesh(const void *internalData, vector<const void *> datas, const uint32_t numWorkgroups[3],
+                               const uint32_t localSize[3], uint32_t)
+{
+    DE_UNREF(internalData);
+
+    return subgroups::checkComputeOrMesh(datas, numWorkgroups, localSize, 0x1F);
+}
+
+string getOpTypeName(int opType)
+{
+    switch (opType)
+    {
+    case OPTYPE_ALL:
+        return "subgroupAll";
+    case OPTYPE_ANY:
+        return "subgroupAny";
+    case OPTYPE_ALLEQUAL:
+        return "subgroupAllEqual";
+    case OPTYPE_ALL_ARB:
+        return "allInvocationsARB";
+    case OPTYPE_ANY_ARB:
+        return "anyInvocationARB";
+    case OPTYPE_ALLEQUAL_ARB:
+        return "allInvocationsEqualARB";
+    default:
+        TCU_THROW(InternalError, "Unsupported op type");
+    }
+}
 
 bool fmtIsBoolean(VkFormat format)
 {
-	// For reasons unknown, the tests use R8_USCALED as the boolean format
-	return	format == VK_FORMAT_R8_USCALED || format == VK_FORMAT_R8G8_USCALED ||
-			format == VK_FORMAT_R8G8B8_USCALED || format == VK_FORMAT_R8G8B8A8_USCALED;
+    // For reasons unknown, the tests use R8_USCALED as the boolean format
+    return format == VK_FORMAT_R8_USCALED || format == VK_FORMAT_R8G8_USCALED || format == VK_FORMAT_R8G8B8_USCALED ||
+           format == VK_FORMAT_R8G8B8A8_USCALED;
 }
 
-const string extHeader(bool arbFunctions)
+const string getExtensions(bool arbFunctions)
 {
-	return arbFunctions	?	"#extension GL_ARB_shader_group_vote: enable\n"
-							"#extension GL_KHR_shader_subgroup_basic: enable\n"
-						:	"#extension GL_KHR_shader_subgroup_vote: enable\n";
+    return arbFunctions ? "#extension GL_ARB_shader_group_vote: enable\n"
+                          "#extension GL_KHR_shader_subgroup_basic: enable\n" :
+                          "#extension GL_KHR_shader_subgroup_vote: enable\n";
 }
 
-// The test source to use in a generic stage. Fragment and compute sources are different
-const string stageTestSource(CaseDefinition caseDef)
+const string getStageTestSource(const CaseDefinition &caseDef)
 {
-	const bool formatIsBoolean = fmtIsBoolean(caseDef.format);
+    const bool formatIsBoolean = fmtIsBoolean(caseDef.format);
+    const string op            = getOpTypeName(caseDef.opType);
+    const string fmt           = subgroups::getFormatNameForGLSL(caseDef.format);
+    const string computePart =
+        isAllComputeStages(caseDef.shaderStage) ? op + "(data[gl_SubgroupInvocationID] > 0) ? 0x4 : 0x0" : "0x4";
 
-	const string op = getOpTypeName(caseDef.opType);
-	const string fmt = subgroups::getFormatNameForGLSL(caseDef.format);
-
-	return
-		(OPTYPE_ALL == caseDef.opType || OPTYPE_ALL_ARB == caseDef.opType) ?
-			"  result = " + op + "(true) ? 0x1 : 0;\n"
-			"  result |= " + op + "(false) ? 0 : 0x1A;\n"
-			"  result |= 0x4;\n"
-		: (OPTYPE_ANY == caseDef.opType || OPTYPE_ANY_ARB == caseDef.opType) ?
-			"  result = " + op + "(true) ? 0x1 : 0;\n"
-			"  result |= " + op + "(false) ? 0 : 0x1A;\n"
-			"  result |= 0x4;\n"
-		: (OPTYPE_ALLEQUAL == caseDef.opType || OPTYPE_ALLEQUAL_ARB == caseDef.opType) ?
-			"  " + fmt + " valueEqual = " + fmt + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" +
-			"  " + fmt + " valueNoEqual = " + fmt + (formatIsBoolean ? "(subgroupElect());\n" : "(gl_SubgroupInvocationID);\n") +
-			"  result = " + op + "(" + fmt + "(1)) ? 0x1 : 0;\n"
-			"  result |= "
-				+ (formatIsBoolean ? "0x2" : op + "(" + fmt + "(gl_SubgroupInvocationID)) ? 0 : 0x2")
-				+ ";\n"
-			"  result |= " + op + "(data[0]) ? 0x4 : 0;\n"
-			"  result |= " + op + "(valueEqual) ? 0x8 : 0x0;\n"
-			"  result |= " + op + "(valueNoEqual) ? 0x0 : 0x10;\n"
-			"  if (subgroupElect()) result |= 0x2 | 0x10;\n"
-		: "";
+    return (OPTYPE_ALL == caseDef.opType || OPTYPE_ALL_ARB == caseDef.opType) ?
+               "  tempRes = " + op +
+                   "(true) ? 0x1 : 0;\n"
+                   "  tempRes |= " +
+                   op +
+                   "(false) ? 0 : 0x1A;\n"
+                   "  tempRes |= " +
+                   computePart + ";\n" :
+           (OPTYPE_ANY == caseDef.opType || OPTYPE_ANY_ARB == caseDef.opType) ?
+               "  tempRes = " + op +
+                   "(true) ? 0x1 : 0;\n"
+                   "  tempRes |= " +
+                   op +
+                   "(false) ? 0 : 0x1A;\n"
+                   "  tempRes |= " +
+                   computePart + ";\n" :
+           (OPTYPE_ALLEQUAL == caseDef.opType || OPTYPE_ALLEQUAL_ARB == caseDef.opType) ?
+               "  " + fmt + " valueEqual = " + fmt + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" + "  " +
+                   fmt + " valueNoEqual = " + fmt +
+                   (formatIsBoolean ? "(subgroupElect());\n" : "(gl_SubgroupInvocationID);\n") + "  tempRes = " + op +
+                   "(" + fmt +
+                   "(1)) ? 0x1 : 0;\n"
+                   "  tempRes |= " +
+                   (formatIsBoolean ? "0x2" : op + "(" + fmt + "(gl_SubgroupInvocationID)) ? 0 : 0x2") +
+                   ";\n"
+                   "  tempRes |= " +
+                   op +
+                   "(data[0]) ? 0x4 : 0;\n"
+                   "  tempRes |= " +
+                   op +
+                   "(valueEqual) ? 0x8 : 0x0;\n"
+                   "  tempRes |= " +
+                   op +
+                   "(valueNoEqual) ? 0x0 : 0x10;\n"
+                   "  if (subgroupElect()) tempRes |= 0x2 | 0x10;\n" :
+               "";
 }
 
-void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
+void initFrameBufferPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
 {
-	const vk::ShaderBuildOptions buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-	const bool formatIsBoolean = fmtIsBoolean(caseDef.format);
-	const bool arbFunctions = caseDef.opType > OPTYPE_LAST_NON_ARB;
-	const string extensionHeader = extHeader(arbFunctions);
+#ifndef CTS_USES_VULKANSC
+    const bool spirv14required = isAllRayTracingStages(caseDef.shaderStage);
+#else
+    const bool spirv14required = false;
+#endif // CTS_USES_VULKANSC
+    const SpirvVersion spirvVersion = spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
+    const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+    const bool arbFunctions = caseDef.opType > OPTYPE_LAST_NON_ARB;
+    const string extensions = getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.format);
+    const bool pointSize    = *caseDef.geometryPointSizeSupported;
 
-	if (VK_SHADER_STAGE_FRAGMENT_BIT != caseDef.shaderStage)
-		subgroups::setFragmentShaderFrameBuffer(programCollection);
-
-	if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
-	{
-		const string vertex	= "#version 450\n"
-			"void main (void)\n"
-			"{\n"
-			"  vec2 uv = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));\n"
-			"  gl_Position = vec4(uv * 4.0f -2.0f, 0.0f, 1.0f);\n"
-			"  gl_PointSize = 1.0f;\n"
-			"}\n";
-		programCollection.glslSources.add("vert") << glu::VertexSource(vertex) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-	}
-	else if (VK_SHADER_STAGE_VERTEX_BIT != caseDef.shaderStage)
-		subgroups::setVertexShaderFrameBuffer(programCollection);
-
-	const string source = stageTestSource(caseDef);
-
-	const string fmt = subgroups::getFormatNameForGLSL(caseDef.format);
-
-	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
-	{
-		std::ostringstream vertexSrc;
-		vertexSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
-			<< extensionHeader.c_str()
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
-			<< "layout(location = 0) out vec4 out_color;\n"
-			<< "layout(location = 0) in highp vec4 in_position;\n"
-			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
-			<< "{\n"
-			<< "  " << fmt << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "  uint result;\n"
-			<< source
-			<< "  out_color.r = float(result);\n"
-			<< "  gl_Position = in_position;\n"
-			<< "  gl_PointSize = 1.0f;\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("vert") << glu::VertexSource(vertexSrc.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-	}
-	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
-	{
-		std::ostringstream geometry;
-
-		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
-			<< extensionHeader.c_str()
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
-			<< "layout(points) in;\n"
-			<< "layout(points, max_vertices = 1) out;\n"
-			<< "layout(location = 0) out float out_color;\n"
-			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
-			<< "{\n"
-			<< "  " << fmt << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "  uint result;\n"
-			<< source
-			<< "  out_color = float(result);\n"
-			<< "  gl_Position = gl_in[0].gl_Position;\n"
-			<< (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "")
-			<< "  EmitVertex();\n"
-			<< "  EndPrimitive();\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("geometry")
-			<< glu::GeometrySource(geometry.str()) << buildOptions;
-	}
-	else if (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)
-	{
-		std::ostringstream controlSource;
-		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
-			<< extensionHeader.c_str()
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
-			<< "layout(vertices = 2) out;\n"
-			<< "layout(location = 0) out float out_color[];\n"
-			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
-			<< "{\n"
-			<< "  " << fmt << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "  uint result;\n"
-			<< "  if (gl_InvocationID == 0)\n"
-			<<"  {\n"
-			<< "    gl_TessLevelOuter[0] = 1.0f;\n"
-			<< "    gl_TessLevelOuter[1] = 1.0f;\n"
-			<< "  }\n"
-			<< source
-			<< "  out_color[gl_InvocationID] = float(result);"
-			<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-			<< (*caseDef.geometryPointSizeSupported ? "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n" : "")
-			<< "}\n";
-
-		programCollection.glslSources.add("tesc")
-			<< glu::TessellationControlSource(controlSource.str()) << buildOptions;
-		subgroups::setTesEvalShaderFrameBuffer(programCollection);
-	}
-	else if (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT == caseDef.shaderStage)
-	{
-		std::ostringstream evaluationSource;
-		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
-			<< extensionHeader.c_str()
-			<< "#extension GL_EXT_tessellation_shader : require\n"
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
-			<< "layout(isolines, equal_spacing, ccw ) in;\n"
-			<< "layout(location = 0) out float out_color;\n"
-			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
-			<< "{\n"
-			<< "  " << fmt << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "  uint result;\n"
-			<< "  highp uint offset = gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5);\n"
-			<< source
-			<< "  out_color = float(result);\n"
-			<< "  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
-			<< (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "")
-			<< "}\n";
-
-		subgroups::setTesCtrlShaderFrameBuffer(programCollection);
-		programCollection.glslSources.add("tese")
-				<< glu::TessellationEvaluationSource(evaluationSource.str()) << buildOptions;
-	}
-	else if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
-	{
-		const string op = getOpTypeName(caseDef.opType);
-		const string sourceFragment =
-		(OPTYPE_ALL == caseDef.opType || OPTYPE_ALL_ARB == caseDef.opType) ?
-			"  result |= " + op + "(!gl_HelperInvocation) ? 0x0 : 0x1;\n"
-			"  result |= " + op + "(false) ? 0 : 0x1A;\n"
-			"  result |= 0x4;\n"
-		: (OPTYPE_ANY == caseDef.opType || OPTYPE_ANY_ARB == caseDef.opType) ?
-			"  result |= " + op + "(gl_HelperInvocation) ? 0x1 : 0x0;\n"
-			"  result |= " + op + "(false) ? 0 : 0x1A;\n"
-			"  result |= 0x4;\n"
-		: (OPTYPE_ALLEQUAL == caseDef.opType || OPTYPE_ALLEQUAL_ARB == caseDef.opType) ?
-			"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" +
-			"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + (formatIsBoolean ? "(subgroupElect());\n" : "(gl_SubgroupInvocationID);\n") +
-			"  result |= " + getOpTypeName(caseDef.opType) + "("
-			+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x10 : 0;\n"
-			"  result |= "
-				+ (formatIsBoolean ? "0x2" : op + "(" + fmt + "(gl_SubgroupInvocationID)) ? 0 : 0x2")
-				+ ";\n"
-			"  result |= " + op + "(data[0]) ? 0x4 : 0;\n"
-			"  result |= " + op + "(valueEqual) ? 0x8 : 0x0;\n"
-			"  result |= " + op + "(gl_HelperInvocation) ? 0x0 : 0x1;\n"
-			"  if (subgroupElect()) result |= 0x2 | 0x10;\n"
-		: "";
-
-		std::ostringstream fragmentSource;
-		fragmentSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
-		<< extensionHeader.c_str()
-		<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
-		<< "layout(location = 0) out uint out_color;\n"
-		<< "layout(set = 0, binding = 0) uniform Buffer1\n"
-		<< "{\n"
-		<< "  " << fmt << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
-		<< "};\n"
-		<< ""
-		<< "void main()\n"
-		<< "{\n"
-		<< "  uint result = 0u;\n"
-		<< "  if (dFdx(gl_SubgroupInvocationID * gl_FragCoord.x * gl_FragCoord.y) - dFdy(gl_SubgroupInvocationID * gl_FragCoord.x * gl_FragCoord.y) > 0.0f)\n"
-		<< "  {\n"
-		<< "    result |= 0x20;\n" // to be sure that compiler doesn't remove dFdx and dFdy executions
-		<< "  }\n"
-		<< (arbFunctions ?
-			"  bool helper = anyInvocationARB(gl_HelperInvocation);\n" :
-			"  bool helper = subgroupAny(gl_HelperInvocation);\n")
-		<< "  if (helper)\n"
-		<< "  {\n"
-		<< "    result |= 0x40;\n"
-		<< "  }\n"
-		<< sourceFragment
-		<< "  out_color = result;\n"
-		<< "}\n";
-
-		programCollection.glslSources.add("fragment")
-			<< glu::FragmentSource(fragmentSource.str())<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-	}
-	else
-	{
-		DE_FATAL("Unsupported shader stage");
-	}
+    subgroups::initStdFrameBufferPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format,
+                                          pointSize, extensions, getStageTestSource(caseDef), "");
 }
 
-void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
+const string getStageTestSourceFrag(const CaseDefinition &caseDef)
 {
-	const bool formatIsBoolean = fmtIsBoolean(caseDef.format);
-	const bool arbFunctions = caseDef.opType > OPTYPE_LAST_NON_ARB;
-	const string extensionHeader = extHeader(arbFunctions);
+    const bool formatIsBoolean = fmtIsBoolean(caseDef.format);
+    const string op            = getOpTypeName(caseDef.opType);
+    const string fmt           = subgroups::getFormatNameForGLSL(caseDef.format);
 
-	const string op = getOpTypeName(caseDef.opType);
-	const string fmt = subgroups::getFormatNameForGLSL(caseDef.format);
-
-	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
-	{
-		std::ostringstream src;
-
-		const string source =
-		(OPTYPE_ALL == caseDef.opType || OPTYPE_ALL_ARB == caseDef.opType) ?
-			"  result = " + op + "(true) ? 0x1 : 0;\n"
-			"  result |= " + op + "(false) ? 0 : 0x1A;\n"
-			"  result |= " + op + "(data[gl_SubgroupInvocationID] > 0) ? 0x4 : 0;\n"
-		: (OPTYPE_ANY == caseDef.opType || OPTYPE_ANY_ARB == caseDef.opType) ?
-			"  result = " + op + "(true) ? 0x1 : 0;\n"
-			"  result |= " + op + "(false) ? 0 : 0x1A;\n"
-			"  result |= " + op + "(data[gl_SubgroupInvocationID] == data[0]) ? 0x4 : 0;\n"
-		: (OPTYPE_ALLEQUAL == caseDef.opType || OPTYPE_ALLEQUAL_ARB == caseDef.opType) ?
-			"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n"
-			"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + (formatIsBoolean ? "(subgroupElect());\n" : "(gl_SubgroupInvocationID);\n") +
-			"  result = " + getOpTypeName(caseDef.opType) + "("
-			+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x1 : 0;\n"
-			"  result |= "
-				+ (formatIsBoolean ? "0x2" : op + "(" + fmt + "(gl_SubgroupInvocationID)) ? 0 : 0x2")
-				+ ";\n"
-			"  result |= " + op + "(data[0]) ? 0x4 : 0x0;\n"
-			"  result |= " + op + "(valueEqual) ? 0x8 : 0x0;\n"
-			"  result |= " + op + "(valueNoEqual) ? 0x0 : 0x10;\n"
-			"  if (subgroupElect()) result |= 0x2 | 0x10;\n"
-		: "";
-
-		src << "#version 450\n"
-			<< extensionHeader.c_str()
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
-			<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
-			"local_size_z_id = 2) in;\n"
-			<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
-			<< "{\n"
-			<< "  uint res[];\n"
-			<< "};\n"
-			<< "layout(set = 0, binding = 1, std430) buffer Buffer2\n"
-			<< "{\n"
-			<< "  " << fmt << " data[];\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "  uint result;\n"
-			<< "  uvec3 globalSize = gl_NumWorkGroups * gl_WorkGroupSize;\n"
-			<< "  highp uint offset = globalSize.x * ((globalSize.y * "
-			"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
-			"gl_GlobalInvocationID.x;\n"
-			<< source
-			<< "  res[offset] = result;\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("comp")
-				<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-	}
-	else
-	{
-		const string source = stageTestSource(caseDef);
-
-		{
-			const string vertex =
-				"#version 450\n"
-				+ extensionHeader
-				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
-				"layout(set = 0, binding = 0, std430) buffer Buffer1\n"
-				"{\n"
-				"  uint res[];\n"
-				"};\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  " + fmt + " data[];\n"
-				"};\n"
-				"\n"
-				"void main (void)\n"
-				"{\n"
-				"  uint result;\n"
-				"  highp uint offset = gl_VertexIndex;\n"
-				+ source +
-				"  res[offset] = result;\n"
-				"  float pixelSize = 2.0f/1024.0f;\n"
-				"  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
-				"  gl_Position = vec4(float(gl_VertexIndex) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
-				"  gl_PointSize = 1.0f;\n"
-				"}\n";
-			programCollection.glslSources.add("vert")
-				<< glu::VertexSource(vertex) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		}
-
-		{
-			const string tesc =
-				"#version 450\n"
-				+ extensionHeader
-				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
-				"layout(vertices=1) out;\n"
-				"layout(set = 0, binding = 1, std430) buffer Buffer1\n"
-				"{\n"
-				"  uint res[];\n"
-				"};\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  " + fmt + " data[];\n"
-				"};\n"
-				"\n"
-				"void main (void)\n"
-				"{\n"
-				"  uint result;\n"
-				"  highp uint offset = gl_PrimitiveID;\n"
-				+ source +
-				"  res[offset] = result;\n"
-				"  if (gl_InvocationID == 0)\n"
-				"  {\n"
-				"    gl_TessLevelOuter[0] = 1.0f;\n"
-				"    gl_TessLevelOuter[1] = 1.0f;\n"
-				"  }\n"
-				"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-				+ (*caseDef.geometryPointSizeSupported ? "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n" : "") +
-				"}\n";
-
-			programCollection.glslSources.add("tesc")
-					<< glu::TessellationControlSource(tesc) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		}
-
-		{
-			const string tese =
-				"#version 450\n"
-				+ extensionHeader
-				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
-				"layout(isolines) in;\n"
-				"layout(set = 0, binding = 2, std430) buffer Buffer1\n"
-				"{\n"
-				"  uint res[];\n"
-				"};\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  " + fmt + " data[];\n"
-				"};\n"
-				"\n"
-				"void main (void)\n"
-				"{\n"
-				"  uint result;\n"
-				"  highp uint offset = gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5);\n"
-				+ source +
-				"  res[offset] = result;\n"
-				"  float pixelSize = 2.0f/1024.0f;\n"
-				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
-				+ (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "") +
-				"}\n";
-
-			programCollection.glslSources.add("tese")
-					<< glu::TessellationEvaluationSource(tese) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		}
-
-		{
-			const string geometry =
-				"#version 450\n"
-				+ extensionHeader
-				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
-				"layout(${TOPOLOGY}) in;\n"
-				"layout(points, max_vertices = 1) out;\n"
-				"layout(set = 0, binding = 3, std430) buffer Buffer1\n"
-				"{\n"
-				"  uint res[];\n"
-				"};\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  " + fmt + " data[];\n"
-				"};\n"
-				"\n"
-				"void main (void)\n"
-				"{\n"
-				"  uint result;\n"
-				"  highp uint offset = gl_PrimitiveIDIn;\n"
-				+ source +
-				"  res[offset] = result;\n"
-				"  gl_Position = gl_in[0].gl_Position;\n"
-				+ (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "") +
-				"  EmitVertex();\n"
-				"  EndPrimitive();\n"
-				"}\n";
-
-			subgroups::addGeometryShadersFromTemplate(geometry, vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u),
-													  programCollection.glslSources);
-		}
-
-		{
-			const string sourceFragment =
-			(OPTYPE_ALL == caseDef.opType || OPTYPE_ALL_ARB == caseDef.opType) ?
-				"  result = " + op + "(true) ? 0x1 : 0;\n"
-				"  result |= " + op + "(false) ? 0 : 0x1A;\n"
-				"  result |= 0x4;\n"
-			: (OPTYPE_ANY == caseDef.opType || OPTYPE_ANY_ARB == caseDef.opType) ?
-				"  result = " + op + "(true) ? 0x1 : 0;\n"
-				"  result |= " + op + "(false) ? 0 : 0x1A;\n"
-				"  result |= 0x4;\n"
-			: (OPTYPE_ALLEQUAL == caseDef.opType || OPTYPE_ALLEQUAL_ARB == caseDef.opType) ?
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" +
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + (formatIsBoolean ? "(subgroupElect());\n" : "(gl_SubgroupInvocationID);\n") +
-				"  result = " + getOpTypeName(caseDef.opType) + "("
-				+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x1 : 0;\n"
-				"  result |= "
-					+ (formatIsBoolean ? "0x2" : op + "(" + fmt + "(gl_SubgroupInvocationID)) ? 0 : 0x2")
-					+ ";\n"
-				"  result |= " + op + "(data[0]) ? 0x4 : 0;\n"
-				"  result |= " + op + "(valueEqual) ? 0x8 : 0x0;\n"
-				"  result |= " + op + "(valueNoEqual) ? 0x0 : 0x10;\n"
-				"  if (subgroupElect()) result |= 0x2 | 0x10;\n"
-			: "";
-			const string fragment =
-				"#version 450\n"
-				+ extensionHeader
-				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
-				"layout(location = 0) out uint result;\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  " + fmt + " data[];\n"
-				"};\n"
-				"void main (void)\n"
-				"{\n"
-				+ sourceFragment +
-				"}\n";
-
-			programCollection.glslSources.add("fragment")
-				<< glu::FragmentSource(fragment)<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		}
-
-		subgroups::addNoSubgroupShader(programCollection);
-	}
+    return (OPTYPE_ALL == caseDef.opType || OPTYPE_ALL_ARB == caseDef.opType) ?
+               "  tempRes |= " + op +
+                   "(!gl_HelperInvocation) ? 0x0 : 0x1;\n"
+                   "  tempRes |= " +
+                   op +
+                   "(false) ? 0 : 0x1A;\n"
+                   "  tempRes |= 0x4;\n" :
+           (OPTYPE_ANY == caseDef.opType || OPTYPE_ANY_ARB == caseDef.opType) ?
+               "  tempRes |= " + op +
+                   "(gl_HelperInvocation) ? 0x1 : 0x0;\n"
+                   "  tempRes |= " +
+                   op +
+                   "(false) ? 0 : 0x1A;\n"
+                   "  tempRes |= 0x4;\n" :
+           (OPTYPE_ALLEQUAL == caseDef.opType || OPTYPE_ALLEQUAL_ARB == caseDef.opType) ?
+               "  " + fmt + " valueEqual = " + fmt + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" + "  " +
+                   fmt + " valueNoEqual = " + fmt +
+                   (formatIsBoolean ? "(subgroupElect());\n" : "(gl_SubgroupInvocationID);\n") +
+                   "  tempRes |= " + getOpTypeName(caseDef.opType) + "(" + fmt +
+                   "(1)) ? 0x10 : 0;\n"
+                   "  tempRes |= " +
+                   (formatIsBoolean ? "0x2" : op + "(" + fmt + "(gl_SubgroupInvocationID)) ? 0 : 0x2") +
+                   ";\n"
+                   "  tempRes |= " +
+                   op +
+                   "(data[0]) ? 0x4 : 0;\n"
+                   "  tempRes |= " +
+                   op +
+                   "(valueEqual) ? 0x8 : 0x0;\n"
+                   "  tempRes |= " +
+                   op +
+                   "(gl_HelperInvocation) ? 0x0 : 0x1;\n"
+                   "  if (subgroupElect()) tempRes |= 0x2 | 0x10;\n" :
+               "";
 }
 
-void supportedCheck (Context& context, CaseDefinition caseDef)
+void initFrameBufferProgramsFrag(SourceCollections &programCollection, CaseDefinition caseDef)
 {
-	if (!subgroups::isSubgroupSupported(context))
-		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
+#ifndef CTS_USES_VULKANSC
+    const bool spirv14required = isAllRayTracingStages(caseDef.shaderStage);
+#else
+    const bool spirv14required = false;
+#endif // CTS_USES_VULKANSC
+    const SpirvVersion spirvVersion = spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
+    const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+    const bool arbFunctions = caseDef.opType > OPTYPE_LAST_NON_ARB;
+    const string extensions = getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.format);
 
-	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_VOTE_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Device does not support subgroup vote operations");
-	}
+    DE_ASSERT(VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage);
 
-	if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
-		TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+    {
+        const string vertex = "#version 450\n"
+                              "void main (void)\n"
+                              "{\n"
+                              "  vec2 uv = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));\n"
+                              "  gl_Position = vec4(uv * 4.0f -2.0f, 0.0f, 1.0f);\n"
+                              "  gl_PointSize = 1.0f;\n"
+                              "}\n";
 
-	if (caseDef.requires16BitUniformBuffer)
-	{
-		if (!subgroups::is16BitUBOStorageSupported(context))
-		{
-			TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
-		}
-	}
+        programCollection.glslSources.add("vert") << glu::VertexSource(vertex) << buildOptions;
+    }
 
-	if (caseDef.requires8BitUniformBuffer)
-	{
-		if (!subgroups::is8BitUBOStorageSupported(context))
-		{
-			TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
-		}
-	}
+    {
+        ostringstream fragmentSource;
 
-	if (caseDef.opType > OPTYPE_LAST_NON_ARB)
-	{
-		context.requireDeviceFunctionality("VK_EXT_shader_subgroup_vote");
-	}
+        fragmentSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                       << extensions << "layout(location = 0) out uint out_color;\n"
+                       << "layout(set = 0, binding = 0) uniform Buffer1\n"
+                       << "{\n"
+                       << "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data["
+                       << subgroups::maxSupportedSubgroupSize() << "];\n"
+                       << "};\n"
+                       << ""
+                       << "void main()\n"
+                       << "{\n"
+                       << "  uint tempRes = 0u;\n"
+                       << "  if (dFdx(gl_SubgroupInvocationID * gl_FragCoord.x * gl_FragCoord.y) - "
+                          "dFdy(gl_SubgroupInvocationID * gl_FragCoord.x * gl_FragCoord.y) > 0.0f)\n"
+                       << "  {\n"
+                       << "    tempRes |= 0x20;\n" // to be sure that compiler doesn't remove dFdx and dFdy executions
+                       << "  }\n"
+                       << (arbFunctions ? "  bool helper = anyInvocationARB(gl_HelperInvocation);\n" :
+                                          "  bool helper = subgroupAny(gl_HelperInvocation);\n")
+                       << "  if (helper)\n"
+                       << "  {\n"
+                       << "    tempRes |= 0x40;\n"
+                       << "  }\n"
+                       << getStageTestSourceFrag(caseDef) << "  out_color = tempRes;\n"
+                       << "}\n";
 
-	if (caseDef.requiredSubgroupSize)
-	{
-		if (!context.requireDeviceFunctionality("VK_EXT_subgroup_size_control"))
-			TCU_THROW(NotSupportedError, "Device does not support VK_EXT_subgroup_size_control extension");
-		VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroupSizeControlFeatures;
-		subgroupSizeControlFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT;
-		subgroupSizeControlFeatures.pNext = DE_NULL;
-
-		VkPhysicalDeviceFeatures2 features;
-		features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		features.pNext = &subgroupSizeControlFeatures;
-
-		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features);
-
-		if (subgroupSizeControlFeatures.subgroupSizeControl == DE_FALSE)
-			TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes nor required subgroup size");
-
-		if (subgroupSizeControlFeatures.computeFullSubgroups == DE_FALSE)
-			TCU_THROW(NotSupportedError, "Device does not support full subgroups in compute shaders");
-
-		VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
-		subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
-		subgroupSizeControlProperties.pNext = DE_NULL;
-
-		VkPhysicalDeviceProperties2 properties;
-		properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-		properties.pNext = &subgroupSizeControlProperties;
-
-		context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
-
-		if ((subgroupSizeControlProperties.requiredSubgroupSizeStages & caseDef.shaderStage) != caseDef.shaderStage)
-			TCU_THROW(NotSupportedError, "Required subgroup size is not supported for shader stage");
-	}
-
-	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
-
-	vkt::subgroups::supportedCheckShader(context, caseDef.shaderStage);
+        programCollection.glslSources.add("fragment") << glu::FragmentSource(fragmentSource.str()) << buildOptions;
+    }
 }
 
-tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
+void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
 {
-	if (!subgroups::areSubgroupOperationsSupportedForStage(
-				context, caseDef.shaderStage))
-	{
-		if (subgroups::areSubgroupOperationsRequiredForStage(
-					caseDef.shaderStage))
-		{
-			return tcu::TestStatus::fail(
-					   "Shader stage " +
-					   subgroups::getShaderStageName(caseDef.shaderStage) +
-					   " is required to support subgroup operations!");
-		}
-		else
-		{
-			TCU_THROW(NotSupportedError, "Device does not support subgroup operations for this stage");
-		}
-	}
+#ifndef CTS_USES_VULKANSC
+    const bool spirv14required =
+        (isAllRayTracingStages(caseDef.shaderStage) || isAllMeshShadingStages(caseDef.shaderStage));
+#else
+    const bool spirv14required = false;
+#endif // CTS_USES_VULKANSC
+    const SpirvVersion spirvVersion = spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
+    const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, spirv14required);
+    const bool arbFunctions = caseDef.opType > OPTYPE_LAST_NON_ARB;
+    const string extensions = getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.format);
+    const bool pointSize    = *caseDef.geometryPointSizeSupported;
 
-	if (caseDef.opType > OPTYPE_LAST_NON_ARB)
-	{
-		context.requireDeviceFunctionality("VK_EXT_shader_subgroup_vote");
-	}
-
-	subgroups::SSBOData inputData;
-	inputData.format = caseDef.format;
-	inputData.layout = subgroups::SSBOData::LayoutStd140;
-	inputData.numElements = subgroups::maxSupportedSubgroupSize();
-	inputData.initializeType = (OPTYPE_ALLEQUAL == caseDef.opType || OPTYPE_ALLEQUAL_ARB == caseDef.opType) ? subgroups::SSBOData::InitializeZero : subgroups::SSBOData::InitializeNonZero;
-
-	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
-		return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkVertexPipelineStages);
-	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
-		return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkVertexPipelineStages);
-	else if (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)
-		return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkVertexPipelineStages, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
-	else if (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT == caseDef.shaderStage)
-		return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkVertexPipelineStages, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
-	else if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
-		return subgroups::makeFragmentFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkFragmentPipelineStages);
-	else
-		TCU_THROW(InternalError, "Unhandled shader stage");
+    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format, pointSize,
+                               extensions, getStageTestSource(caseDef), "");
 }
 
-tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
+void supportedCheck(Context &context, CaseDefinition caseDef)
 {
-	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
-	{
-		if (!subgroups::areSubgroupOperationsSupportedForStage(context, caseDef.shaderStage))
-		{
-			return tcu::TestStatus::fail(
-					   "Shader stage " +
-					   subgroups::getShaderStageName(caseDef.shaderStage) +
-					   " is required to support subgroup operations!");
-		}
+    if (!subgroups::isSubgroupSupported(context))
+        TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
 
-		subgroups::SSBOData inputData;
-		inputData.format = caseDef.format;
-		inputData.layout = subgroups::SSBOData::LayoutStd430;
-		inputData.numElements = subgroups::maxSupportedSubgroupSize();
-		inputData.initializeType = (OPTYPE_ALLEQUAL == caseDef.opType || OPTYPE_ALLEQUAL_ARB == caseDef.opType) ? subgroups::SSBOData::InitializeZero : subgroups::SSBOData::InitializeNonZero;
+    if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_VOTE_BIT))
+    {
+        TCU_THROW(NotSupportedError, "Device does not support subgroup vote operations");
+    }
 
-		if (caseDef.requiredSubgroupSize == DE_FALSE)
-			return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData,
-											  1, DE_NULL, checkCompute);
+    if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
+        TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
 
-		tcu::TestLog& log	= context.getTestContext().getLog();
-		VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
-		subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
-		subgroupSizeControlProperties.pNext = DE_NULL;
-		VkPhysicalDeviceProperties2 properties;
-		properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-		properties.pNext = &subgroupSizeControlProperties;
+    if (caseDef.requires16BitUniformBuffer)
+    {
+        if (!subgroups::is16BitUBOStorageSupported(context))
+        {
+            TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+        }
+    }
 
-		context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
+    if (caseDef.requires8BitUniformBuffer)
+    {
+        if (!subgroups::is8BitUBOStorageSupported(context))
+        {
+            TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+        }
+    }
 
-		log << tcu::TestLog::Message << "Testing required subgroup size range [" <<  subgroupSizeControlProperties.minSubgroupSize << ", "
-			<< subgroupSizeControlProperties.maxSubgroupSize << "]" << tcu::TestLog::EndMessage;
+    if (caseDef.opType > OPTYPE_LAST_NON_ARB)
+    {
+        context.requireDeviceFunctionality("VK_EXT_shader_subgroup_vote");
+    }
 
-		// According to the spec, requiredSubgroupSize must be a power-of-two integer.
-		for (deUint32 size = subgroupSizeControlProperties.minSubgroupSize; size <= subgroupSizeControlProperties.maxSubgroupSize; size *= 2)
-		{
-			tcu::TestStatus result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkCompute,
-																size, VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT);
-			if (result.getCode() != QP_TEST_RESULT_PASS)
-			{
-				log << tcu::TestLog::Message << "subgroupSize " << size << " failed" << tcu::TestLog::EndMessage;
-				return result;
-			}
-		}
-		return tcu::TestStatus::pass("OK");
-	}
-	else
-	{
-		VkPhysicalDeviceSubgroupProperties subgroupProperties;
-		subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-		subgroupProperties.pNext = DE_NULL;
+    if (caseDef.requiredSubgroupSize)
+    {
+        context.requireDeviceFunctionality("VK_EXT_subgroup_size_control");
 
-		VkPhysicalDeviceProperties2 properties;
-		properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-		properties.pNext = &subgroupProperties;
+#ifndef CTS_USES_VULKANSC
+        const VkPhysicalDeviceSubgroupSizeControlFeatures &subgroupSizeControlFeatures =
+            context.getSubgroupSizeControlFeatures();
+        const VkPhysicalDeviceSubgroupSizeControlProperties &subgroupSizeControlProperties =
+            context.getSubgroupSizeControlProperties();
+#else
+        const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT &subgroupSizeControlFeatures =
+            context.getSubgroupSizeControlFeatures();
+        const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
+            context.getSubgroupSizeControlProperties();
+#endif // CTS_USES_VULKANSC
 
-		context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
+        if (subgroupSizeControlFeatures.subgroupSizeControl == false)
+            TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes nor required subgroup size");
 
-		VkShaderStageFlagBits stages = (VkShaderStageFlagBits)(caseDef.shaderStage  & subgroupProperties.supportedStages);
+        if (subgroupSizeControlFeatures.computeFullSubgroups == false)
+            TCU_THROW(NotSupportedError, "Device does not support full subgroups in compute shaders");
 
-		if (VK_SHADER_STAGE_FRAGMENT_BIT != stages && !subgroups::isVertexSSBOSupportedForDevice(context))
-		{
-			if ( (stages & VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
-				TCU_THROW(NotSupportedError, "Device does not support vertex stage SSBO writes");
-			else
-				stages = VK_SHADER_STAGE_FRAGMENT_BIT;
-		}
+        if ((subgroupSizeControlProperties.requiredSubgroupSizeStages & caseDef.shaderStage) != caseDef.shaderStage)
+            TCU_THROW(NotSupportedError, "Required subgroup size is not supported for shader stage");
+    }
 
-		if ((VkShaderStageFlagBits)0u == stages)
-			TCU_THROW(NotSupportedError, "Subgroup operations are not supported for any graphic shader");
+    *caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
 
-		subgroups::SSBOData inputData;
-		inputData.format			= caseDef.format;
-		inputData.layout			= subgroups::SSBOData::LayoutStd430;
-		inputData.numElements		= subgroups::maxSupportedSubgroupSize();
-		inputData.initializeType	= (OPTYPE_ALLEQUAL == caseDef.opType || OPTYPE_ALLEQUAL_ARB == caseDef.opType) ? subgroups::SSBOData::InitializeZero : subgroups::SSBOData::InitializeNonZero;
-		inputData.binding			= 4u;
-		inputData.stages			= stages;
+#ifndef CTS_USES_VULKANSC
+    if (isAllRayTracingStages(caseDef.shaderStage))
+    {
+        context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+    }
+    else if (isAllMeshShadingStages(caseDef.shaderStage))
+    {
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+        context.requireDeviceFunctionality("VK_EXT_mesh_shader");
 
-		return subgroups::allStages(context, VK_FORMAT_R32_UINT, &inputData, 1, DE_NULL, checkVertexPipelineStages, stages);
-	}
+        if ((caseDef.shaderStage & VK_SHADER_STAGE_TASK_BIT_EXT) != 0u)
+        {
+            const auto &features = context.getMeshShaderFeaturesEXT();
+            if (!features.taskShader)
+                TCU_THROW(NotSupportedError, "Task shaders not supported");
+        }
+    }
+
+#endif // CTS_USES_VULKANSC
+
+    subgroups::supportedCheckShader(context, caseDef.shaderStage);
 }
+
+TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
+{
+    if (caseDef.opType > OPTYPE_LAST_NON_ARB)
+    {
+        context.requireDeviceFunctionality("VK_EXT_shader_subgroup_vote");
+    }
+
+    const subgroups::SSBOData::InputDataInitializeType initializeType =
+        (OPTYPE_ALLEQUAL == caseDef.opType || OPTYPE_ALLEQUAL_ARB == caseDef.opType) ?
+            subgroups::SSBOData::InitializeZero :
+            subgroups::SSBOData::InitializeNonZero;
+    const subgroups::SSBOData inputData{
+        initializeType,                        //  InputDataInitializeType initializeType;
+        subgroups::SSBOData::LayoutStd140,     //  InputDataLayoutType layout;
+        caseDef.format,                        //  vk::VkFormat format;
+        subgroups::maxSupportedSubgroupSize(), //  vk::VkDeviceSize numElements;
+        subgroups::SSBOData::BindingUBO,       //  BindingType bindingType;
+    };
+
+    switch (caseDef.shaderStage)
+    {
+    case VK_SHADER_STAGE_VERTEX_BIT:
+        return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, nullptr,
+                                                    checkVertexPipelineStages);
+    case VK_SHADER_STAGE_GEOMETRY_BIT:
+        return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, nullptr,
+                                                      checkVertexPipelineStages);
+    case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+        return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, nullptr,
+                                                                    checkVertexPipelineStages, caseDef.shaderStage);
+    case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+        return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, nullptr,
+                                                                    checkVertexPipelineStages, caseDef.shaderStage);
+    case VK_SHADER_STAGE_FRAGMENT_BIT:
+        return subgroups::makeFragmentFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, nullptr,
+                                                      checkFragmentPipelineStages);
+    default:
+        TCU_THROW(InternalError, "Unhandled shader stage");
+    }
 }
+
+TestStatus test(Context &context, const CaseDefinition caseDef)
+{
+    const subgroups::SSBOData::InputDataInitializeType initializeType =
+        (OPTYPE_ALLEQUAL == caseDef.opType || OPTYPE_ALLEQUAL_ARB == caseDef.opType) ?
+            subgroups::SSBOData::InitializeZero :
+            subgroups::SSBOData::InitializeNonZero;
+
+    const bool isCompute = isAllComputeStages(caseDef.shaderStage);
+#ifndef CTS_USES_VULKANSC
+    const bool isMesh = isAllMeshShadingStages(caseDef.shaderStage);
+#else
+    const bool isMesh = false;
+#endif // CTS_USES_VULKANSC
+    DE_ASSERT(!(isCompute && isMesh));
+
+    if (isCompute || isMesh)
+    {
+#ifndef CTS_USES_VULKANSC
+        const VkPhysicalDeviceSubgroupSizeControlProperties &subgroupSizeControlProperties =
+            context.getSubgroupSizeControlProperties();
+#else
+        const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
+            context.getSubgroupSizeControlProperties();
+#endif // CTS_USES_VULKANSC
+        TestLog &log = context.getTestContext().getLog();
+        const subgroups::SSBOData inputData{
+            initializeType,                        //  InputDataInitializeType initializeType;
+            subgroups::SSBOData::LayoutStd430,     //  InputDataLayoutType layout;
+            caseDef.format,                        //  vk::VkFormat format;
+            subgroups::maxSupportedSubgroupSize(), //  vk::VkDeviceSize numElements;
+        };
+
+        if (caseDef.requiredSubgroupSize == false)
+        {
+            if (isCompute)
+                return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, nullptr,
+                                                  checkComputeOrMesh);
+            else
+                return subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, &inputData, 1, nullptr, checkComputeOrMesh);
+        }
+
+        log << TestLog::Message << "Testing required subgroup size range ["
+            << subgroupSizeControlProperties.minSubgroupSize << ", " << subgroupSizeControlProperties.maxSubgroupSize
+            << "]" << TestLog::EndMessage;
+
+        // According to the spec, requiredSubgroupSize must be a power-of-two integer.
+        for (uint32_t size = subgroupSizeControlProperties.minSubgroupSize;
+             size <= subgroupSizeControlProperties.maxSubgroupSize; size *= 2)
+        {
+            TestStatus result(QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
+
+            if (isCompute)
+                result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData, 1, nullptr,
+                                                    checkComputeOrMesh, size);
+            else
+                result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, &inputData, 1, nullptr,
+                                                 checkComputeOrMesh, size);
+
+            if (result.getCode() != QP_TEST_RESULT_PASS)
+            {
+                log << TestLog::Message << "subgroupSize " << size << " failed" << TestLog::EndMessage;
+                return result;
+            }
+        }
+
+        return TestStatus::pass("OK");
+    }
+    else if (isAllGraphicsStages(caseDef.shaderStage))
+    {
+        const VkShaderStageFlags stages = subgroups::getPossibleGraphicsSubgroupStages(context, caseDef.shaderStage);
+        const subgroups::SSBOData inputData = {
+            initializeType,                        //  InputDataInitializeType initializeType;
+            subgroups::SSBOData::LayoutStd430,     //  InputDataLayoutType layout;
+            caseDef.format,                        //  vk::VkFormat format;
+            subgroups::maxSupportedSubgroupSize(), //  vk::VkDeviceSize numElements;
+            subgroups::SSBOData::BindingSSBO,      //  bool isImage;
+            4u,                                    //  uint32_t binding;
+            stages,                                //  vk::VkShaderStageFlags stages;
+        };
+
+        return subgroups::allStages(context, VK_FORMAT_R32_UINT, &inputData, 1, nullptr, checkVertexPipelineStages,
+                                    stages);
+    }
+#ifndef CTS_USES_VULKANSC
+    else if (isAllRayTracingStages(caseDef.shaderStage))
+    {
+        const VkShaderStageFlags stages = subgroups::getPossibleRayTracingSubgroupStages(context, caseDef.shaderStage);
+        const subgroups::SSBOData inputData = {
+            initializeType,                        //  InputDataInitializeType initializeType;
+            subgroups::SSBOData::LayoutStd430,     //  InputDataLayoutType layout;
+            caseDef.format,                        //  vk::VkFormat format;
+            subgroups::maxSupportedSubgroupSize(), //  vk::VkDeviceSize numElements;
+            subgroups::SSBOData::BindingSSBO,      //  bool isImage;
+            6u,                                    //  uint32_t binding;
+            stages,                                //  vk::VkShaderStageFlags stages;
+        };
+
+        return subgroups::allRayTracingStages(context, VK_FORMAT_R32_UINT, &inputData, 1, nullptr,
+                                              checkVertexPipelineStages, stages);
+    }
+#endif // CTS_USES_VULKANSC
+    else
+        TCU_THROW(InternalError, "Unknown stage or invalid stage set");
+}
+} // namespace
 
 namespace vkt
 {
 namespace subgroups
 {
-tcu::TestCaseGroup* createSubgroupsVoteTests(tcu::TestContext& testCtx)
+TestCaseGroup *createSubgroupsVoteTests(TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> graphicGroup(new tcu::TestCaseGroup(
-		testCtx, "graphics", "Subgroup arithmetic category tests: graphics"));
-	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(
-		testCtx, "compute", "Subgroup arithmetic category tests: compute"));
-	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
-		testCtx, "framebuffer", "Subgroup arithmetic category tests: framebuffer"));
+    de::MovePtr<TestCaseGroup> group(new TestCaseGroup(testCtx, "vote"));
+    de::MovePtr<TestCaseGroup> graphicGroup(new TestCaseGroup(testCtx, "graphics"));
+    de::MovePtr<TestCaseGroup> computeGroup(new TestCaseGroup(testCtx, "compute"));
+    de::MovePtr<TestCaseGroup> framebufferGroup(new TestCaseGroup(testCtx, "framebuffer"));
+    de::MovePtr<TestCaseGroup> fragHelperGroup(new TestCaseGroup(testCtx, "frag_helper"));
+#ifndef CTS_USES_VULKANSC
+    de::MovePtr<TestCaseGroup> raytracingGroup(new TestCaseGroup(testCtx, "ray_tracing"));
+    de::MovePtr<TestCaseGroup> meshGroup(new TestCaseGroup(testCtx, "mesh"));
+    de::MovePtr<TestCaseGroup> meshGroupARB(new TestCaseGroup(testCtx, "mesh"));
+#endif // CTS_USES_VULKANSC
 
-	de::MovePtr<tcu::TestCaseGroup> fragHelperGroup(new tcu::TestCaseGroup(
-		testCtx, "frag_helper", "Subgroup arithmetic category tests: fragment helper invocation"));
+    de::MovePtr<TestCaseGroup> groupARB(new TestCaseGroup(testCtx, "ext_shader_subgroup_vote"));
+    de::MovePtr<TestCaseGroup> graphicGroupARB(new TestCaseGroup(testCtx, "graphics"));
+    de::MovePtr<TestCaseGroup> computeGroupARB(new TestCaseGroup(testCtx, "compute"));
+    de::MovePtr<TestCaseGroup> framebufferGroupARB(new TestCaseGroup(testCtx, "framebuffer"));
+    de::MovePtr<TestCaseGroup> fragHelperGroupARB(new TestCaseGroup(testCtx, "frag_helper"));
+    const bool boolValues[] = {false, true};
 
-	de::MovePtr<tcu::TestCaseGroup> graphicGroupARB(new tcu::TestCaseGroup(
-		testCtx, "graphics", "Subgroup arithmetic category tests: graphics"));
-	de::MovePtr<tcu::TestCaseGroup> computeGroupARB(new tcu::TestCaseGroup(
-		testCtx, "compute", "Subgroup arithmetic category tests: compute"));
-	de::MovePtr<tcu::TestCaseGroup> framebufferGroupARB(new tcu::TestCaseGroup(
-		testCtx, "framebuffer", "Subgroup arithmetic category tests: framebuffer"));
+    {
+        const VkShaderStageFlags fbStages[] = {
+            VK_SHADER_STAGE_VERTEX_BIT,
+            VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+            VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+            VK_SHADER_STAGE_GEOMETRY_BIT,
+        };
+#ifndef CTS_USES_VULKANSC
+        const VkShaderStageFlags meshStages[] = {
+            VK_SHADER_STAGE_MESH_BIT_EXT,
+            VK_SHADER_STAGE_TASK_BIT_EXT,
+        };
+#endif // CTS_USES_VULKANSC
+        const vector<VkFormat> formats = subgroups::getAllFormats();
 
-	de::MovePtr<tcu::TestCaseGroup> fragHelperGroupARB(new tcu::TestCaseGroup(
-		testCtx, "frag_helper", "Subgroup arithmetic category tests: fragment helper invocation"));
+        for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
+        {
+            const VkFormat format           = formats[formatIndex];
+            const bool needs8BitUBOStorage  = isFormat8bitTy(format);
+            const bool needs16BitUBOStorage = isFormat16BitTy(format);
+            const bool formatIsNotVector    = format == VK_FORMAT_R8_USCALED || format == VK_FORMAT_R32_UINT ||
+                                           format == VK_FORMAT_R32_SINT || format == VK_FORMAT_R32_SFLOAT ||
+                                           format == VK_FORMAT_R64_SFLOAT;
 
-	const VkShaderStageFlags stages[] =
-	{
-		VK_SHADER_STAGE_VERTEX_BIT,
-		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-		VK_SHADER_STAGE_GEOMETRY_BIT,
-	};
+            for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
+            {
+                const OpType opType = static_cast<OpType>(opTypeIndex);
 
-	const std::vector<VkFormat> formats = subgroups::getAllFormats();
+                // Skip OPTYPE_LAST_NON_ARB because it is not a real op type.
+                if (opType == OPTYPE_LAST_NON_ARB)
+                    continue;
 
-	for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
-	{
-		const VkFormat format = formats[formatIndex];
-		const deBool formatIsNotVector = VK_FORMAT_R8_USCALED == format || VK_FORMAT_R32_UINT == format ||
-			VK_FORMAT_R32_SINT == format || VK_FORMAT_R32_SFLOAT == format || VK_FORMAT_R64_SFLOAT == format;
+                // Skip the non-nonvector tests because VK_EXT_shader_subgroup_vote functions only supports boolean scalar arguments.
+                if (opType > OPTYPE_LAST_NON_ARB && !formatIsNotVector)
+                    continue;
 
-		for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
-		{
-			// Skip OPTYPE_LAST_NON_ARB because it is not a real op type.
-			if (opTypeIndex == OPTYPE_LAST_NON_ARB)
-				continue;
+                // Skip non-boolean formats when testing allInvocationsEqualARB(bool value), because it requires a boolean
+                // argument that should have the same value for all invocations. For the rest of formats, it won't be a boolean argument,
+                // so it may give wrong results when converting to bool.
+                if (opType == OPTYPE_ALLEQUAL_ARB && format != VK_FORMAT_R8_USCALED)
+                    continue;
 
-			// Skip the non-nonvector tests because VK_EXT_shader_subgroup_vote functions only supports boolean scalar arguments.
-			if (opTypeIndex > OPTYPE_LAST_NON_ARB && !formatIsNotVector)
-				continue;
+                // Skip the typed tests for all but subgroupAllEqual() and allInvocationsEqualARB()
+                if ((VK_FORMAT_R32_UINT != format) && (OPTYPE_ALLEQUAL != opType) && (OPTYPE_ALLEQUAL_ARB != opType))
+                {
+                    continue;
+                }
 
-			// Skip non-boolean formats when testing allInvocationsEqualARB(bool value), because it requires a boolean
-			// argument that should have the same value for all invocations. For the rest of formats, it won't be a boolean argument,
-			// so it may give wrong results when converting to bool.
-			if (opTypeIndex == OPTYPE_ALLEQUAL_ARB && format != VK_FORMAT_R8_USCALED)
-				continue;
+                const string op                    = de::toLower(getOpTypeName(opType));
+                const string name                  = op + "_" + subgroups::getFormatNameForGLSL(format);
+                const bool opNonARB                = (opType < OPTYPE_LAST_NON_ARB);
+                TestCaseGroup *computeGroupPtr     = opNonARB ? computeGroup.get() : computeGroupARB.get();
+                TestCaseGroup *graphicGroupPtr     = opNonARB ? graphicGroup.get() : graphicGroupARB.get();
+                TestCaseGroup *framebufferGroupPtr = opNonARB ? framebufferGroup.get() : framebufferGroupARB.get();
+                TestCaseGroup *fragHelperGroupPtr  = opNonARB ? fragHelperGroup.get() : fragHelperGroupARB.get();
+#ifndef CTS_USES_VULKANSC
+                TestCaseGroup *meshGroupPtr = opNonARB ? meshGroup.get() : meshGroupARB.get();
+#endif // CTS_USES_VULKANSC
 
-			// Skip the typed tests for all but subgroupAllEqual() and allInvocationsEqualARB()
-			if ((VK_FORMAT_R32_UINT != format) && (OPTYPE_ALLEQUAL != opTypeIndex) && (OPTYPE_ALLEQUAL_ARB != opTypeIndex))
-			{
-				continue;
-			}
+                for (size_t groupSizeNdx = 0; groupSizeNdx < DE_LENGTH_OF_ARRAY(boolValues); ++groupSizeNdx)
+                {
+                    const bool requiredSubgroupSize = boolValues[groupSizeNdx];
+                    const string testName           = name + (requiredSubgroupSize ? "_requiredsubgroupsize" : "");
+                    const CaseDefinition caseDef    = {
+                        opType,                        //  OpType opType;
+                        VK_SHADER_STAGE_COMPUTE_BIT,   //  VkShaderStageFlags shaderStage;
+                        format,                        //  VkFormat format;
+                        de::SharedPtr<bool>(new bool), //  de::SharedPtr<bool> geometryPointSizeSupported;
+                        requiredSubgroupSize,          //  bool requiredSubgroupSize;
+                        bool(false),                   //  bool requires8BitUniformBuffer;
+                        bool(false)                    //  bool requires16BitUniformBuffer;
+                    };
 
-			const std::string op = de::toLower(getOpTypeName(opTypeIndex));
+                    addFunctionCaseWithPrograms(computeGroupPtr, testName, supportedCheck, initPrograms, test, caseDef);
+                }
 
-			{
-				CaseDefinition caseDef = { opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format, de::SharedPtr<bool>(new bool), DE_FALSE, deBool(false),deBool(false) };
-				if (opTypeIndex < OPTYPE_LAST_NON_ARB)
-				{
-					addFunctionCaseWithPrograms(computeGroup.get(),
-												op + "_" + subgroups::getFormatNameForGLSL(format),
-												"", supportedCheck, initPrograms, test, caseDef);
-					caseDef.requiredSubgroupSize = DE_TRUE;
-					addFunctionCaseWithPrograms(computeGroup.get(),
-												op + "_" + subgroups::getFormatNameForGLSL(format) + "_requiredsubgroupsize",
-												"", supportedCheck, initPrograms, test, caseDef);
-				}
-				else
-				{
-					addFunctionCaseWithPrograms(computeGroupARB.get(),
-												op + "_" + subgroups::getFormatNameForGLSL(format),
-												"", supportedCheck, initPrograms, test, caseDef);
-					caseDef.requiredSubgroupSize = DE_TRUE;
-					addFunctionCaseWithPrograms(computeGroupARB.get(),
-												op + "_" + subgroups::getFormatNameForGLSL(format) + "_requiredsubgroupsize",
-												"", supportedCheck, initPrograms, test, caseDef);
-				}
-			}
+#ifndef CTS_USES_VULKANSC
+                for (size_t groupSizeNdx = 0; groupSizeNdx < DE_LENGTH_OF_ARRAY(boolValues); ++groupSizeNdx)
+                {
+                    for (const auto &stage : meshStages)
+                    {
+                        const bool requiredSubgroupSize = boolValues[groupSizeNdx];
+                        const string testName = name + (requiredSubgroupSize ? "_requiredsubgroupsize" : "") + "_" +
+                                                getShaderStageName(stage);
+                        const CaseDefinition caseDef = {
+                            opType,                        //  OpType opType;
+                            stage,                         //  VkShaderStageFlags shaderStage;
+                            format,                        //  VkFormat format;
+                            de::SharedPtr<bool>(new bool), //  de::SharedPtr<bool> geometryPointSizeSupported;
+                            requiredSubgroupSize,          //  bool requiredSubgroupSize;
+                            bool(false),                   //  bool requires8BitUniformBuffer;
+                            bool(false)                    //  bool requires16BitUniformBuffer;
+                        };
 
-			{
-				const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS, format, de::SharedPtr<bool>(new bool), DE_FALSE, deBool(false),deBool(false) };
-				if (opTypeIndex < OPTYPE_LAST_NON_ARB)
-				{
-					addFunctionCaseWithPrograms(graphicGroup.get(),
-												op + "_" + subgroups::getFormatNameForGLSL(format),
-												"", supportedCheck, initPrograms, test, caseDef);
-				}
-				else
-				{
-					addFunctionCaseWithPrograms(graphicGroupARB.get(),
-												op + "_" + subgroups::getFormatNameForGLSL(format),
-												"", supportedCheck, initPrograms, test, caseDef);
-				}
-			}
+                        addFunctionCaseWithPrograms(meshGroupPtr, testName, supportedCheck, initPrograms, test,
+                                                    caseDef);
+                    }
+                }
+#endif // CTS_USES_VULKANSC
 
-			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
-			{
-				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format, de::SharedPtr<bool>(new bool), DE_FALSE, deBool(false),deBool(false) };
-				if (opTypeIndex < OPTYPE_LAST_NON_ARB)
-				{
-					addFunctionCaseWithPrograms(framebufferGroup.get(),
-												op + "_" +
-												subgroups::getFormatNameForGLSL(format)
-												+ "_" + getShaderStageName(caseDef.shaderStage), "",
-												supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
-				}
-				else
-				{
-					addFunctionCaseWithPrograms(framebufferGroupARB.get(),
-												op + "_" +
-												subgroups::getFormatNameForGLSL(format)
-												+ "_" + getShaderStageName(caseDef.shaderStage), "",
-												supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
-				}
-			}
+                {
+                    const CaseDefinition caseDef = {
+                        opType,                        //  OpType opType;
+                        VK_SHADER_STAGE_ALL_GRAPHICS,  //  VkShaderStageFlags shaderStage;
+                        format,                        //  VkFormat format;
+                        de::SharedPtr<bool>(new bool), //  de::SharedPtr<bool> geometryPointSizeSupported;
+                        false,                         //  bool requiredSubgroupSize;
+                        bool(false),                   //  bool requires8BitUniformBuffer;
+                        bool(false)                    //  bool requires16BitUniformBuffer;
+                    };
 
-			bool needs8BitUBOStorage = isFormat8bitTy(format);
-			bool needs16BitUBOStorage = isFormat16BitTy(format);
-			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_FRAGMENT_BIT, format, de::SharedPtr<bool>(new bool), DE_FALSE, deBool(needs8BitUBOStorage),deBool(needs16BitUBOStorage) };
-			if (opTypeIndex < OPTYPE_LAST_NON_ARB)
-			{
-				addFunctionCaseWithPrograms(fragHelperGroup.get(),
-											op + "_" +
-											subgroups::getFormatNameForGLSL(format)
-											+ "_" + getShaderStageName(caseDef.shaderStage), "",
-											supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
-			}
-			else
-			{
-				addFunctionCaseWithPrograms(fragHelperGroupARB.get(),
-											op + "_" +
-											subgroups::getFormatNameForGLSL(format)
-											+ "_" + getShaderStageName(caseDef.shaderStage), "",
-											supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
-			}
-		}
-	}
+                    addFunctionCaseWithPrograms(graphicGroupPtr, name, supportedCheck, initPrograms, test, caseDef);
+                }
 
-	de::MovePtr<tcu::TestCaseGroup> groupARB(new tcu::TestCaseGroup(
-		testCtx, "ext_shader_subgroup_vote", "VK_EXT_shader_subgroup_vote category tests"));
+                for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(fbStages); ++stageIndex)
+                {
+                    const CaseDefinition caseDef = {
+                        opType,                        //  OpType opType;
+                        fbStages[stageIndex],          //  VkShaderStageFlags shaderStage;
+                        format,                        //  VkFormat format;
+                        de::SharedPtr<bool>(new bool), //  de::SharedPtr<bool> geometryPointSizeSupported;
+                        false,                         //  bool requiredSubgroupSize;
+                        bool(needs8BitUBOStorage),     //  bool requires8BitUniformBuffer;
+                        bool(needs16BitUBOStorage)     //  bool requires16BitUniformBuffer;
+                    };
+                    const string testName = name + "_" + getShaderStageName(caseDef.shaderStage);
 
-	groupARB->addChild(graphicGroupARB.release());
-	groupARB->addChild(computeGroupARB.release());
-	groupARB->addChild(framebufferGroupARB.release());
-	groupARB->addChild(fragHelperGroupARB.release());
+                    addFunctionCaseWithPrograms(framebufferGroupPtr, testName, supportedCheck, initFrameBufferPrograms,
+                                                noSSBOtest, caseDef);
+                }
 
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-		testCtx, "vote", "Subgroup vote category tests"));
+                {
+                    const CaseDefinition caseDef = {
+                        opType,                        //  OpType opType;
+                        VK_SHADER_STAGE_FRAGMENT_BIT,  //  VkShaderStageFlags shaderStage;
+                        format,                        //  VkFormat format;
+                        de::SharedPtr<bool>(new bool), //  de::SharedPtr<bool> geometryPointSizeSupported;
+                        false,                         //  bool requiredSubgroupSize;
+                        bool(needs8BitUBOStorage),     //  bool requires8BitUniformBuffer;
+                        bool(needs16BitUBOStorage)     //  bool requires16BitUniformBuffer;
+                    };
+                    const string testName = name + "_" + getShaderStageName(caseDef.shaderStage);
 
-	group->addChild(graphicGroup.release());
-	group->addChild(computeGroup.release());
-	group->addChild(framebufferGroup.release());
-	group->addChild(fragHelperGroup.release());
+                    addFunctionCaseWithPrograms(fragHelperGroupPtr, testName, supportedCheck,
+                                                initFrameBufferProgramsFrag, noSSBOtest, caseDef);
+                }
+            }
+        }
+    }
 
-	group->addChild(groupARB.release());
+#ifndef CTS_USES_VULKANSC
+    {
+        const vector<VkFormat> formats = subgroups::getAllRayTracingFormats();
 
-	return group.release();
+        for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
+        {
+            const VkFormat format = formats[formatIndex];
+
+            for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST_NON_ARB; ++opTypeIndex)
+            {
+                const OpType opType = static_cast<OpType>(opTypeIndex);
+
+                // Skip the typed tests for all but subgroupAllEqual()
+                if ((VK_FORMAT_R32_UINT != format) && (OPTYPE_ALLEQUAL != opType))
+                {
+                    continue;
+                }
+
+                const string op              = de::toLower(getOpTypeName(opType));
+                const string name            = op + "_" + subgroups::getFormatNameForGLSL(format);
+                const CaseDefinition caseDef = {
+                    opType,                        //  OpType opType;
+                    SHADER_STAGE_ALL_RAY_TRACING,  //  VkShaderStageFlags shaderStage;
+                    format,                        //  VkFormat format;
+                    de::SharedPtr<bool>(new bool), //  de::SharedPtr<bool> geometryPointSizeSupported;
+                    false,                         //  bool requiredSubgroupSize;
+                    false,                         //  bool requires8BitUniformBuffer;
+                    false                          //  bool requires16BitUniformBuffer;
+                };
+
+                addFunctionCaseWithPrograms(raytracingGroup.get(), name, supportedCheck, initPrograms, test, caseDef);
+            }
+        }
+    }
+#endif // CTS_USES_VULKANSC
+
+    groupARB->addChild(graphicGroupARB.release());
+    groupARB->addChild(computeGroupARB.release());
+    groupARB->addChild(framebufferGroupARB.release());
+    groupARB->addChild(fragHelperGroupARB.release());
+
+    group->addChild(graphicGroup.release());
+    group->addChild(computeGroup.release());
+    group->addChild(framebufferGroup.release());
+    group->addChild(fragHelperGroup.release());
+#ifndef CTS_USES_VULKANSC
+    group->addChild(raytracingGroup.release());
+    group->addChild(meshGroup.release());
+    groupARB->addChild(meshGroupARB.release());
+#endif // CTS_USES_VULKANSC
+
+    group->addChild(groupARB.release());
+
+    return group.release();
 }
 
-} // subgroups
-} // vkt
+} // namespace subgroups
+} // namespace vkt

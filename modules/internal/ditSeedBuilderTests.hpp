@@ -29,8 +29,8 @@
 namespace dit
 {
 
-tcu::TestCaseGroup* createSeedBuilderTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSeedBuilderTests(tcu::TestContext &testCtx);
 
-} // dit
+} // namespace dit
 
 #endif // _DITSEEDBUILDERTESTS_HPP

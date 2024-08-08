@@ -251,213 +251,213 @@ namespace glcts
 class TextureBufferOperations : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureBufferOperations(Context& context, const ExtParameters& extParams, const char* name,
-							const char* description);
+    /* Public methods */
+    TextureBufferOperations(Context &context, const ExtParameters &extParams, const char *name,
+                            const char *description);
 
-	virtual ~TextureBufferOperations()
-	{
-	}
+    virtual ~TextureBufferOperations()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 protected:
-	/* Protected methods */
-	void checkFramebufferStatus(glw::GLenum framebuffer);
-	virtual void initTest(void);
-	virtual void initializeBufferObjectData(void) = 0;
-	virtual void fillBufferWithData(glw::GLint* buffer, glw::GLuint bufferLength);
+    /* Protected methods */
+    void checkFramebufferStatus(glw::GLenum framebuffer);
+    virtual void initTest(void);
+    virtual void initializeBufferObjectData(void) = 0;
+    virtual void fillBufferWithData(glw::GLint *buffer, glw::GLuint bufferLength);
 
-	/* Protected static constants */
-	static const glw::GLuint m_n_vector_components;
+    /* Protected static constants */
+    static const glw::GLuint m_n_vector_components;
 
-	/* Protected variables */
-	glw::GLint m_n_vectors_in_buffer_texture;
+    /* Protected variables */
+    glw::GLint m_n_vectors_in_buffer_texture;
 
-	glw::GLuint m_tb_bo_id;
-	glw::GLuint m_texbuff_id;
+    glw::GLuint m_tb_bo_id;
+    glw::GLuint m_texbuff_id;
 
 private:
-	std::string getComputeShaderCode(void) const;
-	std::string getFragmentShaderCode(void) const;
-	std::string getVertexShaderCode(void) const;
+    std::string getComputeShaderCode(void) const;
+    std::string getFragmentShaderCode(void) const;
+    std::string getVertexShaderCode(void) const;
 
-	void initFirstPhase(void);
-	void initSecondPhase(void);
-	void iterateFirstPhase(glw::GLint* result, glw::GLuint size);
-	void iterateSecondPhase(glw::GLint* result);
-	void deinitFirstPhase(void);
-	void deinitSecondPhase(void);
+    void initFirstPhase(void);
+    void initSecondPhase(void);
+    void iterateFirstPhase(glw::GLint *result, glw::GLuint size);
+    void iterateSecondPhase(glw::GLint *result);
+    void deinitFirstPhase(void);
+    void deinitSecondPhase(void);
 
-	glw::GLboolean verifyResults(glw::GLint* reference, glw::GLint* result, glw::GLuint size, const char* message);
+    glw::GLboolean verifyResults(glw::GLint *reference, glw::GLint *result, glw::GLuint size, const char *message);
 
-	/* Private variables */
-	glw::GLuint m_cs_id;
-	glw::GLuint m_po_cs_id;
-	glw::GLuint m_ssbo_bo_id;
+    /* Private variables */
+    glw::GLuint m_cs_id;
+    glw::GLuint m_po_cs_id;
+    glw::GLuint m_ssbo_bo_id;
 
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_po_vs_fs_id;
-	glw::GLuint m_to_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vbo_id;
-	glw::GLuint m_vbo_indicies_id;
-	glw::GLuint m_vs_id;
-	glw::GLint  m_vertex_location;
-	glw::GLint  m_index_location;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_po_vs_fs_id;
+    glw::GLuint m_to_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vbo_id;
+    glw::GLuint m_vbo_indicies_id;
+    glw::GLuint m_vs_id;
+    glw::GLint m_vertex_location;
+    glw::GLint m_index_location;
 };
 
 /* Test Case 1 - buffer object loads */
 class TextureBufferOperationsViaBufferObjectLoad : public TextureBufferOperations
 {
 public:
-	/* Public methods */
-	TextureBufferOperationsViaBufferObjectLoad(Context& context, const ExtParameters& extParams, const char* name,
-											   const char* description);
+    /* Public methods */
+    TextureBufferOperationsViaBufferObjectLoad(Context &context, const ExtParameters &extParams, const char *name,
+                                               const char *description);
 
-	virtual ~TextureBufferOperationsViaBufferObjectLoad()
-	{
-	}
+    virtual ~TextureBufferOperationsViaBufferObjectLoad()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void initializeBufferObjectData(void);
+    /* Protected methods */
+    virtual void initializeBufferObjectData(void);
 };
 
 /* Test Case 2 - direct CPU writes */
 class TextureBufferOperationsViaCPUWrites : public TextureBufferOperations
 {
 public:
-	/* Public methods */
-	TextureBufferOperationsViaCPUWrites(Context& context, const ExtParameters& extParams, const char* name,
-										const char* description);
+    /* Public methods */
+    TextureBufferOperationsViaCPUWrites(Context &context, const ExtParameters &extParams, const char *name,
+                                        const char *description);
 
-	virtual ~TextureBufferOperationsViaCPUWrites()
-	{
-	}
+    virtual ~TextureBufferOperationsViaCPUWrites()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void initializeBufferObjectData(void);
+    /* Protected methods */
+    virtual void initializeBufferObjectData(void);
 };
 
 /* Test Case 3 - framebuffer readbacks to pixel buffer objects */
 class TextureBufferOperationsViaFrambufferReadBack : public TextureBufferOperations
 {
 public:
-	/* Public methods */
-	TextureBufferOperationsViaFrambufferReadBack(Context& context, const ExtParameters& extParams, const char* name,
-												 const char* description);
+    /* Public methods */
+    TextureBufferOperationsViaFrambufferReadBack(Context &context, const ExtParameters &extParams, const char *name,
+                                                 const char *description);
 
-	virtual ~TextureBufferOperationsViaFrambufferReadBack()
-	{
-	}
+    virtual ~TextureBufferOperationsViaFrambufferReadBack()
+    {
+    }
 
-	virtual void deinit(void);
+    virtual void deinit(void);
 
 private:
-	/* Private methods */
-	virtual void initializeBufferObjectData(void);
-	virtual void fillBufferWithData(glw::GLint* buffer, glw::GLuint bufferLength);
+    /* Private methods */
+    virtual void initializeBufferObjectData(void);
+    virtual void fillBufferWithData(glw::GLint *buffer, glw::GLuint bufferLength);
 
-	std::string getFBFragmentShaderCode() const;
-	std::string getFBVertexShaderCode() const;
+    std::string getFBFragmentShaderCode() const;
+    std::string getFBVertexShaderCode() const;
 
-	glw::GLuint m_fb_fbo_id;
-	glw::GLuint m_fb_fs_id;
-	glw::GLuint m_fb_po_id;
-	glw::GLuint m_fb_to_id;
-	glw::GLuint m_fb_vao_id;
-	glw::GLuint m_fb_vbo_id;
-	glw::GLuint m_fb_vs_id;
-	glw::GLint  m_position_location;
+    glw::GLuint m_fb_fbo_id;
+    glw::GLuint m_fb_fs_id;
+    glw::GLuint m_fb_po_id;
+    glw::GLuint m_fb_to_id;
+    glw::GLuint m_fb_vao_id;
+    glw::GLuint m_fb_vbo_id;
+    glw::GLuint m_fb_vs_id;
+    glw::GLint m_position_location;
 };
 
 /* Test Case 4 - transform feedback */
 class TextureBufferOperationsViaTransformFeedback : public TextureBufferOperations
 {
 public:
-	/* Public methods */
-	TextureBufferOperationsViaTransformFeedback(Context& context, const ExtParameters& extParams, const char* name,
-												const char* description);
+    /* Public methods */
+    TextureBufferOperationsViaTransformFeedback(Context &context, const ExtParameters &extParams, const char *name,
+                                                const char *description);
 
-	virtual ~TextureBufferOperationsViaTransformFeedback()
-	{
-	}
+    virtual ~TextureBufferOperationsViaTransformFeedback()
+    {
+    }
 
-	virtual void deinit(void);
+    virtual void deinit(void);
 
 private:
-	/* Private methods */
-	virtual void initializeBufferObjectData(void);
+    /* Private methods */
+    virtual void initializeBufferObjectData(void);
 
-	std::string getTFVertexShaderCode() const;
-	std::string getTFFragmentShaderCode() const;
+    std::string getTFVertexShaderCode() const;
+    std::string getTFFragmentShaderCode() const;
 
-	/* Private variables */
-	glw::GLuint m_tf_fs_id;
-	glw::GLuint m_tf_po_id;
-	glw::GLuint m_tf_vao_id;
-	glw::GLuint m_tf_vbo_id;
-	glw::GLuint m_tf_vs_id;
-	glw::GLint  m_position_location;
+    /* Private variables */
+    glw::GLuint m_tf_fs_id;
+    glw::GLuint m_tf_po_id;
+    glw::GLuint m_tf_vao_id;
+    glw::GLuint m_tf_vbo_id;
+    glw::GLuint m_tf_vs_id;
+    glw::GLint m_position_location;
 };
 
 /* Test Case 5 - image store */
 class TextureBufferOperationsViaImageStore : public TextureBufferOperations
 {
 public:
-	/* Public methods */
-	TextureBufferOperationsViaImageStore(Context& context, const ExtParameters& extParams, const char* name,
-										 const char* description);
+    /* Public methods */
+    TextureBufferOperationsViaImageStore(Context &context, const ExtParameters &extParams, const char *name,
+                                         const char *description);
 
-	virtual ~TextureBufferOperationsViaImageStore()
-	{
-	}
+    virtual ~TextureBufferOperationsViaImageStore()
+    {
+    }
 
-	virtual void deinit(void);
+    virtual void deinit(void);
 
 private:
-	/* Private methods */
-	virtual void initializeBufferObjectData(void);
-	virtual void fillBufferWithData(glw::GLint* buffer, glw::GLuint bufferLength);
+    /* Private methods */
+    virtual void initializeBufferObjectData(void);
+    virtual void fillBufferWithData(glw::GLint *buffer, glw::GLuint bufferLength);
 
-	std::string getISComputeShaderCode() const;
+    std::string getISComputeShaderCode() const;
 
-	/* Private Variables */
-	glw::GLuint m_is_cs_id;
-	glw::GLuint m_is_po_id;
+    /* Private Variables */
+    glw::GLuint m_is_cs_id;
+    glw::GLuint m_is_po_id;
 
-	/* Private static constants */
-	static const glw::GLuint m_image_unit;
+    /* Private static constants */
+    static const glw::GLuint m_image_unit;
 };
 
 /* Test Case 6 - ssbo writes */
 class TextureBufferOperationsViaSSBOWrites : public TextureBufferOperations
 {
 public:
-	/* Public methods */
-	TextureBufferOperationsViaSSBOWrites(Context& context, const ExtParameters& extParams, const char* name,
-										 const char* description);
+    /* Public methods */
+    TextureBufferOperationsViaSSBOWrites(Context &context, const ExtParameters &extParams, const char *name,
+                                         const char *description);
 
-	virtual ~TextureBufferOperationsViaSSBOWrites()
-	{
-	}
+    virtual ~TextureBufferOperationsViaSSBOWrites()
+    {
+    }
 
-	virtual void deinit(void);
+    virtual void deinit(void);
 
 private:
-	/* Private methods */
-	virtual void initializeBufferObjectData(void);
-	virtual void fillBufferWithData(glw::GLint* buffer, glw::GLuint bufferLength);
+    /* Private methods */
+    virtual void initializeBufferObjectData(void);
+    virtual void fillBufferWithData(glw::GLint *buffer, glw::GLuint bufferLength);
 
-	std::string getSSBOComputeShaderCode() const;
+    std::string getSSBOComputeShaderCode() const;
 
-	/* Private variables */
-	glw::GLuint m_ssbo_cs_id;
-	glw::GLuint m_ssbo_po_id;
+    /* Private variables */
+    glw::GLuint m_ssbo_cs_id;
+    glw::GLuint m_ssbo_po_id;
 };
 
 } // namespace glcts

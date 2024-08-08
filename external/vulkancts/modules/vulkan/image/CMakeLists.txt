@@ -1,6 +1,9 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+)
 
-set(DEQP_VK_IMAGE_SRCS
+set(DEQP_VK_VKSC_IMAGE_SRCS
 	vktImageTests.cpp
 	vktImageTests.hpp
 	vktImageTestsUtil.cpp
@@ -13,6 +16,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageAtomicSpirvShaders.hpp
 	vktImageLoadStoreTests.cpp
 	vktImageLoadStoreTests.hpp
+	vktImageMismatchedDimensionalityTests.cpp
+	vktImageMismatchedDimensionalityTests.hpp
 	vktImageMismatchedFormatsTests.cpp
 	vktImageMismatchedFormatsTests.hpp
 	vktImageMutableTests.cpp
@@ -33,18 +38,33 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageTranscodingSupportTests.hpp
 	vktImageMisalignedCubeTests.cpp
 	vktImageMisalignedCubeTests.hpp
+	vktImageSampleDrawnCubeFaceTests.cpp
+	vktImageSampleDrawnCubeFaceTests.hpp
 	vktImageSubresourceLayoutTests.cpp
 	vktImageSubresourceLayoutTests.hpp
 	vktImageMismatchedWriteOpTests.cpp
 	vktImageMismatchedWriteOpTests.hpp
+	vktImageDepthStencilDescriptorTests.cpp
+	vktImageDepthStencilDescriptorTests.hpp
+	vktImageSampleCompressedTextureTests.cpp
+	vktImageSampleCompressedTextureTests.hpp
+	vktImageExtendedUsageBitTests.cpp
+	vktImageExtendedUsageBitTests.hpp
+	vktImageTransfer.cpp
+	vktImageTransfer.hpp
+	vktImageDepthStencilSeparateTests.cpp
+	vktImageDepthStencilSeparateTests.hpp
 	)
 
-set(DEQP_VK_IMAGE_LIBS
-	tcutil
-	vkutil
+set(DEQP_VK_IMAGE_SRCS
+	vktImageHostImageCopyTests.cpp
+	vktImageHostImageCopyTests.hpp
 	)
 
 PCH(DEQP_VK_IMAGE_SRCS ../pch.cpp)
 
-add_library(deqp-vk-image STATIC ${DEQP_VK_IMAGE_SRCS})
-target_link_libraries(deqp-vk-image ${DEQP_VK_IMAGE_LIBS})
+add_library(deqp-vk-image STATIC ${DEQP_VK_VKSC_IMAGE_SRCS} ${DEQP_VK_IMAGE_SRCS})
+target_link_libraries(deqp-vk-image tcutil vkutil)
+
+add_library(deqp-vksc-image STATIC ${DEQP_VK_VKSC_IMAGE_SRCS})
+target_link_libraries(deqp-vksc-image PUBLIC deqp-vksc-util tcutil vkscutil)

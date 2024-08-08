@@ -30,8 +30,8 @@
 
 namespace tcu
 {
-	class WaiverUtil;
-};
+class WaiverUtil;
+}
 
 namespace es3cts
 {
@@ -39,18 +39,18 @@ namespace es3cts
 class ES30TestPackage : public deqp::TestPackage
 {
 public:
-	ES30TestPackage(tcu::TestContext& testCtx, const char* packageName);
-	~ES30TestPackage(void);
+    ES30TestPackage(tcu::TestContext &testCtx, const char *packageName);
+    ~ES30TestPackage(void);
 
-	void init(void);
+    void init(void);
 
-	virtual tcu::TestCaseExecutor* createExecutor(void) const;
+    virtual tcu::TestCaseExecutor *createExecutor(void) const;
 
 private:
-	ES30TestPackage(const ES30TestPackage& other);
-	ES30TestPackage& operator=(const ES30TestPackage& other);
+    ES30TestPackage(const ES30TestPackage &other);
+    ES30TestPackage &operator=(const ES30TestPackage &other);
 };
 
-} // es3cts
+} // namespace es3cts
 
 #endif // _ES3CTESTPACKAGE_HPP

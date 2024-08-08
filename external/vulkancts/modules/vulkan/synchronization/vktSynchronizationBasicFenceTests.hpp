@@ -23,17 +23,19 @@
  * \brief Synchronization fence basic tests
  *//*--------------------------------------------------------------------*/
 
+#include "vkDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vktSynchronizationDefs.hpp"
 
 namespace vkt
 {
 namespace synchronization
 {
 
-tcu::TestCaseGroup*		createBasicFenceTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBasicFenceTests(tcu::TestContext &testCtx,
+                                          VideoCodecOperationFlags VideoCodecOperationFlags = 0);
 
-} //synchronization
-} // vkt
-
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONBASICFENCETESTS_HPP

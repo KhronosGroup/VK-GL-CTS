@@ -32,121 +32,114 @@ namespace tcu
 namespace nullws
 {
 
-class Window: public eglu::NativeWindow
+class Window : public eglu::NativeWindow
 {
 public:
-	static const Capability CAPABILITIES = CAPABILITY_CREATE_SURFACE_LEGACY;
+    static const Capability CAPABILITIES = CAPABILITY_CREATE_SURFACE_LEGACY;
 
-	Window(eglu::NativeDisplay* nativeDisplay, const eglu::WindowParams& params)
-		: NativeWindow(CAPABILITIES)
-	{
-	}
+    Window(eglu::NativeDisplay *nativeDisplay, const eglu::WindowParams &params) : NativeWindow(CAPABILITIES)
+    {
+    }
 
-	eglw::EGLNativeWindowType getLegacyNative ()
-	{
-		return DE_NULL;
-	}
+    eglw::EGLNativeWindowType getLegacyNative()
+    {
+        return nullptr;
+    }
 };
 
-class WindowFactory: public eglu::NativeWindowFactory
+class WindowFactory : public eglu::NativeWindowFactory
 {
 public:
-	WindowFactory()
-		: NativeWindowFactory("nullws", "NullWS Window", Window::CAPABILITIES)
-	{
-	}
+    WindowFactory() : NativeWindowFactory("nullws", "NullWS Window", Window::CAPABILITIES)
+    {
+    }
 
-	eglu::NativeWindow* createWindow(eglu::NativeDisplay* nativeDisplay, const eglu::WindowParams& params) const
-	{
-		return new Window(nativeDisplay, params);
-	}
+    eglu::NativeWindow *createWindow(eglu::NativeDisplay *nativeDisplay, const eglu::WindowParams &params) const
+    {
+        return new Window(nativeDisplay, params);
+    }
 };
 
-class Pixmap: public eglu::NativePixmap
+class Pixmap : public eglu::NativePixmap
 {
 public:
-	static const Capability CAPABILITIES = CAPABILITY_CREATE_SURFACE_LEGACY;
+    static const Capability CAPABILITIES = CAPABILITY_CREATE_SURFACE_LEGACY;
 
-	Pixmap()
-		: NativePixmap(CAPABILITIES)
-	{
-	}
+    Pixmap() : NativePixmap(CAPABILITIES)
+    {
+    }
 
-	eglw::EGLNativePixmapType getLegacyNative ()
-	{
-		return DE_NULL;
-	}
+    eglw::EGLNativePixmapType getLegacyNative()
+    {
+        return nullptr;
+    }
 };
 
-class PixmapFactory: public eglu::NativePixmapFactory
+class PixmapFactory : public eglu::NativePixmapFactory
 {
 public:
-	PixmapFactory()
-		: NativePixmapFactory("nullws", "NullWS Pixmap", Pixmap::CAPABILITIES)
-	{
-	}
+    PixmapFactory() : NativePixmapFactory("nullws", "NullWS Pixmap", Pixmap::CAPABILITIES)
+    {
+    }
 
-	eglu::NativePixmap* createPixmap (eglu::NativeDisplay*, int, int) const
-	{
-		return new Pixmap();
-	}
+    eglu::NativePixmap *createPixmap(eglu::NativeDisplay *, int, int) const
+    {
+        return new Pixmap();
+    }
 };
 
-class Display: public eglu::NativeDisplay
+class Display : public eglu::NativeDisplay
 {
 public:
-	static const Capability CAPABILITIES = CAPABILITY_GET_DISPLAY_LEGACY;
+    static const Capability CAPABILITIES = CAPABILITY_GET_DISPLAY_LEGACY;
 
-	Display()
-		: eglu::NativeDisplay(CAPABILITIES)
-	{
-	}
+    Display() : eglu::NativeDisplay(CAPABILITIES)
+    {
+    }
 
-	eglw::EGLNativeDisplayType getLegacyNative()
-	{
-		return EGL_DEFAULT_DISPLAY;
-	}
+    eglw::EGLNativeDisplayType getLegacyNative()
+    {
+        return EGL_DEFAULT_DISPLAY;
+    }
 
-	const eglw::Library& getLibrary() const
-	{
-		return m_library;
-	}
+    const eglw::Library &getLibrary() const
+    {
+        return m_library;
+    }
 
 private:
-	eglw::DefaultLibrary m_library;
+    eglw::DefaultLibrary m_library;
 };
 
-
-class DisplayFactory: public eglu::NativeDisplayFactory
+class DisplayFactory : public eglu::NativeDisplayFactory
 {
 public:
-	DisplayFactory()
-		: eglu::NativeDisplayFactory ("nullws", "NullWS Display", Display::CAPABILITIES)
-	{
-		m_nativeWindowRegistry.registerFactory(new WindowFactory());
-		m_nativePixmapRegistry.registerFactory(new PixmapFactory());
-	}
+    DisplayFactory() : eglu::NativeDisplayFactory("nullws", "NullWS Display", Display::CAPABILITIES)
+    {
+        m_nativeWindowRegistry.registerFactory(new WindowFactory());
+        m_nativePixmapRegistry.registerFactory(new PixmapFactory());
+    }
 
-	eglu::NativeDisplay* createDisplay (const eglw::EGLAttrib* attribList = DE_NULL) const
-	{
-		return new Display();
-	}
+    eglu::NativeDisplay *createDisplay(const eglw::EGLAttrib *attribList = nullptr) const
+    {
+        return new Display();
+    }
 };
 
-Platform::Platform ()
+Platform::Platform()
 {
-	m_nativeDisplayFactoryRegistry.registerFactory(new DisplayFactory());
-	m_contextFactoryRegistry.registerFactory(new eglu::GLContextFactory(m_nativeDisplayFactoryRegistry));
+    m_nativeDisplayFactoryRegistry.registerFactory(new DisplayFactory());
+    m_contextFactoryRegistry.registerFactory(new eglu::GLContextFactory(m_nativeDisplayFactoryRegistry));
 }
 
-Platform::~Platform ()
+Platform::~Platform()
 {
 }
 
-} // nullws
-} // tcu
+} // namespace nullws
+} // namespace tcu
 
-tcu::Platform* createPlatform ()
+tcu::Platform *createPlatform()
 {
-	return new tcu::nullws::Platform();
+    return new tcu::nullws::Platform();
 }

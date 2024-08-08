@@ -28,77 +28,73 @@
 namespace rsg
 {
 
-Token::Token (const char* identifier)
-	: m_type(IDENTIFIER)
+Token::Token(const char *identifier) : m_type(IDENTIFIER)
 {
-	m_arg.identifier = deStrdup(identifier);
-	if (!m_arg.identifier)
-		throw std::bad_alloc();
+    m_arg.identifier = deStrdup(identifier);
+    if (!m_arg.identifier)
+        throw std::bad_alloc();
 }
 
-Token::~Token (void)
+Token::~Token(void)
 {
-	if (m_type == IDENTIFIER)
-		deFree(m_arg.identifier);
+    if (m_type == IDENTIFIER)
+        deFree(m_arg.identifier);
 }
 
-Token& Token::operator= (const Token& other)
+Token &Token::operator=(const Token &other)
 {
-	if (m_type == IDENTIFIER)
-	{
-		deFree(m_arg.identifier);
-		m_arg.identifier = DE_NULL;
-	}
+    if (m_type == IDENTIFIER)
+    {
+        deFree(m_arg.identifier);
+        m_arg.identifier = nullptr;
+    }
 
-	m_type = other.m_type;
+    m_type = other.m_type;
 
-	if (m_type == IDENTIFIER)
-	{
-		m_arg.identifier = deStrdup(other.m_arg.identifier);
-		if (!m_arg.identifier)
-			throw std::bad_alloc();
-	}
-	else if (m_type == FLOAT_LITERAL)
-		m_arg.floatValue = other.m_arg.floatValue;
-	else if (m_type == INT_LITERAL)
-		m_arg.intValue = other.m_arg.intValue;
-	else if (m_type == BOOL_LITERAL)
-		m_arg.boolValue = other.m_arg.boolValue;
+    if (m_type == IDENTIFIER)
+    {
+        m_arg.identifier = deStrdup(other.m_arg.identifier);
+        if (!m_arg.identifier)
+            throw std::bad_alloc();
+    }
+    else if (m_type == FLOAT_LITERAL)
+        m_arg.floatValue = other.m_arg.floatValue;
+    else if (m_type == INT_LITERAL)
+        m_arg.intValue = other.m_arg.intValue;
+    else if (m_type == BOOL_LITERAL)
+        m_arg.boolValue = other.m_arg.boolValue;
 
-	return *this;
+    return *this;
 }
 
-Token::Token (const Token& other)
-	: m_type(TYPE_LAST)
+Token::Token(const Token &other) : m_type(TYPE_LAST)
 {
-	*this = other;
+    *this = other;
 }
 
-bool Token::operator!= (const Token& other) const
+bool Token::operator!=(const Token &other) const
 {
-	if (m_type != other.m_type)
-		return false;
+    if (m_type != other.m_type)
+        return false;
 
-	if (m_type == IDENTIFIER && !deStringEqual(m_arg.identifier, other.m_arg.identifier))
-		return false;
-	else if (m_type == FLOAT_LITERAL && m_arg.floatValue != other.m_arg.floatValue)
-		return false;
-	else if (m_type == INT_LITERAL && m_arg.intValue != other.m_arg.intValue)
-		return false;
-	else if (m_type == BOOL_LITERAL && m_arg.boolValue != other.m_arg.boolValue)
-		return false;
+    if (m_type == IDENTIFIER && !deStringEqual(m_arg.identifier, other.m_arg.identifier))
+        return false;
+    else if (m_type == FLOAT_LITERAL && m_arg.floatValue != other.m_arg.floatValue)
+        return false;
+    else if (m_type == INT_LITERAL && m_arg.intValue != other.m_arg.intValue)
+        return false;
+    else if (m_type == BOOL_LITERAL && m_arg.boolValue != other.m_arg.boolValue)
+        return false;
 
-	return true;
+    return true;
 }
 
-TokenStream::TokenStream (void)
-	: m_tokens		(ALLOC_SIZE)
-	, m_numTokens	(0)
+TokenStream::TokenStream(void) : m_tokens(ALLOC_SIZE), m_numTokens(0)
 {
 }
 
-TokenStream::~TokenStream (void)
+TokenStream::~TokenStream(void)
 {
 }
 
-} // rsg
+} // namespace rsg

@@ -37,69 +37,69 @@ namespace null
 class NullEGLDisplay : public eglu::NativeDisplay
 {
 public:
-	NullEGLDisplay (void)
-		: eglu::NativeDisplay(CAPABILITY_GET_DISPLAY_LEGACY)
-	{
-		// \note All functions in library are null
-	}
+    NullEGLDisplay(void) : eglu::NativeDisplay(CAPABILITY_GET_DISPLAY_LEGACY)
+    {
+        // \note All functions in library are null
+    }
 
-	const eglw::Library& getLibrary (void) const
-	{
-		return m_library;
-	}
+    const eglw::Library &getLibrary(void) const
+    {
+        return m_library;
+    }
 
-	eglw::EGLNativeDisplayType getLegacyNative (void)
-	{
-		return EGL_DEFAULT_DISPLAY;
-	}
+    eglw::EGLNativeDisplayType getLegacyNative(void)
+    {
+        return EGL_DEFAULT_DISPLAY;
+    }
 
 private:
-	eglw::FuncPtrLibrary	m_library;
+    eglw::FuncPtrLibrary m_library;
 };
 
 class NullEGLDisplayFactory : public eglu::NativeDisplayFactory
 {
 public:
-	NullEGLDisplayFactory (void)
-		: eglu::NativeDisplayFactory("null", "Null EGL Display", eglu::NativeDisplay::CAPABILITY_GET_DISPLAY_LEGACY)
-	{
-	}
+    NullEGLDisplayFactory(void)
+        : eglu::NativeDisplayFactory("null", "Null EGL Display", eglu::NativeDisplay::CAPABILITY_GET_DISPLAY_LEGACY)
+    {
+    }
 
-	eglu::NativeDisplay* createDisplay (const eglw::EGLAttrib*) const
-	{
-		return new NullEGLDisplay();
-	}
+    eglu::NativeDisplay *createDisplay(const eglw::EGLAttrib *) const
+    {
+        return new NullEGLDisplay();
+    }
 };
 
-Platform::Platform (void)
+Platform::Platform(void)
 {
-	m_contextFactoryRegistry.registerFactory(new NullGLContextFactory());
-	m_nativeDisplayFactoryRegistry.registerFactory(new NullEGLDisplayFactory());
+    m_contextFactoryRegistry.registerFactory(new NullGLContextFactory());
+    m_nativeDisplayFactoryRegistry.registerFactory(new NullEGLDisplayFactory());
 }
 
-Platform::~Platform (void)
+Platform::~Platform(void)
 {
 }
 
-vk::Library* Platform::createLibrary (void) const
+vk::Library *Platform::createLibrary(vk::Platform::LibraryType, const char *libraryPath) const
 {
-	return vk::createNullDriver();
+    DE_UNREF(libraryPath);
+    return vk::createNullDriver();
 }
 
-void Platform::getMemoryLimits (vk::PlatformMemoryLimits& limits) const
+void Platform::getMemoryLimits(tcu::PlatformMemoryLimits &limits) const
 {
-	limits.totalSystemMemory					= 256*1024*1024;
-	limits.totalDeviceLocalMemory				= 0;
-	limits.deviceMemoryAllocationGranularity	= 4096;
-	limits.devicePageSize						= 4096;
-	limits.devicePageTableEntrySize				= 8;
-	limits.devicePageTableHierarchyLevels		= 3;
+    limits.totalSystemMemory                 = 256 * 1024 * 1024;
+    limits.totalDeviceLocalMemory            = 0;
+    limits.deviceMemoryAllocationGranularity = 4096;
+    limits.devicePageSize                    = 4096;
+    limits.devicePageTableEntrySize          = 8;
+    limits.devicePageTableHierarchyLevels    = 3;
 }
 
-} // null
-} // tcu
+} // namespace null
+} // namespace tcu
 
-tcu::Platform* createPlatform (void)
+tcu::Platform *createPlatform(void)
 {
-	return new tcu::null::Platform();
+    return new tcu::null::Platform();
 }

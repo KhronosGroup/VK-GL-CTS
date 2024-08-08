@@ -34,19 +34,19 @@ namespace egl
 class ConfigList : public TestCase
 {
 public:
-							ConfigList		(EglTestContext& eglTestCtx);
-	virtual					~ConfigList		(void);
+    ConfigList(EglTestContext &eglTestCtx);
+    virtual ~ConfigList(void);
 
-	virtual void			init			(void);
-	virtual void			deinit			(void);
-	virtual IterateResult	iterate			(void);
+    virtual void init(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-							ConfigList		(const ConfigList&);		// not allowed!
-	ConfigList&				operator=		(const ConfigList&);		// not allowed!
+    ConfigList(const ConfigList &);            // not allowed!
+    ConfigList &operator=(const ConfigList &); // not allowed!
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLCONFIGLIST_HPP

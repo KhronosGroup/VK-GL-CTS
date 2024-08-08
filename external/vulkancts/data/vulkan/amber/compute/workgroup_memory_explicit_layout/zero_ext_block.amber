@@ -1,0 +1,106 @@
+#!amber
+# Copyright 2021 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DEVICE_EXTENSION VK_KHR_spirv_1_4
+DEVICE_EXTENSION VK_KHR_workgroup_memory_explicit_layout
+DEVICE_EXTENSION VK_KHR_zero_initialize_workgroup_memory
+
+SHADER compute compute_shader SPIRV-ASM
+
+OpCapability Shader
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %index %push_constants %output_buffer %wg
+OpExecutionMode %main LocalSize 32 4 1
+
+OpDecorate %index BuiltIn LocalInvocationIndex
+OpDecorate %buffer_type Block
+OpMemberDecorate %buffer_type 0 Offset 0
+OpDecorate %array ArrayStride 4
+OpDecorate %output_buffer DescriptorSet 0
+OpDecorate %output_buffer Binding 1
+OpDecorate %wg Aliased
+OpMemberDecorate %push_constants_type 0 Offset 0
+OpDecorate %push_constants_type Block
+
+%uint = OpTypeInt 32 0
+%const_uint_0 = OpConstant %uint 0
+%const_uint_32 = OpConstant %uint 32
+%uint_input_ptr = OpTypePointer Input %uint
+%uint_pc_ptr = OpTypePointer PushConstant %uint
+
+%bool = OpTypeBool
+%void = OpTypeVoid
+%main_type = OpTypeFunction %void
+%array = OpTypeArray %uint %const_uint_32
+%buffer_type = OpTypeStruct %array
+%output_buffer_ptr = OpTypePointer StorageBuffer %buffer_type
+%wg_ptr = OpTypePointer Workgroup %buffer_type
+%push_constants_type = OpTypeStruct %uint
+%push_constants_type_ptr = OpTypePointer PushConstant %push_constants_type
+%null_buffer = OpConstantNull %buffer_type
+
+;;; Workgroup variable has a "null initializer".
+
+%wg = OpVariable %wg_ptr Workgroup %null_buffer
+%output_buffer = OpVariable %output_buffer_ptr StorageBuffer
+
+%index = OpVariable %uint_input_ptr Input
+%push_constants = OpVariable %push_constants_type_ptr PushConstant
+
+%main = OpFunction %void None %main_type
+%entry = OpLabel
+
+;;; Look up in the push constant to select which invocation will do
+;;; the work.
+
+%index_val = OpLoad %uint %index
+%worker_ptr = OpAccessChain %uint_pc_ptr %push_constants %const_uint_0
+%worker = OpLoad %uint %worker_ptr
+%is_worker = OpIEqual %bool %index_val %worker
+
+OpSelectionMerge %after_copy None
+OpBranchConditional %is_worker %copy %after_copy
+%copy = OpLabel
+
+OpCopyMemory %output_buffer %wg
+
+OpBranch %after_copy
+%after_copy = OpLabel
+
+OpReturn
+OpFunctionEnd
+
+END
+
+BUFFER output_buffer DATA_TYPE uint32 SIZE 32 FILL 99
+
+BUFFER expected_buffer DATA_TYPE uint32 SIZE 32 FILL 0
+
+BUFFER const_buf DATA_TYPE uint32 DATA
+30
+END
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER const_buf AS push_constant
+  BIND BUFFER output_buffer AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipeline 4 1 1
+
+EXPECT output_buffer EQ_BUFFER expected_buffer

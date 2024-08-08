@@ -34,58 +34,55 @@
 namespace rsg
 {
 
-enum
-{
-	EXEC_VEC_WIDTH	= 64
-};
+constexpr int EXEC_VEC_WIDTH = 64;
 
-typedef ConstStridedValueAccess<EXEC_VEC_WIDTH>			ExecConstValueAccess;
-typedef StridedValueAccess<EXEC_VEC_WIDTH>				ExecValueAccess;
-typedef ValueStorage<EXEC_VEC_WIDTH>					ExecValueStorage;
+typedef ConstStridedValueAccess<EXEC_VEC_WIDTH> ExecConstValueAccess;
+typedef StridedValueAccess<EXEC_VEC_WIDTH> ExecValueAccess;
+typedef ValueStorage<EXEC_VEC_WIDTH> ExecValueStorage;
 
-typedef std::map<const Variable*, ExecValueStorage*>	VarValueMap;
+typedef std::map<const Variable *, ExecValueStorage *> VarValueMap;
 
 class ExecMaskStorage
 {
 public:
-							ExecMaskStorage	(bool initVal = true);
+    ExecMaskStorage(bool initVal = true);
 
-	ExecValueAccess			getValue		(void);
-	ExecConstValueAccess	getValue		(void) const;
+    ExecValueAccess getValue(void);
+    ExecConstValueAccess getValue(void) const;
 
 private:
-	Scalar					m_data[EXEC_VEC_WIDTH];
+    Scalar m_data[EXEC_VEC_WIDTH];
 };
 
 class ExecutionContext
 {
 public:
-									ExecutionContext		(const Sampler2DMap& samplers2D, const SamplerCubeMap& samplersCube);
-									~ExecutionContext		(void);
+    ExecutionContext(const Sampler2DMap &samplers2D, const SamplerCubeMap &samplersCube);
+    ~ExecutionContext(void);
 
-	ExecValueAccess					getValue				(const Variable* variable);
-	const Sampler2D&				getSampler2D			(const Variable* variable) const;
-	const SamplerCube&				getSamplerCube			(const Variable* variable) const;
+    ExecValueAccess getValue(const Variable *variable);
+    const Sampler2D &getSampler2D(const Variable *variable) const;
+    const SamplerCube &getSamplerCube(const Variable *variable) const;
 
-	ExecConstValueAccess			getExecutionMask		(void) const;
+    ExecConstValueAccess getExecutionMask(void) const;
 
-	void							andExecutionMask		(ExecConstValueAccess value); // Pushes computed value
-	void							pushExecutionMask		(ExecConstValueAccess value);
+    void andExecutionMask(ExecConstValueAccess value); // Pushes computed value
+    void pushExecutionMask(ExecConstValueAccess value);
 
-	void							popExecutionMask		(void);
+    void popExecutionMask(void);
 
 protected:
-									ExecutionContext		(const ExecutionContext& other);
-	ExecutionContext&				operator=				(const ExecutionContext& other);
+    ExecutionContext(const ExecutionContext &other);
+    ExecutionContext &operator=(const ExecutionContext &other);
 
-	VarValueMap						m_varValues;
-	const Sampler2DMap&				m_samplers2D;
-	const SamplerCubeMap&			m_samplersCube;
-	std::vector<ExecMaskStorage>	m_execMaskStack;
+    VarValueMap m_varValues;
+    const Sampler2DMap &m_samplers2D;
+    const SamplerCubeMap &m_samplersCube;
+    std::vector<ExecMaskStorage> m_execMaskStack;
 };
 
-void assignMasked (ExecValueAccess dst, ExecConstValueAccess src, ExecConstValueAccess mask);
+void assignMasked(ExecValueAccess dst, ExecConstValueAccess src, ExecConstValueAccess mask);
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGEXECUTIONCONTEXT_HPP

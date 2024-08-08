@@ -142,7 +142,7 @@ index in all the primitives it belongs to.
 The patch-discarding tests draw multiple patches in one draw call, with
 different combinations for tessellation levels; some of these patches contain
 relevant outer tessellation levels with a negative or zero value; they should
-be discarded. Verification is done firstly by a sanity check that the number of
+be discarded. Verification is done firstly by a quick check that the number of
 vertices returned by transform feedback is correct, and secondly by checking
 that white primitives exist in the area where non-discarded primitives are
 drawn, and only there.

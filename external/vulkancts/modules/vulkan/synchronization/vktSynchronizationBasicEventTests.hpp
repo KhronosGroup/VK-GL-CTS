@@ -23,18 +23,21 @@
  * \brief Synchronization event basic tests
  *//*--------------------------------------------------------------------*/
 
+#include "vkDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vktSynchronizationDefs.hpp"
 
 namespace vkt
 {
 namespace synchronization
 {
 
-tcu::TestCaseGroup*		createBasicEventTests					(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*		createSynchronization2BasicEventTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBasicEventTests(tcu::TestContext &testCtx,
+                                          VideoCodecOperationFlags VideoCodecOperationFlags = 0);
+tcu::TestCaseGroup *createSynchronization2BasicEventTests(tcu::TestContext &testCtx,
+                                                          VideoCodecOperationFlags VideoCodecOperationFlags = 0);
 
-} //synchronization
-} // vkt
-
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONBASICEVENTTESTS_HPP

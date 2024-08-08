@@ -32,40 +32,46 @@ namespace SpirVAssembly
 namespace
 {
 
-void createTests (tcu::TestCaseGroup* tests, const char* data_dir)
+void createTests(tcu::TestCaseGroup *tests, const char *data_dir)
 {
-	tcu::TestContext& testCtx = tests->getTestContext();
+#ifndef CTS_USES_VULKANSC
+    tcu::TestContext &testCtx = tests->getTestContext();
 
-	// Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
-	struct Case {
-		const char* basename;
-		const char* description;
-	};
-	const Case cases[] =
-	{
-		{ "workgroup", "OpPtrAccessChain with correct ArrayStride decoration" },
-		{ "workgroup_no_stride", "OpPtrAccessChain with no ArrayStride decoration" },
-		{ "workgroup_bad_stride", "OpPtrAccessChain with incorrect ArrayStride decoration" },
-	};
+    // Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
+    struct Case
+    {
+        const char *basename;
+        const char *description;
+    };
+    const Case cases[] = {
+        {"workgroup", "OpPtrAccessChain with correct ArrayStride decoration"},
+        {"workgroup_no_stride", "OpPtrAccessChain with no ArrayStride decoration"},
+        {"workgroup_bad_stride", "OpPtrAccessChain with incorrect ArrayStride decoration"},
+    };
 
-	for (unsigned i = 0; i < sizeof(cases)/sizeof(cases[0]) ; ++i)
-	{
-		std::string					file		= std::string(cases[i].basename) + ".amber";
-		cts_amber::AmberTestCase	*testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, data_dir, file);
-		testCase->addRequirement("VariablePointerFeatures.variablePointers");
+    for (unsigned i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i)
+    {
+        std::string file = std::string(cases[i].basename) + ".amber";
+        cts_amber::AmberTestCase *testCase =
+            cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, data_dir, file);
+        testCase->addRequirement("VariablePointerFeatures.variablePointers");
 
-		tests->addChild(testCase);
-	}
+        tests->addChild(testCase);
+    }
+#else
+    DE_UNREF(tests);
+    DE_UNREF(data_dir);
+#endif
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createPtrAccessChainGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createPtrAccessChainGroup(tcu::TestContext &testCtx)
 {
-	// Location of the Amber script files under the data/vulkan/amber source tree.
-	const char* data_dir = "spirv_assembly/instruction/compute/ptr_access_chain";
-	return createTestGroup(testCtx, "ptr_access_chain", "OpPtrAccessChain edge cases", createTests, data_dir);
+    // Location of the Amber script files under the data/vulkan/amber source tree.
+    const char *data_dir = "spirv_assembly/instruction/compute/ptr_access_chain";
+    return createTestGroup(testCtx, "ptr_access_chain", createTests, data_dir);
 }
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt

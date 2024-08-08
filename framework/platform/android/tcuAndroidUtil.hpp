@@ -38,54 +38,22 @@ namespace Android
 
 enum ScreenOrientation
 {
-	SCREEN_ORIENTATION_UNSPECIFIED			= 0xffffffff,
-	SCREEN_ORIENTATION_LANDSCAPE			= 0x00000000,
-	SCREEN_ORIENTATION_PORTRAIT				= 0x00000001,
-	SCREEN_ORIENTATION_REVERSE_LANDSCAPE	= 0x00000008,
-	SCREEN_ORIENTATION_REVERSE_PORTRAIT		= 0x00000009
+    SCREEN_ORIENTATION_UNSPECIFIED       = 0xffffffff,
+    SCREEN_ORIENTATION_LANDSCAPE         = 0x00000000,
+    SCREEN_ORIENTATION_PORTRAIT          = 0x00000001,
+    SCREEN_ORIENTATION_REVERSE_LANDSCAPE = 0x00000008,
+    SCREEN_ORIENTATION_REVERSE_PORTRAIT  = 0x00000009
 };
 
-std::string			getIntentStringExtra		(ANativeActivity* activity, const char* name);
-void				setRequestedOrientation		(ANativeActivity* activity, ScreenOrientation orientation);
+std::string getIntentStringExtra(ANativeActivity *activity, const char *name);
+void setRequestedOrientation(ANativeActivity *activity, ScreenOrientation orientation);
 
-ScreenOrientation	mapScreenRotation			(ScreenRotation rotation);
+ScreenOrientation mapScreenRotation(ScreenRotation rotation);
 
-void				describePlatform			(ANativeActivity* activity, std::ostream& dst);
+void describePlatform(ANativeActivity *activity, std::ostream &dst);
 
-bool				hasSystemFeature			(ANativeActivity* activity, const char* name);
-
-//! android.util.DisplayMetrics
-struct DisplayMetrics
-{
-	float		density;
-	float		scaledDensity;
-	int			densityDpi;
-
-	int			widthPixels;
-	int			heightPixels;
-
-	float		xdpi;
-	float		ydpi;
-
-	DisplayMetrics (void)
-		: density		(0.0f)
-		, scaledDensity	(0.0f)
-		, densityDpi	(0)
-		, widthPixels	(0)
-		, heightPixels	(0)
-		, xdpi			(0.0f)
-		, ydpi			(0.0f)
-	{
-	}
-};
-
-DisplayMetrics		getDisplayMetrics			(ANativeActivity* activity);
-
-//! Get minimum required system memory that must be available to kernel and
-//! userspace according to Android CDD.
-size_t				getCDDRequiredSystemMemory	(ANativeActivity* activity);
-
-} // Android
-} // tcu
+size_t getTotalAndroidSystemMemory(ANativeActivity *activity);
+} // namespace Android
+} // namespace tcu
 
 #endif // _TCUANDROIDUTIL_HPP

@@ -25,9 +25,9 @@
 
 // Register package to test executor.
 
-static tcu::TestPackage* createTestPackage (tcu::TestContext& testCtx)
+static tcu::TestPackage *createTestPackage(tcu::TestContext &testCtx)
 {
-	return new deqp::gles2::TestPackage(testCtx);
+    return new deqp::gles2::TestPackage(testCtx);
 }
 
 tcu::TestPackageDescriptor g_gles2PackageDescriptor("dEQP-GLES2", createTestPackage);

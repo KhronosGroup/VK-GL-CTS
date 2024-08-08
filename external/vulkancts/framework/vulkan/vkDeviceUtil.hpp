@@ -25,6 +25,7 @@
 
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
+#include "vkDebugReportUtil.hpp"
 
 #include <vector>
 #include <string>
@@ -37,23 +38,24 @@ class CommandLine;
 namespace vk
 {
 
-Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform,
-											 deUint32							apiVersion);
+Move<VkInstance> createDefaultInstance(const PlatformInterface &vkPlatform, uint32_t apiVersion,
+                                       const tcu::CommandLine &cmdLine);
 
-Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform,
-											 deUint32							apiVersion,
-											 const std::vector<std::string>&	enabledLayers,
-											 const std::vector<std::string>&	enabledExtensions,
-											 const VkAllocationCallbacks*		pAllocator	= DE_NULL);
+Move<VkInstance> createDefaultInstance(const PlatformInterface &vkPlatform, uint32_t apiVersion,
+                                       const std::vector<std::string> &enabledLayers,
+                                       const std::vector<std::string> &enabledExtensions,
+                                       const tcu::CommandLine &cmdLine,
+#ifndef CTS_USES_VULKANSC
+                                       DebugReportRecorder *recorder = nullptr,
+#endif // CTS_USES_VULKANSC
+                                       const VkAllocationCallbacks *pAllocator = nullptr);
 
-deUint32			chooseDeviceIndex		(const InstanceInterface&			vkInstance,
-											 const VkInstance					instance,
-											 const tcu::CommandLine&			cmdLine);
+uint32_t chooseDeviceIndex(const InstanceInterface &vkInstance, const VkInstance instance,
+                           const tcu::CommandLine &cmdLine);
 
-VkPhysicalDevice	chooseDevice			(const InstanceInterface&			vkInstance,
-											 const VkInstance					instance,
-											 const tcu::CommandLine&			cmdLine);
+VkPhysicalDevice chooseDevice(const InstanceInterface &vkInstance, const VkInstance instance,
+                              const tcu::CommandLine &cmdLine);
 
-} // vk
+} // namespace vk
 
 #endif // _VKDEVICEUTIL_HPP

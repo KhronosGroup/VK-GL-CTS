@@ -31,9 +31,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup*		createImageMultisampleLoadStoreTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageMultisampleLoadStoreTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGEMULTISAMPLELOADSTORETESTS_HPP

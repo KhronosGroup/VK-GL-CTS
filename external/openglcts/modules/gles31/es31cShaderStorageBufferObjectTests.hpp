@@ -32,15 +32,15 @@ namespace glcts
 class ShaderStorageBufferObjectTests : public glcts::TestCaseGroup
 {
 public:
-	ShaderStorageBufferObjectTests(glcts::Context& context);
-	~ShaderStorageBufferObjectTests(void);
+    ShaderStorageBufferObjectTests(glcts::Context &context);
+    ~ShaderStorageBufferObjectTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ShaderStorageBufferObjectTests(const ShaderStorageBufferObjectTests& other);
-	ShaderStorageBufferObjectTests& operator=(const ShaderStorageBufferObjectTests& other);
+    ShaderStorageBufferObjectTests(const ShaderStorageBufferObjectTests &other);
+    ShaderStorageBufferObjectTests &operator=(const ShaderStorageBufferObjectTests &other);
 };
-}
+} // namespace glcts
 
 #endif // _ES31CSHADERSTORAGEBUFFEROBJECTTESTS_HPP

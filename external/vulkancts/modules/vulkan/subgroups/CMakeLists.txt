@@ -1,6 +1,9 @@
-include_directories(..)
+include_directories(
+  ..
+  ${DEQP_INL_DIR}
+  )
 
-set(DEQP_VK_SUBGROUPS_SRCS
+set(DEQP_VK_VKSC_SUBGROUPS_SRCS
   vktSubgroupsTests.cpp
   vktSubgroupsTests.hpp
   vktSubgroupsBuiltinVarTests.cpp
@@ -21,12 +24,12 @@ set(DEQP_VK_SUBGROUPS_SRCS
   vktSubgroupsArithmeticTests.hpp
   vktSubgroupsClusteredTests.cpp
   vktSubgroupsClusteredTests.hpp
-  vktSubgroupsPartitionedTests.cpp
-  vktSubgroupsPartitionedTests.hpp
   vktSubgroupsShuffleTests.cpp
   vktSubgroupsShuffleTests.hpp
   vktSubgroupsQuadTests.cpp
   vktSubgroupsQuadTests.hpp
+  vktSubgroupsQuadControlTests.cpp
+  vktSubgroupsQuadControlTests.hpp
   vktSubgroupsScanHelpers.cpp
   vktSubgroupsScanHelpers.hpp
   vktSubgroupsShapeTests.cpp
@@ -37,14 +40,25 @@ set(DEQP_VK_SUBGROUPS_SRCS
   vktSubgroupsBallotMasksTests.hpp
   vktSubgroupsSizeControlTests.cpp
   vktSubgroupsSizeControlTests.hpp
+  vktSubgroupsMultipleDispatchesUniformSubgroupSizeTests.cpp
+  vktSubgroupsMultipleDispatchesUniformSubgroupSizeTests.hpp
   )
 
-set(DEQP_VK_SUBGROUPS_LIBS
-  tcutil
-  vkutil
+set(DEQP_VK_SUBGROUPS_SRCS
+  vktSubgroupsPartitionedTests.cpp
+  vktSubgroupsPartitionedTests.hpp
+  vktSubgroupsUniformDescriptorIndexingTests.cpp
+  vktSubgroupsUniformDescriptorIndexingTests.hpp
+  vktSubgroupUniformControlFlowTests.cpp
+  vktSubgroupUniformControlFlowTests.hpp
   )
 
 PCH(DEQP_VK_SUBGROUPS_SRCS ../pch.cpp)
+include_directories("../amber")
+include_directories("../../../../amber/src/include")
 
-add_library(deqp-vk-subgroups STATIC ${DEQP_VK_SUBGROUPS_SRCS})
-target_link_libraries(deqp-vk-subgroups ${DEQP_VK_SUBGROUPS_LIBS})
+add_library(deqp-vk-subgroups STATIC ${DEQP_VK_VKSC_SUBGROUPS_SRCS} ${DEQP_VK_SUBGROUPS_SRCS})
+target_link_libraries(deqp-vk-subgroups tcutil vkutil)
+
+add_library(deqp-vksc-subgroups STATIC ${DEQP_VK_VKSC_SUBGROUPS_SRCS})
+target_link_libraries(deqp-vksc-subgroups PUBLIC deqp-vksc-util tcutil vkscutil)

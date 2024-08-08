@@ -37,49 +37,87 @@ namespace vkt
  * \note Unlike std::array, size() and max_size() are different values
  *       This makes behaviour more similar to that of std::vector.
  *//*--------------------------------------------------------------------*/
-template<typename _t, size_t CAPACITY>
+template <typename _t, size_t CAPACITY>
 class ConstexprVector
 {
 public:
-	using value_type = _t;
-	using size_type = ::std::size_t;
-	using difference_type = ::std::ptrdiff_t;
-	using const_reference = const value_type&;
-	using const_pointer = const value_type*;
-	using const_iterator = const value_type*;
+    using value_type      = _t;
+    using size_type       = ::std::size_t;
+    using difference_type = ::std::ptrdiff_t;
+    using const_reference = const value_type &;
+    using const_pointer   = const value_type *;
+    using const_iterator  = const value_type *;
 
-	inline constexpr ConstexprVector() noexcept : values{}, count{0} {};
+    inline constexpr ConstexprVector() noexcept : values{}, count{0}
+    {
+    }
 
-	/*--------------------------------------------------------------------*//*!
-	 * MSVC v140 chokes on this if it is a raw variadic template list.
-	 * By providing a single argument lead for type deduction it seems to fix
-	 * things. Marking constructor as explicit since this effectively becomes
-	 * a single argument constructor.
-	 *//*--------------------------------------------------------------------*/
-	template<typename _arg_t, typename... _args_t>
-	inline constexpr explicit ConstexprVector(const _arg_t& arg1, const _args_t&... args) noexcept :
-		values{arg1, args...},
-		count{sizeof...(_args_t) + 1}
-	{
-		static_assert((sizeof...(_args_t) + 1) <= CAPACITY, "Not enough capacity to store values");
-	}
+    /*--------------------------------------------------------------------*//*!
+     * MSVC v140 chokes on this if it is a raw variadic template list.
+     * By providing a single argument lead for type deduction it seems to fix
+     * things. Marking constructor as explicit since this effectively becomes
+     * a single argument constructor.
+     *//*--------------------------------------------------------------------*/
+    template <typename _arg_t, typename... _args_t>
+    inline constexpr explicit ConstexprVector(const _arg_t &arg1, const _args_t &...args) noexcept
+        : values{arg1, args...}
+        , count{sizeof...(_args_t) + 1}
+    {
+        static_assert((sizeof...(_args_t) + 1) <= CAPACITY, "Not enough capacity to store values");
+    }
 
-	inline constexpr const_reference at(size_type pos) const noexcept { return values[pos]; }
-	inline constexpr const_reference operator[](size_type pos) const noexcept { return values[pos]; }
-	inline constexpr const_reference front() const noexcept { return values[0]; }
-	inline constexpr const_reference back() const noexcept { return values[count - 1];	}
-	inline constexpr const_pointer data() const noexcept { return values; }
-	inline constexpr const_iterator begin() const noexcept { return &values[0]; }
-	inline constexpr const_iterator cbegin() const noexcept { return &values[0]; }
-	inline constexpr const_iterator end() const noexcept { return &values[count]; }
-	inline constexpr const_iterator cend() const noexcept { return &values[count]; }
-	inline constexpr bool empty() const noexcept { return count == 0; }
-	inline constexpr size_type size() const noexcept { return count; }
-	inline constexpr size_type max_size() const noexcept { return CAPACITY; }
+    inline constexpr const_reference at(size_type pos) const noexcept
+    {
+        return values[pos];
+    }
+    inline constexpr const_reference operator[](size_type pos) const noexcept
+    {
+        return values[pos];
+    }
+    inline constexpr const_reference front() const noexcept
+    {
+        return values[0];
+    }
+    inline constexpr const_reference back() const noexcept
+    {
+        return values[count - 1];
+    }
+    inline constexpr const_pointer data() const noexcept
+    {
+        return values;
+    }
+    inline constexpr const_iterator begin() const noexcept
+    {
+        return &values[0];
+    }
+    inline constexpr const_iterator cbegin() const noexcept
+    {
+        return &values[0];
+    }
+    inline constexpr const_iterator end() const noexcept
+    {
+        return &values[count];
+    }
+    inline constexpr const_iterator cend() const noexcept
+    {
+        return &values[count];
+    }
+    inline constexpr bool empty() const noexcept
+    {
+        return count == 0;
+    }
+    inline constexpr size_type size() const noexcept
+    {
+        return count;
+    }
+    inline constexpr size_type max_size() const noexcept
+    {
+        return CAPACITY;
+    }
 
 private:
-	value_type values[CAPACITY];
-	size_type count;
+    value_type values[CAPACITY];
+    size_type count;
 };
 
 } // namespace vkt

@@ -4,43 +4,48 @@ OpenGL and OpenGL ES 2.0/3.X Conformance Test Instructions
 This document describes how to build, port, and run the OpenGL and OpenGL ES
 2.0/3.X conformance tests, and how to verify and submit test results.
 
-The Conformance Tests are built on dEQP framework. dEQP documentation is
-available at http://source.android.com/devices/graphics/testing.html
+The Conformance Tests are built on the dEQP framework.
+Up-to-date documentation for dEQP is available at:
+
+* [The VK-GL-CTS wiki for Khronos members](https://gitlab.khronos.org/Tracker/vk-gl-cts/wikis/home)
+* [The VK-GL-CTS wiki for non-Khronos members](https://github.com/KhronosGroup/VK-GL-CTS/wiki)
 
 
 Contents
 ------------------------
- - [Test History](#test-history)
- - [Introduction](#introduction)
- - [Test Environment Requirements](#test-environment-requirements)
- - [Configuring and Building the Tests](#configuring-and-building-the-tests)
+- [OpenGL and OpenGL ES 2.0/3.X Conformance Test Instructions](#opengl-and-opengl-es-203x-conformance-test-instructions)
+  - [Contents](#contents)
+  - [Test History](#test-history)
+  - [Introduction](#introduction)
+  - [Test Environment Requirements](#test-environment-requirements)
+  - [Configuring and Building the Tests](#configuring-and-building-the-tests)
     - [Configuration](#configuration)
     - [Building the Tests](#building-the-tests)
-       - [Windows](#windows)
-       - [Linux](#linux)
-       - [Android](#android)
- - [Porting](#porting)
+      - [Windows](#windows)
+      - [Linux](#linux)
+      - [Android](#android)
+  - [Porting](#porting)
     - [Common Porting Changes](#common-porting-changes)
-    - [Other Allowable Porting Changes](#other-allowable-porting-changes)
- - [Running the Tests](#running-the-tests)
+    - [Other Allowable Changes](#other-allowable-changes)
+  - [Running the Tests](#running-the-tests)
     - [Conformance runs](#conformance-runs)
-       - [Linux and Windows](#linux-and-windows)
-       - [Android](#android-1)
+    - [Linux and Windows](#linux-and-windows)
+      - [Android](#android-1)
     - [Running Subsets](#running-subsets)
-       - [Command line options](#command-line-options)
+      - [Command line options](#command-line-options)
     - [Understanding the Results](#understanding-the-results)
     - [Test Logs](#test-logs)
- - [Debugging Test Failures](#debugging-test-failures)
- - [Waivers](#waivers)
- - [Creating a Submission Package](#creating-a-submission-package)
- - [Submission Update Package](#submission-update-package)
- - [Passing Criteria](#passing-criteria)
- - [Troubleshooting](#troubleshooting)
+  - [Debugging Test Failures](#debugging-test-failures)
+  - [Waivers](#waivers)
+  - [Creating a Submission Package](#creating-a-submission-package)
+  - [Submission Update Package](#submission-update-package)
+  - [Passing Criteria](#passing-criteria)
+  - [Troubleshooting](#troubleshooting)
     - [Crashes early on in the run](#crashes-early-on-in-the-run)
     - [Build fails](#build-fails)
- - [Adding new tests](#adding-new-tests)
- - [Acknowledgments](#acknowledgments)
- - [Revision History](#revision-history)
+  - [Adding new tests](#adding-new-tests)
+  - [Acknowledgments](#acknowledgments)
+  - [Revision History](#revision-history)
 
 Test History
 ------------------------
@@ -99,7 +104,7 @@ the Standard Template Library (STL).
 Configuring and Building the Tests
 ------------------------
 The CTS is built via CMake build system. The requirements for the build are as follows:
-- CMake 3.0 (3.6 for Android NDK r17+ builds) or newer
+- CMake 3.20.0 or newer
 - C++ compiler with STL and exceptions support
 - Unix: Make + GCC / Clang
 - Windows: Visual Studio or Windows SDK (available free-of-charge)
@@ -247,7 +252,6 @@ using Cmake.
 
 Requirements:
 - Visual Studio (2015 or newer recommended) or Windows SDK
-- CMake 3.10.2 Windows native version (i.e. not Cygwin version)
 - For GL/ES2/ES3.x tests: OpengGL, OpenGL ES 2 or ES 3.x libraries and headers
 
 To choose the backend build system for CMake, choose one of the following Generator Names for the
@@ -257,23 +261,23 @@ command line examples in the next steps:
 
 Building GL, ES2, or ES3.x conformance tests:
 
-	cmake <path to openglcts> -DDEQP_TARGET=default -G"<Generator Name>"
-	cmake --build .
+	cmake <path to VK-GL-CTS> -DDEQP_TARGET=default -G"<Generator Name>"
+	cmake --build external/openglcts
 
 Khronos Confidential CTS doesn't support run-time selection of API context.
 If you intend to run it you need to additionally supply `GLCTS_GTF_TARGET`
 option to you cmake command, e.g.:
 
-	cmake <path to openglcts> -DDEQP_TARGET=default -DGLCTS_GTF_TARGET=<target> -G"<Generator Name>"
+	cmake <path to VK-GL-CTS> -DDEQP_TARGET=default -DGLCTS_GTF_TARGET=<target> -G"<Generator Name>"
 
 Available `<target>`s are `gles2`, `gles3`, `gles31`, `gles32`, and `gl`.
 The default `<target>` is `gles32`.
 
 It's also possible to build `GL-CTS.sln` in Visual Studio instead of running
-the `cmake --build .` command.
+the `cmake --build external/openglcts` command.
 
 **NOTE**: Do not create the build directory under the source directory
-(i.e anywhere under `<path to openglcts>`) on Windows, since it causes
+(i.e anywhere under `<path to VK-GL-CTS>`) on Windows, since it causes
 random build failures when copying data files around.
 
 **NOTE**: You can use the CMake for Windows GUI to do configuration and project
@@ -294,18 +298,17 @@ function wcmake () {
 
 Required tools:
 - Standard build utilities (make, gcc, etc.)
-- CMake 3.10.2
 - Necessary API libraries (OpenGL, GLES, EGL depending on configuration)
 
 Building ES2 or ES3.x conformance tests:
 
-	cmake <path to openglcts> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=gles32
-	cmake --build .
+	cmake <path to VK-GL-CTS> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=gles32
+	cmake --build external/openglcts
 
 Building OpenGL conformance tests:
 
-	cmake <path to openglcts> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=gl
-	cmake --build .
+	cmake <path to VK-GL-CTS> -DDEQP_TARGET=null -DGLCTS_GTF_TARGET=gl
+	cmake --build external/openglcts
 
 Khronos Confidential CTS doesn't support run-time selection of API context.
 If you intend to run it then the `GLCTS_GTF_TARGET` option is necessary.
@@ -351,7 +354,7 @@ By default the CTS package will contain libdeqp.so built for `armeabi-v7a`, `arm
 To pick which ABI to use at install time, following commands must be used
 instead:
 
-	adb install --abi <ABI name> <build root>/Khronos-CTS.apk /data/local/tmp/Khronos-CTS.apk
+	adb install -g --abi <ABI name> <build root>/Khronos-CTS.apk /data/local/tmp/Khronos-CTS.apk
 
 Porting
 ------------------------
@@ -510,6 +513,12 @@ Waivers can be specified by supplying a `waivers` string extra. See the followin
 **NOTE**: Supplying a `summary` = `"true"` string extra will result in the `cts-run-summary.xml` file
 being written out but no tests will be executed.
 
+For GLES 3.2 conformance test, the conformance run configurations can be
+generated and written to a customized file, by specifying the file name through
+`khronosCTSTestParamFileName` argument. Example:
+
+	am start -n org.khronos.gl_cts/org.khronos.cts.ES32GetTestParamActivity -e khronosCTSTestParamFileName "/sdcard/cts-test-params.xml"
+
 Individual tests can be launched as well by targeting
 `org.khronos.gl_cts/android.app.NativeActivity` activity. Command line
 arguments must be supplied in a `cmdLine` string extra. See following example:
@@ -550,6 +559,9 @@ Full list of parameters for the `glcts` binary:
   -h, --help
     Show this help
 
+  -q, --quiet
+    Suppress messages to standard output
+
   -n, --deqp-case=<value>
     Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)
 
@@ -558,6 +570,9 @@ Full list of parameters for the `glcts` binary:
 
   --deqp-caselist-file=<value>
     Read case list (in trie format) from given file
+
+  --deqp-caselist-resource=<value>
+    Read case list (in trie format) from given file located application's assets
 
   --deqp-stdin-caselist
     Read case list (in trie format) from stdin
@@ -648,20 +663,56 @@ Full list of parameters for the `glcts` binary:
     default: 'enable'
 
   --deqp-log-shader-sources=[enable|disable]
-    Enable or disable logging of shaders
+    Enable or disable logging of shader sources
     default: 'enable'
 
   --deqp-test-oom=[enable|disable]
     Run tests that exhaust memory on purpose
-    default: 'disable'
+    default: 'enable'
 
   --deqp-archive-dir=<value>
     Path to test resource files
-    default: current working directory
+    default: '.'
 
-  --deqp-case-fraction=<value>,<value>
+  --deqp-log-flush=[enable|disable]
+    Enable or disable log file fflush
+    default: 'enable'
+
+  --deqp-log-compact=[enable|disable]
+    Enable or disable the compact version of the log
+    default: 'disable'
+
+  --deqp-duplicate-case-name-check=[enable|disable]
+    Check for duplicate case names when creating test hierarchy
+    default: 'enable' in Debug mode, 'disable' in Release mode
+
+  --deqp-renderdoc=[enable|disable]
+    Enable RenderDoc frame markers
+    default: 'disable'
+
+  --deqp-fraction=<value>
     Run a fraction of the test cases (e.g. N,M means run group%M==N)
     default: ''
+
+  --deqp-fraction-mandatory-caselist-file=<value>
+    Case list file that must be run for each fraction
+    default: ''
+
+  --deqp-waiver-file=<value>
+    Read waived tests from given file
+    default: ''
+
+  --deqp-runner-type=[any|none|amber]
+    Filter test cases based on runner
+    default: 'any'
+
+  --deqp-terminate-on-fail=[enable|disable]
+    Terminate the run on first failure
+    default: 'disable'
+
+  --deqp-terminate-on-device-lost=[enable|disable]
+    Terminate the run on first device lost error
+    default: 'disable'
 
   --deqp-egl-config-id=<value>
     Legacy name for --deqp-gl-config-id
@@ -713,7 +764,7 @@ The CTS writes test logs in XML encapsulated in a simple plain-text container
 format. Each tested configuration listed in `cts-run-summary.xml`
 
 To analyse and process the log files, run the following scripts
-- `external/openglcts/scripts/verify_submission.py`: Script that verifies logs based on `cts-run-summary.xml` file.
+- `verify_submission.py` located in [VK-GL-CTS-Tools](https://github.com/KhronosGroup/VK-GL-CTS-Tools): Script that verifies logs based on `cts-run-summary.xml` file.
 - `scripts/log/log_to_csv.py`: This utility converts `.qpa` log into CSV format. This is
 useful for importing results into other systems.
 - `scripts/log/log_to_xml.py`: Converts `.qpa` into well-formed XML document. The document

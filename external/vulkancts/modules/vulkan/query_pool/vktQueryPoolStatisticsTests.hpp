@@ -33,16 +33,16 @@ namespace QueryPool
 class QueryPoolStatisticsTests : public tcu::TestCaseGroup
 {
 public:
-	QueryPoolStatisticsTests	(tcu::TestContext &testCtx);
-	~QueryPoolStatisticsTests	(void)	{}
-	void init					(void);
+    QueryPoolStatisticsTests(tcu::TestContext &testCtx);
+    void init(void) override;
+    void deinit(void) override;
 
 private:
-	QueryPoolStatisticsTests				(const QueryPoolStatisticsTests &other);
-	QueryPoolStatisticsTests&	operator=	(const QueryPoolStatisticsTests &other);
+    QueryPoolStatisticsTests(const QueryPoolStatisticsTests &other);
+    QueryPoolStatisticsTests &operator=(const QueryPoolStatisticsTests &other);
 };
 
-} // QueryPool
-} // vkt
+} // namespace QueryPool
+} // namespace vkt
 
 #endif // _VKTQUERYPOOLSTATISTICSTESTS_HPP

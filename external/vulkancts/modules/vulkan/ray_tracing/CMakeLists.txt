@@ -1,8 +1,15 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+	)
 
 set(DEQP_VK_RAY_TRACING_SRCS
+	vktRayTracingAmberTests.cpp
+	vktRayTracingAmberTests.hpp
 	vktRayTracingBarrierTests.cpp
 	vktRayTracingBarrierTests.hpp
+	vktRayTracingBarycentricCoordinatesTests.cpp
+	vktRayTracingBarycentricCoordinatesTests.hpp
 	vktRayTracingBuildIndirectTests.cpp
 	vktRayTracingBuildIndirectTests.hpp
 	vktRayTracingBuiltinTests.cpp
@@ -25,6 +32,8 @@ set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingMemGuaranteeTests.hpp
 	vktRayTracingMiscTests.cpp
 	vktRayTracingMiscTests.hpp
+	vktRayTracingNonUniformArgsTests.cpp
+	vktRayTracingNonUniformArgsTests.hpp
 	vktRayTracingNullASTests.cpp
 	vktRayTracingNullASTests.hpp
 	vktRayTracingShaderBindingTableTests.cpp
@@ -43,6 +52,12 @@ set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingCaptureReplayTests.hpp
 	vktRayTracingTests.cpp
 	vktRayTracingTests.hpp
+	vktRayTracingPipelineFlagsTests.cpp
+	vktRayTracingPipelineFlagsTests.hpp
+	vktRayTracingOpacityMicromapTests.cpp
+	vktRayTracingOpacityMicromapTests.hpp
+	vktRayTracingPositionFetchTests.cpp
+	vktRayTracingPositionFetchTests.hpp
 	)
 
 set(DEQP_VK_RAY_TRACING_LIBS

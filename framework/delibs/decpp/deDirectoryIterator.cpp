@@ -25,8 +25,8 @@
 #include "deString.h"
 
 #if (DE_DIRITER == DE_DIRITER_WIN32)
-#	include <direct.h> /* _chdir() */
-#	include <io.h> /* _findfirst(), _findnext() */
+#include <direct.h> /* _chdir() */
+#include <io.h>     /* _findfirst(), _findnext() */
 #endif
 
 namespace de
@@ -34,88 +34,87 @@ namespace de
 
 #if (DE_DIRITER == DE_DIRITER_WIN32)
 
-DirectoryIterator::DirectoryIterator (const FilePath& path)
-	: m_path(FilePath::normalize(path))
+DirectoryIterator::DirectoryIterator(const FilePath &path) : m_path(FilePath::normalize(path))
 {
-	DE_CHECK_RUNTIME_ERR(m_path.exists());
-	DE_CHECK_RUNTIME_ERR(m_path.getType() == FilePath::TYPE_DIRECTORY);
+    DE_CHECK_RUNTIME_ERR(m_path.exists());
+    DE_CHECK_RUNTIME_ERR(m_path.getType() == FilePath::TYPE_DIRECTORY);
 
-	m_handle	= _findfirst32((std::string(m_path.getPath()) + "/*").c_str(), &m_fileInfo);
-	m_hasItem	= m_handle != -1;
+    m_handle  = _findfirst32((std::string(m_path.getPath()) + "/*").c_str(), &m_fileInfo);
+    m_hasItem = m_handle != -1;
 
-	skipCurAndParent();
+    skipCurAndParent();
 }
 
-DirectoryIterator::~DirectoryIterator (void)
+DirectoryIterator::~DirectoryIterator(void)
 {
-	if (m_handle != -1)
-		_findclose(m_handle);
+    if (m_handle != -1)
+        _findclose(m_handle);
 }
 
-bool DirectoryIterator::hasItem (void) const
+bool DirectoryIterator::hasItem(void) const
 {
-	return m_hasItem;
+    return m_hasItem;
 }
 
-FilePath DirectoryIterator::getItem (void) const
+FilePath DirectoryIterator::getItem(void) const
 {
-	DE_ASSERT(hasItem());
-	return FilePath::join(m_path, m_fileInfo.name);
+    DE_ASSERT(hasItem());
+    return FilePath::join(m_path, m_fileInfo.name);
 }
 
-void DirectoryIterator::next (void)
+void DirectoryIterator::next(void)
 {
-	m_hasItem = (_findnext32(m_handle, &m_fileInfo) == 0);
-	skipCurAndParent();
+    m_hasItem = (_findnext32(m_handle, &m_fileInfo) == 0);
+    skipCurAndParent();
 }
 
-void DirectoryIterator::skipCurAndParent (void)
+void DirectoryIterator::skipCurAndParent(void)
 {
-	while (m_hasItem && (deStringEqual(m_fileInfo.name, "..") || deStringEqual(m_fileInfo.name, ".")))
-		m_hasItem = (_findnext32(m_handle, &m_fileInfo) == 0);
+    while (m_hasItem && (deStringEqual(m_fileInfo.name, "..") || deStringEqual(m_fileInfo.name, ".")))
+        m_hasItem = (_findnext32(m_handle, &m_fileInfo) == 0);
 }
 
 #elif (DE_DIRITER == DE_DIRITER_POSIX)
 
-DirectoryIterator::DirectoryIterator (const FilePath& path)
-	: m_path	(FilePath::normalize(path))
-	, m_handle	(DE_NULL)
-	, m_curEntry(DE_NULL)
+DirectoryIterator::DirectoryIterator(const FilePath &path)
+    : m_path(FilePath::normalize(path))
+    , m_handle(nullptr)
+    , m_curEntry(nullptr)
 {
-	DE_CHECK_RUNTIME_ERR(m_path.exists());
-	DE_CHECK_RUNTIME_ERR(m_path.getType() == FilePath::TYPE_DIRECTORY);
+    DE_CHECK_RUNTIME_ERR(m_path.exists());
+    DE_CHECK_RUNTIME_ERR(m_path.getType() == FilePath::TYPE_DIRECTORY);
 
-	m_handle = opendir(m_path.getPath());
-	DE_CHECK_RUNTIME_ERR(m_handle);
+    m_handle = opendir(m_path.getPath());
+    DE_CHECK_RUNTIME_ERR(m_handle);
 
-	// Find first entry
-	next();
+    // Find first entry
+    next();
 }
 
-DirectoryIterator::~DirectoryIterator (void)
+DirectoryIterator::~DirectoryIterator(void)
 {
-	closedir(m_handle);
+    closedir(m_handle);
 }
 
-bool DirectoryIterator::hasItem (void) const
+bool DirectoryIterator::hasItem(void) const
 {
-	return (m_curEntry != DE_NULL);
+    return (m_curEntry != nullptr);
 }
 
-FilePath DirectoryIterator::getItem (void) const
+FilePath DirectoryIterator::getItem(void) const
 {
-	DE_ASSERT(hasItem());
-	return FilePath::join(m_path, m_curEntry->d_name);
+    DE_ASSERT(hasItem());
+    return FilePath::join(m_path, m_curEntry->d_name);
 }
 
-void DirectoryIterator::next (void)
+void DirectoryIterator::next(void)
 {
-	do
-	{
-		m_curEntry = readdir(m_handle);
-	} while (m_curEntry && (deStringEqual(m_curEntry->d_name, "..") || deStringEqual(m_curEntry->d_name, ".")));
+    do
+    {
+        m_curEntry = readdir(m_handle);
+    } while (m_curEntry && (deStringEqual(m_curEntry->d_name, "..") || deStringEqual(m_curEntry->d_name, ".")));
 }
 
 #endif
 
-} // de
+} // namespace de

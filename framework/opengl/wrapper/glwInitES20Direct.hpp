@@ -29,8 +29,8 @@
 namespace glw
 {
 
-void	initES20Direct	(Functions* gl);	//!< Load all OpenGL ES 2 functions using compile-time linkage.
+void initES20Direct(Functions *gl); //!< Load all OpenGL ES 2 functions using compile-time linkage.
 
-} // glw
+} // namespace glw
 
 #endif // _GLWINITES20DIRECT_HPP

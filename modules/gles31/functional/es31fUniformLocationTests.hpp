@@ -28,7 +28,7 @@
 
 namespace glu
 {
-	class StructType;
+class StructType;
 }
 
 namespace deqp
@@ -38,25 +38,27 @@ namespace gles31
 namespace Functional
 {
 
-typedef std::vector<glu::StructType*> StructList;
+typedef std::vector<glu::StructType *> StructList;
 
 class UniformLocationTests : public TestCaseGroup
 {
 public:
-							UniformLocationTests	(Context& context);
-	virtual					~UniformLocationTests	(void);
+    UniformLocationTests(Context &context, bool isGL45);
+    virtual ~UniformLocationTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							UniformLocationTests	(const UniformLocationTests& other);
-	UniformLocationTests&	operator=				(const UniformLocationTests& other);
+    UniformLocationTests(const UniformLocationTests &other);
+    UniformLocationTests &operator=(const UniformLocationTests &other);
 
-	StructList				structTypes;
+    StructList structTypes;
+
+    bool m_isGL45;
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FUNIFORMLOCATIONTESTS_HPP

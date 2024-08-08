@@ -36,8 +36,8 @@
 
 namespace tcu
 {
-	class WaiverUtil;
-};
+class WaiverUtil;
+}
 
 namespace es2cts
 {
@@ -45,18 +45,18 @@ namespace es2cts
 class TestPackage : public deqp::TestPackage
 {
 public:
-	TestPackage(tcu::TestContext& testCtx, const char* packageName);
-	~TestPackage(void);
+    TestPackage(tcu::TestContext &testCtx, const char *packageName);
+    ~TestPackage(void);
 
-	void init(void);
+    void init(void);
 
-	virtual tcu::TestCaseExecutor* createExecutor(void) const;
+    virtual tcu::TestCaseExecutor *createExecutor(void) const;
 
 private:
-	TestPackage(const TestPackage& other);
-	TestPackage& operator=(const TestPackage& other);
+    TestPackage(const TestPackage &other);
+    TestPackage &operator=(const TestPackage &other);
 };
 
-} // es2cts
+} // namespace es2cts
 
 #endif // _ES2CTESTPACKAGE_HPP

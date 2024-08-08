@@ -83,11 +83,11 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 #   nb_mod(gl_FragCoord.x);
 #   _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
 # }
-SHADER fragment variant_fragment_shader SPIRV-ASM
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7
-; Bound: 65
+; Bound: 66
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -164,8 +164,10 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpBranch %32
          %32 = OpLabel
          %39 = OpSLessThan %14 %22 %38
-               OpLoopMerge %34 %35 None
+               OpLoopMerge %65 %35 None
                OpBranch %33
+         %65 = OpLabel
+               OpBranch %34
          %33 = OpLabel
                OpReturnValue %12
          %35 = OpLabel

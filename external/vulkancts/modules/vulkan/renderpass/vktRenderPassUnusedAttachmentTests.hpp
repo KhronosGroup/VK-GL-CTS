@@ -26,16 +26,17 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
-#include "vktRenderPassTestsUtil.hpp"
+#include "vktRenderPassGroupParams.hpp"
 
 namespace vkt
 {
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& testCtx, const RenderPassType renderPassType);
+tcu::TestCaseGroup *createRenderPassUnusedAttachmentTests(tcu::TestContext &testCtx,
+                                                          const SharedGroupParams groupParams);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTRENDERPASSUNUSEDATTACHMENTTESTS_HPP

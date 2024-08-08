@@ -23,124 +23,124 @@
 
 #include "dePoolMultiSet.h"
 
-DE_DECLARE_POOL_MULTISET(deTestMultiSet, deInt16);
-DE_IMPLEMENT_POOL_MULTISET(deTestMultiSet, deInt16, deInt16Hash, deInt16Equal);
+DE_DECLARE_POOL_MULTISET(deTestMultiSet, int16_t);
+DE_IMPLEMENT_POOL_MULTISET(deTestMultiSet, int16_t, deInt16Hash, deInt16Equal);
 
-void dePoolMultiSet_selfTest (void)
+void dePoolMultiSet_selfTest(void)
 {
-	deMemPool*		pool	= deMemPool_createRoot(DE_NULL, 0);
-	deTestMultiSet*	set		= deTestMultiSet_create(pool);
-	int				i;
+    deMemPool *pool     = deMemPool_createRoot(NULL, 0);
+    deTestMultiSet *set = deTestMultiSet_create(pool);
+    int i;
 
-	/* Test exists() on empty set. */
-	DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 0);
-	for (i = 0; i < 15000; i++)
-		DE_TEST_ASSERT(!deTestMultiSet_exists(set, (deInt16)i));
+    /* Test exists() on empty set. */
+    DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 0);
+    for (i = 0; i < 15000; i++)
+        DE_TEST_ASSERT(!deTestMultiSet_exists(set, (int16_t)i));
 
-	/* Test insert(). */
-	for (i = 0; i < 5000; i++)
-		deTestMultiSet_insert(set, (deInt16)i);
+    /* Test insert(). */
+    for (i = 0; i < 5000; i++)
+        deTestMultiSet_insert(set, (int16_t)i);
 
-	DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 5000);
-	for (i = 0; i < 25000; i++)
-	{
-		deBool inserted	= deInBounds32(i, 0, 5000);
-		deBool found	= deTestMultiSet_exists(set, (deInt16)i);
-		DE_TEST_ASSERT(found == inserted);
-	}
+    DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 5000);
+    for (i = 0; i < 25000; i++)
+    {
+        bool inserted = deInBounds32(i, 0, 5000);
+        bool found    = deTestMultiSet_exists(set, (int16_t)i);
+        DE_TEST_ASSERT(found == inserted);
+    }
 
-	/* Test delete(). */
-	for (i = 0; i < 1000; i++)
-		deTestMultiSet_delete(set, (deInt16)i);
+    /* Test delete(). */
+    for (i = 0; i < 1000; i++)
+        deTestMultiSet_delete(set, (int16_t)i);
 
-	DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 4000);
-	for (i = 0; i < 25000; i++)
-	{
-		deBool inserted	= deInBounds32(i, 1000, 5000);
-		deBool found	= deTestMultiSet_exists(set, (deInt16)i);
-		DE_TEST_ASSERT(found == inserted);
-	}
+    DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 4000);
+    for (i = 0; i < 25000; i++)
+    {
+        bool inserted = deInBounds32(i, 1000, 5000);
+        bool found    = deTestMultiSet_exists(set, (int16_t)i);
+        DE_TEST_ASSERT(found == inserted);
+    }
 
-	/* Test insert() after delete(). */
-	for (i = 10000; i < 12000; i++)
-		deTestMultiSet_insert(set, (deInt16)i);
+    /* Test insert() after delete(). */
+    for (i = 10000; i < 12000; i++)
+        deTestMultiSet_insert(set, (int16_t)i);
 
-	DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 6000);
+    DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 6000);
 
-	for (i = 0; i < 25000; i++)
-	{
-		deBool inserted	= (deInBounds32(i, 1000, 5000) || deInBounds32(i, 10000, 12000));
-		deBool found	= deTestMultiSet_exists(set, (deInt16)i);
-		DE_TEST_ASSERT(found == inserted);
-	}
+    for (i = 0; i < 25000; i++)
+    {
+        bool inserted = (deInBounds32(i, 1000, 5000) || deInBounds32(i, 10000, 12000));
+        bool found    = deTestMultiSet_exists(set, (int16_t)i);
+        DE_TEST_ASSERT(found == inserted);
+    }
 
-	/* Test reset. */
-	deTestMultiSet_reset(set);
-	DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 0);
+    /* Test reset. */
+    deTestMultiSet_reset(set);
+    DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 0);
 
-	/* Test insertion multiple times. */
-	for (i = 0; i < 1000; i++)
-		deTestMultiSet_insert(set, (deInt16)i);
-	for (i = 0; i < 500; i++)
-		deTestMultiSet_insert(set, (deInt16)i);
-	for (i = 0; i < 250; i++)
-		deTestMultiSet_insert(set, (deInt16)i);
+    /* Test insertion multiple times. */
+    for (i = 0; i < 1000; i++)
+        deTestMultiSet_insert(set, (int16_t)i);
+    for (i = 0; i < 500; i++)
+        deTestMultiSet_insert(set, (int16_t)i);
+    for (i = 0; i < 250; i++)
+        deTestMultiSet_insert(set, (int16_t)i);
 
-	DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 1000 + 500 + 250);
+    DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 1000 + 500 + 250);
 
-	for (i = 0; i < 2000; i++)
-	{
-		int		count		= 0;
-		deBool	found		= deTestMultiSet_exists(set, (deInt16)i);
-		int		gotCount	= deTestMultiSet_getKeyCount(set, (deInt16)i);
+    for (i = 0; i < 2000; i++)
+    {
+        int count    = 0;
+        bool found   = deTestMultiSet_exists(set, (int16_t)i);
+        int gotCount = deTestMultiSet_getKeyCount(set, (int16_t)i);
 
-		count += deInBounds32(i, 0, 1000) ? 1 : 0;
-		count += deInBounds32(i, 0, 500) ? 1 : 0;
-		count += deInBounds32(i, 0, 250) ? 1 : 0;
+        count += deInBounds32(i, 0, 1000) ? 1 : 0;
+        count += deInBounds32(i, 0, 500) ? 1 : 0;
+        count += deInBounds32(i, 0, 250) ? 1 : 0;
 
-		DE_TEST_ASSERT(found == (count > 0));
-		DE_TEST_ASSERT(count == gotCount);
-	}
+        DE_TEST_ASSERT(found == (count > 0));
+        DE_TEST_ASSERT(count == gotCount);
+    }
 
-	/* Test multiset deletion rules. */
-	for (i = 0; i < 1000; i++)
-		deTestMultiSet_delete(set, (deInt16)i);
+    /* Test multiset deletion rules. */
+    for (i = 0; i < 1000; i++)
+        deTestMultiSet_delete(set, (int16_t)i);
 
-	DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 500 + 250);
+    DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 500 + 250);
 
-	for (i = 0; i < 2000; i++)
-	{
-		int		count		= 0;
-		deBool	found		= deTestMultiSet_exists(set, (deInt16)i);
-		int		gotCount	= deTestMultiSet_getKeyCount(set, (deInt16)i);
+    for (i = 0; i < 2000; i++)
+    {
+        int count    = 0;
+        bool found   = deTestMultiSet_exists(set, (int16_t)i);
+        int gotCount = deTestMultiSet_getKeyCount(set, (int16_t)i);
 
-		count += deInBounds32(i, 0, 500) ? 1 : 0;
-		count += deInBounds32(i, 0, 250) ? 1 : 0;
+        count += deInBounds32(i, 0, 500) ? 1 : 0;
+        count += deInBounds32(i, 0, 250) ? 1 : 0;
 
-		DE_TEST_ASSERT(found == (count > 0));
-		DE_TEST_ASSERT(count == gotCount);
-	}
+        DE_TEST_ASSERT(found == (count > 0));
+        DE_TEST_ASSERT(count == gotCount);
+    }
 
-	/* Test setKeyCount(). */
-	for (i = 0; i < 250; i++)
-		deTestMultiSet_setKeyCount(set, (deInt16)i, 0);
-	for (i = 750; i < 1000; i++)
-		deTestMultiSet_setKeyCount(set, (deInt16)i, 3);
+    /* Test setKeyCount(). */
+    for (i = 0; i < 250; i++)
+        deTestMultiSet_setKeyCount(set, (int16_t)i, 0);
+    for (i = 750; i < 1000; i++)
+        deTestMultiSet_setKeyCount(set, (int16_t)i, 3);
 
-	DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 250 * 4);
+    DE_TEST_ASSERT(deTestMultiSet_getNumElements(set) == 250 * 4);
 
-	for (i = 0; i < 2000; i++)
-	{
-		int		count		= 0;
-		deBool	found		= deTestMultiSet_exists(set, (deInt16)i);
-		int		gotCount	= deTestMultiSet_getKeyCount(set, (deInt16)i);
+    for (i = 0; i < 2000; i++)
+    {
+        int count    = 0;
+        bool found   = deTestMultiSet_exists(set, (int16_t)i);
+        int gotCount = deTestMultiSet_getKeyCount(set, (int16_t)i);
 
-		count += deInBounds32(i, 250, 500) ? 1 : 0;
-		count += deInBounds32(i, 750, 1000) ? 3 : 0;
+        count += deInBounds32(i, 250, 500) ? 1 : 0;
+        count += deInBounds32(i, 750, 1000) ? 3 : 0;
 
-		DE_TEST_ASSERT(found == (count > 0));
-		DE_TEST_ASSERT(gotCount == count);
-	}
+        DE_TEST_ASSERT(found == (count > 0));
+        DE_TEST_ASSERT(gotCount == count);
+    }
 
-	deMemPool_destroy(pool);
+    deMemPool_destroy(pool);
 }

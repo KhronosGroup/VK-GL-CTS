@@ -35,16 +35,14 @@ namespace osx
 class VulkanPlatform : public vk::Platform
 {
 public:
-						VulkanPlatform		();
-	vk::wsi::Display*	createWsiDisplay	(vk::wsi::Type wsiType) const;
-	vk::Library*		createLibrary		(void) const;
-	bool				hasDisplay		(vk::wsi::Type wsiType) const;
-	void				describePlatform	(std::ostream& dst) const;
-	void				getMemoryLimits		(vk::PlatformMemoryLimits& limits) const;
+    VulkanPlatform();
+    vk::wsi::Display *createWsiDisplay(vk::wsi::Type wsiType) const;
+    vk::Library *createLibrary(const char *libraryPath) const;
+    bool hasDisplay(vk::wsi::Type wsiType) const;
+    void describePlatform(std::ostream &dst) const;
 };
 
-
-} // osx
-} // tcu
+} // namespace osx
+} // namespace tcu
 
 #endif // _TCUOSXVULKANPLATFORM_HPP

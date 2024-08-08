@@ -35,25 +35,26 @@ namespace image
 // Test case variant, used when deciding which SPIR-V shader to get.
 struct CaseVariant
 {
-	enum CheckType
-	{
-		CHECK_TYPE_INTERMEDIATE_RESULTS = 0,
-		CHECK_TYPE_END_RESULTS,
-	};
+    enum CheckType
+    {
+        CHECK_TYPE_INTERMEDIATE_RESULTS = 0,
+        CHECK_TYPE_END_RESULTS,
+    };
 
-	ImageType			imageType;
-	tcu::TextureFormat	textureFormat;
-	CheckType			checkType;
+    ImageType imageType;
+    tcu::TextureFormat textureFormat;
+    CheckType checkType;
 
-	// Allows this struct to be used as key in maps.
-	bool operator< (const CaseVariant& other) const;
+    // Allows this struct to be used as key in maps.
+    bool operator<(const CaseVariant &other) const;
 
-	// Constructor.
-	CaseVariant (ImageType imgtype, tcu::TextureFormat::ChannelOrder order, tcu::TextureFormat::ChannelType chtype, CheckType cktype);
+    // Constructor.
+    CaseVariant(ImageType imgtype, tcu::TextureFormat::ChannelOrder order, tcu::TextureFormat::ChannelType chtype,
+                CheckType cktype);
 };
 
 // Gets the shader template for the appropriate case variant.
-std::string getSpirvAtomicOpShader (const CaseVariant& caseVariant);
+std::string getSpirvAtomicOpShader(const CaseVariant &caseVariant);
 
 } // namespace image
 } // namespace vkt

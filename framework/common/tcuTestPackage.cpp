@@ -33,136 +33,141 @@ namespace tcu
 
 // TestPackage
 
-TestPackage::TestPackage (TestContext& testCtx, const char* name, const char* description)
-	: TestNode(testCtx, NODETYPE_PACKAGE, name, description)
+TestPackage::TestPackage(TestContext &testCtx, const char *name, const char *description)
+    : TestNode(testCtx, NODETYPE_PACKAGE, name)
+    , m_caseListFilter(nullptr)
+{
+    DE_UNREF(description);
+}
+
+TestPackage::~TestPackage(void)
 {
 }
 
-TestPackage::~TestPackage (void)
+void TestPackage::setCaseListFilter(const CaseListFilter *caseListFilter)
 {
+    m_caseListFilter = caseListFilter;
 }
 
-TestNode::IterateResult TestPackage::iterate (void)
+TestNode::IterateResult TestPackage::iterate(void)
 {
-	DE_ASSERT(DE_FALSE); // should never be here!
-	throw InternalError("TestPackage::iterate() called!", "", __FILE__, __LINE__);
+    DE_ASSERT(false); // should never be here!
+    throw InternalError("TestPackage::iterate() called!", "", __FILE__, __LINE__);
 }
 
 // TestPackageRegistry
 
-TestPackageRegistry::TestPackageRegistry (void)
+TestPackageRegistry::TestPackageRegistry(void)
 {
 }
 
-TestPackageRegistry::~TestPackageRegistry (void)
+TestPackageRegistry::~TestPackageRegistry(void)
 {
-	for (int i = 0; i < (int)m_packageInfos.size(); i++)
-		delete m_packageInfos[i];
+    for (int i = 0; i < (int)m_packageInfos.size(); i++)
+        delete m_packageInfos[i];
 }
 
-TestPackageRegistry* TestPackageRegistry::getSingleton (void)
+TestPackageRegistry *TestPackageRegistry::getSingleton(void)
 {
-	return TestPackageRegistry::getOrDestroy(true);
+    return TestPackageRegistry::getOrDestroy(true);
 }
 
-void TestPackageRegistry::destroy (void)
+void TestPackageRegistry::destroy(void)
 {
-	TestPackageRegistry::getOrDestroy(false);
+    TestPackageRegistry::getOrDestroy(false);
 }
 
-TestPackageRegistry* TestPackageRegistry::getOrDestroy (bool isCreate)
+TestPackageRegistry *TestPackageRegistry::getOrDestroy(bool isCreate)
 {
-	static TestPackageRegistry* s_ptr = DE_NULL;
+    static TestPackageRegistry *s_ptr = nullptr;
 
-	if (isCreate)
-	{
-		if (!s_ptr)
-			s_ptr = new TestPackageRegistry();
+    if (isCreate)
+    {
+        if (!s_ptr)
+            s_ptr = new TestPackageRegistry();
 
-		return s_ptr;
-	}
-	else
-	{
-		if (s_ptr)
-		{
-			delete s_ptr;
-			s_ptr = DE_NULL;
-		}
+        return s_ptr;
+    }
+    else
+    {
+        if (s_ptr)
+        {
+            delete s_ptr;
+            s_ptr = nullptr;
+        }
 
-		return DE_NULL;
-	}
+        return nullptr;
+    }
 }
 
-void TestPackageRegistry::registerPackage (const char* name, TestPackageCreateFunc createFunc)
+void TestPackageRegistry::registerPackage(const char *name, TestPackageCreateFunc createFunc)
 {
-	DE_ASSERT(getPackageInfoByName(name) == DE_NULL);
-	m_packageInfos.push_back(new PackageInfo(name, createFunc));
+    DE_ASSERT(getPackageInfoByName(name) == nullptr);
+    m_packageInfos.push_back(new PackageInfo(name, createFunc));
 }
 
-const std::vector<TestPackageRegistry::PackageInfo*>& TestPackageRegistry::getPackageInfos (void) const
+const std::vector<TestPackageRegistry::PackageInfo *> &TestPackageRegistry::getPackageInfos(void) const
 {
-	return m_packageInfos;
+    return m_packageInfos;
 }
 
-TestPackageRegistry::PackageInfo* TestPackageRegistry::getPackageInfoByName (const char* packageName) const
+TestPackageRegistry::PackageInfo *TestPackageRegistry::getPackageInfoByName(const char *packageName) const
 {
-	for (int i = 0; i < (int)m_packageInfos.size(); i++)
-	{
-		if (m_packageInfos[i]->name == packageName)
-			return m_packageInfos[i];
-	}
+    for (int i = 0; i < (int)m_packageInfos.size(); i++)
+    {
+        if (m_packageInfos[i]->name == packageName)
+            return m_packageInfos[i];
+    }
 
-	return DE_NULL;
+    return nullptr;
 }
 
-TestPackage* TestPackageRegistry::createPackage (const char* name, TestContext& testCtx) const
+TestPackage *TestPackageRegistry::createPackage(const char *name, TestContext &testCtx) const
 {
-	PackageInfo* info = getPackageInfoByName(name);
-	return info ? info->createFunc(testCtx) : DE_NULL;
+    PackageInfo *info = getPackageInfoByName(name);
+    return info ? info->createFunc(testCtx) : nullptr;
 }
 
 // TestPackageDescriptor
 
-TestPackageDescriptor::TestPackageDescriptor (const char* name, TestPackageCreateFunc createFunc)
+TestPackageDescriptor::TestPackageDescriptor(const char *name, TestPackageCreateFunc createFunc)
 {
-	TestPackageRegistry::getSingleton()->registerPackage(name, createFunc);
+    TestPackageRegistry::getSingleton()->registerPackage(name, createFunc);
 }
 
-TestPackageDescriptor::~TestPackageDescriptor (void)
+TestPackageDescriptor::~TestPackageDescriptor(void)
 {
-	TestPackageRegistry::destroy();
+    TestPackageRegistry::destroy();
 }
 
 // TestPackageRoot
 
-TestPackageRoot::TestPackageRoot (TestContext& testCtx)
-	: TestNode(testCtx, NODETYPE_ROOT, "", "")
+TestPackageRoot::TestPackageRoot(TestContext &testCtx) : TestNode(testCtx, NODETYPE_ROOT, "")
 {
 }
 
-TestPackageRoot::TestPackageRoot (TestContext& testCtx, const vector<TestNode*>& children)
-	: TestNode(testCtx, NODETYPE_ROOT, "", "", children)
+TestPackageRoot::TestPackageRoot(TestContext &testCtx, const vector<TestNode *> &children)
+    : TestNode(testCtx, NODETYPE_ROOT, "", children)
 {
 }
 
-TestPackageRoot::TestPackageRoot (TestContext& testCtx, const TestPackageRegistry* packageRegistry)
-	: TestNode(testCtx, NODETYPE_ROOT, "", "")
+TestPackageRoot::TestPackageRoot(TestContext &testCtx, const TestPackageRegistry *packageRegistry)
+    : TestNode(testCtx, NODETYPE_ROOT, "")
 {
-	const vector<TestPackageRegistry::PackageInfo*>&	packageInfos	= packageRegistry->getPackageInfos();
+    const vector<TestPackageRegistry::PackageInfo *> &packageInfos = packageRegistry->getPackageInfos();
 
-	for (int i = 0; i < (int)packageInfos.size(); i++)
-		addChild(packageInfos[i]->createFunc(testCtx));
+    for (int i = 0; i < (int)packageInfos.size(); i++)
+        addChild(packageInfos[i]->createFunc(testCtx));
 }
 
-TestPackageRoot::~TestPackageRoot (void)
+TestPackageRoot::~TestPackageRoot(void)
 {
 }
 
-TestCase::IterateResult TestPackageRoot::iterate (void)
+TestCase::IterateResult TestPackageRoot::iterate(void)
 {
-	DE_ASSERT(DE_FALSE); // should never be here!
-	throw InternalError("TestPackageRoot::iterate() called!", "", __FILE__, __LINE__);
+    DE_ASSERT(false); // should never be here!
+    throw InternalError("TestPackageRoot::iterate() called!", "", __FILE__, __LINE__);
 }
 
-
-} // tcu
+} // namespace tcu

@@ -1,0 +1,8 @@
+
+
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_fragment
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_vertex
+dEQP-VK.ray_tracing_pipeline.build.cpuht*1048576_1_1
+dEQP-VK.ray_tracing_pipeline.build.cpuht*65536_4_4
+# VK-GL-CTS 4090
+dEQP-VK.shader_object.performance.*

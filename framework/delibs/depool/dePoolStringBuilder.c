@@ -29,113 +29,113 @@
 
 typedef struct StringBlock_s
 {
-	const char*				str;
-	struct StringBlock_s*	next;
+    const char *str;
+    struct StringBlock_s *next;
 } StringBlock;
 
 struct dePoolStringBuilder_s
 {
-	deMemPool*		pool;
-	int				length;
-	StringBlock*	blockListHead;
-	StringBlock*	blockListTail;
+    deMemPool *pool;
+    int length;
+    StringBlock *blockListHead;
+    StringBlock *blockListTail;
 };
 
-dePoolStringBuilder* dePoolStringBuilder_create (deMemPool* pool)
+dePoolStringBuilder *dePoolStringBuilder_create(deMemPool *pool)
 {
-	dePoolStringBuilder* builder = DE_POOL_NEW(pool, dePoolStringBuilder);
-	if (!builder)
-		return DE_NULL;
+    dePoolStringBuilder *builder = DE_POOL_NEW(pool, dePoolStringBuilder);
+    if (!builder)
+        return NULL;
 
-	builder->pool			= pool;
-	builder->length			= 0;
-	builder->blockListHead	= DE_NULL;
-	builder->blockListTail	= DE_NULL;
+    builder->pool          = pool;
+    builder->length        = 0;
+    builder->blockListHead = NULL;
+    builder->blockListTail = NULL;
 
-	return builder;
+    return builder;
 }
 
-deBool dePoolStringBuilder_appendString (dePoolStringBuilder* builder, const char* str)
+bool dePoolStringBuilder_appendString(dePoolStringBuilder *builder, const char *str)
 {
-	StringBlock*	block		= DE_POOL_NEW(builder->pool, StringBlock);
-	size_t			len			= strlen(str);
-	char*			blockStr	= (char*)deMemPool_alloc(builder->pool, len + 1);
+    StringBlock *block = DE_POOL_NEW(builder->pool, StringBlock);
+    size_t len         = strlen(str);
+    char *blockStr     = (char *)deMemPool_alloc(builder->pool, len + 1);
 
-	if (!block || !blockStr)
-		return DE_FALSE;
+    if (!block || !blockStr)
+        return false;
 
-	/* Initialize block. */
-	{
-		char*		d	= blockStr;
-		const char*	s	= str;
-		while (*s)
-			*d++ = *s++;
-		*d = 0;
+    /* Initialize block. */
+    {
+        char *d       = blockStr;
+        const char *s = str;
+        while (*s)
+            *d++ = *s++;
+        *d = 0;
 
-		block->str	= blockStr;
-		block->next	= DE_NULL;
-	}
+        block->str  = blockStr;
+        block->next = NULL;
+    }
 
-	/* Add block to list. */
-	if (builder->blockListTail)
-		builder->blockListTail->next = block;
-	else
-		builder->blockListHead = block;
+    /* Add block to list. */
+    if (builder->blockListTail)
+        builder->blockListTail->next = block;
+    else
+        builder->blockListHead = block;
 
-	builder->blockListTail = block;
+    builder->blockListTail = block;
 
-	builder->length += (int)len;
+    builder->length += (int)len;
 
-	return DE_TRUE;
+    return true;
 }
 
-deBool dePoolStringBuilder_appendFormat (dePoolStringBuilder* builder, const char* format, ...)
+bool dePoolStringBuilder_appendFormat(dePoolStringBuilder *builder, const char *format, ...)
 {
-	char	buf[512];
-	va_list	args;
-	deBool	ok;
+    char buf[512];
+    va_list args;
+    bool ok;
 
-	va_start(args, format);
-	vsnprintf(buf, DE_LENGTH_OF_ARRAY(buf), format, args);
-	ok = dePoolStringBuilder_appendString(builder, buf);
-	va_end(args);
+    va_start(args, format);
+    vsnprintf(buf, DE_LENGTH_OF_ARRAY(buf), format, args);
+    ok = dePoolStringBuilder_appendString(builder, buf);
+    va_end(args);
 
-	return ok;
+    return ok;
 }
 
 /* \todo [2009-09-05 petri] Other appends? printf style? */
 
-int dePoolStringBuilder_getLength (dePoolStringBuilder* builder)
+int dePoolStringBuilder_getLength(dePoolStringBuilder *builder)
 {
-	return builder->length;
+    return builder->length;
 }
 
-char* dePoolStringBuilder_dupToString (dePoolStringBuilder* builder)
+char *dePoolStringBuilder_dupToString(dePoolStringBuilder *builder)
 {
-	return dePoolStringBuilder_dupToPool(builder, builder->pool);
+    return dePoolStringBuilder_dupToPool(builder, builder->pool);
 }
 
-char* dePoolStringBuilder_dupToPool (dePoolStringBuilder* builder, deMemPool* pool)
+char *dePoolStringBuilder_dupToPool(dePoolStringBuilder *builder, deMemPool *pool)
 {
-	char* resultStr = (char*)deMemPool_alloc(pool, (size_t)builder->length + 1);
+    char *resultStr = (char *)deMemPool_alloc(pool, (size_t)builder->length + 1);
 
-	if (resultStr)
-	{
-		StringBlock*	block	= builder->blockListHead;
-		char*			dstPtr	= resultStr;
+    if (resultStr)
+    {
+        StringBlock *block = builder->blockListHead;
+        char *dstPtr       = resultStr;
 
-		while (block)
-		{
-			const char* p = block->str;
-			while (*p)
-				*dstPtr++ = *p++;
-			block = block->next;
-		}
+        while (block)
+        {
+            const char *p = block->str;
+            while (*p)
+                *dstPtr++ = *p++;
+            block = block->next;
+        }
 
-		*dstPtr++ = 0;
+        *dstPtr++ = 0;
 
-		DE_ASSERT((int)strlen(resultStr) == builder->length);
-	}
+        DE_ASSERT((int)strlen(resultStr) == builder->length);
+    }
 
-	return resultStr;
+    return resultStr;
 }

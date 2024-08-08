@@ -50,40 +50,58 @@ namespace Image
 class ManagedSurface
 {
 public:
-										ManagedSurface	(de::MovePtr<eglu::UniqueSurface> surface) : m_surface(surface) {}
-	virtual								~ManagedSurface	(void) {}
-	eglw::EGLSurface					get				(void) const { return **m_surface; }
+    ManagedSurface(de::MovePtr<eglu::UniqueSurface> surface) : m_surface(surface)
+    {
+    }
+    virtual ~ManagedSurface(void)
+    {
+    }
+    eglw::EGLSurface get(void) const
+    {
+        return **m_surface;
+    }
 
 private:
-	de::UniquePtr<eglu::UniqueSurface>	m_surface;
+    de::UniquePtr<eglu::UniqueSurface> m_surface;
 };
 
-de::MovePtr<ManagedSurface> createSurface (EglTestContext& eglTestCtx, eglw::EGLDisplay display, eglw::EGLConfig config, int width, int height);
+de::MovePtr<ManagedSurface> createSurface(EglTestContext &eglTestCtx, eglw::EGLDisplay display, eglw::EGLConfig config,
+                                          int width, int height);
 
 class ClientBuffer
 {
 public:
-	virtual							~ClientBuffer	(void) {}
-	virtual eglw::EGLClientBuffer	get				(void) const = 0;
+    virtual ~ClientBuffer(void)
+    {
+    }
+    virtual eglw::EGLClientBuffer get(void) const = 0;
 };
 
 class ImageSource
 {
 public:
-	virtual								~ImageSource		(void) {}
-	virtual std::string					getRequiredExtension(void) const = 0;
-	virtual de::MovePtr<ClientBuffer>	createBuffer		(const glw::Functions& gl, tcu::Texture2D* reference = DE_NULL) const = 0;
-	virtual eglw::EGLImageKHR			createImage			(const eglw::Library& egl, eglw::EGLDisplay dpy, eglw::EGLContext ctx, eglw::EGLClientBuffer clientBuffer) const = 0;
-	virtual glw::GLenum					getEffectiveFormat	(void) const = 0;
+    virtual ~ImageSource(void)
+    {
+    }
+    virtual std::string getRequiredExtension(void) const                                      = 0;
+    virtual de::MovePtr<ClientBuffer> createBuffer(const eglw::Library &egl, const glw::Functions &gl,
+                                                   tcu::Texture2D *reference = nullptr) const = 0;
+    virtual eglw::EGLImageKHR createImage(const eglw::Library &egl, eglw::EGLDisplay dpy, eglw::EGLContext ctx,
+                                          eglw::EGLClientBuffer clientBuffer) const           = 0;
+    virtual glw::GLenum getEffectiveFormat(void) const                                        = 0;
+    virtual bool isYUVFormatImage(void) const
+    {
+        return false;
+    };
 };
 
-de::MovePtr<ImageSource> createTextureImageSource			(eglw::EGLenum source, glw::GLenum internalFormat, glw::GLenum format, glw::GLenum type, bool useTexLevel0 = false);
-de::MovePtr<ImageSource> createRenderbufferImageSource		(glw::GLenum format);
-de::MovePtr<ImageSource> createUnsupportedImageSource		(const std::string& message, glw::GLenum format);
+de::MovePtr<ImageSource> createTextureImageSource(eglw::EGLenum source, glw::GLenum internalFormat, glw::GLenum format,
+                                                  glw::GLenum type, bool useTexLevel0 = false);
+de::MovePtr<ImageSource> createRenderbufferImageSource(glw::GLenum format);
+de::MovePtr<ImageSource> createUnsupportedImageSource(const std::string &message, glw::GLenum format, bool isYUV);
 
-} // Image
-} // egl
-} // deqp
-
+} // namespace Image
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLIMAGEUTIL_HPP

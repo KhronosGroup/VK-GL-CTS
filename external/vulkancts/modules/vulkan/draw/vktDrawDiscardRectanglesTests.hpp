@@ -26,15 +26,16 @@
 
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
+#include "vktDrawGroupParams.hpp"
 
 namespace vkt
 {
 namespace Draw
 {
 
-tcu::TestCaseGroup* createDiscardRectanglesTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDiscardRectanglesTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWDISCARDRECTANGLESTESTS_HPP

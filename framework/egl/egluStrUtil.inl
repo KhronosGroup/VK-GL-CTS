@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 3338ed0db494d6a4db7f76627b38f0b1892db096.
+ * Generated from Khronos EGL API description (egl.xml) revision 682c662d48fbae076c5ed89a1bd5b2aa7e2e4449.
  */
 
 const char* getBooleanName (int value)
@@ -10,7 +10,7 @@ const char* getBooleanName (int value)
 	{
 		case EGL_TRUE:	return "EGL_TRUE";
 		case EGL_FALSE:	return "EGL_FALSE";
-		default:		return DE_NULL;
+		default:		return nullptr;
 	}
 }
 
@@ -21,7 +21,7 @@ const char* getBoolDontCareName (int value)
 		case EGL_TRUE:		return "EGL_TRUE";
 		case EGL_FALSE:		return "EGL_FALSE";
 		case EGL_DONT_CARE:	return "EGL_DONT_CARE";
-		default:			return DE_NULL;
+		default:			return nullptr;
 	}
 }
 
@@ -32,7 +32,7 @@ const char* getAPIName (int value)
 		case EGL_OPENGL_API:	return "EGL_OPENGL_API";
 		case EGL_OPENGL_ES_API:	return "EGL_OPENGL_ES_API";
 		case EGL_OPENVG_API:	return "EGL_OPENVG_API";
-		default:				return DE_NULL;
+		default:				return nullptr;
 	}
 }
 
@@ -55,7 +55,7 @@ const char* getErrorName (int value)
 		case EGL_BAD_PARAMETER:			return "EGL_BAD_PARAMETER";
 		case EGL_BAD_SURFACE:			return "EGL_BAD_SURFACE";
 		case EGL_CONTEXT_LOST:			return "EGL_CONTEXT_LOST";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -67,7 +67,7 @@ const char* getContextAttribName (int value)
 		case EGL_CONTEXT_CLIENT_TYPE:		return "EGL_CONTEXT_CLIENT_TYPE";
 		case EGL_CONTEXT_CLIENT_VERSION:	return "EGL_CONTEXT_CLIENT_VERSION";
 		case EGL_RENDER_BUFFER:				return "EGL_RENDER_BUFFER";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -105,7 +105,8 @@ const char* getConfigAttribName (int value)
 		case EGL_TRANSPARENT_GREEN_VALUE:	return "EGL_TRANSPARENT_GREEN_VALUE";
 		case EGL_TRANSPARENT_BLUE_VALUE:	return "EGL_TRANSPARENT_BLUE_VALUE";
 		case EGL_COLOR_COMPONENT_TYPE_EXT:	return "EGL_COLOR_COMPONENT_TYPE_EXT";
-		default:							return DE_NULL;
+		case EGL_RECORDABLE_ANDROID:		return "EGL_RECORDABLE_ANDROID";
+		default:							return nullptr;
 	}
 }
 
@@ -129,7 +130,7 @@ const char* getSurfaceAttribName (int value)
 		case EGL_TEXTURE_TARGET:		return "EGL_TEXTURE_TARGET";
 		case EGL_ALPHA_FORMAT:			return "EGL_ALPHA_FORMAT";
 		case EGL_COLORSPACE:			return "EGL_COLORSPACE";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -145,7 +146,7 @@ const char* getYuvOrderName (int value)
 		case EGL_YUV_ORDER_YVYU_EXT:	return "EGL_YUV_ORDER_YVYU_EXT";
 		case EGL_YUV_ORDER_VYUY_EXT:	return "EGL_YUV_ORDER_VYUY_EXT";
 		case EGL_YUV_ORDER_AYUV_EXT:	return "EGL_YUV_ORDER_AYUV_EXT";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -156,7 +157,7 @@ const char* getYuvPlaneBppName (int value)
 		case EGL_YUV_PLANE_BPP_0_EXT:	return "EGL_YUV_PLANE_BPP_0_EXT";
 		case EGL_YUV_PLANE_BPP_8_EXT:	return "EGL_YUV_PLANE_BPP_8_EXT";
 		case EGL_YUV_PLANE_BPP_10_EXT:	return "EGL_YUV_PLANE_BPP_10_EXT";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -166,7 +167,7 @@ const char* getColorComponentTypeName (int value)
 	{
 		case EGL_COLOR_COMPONENT_TYPE_FIXED_EXT:	return "EGL_COLOR_COMPONENT_TYPE_FIXED_EXT";
 		case EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT:	return "EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -176,7 +177,7 @@ const char* getSurfaceTargetName (int value)
 	{
 		case EGL_READ:	return "EGL_READ";
 		case EGL_DRAW:	return "EGL_DRAW";
-		default:		return DE_NULL;
+		default:		return nullptr;
 	}
 }
 
@@ -186,7 +187,7 @@ const char* getColorBufferTypeName (int value)
 	{
 		case EGL_RGB_BUFFER:		return "EGL_RGB_BUFFER";
 		case EGL_LUMINANCE_BUFFER:	return "EGL_LUMINANCE_BUFFER";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -197,7 +198,7 @@ const char* getConfigCaveatName (int value)
 		case EGL_NONE:					return "EGL_NONE";
 		case EGL_SLOW_CONFIG:			return "EGL_SLOW_CONFIG";
 		case EGL_NON_CONFORMANT_CONFIG:	return "EGL_NON_CONFORMANT_CONFIG";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -207,7 +208,7 @@ const char* getTransparentTypeName (int value)
 	{
 		case EGL_NONE:				return "EGL_NONE";
 		case EGL_TRANSPARENT_RGB:	return "EGL_TRANSPARENT_RGB";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -217,7 +218,7 @@ const char* getMultisampleResolveName (int value)
 	{
 		case EGL_MULTISAMPLE_RESOLVE_DEFAULT:	return "EGL_MULTISAMPLE_RESOLVE_DEFAULT";
 		case EGL_MULTISAMPLE_RESOLVE_BOX:		return "EGL_MULTISAMPLE_RESOLVE_BOX";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -227,7 +228,7 @@ const char* getRenderBufferName (int value)
 	{
 		case EGL_SINGLE_BUFFER:	return "EGL_SINGLE_BUFFER";
 		case EGL_BACK_BUFFER:	return "EGL_BACK_BUFFER";
-		default:				return DE_NULL;
+		default:				return nullptr;
 	}
 }
 
@@ -237,7 +238,7 @@ const char* getSwapBehaviorName (int value)
 	{
 		case EGL_BUFFER_DESTROYED:	return "EGL_BUFFER_DESTROYED";
 		case EGL_BUFFER_PRESERVED:	return "EGL_BUFFER_PRESERVED";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -248,7 +249,7 @@ const char* getTextureFormatName (int value)
 		case EGL_NO_TEXTURE:	return "EGL_NO_TEXTURE";
 		case EGL_TEXTURE_RGB:	return "EGL_TEXTURE_RGB";
 		case EGL_TEXTURE_RGBA:	return "EGL_TEXTURE_RGBA";
-		default:				return DE_NULL;
+		default:				return nullptr;
 	}
 }
 
@@ -258,7 +259,7 @@ const char* getTextureTargetName (int value)
 	{
 		case EGL_NO_TEXTURE:	return "EGL_NO_TEXTURE";
 		case EGL_TEXTURE_2D:	return "EGL_TEXTURE_2D";
-		default:				return DE_NULL;
+		default:				return nullptr;
 	}
 }
 
@@ -268,7 +269,7 @@ const char* getAlphaFormatName (int value)
 	{
 		case EGL_ALPHA_FORMAT_NONPRE:	return "EGL_ALPHA_FORMAT_NONPRE";
 		case EGL_ALPHA_FORMAT_PRE:		return "EGL_ALPHA_FORMAT_PRE";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -278,7 +279,7 @@ const char* getColorspaceName (int value)
 	{
 		case EGL_COLORSPACE_sRGB:	return "EGL_COLORSPACE_sRGB";
 		case EGL_COLORSPACE_LINEAR:	return "EGL_COLORSPACE_LINEAR";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 

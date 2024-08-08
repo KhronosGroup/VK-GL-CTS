@@ -31,7 +31,7 @@ namespace tcu
 {
 class Surface;
 class TextureFormat;
-}
+} // namespace tcu
 
 namespace deqp
 {
@@ -43,35 +43,38 @@ namespace Functional
 class FboTestCase : public TestCase, public sglr::ContextWrapper
 {
 public:
-						FboTestCase				(Context& context, const char* name, const char* description, bool useScreenSizedViewport = false);
-						~FboTestCase			(void);
+    FboTestCase(Context &context, const char *name, const char *description, bool useScreenSizedViewport = false);
+    ~FboTestCase(void);
 
-	IterateResult		iterate					(void);
+    IterateResult iterate(void);
 
 protected:
-	virtual void		preCheck				(void) {}
-	virtual void		render					(tcu::Surface& dst) = DE_NULL;
-	virtual bool		compare					(const tcu::Surface& reference, const tcu::Surface& result);
+    virtual void preCheck(void)
+    {
+    }
+    virtual void render(tcu::Surface &dst) = 0;
+    virtual bool compare(const tcu::Surface &reference, const tcu::Surface &result);
 
-	// Utilities.
-	void				checkFormatSupport		(deUint32 sizedFormat);
-	void				checkSampleCount		(deUint32 sizedFormat, int numSamples);
-	void				readPixels				(tcu::Surface& dst, int x, int y, int width, int height, const tcu::TextureFormat& format, const tcu::Vec4& scale, const tcu::Vec4& bias);
-	void				readPixels				(tcu::Surface& dst, int x, int y, int width, int height);
-	void				checkFramebufferStatus	(deUint32 target);
-	void				checkError				(void);
-	void				clearColorBuffer		(const tcu::TextureFormat& format, const tcu::Vec4& value = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f));
+    // Utilities.
+    void checkFormatSupport(uint32_t sizedFormat);
+    void checkSampleCount(uint32_t sizedFormat, int numSamples);
+    void readPixels(tcu::Surface &dst, int x, int y, int width, int height, const tcu::TextureFormat &format,
+                    const tcu::Vec4 &scale, const tcu::Vec4 &bias);
+    void readPixels(tcu::Surface &dst, int x, int y, int width, int height);
+    void checkFramebufferStatus(uint32_t target);
+    void checkError(void);
+    void clearColorBuffer(const tcu::TextureFormat &format, const tcu::Vec4 &value = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f));
 
-	int					m_viewportWidth;
-	int					m_viewportHeight;
+    int m_viewportWidth;
+    int m_viewportHeight;
 
 private:
-						FboTestCase				(const FboTestCase& other);
-	FboTestCase&		operator=				(const FboTestCase& other);
+    FboTestCase(const FboTestCase &other);
+    FboTestCase &operator=(const FboTestCase &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FFBOTESTCASE_HPP

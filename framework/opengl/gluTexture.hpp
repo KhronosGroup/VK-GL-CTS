@@ -43,24 +43,33 @@ namespace glu
 class Texture1D
 {
 public:
-							Texture1D				(const RenderContext& context, deUint32 format, deUint32 dataType, int width);
-							Texture1D				(const RenderContext& context, deUint32 internalFormat, int width);
-							~Texture1D				(void);
+    Texture1D(const RenderContext &context, uint32_t format, uint32_t dataType, int width);
+    Texture1D(const RenderContext &context, uint32_t internalFormat, int width);
+    ~Texture1D(void);
 
-	tcu::Texture1D&			getRefTexture			(void)			{ return m_refTexture;	}
-	const tcu::Texture1D&	getRefTexture			(void) const	{ return m_refTexture;	}
-	deUint32				getGLTexture			(void) const	{ return m_glTexture;	}
+    tcu::Texture1D &getRefTexture(void)
+    {
+        return m_refTexture;
+    }
+    const tcu::Texture1D &getRefTexture(void) const
+    {
+        return m_refTexture;
+    }
+    uint32_t getGLTexture(void) const
+    {
+        return m_glTexture;
+    }
 
-	void					upload					(void);
+    void upload(void);
 
 private:
-							Texture1D				(const Texture1D& other); // Not allowed!
-	Texture1D&				operator=				(const Texture1D& other); // Not allowed!
+    Texture1D(const Texture1D &other);            // Not allowed!
+    Texture1D &operator=(const Texture1D &other); // Not allowed!
 
-	const RenderContext&	m_context;
-	deUint32				m_format;				//!< Internal format.
-	tcu::Texture1D			m_refTexture;
-	deUint32				m_glTexture;
+    const RenderContext &m_context;
+    uint32_t m_format; //!< Internal format.
+    tcu::Texture1D m_refTexture;
+    uint32_t m_glTexture;
 } DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
@@ -69,47 +78,65 @@ private:
 class Texture2D
 {
 public:
-							Texture2D				(const RenderContext& context, const ContextInfo& contextInfo, int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams = tcu::TexDecompressionParams());
-							Texture2D				(const RenderContext& context, deUint32 format, deUint32 dataType, int width, int height);
-							Texture2D				(const RenderContext& context, deUint32 internalFormat, int width, int height);
-	virtual					~Texture2D				(void);
+    Texture2D(const RenderContext &context, const ContextInfo &contextInfo, int numLevels,
+              const tcu::CompressedTexture *levels,
+              const tcu::TexDecompressionParams &decompressionParams = tcu::TexDecompressionParams());
+    Texture2D(const RenderContext &context, uint32_t format, uint32_t dataType, int width, int height);
+    Texture2D(const RenderContext &context, uint32_t internalFormat, int width, int height);
+    virtual ~Texture2D(void);
 
-	virtual void			upload					(void); // Not supported on compressed textures.
+    virtual void upload(void); // Not supported on compressed textures.
 
-	tcu::Texture2D&			getRefTexture			(void)			{ return m_refTexture;	}
-	const tcu::Texture2D&	getRefTexture			(void) const	{ return m_refTexture;	}
-	deUint32				getGLTexture			(void) const	{ return m_glTexture;	}
+    tcu::Texture2D &getRefTexture(void)
+    {
+        return m_refTexture;
+    }
+    const tcu::Texture2D &getRefTexture(void) const
+    {
+        return m_refTexture;
+    }
+    uint32_t getGLTexture(void) const
+    {
+        return m_glTexture;
+    }
 
-	static Texture2D*		create					(const RenderContext& context, const ContextInfo& contextInfo, const tcu::Archive& archive, int numLevels, const std::vector<std::string>& filenames);
-	static Texture2D*		create					(const RenderContext& context, const ContextInfo& contextInfo, const tcu::Archive& archive, int numLevels, const char* const* filenames);
-	static Texture2D*		create					(const RenderContext& context, const ContextInfo& contextInfo, const tcu::Archive& archive, const char* filename) { return create(context, contextInfo, archive, 1, &filename); }
+    static Texture2D *create(const RenderContext &context, const ContextInfo &contextInfo, const tcu::Archive &archive,
+                             int numLevels, const std::vector<std::string> &filenames);
+    static Texture2D *create(const RenderContext &context, const ContextInfo &contextInfo, const tcu::Archive &archive,
+                             int numLevels, const char *const *filenames);
+    static Texture2D *create(const RenderContext &context, const ContextInfo &contextInfo, const tcu::Archive &archive,
+                             const char *filename)
+    {
+        return create(context, contextInfo, archive, 1, &filename);
+    }
 
 protected:
-	const RenderContext&	m_context;
+    const RenderContext &m_context;
 
-	bool					m_isCompressed;
-	deUint32				m_format;               //!< Internal format.
-	tcu::Texture2D			m_refTexture;
+    bool m_isCompressed;
+    uint32_t m_format; //!< Internal format.
+    tcu::Texture2D m_refTexture;
 
-	deUint32				m_glTexture;
+    uint32_t m_glTexture;
 
 private:
-							Texture2D				(const Texture2D& other); // Not allowed!
-	Texture2D&				operator=				(const Texture2D& other); // Not allowed!
+    Texture2D(const Texture2D &other);            // Not allowed!
+    Texture2D &operator=(const Texture2D &other); // Not allowed!
 
-	void					loadCompressed			(int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams);
+    void loadCompressed(int numLevels, const tcu::CompressedTexture *levels,
+                        const tcu::TexDecompressionParams &decompressionParams);
 } DE_WARN_UNUSED_TYPE;
 
 class ImmutableTexture2D : public Texture2D
 {
 public:
-							ImmutableTexture2D		(const RenderContext& context, deUint32 internalFormat, int width, int height);
+    ImmutableTexture2D(const RenderContext &context, uint32_t internalFormat, int width, int height);
 
-	void					upload					(void); // Not supported on compressed textures.
+    void upload(void); // Not supported on compressed textures.
 
 private:
-							ImmutableTexture2D		(const ImmutableTexture2D& other); // Not allowed!
-	ImmutableTexture2D&		operator=				(const ImmutableTexture2D& other); // Not allowed!
+    ImmutableTexture2D(const ImmutableTexture2D &other);            // Not allowed!
+    ImmutableTexture2D &operator=(const ImmutableTexture2D &other); // Not allowed!
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -118,37 +145,51 @@ private:
 class TextureCube
 {
 public:
-	// For compressed cubemap constructor and create() function input level pointers / filenames are expected
-	// to laid out to array in following order:
-	//   { l0_neg_x, l0_pos_x, l0_neg_y, l0_pos_y, l0_neg_z, l0_pos_z, l1_neg_x, l1_pos_x, ... }
+    // For compressed cubemap constructor and create() function input level pointers / filenames are expected
+    // to laid out to array in following order:
+    //   { l0_neg_x, l0_pos_x, l0_neg_y, l0_pos_y, l0_neg_z, l0_pos_z, l1_neg_x, l1_pos_x, ... }
 
-							TextureCube				(const RenderContext& context, const ContextInfo& contextInfo, int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams = tcu::TexDecompressionParams());
-							TextureCube				(const RenderContext& context, deUint32 format, deUint32 dataType, int size);
-							TextureCube				(const RenderContext& context, deUint32 internalFormat, int size);
-							~TextureCube			(void);
+    TextureCube(const RenderContext &context, const ContextInfo &contextInfo, int numLevels,
+                const tcu::CompressedTexture *levels,
+                const tcu::TexDecompressionParams &decompressionParams = tcu::TexDecompressionParams());
+    TextureCube(const RenderContext &context, uint32_t format, uint32_t dataType, int size);
+    TextureCube(const RenderContext &context, uint32_t internalFormat, int size);
+    ~TextureCube(void);
 
-	void					upload					(void); // Not supported on compressed textures.
+    void upload(void); // Not supported on compressed textures.
 
-	tcu::TextureCube&		getRefTexture			(void)			{ return m_refTexture;	}
-	const tcu::TextureCube&	getRefTexture			(void) const	{ return m_refTexture;	}
-	deUint32				getGLTexture			(void) const	{ return m_glTexture;	}
+    tcu::TextureCube &getRefTexture(void)
+    {
+        return m_refTexture;
+    }
+    const tcu::TextureCube &getRefTexture(void) const
+    {
+        return m_refTexture;
+    }
+    uint32_t getGLTexture(void) const
+    {
+        return m_glTexture;
+    }
 
-	static TextureCube*		create					(const RenderContext& context, const ContextInfo& contextInfo, const tcu::Archive& archive, int numLevels, const std::vector<std::string>& filenames);
-	static TextureCube*		create					(const RenderContext& context, const ContextInfo& contextInfo, const tcu::Archive& archive, int numLevels, const char* const* filenames);
+    static TextureCube *create(const RenderContext &context, const ContextInfo &contextInfo,
+                               const tcu::Archive &archive, int numLevels, const std::vector<std::string> &filenames);
+    static TextureCube *create(const RenderContext &context, const ContextInfo &contextInfo,
+                               const tcu::Archive &archive, int numLevels, const char *const *filenames);
 
 private:
-							TextureCube				(const TextureCube& other); // Not allowed!
-	TextureCube&			operator=				(const TextureCube& other); // Not allowed!
+    TextureCube(const TextureCube &other);            // Not allowed!
+    TextureCube &operator=(const TextureCube &other); // Not allowed!
 
-	void					loadCompressed			(int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams);
+    void loadCompressed(int numLevels, const tcu::CompressedTexture *levels,
+                        const tcu::TexDecompressionParams &decompressionParams);
 
-	const RenderContext&	m_context;
+    const RenderContext &m_context;
 
-	bool					m_isCompressed;
-	deUint32				m_format;				//!< Internal format.
+    bool m_isCompressed;
+    uint32_t m_format; //!< Internal format.
 
-	tcu::TextureCube		m_refTexture;
-	deUint32				m_glTexture;
+    tcu::TextureCube m_refTexture;
+    uint32_t m_glTexture;
 } DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
@@ -158,31 +199,43 @@ private:
 class Texture2DArray
 {
 public:
-								Texture2DArray			(const RenderContext& context, deUint32 format, deUint32 dataType, int width, int height, int numLayers);
-								Texture2DArray			(const RenderContext& context, deUint32 internalFormat, int width, int height, int numLayers);
-								Texture2DArray			(const RenderContext& context, const ContextInfo& contextInfo, int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams = tcu::TexDecompressionParams());
-								~Texture2DArray			(void);
+    Texture2DArray(const RenderContext &context, uint32_t format, uint32_t dataType, int width, int height,
+                   int numLayers);
+    Texture2DArray(const RenderContext &context, uint32_t internalFormat, int width, int height, int numLayers);
+    Texture2DArray(const RenderContext &context, const ContextInfo &contextInfo, int numLevels,
+                   const tcu::CompressedTexture *levels,
+                   const tcu::TexDecompressionParams &decompressionParams = tcu::TexDecompressionParams());
+    ~Texture2DArray(void);
 
-	void						upload					(void);
+    void upload(void);
 
-	tcu::Texture2DArray&		getRefTexture			(void)			{ return m_refTexture;	}
-	const tcu::Texture2DArray&	getRefTexture			(void) const	{ return m_refTexture;	}
-	deUint32					getGLTexture			(void) const	{ return m_glTexture;	}
+    tcu::Texture2DArray &getRefTexture(void)
+    {
+        return m_refTexture;
+    }
+    const tcu::Texture2DArray &getRefTexture(void) const
+    {
+        return m_refTexture;
+    }
+    uint32_t getGLTexture(void) const
+    {
+        return m_glTexture;
+    }
 
 private:
-								Texture2DArray			(const Texture2DArray& other); // Not allowed!
-	Texture2DArray&				operator=				(const Texture2DArray& other); // Not allowed!
+    Texture2DArray(const Texture2DArray &other);            // Not allowed!
+    Texture2DArray &operator=(const Texture2DArray &other); // Not allowed!
 
-	void						loadCompressed			(int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams);
+    void loadCompressed(int numLevels, const tcu::CompressedTexture *levels,
+                        const tcu::TexDecompressionParams &decompressionParams);
 
+    const RenderContext &m_context;
 
-	const RenderContext&		m_context;
+    bool m_isCompressed;
+    uint32_t m_format; //!< Internal format.
 
-	bool						m_isCompressed;
-	deUint32					m_format;				//!< Internal format.
-
-	tcu::Texture2DArray			m_refTexture;
-	deUint32					m_glTexture;
+    tcu::Texture2DArray m_refTexture;
+    uint32_t m_glTexture;
 } DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
@@ -192,26 +245,35 @@ private:
 class Texture1DArray
 {
 public:
-								Texture1DArray			(const RenderContext& context, deUint32 format, deUint32 dataType, int width, int numLayers);
-								Texture1DArray			(const RenderContext& context, deUint32 internalFormat, int width, int numLayers);
-								~Texture1DArray			(void);
+    Texture1DArray(const RenderContext &context, uint32_t format, uint32_t dataType, int width, int numLayers);
+    Texture1DArray(const RenderContext &context, uint32_t internalFormat, int width, int numLayers);
+    ~Texture1DArray(void);
 
-	void						upload					(void);
+    void upload(void);
 
-	tcu::Texture1DArray&		getRefTexture			(void)			{ return m_refTexture;	}
-	const tcu::Texture1DArray&	getRefTexture			(void) const	{ return m_refTexture;	}
-	deUint32					getGLTexture			(void) const	{ return m_glTexture;	}
+    tcu::Texture1DArray &getRefTexture(void)
+    {
+        return m_refTexture;
+    }
+    const tcu::Texture1DArray &getRefTexture(void) const
+    {
+        return m_refTexture;
+    }
+    uint32_t getGLTexture(void) const
+    {
+        return m_glTexture;
+    }
 
 private:
-								Texture1DArray			(const Texture1DArray& other); // Not allowed!
-	Texture1DArray&				operator=				(const Texture1DArray& other); // Not allowed!
+    Texture1DArray(const Texture1DArray &other);            // Not allowed!
+    Texture1DArray &operator=(const Texture1DArray &other); // Not allowed!
 
-	const RenderContext&		m_context;
+    const RenderContext &m_context;
 
-	deUint32					m_format;				//!< Internal format.
+    uint32_t m_format; //!< Internal format.
 
-	tcu::Texture1DArray			m_refTexture;
-	deUint32					m_glTexture;
+    tcu::Texture1DArray m_refTexture;
+    uint32_t m_glTexture;
 } DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
@@ -221,30 +283,42 @@ private:
 class Texture3D
 {
 public:
-								Texture3D			(const RenderContext& context, deUint32 format, deUint32 dataType, int width, int height, int depth);
-								Texture3D			(const RenderContext& context, deUint32 internalFormat, int width, int height, int depth);
-								Texture3D			(const RenderContext& context, const ContextInfo& contextInfo, int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams = tcu::TexDecompressionParams());
-								~Texture3D			(void);
+    Texture3D(const RenderContext &context, uint32_t format, uint32_t dataType, int width, int height, int depth);
+    Texture3D(const RenderContext &context, uint32_t internalFormat, int width, int height, int depth);
+    Texture3D(const RenderContext &context, const ContextInfo &contextInfo, int numLevels,
+              const tcu::CompressedTexture *levels,
+              const tcu::TexDecompressionParams &decompressionParams = tcu::TexDecompressionParams());
+    ~Texture3D(void);
 
-	void						upload				(void);
+    void upload(void);
 
-	tcu::Texture3D&				getRefTexture		(void)			{ return m_refTexture;	}
-	const tcu::Texture3D&		getRefTexture		(void) const	{ return m_refTexture;	}
-	deUint32					getGLTexture		(void) const	{ return m_glTexture;	}
+    tcu::Texture3D &getRefTexture(void)
+    {
+        return m_refTexture;
+    }
+    const tcu::Texture3D &getRefTexture(void) const
+    {
+        return m_refTexture;
+    }
+    uint32_t getGLTexture(void) const
+    {
+        return m_glTexture;
+    }
 
 private:
-								Texture3D			(const Texture3D& other); // Not allowed!
-	Texture3D&					operator=			(const Texture3D& other); // Not allowed!
+    Texture3D(const Texture3D &other);            // Not allowed!
+    Texture3D &operator=(const Texture3D &other); // Not allowed!
 
-	void						loadCompressed		(int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams);
+    void loadCompressed(int numLevels, const tcu::CompressedTexture *levels,
+                        const tcu::TexDecompressionParams &decompressionParams);
 
-	const RenderContext&		m_context;
+    const RenderContext &m_context;
 
-	bool						m_isCompressed;
-	deUint32					m_format;			//!< Internal format.
+    bool m_isCompressed;
+    uint32_t m_format; //!< Internal format.
 
-	tcu::Texture3D				m_refTexture;
-	deUint32					m_glTexture;
+    tcu::Texture3D m_refTexture;
+    uint32_t m_glTexture;
 } DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
@@ -254,28 +328,37 @@ private:
 class TextureCubeArray
 {
 public:
-									TextureCubeArray	(const RenderContext& context, deUint32 format, deUint32 dataType, int size, int numLayers);
-									TextureCubeArray	(const RenderContext& context, deUint32 internalFormat, int size, int numLayers);
+    TextureCubeArray(const RenderContext &context, uint32_t format, uint32_t dataType, int size, int numLayers);
+    TextureCubeArray(const RenderContext &context, uint32_t internalFormat, int size, int numLayers);
 
-									~TextureCubeArray	(void);
+    ~TextureCubeArray(void);
 
-	void							upload				(void);
+    void upload(void);
 
-	tcu::TextureCubeArray&			getRefTexture		(void)			{ return m_refTexture;	}
-	const tcu::TextureCubeArray&	getRefTexture		(void) const	{ return m_refTexture;	}
-	deUint32						getGLTexture		(void) const	{ return m_glTexture;	}
+    tcu::TextureCubeArray &getRefTexture(void)
+    {
+        return m_refTexture;
+    }
+    const tcu::TextureCubeArray &getRefTexture(void) const
+    {
+        return m_refTexture;
+    }
+    uint32_t getGLTexture(void) const
+    {
+        return m_glTexture;
+    }
 
 private:
-									TextureCubeArray	(const TextureCubeArray& other); // Not allowed!
-	TextureCubeArray&				operator=			(const TextureCubeArray& other); // Not allowed!
+    TextureCubeArray(const TextureCubeArray &other);            // Not allowed!
+    TextureCubeArray &operator=(const TextureCubeArray &other); // Not allowed!
 
-	const RenderContext&			m_context;
+    const RenderContext &m_context;
 
-	bool							m_isCompressed;
-	deUint32						m_format;			//!< Internal format.
+    bool m_isCompressed;
+    uint32_t m_format; //!< Internal format.
 
-	tcu::TextureCubeArray			m_refTexture;
-	deUint32						m_glTexture;
+    tcu::TextureCubeArray m_refTexture;
+    uint32_t m_glTexture;
 } DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
@@ -284,43 +367,65 @@ private:
 class TextureBuffer
 {
 public:
-										TextureBuffer		(const RenderContext& context, deUint32 internalFormat, size_t bufferSize);
-										TextureBuffer		(const RenderContext& context, deUint32 internalFormat, size_t bufferSize, size_t offset, size_t size, const void* data = DE_NULL);
+    TextureBuffer(const RenderContext &context, uint32_t internalFormat, size_t bufferSize);
+    TextureBuffer(const RenderContext &context, uint32_t internalFormat, size_t bufferSize, size_t offset, size_t size,
+                  const void *data = nullptr);
 
-										~TextureBuffer		(void);
+    ~TextureBuffer(void);
 
-	// \note Effective pixel buffer access must be limited to w <= GL_MAX_TEXTURE_BUFFER_SIZE
-	const tcu::PixelBufferAccess		getFullRefTexture	(void);
-	const tcu::ConstPixelBufferAccess	getFullRefTexture	(void) const;
+    // \note Effective pixel buffer access must be limited to w <= GL_MAX_TEXTURE_BUFFER_SIZE
+    const tcu::PixelBufferAccess getFullRefTexture(void);
+    const tcu::ConstPixelBufferAccess getFullRefTexture(void) const;
 
-	// \note mutating buffer storage will invalidate existing pixel buffer accesses
-	de::ArrayBuffer<deUint8>&			getRefBuffer		(void)			{ return m_refBuffer;			}
-	const de::ArrayBuffer<deUint8>&		getRefBuffer		(void) const	{ return m_refBuffer;			}
+    // \note mutating buffer storage will invalidate existing pixel buffer accesses
+    de::ArrayBuffer<uint8_t> &getRefBuffer(void)
+    {
+        return m_refBuffer;
+    }
+    const de::ArrayBuffer<uint8_t> &getRefBuffer(void) const
+    {
+        return m_refBuffer;
+    }
 
-	size_t								getSize				(void) const	{ return m_size;				}
-	size_t								getOffset			(void) const	{ return m_offset;				}
-	size_t								getBufferSize		(void) const	{ return m_refBuffer.size();	}
+    size_t getSize(void) const
+    {
+        return m_size;
+    }
+    size_t getOffset(void) const
+    {
+        return m_offset;
+    }
+    size_t getBufferSize(void) const
+    {
+        return m_refBuffer.size();
+    }
 
-	deUint32							getGLTexture		(void) const	{ return m_glTexture;			}
-	deUint32							getGLBuffer			(void) const	{ return m_glBuffer;			}
+    uint32_t getGLTexture(void) const
+    {
+        return m_glTexture;
+    }
+    uint32_t getGLBuffer(void) const
+    {
+        return m_glBuffer;
+    }
 
-	void								upload				(void);
+    void upload(void);
 
 private:
-	void								init				(deUint32 internalFormat, size_t bufferSize, size_t offset, size_t size, const void* data);
-										TextureBuffer		(const TextureBuffer& other); // Not allowed!
-	TextureBuffer&						operator=			(const TextureBuffer& other); // Not allowed!
+    void init(uint32_t internalFormat, size_t bufferSize, size_t offset, size_t size, const void *data);
+    TextureBuffer(const TextureBuffer &other);            // Not allowed!
+    TextureBuffer &operator=(const TextureBuffer &other); // Not allowed!
 
-	const RenderContext&				m_context;
-	deUint32							m_format;		//!< Internal format.
-	de::ArrayBuffer<deUint8>			m_refBuffer;
-	size_t								m_offset;
-	size_t								m_size;
+    const RenderContext &m_context;
+    uint32_t m_format; //!< Internal format.
+    de::ArrayBuffer<uint8_t> m_refBuffer;
+    size_t m_offset;
+    size_t m_size;
 
-	deUint32							m_glTexture;
-	deUint32							m_glBuffer;
+    uint32_t m_glTexture;
+    uint32_t m_glBuffer;
 } DE_WARN_UNUSED_TYPE;
 
-} // glu
+} // namespace glu
 
 #endif // _GLUTEXTURE_HPP

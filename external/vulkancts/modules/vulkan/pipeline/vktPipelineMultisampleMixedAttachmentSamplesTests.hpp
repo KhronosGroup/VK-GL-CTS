@@ -25,15 +25,18 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createMultisampleMixedAttachmentSamplesTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMultisampleMixedAttachmentSamplesTests(tcu::TestContext &testCtx,
+                                                                 vk::PipelineConstructionType pipelineConstructionType,
+                                                                 bool useFragmentShadingRate);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEMULTISAMPLEMIXEDATTACHMENTSAMPLESTESTS_HPP

@@ -1,0 +1,141 @@
+#!amber
+# Copyright 2021 Google LLC.
+# Copyright 2021 The Khronos Group Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Matrix 4x4 determinant precision test 16bit
+
+DEVICE_EXTENSION VK_KHR_storage_buffer_storage_class
+DEVICE_EXTENSION VK_KHR_16bit_storage
+DEVICE_FEATURE   Float16Int8Features.shaderFloat16
+DEVICE_FEATURE   Storage16BitFeatures.storageBuffer16BitAccess
+
+SHADER compute compute_shader GLSL
+#version 450
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : enable
+
+const int NUMMATRICES = 10;
+
+layout(set = 0, binding = 0) buffer block0
+{
+  f16mat4 matIns[NUMMATRICES];
+};
+
+layout(set = 0, binding = 1) buffer block1
+{
+  float16_t detM[NUMMATRICES];
+};
+
+void main()
+{
+  for (int ndx = 0; ndx < NUMMATRICES; ndx++)
+  {
+    f16mat4 matIn = matIns[ndx];
+    detM[ndx]     = determinant(matIn);
+  }
+}
+END
+
+BUFFER bufIn DATA_TYPE mat4x4<float16> DATA
+     -1.0             1.0              4.0             2.0
+      2.0            -1.0              2.0             5.0
+      1.0             2.0              3.0             4.0
+      3.0             4.0             -1.0             2.0
+
+      1.0             0.0              0.0             0.0
+      0.0             0.0              1.0             0.0
+      0.0             1.0              0.0             0.0
+      0.0             0.0              0.0             1.0
+
+     -0.08837890625   0.1569824219     0.001299858093  0.2451171875
+      0.0380859375    0.7124023438    -0.003200531006  0.9111328125
+      0.07598876953   0.09777832031   -1.060546875     1.904296875
+     -0.4968261719    1.595703125      0.01309967041  -2.6953125
+
+      0.55322265625  -2.6953125      -12.75           -0.381103515625
+     -0.473876953125 -0.014030456543  -4.9140625      -9.59375
+     -1.083984375     0.62841796875    0.067443847656 -4.7734375
+     -0.062286376953 -0.58935546875   -0.143798828125  0.4453125
+
+     14.4765625      -4.6953125       -5.40625         2.572265625
+     -3.298828125     9.1796875        2.822265625     6.46484375
+      3.6953125       3.67578125      -3.779296875     4.26953125
+     -7.3828125       5.45703125      -7.4921875       3.99609375
+
+    -17           -1100            -100               -0.01800537109
+      6              43              -3.099609375     20
+     -2.30078125      0.002700805664 -0.000500202179  -1.900390625
+      0.3601074219    0.3100585938   -0.00479888916    0.02699279785
+
+     -3.384765625     3.154296875    -9.8671875        1.489257812
+     -1.336914062     1.853515625    13.1875           4.7734375
+     -2.580078125    54.8125         -5.62890625      -1.877929688
+     -0.7348632812   -1.95703125      1.390625         5.82421875
+
+     -1.60546875    -18.71875        -2.263671875      2.4296875
+     -2.67578125     -7.33984375    226.5              3.841796875
+      9.5234375      -3.541015625    -2.8828125        1.755859375
+      1.602539062     1.243164062    10.6796875       -0.7749023438
+
+     25.703125        1.28125        2.548828125      -2.83203125
+     -1.983398438    -2.9296875     -6.0625           -1.15625
+     -2.45703125    -39.84375        0.8330078125     -4.12109375
+      0.814453125     0.6962890625   3.279296875      -2.87109375
+
+    -13.421875       -1.57421875     4.17578125        4.421875
+     -1.33300781      2.875         -5.18359375        1.84960938
+     -1.30273438     -5.03125       -0.909179688       1.53710938
+    -17.03125         1.13378906     2.16601562       -1.44628906
+END
+
+BUFFER bufOut DATA_TYPE float16 SIZE 10 FILL 0.0
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER bufIn AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER bufOut AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipeline 1 1 1
+
+# Decimals between 16 and 32: 0.015625
+EXPECT bufOut IDX  0 TOLERANCE  0.015625       EQ   -26.0
+
+# Decimals between 0.5 and 1: 0.00048828125
+EXPECT bufOut IDX  2 TOLERANCE  0.00048828125  EQ    -1.0
+
+# Decimals between 0.25 and 0.5: 0.00146484375
+EXPECT bufOut IDX  4 TOLERANCE  0.00146484375  EQ    -0.3641016781
+
+# Decimals between 32 and 64: 0.25
+EXPECT bufOut IDX  6 TOLERANCE  0.25           EQ    46.3125
+
+# Decimals between 1024 and 2048: 12.0
+EXPECT bufOut IDX  8 TOLERANCE  12.0            EQ -1840
+
+# Integers between 4096 and 8192: 24
+EXPECT bufOut IDX 10 TOLERANCE  24              EQ  6036
+
+# Integers between 8192 and 16384: 64
+EXPECT bufOut IDX 12 TOLERANCE 64               EQ 13472
+
+# Integers between 32768 and 65536: 128
+EXPECT bufOut IDX 14 TOLERANCE 128              EQ 40192
+
+# Integers between 16384 and 32768: 96
+EXPECT bufOut IDX 16 TOLERANCE 96              EQ 20800
+
+# Integers between 2048 and 4096: 8
+EXPECT bufOut IDX 18 TOLERANCE  8              EQ -3212

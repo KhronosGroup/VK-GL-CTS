@@ -36,18 +36,18 @@ namespace Functional
 class ShaderImageLoadStoreTests : public TestCaseGroup
 {
 public:
-								ShaderImageLoadStoreTests	(Context& context);
-								~ShaderImageLoadStoreTests	(void);
+    ShaderImageLoadStoreTests(Context &context);
+    ~ShaderImageLoadStoreTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								ShaderImageLoadStoreTests	(const ShaderImageLoadStoreTests& other);
-	ShaderImageLoadStoreTests&	operator=					(const ShaderImageLoadStoreTests& other);
+    ShaderImageLoadStoreTests(const ShaderImageLoadStoreTests &other);
+    ShaderImageLoadStoreTests &operator=(const ShaderImageLoadStoreTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSHADERIMAGELOADSTORETESTS_HPP

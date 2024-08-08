@@ -28,52 +28,48 @@
 namespace tcu
 {
 
-TestContext::TestContext (
-	Platform&			platform,
-	Archive&			rootArchive,
-	TestLog&			log,
-	const CommandLine&	cmdLine,
-	qpWatchDog*			watchDog)
-	: m_platform		(platform)
-	, m_rootArchive		(rootArchive)
-	, m_log				(log)
-	, m_cmdLine			(cmdLine)
-	, m_watchDog		(watchDog)
-	, m_curArchive		(DE_NULL)
-	, m_testResult		(QP_TEST_RESULT_LAST)
-	, m_terminateAfter	(false)
+TestContext::TestContext(Platform &platform, Archive &rootArchive, TestLog &log, const CommandLine &cmdLine,
+                         qpWatchDog *watchDog)
+    : m_platform(platform)
+    , m_rootArchive(rootArchive)
+    , m_log(log)
+    , m_cmdLine(cmdLine)
+    , m_watchDog(watchDog)
+    , m_curArchive(nullptr)
+    , m_testResult(QP_TEST_RESULT_LAST)
+    , m_terminateAfter(false)
 {
-	setCurrentArchive(m_rootArchive);
+    setCurrentArchive(m_rootArchive);
 }
 
 void TestContext::writeSessionInfo(void)
 {
-	const std::string sessionInfo = "#sessionInfo commandLineParameters \"";
-	m_log.writeSessionInfo(sessionInfo + m_cmdLine.getInitialCmdLine() + "\"\n");
+    const std::string sessionInfo = "#sessionInfo commandLineParameters \"";
+    m_log.writeSessionInfo(sessionInfo + m_cmdLine.getInitialCmdLine() + "\"\n");
 }
 
-void TestContext::touchWatchdog (void)
+void TestContext::touchWatchdog(void)
 {
-	if (m_watchDog)
-		qpWatchDog_touch(m_watchDog);
+    if (m_watchDog)
+        qpWatchDog_touch(m_watchDog);
 }
 
-void TestContext::touchWatchdogAndDisableIntervalTimeLimit (void)
+void TestContext::touchWatchdogAndDisableIntervalTimeLimit(void)
 {
-	if (m_watchDog)
-		qpWatchDog_touchAndDisableIntervalTimeLimit(m_watchDog);
+    if (m_watchDog)
+        qpWatchDog_touchAndDisableIntervalTimeLimit(m_watchDog);
 }
 
-void TestContext::touchWatchdogAndEnableIntervalTimeLimit (void)
+void TestContext::touchWatchdogAndEnableIntervalTimeLimit(void)
 {
-	if (m_watchDog)
-		qpWatchDog_touchAndEnableIntervalTimeLimit(m_watchDog);
+    if (m_watchDog)
+        qpWatchDog_touchAndEnableIntervalTimeLimit(m_watchDog);
 }
 
-void TestContext::setTestResult (qpTestResult testResult, const char* description)
+void TestContext::setTestResult(qpTestResult testResult, const char *description)
 {
-	m_testResult		= testResult;
-	m_testResultDesc	= description;
+    m_testResult     = testResult;
+    m_testResultDesc = description;
 }
 
-} // tcu
+} // namespace tcu

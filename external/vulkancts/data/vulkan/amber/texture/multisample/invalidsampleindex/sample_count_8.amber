@@ -1,0 +1,89 @@
+#!amber
+# Copyright 2021 Google LLC.
+# Copyright 2021 The Khronos Group Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Write to an invalid sample index test
+# Sample Count:             8
+# Tested Sample Min:        -256
+# Tested Sample Max:        256
+# Description:              All writes to invalid sample numbers should be discarded.
+
+DEVICE_FEATURE shaderStorageImageMultisample
+
+SHADER compute compute_shader GLSL
+#version 430
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+uniform layout(set=0, binding=0, rgba8) image2DMS texture;
+uniform layout(set=0, binding=1, rgba8) image2D result;
+
+
+void main()
+{
+    int numSamples = 8;
+    int distortion = 256;
+    vec4 ndxColors[4];
+
+    ndxColors[0] = vec4(1.0, 0.0, 0.0, 1.0);
+    ndxColors[1] = vec4(0.0, 1.0, 0.0, 1.0);
+    ndxColors[2] = vec4(0.0, 0.0, 1.0, 1.0);
+    ndxColors[3] = vec4(0.0, 1.0, 1.0, 1.0);
+
+    ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
+
+    // Initialize texture
+    for (int s = -distortion; s < distortion; s++)
+    {
+        vec4 color = vec4(1);
+
+        if (s >= 0 && s < numSamples) color = ndxColors[s % 4];
+
+        imageStore(texture, uv, s, color);
+    }
+
+    memoryBarrierImage();
+    barrier();
+
+    // Verification
+    bool imageOk = true;
+
+    for (int s = 0; s < numSamples; s++)
+    {
+        vec4 color = vec4(1);
+
+        if (s >= 0 && s < numSamples) color = ndxColors[s % 4];
+
+        if (imageLoad(texture, uv, s) != color)
+            imageOk = false;
+    }
+
+    vec4 resultColor = imageOk ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
+    imageStore(result, uv, resultColor);
+}
+END
+
+IMAGE texture FORMAT R8G8B8A8_UNORM DIM_2D WIDTH 16 HEIGHT 16 SAMPLES 8
+IMAGE result FORMAT R8G8B8A8_UNORM DIM_2D WIDTH 16 HEIGHT 16 FILL 0
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+  BIND BUFFER texture AS storage_image DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER result AS storage_image DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipeline 1 1 1
+
+EXPECT result IDX 0 0 SIZE 16 16 EQ_RGBA 0 255 0 255

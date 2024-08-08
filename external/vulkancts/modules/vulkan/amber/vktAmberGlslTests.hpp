@@ -32,9 +32,10 @@ namespace vkt
 namespace cts_amber
 {
 
-tcu::TestCaseGroup* createCombinedOperationsGroup	(tcu::TestContext&);
+tcu::TestCaseGroup *createCombinedOperationsGroup(tcu::TestContext &);
+tcu::TestCaseGroup *createCrashTestGroup(tcu::TestContext &);
 
-} // cts_amber
-} // vkt
+} // namespace cts_amber
+} // namespace vkt
 
 #endif // _VKTAMBERGLSLTESTS_HPP

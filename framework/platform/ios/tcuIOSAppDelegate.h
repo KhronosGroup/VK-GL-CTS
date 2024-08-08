@@ -27,7 +27,7 @@
 
 @interface tcuIOSAppDelegate : NSObject <UIApplicationDelegate>
 
-@property (nonatomic, retain) UIWindow *window;
-@property (nonatomic, retain) tcuIOSViewController *viewController;
+@property(nonatomic, retain) UIWindow *window;
+@property(nonatomic, retain) tcuIOSViewController *viewController;
 
 @end

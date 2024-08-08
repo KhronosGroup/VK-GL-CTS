@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+)
 
 set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryTests.cpp
@@ -9,6 +12,8 @@ set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryTraversalControlTests.hpp
 	vktRayQueryAccelerationStructuresTests.cpp
 	vktRayQueryAccelerationStructuresTests.hpp
+	vktRayQueryBarycentricCoordinatesTests.cpp
+	vktRayQueryBarycentricCoordinatesTests.hpp
 	vktRayQueryProceduralGeometryTests.cpp
 	vktRayQueryProceduralGeometryTests.hpp
 	vktRayQueryWatertightnessTests.cpp
@@ -19,6 +24,16 @@ set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryMiscTests.hpp
 	vktRayQueryDirectionTests.cpp
 	vktRayQueryDirectionTests.hpp
+	vktRayQueryNonUniformArgsTests.cpp
+	vktRayQueryNonUniformArgsTests.hpp
+	vktRayQueryOpacityMicromapTests.cpp
+	vktRayQueryOpacityMicromapTests.hpp
+	vktRayQueryPositionFetchTests.cpp
+	vktRayQueryPositionFetchTests.hpp
+	vktRayQueryMultipleRayQueries.cpp
+	vktRayQueryMultipleRayQueries.hpp
+	vktRayQueryStressTests.cpp
+	vktRayQueryStressTests.hpp
 	)
 
 set(DEQP_VK_RAY_QUERY_LIBS

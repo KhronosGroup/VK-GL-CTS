@@ -24,16 +24,16 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
-#include "vktRenderPassTestsUtil.hpp"
+#include "vktRenderPassGroupParams.hpp"
 
 namespace vkt
 {
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createFragmentDensityMapTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createFragmentDensityMapTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTRENDERPASSFRAGMENTDENSITYMAPTESTS_HPP

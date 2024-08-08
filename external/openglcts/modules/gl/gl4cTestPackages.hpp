@@ -33,87 +33,103 @@ namespace gl4cts
 class GL40TestPackage : public gl3cts::GL33TestPackage
 {
 public:
-	GL40TestPackage(tcu::TestContext& testCtx, const char* packageName,
-					const char*		 description	   = "OpenGL 4.0 Conformance Tests",
-					glu::ContextType renderContextType = glu::ContextType(4, 0, glu::PROFILE_CORE));
+    GL40TestPackage(tcu::TestContext &testCtx, const char *packageName,
+                    const char *description            = "OpenGL 4.0 Conformance Tests",
+                    glu::ContextType renderContextType = glu::ContextType(4, 0, glu::PROFILE_CORE));
 
-	~GL40TestPackage(void);
+    ~GL40TestPackage(void);
 
-	void init(void);
+    void init(void);
 };
 
 class GL41TestPackage : public GL40TestPackage
 {
 public:
-	GL41TestPackage(tcu::TestContext& testCtx, const char* packageName,
-					const char*		 description	   = "OpenGL 4.1 Conformance Tests",
-					glu::ContextType renderContextType = glu::ContextType(4, 1, glu::PROFILE_CORE));
+    GL41TestPackage(tcu::TestContext &testCtx, const char *packageName,
+                    const char *description            = "OpenGL 4.1 Conformance Tests",
+                    glu::ContextType renderContextType = glu::ContextType(4, 1, glu::PROFILE_CORE));
 
-	~GL41TestPackage(void);
+    ~GL41TestPackage(void);
 
-	void init(void);
+    void init(void);
 };
 
 class GL42TestPackage : public GL41TestPackage
 {
 public:
-	GL42TestPackage(tcu::TestContext& testCtx, const char* packageName,
-					const char*		 description	   = "OpenGL 4.2 Conformance Tests",
-					glu::ContextType renderContextType = glu::ContextType(4, 2, glu::PROFILE_CORE));
+    GL42TestPackage(tcu::TestContext &testCtx, const char *packageName,
+                    const char *description            = "OpenGL 4.2 Conformance Tests",
+                    glu::ContextType renderContextType = glu::ContextType(4, 2, glu::PROFILE_CORE));
 
-	~GL42TestPackage(void);
+    ~GL42TestPackage(void);
 
-	void init(void);
+    void init(void);
+};
+
+class GL42CompatTestPackage : public deqp::TestPackage
+{
+public:
+    GL42CompatTestPackage(tcu::TestContext &testCtx, const char *packageName,
+                          const char *description            = "OpenGL 4.2 Compatibility Conformance Tests",
+                          glu::ContextType renderContextType = glu::ContextType(4, 2, glu::PROFILE_COMPATIBILITY));
+
+    ~GL42CompatTestPackage(void);
+
+    tcu::TestCaseExecutor *createExecutor(void) const;
+
+    void init(void);
+
+    using deqp::TestPackage::getContext;
 };
 
 class GL43TestPackage : public GL42TestPackage
 {
 public:
-	GL43TestPackage(tcu::TestContext& testCtx, const char* packageName,
-					const char*		 description	   = "OpenGL 4.3 Conformance Tests",
-					glu::ContextType renderContextType = glu::ContextType(4, 3, glu::PROFILE_CORE));
+    GL43TestPackage(tcu::TestContext &testCtx, const char *packageName,
+                    const char *description            = "OpenGL 4.3 Conformance Tests",
+                    glu::ContextType renderContextType = glu::ContextType(4, 3, glu::PROFILE_CORE));
 
-	~GL43TestPackage(void);
+    ~GL43TestPackage(void);
 
-	void init(void);
+    void init(void);
 };
 
 class GL44TestPackage : public GL43TestPackage
 {
 public:
-	GL44TestPackage(tcu::TestContext& testCtx, const char* packageName,
-					const char*		 description	   = "OpenGL 4.4 Conformance Tests",
-					glu::ContextType renderContextType = glu::ContextType(4, 4, glu::PROFILE_CORE));
+    GL44TestPackage(tcu::TestContext &testCtx, const char *packageName,
+                    const char *description            = "OpenGL 4.4 Conformance Tests",
+                    glu::ContextType renderContextType = glu::ContextType(4, 4, glu::PROFILE_CORE));
 
-	~GL44TestPackage(void);
+    ~GL44TestPackage(void);
 
-	void init(void);
+    void init(void);
 };
 
 class GL45TestPackage : public GL44TestPackage
 {
 public:
-	GL45TestPackage(tcu::TestContext& testCtx, const char* packageName,
-					const char*		 description	   = "OpenGL 4.5 Conformance Tests",
-					glu::ContextType renderContextType = glu::ContextType(4, 5, glu::PROFILE_CORE));
+    GL45TestPackage(tcu::TestContext &testCtx, const char *packageName,
+                    const char *description            = "OpenGL 4.5 Conformance Tests",
+                    glu::ContextType renderContextType = glu::ContextType(4, 5, glu::PROFILE_CORE));
 
-	~GL45TestPackage(void);
+    ~GL45TestPackage(void);
 
-	void init(void);
+    void init(void);
 };
 
 class GL46TestPackage : public GL45TestPackage
 {
 public:
-	GL46TestPackage(tcu::TestContext& testCtx, const char* packageName,
-					const char*		 description	   = "OpenGL 4.6 Conformance Tests",
-					glu::ContextType renderContextType = glu::ContextType(4, 6, glu::PROFILE_CORE));
+    GL46TestPackage(tcu::TestContext &testCtx, const char *packageName,
+                    const char *description            = "OpenGL 4.6 Conformance Tests",
+                    glu::ContextType renderContextType = glu::ContextType(4, 6, glu::PROFILE_CORE));
 
-	~GL46TestPackage(void);
+    ~GL46TestPackage(void);
 
-	void init(void);
+    void init(void);
 };
 
-} // gl4cts
+} // namespace gl4cts
 
 #endif // _GL4CTESTPACKAGES_HPP

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 9d534f9312e56c72df763207e449c6719576fd54.
+ * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
  */
 const char*							getErrorName							(int value);
 const char*							getTypeName								(int value);
@@ -55,6 +55,7 @@ const char*							getBooleanName							(int value);
 const char*							getGettableStateName					(int value);
 const char*							getGettableIndexedStateName				(int value);
 const char*							getGettableStringName					(int value);
+const char*							getGettablePackStateName				(int value);
 const char*							getPointerStateName						(int value);
 const char*							getInternalFormatParameterName			(int value);
 const char*							getInternalFormatTargetName				(int value);
@@ -67,6 +68,7 @@ const char*							getProgramInterfaceName					(int value);
 const char*							getProgramResourcePropertyName			(int value);
 const char*							getPrecisionFormatTypeName				(int value);
 const char*							getTransformFeedbackTargetName			(int value);
+const char*							getClampColorTargetName					(int value);
 const char*							getProvokingVertexName					(int value);
 const char*							getDebugMessageSourceName				(int value);
 const char*							getDebugMessageTypeName					(int value);
@@ -75,10 +77,22 @@ const char*							getPipelineParamName					(int value);
 const char*							getPatchParamName						(int value);
 const char*							getTextureFormatName					(int value);
 const char*							getGraphicsResetStatusName				(int value);
+const char*							getClipDistanceParamName				(int value);
+const char*							getConditionalRenderParamName			(int value);
+const char*							getWaitEnumName							(int value);
+const char*							getLogicOpParamsName					(int value);
+const char*							getPolygonModeName						(int value);
+const char*							getPrimSizeParamName					(int value);
+const char*							getActiveTextureParamName				(int value);
+const char*							getClipControlParamName					(int value);
+const char*							getUniformSubroutinesParamName			(int value);
 tcu::Format::Bitfield<16>			getBufferMaskStr						(int value);
 tcu::Format::Bitfield<16>			getBufferMapFlagsStr					(int value);
 tcu::Format::Bitfield<16>			getMemoryBarrierFlagsStr				(int value);
 tcu::Format::Bitfield<16>			getShaderTypeMaskStr					(int value);
+tcu::Format::Bitfield<16>			getContextMaskStr						(int value);
+tcu::Format::Bitfield<16>			getClientWaitMaskStr					(int value);
+tcu::Format::Bitfield<16>			getContextProfileMaskStr				(int value);
 inline tcu::Format::Enum<int, 2>	getErrorStr								(int value)		{ return tcu::Format::Enum<int, 2>(getErrorName, value); }
 inline tcu::Format::Enum<int, 2>	getTypeStr								(int value)		{ return tcu::Format::Enum<int, 2>(getTypeName, value); }
 inline tcu::Format::Enum<int, 2>	getParamQueryStr						(int value)		{ return tcu::Format::Enum<int, 2>(getParamQueryName, value); }
@@ -131,6 +145,7 @@ inline tcu::Format::Enum<int, 2>	getBooleanStr							(int value)		{ return tcu::
 inline tcu::Format::Enum<int, 2>	getGettableStateStr						(int value)		{ return tcu::Format::Enum<int, 2>(getGettableStateName, value); }
 inline tcu::Format::Enum<int, 2>	getGettableIndexedStateStr				(int value)		{ return tcu::Format::Enum<int, 2>(getGettableIndexedStateName, value); }
 inline tcu::Format::Enum<int, 2>	getGettableStringStr					(int value)		{ return tcu::Format::Enum<int, 2>(getGettableStringName, value); }
+inline tcu::Format::Enum<int, 2>	getGettablePackStateStr					(int value)		{ return tcu::Format::Enum<int, 2>(getGettablePackStateName, value); }
 inline tcu::Format::Enum<int, 2>	getPointerStateStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPointerStateName, value); }
 inline tcu::Format::Enum<int, 2>	getInternalFormatParameterStr			(int value)		{ return tcu::Format::Enum<int, 2>(getInternalFormatParameterName, value); }
 inline tcu::Format::Enum<int, 2>	getInternalFormatTargetStr				(int value)		{ return tcu::Format::Enum<int, 2>(getInternalFormatTargetName, value); }
@@ -143,6 +158,7 @@ inline tcu::Format::Enum<int, 2>	getProgramInterfaceStr					(int value)		{ retur
 inline tcu::Format::Enum<int, 2>	getProgramResourcePropertyStr			(int value)		{ return tcu::Format::Enum<int, 2>(getProgramResourcePropertyName, value); }
 inline tcu::Format::Enum<int, 2>	getPrecisionFormatTypeStr				(int value)		{ return tcu::Format::Enum<int, 2>(getPrecisionFormatTypeName, value); }
 inline tcu::Format::Enum<int, 2>	getTransformFeedbackTargetStr			(int value)		{ return tcu::Format::Enum<int, 2>(getTransformFeedbackTargetName, value); }
+inline tcu::Format::Enum<int, 2>	getClampColorTargetStr					(int value)		{ return tcu::Format::Enum<int, 2>(getClampColorTargetName, value); }
 inline tcu::Format::Enum<int, 2>	getProvokingVertexStr					(int value)		{ return tcu::Format::Enum<int, 2>(getProvokingVertexName, value); }
 inline tcu::Format::Enum<int, 2>	getDebugMessageSourceStr				(int value)		{ return tcu::Format::Enum<int, 2>(getDebugMessageSourceName, value); }
 inline tcu::Format::Enum<int, 2>	getDebugMessageTypeStr					(int value)		{ return tcu::Format::Enum<int, 2>(getDebugMessageTypeName, value); }
@@ -151,4 +167,13 @@ inline tcu::Format::Enum<int, 2>	getPipelineParamStr						(int value)		{ return 
 inline tcu::Format::Enum<int, 2>	getPatchParamStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPatchParamName, value); }
 inline tcu::Format::Enum<int, 2>	getTextureFormatStr						(int value)		{ return tcu::Format::Enum<int, 2>(getTextureFormatName, value); }
 inline tcu::Format::Enum<int, 2>	getGraphicsResetStatusStr				(int value)		{ return tcu::Format::Enum<int, 2>(getGraphicsResetStatusName, value); }
-inline tcu::Format::Enum<int, 1>	getBooleanStr							(deUint8 value)	{ return tcu::Format::Enum<int, 1>(getBooleanName, (int)value); }
+inline tcu::Format::Enum<int, 2>	getClipDistanceParamStr					(int value)		{ return tcu::Format::Enum<int, 2>(getClipDistanceParamName, value); }
+inline tcu::Format::Enum<int, 2>	getConditionalRenderParamStr			(int value)		{ return tcu::Format::Enum<int, 2>(getConditionalRenderParamName, value); }
+inline tcu::Format::Enum<int, 2>	getWaitEnumStr							(int value)		{ return tcu::Format::Enum<int, 2>(getWaitEnumName, value); }
+inline tcu::Format::Enum<int, 2>	getLogicOpParamsStr						(int value)		{ return tcu::Format::Enum<int, 2>(getLogicOpParamsName, value); }
+inline tcu::Format::Enum<int, 2>	getPolygonModeStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPolygonModeName, value); }
+inline tcu::Format::Enum<int, 2>	getPrimSizeParamStr						(int value)		{ return tcu::Format::Enum<int, 2>(getPrimSizeParamName, value); }
+inline tcu::Format::Enum<int, 2>	getActiveTextureParamStr				(int value)		{ return tcu::Format::Enum<int, 2>(getActiveTextureParamName, value); }
+inline tcu::Format::Enum<int, 2>	getClipControlParamStr					(int value)		{ return tcu::Format::Enum<int, 2>(getClipControlParamName, value); }
+inline tcu::Format::Enum<int, 2>	getUniformSubroutinesParamStr			(int value)		{ return tcu::Format::Enum<int, 2>(getUniformSubroutinesParamName, value); }
+inline tcu::Format::Enum<int, 1>	getBooleanStr							(uint8_t value)	{ return tcu::Format::Enum<int, 1>(getBooleanName, (int)value); }

@@ -31,9 +31,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup* createTrinaryMinMaxGroup (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTrinaryMinMaxGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMTRINARYMINMAXTESTS_HPP

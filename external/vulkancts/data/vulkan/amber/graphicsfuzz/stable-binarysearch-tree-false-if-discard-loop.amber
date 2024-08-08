@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+DEVICE_EXTENSION VK_KHR_shader_terminate_invocation
 
 # A test for a bug found by GraphicsFuzz.
 
@@ -162,7 +163,7 @@ SHADER vertex reference_vertex_shader PASSTHROUGH
 #         _GLF_color = vec4(0.0, 0.0, 1.0, 1.0);
 #     }
 # }
-SHADER fragment reference_fragment_shader SPIRV-ASM
+SHADER fragment reference_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 10
@@ -1028,13 +1029,14 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 #         _GLF_color = vec4(0.0, 0.0, 1.0, 1.0);
 #     }
 # }
-SHADER fragment variant_fragment_shader SPIRV-ASM
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 10
 ; Bound: 1740
 ; Schema: 0
                OpCapability Shader
+               OpExtension "SPV_KHR_terminate_invocation"
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %204 %315
@@ -1175,7 +1177,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpLoopMerge %377 %376 None
                OpBranch %375
         %375 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %376 = OpLabel
                OpBranch %374
         %377 = OpLabel
@@ -1292,7 +1294,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpLoopMerge %479 %478 None
                OpBranch %477
         %477 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %478 = OpLabel
                OpBranch %476
         %479 = OpLabel
@@ -1392,7 +1394,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpLoopMerge %581 %580 None
                OpBranch %579
         %579 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %580 = OpLabel
                OpBranch %578
         %581 = OpLabel
@@ -1487,7 +1489,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpLoopMerge %683 %682 None
                OpBranch %681
         %681 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %682 = OpLabel
                OpBranch %680
         %683 = OpLabel
@@ -1582,7 +1584,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpLoopMerge %785 %784 None
                OpBranch %783
         %783 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %784 = OpLabel
                OpBranch %782
         %785 = OpLabel
@@ -1677,7 +1679,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpLoopMerge %887 %886 None
                OpBranch %885
         %885 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %886 = OpLabel
                OpBranch %884
         %887 = OpLabel
@@ -1772,7 +1774,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpLoopMerge %989 %988 None
                OpBranch %987
         %987 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %988 = OpLabel
                OpBranch %986
         %989 = OpLabel
@@ -1867,7 +1869,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpLoopMerge %1091 %1090 None
                OpBranch %1089
        %1089 = OpLabel
-               OpKill
+               OpTerminateInvocation
        %1090 = OpLabel
                OpBranch %1088
        %1091 = OpLabel
@@ -1962,7 +1964,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpLoopMerge %1193 %1192 None
                OpBranch %1191
        %1191 = OpLabel
-               OpKill
+               OpTerminateInvocation
        %1192 = OpLabel
                OpBranch %1190
        %1193 = OpLabel

@@ -26,16 +26,31 @@
 #include "tcuDefs.hpp"
 
 // Macros for checking API errors.
-#define GLU_EXPECT_NO_ERROR(ERR, MSG)	glu::checkError((ERR), MSG, __FILE__, __LINE__)
-#define GLU_CHECK_ERROR(ERR)			GLU_EXPECT_NO_ERROR(ERR, DE_NULL)
-#define GLU_CHECK_MSG(MSG)				GLU_EXPECT_NO_ERROR(glGetError(), MSG)
-#define GLU_CHECK()						GLU_CHECK_MSG(DE_NULL)
-#define GLU_CHECK_CALL_ERROR(CALL, ERR)	do { CALL; GLU_EXPECT_NO_ERROR(ERR, #CALL); } while (deGetFalse())
-#define GLU_CHECK_CALL(CALL)			do { CALL; GLU_EXPECT_NO_ERROR(glGetError(), #CALL); } while (deGetFalse())
+#define GLU_EXPECT_NO_ERROR(ERR, MSG) glu::checkError((ERR), MSG, __FILE__, __LINE__)
+#define GLU_CHECK_ERROR(ERR) GLU_EXPECT_NO_ERROR(ERR, nullptr)
+#define GLU_CHECK_MSG(MSG) GLU_EXPECT_NO_ERROR(glGetError(), MSG)
+#define GLU_CHECK() GLU_CHECK_MSG(nullptr)
+#define GLU_CHECK_CALL_ERROR(CALL, ERR)  \
+    do                                   \
+    {                                    \
+        CALL;                            \
+        GLU_EXPECT_NO_ERROR(ERR, #CALL); \
+    } while (false)
+#define GLU_CHECK_CALL(CALL)                      \
+    do                                            \
+    {                                             \
+        CALL;                                     \
+        GLU_EXPECT_NO_ERROR(glGetError(), #CALL); \
+    } while (false)
 
-#define GLU_CHECK_GLW_MSG(GL, MSG)		GLU_EXPECT_NO_ERROR((GL).getError(), MSG)
-#define GLU_CHECK_GLW(GL)				GLU_CHECK_GLW_MSG(GL, DE_NULL)
-#define GLU_CHECK_GLW_CALL(GL, CALL)	do { (GL).CALL; GLU_EXPECT_NO_ERROR((GL).getError(), #CALL); } while (deGetFalse())
+#define GLU_CHECK_GLW_MSG(GL, MSG) GLU_EXPECT_NO_ERROR((GL).getError(), MSG)
+#define GLU_CHECK_GLW(GL) GLU_CHECK_GLW_MSG(GL, nullptr)
+#define GLU_CHECK_GLW_CALL(GL, CALL)                 \
+    do                                               \
+    {                                                \
+        (GL).CALL;                                   \
+        GLU_EXPECT_NO_ERROR((GL).getError(), #CALL); \
+    } while (false)
 
 /*--------------------------------------------------------------------*//*!
  * \brief OpenGL (ES) utilities
@@ -43,9 +58,9 @@
 namespace glu
 {
 
-DE_INLINE   void*   BufferOffsetAsPointer   (uintptr_t byteOffset)
+DE_INLINE void *BufferOffsetAsPointer(uintptr_t byteOffset)
 {
-    return reinterpret_cast<void*>(byteOffset);
+    return reinterpret_cast<void *>(byteOffset);
 }
 
 class RenderContext;
@@ -53,27 +68,30 @@ class RenderContext;
 class Error : public tcu::TestError
 {
 public:
-					Error				(int error, const char* message, const char* expr, const char* file, int line);
-					Error				(int error, const std::string& message);
-	virtual			~Error				(void) throw();
+    Error(int error, const char *message, const char *expr, const char *file, int line);
+    Error(int error, const std::string &message);
+    virtual ~Error(void) throw();
 
-	int				getError			(void) const { return m_error; }
+    int getError(void) const
+    {
+        return m_error;
+    }
 
 private:
-	int				m_error;
+    int m_error;
 };
 
 class OutOfMemoryError : public tcu::ResourceError
 {
 public:
-					OutOfMemoryError	(const char* message, const char* expr, const char* file, int line);
-					OutOfMemoryError	(const std::string& message);
-	virtual			~OutOfMemoryError	(void) throw();
+    OutOfMemoryError(const char *message, const char *expr, const char *file, int line);
+    OutOfMemoryError(const std::string &message);
+    virtual ~OutOfMemoryError(void) throw();
 };
 
-void checkError (deUint32 err, const char* msg, const char* file, int line);
-void checkError (const RenderContext& context, const char* msg, const char* file, int line);
+void checkError(uint32_t err, const char *msg, const char *file, int line);
+void checkError(const RenderContext &context, const char *msg, const char *file, int line);
 
-} // glu
+} // namespace glu
 
 #endif // _GLUDEFS_HPP

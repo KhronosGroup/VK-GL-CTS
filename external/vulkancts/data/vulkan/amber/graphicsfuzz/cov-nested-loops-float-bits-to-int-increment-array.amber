@@ -1,0 +1,449 @@
+#!amber
+
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a coverage-gap found by the GraphicsFuzz project.
+
+# Short description: A fragment shader that covers specific LLVM code paths
+
+# The test passes because the shader always writes red.
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 320 es
+#
+# #define _int_5 _GLF_uniform_int_values[0]
+# #define _int_3 _GLF_uniform_int_values[1]
+# #define _int_4 _GLF_uniform_int_values[2]
+# #define _int_6 _GLF_uniform_int_values[3]
+# #define _int_7 _GLF_uniform_int_values[4]
+# #define _int_8 _GLF_uniform_int_values[5]
+# #define _int_1 _GLF_uniform_int_values[6]
+# #define _int_0 _GLF_uniform_int_values[7]
+# #define _int_2 _GLF_uniform_int_values[8]
+# #define _int_9 _GLF_uniform_int_values[9]
+# #define _int_1065353216 _GLF_uniform_int_values[10]
+#
+# precision highp int;
+# precision highp float;
+#
+# // Contents of _GLF_uniform_int_values: [5, 3, 4, 6, 7, 8, 1, 0, 2, 9, 1065353216]
+# layout(set = 0, binding = 0) uniform buf0
+# {
+#     int _GLF_uniform_int_values[11];
+# };
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void main()
+# {
+#     // a becomes 1065353216.
+#     int a = floatBitsToInt(1.0);
+#     int arr[9] = int[9](_int_1, _int_2, _int_3, _int_4, _int_5, _int_6, _int_7, _int_8, _int_9);
+#
+#     // During the loop only arr[8] changes to zero.
+#     for(int i = 0; i < 5; i ++)
+#     {
+#         for(int j = 0; j < 5; j ++)
+#         {
+#             // a is a large number making the clamp always return 8.
+#             int idx = clamp(a, 0, 8);
+#             // Sets the last array element to zero.
+#             arr[idx] = _int_0;
+#
+#             for(int k = _int_0; k < i; k ++)
+#             {
+#                 for(int l = 0; l < j; l ++)
+#                 {
+#                     // These cases get all hit at some point, but
+#                     // they only affect the last element as idx is
+#                     // always eight. Even that value gets overwritten
+#                     // by zero (see the code above)  and the last
+#                     // iterations don't hit any of these cases making
+#                     // the final value zero.
+#                     switch(a - _int_1065353216)
+#                     {
+#                         case 6:
+#                             arr[idx] += _int_1;
+#                             break;
+#                         case 7:
+#                             arr[idx] += _int_2;
+#                             break;
+#                         case 8:
+#                             arr[idx] += _int_3;
+#                             break;
+#                         case 9:
+#                             arr[idx] += _int_4;
+#                             break;
+#                         case 10:
+#                             arr[idx] += _int_5;
+#                             break;
+#                     }
+#                 }
+#             }
+#             a++;
+#         }
+#     }
+#
+#     int ref[9] = int[9](_int_1, _int_2, _int_3, _int_4, _int_5, _int_6, _int_7, _int_8, _int_0);
+#
+#     _GLF_color = vec4(_int_1, _int_0, _int_0, _int_1);
+#
+#     // Verify results.
+#     for(int i = _int_0; i < _int_9; i ++)
+#     {
+#         if(arr[i] != ref[i])
+#         {
+#             // Indicate a failure.
+#             _GLF_color = vec4(_int_0);
+#         }
+#     }
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 221
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %180
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %8 "a"
+               OpName %16 "arr"
+               OpName %19 "buf0"
+               OpMemberName %19 0 "_GLF_uniform_int_values"
+               OpName %21 ""
+               OpName %51 "i"
+               OpName %60 "j"
+               OpName %68 "idx"
+               OpName %76 "k"
+               OpName %87 "l"
+               OpName %158 "ref"
+               OpName %180 "_GLF_color"
+               OpName %194 "i"
+               OpDecorate %18 ArrayStride 16
+               OpMemberDecorate %19 0 Offset 0
+               OpDecorate %19 Block
+               OpDecorate %21 DescriptorSet 0
+               OpDecorate %21 Binding 0
+               OpDecorate %180 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpTypeFloat 32
+         %10 = OpConstant %9 1
+         %12 = OpTypeInt 32 0
+         %13 = OpConstant %12 9
+         %14 = OpTypeArray %6 %13
+         %15 = OpTypePointer Function %14
+         %17 = OpConstant %12 11
+         %18 = OpTypeArray %6 %17
+         %19 = OpTypeStruct %18
+         %20 = OpTypePointer Uniform %19
+         %21 = OpVariable %20 Uniform
+         %22 = OpConstant %6 0
+         %23 = OpConstant %6 6
+         %24 = OpTypePointer Uniform %6
+         %27 = OpConstant %6 8
+         %30 = OpConstant %6 1
+         %33 = OpConstant %6 2
+         %38 = OpConstant %6 3
+         %41 = OpConstant %6 4
+         %44 = OpConstant %6 5
+         %47 = OpConstant %6 9
+         %58 = OpTypeBool
+         %72 = OpConstant %6 7
+         %97 = OpConstant %6 10
+        %178 = OpTypeVector %9 4
+        %179 = OpTypePointer Output %178
+        %180 = OpVariable %179 Output
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %16 = OpVariable %15 Function
+         %51 = OpVariable %7 Function
+         %60 = OpVariable %7 Function
+         %68 = OpVariable %7 Function
+         %76 = OpVariable %7 Function
+         %87 = OpVariable %7 Function
+        %158 = OpVariable %15 Function
+        %194 = OpVariable %7 Function
+         %11 = OpBitcast %6 %10
+               OpStore %8 %11
+         %25 = OpAccessChain %24 %21 %22 %23
+         %26 = OpLoad %6 %25
+         %28 = OpAccessChain %24 %21 %22 %27
+         %29 = OpLoad %6 %28
+         %31 = OpAccessChain %24 %21 %22 %30
+         %32 = OpLoad %6 %31
+         %34 = OpAccessChain %24 %21 %22 %33
+         %35 = OpLoad %6 %34
+         %36 = OpAccessChain %24 %21 %22 %22
+         %37 = OpLoad %6 %36
+         %39 = OpAccessChain %24 %21 %22 %38
+         %40 = OpLoad %6 %39
+         %42 = OpAccessChain %24 %21 %22 %41
+         %43 = OpLoad %6 %42
+         %45 = OpAccessChain %24 %21 %22 %44
+         %46 = OpLoad %6 %45
+         %48 = OpAccessChain %24 %21 %22 %47
+         %49 = OpLoad %6 %48
+         %50 = OpCompositeConstruct %14 %26 %29 %32 %35 %37 %40 %43 %46 %49
+               OpStore %16 %50
+               OpStore %51 %22
+               OpBranch %52
+         %52 = OpLabel
+               OpLoopMerge %54 %55 None
+               OpBranch %56
+         %56 = OpLabel
+         %57 = OpLoad %6 %51
+         %59 = OpSLessThan %58 %57 %44
+               OpBranchConditional %59 %53 %54
+         %53 = OpLabel
+               OpStore %60 %22
+               OpBranch %61
+         %61 = OpLabel
+               OpLoopMerge %63 %64 None
+               OpBranch %65
+         %65 = OpLabel
+         %66 = OpLoad %6 %60
+         %67 = OpSLessThan %58 %66 %44
+               OpBranchConditional %67 %62 %63
+         %62 = OpLabel
+         %69 = OpLoad %6 %8
+         %70 = OpExtInst %6 %1 SClamp %69 %22 %27
+               OpStore %68 %70
+         %71 = OpLoad %6 %68
+         %73 = OpAccessChain %24 %21 %22 %72
+         %74 = OpLoad %6 %73
+         %75 = OpAccessChain %7 %16 %71
+               OpStore %75 %74
+         %77 = OpAccessChain %24 %21 %22 %72
+         %78 = OpLoad %6 %77
+               OpStore %76 %78
+               OpBranch %79
+         %79 = OpLabel
+               OpLoopMerge %81 %82 None
+               OpBranch %83
+         %83 = OpLabel
+         %84 = OpLoad %6 %76
+         %85 = OpLoad %6 %51
+         %86 = OpSLessThan %58 %84 %85
+               OpBranchConditional %86 %80 %81
+         %80 = OpLabel
+               OpStore %87 %22
+               OpBranch %88
+         %88 = OpLabel
+               OpLoopMerge %90 %91 None
+               OpBranch %92
+         %92 = OpLabel
+         %93 = OpLoad %6 %87
+         %94 = OpLoad %6 %60
+         %95 = OpSLessThan %58 %93 %94
+               OpBranchConditional %95 %89 %90
+         %89 = OpLabel
+         %96 = OpLoad %6 %8
+         %98 = OpAccessChain %24 %21 %22 %97
+         %99 = OpLoad %6 %98
+        %100 = OpISub %6 %96 %99
+               OpSelectionMerge %106 None
+               OpSwitch %100 %106 6 %101 7 %102 8 %103 9 %104 10 %105
+        %101 = OpLabel
+        %107 = OpLoad %6 %68
+        %108 = OpAccessChain %24 %21 %22 %23
+        %109 = OpLoad %6 %108
+        %110 = OpAccessChain %7 %16 %107
+        %111 = OpLoad %6 %110
+        %112 = OpIAdd %6 %111 %109
+        %113 = OpAccessChain %7 %16 %107
+               OpStore %113 %112
+               OpBranch %106
+        %102 = OpLabel
+        %115 = OpLoad %6 %68
+        %116 = OpAccessChain %24 %21 %22 %27
+        %117 = OpLoad %6 %116
+        %118 = OpAccessChain %7 %16 %115
+        %119 = OpLoad %6 %118
+        %120 = OpIAdd %6 %119 %117
+        %121 = OpAccessChain %7 %16 %115
+               OpStore %121 %120
+               OpBranch %106
+        %103 = OpLabel
+        %123 = OpLoad %6 %68
+        %124 = OpAccessChain %24 %21 %22 %30
+        %125 = OpLoad %6 %124
+        %126 = OpAccessChain %7 %16 %123
+        %127 = OpLoad %6 %126
+        %128 = OpIAdd %6 %127 %125
+        %129 = OpAccessChain %7 %16 %123
+               OpStore %129 %128
+               OpBranch %106
+        %104 = OpLabel
+        %131 = OpLoad %6 %68
+        %132 = OpAccessChain %24 %21 %22 %33
+        %133 = OpLoad %6 %132
+        %134 = OpAccessChain %7 %16 %131
+        %135 = OpLoad %6 %134
+        %136 = OpIAdd %6 %135 %133
+        %137 = OpAccessChain %7 %16 %131
+               OpStore %137 %136
+               OpBranch %106
+        %105 = OpLabel
+        %139 = OpLoad %6 %68
+        %140 = OpAccessChain %24 %21 %22 %22
+        %141 = OpLoad %6 %140
+        %142 = OpAccessChain %7 %16 %139
+        %143 = OpLoad %6 %142
+        %144 = OpIAdd %6 %143 %141
+        %145 = OpAccessChain %7 %16 %139
+               OpStore %145 %144
+               OpBranch %106
+        %106 = OpLabel
+               OpBranch %91
+         %91 = OpLabel
+        %148 = OpLoad %6 %87
+        %149 = OpIAdd %6 %148 %30
+               OpStore %87 %149
+               OpBranch %88
+         %90 = OpLabel
+               OpBranch %82
+         %82 = OpLabel
+        %150 = OpLoad %6 %76
+        %151 = OpIAdd %6 %150 %30
+               OpStore %76 %151
+               OpBranch %79
+         %81 = OpLabel
+        %152 = OpLoad %6 %8
+        %153 = OpIAdd %6 %152 %30
+               OpStore %8 %153
+               OpBranch %64
+         %64 = OpLabel
+        %154 = OpLoad %6 %60
+        %155 = OpIAdd %6 %154 %30
+               OpStore %60 %155
+               OpBranch %61
+         %63 = OpLabel
+               OpBranch %55
+         %55 = OpLabel
+        %156 = OpLoad %6 %51
+        %157 = OpIAdd %6 %156 %30
+               OpStore %51 %157
+               OpBranch %52
+         %54 = OpLabel
+        %159 = OpAccessChain %24 %21 %22 %23
+        %160 = OpLoad %6 %159
+        %161 = OpAccessChain %24 %21 %22 %27
+        %162 = OpLoad %6 %161
+        %163 = OpAccessChain %24 %21 %22 %30
+        %164 = OpLoad %6 %163
+        %165 = OpAccessChain %24 %21 %22 %33
+        %166 = OpLoad %6 %165
+        %167 = OpAccessChain %24 %21 %22 %22
+        %168 = OpLoad %6 %167
+        %169 = OpAccessChain %24 %21 %22 %38
+        %170 = OpLoad %6 %169
+        %171 = OpAccessChain %24 %21 %22 %41
+        %172 = OpLoad %6 %171
+        %173 = OpAccessChain %24 %21 %22 %44
+        %174 = OpLoad %6 %173
+        %175 = OpAccessChain %24 %21 %22 %72
+        %176 = OpLoad %6 %175
+        %177 = OpCompositeConstruct %14 %160 %162 %164 %166 %168 %170 %172 %174 %176
+               OpStore %158 %177
+        %181 = OpAccessChain %24 %21 %22 %23
+        %182 = OpLoad %6 %181
+        %183 = OpConvertSToF %9 %182
+        %184 = OpAccessChain %24 %21 %22 %72
+        %185 = OpLoad %6 %184
+        %186 = OpConvertSToF %9 %185
+        %187 = OpAccessChain %24 %21 %22 %72
+        %188 = OpLoad %6 %187
+        %189 = OpConvertSToF %9 %188
+        %190 = OpAccessChain %24 %21 %22 %23
+        %191 = OpLoad %6 %190
+        %192 = OpConvertSToF %9 %191
+        %193 = OpCompositeConstruct %178 %183 %186 %189 %192
+               OpStore %180 %193
+        %195 = OpAccessChain %24 %21 %22 %72
+        %196 = OpLoad %6 %195
+               OpStore %194 %196
+               OpBranch %197
+        %197 = OpLabel
+               OpLoopMerge %199 %200 None
+               OpBranch %201
+        %201 = OpLabel
+        %202 = OpLoad %6 %194
+        %203 = OpAccessChain %24 %21 %22 %47
+        %204 = OpLoad %6 %203
+        %205 = OpSLessThan %58 %202 %204
+               OpBranchConditional %205 %198 %199
+        %198 = OpLabel
+        %206 = OpLoad %6 %194
+        %207 = OpAccessChain %7 %16 %206
+        %208 = OpLoad %6 %207
+        %209 = OpLoad %6 %194
+        %210 = OpAccessChain %7 %158 %209
+        %211 = OpLoad %6 %210
+        %212 = OpINotEqual %58 %208 %211
+               OpSelectionMerge %214 None
+               OpBranchConditional %212 %213 %214
+        %213 = OpLabel
+        %215 = OpAccessChain %24 %21 %22 %72
+        %216 = OpLoad %6 %215
+        %217 = OpConvertSToF %9 %216
+        %218 = OpCompositeConstruct %178 %217 %217 %217 %217
+               OpStore %180 %218
+               OpBranch %214
+        %214 = OpLabel
+               OpBranch %200
+        %200 = OpLabel
+        %219 = OpLoad %6 %194
+        %220 = OpIAdd %6 %219 %30
+               OpStore %194 %220
+               OpBranch %197
+        %199 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# _GLF_uniform_int_values
+BUFFER variant__GLF_uniform_int_values DATA_TYPE int32[] STD140 DATA
+ 5 3 4 6 7 8 1 0 2 9 1065353216
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 16 16
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant__GLF_uniform_int_values AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 16 16
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 16 16 EQ_RGBA 255 0 0 255

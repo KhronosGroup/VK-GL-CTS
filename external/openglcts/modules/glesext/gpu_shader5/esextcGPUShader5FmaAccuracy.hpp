@@ -117,54 +117,54 @@ namespace glcts
 class GPUShader5FmaAccuracyTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GPUShader5FmaAccuracyTest(Context& context, const ExtParameters& extParams, const char* name,
-							  const char* description);
+    /* Public methods */
+    GPUShader5FmaAccuracyTest(Context &context, const ExtParameters &extParams, const char *name,
+                              const char *description);
 
-	virtual ~GPUShader5FmaAccuracyTest(void)
-	{
-	}
+    virtual ~GPUShader5FmaAccuracyTest(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void calculateRelativeError(glw::GLfloat result, glw::GLfloat expected_result, glw::GLfloat& relative_error);
-	void executePass(glw::GLuint program_object_id, glw::GLfloat* results);
-	glw::GLuint getNumberOfStepsForIndex(glw::GLuint index);
-	void initTest(void);
-	void logArray(const char* description, glw::GLfloat* data, glw::GLuint length);
+    /* Private methods */
+    void calculateRelativeError(glw::GLfloat result, glw::GLfloat expected_result, glw::GLfloat &relative_error);
+    void executePass(glw::GLuint program_object_id, glw::GLfloat *results);
+    glw::GLuint getNumberOfStepsForIndex(glw::GLuint index);
+    void initTest(void);
+    void logArray(const char *description, glw::GLfloat *data, glw::GLuint length);
 
-	/* Private variables */
-	/* Program and shader ids */
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_program_object_id_for_float_pass;
-	glw::GLuint m_program_object_id_for_fma_pass;
-	glw::GLuint m_vertex_shader_id_for_float_pass;
-	glw::GLuint m_vertex_shader_id_for_fma_pass;
+    /* Private variables */
+    /* Program and shader ids */
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_program_object_id_for_float_pass;
+    glw::GLuint m_program_object_id_for_fma_pass;
+    glw::GLuint m_vertex_shader_id_for_float_pass;
+    glw::GLuint m_vertex_shader_id_for_fma_pass;
 
-	/* Buffer object used for transform feedback */
-	glw::GLuint m_buffer_object_id;
+    /* Buffer object used for transform feedback */
+    glw::GLuint m_buffer_object_id;
 
-	/* Vertex array object */
-	glw::GLuint m_vertex_array_object_id;
+    /* Vertex array object */
+    glw::GLuint m_vertex_array_object_id;
 
-	/* Size of buffer used for transform feedback */
-	static const glw::GLuint m_buffer_size;
+    /* Size of buffer used for transform feedback */
+    static const glw::GLuint m_buffer_size;
 
-	/* Expected solution */
-	static const glw::GLfloat m_expected_result;
+    /* Expected solution */
+    static const glw::GLfloat m_expected_result;
 
-	/* Number of draw call executions */
-	static const glw::GLuint m_n_draw_call_executions;
+    /* Number of draw call executions */
+    static const glw::GLuint m_n_draw_call_executions;
 
-	/* Shaders' code */
-	static const glw::GLchar* const m_fragment_shader_code;
-	static const glw::GLchar* const m_vertex_shader_code_for_fma_pass;
-	static const glw::GLchar* const m_vertex_shader_code_for_float_pass;
+    /* Shaders' code */
+    static const glw::GLchar *const m_fragment_shader_code;
+    static const glw::GLchar *const m_vertex_shader_code_for_fma_pass;
+    static const glw::GLchar *const m_vertex_shader_code_for_float_pass;
 };
 
-} /* glcts */
+} // namespace glcts
 
 #endif // _ESEXTCGPUSHADER5FMAACCURACY_HPP

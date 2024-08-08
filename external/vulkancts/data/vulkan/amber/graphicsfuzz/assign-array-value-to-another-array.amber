@@ -64,7 +64,7 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 #     for (int i = 1; i < 6; i++)
 #         func(i);
 # }
-SHADER fragment variant_fragment_shader SPIRV-ASM
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 8

@@ -35,11 +35,11 @@ namespace Functional
 namespace NegativeTestShared
 {
 
-std::vector<FunctionContainer> getNegativeTextureApiTestFunctions ();
+std::vector<FunctionContainer> getNegativeTextureApiTestFunctions();
 
-} // NegativeTestShared
-} // Functional
-} // gles3
-} // deqp
+} // namespace NegativeTestShared
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FNEGATIVETEXTUREAPITESTS_HPP

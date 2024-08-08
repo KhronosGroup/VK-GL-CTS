@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *	  http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRayTracingTests.hpp"
+#include "vktRayTracingAmberTests.hpp"
 #include "vktRayTracingBuiltinTests.hpp"
 #include "vktRayTracingBuildLargeTests.hpp"
 #include "vktRayTracingBuildTests.hpp"
@@ -42,6 +43,11 @@
 #include "vktRayTracingBarrierTests.hpp"
 #include "vktRayTracingDataSpillTests.hpp"
 #include "vktRayTracingDirectionTests.hpp"
+#include "vktRayTracingBarycentricCoordinatesTests.hpp"
+#include "vktRayTracingNonUniformArgsTests.hpp"
+#include "vktRayTracingPipelineFlagsTests.hpp"
+#include "vktRayTracingOpacityMicromapTests.hpp"
+#include "vktRayTracingPositionFetchTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -52,34 +58,43 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ray_tracing_pipeline", "Ray tracing tests"));
+    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
-	group->addChild(createBuiltinTests(testCtx));
-	group->addChild(createSpecConstantTests(testCtx));
-	group->addChild(createBuildLargeShaderSetTests(testCtx));
-	group->addChild(createBuildTests(testCtx));
-	group->addChild(createCallableShadersTests(testCtx));
-	group->addChild(createTraceRaysTests(testCtx));
-	group->addChild(createShaderBindingTableTests(testCtx));
-	group->addChild(createTraversalControlTests(testCtx));
-	group->addChild(createAccelerationStructuresTests(testCtx));
-	group->addChild(createProceduralGeometryTests(testCtx));
-	group->addChild(createBuildIndirectTests(testCtx));
-	group->addChild(createWatertightnessTests(testCtx));
-	group->addChild(createPipelineLibraryTests(testCtx));
-	group->addChild(createMemGuaranteeTests(testCtx));
-	group->addChild(createNullAccelerationStructureTests(testCtx));
-	group->addChild(createCaptureReplayTests(testCtx));
-	group->addChild(createMiscTests(testCtx));
-	group->addChild(createComplexControlFlowTests(testCtx));
-	group->addChild(createBarrierTests(testCtx));
-	group->addChild(createDataSpillTests(testCtx));
-	group->addChild(createDirectionTests(testCtx));
+    group->addChild(createAmberTests(testCtx));
+    group->addChild(createBuiltinTests(testCtx));
+    group->addChild(createSpecConstantTests(testCtx));
+    group->addChild(createBuildLargeShaderSetTests(testCtx));
+    group->addChild(createBuildTests(testCtx));
+    group->addChild(createCallableShadersTests(testCtx));
+    group->addChild(createTraceRaysTests(testCtx));
+    group->addChild(createTraceRaysMaintenance1Tests(testCtx));
+    group->addChild(createShaderBindingTableTests(testCtx));
+    group->addChild(createTraversalControlTests(testCtx));
+    group->addChild(createAccelerationStructuresTests(testCtx));
+    group->addChild(createProceduralGeometryTests(testCtx));
+    group->addChild(createBuildIndirectTests(testCtx));
+    group->addChild(createWatertightnessTests(testCtx));
+    group->addChild(createPipelineLibraryTests(testCtx));
+    group->addChild(createMemGuaranteeTests(testCtx));
+    group->addChild(createNullAccelerationStructureTests(testCtx));
+    group->addChild(createCaptureReplayTests(testCtx));
+    group->addChild(createMiscTests(testCtx));
+    group->addChild(createComplexControlFlowTests(testCtx));
+    group->addChild(createBarrierTests(testCtx));
+    group->addChild(createDataSpillTests(testCtx));
+    group->addChild(createDirectionLengthTests(testCtx));
+    group->addChild(createInsideAABBsTests(testCtx));
+    group->addChild(createBarycentricCoordinatesTests(testCtx));
+    group->addChild(createNonUniformArgsTests(testCtx));
+    group->addChild(createPipelineFlagsTests(testCtx));
+    group->addChild(createTraceRays2Tests(testCtx));
+    group->addChild(createOpacityMicromapTests(testCtx));
+    group->addChild(createPositionFetchTests(testCtx));
 
-	return group.release();
+    return group.release();
 }
 
-}	// RayTracing
-}	// vkt
+} // namespace RayTracing
+} // namespace vkt

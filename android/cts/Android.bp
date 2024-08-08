@@ -13,12 +13,30 @@
 // limitations under the License.
 //
 
+package {
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "external_deqp_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["external_deqp_license"],
+}
+
 filegroup {
-    name: "deqp_master_caselists",
+    name: "deqp_main_caselists",
     srcs: [
-        "master/*.txt",
+        "main/*.txt",
+        "main/vk-*/*.txt",
     ],
-    path: "master",
+    path: "main",
+}
+
+filegroup {
+    name: "deqp_angle_exclude_caselists",
+    srcs: [
+        "angle/*.txt",
+    ],
+    path: "angle",
 }
 
 java_test_host {
@@ -27,8 +45,9 @@ java_test_host {
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
-        "vts",
+        "vts10",
         "general-tests",
+        "mts"
     ],
 
     srcs: ["runner/src/**/*.java"],
@@ -39,6 +58,7 @@ java_test_host {
     ],
 
     data: [
-        ":deqp_master_caselists",
+        ":deqp_main_caselists",
+        ":deqp_angle_exclude_caselists",
     ],
 }

@@ -47,41 +47,41 @@ namespace tessellation
 namespace
 {
 
-tcu::TestCaseGroup* createGeometryInteractionTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createGeometryInteractionTests(tcu::TestContext &testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "geometry_interaction", "Tessellation and geometry shader interaction tests"));
+    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "geometry_interaction"));
 
-	group->addChild(createGeometryPassthroughTests		(testCtx));
-	group->addChild(createGeometryGridRenderLimitsTests	(testCtx));
-	group->addChild(createGeometryGridRenderScatterTests(testCtx));
-	group->addChild(createGeometryPointSizeTests		(testCtx));
+    group->addChild(createGeometryPassthroughTests(testCtx));
+    group->addChild(createGeometryGridRenderLimitsTests(testCtx));
+    group->addChild(createGeometryGridRenderScatterTests(testCtx));
+    group->addChild(createGeometryPointSizeTests(testCtx));
 
-	return group.release();
+    return group.release();
 }
 
-void createChildren (tcu::TestCaseGroup* tessellationTests)
+void createChildren(tcu::TestCaseGroup *tessellationTests)
 {
-	tcu::TestContext& testCtx = tessellationTests->getTestContext();
+    tcu::TestContext &testCtx = tessellationTests->getTestContext();
 
-	tessellationTests->addChild(createLimitsTests				(testCtx));
-	tessellationTests->addChild(createCoordinatesTests			(testCtx));
-	tessellationTests->addChild(createWindingTests				(testCtx));
-	tessellationTests->addChild(createShaderInputOutputTests	(testCtx));
-	tessellationTests->addChild(createMiscDrawTests				(testCtx));
-	tessellationTests->addChild(createCommonEdgeTests			(testCtx));
-	tessellationTests->addChild(createFractionalSpacingTests	(testCtx));
-	tessellationTests->addChild(createPrimitiveDiscardTests		(testCtx));
-	tessellationTests->addChild(createInvarianceTests			(testCtx));
-	tessellationTests->addChild(createUserDefinedIOTests		(testCtx));
-	tessellationTests->addChild(createGeometryInteractionTests	(testCtx));
+    tessellationTests->addChild(createLimitsTests(testCtx));
+    tessellationTests->addChild(createCoordinatesTests(testCtx));
+    tessellationTests->addChild(createWindingTests(testCtx));
+    tessellationTests->addChild(createShaderInputOutputTests(testCtx));
+    tessellationTests->addChild(createMiscDrawTests(testCtx));
+    tessellationTests->addChild(createCommonEdgeTests(testCtx));
+    tessellationTests->addChild(createFractionalSpacingTests(testCtx));
+    tessellationTests->addChild(createPrimitiveDiscardTests(testCtx));
+    tessellationTests->addChild(createInvarianceTests(testCtx));
+    tessellationTests->addChild(createUserDefinedIOTests(testCtx));
+    tessellationTests->addChild(createGeometryInteractionTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	return createTestGroup(testCtx, "tessellation", "Tessellation tests", createChildren);
+    return createTestGroup(testCtx, name.c_str(), createChildren);
 }
 
-} // tessellation
-} // vkt
+} // namespace tessellation
+} // namespace vkt

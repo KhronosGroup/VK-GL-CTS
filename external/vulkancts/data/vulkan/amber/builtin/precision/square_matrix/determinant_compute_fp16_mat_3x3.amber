@@ -1,0 +1,131 @@
+#!amber
+# Copyright 2021 Google LLC.
+# Copyright 2021 The Khronos Group Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Matrix 3x3 determinant precision test 16bit
+
+DEVICE_EXTENSION VK_KHR_storage_buffer_storage_class
+DEVICE_EXTENSION VK_KHR_16bit_storage
+DEVICE_FEATURE   Float16Int8Features.shaderFloat16
+DEVICE_FEATURE   Storage16BitFeatures.storageBuffer16BitAccess
+
+SHADER compute compute_shader GLSL
+#version 450
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : enable
+
+const int NUMMATRICES = 10;
+
+layout(set = 0, binding = 0) buffer block0
+{
+  f16mat3 matIns[NUMMATRICES];
+};
+
+layout(set = 0, binding = 1) buffer block1
+{
+  float16_t detM[NUMMATRICES];
+};
+
+void main()
+{
+  for (int ndx = 0; ndx < NUMMATRICES; ndx++)
+  {
+    f16mat3 matIn = matIns[ndx];
+    detM[ndx]     = determinant(matIn);
+  }
+}
+END
+
+BUFFER bufIn DATA_TYPE mat3x3<float16> DATA
+    1.0                5.0                   3.0
+    2.0                4.0                   7.0
+    4.0                6.0                   2.0
+
+    1.0                0.0                   1.0
+    0.0                0.0                   1.0
+    1.0                1.0                   1.0
+
+   -0.00400000019     -2.9000001           -41.0
+   -0.419999987        0.00490000006        -0.0170000009
+   -0.699999988        0.00500000035        -0.00260000001
+
+   -0.140000000596046  0.00109999999403954  -0.399999976158142
+  -32.0                1.80000007152557     -0.046000003814697
+    5.0                0.00500000035390258 -27.0
+
+   -4.0233599          1.22770872           21.1278195
+    5.73735199        90.5568627           -60.4349515
+   -2.14830406        -1.27748196           -1.95159347
+
+    6.0                4.80000019073486      0.149999991059303
+ -100.0                3.60000014305115      3.10000014305115
+  -50.0                0.0399999991059303   80.0
+
+   24.1753959          2.79813019            0.829575022
+   -9.7064469          1.16276185          -17.4720435
+   -1.38314259        -4.84031414            3.56710072
+
+   -1.61521246         5.92810797            1.18125284
+    1.78069006        19.186389              4.75964561
+   52.7974026         -1.11742044            1.15160604
+
+    3.17625232        -2.39810968            4.12844617
+    1.38140651         5.53174748            1.81531844
+  -16.4044715         -1.84897984            0.952559261
+
+    1.61552133         0.62901187            2.73753558
+   -0.971753372      -18.8233818             3.51006655
+   -8.01648116         3.5704698             5.98052632
+END
+
+BUFFER bufOut DATA_TYPE float16 SIZE 10 FILL 0.0
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER bufIn AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER bufOut AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipeline 1 1 1
+
+# Decimals between 64 and 128: 0.0625
+EXPECT bufOut IDX  0 TOLERANCE  0.0625           EQ    74
+
+# Decimals between 0.5 and 1: 0.00048828125
+EXPECT bufOut IDX  2 TOLERANCE  0.00048828125    EQ    -1
+
+# Decimals between 0.0625 and 0.125: 0.0002441406
+EXPECT bufOut IDX  4 TOLERANCE  0.0002441406    EQ    -0.0858154296875
+
+# Decimals between 8 and 16: 0.03125
+EXPECT bufOut IDX  6 TOLERANCE  0.03125         EQ     9.5156
+
+# Integers between 4096 and 8192: 4
+EXPECT bufOut IDX  8 TOLERANCE  4.0              EQ  5140
+
+# Integers between 32768 and 65536: 128
+EXPECT bufOut IDX 10 TOLERANCE 128               EQ 39424
+
+# Decimals between 1024 and 2048: 4.0
+EXPECT bufOut IDX 12 TOLERANCE  4.0              EQ -1739.0
+
+# Decimals between 128 and 256:  2.0
+EXPECT bufOut IDX 14 TOLERANCE  2.0             EQ   234.75
+
+# Decimals between 256 and 512: 0.25
+EXPECT bufOut IDX 16 TOLERANCE  0.5              EQ   465.25
+
+# Decimals between 512 and 1024: 1.0
+EXPECT bufOut IDX 18 TOLERANCE  1.0              EQ  -638.0

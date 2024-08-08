@@ -41,174 +41,200 @@ namespace gles3
 namespace Functional
 {
 
-StringQueryTests::StringQueryTests (Context& context)
-	: TestCaseGroup (context, "string", "String Query tests")
+StringQueryTests::StringQueryTests(Context &context) : TestCaseGroup(context, "string", "String Query tests")
 {
 }
 
-StringQueryTests::~StringQueryTests (void)
+StringQueryTests::~StringQueryTests(void)
 {
 }
 
-void StringQueryTests::init (void)
+void StringQueryTests::init(void)
 {
-	using tcu::TestLog;
+    using tcu::TestLog;
 
-	ES3F_ADD_API_CASE(renderer, "RENDERER",
-	{
-		const GLubyte* string = glGetString(GL_RENDERER);
-		if (string == NULL)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid string");
-	});
-	ES3F_ADD_API_CASE(vendor, "VENDOR",
-	{
-		const GLubyte* string = glGetString(GL_VENDOR);
-		if (string == NULL)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid string");
-	});
-	ES3F_ADD_API_CASE(version, "VERSION",
-	{
-		const char* string				= (const char*)glGetString(GL_VERSION);
-		const char	referenceString[]	= "OpenGL ES 3.";
+    ES3F_ADD_API_CASE(renderer, "RENDERER", {
+        const GLubyte *string = glGetString(GL_RENDERER);
+        if (string == NULL)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid string");
+    });
+    ES3F_ADD_API_CASE(vendor, "VENDOR", {
+        const GLubyte *string = glGetString(GL_VENDOR);
+        if (string == NULL)
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid string");
+    });
+    ES3F_ADD_API_CASE(version, "VERSION", {
+        bool isES = glu::isContextTypeES(m_context.getRenderContext().getType());
 
-		if (string == NULL)
-			TCU_FAIL("Got invalid string");
+        const char *string          = (const char *)glGetString(GL_VERSION);
+        const char *referenceString = isES ? "OpenGL ES 3." : "4.";
 
-		if (!deStringBeginsWith(string, referenceString))
-			TCU_FAIL("Got invalid string prefix");
+        if (string == NULL)
+            TCU_FAIL("Got invalid string");
 
-		{
-			std::string tmpString;
-			char		versionDelimiter;
-			int			glMajor				= 0;
-			int			glMinor				= 0;
-			GLint		stateVersionMinor	= 0;
+        if (!deStringBeginsWith(string, referenceString))
+            TCU_FAIL("Got invalid string prefix");
 
-			std::istringstream versionStream(string);
-			versionStream >> tmpString;			// OpenGL
-			versionStream >> tmpString;			// ES
-			versionStream >> glMajor;			// 3
-			versionStream >> std::noskipws;
-			versionStream >> versionDelimiter;	// .
-			versionStream >> glMinor;			// x
+        {
+            std::string tmpString;
+            char versionDelimiter;
+            int glMajor             = 0;
+            int glMinor             = 0;
+            GLint stateVersionMinor = 0;
 
-			if (!versionStream)
-				TCU_FAIL("Got invalid string format");
+            std::istringstream versionStream(string);
 
-			glGetIntegerv(GL_MINOR_VERSION, &stateVersionMinor);
-			if (glMinor != stateVersionMinor)
-			{
-				m_testCtx.getLog() << TestLog::Message << "// ERROR: MINOR_VERSION is " << stateVersionMinor << TestLog::EndMessage;
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid version.");
-				return;
-			}
-		}
-	});
-	ES3F_ADD_API_CASE(shading_language_version, "SHADING_LANGUAGE_VERSION",
-	{
-		const char* string				= (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
-		const char	referenceString[]	= "OpenGL ES GLSL ES ";
+            if (isES)
+            {
+                versionStream >> tmpString; // OpenGL
+                versionStream >> tmpString; // ES
+            }
 
-		if (string == NULL)
-			TCU_FAIL("Got invalid string");
+            versionStream >> glMajor; // 3
+            versionStream >> std::noskipws;
+            versionStream >> versionDelimiter; // .
+            versionStream >> glMinor;          // x
 
-		if (!deStringBeginsWith(string, referenceString))
-			TCU_FAIL("Got invalid string prefix");
+            if (!versionStream)
+                TCU_FAIL("Got invalid string format");
 
-		{
-			std::string tmpString;
-			char		versionDelimiter;
-			int			glslMajor			= 0;
-			char		glslMinorDigit1		= 0;
-			char		glslMinorDigit2		= 0;
-			bool		digitsAreValid;
+            glGetIntegerv(GL_MINOR_VERSION, &stateVersionMinor);
+            if (glMinor != stateVersionMinor)
+            {
+                m_testCtx.getLog() << TestLog::Message << "// ERROR: MINOR_VERSION is " << stateVersionMinor
+                                   << TestLog::EndMessage;
+                m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid version.");
+                return;
+            }
+        }
+    });
+    ES3F_ADD_API_CASE(shading_language_version, "SHADING_LANGUAGE_VERSION", {
+        bool isES = glu::isContextTypeES(m_context.getRenderContext().getType());
 
-			std::istringstream versionStream(string);
-			versionStream >> tmpString;			// OpenGL
-			versionStream >> tmpString;			// ES
-			versionStream >> tmpString;			// GLSL
-			versionStream >> tmpString;			// ES
-			versionStream >> glslMajor;			// x
-			versionStream >> std::noskipws;
-			versionStream >> versionDelimiter;	// .
-			versionStream >> glslMinorDigit1;	// x
-			versionStream >> glslMinorDigit2;	// x
+        const char *string          = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
+        const char *referenceString = isES ? "OpenGL ES GLSL ES " : "4.";
 
-			digitsAreValid =	glslMinorDigit1 >= '0' && glslMinorDigit1 <= '9' &&
-								glslMinorDigit2 >= '0' && glslMinorDigit2 <= '9';
+        if (string == NULL)
+            TCU_FAIL("Got invalid string");
 
-			if (!versionStream || !digitsAreValid)
-				TCU_FAIL("Got invalid string format");
-		}
-	});
-	ES3F_ADD_API_CASE(extensions, "EXTENSIONS",
-	{
-		const char* extensions_cstring = (const char*)glGetString(GL_EXTENSIONS);
-		if (extensions_cstring == NULL)
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid string");
+        if (!deStringBeginsWith(string, referenceString))
+            TCU_FAIL("Got invalid string prefix");
 
-		// split extensions_string at ' '
+        {
+            std::string tmpString;
+            char versionDelimiter;
+            int glslMajor        = 0;
+            char glslMinorDigit1 = 0;
+            char glslMinorDigit2 = 0;
+            bool digitsAreValid;
 
-		std::istringstream extensionStream((std::string)(extensions_cstring));
-		std::vector<std::string> extensions;
+            std::istringstream versionStream(string);
 
-		for (;;)
-		{
-			std::string extension;
-			if (std::getline(extensionStream, extension, ' '))
-				extensions.push_back(extension);
-			else
-				break;
-		}
+            if (isES)
+            {
+                versionStream >> tmpString; // OpenGL
+                versionStream >> tmpString; // ES
+                versionStream >> tmpString; // GLSL
+                versionStream >> tmpString; // ES
+            }
 
-		GLint numExtensions = 0;
-		glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
-		expectError(GL_NO_ERROR);
+            versionStream >> glslMajor; // x
+            versionStream >> std::noskipws;
+            versionStream >> versionDelimiter; // .
+            versionStream >> glslMinorDigit1;  // x
+            versionStream >> glslMinorDigit2;  // x
 
-		if (extensions.size() != (size_t)numExtensions)
-		{
-			m_testCtx.getLog() << TestLog::Message << "// ERROR:  NUM_EXTENSIONS is " << numExtensions << "; got " << extensions.size() << " extensions" << TestLog::EndMessage;
-			if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got non-consistent number of extensions");
-		}
+            digitsAreValid =
+                glslMinorDigit1 >= '0' && glslMinorDigit1 <= '9' && glslMinorDigit2 >= '0' && glslMinorDigit2 <= '9';
 
-		// all in glGetStringi(GL_EXTENSIONS) in must be in glGetString
+            if (!versionStream || !digitsAreValid)
+                TCU_FAIL("Got invalid string format");
+        }
+    });
+    ES3F_ADD_API_CASE(extensions, "EXTENSIONS", {
+        const char *extensions_cstring = (const char *)glGetString(GL_EXTENSIONS);
+        if (extensions_cstring == NULL)
+        {
+            bool isES = glu::isContextTypeES(m_context.getRenderContext().getType());
 
-		for (int i = 0; i < numExtensions; ++i)
-		{
-			std::string extension((const char*)glGetStringi(GL_EXTENSIONS, i));
+            // GL_EXTENSIONS has been deprecated on desktop GL
+            if (!isES)
+            {
+                m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Got NULL string for deprecated enum");
+                expectError(GL_INVALID_ENUM);
+                return;
+            }
 
-			if (std::find(extensions.begin(), extensions.end(), extension) == extensions.end())
-			{
-				m_testCtx.getLog() << TestLog::Message << "// ERROR: extension " << extension << " found with GetStringi was not found in glGetString(GL_EXTENSIONS)" << TestLog::EndMessage;
-				if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Extension query methods are not consistent.");
-			}
-		}
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid string");
+            return;
+        }
 
-		// only elements in glGetStringi(GL_EXTENSIONS) can be in glGetString
+        // split extensions_string at ' '
 
-		for (int i = 0; i < numExtensions; ++i)
-		{
-			std::string extension((const char*)glGetStringi(GL_EXTENSIONS, i));
+        std::istringstream extensionStream((std::string)(extensions_cstring));
+        std::vector<std::string> extensions;
 
-			std::vector<std::string>::iterator it = std::find(extensions.begin(), extensions.end(), extension);
-			if (it != extensions.end())
-				extensions.erase(it);
-		}
+        for (;;)
+        {
+            std::string extension;
+            if (std::getline(extensionStream, extension, ' '))
+                extensions.push_back(extension);
+            else
+                break;
+        }
 
-		if (!extensions.empty())
-		{
-			for (size_t ndx = 0; ndx < extensions.size(); ++ndx)
-				m_testCtx.getLog() << TestLog::Message << "// ERROR: extension \"" << extensions[ndx] << "\" found with GetString was not found with GetStringi(GL_EXTENSIONS, ind)" << TestLog::EndMessage;
+        GLint numExtensions = 0;
+        glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
+        expectError(GL_NO_ERROR);
 
-			if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Extension query methods are not consistent.");
-		}
+        if (extensions.size() != (size_t)numExtensions)
+        {
+            m_testCtx.getLog() << TestLog::Message << "// ERROR:  NUM_EXTENSIONS is " << numExtensions << "; got "
+                               << extensions.size() << " extensions" << TestLog::EndMessage;
+            if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+                m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got non-consistent number of extensions");
+        }
 
-	});
+        // all in glGetStringi(GL_EXTENSIONS) in must be in glGetString
+
+        for (int i = 0; i < numExtensions; ++i)
+        {
+            std::string extension((const char *)glGetStringi(GL_EXTENSIONS, i));
+
+            if (std::find(extensions.begin(), extensions.end(), extension) == extensions.end())
+            {
+                m_testCtx.getLog() << TestLog::Message << "// ERROR: extension " << extension
+                                   << " found with GetStringi was not found in glGetString(GL_EXTENSIONS)"
+                                   << TestLog::EndMessage;
+                if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+                    m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Extension query methods are not consistent.");
+            }
+        }
+
+        // only elements in glGetStringi(GL_EXTENSIONS) can be in glGetString
+
+        for (int i = 0; i < numExtensions; ++i)
+        {
+            std::string extension((const char *)glGetStringi(GL_EXTENSIONS, i));
+
+            std::vector<std::string>::iterator it = std::find(extensions.begin(), extensions.end(), extension);
+            if (it != extensions.end())
+                extensions.erase(it);
+        }
+
+        if (!extensions.empty())
+        {
+            for (size_t ndx = 0; ndx < extensions.size(); ++ndx)
+                m_testCtx.getLog() << TestLog::Message << "// ERROR: extension \"" << extensions[ndx]
+                                   << "\" found with GetString was not found with GetStringi(GL_EXTENSIONS, ind)"
+                                   << TestLog::EndMessage;
+
+            if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+                m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Extension query methods are not consistent.");
+        }
+    });
 }
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp

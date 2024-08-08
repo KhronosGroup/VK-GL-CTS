@@ -67,47 +67,47 @@ namespace glcts
 class GeometryShader_gl_in_ArrayContentsTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShader_gl_in_ArrayContentsTest(Context& context, const ExtParameters& extParams, const char* name,
-										   const char* description);
+    /* Public methods */
+    GeometryShader_gl_in_ArrayContentsTest(Context &context, const ExtParameters &extParams, const char *name,
+                                           const char *description);
 
-	virtual ~GeometryShader_gl_in_ArrayContentsTest()
-	{
-	}
+    virtual ~GeometryShader_gl_in_ArrayContentsTest()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void initTest(void);
+    /* Private methods */
+    void initTest(void);
 
-	/* Private fields */
-	/* Program and shader ids */
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_geometry_shader_sized_arrays_id;
-	glw::GLuint m_geometry_shader_unsized_arrays_id;
-	glw::GLuint m_program_object_sized_arrays_id;
-	glw::GLuint m_program_object_unsized_arrays_id;
-	glw::GLuint m_vertex_shader_id;
+    /* Private fields */
+    /* Program and shader ids */
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_geometry_shader_sized_arrays_id;
+    glw::GLuint m_geometry_shader_unsized_arrays_id;
+    glw::GLuint m_program_object_sized_arrays_id;
+    glw::GLuint m_program_object_unsized_arrays_id;
+    glw::GLuint m_vertex_shader_id;
 
-	/* Shaders' code */
-	static const glw::GLchar* const m_fragment_shader_code;
-	static const glw::GLchar* const m_geometry_shader_code;
-	static const glw::GLchar* const m_geometry_shader_preamble_code;
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Shaders' code */
+    static const glw::GLchar *const m_fragment_shader_code;
+    static const glw::GLchar *const m_geometry_shader_code;
+    static const glw::GLchar *const m_geometry_shader_preamble_code;
+    static const glw::GLchar *const m_vertex_shader_code;
 
-	/* Buffer Object used to store output from transform feedback */
-	glw::GLuint m_buffer_object_id;
+    /* Buffer Object used to store output from transform feedback */
+    glw::GLuint m_buffer_object_id;
 
-	/* Constants used to calculate and store size of buffer object, that will be used as transform feedback output */
-	static const unsigned int m_buffer_size;
-	static const unsigned int m_n_bytes_emitted_per_vertex;
-	static const unsigned int m_n_emitted_primitives;
-	static const unsigned int m_n_vertices_emitted_per_primitive;
+    /* Constants used to calculate and store size of buffer object, that will be used as transform feedback output */
+    static const unsigned int m_buffer_size;
+    static const unsigned int m_n_bytes_emitted_per_vertex;
+    static const unsigned int m_n_emitted_primitives;
+    static const unsigned int m_n_vertices_emitted_per_primitive;
 
-	/* Vertex array object ID */
-	glw::GLuint m_vertex_array_object_id;
+    /* Vertex array object ID */
+    glw::GLuint m_vertex_array_object_id;
 };
 
 /** Implementation of test case 5.2. Test description follows:
@@ -131,98 +131,98 @@ private:
 class GeometryShader_gl_in_ArrayLengthTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShader_gl_in_ArrayLengthTest(Context& context, const ExtParameters& extParams, const char* name,
-										 const char* description);
+    /* Public methods */
+    GeometryShader_gl_in_ArrayLengthTest(Context &context, const ExtParameters &extParams, const char *name,
+                                         const char *description);
 
-	virtual ~GeometryShader_gl_in_ArrayLengthTest()
-	{
-	}
+    virtual ~GeometryShader_gl_in_ArrayLengthTest()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual void		  init(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual void init(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct Case
-	{
-		/* Mode to be used for glDrawArrays() call */
-		glw::GLenum draw_call_mode;
-		/* Amount of vertices to be requested for glDrawArrays() call */
-		glw::GLint draw_call_n_vertices;
-		/* Transform feed-back mode to use before doing glDrawArrays() call */
-		glw::GLenum tf_mode;
+    /* Private types */
+    struct Case
+    {
+        /* Mode to be used for glDrawArrays() call */
+        glw::GLenum draw_call_mode;
+        /* Amount of vertices to be requested for glDrawArrays() call */
+        glw::GLint draw_call_n_vertices;
+        /* Transform feed-back mode to use before doing glDrawArrays() call */
+        glw::GLenum tf_mode;
 
-		/* ID of a fragment shader to be used for the test case */
-		glw::GLint fs_id;
-		/* ID of a geometry shader to be used for the test case */
-		glw::GLint gs_id;
-		/* String defining input layout qualifier for the test case. */
-		const glw::GLchar* input_body_part;
-		/* String defining output layout qualifier for the test case. */
-		const glw::GLchar* output_body_part;
-		/** ID of a program object to be used for the test case */
-		glw::GLint po_id;
-		/** ID of a vertex shader to be used for the test case */
-		glw::GLint vs_id;
+        /* ID of a fragment shader to be used for the test case */
+        glw::GLint fs_id;
+        /* ID of a geometry shader to be used for the test case */
+        glw::GLint gs_id;
+        /* String defining input layout qualifier for the test case. */
+        const glw::GLchar *input_body_part;
+        /* String defining output layout qualifier for the test case. */
+        const glw::GLchar *output_body_part;
+        /** ID of a program object to be used for the test case */
+        glw::GLint po_id;
+        /** ID of a vertex shader to be used for the test case */
+        glw::GLint vs_id;
 
-		/** Expected gl_in.length() value for the test case */
-		glw::GLint expected_array_length;
-	};
+        /** Expected gl_in.length() value for the test case */
+        glw::GLint expected_array_length;
+    };
 
-	/* Type of container used to group all test cases */
-	typedef std::deque<Case*> testContainer;
+    /* Type of container used to group all test cases */
+    typedef std::deque<Case *> testContainer;
 
-	/* Private methods */
-	void deinitCase(Case& info);
+    /* Private methods */
+    void deinitCase(Case &info);
 
-	void initCase(Case& info, glw::GLenum draw_call_mode, glw::GLint draw_call_n_vertices,
-				  glw::GLint expected_array_length, glw::GLenum tf_mode, const glw::GLchar* input_body_part,
-				  const glw::GLchar* output_body_part);
+    void initCase(Case &info, glw::GLenum draw_call_mode, glw::GLint draw_call_n_vertices,
+                  glw::GLint expected_array_length, glw::GLenum tf_mode, const glw::GLchar *input_body_part,
+                  const glw::GLchar *output_body_part);
 
-	void initCaseProgram(Case& info, const glw::GLchar** captured_varyings, glw::GLuint n_captured_varyings_size);
+    void initCaseProgram(Case &info, const glw::GLchar **captured_varyings, glw::GLuint n_captured_varyings_size);
 
-	void resetCase(Case& info);
+    void resetCase(Case &info);
 
-	/* Private fields */
-	/* Shaders */
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Private fields */
+    /* Shaders */
+    static const glw::GLchar *const m_vertex_shader_code;
 
-	static const glw::GLchar* const m_geometry_shader_code_input_points;
-	static const glw::GLchar* const m_geometry_shader_code_input_lines;
-	static const glw::GLchar* const m_geometry_shader_code_input_lines_with_adjacency;
-	static const glw::GLchar* const m_geometry_shader_code_input_triangles;
-	static const glw::GLchar* const m_geometry_shader_code_input_triangles_with_adjacency;
-	static const glw::GLchar* const m_geometry_shader_code_main;
-	static const glw::GLchar* const m_geometry_shader_code_output_line_strip;
-	static const glw::GLchar* const m_geometry_shader_code_output_points;
-	static const glw::GLchar* const m_geometry_shader_code_output_triangle_strip;
-	static const glw::GLchar* const m_geometry_shader_code_preamble;
+    static const glw::GLchar *const m_geometry_shader_code_input_points;
+    static const glw::GLchar *const m_geometry_shader_code_input_lines;
+    static const glw::GLchar *const m_geometry_shader_code_input_lines_with_adjacency;
+    static const glw::GLchar *const m_geometry_shader_code_input_triangles;
+    static const glw::GLchar *const m_geometry_shader_code_input_triangles_with_adjacency;
+    static const glw::GLchar *const m_geometry_shader_code_main;
+    static const glw::GLchar *const m_geometry_shader_code_output_line_strip;
+    static const glw::GLchar *const m_geometry_shader_code_output_points;
+    static const glw::GLchar *const m_geometry_shader_code_output_triangle_strip;
+    static const glw::GLchar *const m_geometry_shader_code_preamble;
 
-	static const glw::GLchar* const m_fragment_shader_code;
+    static const glw::GLchar *const m_fragment_shader_code;
 
-	/* Test cases */
-	Case m_test_lines;
-	Case m_test_lines_adjacency;
-	Case m_test_lines_adjacency_to_line_strip;
-	Case m_test_points;
-	Case m_test_triangles;
-	Case m_test_triangles_adjacency;
-	Case m_test_triangles_adjacency_to_triangle_strip;
+    /* Test cases */
+    Case m_test_lines;
+    Case m_test_lines_adjacency;
+    Case m_test_lines_adjacency_to_line_strip;
+    Case m_test_points;
+    Case m_test_triangles;
+    Case m_test_triangles_adjacency;
+    Case m_test_triangles_adjacency_to_triangle_strip;
 
-	/* Set of test cases */
-	testContainer m_tests;
+    /* Set of test cases */
+    testContainer m_tests;
 
-	/* Buffer Object used to store output from transform feedback */
-	glw::GLuint m_buffer_object_id;
+    /* Buffer Object used to store output from transform feedback */
+    glw::GLuint m_buffer_object_id;
 
-	/* Constants used to calculate and store size of buffer object, that will be used as transform feedback output */
-	static const glw::GLuint m_buffer_size;
-	static const glw::GLuint m_max_primitive_emitted;
+    /* Constants used to calculate and store size of buffer object, that will be used as transform feedback output */
+    static const glw::GLuint m_buffer_size;
+    static const glw::GLuint m_max_primitive_emitted;
 
-	/* Vertex array object ID */
-	glw::GLuint m_vertex_array_object_id;
+    /* Vertex array object ID */
+    glw::GLuint m_vertex_array_object_id;
 };
 
 /** Implementation of test case 5.3. Test description follows:
@@ -267,44 +267,44 @@ private:
 class GeometryShader_gl_PointSize_ValueTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShader_gl_PointSize_ValueTest(Context& context, const ExtParameters& extParams, const char* name,
-										  const char* description);
+    /* Public methods */
+    GeometryShader_gl_PointSize_ValueTest(Context &context, const ExtParameters &extParams, const char *name,
+                                          const char *description);
 
-	virtual ~GeometryShader_gl_PointSize_ValueTest()
-	{
-	}
+    virtual ~GeometryShader_gl_PointSize_ValueTest()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual void		  init(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual void init(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private fields */
-	/* Program and shader ids */
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_geometry_shader_id;
-	glw::GLuint m_program_object_id;
-	glw::GLuint m_vertex_shader_id;
+    /* Private fields */
+    /* Program and shader ids */
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_geometry_shader_id;
+    glw::GLuint m_program_object_id;
+    glw::GLuint m_vertex_shader_id;
 
-	/* Shaders' code */
-	static const glw::GLchar* const m_fragment_shader_code;
-	static const glw::GLchar* const m_geometry_shader_code;
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Shaders' code */
+    static const glw::GLchar *const m_fragment_shader_code;
+    static const glw::GLchar *const m_geometry_shader_code;
+    static const glw::GLchar *const m_vertex_shader_code;
 
-	/* Vertex array object ID */
-	glw::GLuint m_vertex_array_object_id;
+    /* Vertex array object ID */
+    glw::GLuint m_vertex_array_object_id;
 
-	/* Texture object ID */
-	glw::GLuint m_color_texture_id;
+    /* Texture object ID */
+    glw::GLuint m_color_texture_id;
 
-	/* Framebuffer object ID */
-	glw::GLuint m_framebuffer_object_id;
+    /* Framebuffer object ID */
+    glw::GLuint m_framebuffer_object_id;
 
-	/* Constants used to store properties of framebuffer's color attachment */
-	static const glw::GLuint m_texture_height;
-	static const glw::GLuint m_texture_pixel_size;
-	static const glw::GLuint m_texture_width;
+    /* Constants used to store properties of framebuffer's color attachment */
+    static const glw::GLuint m_texture_height;
+    static const glw::GLuint m_texture_pixel_size;
+    static const glw::GLuint m_texture_width;
 };
 
 /** Implementation of test case 5.4. Test description follows:
@@ -334,46 +334,46 @@ private:
 class GeometryShader_gl_Position_ValueTest : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShader_gl_Position_ValueTest(Context& context, const ExtParameters& extParams, const char* name,
-										 const char* description);
+    /* Public methods */
+    GeometryShader_gl_Position_ValueTest(Context &context, const ExtParameters &extParams, const char *name,
+                                         const char *description);
 
-	virtual ~GeometryShader_gl_Position_ValueTest()
-	{
-	}
+    virtual ~GeometryShader_gl_Position_ValueTest()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual void		  init(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual void init(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private fields */
-	/* Program and shader ids */
-	glw::GLuint m_fragment_shader_id;
-	glw::GLuint m_geometry_shader_id;
-	glw::GLuint m_program_object_id;
-	glw::GLuint m_vertex_shader_id;
+    /* Private fields */
+    /* Program and shader ids */
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_geometry_shader_id;
+    glw::GLuint m_program_object_id;
+    glw::GLuint m_vertex_shader_id;
 
-	/* Shaders' code */
-	static const glw::GLchar* const m_fragment_shader_code;
-	static const glw::GLchar* const m_geometry_shader_code;
-	static const glw::GLchar* const m_vertex_shader_code;
+    /* Shaders' code */
+    static const glw::GLchar *const m_fragment_shader_code;
+    static const glw::GLchar *const m_geometry_shader_code;
+    static const glw::GLchar *const m_vertex_shader_code;
 
-	/* Vertex array object ID */
-	glw::GLuint m_vertex_array_object_id;
+    /* Vertex array object ID */
+    glw::GLuint m_vertex_array_object_id;
 
-	/* Texture object ID */
-	glw::GLuint m_color_texture_id;
+    /* Texture object ID */
+    glw::GLuint m_color_texture_id;
 
-	/* Framebuffer object ID */
-	glw::GLuint m_framebuffer_object_id;
+    /* Framebuffer object ID */
+    glw::GLuint m_framebuffer_object_id;
 
-	/* Constants used to store properties of framebuffer's color attachment */
-	static const glw::GLuint m_texture_height;
-	static const glw::GLuint m_texture_pixel_size;
-	static const glw::GLuint m_texture_width;
+    /* Constants used to store properties of framebuffer's color attachment */
+    static const glw::GLuint m_texture_height;
+    static const glw::GLuint m_texture_pixel_size;
+    static const glw::GLuint m_texture_width;
 };
 
-} /* glcts */
+} // namespace glcts
 
 #endif // _ESEXTCGEOMETRYSHADERINPUT_HPP

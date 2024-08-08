@@ -9,6 +9,12 @@ set(GLCTS_ESEXT_SRCS
     esextcTestCaseBase.hpp
     esextcTestPackage.cpp
     esextcTestPackage.hpp
+    disjoint_timer_query/esextcDisjointTimerQueryBase.cpp
+    disjoint_timer_query/esextcDisjointTimerQueryBase.hpp
+    disjoint_timer_query/esextcDisjointTimerQueryHandleReuse.cpp
+    disjoint_timer_query/esextcDisjointTimerQueryHandleReuse.hpp
+    disjoint_timer_query/esextcDisjointTimerQueryTests.cpp
+    disjoint_timer_query/esextcDisjointTimerQueryTests.cpp
     draw_buffers_indexed/esextcDrawBuffersIndexedBase.cpp
     draw_buffers_indexed/esextcDrawBuffersIndexedBase.hpp
     draw_buffers_indexed/esextcDrawBuffersIndexedCoverage.cpp
@@ -201,6 +207,22 @@ set(GLCTS_ESEXT_SRCS
     texture_cube_map_array/esextcTextureCubeMapArrayTex3DValidation.hpp
     texture_shadow_lod/esextcTextureShadowLodFunctionsTest.cpp
     texture_shadow_lod/esextcTextureShadowLodFunctionsTest.hpp
+    fragment_shading_rate/esextcFragmentShadingRateTests.cpp
+    fragment_shading_rate/esextcFragmentShadingRateTests.hpp
+    fragment_shading_rate/esextcFragmentShadingRateErrors.cpp
+    fragment_shading_rate/esextcFragmentShadingRateErrors.hpp
+    fragment_shading_rate/esextcFragmentShadingRateBasic.cpp
+    fragment_shading_rate/esextcFragmentShadingRateBasic.hpp
+    fragment_shading_rate/esextcFragmentShadingRateComplex.cpp
+    fragment_shading_rate/esextcFragmentShadingRateComplex.hpp
+    fragment_shading_rate/esextcFragmentShadingRateCombinedTests.cpp
+    fragment_shading_rate/esextcFragmentShadingRateCombinedTests.hpp
+    fragment_shading_rate/esextcFragmentShadingRateAPI.cpp
+    fragment_shading_rate/esextcFragmentShadingRateAPI.hpp
+    fragment_shading_rate/esextcFragmentShadingRateAttachmentTests.cpp
+    fragment_shading_rate/esextcFragmentShadingRateAttachmentTests.hpp
+    fragment_shading_rate/esextcFragmentShadingRateRenderTarget.cpp
+    fragment_shading_rate/esextcFragmentShadingRateRenderTarget.hpp
     )
 
 set(GLCTS_ESEXT_LIBS

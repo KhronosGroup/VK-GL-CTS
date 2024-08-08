@@ -31,9 +31,6 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 #
 # layout(location = 0) out vec4 _GLF_color;
 #
-# layout(set = 0, binding = 0) uniform buf0 {
-#  vec2 resolution;
-# };
 # struct QuicksortObject {
 #  int numbers[10];
 # } ;
@@ -108,7 +105,7 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 #   _GLF_color = vec4(0.0, 1.0, 0.0, 1.0);
 #
 # }
-SHADER fragment variant_fragment_shader SPIRV-ASM
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 8
@@ -148,14 +145,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpName %119 "param"
                OpName %152 "i"
                OpName %188 "_GLF_color"
-               OpName %195 "buf0"
-               OpMemberName %195 0 "resolution"
-               OpName %197 ""
                OpDecorate %188 Location 0
-               OpMemberDecorate %195 0 Offset 0
-               OpDecorate %195 Block
-               OpDecorate %197 DescriptorSet 0
-               OpDecorate %197 Binding 0
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
@@ -186,9 +176,6 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
         %191 = OpConstantComposite %186 %189 %190 %190 %189
         %193 = OpConstantComposite %186 %190 %189 %190 %189
         %194 = OpTypeVector %185 2
-        %195 = OpTypeStruct %194
-        %196 = OpTypePointer Uniform %195
-        %197 = OpVariable %196 Uniform
           %4 = OpFunction %2 None %3
           %5 = OpLabel
         %152 = OpVariable %7 Function
@@ -433,23 +420,17 @@ END
 
 # uniforms for variant
 
-# resolution
-BUFFER variant_resolution DATA_TYPE vec2<float> DATA
- 256.0 256.0
-END
-
 BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
 
 PIPELINE graphics variant_pipeline
   ATTACH variant_vertex_shader
   ATTACH variant_fragment_shader
-  FRAMEBUFFER_SIZE 256 256
+  FRAMEBUFFER_SIZE 16 16
   BIND BUFFER variant_framebuffer AS color LOCATION 0
-  BIND BUFFER variant_resolution AS uniform DESCRIPTOR_SET 0 BINDING 0
 END
 CLEAR_COLOR variant_pipeline 0 0 0 255
 
 CLEAR variant_pipeline
-RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 16 16
 
-EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
+EXPECT variant_framebuffer IDX 0 0 SIZE 16 16 EQ_RGBA 255 0 0 255

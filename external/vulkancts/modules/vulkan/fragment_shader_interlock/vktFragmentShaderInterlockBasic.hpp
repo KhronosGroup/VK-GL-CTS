@@ -32,10 +32,9 @@ namespace vkt
 namespace FragmentShaderInterlock
 {
 
-tcu::TestCaseGroup* createBasicTests(tcu::TestContext& testCtx);
-void cleanupDevice();
+tcu::TestCaseGroup *createBasicTests(tcu::TestContext &testCtx);
 
-} // FragmentShaderInterlock
-} // vkt
+} // namespace FragmentShaderInterlock
+} // namespace vkt
 
 #endif // _VKTFRAGMENTSHADERINTERLOCKBASIC_HPP

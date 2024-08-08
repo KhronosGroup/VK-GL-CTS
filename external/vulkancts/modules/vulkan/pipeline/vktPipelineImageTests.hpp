@@ -25,15 +25,16 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createImageTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageTests(tcu::TestContext &testCtx, vk::PipelineConstructionType pipelineConstructionType);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEIMAGETESTS_HPP

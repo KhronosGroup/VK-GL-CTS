@@ -30,7 +30,6 @@
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
 
-
 namespace deqp
 {
 namespace gles31
@@ -45,163 +44,181 @@ using namespace gls::StateQueryUtil;
 class InterpolationOffsetCase : public TestCase
 {
 public:
-	enum TestType
-	{
-		TEST_MIN_OFFSET = 0,
-		TEST_MAX_OFFSET,
+    enum TestType
+    {
+        TEST_MIN_OFFSET = 0,
+        TEST_MAX_OFFSET,
 
-		TEST_LAST
-	};
+        TEST_LAST
+    };
 
-						InterpolationOffsetCase		(Context& context, const char* name, const char* desc, QueryType verifier, TestType testType);
-						~InterpolationOffsetCase	(void);
+    InterpolationOffsetCase(Context &context, const char *name, const char *desc, QueryType verifier,
+                            TestType testType);
+    ~InterpolationOffsetCase(void);
 
-	void				init						(void);
-	IterateResult		iterate						(void);
+    void init(void);
+    IterateResult iterate(void);
 
 private:
-	const QueryType		m_verifier;
-	const TestType		m_testType;
+    const QueryType m_verifier;
+    const TestType m_testType;
 };
 
-InterpolationOffsetCase::InterpolationOffsetCase (Context& context, const char* name, const char* desc, QueryType verifier, TestType testType)
-	: TestCase		(context, name, desc)
-	, m_verifier	(verifier)
-	, m_testType	(testType)
+InterpolationOffsetCase::InterpolationOffsetCase(Context &context, const char *name, const char *desc,
+                                                 QueryType verifier, TestType testType)
+    : TestCase(context, name, desc)
+    , m_verifier(verifier)
+    , m_testType(testType)
 {
-	DE_ASSERT(m_testType < TEST_LAST);
+    DE_ASSERT(m_testType < TEST_LAST);
 }
 
-InterpolationOffsetCase::~InterpolationOffsetCase (void)
+InterpolationOffsetCase::~InterpolationOffsetCase(void)
 {
 }
 
-void InterpolationOffsetCase::init (void)
+void InterpolationOffsetCase::init(void)
 {
-	auto		ctxType			= m_context.getRenderContext().getType();
-	const bool	isES32orGL45	= glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
-								  glu::contextSupports(ctxType, glu::ApiType::core(4, 5));
+    auto ctxType            = m_context.getRenderContext().getType();
+    const bool isES32orGL45 = glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+                              glu::contextSupports(ctxType, glu::ApiType::core(4, 5));
 
-	if (!isES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
-		throw tcu::NotSupportedError("Test requires GL_OES_shader_multisample_interpolation extension");
+    if (!isES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
+        throw tcu::NotSupportedError("Test requires GL_OES_shader_multisample_interpolation extension");
 }
 
-InterpolationOffsetCase::IterateResult InterpolationOffsetCase::iterate (void)
+InterpolationOffsetCase::IterateResult InterpolationOffsetCase::iterate(void)
 {
-	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
-	gl.enableLogging(true);
+    glu::CallLogWrapper gl(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+    tcu::ResultCollector result(m_testCtx.getLog(), " // ERROR: ");
+    gl.enableLogging(true);
 
-	if (m_testType == TEST_MAX_OFFSET)
-		verifyStateFloatMin(result, gl, GL_MAX_FRAGMENT_INTERPOLATION_OFFSET, 0.5, m_verifier);
-	else if (m_testType == TEST_MIN_OFFSET)
-		verifyStateFloatMax(result, gl, GL_MIN_FRAGMENT_INTERPOLATION_OFFSET, -0.5, m_verifier);
-	else
-		DE_ASSERT(false);
+    if (m_testType == TEST_MAX_OFFSET)
+    {
+        glw::GLfloat fragmentInterpolationOffsetBits = 0.0;
+        gl.glGetFloatv(GL_FRAGMENT_INTERPOLATION_OFFSET_BITS, &fragmentInterpolationOffsetBits);
+        GLU_EXPECT_NO_ERROR(gl.glGetError(), "glGetIntegerv");
 
-	result.setTestContextResult(m_testCtx);
-	return STOP;
+        glw::GLfloat ULP = 1.0f / powf(2, fragmentInterpolationOffsetBits);
+
+        verifyStateFloatMin(result, gl, GL_MAX_FRAGMENT_INTERPOLATION_OFFSET, 0.5f - ULP, m_verifier);
+    }
+    else if (m_testType == TEST_MIN_OFFSET)
+        verifyStateFloatMax(result, gl, GL_MIN_FRAGMENT_INTERPOLATION_OFFSET, -0.5f, m_verifier);
+    else
+        DE_ASSERT(false);
+
+    result.setTestContextResult(m_testCtx);
+    return STOP;
 }
 
 class FragmentInterpolationOffsetBitsCase : public TestCase
 {
 public:
-						FragmentInterpolationOffsetBitsCase		(Context& context, const char* name, const char* desc, QueryType verifier);
-						~FragmentInterpolationOffsetBitsCase	(void);
+    FragmentInterpolationOffsetBitsCase(Context &context, const char *name, const char *desc, QueryType verifier);
+    ~FragmentInterpolationOffsetBitsCase(void);
 
-	void				init									(void);
-	IterateResult		iterate									(void);
+    void init(void);
+    IterateResult iterate(void);
 
 private:
-	const QueryType		m_verifier;
+    const QueryType m_verifier;
 };
 
-FragmentInterpolationOffsetBitsCase::FragmentInterpolationOffsetBitsCase (Context& context, const char* name, const char* desc, QueryType verifier)
-	: TestCase		(context, name, desc)
-	, m_verifier	(verifier)
+FragmentInterpolationOffsetBitsCase::FragmentInterpolationOffsetBitsCase(Context &context, const char *name,
+                                                                         const char *desc, QueryType verifier)
+    : TestCase(context, name, desc)
+    , m_verifier(verifier)
 {
 }
 
-FragmentInterpolationOffsetBitsCase::~FragmentInterpolationOffsetBitsCase (void)
+FragmentInterpolationOffsetBitsCase::~FragmentInterpolationOffsetBitsCase(void)
 {
 }
 
-void FragmentInterpolationOffsetBitsCase::init (void)
+void FragmentInterpolationOffsetBitsCase::init(void)
 {
-	auto		ctxType			= m_context.getRenderContext().getType();
-	const bool	isES32orGL45	= glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
-								  glu::contextSupports(ctxType, glu::ApiType::core(4, 5));
+    auto ctxType            = m_context.getRenderContext().getType();
+    const bool isES32orGL45 = glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
+                              glu::contextSupports(ctxType, glu::ApiType::core(4, 5));
 
-	if (!isES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
-		throw tcu::NotSupportedError("Test requires GL_OES_shader_multisample_interpolation extension");
+    if (!isES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
+        throw tcu::NotSupportedError("Test requires GL_OES_shader_multisample_interpolation extension");
 }
 
-FragmentInterpolationOffsetBitsCase::IterateResult FragmentInterpolationOffsetBitsCase::iterate (void)
+FragmentInterpolationOffsetBitsCase::IterateResult FragmentInterpolationOffsetBitsCase::iterate(void)
 {
-	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
-	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
-	gl.enableLogging(true);
+    glu::CallLogWrapper gl(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+    tcu::ResultCollector result(m_testCtx.getLog(), " // ERROR: ");
+    gl.enableLogging(true);
 
-	verifyStateIntegerMin(result, gl, GL_FRAGMENT_INTERPOLATION_OFFSET_BITS, 4, m_verifier);
+    verifyStateIntegerMin(result, gl, GL_FRAGMENT_INTERPOLATION_OFFSET_BITS, 4, m_verifier);
 
-	result.setTestContextResult(m_testCtx);
-	return STOP;
+    result.setTestContextResult(m_testCtx);
+    return STOP;
 }
 
-} // anonymous
+} // namespace
 
-ShaderMultisampleInterpolationStateQueryTests::ShaderMultisampleInterpolationStateQueryTests (Context& context)
-	: TestCaseGroup(context, "multisample_interpolation", "Test multisample interpolation states")
-{
-}
-
-ShaderMultisampleInterpolationStateQueryTests::~ShaderMultisampleInterpolationStateQueryTests (void)
+ShaderMultisampleInterpolationStateQueryTests::ShaderMultisampleInterpolationStateQueryTests(Context &context)
+    : TestCaseGroup(context, "multisample_interpolation", "Test multisample interpolation states")
 {
 }
 
-void ShaderMultisampleInterpolationStateQueryTests::init (void)
+ShaderMultisampleInterpolationStateQueryTests::~ShaderMultisampleInterpolationStateQueryTests(void)
 {
-	static const struct Verifier
-	{
-		QueryType		verifier;
-		const char*		name;
-		const char*		desc;
-	} verifiers[] =
-	{
-		{ QUERY_BOOLEAN,	"get_boolean",		"Test using getBoolean"		},
-		{ QUERY_INTEGER,	"get_integer",		"Test using getInteger"		},
-		{ QUERY_FLOAT,		"get_float",		"Test using getFloat"		},
-		{ QUERY_INTEGER64,	"get_integer64",	"Test using getInteger64"	},
-	};
-
-	// .min_fragment_interpolation_offset
-	{
-		tcu::TestCaseGroup* const group = new tcu::TestCaseGroup(m_testCtx, "min_fragment_interpolation_offset", "Test MIN_FRAGMENT_INTERPOLATION_OFFSET");
-		addChild(group);
-
-		for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)
-			group->addChild(new InterpolationOffsetCase(m_context, verifiers[verifierNdx].name, verifiers[verifierNdx].desc, verifiers[verifierNdx].verifier, InterpolationOffsetCase::TEST_MIN_OFFSET));
-	}
-
-	// .max_fragment_interpolation_offset
-	{
-		tcu::TestCaseGroup* const group = new tcu::TestCaseGroup(m_testCtx, "max_fragment_interpolation_offset", "Test MAX_FRAGMENT_INTERPOLATION_OFFSET");
-		addChild(group);
-
-		for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)
-			group->addChild(new InterpolationOffsetCase(m_context, verifiers[verifierNdx].name, verifiers[verifierNdx].desc, verifiers[verifierNdx].verifier, InterpolationOffsetCase::TEST_MAX_OFFSET));
-	}
-
-	// .fragment_interpolation_offset_bits
-	{
-		tcu::TestCaseGroup* const group = new tcu::TestCaseGroup(m_testCtx, "fragment_interpolation_offset_bits", "Test FRAGMENT_INTERPOLATION_OFFSET_BITS");
-		addChild(group);
-
-		for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)
-			group->addChild(new FragmentInterpolationOffsetBitsCase(m_context, verifiers[verifierNdx].name, verifiers[verifierNdx].desc, verifiers[verifierNdx].verifier));
-	}
 }
 
-} // Functional
-} // gles31
-} // deqp
+void ShaderMultisampleInterpolationStateQueryTests::init(void)
+{
+    static const struct Verifier
+    {
+        QueryType verifier;
+        const char *name;
+        const char *desc;
+    } verifiers[] = {
+        {QUERY_BOOLEAN, "get_boolean", "Test using getBoolean"},
+        {QUERY_INTEGER, "get_integer", "Test using getInteger"},
+        {QUERY_FLOAT, "get_float", "Test using getFloat"},
+        {QUERY_INTEGER64, "get_integer64", "Test using getInteger64"},
+    };
+
+    // .min_fragment_interpolation_offset
+    {
+        tcu::TestCaseGroup *const group = new tcu::TestCaseGroup(m_testCtx, "min_fragment_interpolation_offset",
+                                                                 "Test MIN_FRAGMENT_INTERPOLATION_OFFSET");
+        addChild(group);
+
+        for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)
+            group->addChild(new InterpolationOffsetCase(m_context, verifiers[verifierNdx].name,
+                                                        verifiers[verifierNdx].desc, verifiers[verifierNdx].verifier,
+                                                        InterpolationOffsetCase::TEST_MIN_OFFSET));
+    }
+
+    // .max_fragment_interpolation_offset
+    {
+        tcu::TestCaseGroup *const group = new tcu::TestCaseGroup(m_testCtx, "max_fragment_interpolation_offset",
+                                                                 "Test MAX_FRAGMENT_INTERPOLATION_OFFSET");
+        addChild(group);
+
+        for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)
+            group->addChild(new InterpolationOffsetCase(m_context, verifiers[verifierNdx].name,
+                                                        verifiers[verifierNdx].desc, verifiers[verifierNdx].verifier,
+                                                        InterpolationOffsetCase::TEST_MAX_OFFSET));
+    }
+
+    // .fragment_interpolation_offset_bits
+    {
+        tcu::TestCaseGroup *const group = new tcu::TestCaseGroup(m_testCtx, "fragment_interpolation_offset_bits",
+                                                                 "Test FRAGMENT_INTERPOLATION_OFFSET_BITS");
+        addChild(group);
+
+        for (int verifierNdx = 0; verifierNdx < DE_LENGTH_OF_ARRAY(verifiers); ++verifierNdx)
+            group->addChild(new FragmentInterpolationOffsetBitsCase(
+                m_context, verifiers[verifierNdx].name, verifiers[verifierNdx].desc, verifiers[verifierNdx].verifier));
+    }
+}
+
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp

@@ -35,56 +35,63 @@ namespace SpirVAssembly
 namespace
 {
 
-void createSignedOpTests (tcu::TestCaseGroup* tests, const char* data_dir)
+void createSignedOpTests(tcu::TestCaseGroup *tests, const char *data_dir)
 {
-	tcu::TestContext& testCtx = tests->getTestContext();
+#ifndef CTS_USES_VULKANSC
+    tcu::TestContext &testCtx = tests->getTestContext();
 
-	// Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
-	struct Case {
-		const char* basename;
-		const char* description;
-	};
-	const Case cases[] =
-	{
-		{ "glsl_int_findumsb", "32bit signed int with FindUMsb" },
-		{ "glsl_int_uclamp", "32bit signed int with UClamp" },
-		{ "glsl_int_umax", "32bit signed int with UMax" },
-		{ "glsl_int_umin", "32bit signed int with UMin" },
-		{ "glsl_uint_findsmsb", "32bit unsigned int with FindSMsb" },
-		{ "glsl_uint_sabs", "32bit unsigned int with SAbs" },
-		{ "glsl_uint_sclamp", "32bit unsigned int with SClamp" },
-		{ "glsl_uint_smax", "32bit unsigned int with SMax" },
-		{ "glsl_uint_smin", "32bit unsigned int with SMin" },
-		{ "glsl_uint_ssign", "32bit unsigned int with SSign" },
-		{ "int_atomicumax", "32bit unsigned int with UMax" },
-		{ "int_atomicumin", "32bit unsigned int with UMin" },
-		{ "int_ugreaterthan", "32bit unsigned int with UGreaterThanEqual" },
-		{ "int_ugreaterthanequal", "32bit unsigned int with UGreaterThanEqual" },
-		{ "int_ulessthan", "32bit unsigned int with ULessThan" },
-		{ "int_ulessthanequal", "32bit unsigned int with ULessThanEqual" },
-		{ "uint_atomicsmax", "32bit unsigned int with SMax" },
-		{ "uint_atomicsmin", "32bit unsigned int with SMin" },
-		{ "uint_sdiv", "32bit unsigned int with UMax" },
-		{ "uint_smulextended", "32bit unsigned int with SMulExtended" },
-		{ "uint_snegate", "32bit unsigned int with SNegate" },
-	};
-	for (unsigned i = 0; i < sizeof(cases)/sizeof(cases[0]) ; ++i)
-	{
-		std::string					file		= std::string(cases[i].basename) + ".amber";
-		cts_amber::AmberTestCase	*testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, data_dir, file);
+    // Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
+    struct Case
+    {
+        const char *basename;
+        const char *description;
+    };
+    const Case cases[] = {
+        {"glsl_int_findumsb", "32bit signed int with FindUMsb"},
+        {"glsl_int_uclamp", "32bit signed int with UClamp"},
+        {"glsl_int_umax", "32bit signed int with UMax"},
+        {"glsl_int_umin", "32bit signed int with UMin"},
+        {"glsl_uint_findsmsb", "32bit unsigned int with FindSMsb"},
+        {"glsl_uint_sabs", "32bit unsigned int with SAbs"},
+        {"glsl_uint_sclamp", "32bit unsigned int with SClamp"},
+        {"glsl_uint_smax", "32bit unsigned int with SMax"},
+        {"glsl_uint_smin", "32bit unsigned int with SMin"},
+        {"glsl_uint_ssign", "32bit unsigned int with SSign"},
+        {"int_atomicumax", "32bit unsigned int with UMax"},
+        {"int_atomicumin", "32bit unsigned int with UMin"},
+        {"int_ugreaterthan", "32bit unsigned int with UGreaterThanEqual"},
+        {"int_ugreaterthanequal", "32bit unsigned int with UGreaterThanEqual"},
+        {"int_ulessthan", "32bit unsigned int with ULessThan"},
+        {"int_ulessthanequal", "32bit unsigned int with ULessThanEqual"},
+        {"uint_atomicsmax", "32bit unsigned int with SMax"},
+        {"uint_atomicsmin", "32bit unsigned int with SMin"},
+        {"uint_sdiv", "32bit unsigned int with UMax"},
+        {"uint_smulextended", "32bit unsigned int with SMulExtended"},
+        {"uint_snegate", "32bit unsigned int with SNegate"},
+    };
 
-		tests->addChild(testCase);
-	}
+    for (unsigned i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i)
+    {
+        std::string file = std::string(cases[i].basename) + ".amber";
+        cts_amber::AmberTestCase *testCase =
+            cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, data_dir, file);
+
+        tests->addChild(testCase);
+    }
+#else
+    DE_UNREF(tests);
+    DE_UNREF(data_dir);
+#endif
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createSignedOpTestsGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createSignedOpTestsGroup(tcu::TestContext &testCtx)
 {
-	// Location of the Amber script files under the data/vulkan/amber source tree.
-	const char* data_dir = "spirv_assembly/instruction/compute/signed_op";
-	return createTestGroup(testCtx, "signed_op", "Signed op over uint values", createSignedOpTests, data_dir);
+    // Location of the Amber script files under the data/vulkan/amber source tree.
+    const char *data_dir = "spirv_assembly/instruction/compute/signed_op";
+    return createTestGroup(testCtx, "signed_op", createSignedOpTests, data_dir);
 }
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt

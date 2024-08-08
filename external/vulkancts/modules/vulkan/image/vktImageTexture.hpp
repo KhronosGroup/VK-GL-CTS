@@ -35,36 +35,51 @@ namespace image
 class Texture
 {
 public:
-						Texture			(const ImageType imageType, const tcu::IVec3& imageLayerSize, const int layers, const int samples = 1, const int levels = 1);
-						Texture			(const Texture& other, const int samples);
+    Texture(const ImageType imageType, const tcu::IVec3 &imageLayerSize, const int layers, const int samples = 1,
+            const int levels = 1);
+    Texture(const Texture &other, const int samples);
 
-	ImageType			type			(void) const { return m_type; }			//!< Texture type
-	tcu::IVec3			layerSize		(const int mipLevel = 0) const;			//!< Size of a single layer for mipmap level 0
-	int					numLayers		(void) const { return m_numLayers; }	//!< Number of array layers (for array and cube types)
-	int					numSamples		(void) const { return m_numSamples; }	//!< Number of samples per texel (multisampled texture)
+    ImageType type(void) const
+    {
+        return m_type;
+    }                                                   //!< Texture type
+    tcu::IVec3 layerSize(const int mipLevel = 0) const; //!< Size of a single layer for mipmap level 0
+    int numLayers(void) const
+    {
+        return m_numLayers;
+    } //!< Number of array layers (for array and cube types)
+    int numSamples(void) const
+    {
+        return m_numSamples;
+    } //!< Number of samples per texel (multisampled texture)
 
-	tcu::IVec3			size			(const int mipLevel = 0) const;			//!< Size including number of layers in additional dimension (e.g. z in 2d texture) for mipmap level 0
-	int					dimension		(void) const;							//!< Coordinate dimension used for addressing (e.g. 3 (x,y,z) for 2d array)
-	int					layerDimension	(void) const;							//!< Coordinate dimension used for addressing a single layer (e.g. 2 (x,y) for 2d array)
+    tcu::IVec3 size(const int mipLevel = 0)
+        const; //!< Size including number of layers in additional dimension (e.g. z in 2d texture) for mipmap level 0
+    int dimension(void) const; //!< Coordinate dimension used for addressing (e.g. 3 (x,y,z) for 2d array)
+    int layerDimension(
+        void) const; //!< Coordinate dimension used for addressing a single layer (e.g. 2 (x,y) for 2d array)
 
-	int					numMipmapLevels	(void) const { return m_numMipmapLevels; };	//!< Number of levels of detail (mipmap texture)
+    int numMipmapLevels(void) const
+    {
+        return m_numMipmapLevels;
+    } //!< Number of levels of detail (mipmap texture)
 
 private:
-	void				checkInvariants	(void) const;
+    void checkInvariants(void) const;
 
-	const tcu::IVec3	m_layerSize;
-	const ImageType		m_type;
-	const int			m_numLayers;
-	const int			m_numSamples;
-	const int			m_numMipmapLevels;
+    const tcu::IVec3 m_layerSize;
+    const ImageType m_type;
+    const int m_numLayers;
+    const int m_numSamples;
+    const int m_numMipmapLevels;
 };
 
-inline bool isCube (const Texture& texture)
+inline bool isCube(const Texture &texture)
 {
-	return texture.type() == IMAGE_TYPE_CUBE || texture.type() == IMAGE_TYPE_CUBE_ARRAY;
+    return texture.type() == IMAGE_TYPE_CUBE || texture.type() == IMAGE_TYPE_CUBE_ARRAY;
 }
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGETEXTURE_HPP

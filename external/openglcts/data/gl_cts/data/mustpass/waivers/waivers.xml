@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<waiver_list>
+
+	<!--/*     Copyright (C) 2020 The Khronos Group Inc
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+*/-->
+	<!--/*
+	Each <waiver> entry must contain vendor and url string attributes.
+	Vendor string can use wildcard *.
+	Url should be a full path to gitlab issue(s).
+	Waiver tag should contain one <description> child that describes issue.
+	Waiver tag should containing one <renderer_list> child.
+	Renderer list should have one or more <r> elements containing renderer names for which this waiver was created.
+	String in <r> tags can use wildcard *.
+	Waiver tag should contain one or more <t> elements containing test paths that should be waived.
+	String in <t> tags can use wildcard *.
+
+	<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="waiver_list">
+	<xs:complexType>
+		<xs:sequence>
+			<xs:element name="waiver" maxOccurs="unbounded">
+			<xs:complexType>
+				<xs:sequence>
+					<xs:element name="description" type="xs:string"/>
+					<xs:element name="renderer_list">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="r" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+						</xs:sequence>
+					</xs:complexType>
+					</xs:element>
+					<xs:element name="t" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+				</xs:sequence>
+				<xs:attribute name="vendor" type="xs:string" use="required"/>
+				<xs:attribute name="url" type="xs:string" use="required"/>
+			</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	</xs:element>
+	</xs:schema>
+*/-->
+
+	<waiver vendor="ATI Technologies Inc." url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/1141 , https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/1190">
+		<description></description>
+		<!--TODO: this waiver is not applied - please specify for which renderers it should be defined -->
+		<renderer_list>
+			<r>???</r>
+		</renderer_list>
+		<t>KHR-GL42.texture_view.view_classes</t>
+		<t>KHR-GL43.texture_view.view_classes</t>
+		<t>KHR-GL44.texture_view.view_classes</t>
+		<t>KHR-GL45.texture_view.view_classes</t>
+		<t>KHR-GL46.texture_view.view_classes</t>
+	</waiver>
+	<waiver vendor="Google*" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/2237">
+		<description>ANGLE is unable to capture individual array elements in transform feedback using VK_EXT_transform_feedback revision 1.</description>
+		<renderer_list>
+			<r>ANGLE (*Vulkan *</r>
+		</renderer_list>
+		<t>dEQP-GLES3.functional.transform_feedback.array_element.*</t>
+		<t>dEQP-GLES3.functional.transform_feedback.random.*</t>
+		<t>dEQP-GLES31.functional.program_interface_query.transform_feedback_varying.*_array_element</t>
+		<t>dEQP-GLES31.functional.program_interface_query.transform_feedback_varying.type.*.array.*</t>
+		<t>KHR-GLES31.core.program_interface_query.transform-feedback-types</t>
+	</waiver>
+	<waiver vendor="Samsung*" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/3255">
+		<description>ANGLE is unable to capture individual array elements in transform feedback using VK_EXT_transform_feedback revision 1.</description>
+		<renderer_list>
+			<r>ANGLE (*Vulkan *</r>
+		</renderer_list>
+		<t>dEQP-GLES3.functional.transform_feedback.array_element.*</t>
+		<t>dEQP-GLES3.functional.transform_feedback.random.*</t>
+		<t>dEQP-GLES31.functional.program_interface_query.transform_feedback_varying.*_array_element</t>
+		<t>dEQP-GLES31.functional.program_interface_query.transform_feedback_varying.type.*.array.*</t>
+		<t>KHR-GLES31.core.program_interface_query.transform-feedback-types</t>
+	</waiver>
+	<waiver vendor="Intel" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/2601">
+		<description>Testing of wide-line attribute interpolation is too strict</description>
+		<renderer_list>
+			<r>*</r>
+		</renderer_list>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.basic.line_loop_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.basic.line_strip_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.basic.lines_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.projected.line_loop_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.projected.line_strip_wide</t>
+		<t>dEQP-GLES2.functional.rasterization.interpolation.projected.lines_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.fbo.rbo_singlesample.interpolation.lines_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.fbo.texture_2d.interpolation.lines_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.basic.line_loop_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.basic.line_strip_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.basic.lines_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.line_loop_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.line_strip_wide</t>
+		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.lines_wide</t>
+	</waiver>
+
+</waiver_list>

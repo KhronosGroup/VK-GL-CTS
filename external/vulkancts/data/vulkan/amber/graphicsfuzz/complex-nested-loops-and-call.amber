@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+DEVICE_EXTENSION VK_KHR_shader_terminate_invocation
 
 # A test for a bug found by GraphicsFuzz.
 
@@ -110,13 +111,14 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 #     }
 #     _GLF_color = vec4(data[0], 1.0);
 # }
-SHADER fragment variant_fragment_shader SPIRV-ASM
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7
 ; Bound: 255
 ; Schema: 0
                OpCapability Shader
+               OpExtension "SPV_KHR_terminate_invocation"
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %79 %91
@@ -216,7 +218,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpSelectionMerge %190 None
                OpBranchConditional %189 %191 %190
         %191 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %190 = OpLabel
         %194 = OpIAdd %6 %240 %27
         %197 = OpFOrdLessThan %46 %135 %62

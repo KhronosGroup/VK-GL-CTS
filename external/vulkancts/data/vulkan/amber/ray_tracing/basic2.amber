@@ -1,0 +1,202 @@
+#!amber
+
+DEVICE_EXTENSION VK_KHR_acceleration_structure
+DEVICE_EXTENSION VK_KHR_ray_tracing_pipeline
+DEVICE_EXTENSION VK_KHR_buffer_device_address
+DEVICE_FEATURE   RayTracingPipelineFeaturesKHR.rayTracingPipeline
+DEVICE_FEATURE   AccelerationStructureFeaturesKHR.accelerationStructure
+DEVICE_FEATURE   BufferDeviceAddressFeatures.bufferDeviceAddress
+
+SHADER ray_generation raygen1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) rayPayloadEXT vec3 hitValue;
+  layout(set = 0, binding = 0) uniform accelerationStructureEXT topLevelAS;
+  void main()
+  {
+    traceRayEXT(topLevelAS, 0u, 0xFFu, 0, 0, 0, vec3(0.5, 0.5, 0.0), 0.0, vec3(0.0, 0.0, -1.0), 9.0, 0);
+  }
+END
+SHADER ray_generation raygen2 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) rayPayloadEXT vec3 hitValue;
+  layout(set = 0, binding = 0) uniform accelerationStructureEXT topLevelAS;
+  void main()
+  {
+    traceRayEXT(topLevelAS, 0u, 0xFFu, 0, 0, 0, vec3(0.5, 0.5, 0.0), 0.0, vec3(0.0, 0.0, -1.0), 9.0, 0);
+  }
+END
+
+SHADER miss miss1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) rayPayloadInEXT uvec4 hitValue;
+  void main()
+  {
+    hitValue = uvec4(1,0,0,1);
+  }
+END
+
+SHADER miss miss2 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) rayPayloadInEXT uvec4 hitValue;
+  void main()
+  {
+    hitValue = uvec4(1,0,0,1);
+  }
+END
+
+SHADER closest_hit closesthit1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  hitAttributeEXT vec3 attribs;
+  layout(location = 0) rayPayloadInEXT vec3 hitValue;
+  void main()
+  {
+  }
+END
+
+SHADER closest_hit closesthit2 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  hitAttributeEXT vec3 attribs;
+  layout(location = 0) rayPayloadInEXT vec3 hitValue;
+  void main()
+  {
+  }
+END
+
+SHADER any_hit anyhit1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  hitAttributeEXT vec3 attribs;
+  layout(location = 0) rayPayloadInEXT vec3 hitValue;
+  void main()
+  {
+  }
+END
+
+SHADER any_hit anyhit2 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  hitAttributeEXT vec3 attribs;
+  layout(location = 0) rayPayloadInEXT vec3 hitValue;
+  void main()
+  {
+  }
+END
+
+SHADER intersection intersection1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  hitAttributeEXT vec3 hitAttribute;
+  void main()
+  {
+    reportIntersectionEXT(0.95f, 0x7Eu);
+  }
+END
+
+SHADER intersection intersection2 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  hitAttributeEXT vec3 hitAttribute;
+  void main()
+  {
+    reportIntersectionEXT(0.95f, 0x7Eu);
+  }
+END
+
+SHADER callable call1 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) callableDataInEXT float dummy;
+  void main()
+  {
+  }
+END
+
+SHADER callable call2 GLSL
+  #version 460 core
+  #extension GL_EXT_ray_tracing : require
+  layout(location = 0) callableDataInEXT float dummy;
+  void main()
+  {
+  }
+END
+
+ACCELERATION_STRUCTURE BOTTOM_LEVEL triangles
+  GEOMETRY TRIANGLES
+    0.0 -0.75 1.0
+    -0.75 0.75 1.0
+    0.75 0.75 1.0
+  END
+  GEOMETRY TRIANGLES
+    0.0 -0.75 1.0
+    -0.75 0.75 1.0
+    0.75 0.75 1.0
+  END
+END
+
+ACCELERATION_STRUCTURE BOTTOM_LEVEL aabbs
+  GEOMETRY AABBS
+    -0.5 -0.75 -1.0   0.50 0.75 1.0
+    -0.33 -0.75 -1.0  0.33 0.75 1.0
+  END
+  GEOMETRY AABBS
+    -1.50 -1.75 -1.0  1.50 1.75 1.0
+    -2.33 -2.75 -2.0  2.33 2.75 2.0
+    -3.50 -3.75 -3.0  3.50 3.75 3.0
+  END
+END
+
+ACCELERATION_STRUCTURE TOP_LEVEL tlas1
+  BOTTOM_LEVEL_INSTANCE triangles
+  END
+  BOTTOM_LEVEL_INSTANCE triangles
+    INDEX 0
+    OFFSET 1
+    FLAGS TRIANGLE_FACING_CULL_DISABLE TRIANGLE_FLIP_FACING FORCE_OPAQUE FORCE_OPACITY_MICROMAP_2_STATE
+    TRANSFORM
+      1 0 0 0.5
+      0 1 0 0.5
+      0 0 1 0.3
+    END
+  END
+  BOTTOM_LEVEL_INSTANCE aabbs
+    INDEX 0
+    OFFSET 1
+    MASK 0x0F
+    FLAGS
+      FORCE_NO_OPAQUE
+      DISABLE_OPACITY_MICROMAPS
+      1
+    END
+  END
+END
+
+PIPELINE raytracing my_rtpipeline
+  BIND ACCELERATION_STRUCTURE tlas1 DESCRIPTOR_SET 0 BINDING 0
+  SHADER_GROUP g1 raygen1
+  SHADER_GROUP g2 miss1
+  SHADER_GROUP g3 anyhit1 closesthit1 intersection1
+  SHADER_GROUP g4 raygen2
+  SHADER_GROUP g5 miss2
+  SHADER_GROUP g6 anyhit2 closesthit2 intersection2
+  SHADER_GROUP g7 call1
+  SHADER_GROUP g8 call2
+  SHADER_BINDING_TABLE sbt1
+    g1
+  END
+  SHADER_BINDING_TABLE sbt2
+    g2
+    g5
+  END
+  SHADER_BINDING_TABLE sbt3
+    g3
+    g6
+  END
+END
+
+RUN my_rtpipeline RAYGEN sbt1 MISS sbt2 HIT sbt3 1920 1080 1

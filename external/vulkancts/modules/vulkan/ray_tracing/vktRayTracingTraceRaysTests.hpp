@@ -4,7 +4,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2020 The Khronos Group Inc.
+ * Copyright (c) 2022 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,11 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createTraceRaysTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTraceRaysTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createTraceRaysMaintenance1Tests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createTraceRays2Tests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGTRACERAYSTESTS_HPP

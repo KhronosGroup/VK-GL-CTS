@@ -25,15 +25,17 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace TransformFeedback
 {
 
-tcu::TestCaseGroup* createTransformFeedbackSimpleTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTransformFeedbackSimpleTests(tcu::TestContext &testCtx,
+                                                       vk::PipelineConstructionType constructionType);
 
-} // TransformFeedback
-} // vkt
+} // namespace TransformFeedback
+} // namespace vkt
 
 #endif // _VKTTRANSFORMFEEDBACKSIMPLETESTS_HPP

@@ -36,11 +36,11 @@ namespace glu
 
 enum ResetNotificationStrategy
 {
-	RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED = 0,		//!< Not specified, implementation-dependent
-	RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION,	//!< No reset notification (may not be supported)
-	RESET_NOTIFICATION_STRATEGY_LOSE_CONTEXT_ON_RESET,	//!< Lose context on reset (may not be supported)
+    RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED = 0,     //!< Not specified, implementation-dependent
+    RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION, //!< No reset notification (may not be supported)
+    RESET_NOTIFICATION_STRATEGY_LOSE_CONTEXT_ON_RESET, //!< Lose context on reset (may not be supported)
 
-	RESET_NOTIFICATION_STRATEGY_LAST
+    RESET_NOTIFICATION_STRATEGY_LAST
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -48,80 +48,94 @@ enum ResetNotificationStrategy
  *//*--------------------------------------------------------------------*/
 struct RenderConfig
 {
-	enum SurfaceType
-	{
-		SURFACETYPE_DONT_CARE = 0,
-		SURFACETYPE_WINDOW,				//!< Native window.
-		SURFACETYPE_OFFSCREEN_NATIVE,	//!< Native renderable offscreen buffer, such as pixmap or bitmap.
-		SURFACETYPE_OFFSCREEN_GENERIC,	//!< Generic offscreen buffer, such as EGL pbuffer.
+    enum SurfaceType
+    {
+        SURFACETYPE_DONT_CARE = 0,
+        SURFACETYPE_WINDOW,            //!< Native window.
+        SURFACETYPE_OFFSCREEN_NATIVE,  //!< Native renderable offscreen buffer, such as pixmap or bitmap.
+        SURFACETYPE_OFFSCREEN_GENERIC, //!< Generic offscreen buffer, such as EGL pbuffer.
 
-		SURFACETYPE_LAST
-	};
+        SURFACETYPE_LAST
+    };
 
-	enum Visibility
-	{
-		VISIBILITY_HIDDEN = 0,
-		VISIBILITY_VISIBLE,
-		VISIBILITY_FULLSCREEN,
+    enum Visibility
+    {
+        VISIBILITY_HIDDEN = 0,
+        VISIBILITY_VISIBLE,
+        VISIBILITY_FULLSCREEN,
 
-		VISIBILITY_LAST
-	};
+        VISIBILITY_LAST
+    };
 
-	enum
-	{
-		DONT_CARE = -1
-	};
+    enum ComponentType
+    {
+        COMPONENT_TYPE_DONT_CARE = 0,
+        COMPONENT_TYPE_FIXED,
+        COMPONENT_TYPE_FLOAT,
 
-	ContextType					type;
+        COMPONENT_TYPE_LAST
+    };
 
-	int							width;
-	int							height;
-	SurfaceType					surfaceType;
-	Visibility					windowVisibility;
+    enum
+    {
+        DONT_CARE = -1
+    };
 
-	int							id;
+    ContextType type;
 
-	int							redBits;
-	int							greenBits;
-	int							blueBits;
-	int							alphaBits;
-	int							depthBits;
-	int							stencilBits;
-	int							numSamples;
+    int width;
+    int height;
+    SurfaceType surfaceType;
+    Visibility windowVisibility;
+    ComponentType componentType;
 
-	ResetNotificationStrategy	resetNotificationStrategy;
+    int id;
 
-	RenderConfig (ContextType type_ = ContextType())
-		: type						(type_)
-		, width						(DONT_CARE)
-		, height					(DONT_CARE)
-		, surfaceType				(SURFACETYPE_DONT_CARE)
-		, windowVisibility			(VISIBILITY_VISIBLE)
-		, id						(DONT_CARE)
-		, redBits					(DONT_CARE)
-		, greenBits					(DONT_CARE)
-		, blueBits					(DONT_CARE)
-		, alphaBits					(DONT_CARE)
-		, depthBits					(DONT_CARE)
-		, stencilBits				(DONT_CARE)
-		, numSamples				(DONT_CARE)
-		, resetNotificationStrategy	(RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
-	{
-	}
+    int redBits;
+    int greenBits;
+    int blueBits;
+    int alphaBits;
+    int depthBits;
+    int stencilBits;
+    int numSamples;
+
+    ResetNotificationStrategy resetNotificationStrategy;
+
+    RenderConfig(ContextType type_ = ContextType())
+        : type(type_)
+        , width(DONT_CARE)
+        , height(DONT_CARE)
+        , surfaceType(SURFACETYPE_DONT_CARE)
+        , windowVisibility(VISIBILITY_VISIBLE)
+        , componentType(COMPONENT_TYPE_DONT_CARE)
+        , id(DONT_CARE)
+        , redBits(DONT_CARE)
+        , greenBits(DONT_CARE)
+        , blueBits(DONT_CARE)
+        , alphaBits(DONT_CARE)
+        , depthBits(DONT_CARE)
+        , stencilBits(DONT_CARE)
+        , numSamples(DONT_CARE)
+        , resetNotificationStrategy(RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
+    {
+    }
 } DE_WARN_UNUSED_TYPE;
 
 // Utilities
 
-void						parseRenderConfig		(RenderConfig* config, const tcu::CommandLine& cmdLine);
-RenderConfig::Visibility	parseWindowVisibility	(const tcu::CommandLine& cmdLine);
+void parseRenderConfig(RenderConfig *config, const tcu::CommandLine &cmdLine);
+RenderConfig::Visibility parseWindowVisibility(const tcu::CommandLine &cmdLine);
 
-template<typename T>
-T getValueOrDefault (const RenderConfig& config, const T RenderConfig::*field, T defaultValue)
+template <typename T>
+T getValueOrDefault(const RenderConfig &config, const T RenderConfig::*field, T defaultValue)
 {
-	T value = config.*field;
-	return value == (T)RenderConfig::DONT_CARE ? defaultValue : value;
+    T value = config.*field;
+    return value == (T)RenderConfig::DONT_CARE ? defaultValue : value;
 }
 
-} // glu
+RenderConfig::ComponentType fromEGLComponentType(int eglComponentType);
+int toEGLComponentType(RenderConfig::ComponentType gluComponentType);
+
+} // namespace glu
 
 #endif // _GLURENDERCONFIG_HPP

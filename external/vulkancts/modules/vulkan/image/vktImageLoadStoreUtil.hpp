@@ -37,44 +37,48 @@ namespace vkt
 namespace image
 {
 
-typedef de::SharedPtr<vk::Unique<vk::VkDescriptorSet> >	SharedVkDescriptorSet;
-typedef de::SharedPtr<vk::Unique<vk::VkImageView> >		SharedVkImageView;
+typedef de::SharedPtr<vk::Unique<vk::VkDescriptorSet>> SharedVkDescriptorSet;
+typedef de::SharedPtr<vk::Unique<vk::VkImageView>> SharedVkImageView;
 
-template<typename T>
-inline de::SharedPtr<vk::Unique<T> > makeVkSharedPtr (vk::Move<T> vkMove)
+template <typename T>
+inline de::SharedPtr<vk::Unique<T>> makeVkSharedPtr(vk::Move<T> vkMove)
 {
-	return de::SharedPtr<vk::Unique<T> >(new vk::Unique<T>(vkMove));
+    return de::SharedPtr<vk::Unique<T>>(new vk::Unique<T>(vkMove));
 }
 
-inline float computeStoreColorBias (const vk::VkFormat format)
+inline float computeStoreColorBias(const vk::VkFormat format)
 {
-	return isSnormFormat(format) ? -1.0f : 0.0f;
+    return isSnormFormat(format) ? -1.0f : 0.0f;
 }
 
-inline bool isIntegerFormat (const vk::VkFormat format)
+inline bool isIntegerFormat(const vk::VkFormat format)
 {
-	return isIntFormat(format) || isUintFormat(format);
+    return isIntFormat(format) || isUintFormat(format);
 }
 
-inline bool isSignedFormat (const vk::VkFormat format)
+inline bool isSignedFormat(const vk::VkFormat format)
 {
-	return isIntFormat(format) || isSnormFormat(format) || isSfloatFormat(format);
+    return isIntFormat(format) || isSnormFormat(format) || isSfloatFormat(format);
 }
 
-inline bool colorScaleAndBiasAreValid (const vk::VkFormat format, const float colorScale, const float colorBias)
+inline bool colorScaleAndBiasAreValid(const vk::VkFormat format, const float colorScale, const float colorBias)
 {
-	// Only normalized (fixed-point) formats may have scale/bias
-	const bool integerOrFloatFormat = isIntFormat(format) || isUintFormat(format) || isFloatFormat(format);
-	return !integerOrFloatFormat || (colorScale == 1.0f && colorBias == 0.0f);
+    // Only normalized (fixed-point) formats may have scale/bias
+    const bool integerOrFloatFormat = isIntFormat(format) || isUintFormat(format) || isFloatFormat(format);
+    return !integerOrFloatFormat || (colorScale == 1.0f && colorBias == 0.0f);
 }
 
-float					computeStoreColorScale				(const vk::VkFormat format, const tcu::IVec3 imageSize);
-ImageType				getImageTypeForSingleLayer			(const ImageType imageType);
-vk::VkImageCreateInfo	makeImageCreateInfo					(const Texture& texture, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const vk::VkImageCreateFlags flags);
-vk::VkDeviceSize		getOptimalUniformBufferChunkSize	(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, vk::VkDeviceSize minimumRequiredChunkSizeBytes);
-bool					isRepresentableIntegerValue			(const tcu::Vector<deInt64, 4> value, tcu::TextureFormat format);
+float computeStoreColorScale(const vk::VkFormat format, const tcu::IVec3 imageSize);
+ImageType getImageTypeForSingleLayer(const ImageType imageType);
+vk::VkImageCreateInfo makeImageCreateInfo(const Texture &texture, const vk::VkFormat format,
+                                          const vk::VkImageUsageFlags usage, const vk::VkImageCreateFlags flags,
+                                          const vk::VkImageTiling tiling = vk::VK_IMAGE_TILING_OPTIMAL);
+vk::VkDeviceSize getOptimalUniformBufferChunkSize(const vk::InstanceInterface &vki,
+                                                  const vk::VkPhysicalDevice physDevice,
+                                                  vk::VkDeviceSize minimumRequiredChunkSizeBytes);
+bool isRepresentableIntegerValue(const tcu::Vector<int64_t, 4> value, tcu::TextureFormat format);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGELOADSTOREUTIL_HPP

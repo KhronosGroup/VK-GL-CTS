@@ -32,83 +32,88 @@
 namespace tcu
 {
 class TestLog;
-} // tcu
+} // namespace tcu
 
 namespace vk
 {
 
 struct SpirVAsmBuildOptions
 {
-	deUint32		vulkanVersion;
-	SpirvVersion	targetVersion;
-	bool			supports_VK_KHR_spirv_1_4;
+    uint32_t vulkanVersion;
+    SpirvVersion targetVersion;
+    bool supports_VK_KHR_spirv_1_4;
+    bool supports_VK_KHR_maintenance4;
 
-	SpirVAsmBuildOptions (deUint32 vulkanVersion_, SpirvVersion targetVersion_, bool allowSpirv14 = false)
-		: vulkanVersion				(vulkanVersion_)
-		, targetVersion				(targetVersion_)
-		, supports_VK_KHR_spirv_1_4	(allowSpirv14)
-	{}
+    SpirVAsmBuildOptions(uint32_t vulkanVersion_, SpirvVersion targetVersion_, bool allowSpirv14 = false,
+                         bool allowMaintenance4 = false)
+        : vulkanVersion(vulkanVersion_)
+        , targetVersion(targetVersion_)
+        , supports_VK_KHR_spirv_1_4(allowSpirv14)
+        , supports_VK_KHR_maintenance4(allowMaintenance4)
+    {
+    }
 
-	SpirVAsmBuildOptions (void)
-		: vulkanVersion				(VK_MAKE_VERSION(1, 0, 0))
-		, targetVersion				(SPIRV_VERSION_1_0)
-		, supports_VK_KHR_spirv_1_4	(false)
-	{}
+    SpirVAsmBuildOptions(void)
+        : vulkanVersion(VK_MAKE_API_VERSION(0, 1, 0, 0))
+        , targetVersion(SPIRV_VERSION_1_0)
+        , supports_VK_KHR_spirv_1_4(false)
+        , supports_VK_KHR_maintenance4(false)
+    {
+    }
 
-	SpirvValidatorOptions getSpirvValidatorOptions() const
-	{
-		SpirvValidatorOptions result(vulkanVersion);
-		result.supports_VK_KHR_spirv_1_4 = supports_VK_KHR_spirv_1_4;
-		return result;
-	}
+    SpirvValidatorOptions getSpirvValidatorOptions() const
+    {
+        SpirvValidatorOptions result(vulkanVersion);
+        result.supports_VK_KHR_spirv_1_4 = supports_VK_KHR_spirv_1_4;
+        if (supports_VK_KHR_maintenance4)
+            result.flags = result.flags | SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_ALLOW_LOCALSIZEID;
+        return result;
+    }
 };
 
 struct SpirVAsmSource
 {
-	SpirVAsmSource (void)
-	{
-	}
+    SpirVAsmSource(void)
+    {
+    }
 
-	SpirVAsmSource (const std::string& source_)
-		: source(source_)
-	{
-	}
+    SpirVAsmSource(const std::string &source_) : source(source_)
+    {
+    }
 
-	SpirVAsmSource& operator<< (const SpirVAsmBuildOptions& buildOptions_)
-	{
-		buildOptions = buildOptions_;
-		return *this;
-	};
+    SpirVAsmSource &operator<<(const SpirVAsmBuildOptions &buildOptions_)
+    {
+        buildOptions = buildOptions_;
+        return *this;
+    }
 
-	SpirVAsmBuildOptions	buildOptions;
-	std::string				source;
+    SpirVAsmBuildOptions buildOptions;
+    std::string source;
 };
 
 struct SpirVProgramInfo
 {
-	SpirVProgramInfo (void)
-		: compileTimeUs	(0)
-		, compileOk		(false)
-	{
-	}
+    SpirVProgramInfo(void) : compileTimeUs(0), compileOk(false)
+    {
+    }
 
-	std::string		source;
-	std::string		infoLog;
-	deUint64		compileTimeUs;
-	bool			compileOk;
+    std::string source;
+    std::string infoLog;
+    uint64_t compileTimeUs;
+    bool compileOk;
 };
 
-tcu::TestLog&	operator<<		(tcu::TestLog& log, const SpirVProgramInfo& shaderInfo);
-tcu::TestLog&	operator<<		(tcu::TestLog& log, const SpirVAsmSource& program);
+tcu::TestLog &operator<<(tcu::TestLog &log, const SpirVProgramInfo &shaderInfo);
+tcu::TestLog &operator<<(tcu::TestLog &log, const SpirVAsmSource &program);
 
 // Helper for constructing SpirVAsmSource
-template<typename T>
-SpirVAsmSource& operator<< (SpirVAsmSource& src, const T& val)
+template <typename T>
+SpirVAsmSource &operator<<(SpirVAsmSource &src, const T &val)
 {
-	src.source += de::toString(val);
-	return src;
+    src.source += de::toString(val);
+    return src;
 }
 
-}
+} // namespace vk
 
 #endif // _VKSPIRVPROGRAM_HPP

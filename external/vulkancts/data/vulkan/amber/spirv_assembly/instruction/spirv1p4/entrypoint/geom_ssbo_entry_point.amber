@@ -40,13 +40,11 @@ geometryShader
                OpMemberName %gl_PerVertex 0 "gl_Position"
                OpMemberName %gl_PerVertex 1 "gl_PointSize"
                OpMemberName %gl_PerVertex 2 "gl_ClipDistance"
-               OpMemberName %gl_PerVertex 3 "gl_CullDistance"
                OpName %gl_in "gl_in"
                OpName %gl_PerVertex_0 "gl_PerVertex"
                OpMemberName %gl_PerVertex_0 0 "gl_Position"
                OpMemberName %gl_PerVertex_0 1 "gl_PointSize"
                OpMemberName %gl_PerVertex_0 2 "gl_ClipDistance"
-               OpMemberName %gl_PerVertex_0 3 "gl_CullDistance"
                OpName %_ ""
                OpName %input_buffer "input_buffer"
                OpMemberName %input_buffer 0 "factor"
@@ -54,12 +52,10 @@ geometryShader
                OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
                OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
                OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
-               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance
                OpDecorate %gl_PerVertex Block
                OpMemberDecorate %gl_PerVertex_0 0 BuiltIn Position
                OpMemberDecorate %gl_PerVertex_0 1 BuiltIn PointSize
                OpMemberDecorate %gl_PerVertex_0 2 BuiltIn ClipDistance
-               OpMemberDecorate %gl_PerVertex_0 3 BuiltIn CullDistance
                OpDecorate %gl_PerVertex_0 Block
                OpMemberDecorate %input_buffer 0 Offset 0
                OpDecorate %input_buffer Block
@@ -79,13 +75,13 @@ geometryShader
        %uint = OpTypeInt 32 0
      %uint_1 = OpConstant %uint 1
 %_arr_float_uint_1 = OpTypeArray %float %uint_1
-%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1
      %uint_3 = OpConstant %uint 3
 %_arr_gl_PerVertex_uint_3 = OpTypeArray %gl_PerVertex %uint_3
 %_ptr_Input__arr_gl_PerVertex_uint_3 = OpTypePointer Input %_arr_gl_PerVertex_uint_3
       %gl_in = OpVariable %_ptr_Input__arr_gl_PerVertex_uint_3 Input
 %_ptr_Input_v4float = OpTypePointer Input %v4float
-%gl_PerVertex_0 = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+%gl_PerVertex_0 = OpTypeStruct %v4float %float %_arr_float_uint_1
 %_ptr_Output_gl_PerVertex_0 = OpTypePointer Output %gl_PerVertex_0
           %_ = OpVariable %_ptr_Output_gl_PerVertex_0 Output
 %input_buffer = OpTypeStruct %float

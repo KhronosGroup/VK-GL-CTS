@@ -1,0 +1,707 @@
+#!amber
+
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a coverage-gap found by the GraphicsFuzz project.
+
+# Short description: A fragment shader that covers specific LLVM code paths
+
+# The test passes because the shader always writes red.
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 320 es
+# #define _int_1 _GLF_uniform_int_values[0]
+# #define _int_2 _GLF_uniform_int_values[1]
+# #define _int_0 _GLF_uniform_int_values[2]
+#
+# precision highp float;
+# precision highp int;
+#
+# // Contents of _GLF_uniform_int_values: [1, 2, 0]
+# layout(set = 0, binding = 0) uniform buf0
+# {
+#     int _GLF_uniform_int_values[3];
+# };
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void func()
+# {
+#     int a = -86465;
+#
+#     for(int i = 0; i < 3; i++)
+#     {
+#         // Always clamps the index to one and selects value two.
+#         if(int[256](_int_1, _int_2, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1, _int_1)[clamp(a, 1, 255)] == _int_2)
+#         {
+#             _GLF_color = vec4(1, 0, 0, 1);
+#         }
+#
+#         a++;
+#     }
+# }
+#
+# void main()
+# {
+#     _GLF_color = vec4(_int_0);
+#     func();
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 10
+; Bound: 575
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %561
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %6 "func("
+               OpName %10 "a"
+               OpName %12 "i"
+               OpName %26 "buf0"
+               OpMemberName %26 0 "_GLF_uniform_int_values"
+               OpName %28 ""
+               OpName %550 "indexable"
+               OpName %561 "_GLF_color"
+               OpDecorate %25 ArrayStride 16
+               OpMemberDecorate %26 0 Offset 0
+               OpDecorate %26 Block
+               OpDecorate %28 DescriptorSet 0
+               OpDecorate %28 Binding 0
+               OpDecorate %561 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %8 -86465
+         %13 = OpConstant %8 0
+         %20 = OpConstant %8 3
+         %21 = OpTypeBool
+         %23 = OpTypeInt 32 0
+         %24 = OpConstant %23 3
+         %25 = OpTypeArray %8 %24
+         %26 = OpTypeStruct %25
+         %27 = OpTypePointer Uniform %26
+         %28 = OpVariable %27 Uniform
+         %29 = OpTypePointer Uniform %8
+         %32 = OpConstant %8 1
+        %543 = OpConstant %23 256
+        %544 = OpTypeArray %8 %543
+        %547 = OpConstant %8 255
+        %549 = OpTypePointer Function %544
+        %558 = OpTypeFloat 32
+        %559 = OpTypeVector %558 4
+        %560 = OpTypePointer Output %559
+        %561 = OpVariable %560 Output
+        %562 = OpConstant %558 1
+        %563 = OpConstant %558 0
+        %564 = OpConstantComposite %559 %562 %563 %563 %562
+        %569 = OpConstant %8 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+        %570 = OpAccessChain %29 %28 %13 %569
+        %571 = OpLoad %8 %570
+        %572 = OpConvertSToF %558 %571
+        %573 = OpCompositeConstruct %559 %572 %572 %572 %572
+               OpStore %561 %573
+        %574 = OpFunctionCall %2 %6
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+         %10 = OpVariable %9 Function
+         %12 = OpVariable %9 Function
+        %550 = OpVariable %549 Function
+               OpStore %10 %11
+               OpStore %12 %13
+               OpBranch %14
+         %14 = OpLabel
+               OpLoopMerge %16 %17 None
+               OpBranch %18
+         %18 = OpLabel
+         %19 = OpLoad %8 %12
+         %22 = OpSLessThan %21 %19 %20
+               OpBranchConditional %22 %15 %16
+         %15 = OpLabel
+         %30 = OpAccessChain %29 %28 %13 %13
+         %31 = OpLoad %8 %30
+         %33 = OpAccessChain %29 %28 %13 %32
+         %34 = OpLoad %8 %33
+         %35 = OpAccessChain %29 %28 %13 %13
+         %36 = OpLoad %8 %35
+         %37 = OpAccessChain %29 %28 %13 %13
+         %38 = OpLoad %8 %37
+         %39 = OpAccessChain %29 %28 %13 %13
+         %40 = OpLoad %8 %39
+         %41 = OpAccessChain %29 %28 %13 %13
+         %42 = OpLoad %8 %41
+         %43 = OpAccessChain %29 %28 %13 %13
+         %44 = OpLoad %8 %43
+         %45 = OpAccessChain %29 %28 %13 %13
+         %46 = OpLoad %8 %45
+         %47 = OpAccessChain %29 %28 %13 %13
+         %48 = OpLoad %8 %47
+         %49 = OpAccessChain %29 %28 %13 %13
+         %50 = OpLoad %8 %49
+         %51 = OpAccessChain %29 %28 %13 %13
+         %52 = OpLoad %8 %51
+         %53 = OpAccessChain %29 %28 %13 %13
+         %54 = OpLoad %8 %53
+         %55 = OpAccessChain %29 %28 %13 %13
+         %56 = OpLoad %8 %55
+         %57 = OpAccessChain %29 %28 %13 %13
+         %58 = OpLoad %8 %57
+         %59 = OpAccessChain %29 %28 %13 %13
+         %60 = OpLoad %8 %59
+         %61 = OpAccessChain %29 %28 %13 %13
+         %62 = OpLoad %8 %61
+         %63 = OpAccessChain %29 %28 %13 %13
+         %64 = OpLoad %8 %63
+         %65 = OpAccessChain %29 %28 %13 %13
+         %66 = OpLoad %8 %65
+         %67 = OpAccessChain %29 %28 %13 %13
+         %68 = OpLoad %8 %67
+         %69 = OpAccessChain %29 %28 %13 %13
+         %70 = OpLoad %8 %69
+         %71 = OpAccessChain %29 %28 %13 %13
+         %72 = OpLoad %8 %71
+         %73 = OpAccessChain %29 %28 %13 %13
+         %74 = OpLoad %8 %73
+         %75 = OpAccessChain %29 %28 %13 %13
+         %76 = OpLoad %8 %75
+         %77 = OpAccessChain %29 %28 %13 %13
+         %78 = OpLoad %8 %77
+         %79 = OpAccessChain %29 %28 %13 %13
+         %80 = OpLoad %8 %79
+         %81 = OpAccessChain %29 %28 %13 %13
+         %82 = OpLoad %8 %81
+         %83 = OpAccessChain %29 %28 %13 %13
+         %84 = OpLoad %8 %83
+         %85 = OpAccessChain %29 %28 %13 %13
+         %86 = OpLoad %8 %85
+         %87 = OpAccessChain %29 %28 %13 %13
+         %88 = OpLoad %8 %87
+         %89 = OpAccessChain %29 %28 %13 %13
+         %90 = OpLoad %8 %89
+         %91 = OpAccessChain %29 %28 %13 %13
+         %92 = OpLoad %8 %91
+         %93 = OpAccessChain %29 %28 %13 %13
+         %94 = OpLoad %8 %93
+         %95 = OpAccessChain %29 %28 %13 %13
+         %96 = OpLoad %8 %95
+         %97 = OpAccessChain %29 %28 %13 %13
+         %98 = OpLoad %8 %97
+         %99 = OpAccessChain %29 %28 %13 %13
+        %100 = OpLoad %8 %99
+        %101 = OpAccessChain %29 %28 %13 %13
+        %102 = OpLoad %8 %101
+        %103 = OpAccessChain %29 %28 %13 %13
+        %104 = OpLoad %8 %103
+        %105 = OpAccessChain %29 %28 %13 %13
+        %106 = OpLoad %8 %105
+        %107 = OpAccessChain %29 %28 %13 %13
+        %108 = OpLoad %8 %107
+        %109 = OpAccessChain %29 %28 %13 %13
+        %110 = OpLoad %8 %109
+        %111 = OpAccessChain %29 %28 %13 %13
+        %112 = OpLoad %8 %111
+        %113 = OpAccessChain %29 %28 %13 %13
+        %114 = OpLoad %8 %113
+        %115 = OpAccessChain %29 %28 %13 %13
+        %116 = OpLoad %8 %115
+        %117 = OpAccessChain %29 %28 %13 %13
+        %118 = OpLoad %8 %117
+        %119 = OpAccessChain %29 %28 %13 %13
+        %120 = OpLoad %8 %119
+        %121 = OpAccessChain %29 %28 %13 %13
+        %122 = OpLoad %8 %121
+        %123 = OpAccessChain %29 %28 %13 %13
+        %124 = OpLoad %8 %123
+        %125 = OpAccessChain %29 %28 %13 %13
+        %126 = OpLoad %8 %125
+        %127 = OpAccessChain %29 %28 %13 %13
+        %128 = OpLoad %8 %127
+        %129 = OpAccessChain %29 %28 %13 %13
+        %130 = OpLoad %8 %129
+        %131 = OpAccessChain %29 %28 %13 %13
+        %132 = OpLoad %8 %131
+        %133 = OpAccessChain %29 %28 %13 %13
+        %134 = OpLoad %8 %133
+        %135 = OpAccessChain %29 %28 %13 %13
+        %136 = OpLoad %8 %135
+        %137 = OpAccessChain %29 %28 %13 %13
+        %138 = OpLoad %8 %137
+        %139 = OpAccessChain %29 %28 %13 %13
+        %140 = OpLoad %8 %139
+        %141 = OpAccessChain %29 %28 %13 %13
+        %142 = OpLoad %8 %141
+        %143 = OpAccessChain %29 %28 %13 %13
+        %144 = OpLoad %8 %143
+        %145 = OpAccessChain %29 %28 %13 %13
+        %146 = OpLoad %8 %145
+        %147 = OpAccessChain %29 %28 %13 %13
+        %148 = OpLoad %8 %147
+        %149 = OpAccessChain %29 %28 %13 %13
+        %150 = OpLoad %8 %149
+        %151 = OpAccessChain %29 %28 %13 %13
+        %152 = OpLoad %8 %151
+        %153 = OpAccessChain %29 %28 %13 %13
+        %154 = OpLoad %8 %153
+        %155 = OpAccessChain %29 %28 %13 %13
+        %156 = OpLoad %8 %155
+        %157 = OpAccessChain %29 %28 %13 %13
+        %158 = OpLoad %8 %157
+        %159 = OpAccessChain %29 %28 %13 %13
+        %160 = OpLoad %8 %159
+        %161 = OpAccessChain %29 %28 %13 %13
+        %162 = OpLoad %8 %161
+        %163 = OpAccessChain %29 %28 %13 %13
+        %164 = OpLoad %8 %163
+        %165 = OpAccessChain %29 %28 %13 %13
+        %166 = OpLoad %8 %165
+        %167 = OpAccessChain %29 %28 %13 %13
+        %168 = OpLoad %8 %167
+        %169 = OpAccessChain %29 %28 %13 %13
+        %170 = OpLoad %8 %169
+        %171 = OpAccessChain %29 %28 %13 %13
+        %172 = OpLoad %8 %171
+        %173 = OpAccessChain %29 %28 %13 %13
+        %174 = OpLoad %8 %173
+        %175 = OpAccessChain %29 %28 %13 %13
+        %176 = OpLoad %8 %175
+        %177 = OpAccessChain %29 %28 %13 %13
+        %178 = OpLoad %8 %177
+        %179 = OpAccessChain %29 %28 %13 %13
+        %180 = OpLoad %8 %179
+        %181 = OpAccessChain %29 %28 %13 %13
+        %182 = OpLoad %8 %181
+        %183 = OpAccessChain %29 %28 %13 %13
+        %184 = OpLoad %8 %183
+        %185 = OpAccessChain %29 %28 %13 %13
+        %186 = OpLoad %8 %185
+        %187 = OpAccessChain %29 %28 %13 %13
+        %188 = OpLoad %8 %187
+        %189 = OpAccessChain %29 %28 %13 %13
+        %190 = OpLoad %8 %189
+        %191 = OpAccessChain %29 %28 %13 %13
+        %192 = OpLoad %8 %191
+        %193 = OpAccessChain %29 %28 %13 %13
+        %194 = OpLoad %8 %193
+        %195 = OpAccessChain %29 %28 %13 %13
+        %196 = OpLoad %8 %195
+        %197 = OpAccessChain %29 %28 %13 %13
+        %198 = OpLoad %8 %197
+        %199 = OpAccessChain %29 %28 %13 %13
+        %200 = OpLoad %8 %199
+        %201 = OpAccessChain %29 %28 %13 %13
+        %202 = OpLoad %8 %201
+        %203 = OpAccessChain %29 %28 %13 %13
+        %204 = OpLoad %8 %203
+        %205 = OpAccessChain %29 %28 %13 %13
+        %206 = OpLoad %8 %205
+        %207 = OpAccessChain %29 %28 %13 %13
+        %208 = OpLoad %8 %207
+        %209 = OpAccessChain %29 %28 %13 %13
+        %210 = OpLoad %8 %209
+        %211 = OpAccessChain %29 %28 %13 %13
+        %212 = OpLoad %8 %211
+        %213 = OpAccessChain %29 %28 %13 %13
+        %214 = OpLoad %8 %213
+        %215 = OpAccessChain %29 %28 %13 %13
+        %216 = OpLoad %8 %215
+        %217 = OpAccessChain %29 %28 %13 %13
+        %218 = OpLoad %8 %217
+        %219 = OpAccessChain %29 %28 %13 %13
+        %220 = OpLoad %8 %219
+        %221 = OpAccessChain %29 %28 %13 %13
+        %222 = OpLoad %8 %221
+        %223 = OpAccessChain %29 %28 %13 %13
+        %224 = OpLoad %8 %223
+        %225 = OpAccessChain %29 %28 %13 %13
+        %226 = OpLoad %8 %225
+        %227 = OpAccessChain %29 %28 %13 %13
+        %228 = OpLoad %8 %227
+        %229 = OpAccessChain %29 %28 %13 %13
+        %230 = OpLoad %8 %229
+        %231 = OpAccessChain %29 %28 %13 %13
+        %232 = OpLoad %8 %231
+        %233 = OpAccessChain %29 %28 %13 %13
+        %234 = OpLoad %8 %233
+        %235 = OpAccessChain %29 %28 %13 %13
+        %236 = OpLoad %8 %235
+        %237 = OpAccessChain %29 %28 %13 %13
+        %238 = OpLoad %8 %237
+        %239 = OpAccessChain %29 %28 %13 %13
+        %240 = OpLoad %8 %239
+        %241 = OpAccessChain %29 %28 %13 %13
+        %242 = OpLoad %8 %241
+        %243 = OpAccessChain %29 %28 %13 %13
+        %244 = OpLoad %8 %243
+        %245 = OpAccessChain %29 %28 %13 %13
+        %246 = OpLoad %8 %245
+        %247 = OpAccessChain %29 %28 %13 %13
+        %248 = OpLoad %8 %247
+        %249 = OpAccessChain %29 %28 %13 %13
+        %250 = OpLoad %8 %249
+        %251 = OpAccessChain %29 %28 %13 %13
+        %252 = OpLoad %8 %251
+        %253 = OpAccessChain %29 %28 %13 %13
+        %254 = OpLoad %8 %253
+        %255 = OpAccessChain %29 %28 %13 %13
+        %256 = OpLoad %8 %255
+        %257 = OpAccessChain %29 %28 %13 %13
+        %258 = OpLoad %8 %257
+        %259 = OpAccessChain %29 %28 %13 %13
+        %260 = OpLoad %8 %259
+        %261 = OpAccessChain %29 %28 %13 %13
+        %262 = OpLoad %8 %261
+        %263 = OpAccessChain %29 %28 %13 %13
+        %264 = OpLoad %8 %263
+        %265 = OpAccessChain %29 %28 %13 %13
+        %266 = OpLoad %8 %265
+        %267 = OpAccessChain %29 %28 %13 %13
+        %268 = OpLoad %8 %267
+        %269 = OpAccessChain %29 %28 %13 %13
+        %270 = OpLoad %8 %269
+        %271 = OpAccessChain %29 %28 %13 %13
+        %272 = OpLoad %8 %271
+        %273 = OpAccessChain %29 %28 %13 %13
+        %274 = OpLoad %8 %273
+        %275 = OpAccessChain %29 %28 %13 %13
+        %276 = OpLoad %8 %275
+        %277 = OpAccessChain %29 %28 %13 %13
+        %278 = OpLoad %8 %277
+        %279 = OpAccessChain %29 %28 %13 %13
+        %280 = OpLoad %8 %279
+        %281 = OpAccessChain %29 %28 %13 %13
+        %282 = OpLoad %8 %281
+        %283 = OpAccessChain %29 %28 %13 %13
+        %284 = OpLoad %8 %283
+        %285 = OpAccessChain %29 %28 %13 %13
+        %286 = OpLoad %8 %285
+        %287 = OpAccessChain %29 %28 %13 %13
+        %288 = OpLoad %8 %287
+        %289 = OpAccessChain %29 %28 %13 %13
+        %290 = OpLoad %8 %289
+        %291 = OpAccessChain %29 %28 %13 %13
+        %292 = OpLoad %8 %291
+        %293 = OpAccessChain %29 %28 %13 %13
+        %294 = OpLoad %8 %293
+        %295 = OpAccessChain %29 %28 %13 %13
+        %296 = OpLoad %8 %295
+        %297 = OpAccessChain %29 %28 %13 %13
+        %298 = OpLoad %8 %297
+        %299 = OpAccessChain %29 %28 %13 %13
+        %300 = OpLoad %8 %299
+        %301 = OpAccessChain %29 %28 %13 %13
+        %302 = OpLoad %8 %301
+        %303 = OpAccessChain %29 %28 %13 %13
+        %304 = OpLoad %8 %303
+        %305 = OpAccessChain %29 %28 %13 %13
+        %306 = OpLoad %8 %305
+        %307 = OpAccessChain %29 %28 %13 %13
+        %308 = OpLoad %8 %307
+        %309 = OpAccessChain %29 %28 %13 %13
+        %310 = OpLoad %8 %309
+        %311 = OpAccessChain %29 %28 %13 %13
+        %312 = OpLoad %8 %311
+        %313 = OpAccessChain %29 %28 %13 %13
+        %314 = OpLoad %8 %313
+        %315 = OpAccessChain %29 %28 %13 %13
+        %316 = OpLoad %8 %315
+        %317 = OpAccessChain %29 %28 %13 %13
+        %318 = OpLoad %8 %317
+        %319 = OpAccessChain %29 %28 %13 %13
+        %320 = OpLoad %8 %319
+        %321 = OpAccessChain %29 %28 %13 %13
+        %322 = OpLoad %8 %321
+        %323 = OpAccessChain %29 %28 %13 %13
+        %324 = OpLoad %8 %323
+        %325 = OpAccessChain %29 %28 %13 %13
+        %326 = OpLoad %8 %325
+        %327 = OpAccessChain %29 %28 %13 %13
+        %328 = OpLoad %8 %327
+        %329 = OpAccessChain %29 %28 %13 %13
+        %330 = OpLoad %8 %329
+        %331 = OpAccessChain %29 %28 %13 %13
+        %332 = OpLoad %8 %331
+        %333 = OpAccessChain %29 %28 %13 %13
+        %334 = OpLoad %8 %333
+        %335 = OpAccessChain %29 %28 %13 %13
+        %336 = OpLoad %8 %335
+        %337 = OpAccessChain %29 %28 %13 %13
+        %338 = OpLoad %8 %337
+        %339 = OpAccessChain %29 %28 %13 %13
+        %340 = OpLoad %8 %339
+        %341 = OpAccessChain %29 %28 %13 %13
+        %342 = OpLoad %8 %341
+        %343 = OpAccessChain %29 %28 %13 %13
+        %344 = OpLoad %8 %343
+        %345 = OpAccessChain %29 %28 %13 %13
+        %346 = OpLoad %8 %345
+        %347 = OpAccessChain %29 %28 %13 %13
+        %348 = OpLoad %8 %347
+        %349 = OpAccessChain %29 %28 %13 %13
+        %350 = OpLoad %8 %349
+        %351 = OpAccessChain %29 %28 %13 %13
+        %352 = OpLoad %8 %351
+        %353 = OpAccessChain %29 %28 %13 %13
+        %354 = OpLoad %8 %353
+        %355 = OpAccessChain %29 %28 %13 %13
+        %356 = OpLoad %8 %355
+        %357 = OpAccessChain %29 %28 %13 %13
+        %358 = OpLoad %8 %357
+        %359 = OpAccessChain %29 %28 %13 %13
+        %360 = OpLoad %8 %359
+        %361 = OpAccessChain %29 %28 %13 %13
+        %362 = OpLoad %8 %361
+        %363 = OpAccessChain %29 %28 %13 %13
+        %364 = OpLoad %8 %363
+        %365 = OpAccessChain %29 %28 %13 %13
+        %366 = OpLoad %8 %365
+        %367 = OpAccessChain %29 %28 %13 %13
+        %368 = OpLoad %8 %367
+        %369 = OpAccessChain %29 %28 %13 %13
+        %370 = OpLoad %8 %369
+        %371 = OpAccessChain %29 %28 %13 %13
+        %372 = OpLoad %8 %371
+        %373 = OpAccessChain %29 %28 %13 %13
+        %374 = OpLoad %8 %373
+        %375 = OpAccessChain %29 %28 %13 %13
+        %376 = OpLoad %8 %375
+        %377 = OpAccessChain %29 %28 %13 %13
+        %378 = OpLoad %8 %377
+        %379 = OpAccessChain %29 %28 %13 %13
+        %380 = OpLoad %8 %379
+        %381 = OpAccessChain %29 %28 %13 %13
+        %382 = OpLoad %8 %381
+        %383 = OpAccessChain %29 %28 %13 %13
+        %384 = OpLoad %8 %383
+        %385 = OpAccessChain %29 %28 %13 %13
+        %386 = OpLoad %8 %385
+        %387 = OpAccessChain %29 %28 %13 %13
+        %388 = OpLoad %8 %387
+        %389 = OpAccessChain %29 %28 %13 %13
+        %390 = OpLoad %8 %389
+        %391 = OpAccessChain %29 %28 %13 %13
+        %392 = OpLoad %8 %391
+        %393 = OpAccessChain %29 %28 %13 %13
+        %394 = OpLoad %8 %393
+        %395 = OpAccessChain %29 %28 %13 %13
+        %396 = OpLoad %8 %395
+        %397 = OpAccessChain %29 %28 %13 %13
+        %398 = OpLoad %8 %397
+        %399 = OpAccessChain %29 %28 %13 %13
+        %400 = OpLoad %8 %399
+        %401 = OpAccessChain %29 %28 %13 %13
+        %402 = OpLoad %8 %401
+        %403 = OpAccessChain %29 %28 %13 %13
+        %404 = OpLoad %8 %403
+        %405 = OpAccessChain %29 %28 %13 %13
+        %406 = OpLoad %8 %405
+        %407 = OpAccessChain %29 %28 %13 %13
+        %408 = OpLoad %8 %407
+        %409 = OpAccessChain %29 %28 %13 %13
+        %410 = OpLoad %8 %409
+        %411 = OpAccessChain %29 %28 %13 %13
+        %412 = OpLoad %8 %411
+        %413 = OpAccessChain %29 %28 %13 %13
+        %414 = OpLoad %8 %413
+        %415 = OpAccessChain %29 %28 %13 %13
+        %416 = OpLoad %8 %415
+        %417 = OpAccessChain %29 %28 %13 %13
+        %418 = OpLoad %8 %417
+        %419 = OpAccessChain %29 %28 %13 %13
+        %420 = OpLoad %8 %419
+        %421 = OpAccessChain %29 %28 %13 %13
+        %422 = OpLoad %8 %421
+        %423 = OpAccessChain %29 %28 %13 %13
+        %424 = OpLoad %8 %423
+        %425 = OpAccessChain %29 %28 %13 %13
+        %426 = OpLoad %8 %425
+        %427 = OpAccessChain %29 %28 %13 %13
+        %428 = OpLoad %8 %427
+        %429 = OpAccessChain %29 %28 %13 %13
+        %430 = OpLoad %8 %429
+        %431 = OpAccessChain %29 %28 %13 %13
+        %432 = OpLoad %8 %431
+        %433 = OpAccessChain %29 %28 %13 %13
+        %434 = OpLoad %8 %433
+        %435 = OpAccessChain %29 %28 %13 %13
+        %436 = OpLoad %8 %435
+        %437 = OpAccessChain %29 %28 %13 %13
+        %438 = OpLoad %8 %437
+        %439 = OpAccessChain %29 %28 %13 %13
+        %440 = OpLoad %8 %439
+        %441 = OpAccessChain %29 %28 %13 %13
+        %442 = OpLoad %8 %441
+        %443 = OpAccessChain %29 %28 %13 %13
+        %444 = OpLoad %8 %443
+        %445 = OpAccessChain %29 %28 %13 %13
+        %446 = OpLoad %8 %445
+        %447 = OpAccessChain %29 %28 %13 %13
+        %448 = OpLoad %8 %447
+        %449 = OpAccessChain %29 %28 %13 %13
+        %450 = OpLoad %8 %449
+        %451 = OpAccessChain %29 %28 %13 %13
+        %452 = OpLoad %8 %451
+        %453 = OpAccessChain %29 %28 %13 %13
+        %454 = OpLoad %8 %453
+        %455 = OpAccessChain %29 %28 %13 %13
+        %456 = OpLoad %8 %455
+        %457 = OpAccessChain %29 %28 %13 %13
+        %458 = OpLoad %8 %457
+        %459 = OpAccessChain %29 %28 %13 %13
+        %460 = OpLoad %8 %459
+        %461 = OpAccessChain %29 %28 %13 %13
+        %462 = OpLoad %8 %461
+        %463 = OpAccessChain %29 %28 %13 %13
+        %464 = OpLoad %8 %463
+        %465 = OpAccessChain %29 %28 %13 %13
+        %466 = OpLoad %8 %465
+        %467 = OpAccessChain %29 %28 %13 %13
+        %468 = OpLoad %8 %467
+        %469 = OpAccessChain %29 %28 %13 %13
+        %470 = OpLoad %8 %469
+        %471 = OpAccessChain %29 %28 %13 %13
+        %472 = OpLoad %8 %471
+        %473 = OpAccessChain %29 %28 %13 %13
+        %474 = OpLoad %8 %473
+        %475 = OpAccessChain %29 %28 %13 %13
+        %476 = OpLoad %8 %475
+        %477 = OpAccessChain %29 %28 %13 %13
+        %478 = OpLoad %8 %477
+        %479 = OpAccessChain %29 %28 %13 %13
+        %480 = OpLoad %8 %479
+        %481 = OpAccessChain %29 %28 %13 %13
+        %482 = OpLoad %8 %481
+        %483 = OpAccessChain %29 %28 %13 %13
+        %484 = OpLoad %8 %483
+        %485 = OpAccessChain %29 %28 %13 %13
+        %486 = OpLoad %8 %485
+        %487 = OpAccessChain %29 %28 %13 %13
+        %488 = OpLoad %8 %487
+        %489 = OpAccessChain %29 %28 %13 %13
+        %490 = OpLoad %8 %489
+        %491 = OpAccessChain %29 %28 %13 %13
+        %492 = OpLoad %8 %491
+        %493 = OpAccessChain %29 %28 %13 %13
+        %494 = OpLoad %8 %493
+        %495 = OpAccessChain %29 %28 %13 %13
+        %496 = OpLoad %8 %495
+        %497 = OpAccessChain %29 %28 %13 %13
+        %498 = OpLoad %8 %497
+        %499 = OpAccessChain %29 %28 %13 %13
+        %500 = OpLoad %8 %499
+        %501 = OpAccessChain %29 %28 %13 %13
+        %502 = OpLoad %8 %501
+        %503 = OpAccessChain %29 %28 %13 %13
+        %504 = OpLoad %8 %503
+        %505 = OpAccessChain %29 %28 %13 %13
+        %506 = OpLoad %8 %505
+        %507 = OpAccessChain %29 %28 %13 %13
+        %508 = OpLoad %8 %507
+        %509 = OpAccessChain %29 %28 %13 %13
+        %510 = OpLoad %8 %509
+        %511 = OpAccessChain %29 %28 %13 %13
+        %512 = OpLoad %8 %511
+        %513 = OpAccessChain %29 %28 %13 %13
+        %514 = OpLoad %8 %513
+        %515 = OpAccessChain %29 %28 %13 %13
+        %516 = OpLoad %8 %515
+        %517 = OpAccessChain %29 %28 %13 %13
+        %518 = OpLoad %8 %517
+        %519 = OpAccessChain %29 %28 %13 %13
+        %520 = OpLoad %8 %519
+        %521 = OpAccessChain %29 %28 %13 %13
+        %522 = OpLoad %8 %521
+        %523 = OpAccessChain %29 %28 %13 %13
+        %524 = OpLoad %8 %523
+        %525 = OpAccessChain %29 %28 %13 %13
+        %526 = OpLoad %8 %525
+        %527 = OpAccessChain %29 %28 %13 %13
+        %528 = OpLoad %8 %527
+        %529 = OpAccessChain %29 %28 %13 %13
+        %530 = OpLoad %8 %529
+        %531 = OpAccessChain %29 %28 %13 %13
+        %532 = OpLoad %8 %531
+        %533 = OpAccessChain %29 %28 %13 %13
+        %534 = OpLoad %8 %533
+        %535 = OpAccessChain %29 %28 %13 %13
+        %536 = OpLoad %8 %535
+        %537 = OpAccessChain %29 %28 %13 %13
+        %538 = OpLoad %8 %537
+        %539 = OpAccessChain %29 %28 %13 %13
+        %540 = OpLoad %8 %539
+        %541 = OpAccessChain %29 %28 %13 %13
+        %542 = OpLoad %8 %541
+        %545 = OpCompositeConstruct %544 %31 %34 %36 %38 %40 %42 %44 %46 %48 %50 %52 %54 %56 %58 %60 %62 %64 %66 %68 %70 %72 %74 %76 %78 %80 %82 %84 %86 %88 %90 %92 %94 %96 %98 %100 %102 %104 %106 %108 %110 %112 %114 %116 %118 %120 %122 %124 %126 %128 %130 %132 %134 %136 %138 %140 %142 %144 %146 %148 %150 %152 %154 %156 %158 %160 %162 %164 %166 %168 %170 %172 %174 %176 %178 %180 %182 %184 %186 %188 %190 %192 %194 %196 %198 %200 %202 %204 %206 %208 %210 %212 %214 %216 %218 %220 %222 %224 %226 %228 %230 %232 %234 %236 %238 %240 %242 %244 %246 %248 %250 %252 %254 %256 %258 %260 %262 %264 %266 %268 %270 %272 %274 %276 %278 %280 %282 %284 %286 %288 %290 %292 %294 %296 %298 %300 %302 %304 %306 %308 %310 %312 %314 %316 %318 %320 %322 %324 %326 %328 %330 %332 %334 %336 %338 %340 %342 %344 %346 %348 %350 %352 %354 %356 %358 %360 %362 %364 %366 %368 %370 %372 %374 %376 %378 %380 %382 %384 %386 %388 %390 %392 %394 %396 %398 %400 %402 %404 %406 %408 %410 %412 %414 %416 %418 %420 %422 %424 %426 %428 %430 %432 %434 %436 %438 %440 %442 %444 %446 %448 %450 %452 %454 %456 %458 %460 %462 %464 %466 %468 %470 %472 %474 %476 %478 %480 %482 %484 %486 %488 %490 %492 %494 %496 %498 %500 %502 %504 %506 %508 %510 %512 %514 %516 %518 %520 %522 %524 %526 %528 %530 %532 %534 %536 %538 %540 %542
+        %546 = OpLoad %8 %10
+        %548 = OpExtInst %8 %1 SClamp %546 %32 %547
+               OpStore %550 %545
+        %551 = OpAccessChain %9 %550 %548
+        %552 = OpLoad %8 %551
+        %553 = OpAccessChain %29 %28 %13 %32
+        %554 = OpLoad %8 %553
+        %555 = OpIEqual %21 %552 %554
+               OpSelectionMerge %557 None
+               OpBranchConditional %555 %556 %557
+        %556 = OpLabel
+               OpStore %561 %564
+               OpBranch %557
+        %557 = OpLabel
+        %565 = OpLoad %8 %10
+        %566 = OpIAdd %8 %565 %32
+               OpStore %10 %566
+               OpBranch %17
+         %17 = OpLabel
+        %567 = OpLoad %8 %12
+        %568 = OpIAdd %8 %567 %32
+               OpStore %12 %568
+               OpBranch %14
+         %16 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# _GLF_uniform_int_values
+BUFFER variant__GLF_uniform_int_values DATA_TYPE int32[] STD140 DATA
+ 1 2 0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 32 32
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant__GLF_uniform_int_values AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 32 32
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 32 32 EQ_RGBA 255 0 0 255

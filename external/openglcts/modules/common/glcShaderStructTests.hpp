@@ -33,18 +33,18 @@ namespace deqp
 class ShaderStructTests : public TestCaseGroup
 {
 public:
-	ShaderStructTests(Context& context, glu::GLSLVersion glslVersion);
-	virtual ~ShaderStructTests(void);
+    ShaderStructTests(Context &context, glu::GLSLVersion glslVersion);
+    virtual ~ShaderStructTests(void);
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	ShaderStructTests(const ShaderStructTests&);			// not allowed!
-	ShaderStructTests& operator=(const ShaderStructTests&); // not allowed!
+    ShaderStructTests(const ShaderStructTests &);            // not allowed!
+    ShaderStructTests &operator=(const ShaderStructTests &); // not allowed!
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
-} // deqp
+} // namespace deqp
 
 #endif // _GLCSHADERSTRUCTTESTS_HPP

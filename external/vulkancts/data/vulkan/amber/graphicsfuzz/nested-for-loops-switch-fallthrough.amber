@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+DEVICE_EXTENSION VK_KHR_shader_terminate_invocation
 
 # A test for a bug found by GraphicsFuzz.
 
@@ -165,13 +166,14 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 #     else
 #         _GLF_color = vec4(1);
 # }
-SHADER fragment variant_fragment_shader SPIRV-ASM
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 8
 ; Bound: 358
 ; Schema: 0
                OpCapability Shader
+               OpExtension "SPV_KHR_terminate_invocation"
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %13 %117
@@ -363,7 +365,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpSelectionMerge %146 None
                OpBranchConditional %144 %145 %146
         %145 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %146 = OpLabel
         %149 = OpIAdd %6 %294 %112
                OpBranch %39
@@ -543,13 +545,13 @@ BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
 PIPELINE graphics variant_pipeline
   ATTACH variant_vertex_shader
   ATTACH variant_fragment_shader
-  FRAMEBUFFER_SIZE 256 256
+  FRAMEBUFFER_SIZE 64 64
   BIND BUFFER variant_framebuffer AS color LOCATION 0
   BIND BUFFER variant_zero AS uniform DESCRIPTOR_SET 0 BINDING 0
 END
 CLEAR_COLOR variant_pipeline 0 0 0 255
 
 CLEAR variant_pipeline
-RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 64 64
 
-EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
+EXPECT variant_framebuffer IDX 0 0 SIZE 64 64 EQ_RGBA 255 0 0 255

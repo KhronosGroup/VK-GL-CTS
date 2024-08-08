@@ -1,0 +1,16 @@
+{
+    "mandatory_features":
+        {
+            "VkPhysicalDeviceRawAccessChainsFeaturesNV":
+                [
+                    {
+                        "features": [
+                            "shaderRawAccessChains"
+                        ],
+                        "requirements": [
+                            "VK_NV_raw_access_chains"
+                        ]
+                    }
+                ]
+        }
+}

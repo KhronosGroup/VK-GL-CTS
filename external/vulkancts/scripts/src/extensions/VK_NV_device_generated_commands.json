@@ -1,0 +1,24 @@
+{
+    "register_extension":
+        {
+            "type": "device",
+            "core": ""
+        },
+    "mandatory_features":
+        {
+            "VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV":
+                [
+                    {
+                        "features": [
+                            "deviceGeneratedCommands"
+                        ],
+                        "requirements": [
+                            "VK_NV_device_generated_commands"
+                        ],
+                        "mandatory_variant": [
+                            "vulkan"
+                        ]
+                    }
+                ]
+        }
+}

@@ -1,0 +1,127 @@
+#!amber
+
+SHADER vertex vert_shader PASSTHROUGH
+
+SHADER fragment frag_shader GLSL TARGET_ENV spv1.3
+#version 450
+
+#extension GL_EXT_maximal_reconvergence : require
+#extension GL_KHR_shader_subgroup_ballot : require
+#extension GL_EXT_demote_to_helper_invocation : require
+
+layout(binding = 0) readonly buffer X { uvec4 fragments; };
+layout(binding = 1)          buffer Y { uint  result; };
+layout(location = 0) out vec4 dEQP_FragColor;
+
+void main()
+[[maximally_reconverges]]
+{
+	const uvec4	fullBallot		= subgroupBallot(true);
+	const uint	fragmentID		= uint(gl_FragCoord.y) * 16 + uint(gl_FragCoord.x);
+	const uvec4	quadBallot		= subgroupBallot((fragments[gl_SubgroupInvocationID % 4] - fragmentID) == 0);
+	const bool	quadSubgroup	= subgroupBallotBitCount(quadBallot) == 2;
+
+	if (quadSubgroup && subgroupInverseBallot(quadBallot))
+	{
+		switch (gl_SubgroupInvocationID % 4)
+		{
+		case 0:
+			{
+				while (true)
+				{
+					subgroupMemoryBarrier();
+					if (subgroupElect())
+					{
+						break;
+					}
+				}
+				demote;
+			}
+			break;
+		case 1:
+			{
+				do
+				{
+					subgroupMemoryBarrierBuffer();
+					if (subgroupElect())
+					{
+						break;
+					}
+				}
+				while (quadSubgroup);
+				demote;
+			}
+			break;
+		case 2:
+			{
+				while (quadSubgroup)
+				{
+					subgroupMemoryBarrierBuffer();
+					if (subgroupElect())
+					{
+						break;
+					}
+				}
+				demote;
+			}
+			break;
+		case 3:
+			{
+				for (;;)
+				{
+					subgroupMemoryBarrier();
+					if (subgroupElect())
+					{
+						break;
+					}
+				}
+				demote;
+			}
+			break;
+		}
+	}
+
+	const uvec4 nonHelperBallot = subgroupBallot( ! helperInvocationEXT() );
+	const uvec4	demotedBallot	= nonHelperBallot ^ fullBallot;
+	const uint	writeInvocation	= subgroupBallotFindLSB(nonHelperBallot);
+
+	if (quadSubgroup && gl_SubgroupInvocationID == writeInvocation)
+	{
+		result = (demotedBallot == quadBallot) ? 1 : 0;
+	}
+
+	dEQP_FragColor = vec4(1.0);
+}
+END
+
+BUFFER vertices DATA_TYPE R32G32_SFLOAT DATA
+-1.0 3.5    -1.0 -1.0    3.5 -1.0
+END
+
+BUFFER fragments DATA_TYPE R32G32B32A32_UINT DATA
+   34   256   50   256
+END
+
+BUFFER result DATA_TYPE R32_UINT DATA 99 END
+
+BUFFER framebuffer FORMAT R32G32B32A32_SFLOAT
+
+PIPELINE graphics mainPipeline
+	ATTACH vert_shader
+	ATTACH frag_shader
+
+	FRAMEBUFFER_SIZE 16 16
+
+    BIND BUFFER fragments AS storage DESCRIPTOR_SET 0 BINDING 0
+	BIND BUFFER result AS storage DESCRIPTOR_SET 0 BINDING 1
+	VERTEX_DATA vertices LOCATION 0
+	BIND BUFFER framebuffer AS color LOCATION 0
+END
+
+CLEAR_COLOR mainPipeline 0 0 0 0
+CLEAR mainPipeline
+
+RUN mainPipeline DRAW_ARRAY AS TRIANGLE_LIST START_IDX 0 COUNT 3
+
+EXPECT result IDX 0 EQ 1
+

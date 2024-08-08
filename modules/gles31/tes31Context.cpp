@@ -33,57 +33,57 @@ namespace deqp
 namespace gles31
 {
 
-Context::Context (tcu::TestContext& testCtx, glu::ApiType apiType)
-	: m_testCtx		(testCtx)
-	, m_renderCtx	(DE_NULL)
-	, m_contextInfo	(DE_NULL)
-	, m_apiType		(apiType)
+Context::Context(tcu::TestContext &testCtx, glu::ApiType apiType)
+    : m_testCtx(testCtx)
+    , m_renderCtx(nullptr)
+    , m_contextInfo(nullptr)
+    , m_apiType(apiType)
 {
-	if (m_testCtx.getCommandLine().getRunMode() == tcu::RUNMODE_EXECUTE)
-		createRenderContext();
-	else
-	{
-		// \todo [2016-11-15 pyry] Many tests (erroneously) inspect context type
-		//						   during test hierarchy construction. We should fix that
-		//						   and revert dummy context to advertise unknown context type.
-		m_renderCtx = new glu::DummyRenderContext(glu::ContextType(glu::ApiType::es(3,1)));
-	}
+    if (m_testCtx.getCommandLine().getRunMode() == tcu::RUNMODE_EXECUTE)
+        createRenderContext();
+    else
+    {
+        // \todo [2016-11-15 pyry] Many tests (erroneously) inspect context type
+        //                           during test hierarchy construction. We should fix that
+        //                           and revert empty context to advertise unknown context type.
+        m_renderCtx = new glu::EmptyRenderContext(glu::ContextType(apiType));
+    }
 }
 
-Context::~Context (void)
+Context::~Context(void)
 {
-	destroyRenderContext();
+    destroyRenderContext();
 }
 
-void Context::createRenderContext (void)
+void Context::createRenderContext(void)
 {
-	DE_ASSERT(!m_renderCtx && !m_contextInfo);
+    DE_ASSERT(!m_renderCtx && !m_contextInfo);
 
-	try
-	{
-		m_renderCtx		= glu::createDefaultRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), m_apiType);
-		m_contextInfo	= glu::ContextInfo::create(*m_renderCtx);
-	}
-	catch (...)
-	{
-		destroyRenderContext();
-		throw;
-	}
+    try
+    {
+        m_renderCtx   = glu::createDefaultRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), m_apiType);
+        m_contextInfo = glu::ContextInfo::create(*m_renderCtx);
+    }
+    catch (...)
+    {
+        destroyRenderContext();
+        throw;
+    }
 }
 
-void Context::destroyRenderContext (void)
+void Context::destroyRenderContext(void)
 {
-	delete m_contextInfo;
-	delete m_renderCtx;
+    delete m_contextInfo;
+    delete m_renderCtx;
 
-	m_contextInfo	= DE_NULL;
-	m_renderCtx		= DE_NULL;
+    m_contextInfo = nullptr;
+    m_renderCtx   = nullptr;
 }
 
-const tcu::RenderTarget& Context::getRenderTarget (void) const
+const tcu::RenderTarget &Context::getRenderTarget(void) const
 {
-	return m_renderCtx->getRenderTarget();
+    return m_renderCtx->getRenderTarget();
 }
 
-} // gles31
-} // deqp
+} // namespace gles31
+} // namespace deqp

@@ -35,18 +35,18 @@ namespace Functional
 class ShaderHelperInvocationTests : public TestCaseGroup
 {
 public:
-									ShaderHelperInvocationTests		(Context& context);
-	virtual							~ShaderHelperInvocationTests	(void);
+    ShaderHelperInvocationTests(Context &context);
+    virtual ~ShaderHelperInvocationTests(void);
 
-	virtual void					init							(void);
+    virtual void init(void);
 
 private:
-									ShaderHelperInvocationTests		(const ShaderHelperInvocationTests&);
-	ShaderHelperInvocationTests&	operator=						(const ShaderHelperInvocationTests&);
+    ShaderHelperInvocationTests(const ShaderHelperInvocationTests &);
+    ShaderHelperInvocationTests &operator=(const ShaderHelperInvocationTests &);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSHADERHELPERINVOCATIONTESTS_HPP

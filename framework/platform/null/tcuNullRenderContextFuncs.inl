@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 9d534f9312e56c72df763207e449c6719576fd54.
+ * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
  */
 
 GLW_APICALL void GLW_APIENTRY glActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -1927,6 +1927,18 @@ GLW_APICALL void GLW_APIENTRY glFramebufferRenderbuffer (GLenum target, GLenum a
 
 }
 
+GLW_APICALL void GLW_APIENTRY glFramebufferShadingRateEXT (GLenum target, GLenum attachment, GLuint texture, GLint baseLayer, GLsizei numLayers, GLsizei texelWidth, GLsizei texelHeight)
+{
+	DE_UNREF(target);
+	DE_UNREF(attachment);
+	DE_UNREF(texture);
+	DE_UNREF(baseLayer);
+	DE_UNREF(numLayers);
+	DE_UNREF(texelWidth);
+	DE_UNREF(texelHeight);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glFramebufferTexture (GLenum target, GLenum attachment, GLuint texture, GLint level)
 {
 	DE_UNREF(target);
@@ -2075,23 +2087,23 @@ GLW_APICALL void GLW_APIENTRY glGetActiveAttrib (GLuint program, GLuint index, G
 
 }
 
-GLW_APICALL void GLW_APIENTRY glGetActiveSubroutineName (GLuint program, GLenum shadertype, GLuint index, GLsizei bufsize, GLsizei *length, GLchar *name)
+GLW_APICALL void GLW_APIENTRY glGetActiveSubroutineName (GLuint program, GLenum shadertype, GLuint index, GLsizei bufSize, GLsizei *length, GLchar *name)
 {
 	DE_UNREF(program);
 	DE_UNREF(shadertype);
 	DE_UNREF(index);
-	DE_UNREF(bufsize);
+	DE_UNREF(bufSize);
 	DE_UNREF(length);
 	DE_UNREF(name);
 
 }
 
-GLW_APICALL void GLW_APIENTRY glGetActiveSubroutineUniformName (GLuint program, GLenum shadertype, GLuint index, GLsizei bufsize, GLsizei *length, GLchar *name)
+GLW_APICALL void GLW_APIENTRY glGetActiveSubroutineUniformName (GLuint program, GLenum shadertype, GLuint index, GLsizei bufSize, GLsizei *length, GLchar *name)
 {
 	DE_UNREF(program);
 	DE_UNREF(shadertype);
 	DE_UNREF(index);
-	DE_UNREF(bufsize);
+	DE_UNREF(bufSize);
 	DE_UNREF(length);
 	DE_UNREF(name);
 
@@ -2311,6 +2323,15 @@ GLW_APICALL GLint GLW_APIENTRY glGetFragDataLocation (GLuint program, const GLch
 	return (GLint)0;
 }
 
+GLW_APICALL void GLW_APIENTRY glGetFragmentShadingRatesEXT (GLsizei samples, GLsizei maxCount, GLsizei *count, GLenum *shadingRates)
+{
+	DE_UNREF(samples);
+	DE_UNREF(maxCount);
+	DE_UNREF(count);
+	DE_UNREF(shadingRates);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glGetFramebufferAttachmentParameteriv (GLenum target, GLenum attachment, GLenum pname, GLint *params)
 {
 	DE_UNREF(target);
@@ -2365,23 +2386,23 @@ GLW_APICALL void GLW_APIENTRY glGetIntegeri_v (GLenum target, GLuint index, GLin
 
 }
 
-GLW_APICALL void GLW_APIENTRY glGetInternalformatSampleivNV (GLenum target, GLenum internalformat, GLsizei samples, GLenum pname, GLsizei bufSize, GLint *params)
+GLW_APICALL void GLW_APIENTRY glGetInternalformatSampleivNV (GLenum target, GLenum internalformat, GLsizei samples, GLenum pname, GLsizei count, GLint *params)
 {
 	DE_UNREF(target);
 	DE_UNREF(internalformat);
 	DE_UNREF(samples);
 	DE_UNREF(pname);
-	DE_UNREF(bufSize);
+	DE_UNREF(count);
 	DE_UNREF(params);
 
 }
 
-GLW_APICALL void GLW_APIENTRY glGetInternalformati64v (GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint64 *params)
+GLW_APICALL void GLW_APIENTRY glGetInternalformati64v (GLenum target, GLenum internalformat, GLenum pname, GLsizei count, GLint64 *params)
 {
 	DE_UNREF(target);
 	DE_UNREF(internalformat);
 	DE_UNREF(pname);
-	DE_UNREF(bufSize);
+	DE_UNREF(count);
 	DE_UNREF(params);
 
 }
@@ -2793,14 +2814,14 @@ GLW_APICALL void GLW_APIENTRY glGetProgramResourceName (GLuint program, GLenum p
 
 }
 
-GLW_APICALL void GLW_APIENTRY glGetProgramResourceiv (GLuint program, GLenum programInterface, GLuint index, GLsizei propCount, const GLenum *props, GLsizei bufSize, GLsizei *length, GLint *params)
+GLW_APICALL void GLW_APIENTRY glGetProgramResourceiv (GLuint program, GLenum programInterface, GLuint index, GLsizei propCount, const GLenum *props, GLsizei count, GLsizei *length, GLint *params)
 {
 	DE_UNREF(program);
 	DE_UNREF(programInterface);
 	DE_UNREF(index);
 	DE_UNREF(propCount);
 	DE_UNREF(props);
-	DE_UNREF(bufSize);
+	DE_UNREF(count);
 	DE_UNREF(length);
 	DE_UNREF(params);
 
@@ -2985,11 +3006,11 @@ GLW_APICALL GLint GLW_APIENTRY glGetSubroutineUniformLocation (GLuint program, G
 	return (GLint)0;
 }
 
-GLW_APICALL void GLW_APIENTRY glGetSynciv (GLsync sync, GLenum pname, GLsizei bufSize, GLsizei *length, GLint *values)
+GLW_APICALL void GLW_APIENTRY glGetSynciv (GLsync sync, GLenum pname, GLsizei count, GLsizei *length, GLint *values)
 {
 	DE_UNREF(sync);
 	DE_UNREF(pname);
-	DE_UNREF(bufSize);
+	DE_UNREF(count);
 	DE_UNREF(length);
 	DE_UNREF(values);
 
@@ -5711,11 +5732,11 @@ GLW_APICALL void GLW_APIENTRY glScissorIndexedv (GLuint index, const GLint *v)
 
 }
 
-GLW_APICALL void GLW_APIENTRY glShaderBinary (GLsizei count, const GLuint *shaders, GLenum binaryformat, const void *binary, GLsizei length)
+GLW_APICALL void GLW_APIENTRY glShaderBinary (GLsizei count, const GLuint *shaders, GLenum binaryFormat, const void *binary, GLsizei length)
 {
 	DE_UNREF(count);
 	DE_UNREF(shaders);
-	DE_UNREF(binaryformat);
+	DE_UNREF(binaryFormat);
 	DE_UNREF(binary);
 	DE_UNREF(length);
 
@@ -5735,6 +5756,19 @@ GLW_APICALL void GLW_APIENTRY glShaderStorageBlockBinding (GLuint program, GLuin
 	DE_UNREF(program);
 	DE_UNREF(storageBlockIndex);
 	DE_UNREF(storageBlockBinding);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glShadingRateEXT (GLenum rate)
+{
+	DE_UNREF(rate);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glShadingRateCombinerOpsEXT (GLenum combinerOp0, GLenum combinerOp1)
+{
+	DE_UNREF(combinerOp0);
+	DE_UNREF(combinerOp1);
 
 }
 

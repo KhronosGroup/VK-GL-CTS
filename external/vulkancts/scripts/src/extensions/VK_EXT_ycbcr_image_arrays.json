@@ -1,0 +1,16 @@
+{
+    "mandatory_features":
+        {
+            "VkPhysicalDeviceYcbcrImageArraysFeaturesEXT":
+                [
+                    {
+                        "features": [
+                            "ycbcrImageArrays"
+                        ],
+                        "requirements": [
+                            "VK_EXT_ycbcr_image_arrays"
+                        ]
+                    }
+                ]
+        }
+}

@@ -26,6 +26,8 @@ set(TCUTIL_SRCS
 	tcuImageIO.hpp
 	tcuInterval.cpp
 	tcuInterval.hpp
+	tcuLibDrm.cpp
+	tcuLibDrm.hpp
 	tcuMatrix.hpp
 	tcuMatrix.cpp
 	tcuMatrixUtil.hpp

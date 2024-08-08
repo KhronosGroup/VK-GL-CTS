@@ -4,6 +4,7 @@ include_directories(
 	..
 	../shaderexecutor
 	../util
+	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_YCBCR_SRCS
@@ -25,16 +26,14 @@ set(DEQP_VK_YCBCR_SRCS
 	vktYCbCrCopyTests.hpp
 	vktYCbCrStorageImageWriteTests.cpp
 	vktYCbCrStorageImageWriteTests.hpp
-	)
-
-set(DEQP_VK_YCBCR_LIBS
-	deqp-vk-shaderexecutor
-	deqp-vk-util
-	tcutil
-	vkutil
+	vktYCbCrImageOffsetTests.cpp
+	vktYCbCrImageOffsetTests.hpp
 	)
 
 PCH(DEQP_VK_YCBCR_SRCS ../pch.cpp)
 
 add_library(deqp-vk-ycbcr STATIC ${DEQP_VK_YCBCR_SRCS})
-target_link_libraries(deqp-vk-ycbcr ${DEQP_VK_YCBCR_LIBS})
+target_link_libraries(deqp-vk-ycbcr deqp-vk-shaderexecutor deqp-vk-util tcutil vkutil)
+
+add_library(deqp-vksc-ycbcr STATIC ${DEQP_VK_YCBCR_SRCS})
+target_link_libraries(deqp-vksc-ycbcr PUBLIC deqp-vksc-shaderexecutor deqp-vksc-util tcutil vkscutil)

@@ -31,8 +31,8 @@ namespace vkt
 {
 namespace MemoryModel
 {
-tcu::TestCaseGroup*		createTests (tcu::TestContext& testCtx);
-} // MemoryModel
-} // vkt
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
+} // namespace MemoryModel
+} // namespace vkt
 
 #endif // _VKTMEMORYMODELTESTS_HPP

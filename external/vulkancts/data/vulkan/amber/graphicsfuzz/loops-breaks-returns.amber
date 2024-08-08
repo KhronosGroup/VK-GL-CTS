@@ -83,7 +83,7 @@
 #   }
 #   data_out[gid] = 7u; // gid == 1
 # }
-SHADER compute variant_compute_shader SPIRV-ASM
+SHADER compute variant_compute_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7

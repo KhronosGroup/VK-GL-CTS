@@ -23,70 +23,76 @@
 
 #include "vkStrUtil.hpp"
 
-namespace vk
-{
-
-struct CharPtr
-{
-	const char*	ptr;
-
-	CharPtr (const char* ptr_) : ptr(ptr_) {}
-};
-
-std::ostream& operator<< (std::ostream& str, const CharPtr& ptr)
-{
-	if (!ptr.ptr)
-		return str << "(null)";
-	else
-		return str << '"' << ptr.ptr << '"';
-}
-
-inline CharPtr getCharPtrStr (const char* ptr)
-{
-	return CharPtr(ptr);
-}
-
-
 #if (DE_OS == DE_OS_WIN32)
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-struct WStr
-{
-	LPCWSTR wstr;
+#endif
 
-	WStr (LPCWSTR wstr_) : wstr(wstr_) {}
+namespace vk
+{
+
+struct CharPtr
+{
+    const char *ptr;
+
+    CharPtr(const char *ptr_) : ptr(ptr_)
+    {
+    }
 };
 
-std::ostream& operator<< (std::ostream& str, const WStr& wstr)
+std::ostream &operator<<(std::ostream &str, const CharPtr &ptr)
 {
-	int len = WideCharToMultiByte(CP_UTF8, 0, wstr.wstr, -1, NULL, 0, 0, 0);
-	if (len < 1)
-		return str << "(null)";
-
-	std::string result;
-	result.resize(len + 1);
-	WideCharToMultiByte(CP_UTF8, 0, wstr.wstr, -1, &result[0], len, 0, 0);
-
-	return str << '"' << result << '"';
+    if (!ptr.ptr)
+        return str << "(null)";
+    else
+        return str << '"' << ptr.ptr << '"';
 }
 
-inline WStr getWStr (pt::Win32LPCWSTR pt_wstr)
+inline CharPtr getCharPtrStr(const char *ptr)
 {
-	return WStr(static_cast<LPCWSTR>(pt_wstr.internal));
+    return CharPtr(ptr);
+}
+
+#if (DE_OS == DE_OS_WIN32)
+
+struct WStr
+{
+    LPCWSTR wstr;
+
+    WStr(LPCWSTR wstr_) : wstr(wstr_)
+    {
+    }
+};
+
+std::ostream &operator<<(std::ostream &str, const WStr &wstr)
+{
+    int len = WideCharToMultiByte(CP_UTF8, 0, wstr.wstr, -1, NULL, 0, 0, 0);
+    if (len < 1)
+        return str << "(null)";
+
+    std::string result;
+    result.resize(len + 1);
+    WideCharToMultiByte(CP_UTF8, 0, wstr.wstr, -1, &result[0], len, 0, 0);
+
+    return str << '"' << result << '"';
+}
+
+inline WStr getWStr(pt::Win32LPCWSTR pt_wstr)
+{
+    return WStr(static_cast<LPCWSTR>(pt_wstr.internal));
 }
 
 #else
 
-inline CharPtr getWStr (pt::Win32LPCWSTR pt_wstr)
+inline CharPtr getWStr(pt::Win32LPCWSTR pt_wstr)
 {
-	return CharPtr(static_cast<const char*>(pt_wstr.internal));
+    return CharPtr(static_cast<const char *>(pt_wstr.internal));
 }
 
 #endif
 
-
 #include "vkStrUtilImpl.inl"
 
-} // vk
+} // namespace vk

@@ -1592,7 +1592,7 @@ const std::string kShader_3d_r32ui_end_result = R"(
 ;     int gx = int(gl_GlobalInvocationID.x);
 ;     int gy = int(gl_GlobalInvocationID.y);
 ;     int gz = int(gl_GlobalInvocationID.z);
-;     imageAtomicAdd(u_resultImage, ivec3(gx % 64,gy,gz), uint(gx*gx + gy*gy + gz*gz));
+;     imageAtomicAdd(u_resultImage, ivec3(gx % 48,gy,gz), uint(gx*gx + gy*gy + gz*gz));
 ; }
 ;
 ; SPIR-V
@@ -1625,7 +1625,7 @@ OpDecorate %53 BuiltIn WorkgroupSize
 %28 = OpTypeImage %9 3D 0 0 0 2 R32ui
 %29 = OpTypePointer UniformConstant %28
 %30 = OpVariable %29 UniformConstant
-%32 = OpConstant %6 64
+%32 = OpConstant %6 48
 %36 = OpTypeVector %6 3
 %50 = OpTypePointer Image %9
 %53 = OpConstantComposite %10 %19 %19 %19
@@ -1685,7 +1685,7 @@ const std::string kShader_3d_r32ui_intermediate_values = R"(
 ;     int gx = int(gl_GlobalInvocationID.x);
 ;     int gy = int(gl_GlobalInvocationID.y);
 ;     int gz = int(gl_GlobalInvocationID.z);
-;     imageStore(u_intermValuesImage, ivec3(gx,gy,gz), uvec4(imageAtomicAdd(u_resultImage, ivec3(gx % 64,gy,gz), uint(gx*gx + gy*gy + gz*gz))));
+;     imageStore(u_intermValuesImage, ivec3(gx,gy,gz), uvec4(imageAtomicAdd(u_resultImage, ivec3(gx % 48,gy,gz), uint(gx*gx + gy*gy + gz*gz))));
 ; }
 ;
 ; SPIR-V
@@ -1723,7 +1723,7 @@ OpDecorate %61 BuiltIn WorkgroupSize
 %30 = OpVariable %29 UniformConstant
 %35 = OpTypeVector %6 3
 %37 = OpVariable %29 UniformConstant
-%39 = OpConstant %6 64
+%39 = OpConstant %6 48
 %56 = OpTypePointer Image %9
 %59 = OpTypeVector %9 4
 %61 = OpConstantComposite %10 %19 %19 %19
@@ -1789,7 +1789,7 @@ const std::string kShader_3d_r32i_end_result = R"(
 ;     int gx = int(gl_GlobalInvocationID.x);
 ;     int gy = int(gl_GlobalInvocationID.y);
 ;     int gz = int(gl_GlobalInvocationID.z);
-;     imageAtomicAdd(u_resultImage, ivec3(gx % 64,gy,gz), int(gx*gx + gy*gy + gz*gz));
+;     imageAtomicAdd(u_resultImage, ivec3(gx % 48,gy,gz), int(gx*gx + gy*gy + gz*gz));
 ; }
 ;
 ; SPIR-V
@@ -1822,7 +1822,7 @@ OpDecorate %52 BuiltIn WorkgroupSize
 %28 = OpTypeImage %6 3D 0 0 0 2 R32i
 %29 = OpTypePointer UniformConstant %28
 %30 = OpVariable %29 UniformConstant
-%32 = OpConstant %6 64
+%32 = OpConstant %6 48
 %36 = OpTypeVector %6 3
 %49 = OpTypePointer Image %6
 %52 = OpConstantComposite %10 %19 %19 %19
@@ -1881,7 +1881,7 @@ const std::string kShader_3d_r32i_intermediate_values = R"(
 ;     int gx = int(gl_GlobalInvocationID.x);
 ;     int gy = int(gl_GlobalInvocationID.y);
 ;     int gz = int(gl_GlobalInvocationID.z);
-;     imageStore(u_intermValuesImage, ivec3(gx,gy,gz), ivec4(imageAtomicAdd(u_resultImage, ivec3(gx % 64,gy,gz), int(gx*gx + gy*gy + gz*gz))));
+;     imageStore(u_intermValuesImage, ivec3(gx,gy,gz), ivec4(imageAtomicAdd(u_resultImage, ivec3(gx % 48,gy,gz), int(gx*gx + gy*gy + gz*gz))));
 ; }
 ;
 ; SPIR-V
@@ -1919,7 +1919,7 @@ OpDecorate %60 BuiltIn WorkgroupSize
 %30 = OpVariable %29 UniformConstant
 %35 = OpTypeVector %6 3
 %37 = OpVariable %29 UniformConstant
-%39 = OpConstant %6 64
+%39 = OpConstant %6 48
 %55 = OpTypePointer Image %6
 %58 = OpTypeVector %6 4
 %60 = OpConstantComposite %10 %19 %19 %19
@@ -4826,7 +4826,7 @@ const std::string kShader_3d_r64ui_end_result = R"(
 ;    int gx = int(gl_GlobalInvocationID.x);
 ;    int gy = int(gl_GlobalInvocationID.y);
 ;    int gz = int(gl_GlobalInvocationID.z);
-;    imageAtomicAdd(u_resultImage, ivec3(gx%64, gy, gz), uint(gx*gx + gy*gy + gz*gz));
+;    imageAtomicAdd(u_resultImage, ivec3(gx%48, gy, gz), uint(gx*gx + gy*gy + gz*gz));
 ; }
 ;
 ; SPIR-V
@@ -4864,7 +4864,7 @@ OpDecorate %56 BuiltIn WorkgroupSize
 %29 = OpTypeImage %28 3D 0 0 0 2 R64ui
 %30 = OpTypePointer UniformConstant %29
 %31 = OpVariable %30 UniformConstant
-%33 = OpConstant %6 64
+%33 = OpConstant %6 48
 %37 = OpTypeVector %6 3
 %50 = OpTypeInt 64 1
 %53 = OpTypePointer Image %28
@@ -4928,7 +4928,7 @@ const std::string kShader_3d_r64ui_intermediate_values = R"(
 ;    int gx = int(gl_GlobalInvocationID.x);
 ;    int gy = int(gl_GlobalInvocationID.y);
 ;    int gz = int(gl_GlobalInvocationID.z);
-;    imageStore(u_intermValuesImage, ivec3(gx, gy, gz), u64vec4(imageAtomicAdd(u_resultImage, ivec3(gx%64, gy, gz), uint(gx*gx + gy*gy + gz*gz))));
+;    imageStore(u_intermValuesImage, ivec3(gx, gy, gz), u64vec4(imageAtomicAdd(u_resultImage, ivec3(gx%48, gy, gz), uint(gx*gx + gy*gy + gz*gz))));
 ; }
 ;
 ; SPIR-V
@@ -4971,7 +4971,7 @@ OpDecorate %64 BuiltIn WorkgroupSize
 %31 = OpVariable %30 UniformConstant
 %36 = OpTypeVector %6 3
 %38 = OpVariable %30 UniformConstant
-%40 = OpConstant %6 64
+%40 = OpConstant %6 48
 %56 = OpTypeInt 64 1
 %59 = OpTypePointer Image %28
 %62 = OpTypeVector %28 4
@@ -5041,7 +5041,7 @@ const std::string kShader_3d_r64i_end_result = R"(
 ;    int gx = int(gl_GlobalInvocationID.x);
 ;    int gy = int(gl_GlobalInvocationID.y);
 ;    int gz = int(gl_GlobalInvocationID.z);
-;    imageAtomicAdd(u_resultImage, ivec3(gx%64, gy, gz), int(gx*gx + gy*gy + gz*gz));
+;    imageAtomicAdd(u_resultImage, ivec3(gx%48, gy, gz), int(gx*gx + gy*gy + gz*gz));
 ; }
 ;
 ; SPIR-V
@@ -5079,7 +5079,7 @@ OpDecorate %54 BuiltIn WorkgroupSize
 %29 = OpTypeImage %28 3D 0 0 0 2 R64i
 %30 = OpTypePointer UniformConstant %29
 %31 = OpVariable %30 UniformConstant
-%33 = OpConstant %6 64
+%33 = OpConstant %6 48
 %37 = OpTypeVector %6 3
 %51 = OpTypePointer Image %28
 %54 = OpConstantComposite %10 %19 %19 %19
@@ -5141,7 +5141,7 @@ const std::string kShader_3d_r64i_intermediate_values = R"(
 ;    int gx = int(gl_GlobalInvocationID.x);
 ;    int gy = int(gl_GlobalInvocationID.y);
 ;    int gz = int(gl_GlobalInvocationID.z);
-;    imageStore(u_intermValuesImage, ivec3(gx, gy, gz), i64vec4(imageAtomicAdd(u_resultImage, ivec3(gx%64, gy, gz), int(gx*gx + gy*gy + gz*gz))));
+;    imageStore(u_intermValuesImage, ivec3(gx, gy, gz), i64vec4(imageAtomicAdd(u_resultImage, ivec3(gx%48, gy, gz), int(gx*gx + gy*gy + gz*gz))));
 ; }
 ;
 ; SPIR-V
@@ -5184,7 +5184,7 @@ OpDecorate %62 BuiltIn WorkgroupSize
 %31 = OpVariable %30 UniformConstant
 %36 = OpTypeVector %6 3
 %38 = OpVariable %30 UniformConstant
-%40 = OpConstant %6 64
+%40 = OpConstant %6 48
 %57 = OpTypePointer Image %28
 %60 = OpTypeVector %28 4
 %62 = OpConstantComposite %10 %19 %19 %19
@@ -6500,109 +6500,238 @@ OpFunctionEnd
 
 } // anonymous namespace
 
-bool CaseVariant::operator< (const CaseVariant& other) const
+bool CaseVariant::operator<(const CaseVariant &other) const
 {
-	// Simple lexicographical comparison using the struct members.
-	const std::array<int, 4> thisMembers =
-	{{
-		static_cast<int>(imageType),
-		static_cast<int>(textureFormat.order),
-		static_cast<int>(textureFormat.type),
-		static_cast<int>(checkType),
-	}};
+    // Simple lexicographical comparison using the struct members.
+    const std::array<int, 4> thisMembers = {{
+        static_cast<int>(imageType),
+        static_cast<int>(textureFormat.order),
+        static_cast<int>(textureFormat.type),
+        static_cast<int>(checkType),
+    }};
 
-	const std::array<int, 4> otherMembers =
-	{{
-		static_cast<int>(other.imageType),
-		static_cast<int>(other.textureFormat.order),
-		static_cast<int>(other.textureFormat.type),
-		static_cast<int>(other.checkType),
-	}};
+    const std::array<int, 4> otherMembers = {{
+        static_cast<int>(other.imageType),
+        static_cast<int>(other.textureFormat.order),
+        static_cast<int>(other.textureFormat.type),
+        static_cast<int>(other.checkType),
+    }};
 
-	return thisMembers < otherMembers;
+    return thisMembers < otherMembers;
 }
 
-CaseVariant::CaseVariant (ImageType imgtype, tcu::TextureFormat::ChannelOrder order, tcu::TextureFormat::ChannelType chtype, CheckType cktype)
-	: imageType{imgtype}, textureFormat{order, chtype}, checkType{cktype}
-{}
-
-std::string getSpirvAtomicOpShader (const CaseVariant& caseVariant)
+CaseVariant::CaseVariant(ImageType imgtype, tcu::TextureFormat::ChannelOrder order,
+                         tcu::TextureFormat::ChannelType chtype, CheckType cktype)
+    : imageType{imgtype}
+    , textureFormat{order, chtype}
+    , checkType{cktype}
 {
-	using ShadersMapT	= std::map<CaseVariant, const std::string*>;
-	using ValueType		= ShadersMapT::value_type;
+}
 
-	static const ShadersMapT kShadersMap =
-	{
-		ValueType{CaseVariant{IMAGE_TYPE_1D,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_1d_r32ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_1D,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_1d_r32ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_1D,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_1d_r32i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_1D,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_1d_r32i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_1d_array_r32ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_1d_array_r32ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_1d_array_r32i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_1d_array_r32i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_2D,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_2d_r32ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_2D,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_2d_r32ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_2D,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_2d_r32i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_2D,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_2d_r32i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_2d_array_r32ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_2d_array_r32ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_2d_array_r32i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_2d_array_r32i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_3D,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_3d_r32ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_3D,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_3d_r32ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_3D,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_3d_r32i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_3D,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_3d_r32i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_cube_r32ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_cube_r32ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_cube_r32i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_cube_r32i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY,	tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_cube_array_r32ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY,	tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_cube_array_r32ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY,	tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_cube_array_r32i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY,	tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_cube_array_r32i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_BUFFER,		tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_image_buffer_r32ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_BUFFER,		tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_image_buffer_r32ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_BUFFER,		tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_image_buffer_r32i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_BUFFER,		tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT32,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_image_buffer_r32i_intermediate_values},
+std::string getSpirvAtomicOpShader(const CaseVariant &caseVariant)
+{
+    using ShadersMapT = std::map<CaseVariant, const std::string *>;
+    using ValueType   = ShadersMapT::value_type;
 
-		ValueType{CaseVariant{IMAGE_TYPE_1D,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_1d_r64ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_1D,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_1d_r64ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_1D,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_1d_r64i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_1D,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_1d_r64i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_1d_array_r64ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_1d_array_r64ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_1d_array_r64i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_1d_array_r64i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_2D,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_2d_r64ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_2D,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_2d_r64ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_2D,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_2d_r64i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_2D,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_2d_r64i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_2d_array_r64ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_2d_array_r64ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_2d_array_r64i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY,		tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_2d_array_r64i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_3D,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_3d_r64ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_3D,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_3d_r64ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_3D,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_3d_r64i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_3D,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_3d_r64i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_cube_r64ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE,			tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_cube_r64ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_cube_r64i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE,			tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_cube_r64i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY,	tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_cube_array_r64ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY,	tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_cube_array_r64ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY,	tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_cube_array_r64i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY,	tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_cube_array_r64i_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_BUFFER,		tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_image_buffer_r64ui_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_BUFFER,		tcu::TextureFormat::R,	tcu::TextureFormat::UNSIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_image_buffer_r64ui_intermediate_values},
-		ValueType{CaseVariant{IMAGE_TYPE_BUFFER,		tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_END_RESULTS},			&kShader_image_buffer_r64i_end_result},
-		ValueType{CaseVariant{IMAGE_TYPE_BUFFER,		tcu::TextureFormat::R,	tcu::TextureFormat::SIGNED_INT64,	CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},	&kShader_image_buffer_r64i_intermediate_values},
-	};
+    static const ShadersMapT kShadersMap = {
+        ValueType{CaseVariant{IMAGE_TYPE_1D, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_1d_r32ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_1D, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_1d_r32ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_1D, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_1d_r32i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_1D, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_1d_r32i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_1d_array_r32ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_1d_array_r32ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_1d_array_r32i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_1d_array_r32i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_2D, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_2d_r32ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_2D, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_2d_r32ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_2D, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_2d_r32i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_2D, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_2d_r32i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_2d_array_r32ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_2d_array_r32ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_2d_array_r32i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_2d_array_r32i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_3D, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_3d_r32ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_3D, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_3d_r32ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_3D, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_3d_r32i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_3D, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_3d_r32i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_cube_r32ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_cube_r32ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_cube_r32i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_cube_r32i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_cube_array_r32ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_cube_array_r32ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_cube_array_r32i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_cube_array_r32i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_BUFFER, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_image_buffer_r32ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_BUFFER, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_image_buffer_r32ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_BUFFER, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_image_buffer_r32i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_BUFFER, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_image_buffer_r32i_intermediate_values},
 
-	const auto iter = kShadersMap.find(caseVariant);
-	DE_ASSERT(iter != kShadersMap.end());
-	return *(iter->second);
+        ValueType{CaseVariant{IMAGE_TYPE_1D, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_1d_r64ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_1D, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_1d_r64ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_1D, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_1d_r64i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_1D, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_1d_r64i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_1d_array_r64ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_1d_array_r64ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_1d_array_r64i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_1D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_1d_array_r64i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_2D, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_2d_r64ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_2D, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_2d_r64ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_2D, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_2d_r64i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_2D, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_2d_r64i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_2d_array_r64ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_2d_array_r64ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_2d_array_r64i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_2D_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_2d_array_r64i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_3D, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_3d_r64ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_3D, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_3d_r64ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_3D, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_3d_r64i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_3D, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_3d_r64i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_cube_r64ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_cube_r64ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_cube_r64i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_cube_r64i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_cube_array_r64ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_cube_array_r64ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_cube_array_r64i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_CUBE_ARRAY, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_cube_array_r64i_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_BUFFER, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_image_buffer_r64ui_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_BUFFER, tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_image_buffer_r64ui_intermediate_values},
+        ValueType{CaseVariant{IMAGE_TYPE_BUFFER, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_END_RESULTS},
+                  &kShader_image_buffer_r64i_end_result},
+        ValueType{CaseVariant{IMAGE_TYPE_BUFFER, tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64,
+                              CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS},
+                  &kShader_image_buffer_r64i_intermediate_values},
+    };
+
+    const auto iter = kShadersMap.find(caseVariant);
+    DE_ASSERT(iter != kShadersMap.end());
+    return *(iter->second);
 }
 
 } // namespace image
@@ -6628,54 +6757,54 @@ spirv_lines = []
 header_printed = False
 
 for line in sys.stdin:
-	if line.startswith("#beginTestCaseResult"):
-		test_name = line.strip().split()[1]
-		test_name = "_".join(test_name.split(".")[-2:])
+    if line.startswith("#beginTestCaseResult"):
+        test_name = line.strip().split()[1]
+        test_name = "_".join(test_name.split(".")[-2:])
 
-	if "<ShaderSource>" in line:
-		line = re.sub(r".*<ShaderSource>", "", line)
-		state = STATE_GLSL
+    if "<ShaderSource>" in line:
+        line = re.sub(r".*<ShaderSource>", "", line)
+        state = STATE_GLSL
 
-	if "</ShaderSource>" in line:
-		state = STATE_OUT
+    if "</ShaderSource>" in line:
+        state = STATE_OUT
 
-	if "<SpirVAssemblySource>" in line:
-		line = re.sub(r".*<SpirVAssemblySource>", "", line)
-		state = STATE_SPIRV
+    if "<SpirVAssemblySource>" in line:
+        line = re.sub(r".*<SpirVAssemblySource>", "", line)
+        state = STATE_SPIRV
 
-	if "</SpirVAssemblySource>" in line:
-		state = STATE_OUT
-		if not header_printed:
-			print("#include <string>")
-			print()
-			header_printed = True
-		print("const std::string kShader_%s = R\"(" % (test_name,))
-		print("; The SPIR-V shader below is based on the following GLSL shader, but OpAtomicIAdd has been")
-		print("; replaced with a template parameter and the last argument for it has been made optional.")
-		print(";")
-		for glsl_line in glsl_lines:
-			glsl_line = html.unescape(glsl_line)
-			print("; %s" % (glsl_line,), end="")
-		print(";")
-		for spirv_line in spirv_lines:
-			spirv_line = html.unescape(spirv_line)
-			if "OpAtomicIAdd" in spirv_line:
-				words = spirv_line.strip().split()
-				for i in range(len(words)):
-					if words[i] == "OpAtomicIAdd":
-						words[i] = r"${OPNAME}"
-				words[-1] = r"${LASTARG:default=%s}" % (words[-1], )
-				spirv_line = " ".join(words) + "\n"
-			print("%s" % (spirv_line, ), end="")
-		print(")\";")
-		print()
+    if "</SpirVAssemblySource>" in line:
+        state = STATE_OUT
+        if not header_printed:
+            print("#include <string>")
+            print()
+            header_printed = True
+        print("const std::string kShader_%s = R\"(" % (test_name,))
+        print("; The SPIR-V shader below is based on the following GLSL shader, but OpAtomicIAdd has been")
+        print("; replaced with a template parameter and the last argument for it has been made optional.")
+        print(";")
+        for glsl_line in glsl_lines:
+            glsl_line = html.unescape(glsl_line)
+            print("; %s" % (glsl_line,), end="")
+        print(";")
+        for spirv_line in spirv_lines:
+            spirv_line = html.unescape(spirv_line)
+            if "OpAtomicIAdd" in spirv_line:
+                words = spirv_line.strip().split()
+                for i in range(len(words)):
+                    if words[i] == "OpAtomicIAdd":
+                        words[i] = r"${OPNAME}"
+                words[-1] = r"${LASTARG:default=%s}" % (words[-1], )
+                spirv_line = " ".join(words) + "\n"
+            print("%s" % (spirv_line, ), end="")
+        print(")\";")
+        print()
 
-		test_name = None
-		glsl_lines = []
-		spirv_lines = []
+        test_name = None
+        glsl_lines = []
+        spirv_lines = []
 
-	if state == STATE_GLSL:
-		glsl_lines.append(line)
-	elif state == STATE_SPIRV:
-		spirv_lines.append(line)
+    if state == STATE_GLSL:
+        glsl_lines.append(line)
+    elif state == STATE_SPIRV:
+        spirv_lines.append(line)
 #endif

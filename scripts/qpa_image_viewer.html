@@ -37,18 +37,39 @@ limitations under the License.
             figure {
                 display: flex;
                 flex-direction: column;
+
+                /* Taken from https://stackoverflow.com/a/25709375. A grid pattern
+                   so that images are easier to see with transparency. */
+                background:
+                    linear-gradient(-90deg, rgba(0,0,0,.05) 1px, transparent 1px),
+                    linear-gradient(rgba(0,0,0,.05) 1px, transparent 1px),
+                    linear-gradient(-90deg, rgba(0, 0, 0, .04) 1px, transparent 1px),
+                    linear-gradient(rgba(0,0,0,.04) 1px, transparent 1px),
+                    linear-gradient(transparent 3px, #f2f2f2 3px, #f2f2f2 78px, transparent 78px),
+                    linear-gradient(-90deg, #aaa 1px, transparent 1px),
+                    linear-gradient(-90deg, transparent 3px, #f2f2f2 3px, #f2f2f2 78px, transparent 78px),
+                    linear-gradient(#aaa 1px, transparent 1px),
+                    #f2f2f2;
+                background-size:
+                    4px 4px,
+                    4px 4px,
+                    80px 80px,
+                    80px 80px,
+                    80px 80px,
+                    80px 80px,
+                    80px 80px,
+                    80px 80px;
             }
             img {
+                margin-left: 1ex;
                 margin-right: 1ex;
                 margin-bottom: 1ex;
                 /* Attempt to zoom images using the nearest-neighbor scaling
-                algorithm. Unfortunately, not supported under Firefox at the
-                time this text is being written. */
+                algorithm. */
                 image-rendering: pixelated;
-                /* Use a black background color for images in case some pixels
-                are transparent to some degree. In the worst case, the image
-                could appear to be missing. */
-                background: black;
+                image-rendering: crisp-edges;
+                /* Border around images. */
+                border: 1px solid darkgrey;
             }
             button {
                 margin: 1ex;
@@ -62,7 +83,7 @@ limitations under the License.
             button:hover {
                 opacity: .8;
             }
-            #clearimagesbutton {
+            #clearimagesbutton,#cleartextbutton {
                 background-color: seagreen;
             }
             select {
@@ -108,6 +129,14 @@ limitations under the License.
                 display: flex;
                 flex-wrap: wrap;
             }
+            .pathheader {
+                font-family: monospace;
+                font-size: large;
+            }
+            .subtext {
+                font-family: monospace;
+                font-size: smaller;
+            }
         </style>
     </head>
     <body>
@@ -125,6 +154,7 @@ limitations under the License.
                 <h2>Option 2: Paste QPA text or text extract containing &lt;Image&gt; elements below and click "Load images"</h2>
                 <textarea id="qpatext"></textarea>
                 <button id="loadimagesbutton">&#x1F4C3; Load images</button>
+                <button id="cleartextbutton">&#x267B; Clear text</button>
             </div>
         </div>
 
@@ -134,6 +164,7 @@ limitations under the License.
                 <option value="1" selected>1x</option>
                 <option value="2">2x</option>
                 <option value="4">4x</option>
+                <option value="6">6x</option>
                 <option value="8">8x</option>
                 <option value="16">16x</option>
                 <option value="32">32x</option>
@@ -172,16 +203,52 @@ limitations under the License.
                 }
             }
 
+            // Clears textarea text.
+            var clearText = function() {
+                document.getElementById("qpatext").value = "";
+            }
+
             // Returns a properly sized image with the given base64-encoded PNG data.
-            var createImage = function (pngData, imageName) {
+            var createImage = function (pngData, imageName, imageFormat, imageDimensions, imageDescription) {
                 var imageContainer = document.createElement("figure");
                 if (imageName.length > 0) {
                     var newFileNameHeader = document.createElement("figcaption");
-                    newFileNameHeader.textContent = escape(imageName);
+                    newFileNameHeader.textContent = imageName;
+                    newFileNameHeader.style.fontWeight = "bold";
+                    newFileNameHeader.style.textAlign = "center";
+
+                    if (imageDescription.length > 0) {
+                        var newDescription = document.createElement("span");
+                        newDescription.className = "subtext";
+                        newDescription.textContent = decodeURI(imageDescription).replace(/&apos;/g,'\'').replace(/&quot;/g,'"');
+
+                        newFileNameHeader.appendChild(document.createElement("br"));
+                        newFileNameHeader.appendChild(newDescription);
+                    }
+
+                    if (imageFormat.length > 0 || imageDimensions.length > 0) {
+                        var newSubText = document.createElement("span");
+                        newSubText.className = "subtext";
+
+                        newSubText.textContent = "(";
+                        if (imageDimensions.length > 0)
+                            newSubText.textContent += imageDimensions;
+                        if (imageFormat.length > 0) {
+                            if (imageDimensions.length > 0)
+                                newSubText.textContent += " ";
+                            newSubText.textContent += imageFormat;
+                        }
+                        newSubText.textContent += ")";
+
+                        newFileNameHeader.appendChild(document.createElement("br"));
+                        newFileNameHeader.appendChild(newSubText);
+                    }
                     imageContainer.appendChild(newFileNameHeader);
                 }
+
                 var newImage = document.createElement("img");
                 newImage.src = "data:image/png;base64," + pngData;
+                newImage.style.alignSelf = "center";
                 newImage.onload = (function () {
                     // Grab the image for the callback. We need to wait until
                     // the image has been properly loaded to access its
@@ -210,14 +277,18 @@ limitations under the License.
                 return imagesBlock;
             }
 
-            // Processes a chunk of QPA text from the given file name. Creates
-            // the file name header and a list of images in the images <div>, as
-            // found in the text.
-            var processText = function(textString, fileName) {
-                var imagesNode = document.getElementById("images");
-                var newHeader = createFileNameHeader(fileName);
-                imagesNode.appendChild(newHeader);
-                var imagesBlock = createImagesBlock();
+            // Returns a new test case header.
+            var createTestCaseHeader = function (testCasePath) {
+                var header = document.createElement("h4");
+                header.textContent = testCasePath;
+                header.className = "pathheader";
+                return header;
+            }
+
+            // Processes a single test case from the given text string. Creates
+            // a list of images in the given images block, as found in the
+            // text.
+            var processTestCase = function(textString, imagesBlock) {
                 // [\s\S] is a match-anything regexp like the dot, except it
                 // also matches newlines. Ideally, browsers would need to widely
                 // support the "dotall" regexp modifier, but that's not the case
@@ -226,22 +297,96 @@ limitations under the License.
                 // Group 2 is the base64 PNG data.
                 var imageRegexp = /<Image\b(.*?)>([\s\S]*?)<\/Image>/g;
                 var imageNameRegexp = /\bName="(.*?)"/;
+                var imageFormatRegexp = /\bFormat="(.*?)"/;
+                var imageWidthRegexp = /\bWidth="(.*?)"/;
+                var imageHeightRegexp = /\bHeight="(.*?)"/;
+                var imageDescRegexp = /\bDescription="(.*?)"/;
+
                 var result;
+
                 var innerResult;
                 var imageName;
+                var imageFormat;
+                var imageDimensions = "";
+                var imageDescription;
+
                 while ((result = imageRegexp.exec(textString)) !== null) {
                     innerResult = result[1].match(imageNameRegexp);
                     imageName = ((innerResult !== null) ? innerResult[1] : "");
+
+                    innerResult = result[1].match(imageFormatRegexp);
+                    imageFormat = ((innerResult !== null) ? innerResult[1] : "");
+
+                    innerResult = result[1].match(imageWidthRegexp);
+                    var imageWidth = ((innerResult !== null) ? innerResult[1] : "");
+
+                    innerResult = result[1].match(imageHeightRegexp);
+                    var imageHeight = ((innerResult !== null) ? innerResult[1] : "");
+
+                    if ((imageWidth.length > 0) && (imageHeight.length > 0))
+                        imageDimensions = imageWidth + "x" + imageHeight;
+
+                    innerResult = result[1].match(imageDescRegexp);
+                    imageDescription = ((innerResult !== null) ? innerResult[1] : "");
+
                     // Blanks need to be removed from the base64 string.
                     var pngData = result[2].replace(/\s+/g, "");
-                    imagesBlock.appendChild(createImage(pngData, imageName));
+                    imagesBlock.appendChild(createImage(pngData, imageName, imageFormat, imageDimensions, imageDescription));
                 }
-                imagesNode.appendChild(imagesBlock);
+            }
+
+            var getTestCaseResultRegexp = function () {
+                return new RegExp(/#beginTestCaseResult\s([^\n]+)\n([\S\s]*?)#endTestCaseResult/g);
+            }
+
+            // Processes a chunk of QPA text from the given file name. Creates
+            // the file name header, the test case header and a list of images
+            // in the images <div>, as found in the text.
+            var processText = function(textString, fileName) {
+                var imagesNode = document.getElementById("images");
+                if (fileName.length > 0) {
+                    var newHeader = createFileNameHeader(fileName);
+                    imagesNode.appendChild(newHeader);
+                }
+
+                var imagesDiv = document.createElement("div");
+                var testCaseResultRegexp = getTestCaseResultRegexp();
+                var result;
+
+                while ((result = testCaseResultRegexp.exec(textString)) !== null) {
+                    var testCasePathHeader = createTestCaseHeader(result[1]);
+                    imagesDiv.appendChild(testCasePathHeader);
+
+                    var imagesBlock = createImagesBlock();
+                    processTestCase(result[2], imagesBlock);
+                    imagesDiv.appendChild(imagesBlock);
+                }
+
+                imagesNode.appendChild(imagesDiv);
             }
 
             // Loads images from the text in the text area.
             var loadImages = function () {
-                processText(document.getElementById("qpatext").value, "<Pasted Text>");
+                var textString = document.getElementById("qpatext").value;
+                var testRE = getTestCaseResultRegexp();
+
+                // Full case being pasted.
+                if (testRE.test(textString)) {
+                    processText(textString, "<Pasted Text>");
+                }
+                else {
+                    // Excerpt from an unknown test case.
+                    var imagesNode = document.getElementById("images");
+                    var fileNameHeader = createFileNameHeader("<Pasted Text>");
+                    imagesNode.appendChild(fileNameHeader);
+                    var imagesDiv = document.createElement("div");
+                    var imagesBlock = createImagesBlock();
+                    var testCasePathHeader = createTestCaseHeader("<Unknown test case>");
+                    imagesDiv.appendChild(testCasePathHeader);
+                    processTestCase(textString, imagesBlock);
+                    imagesDiv.appendChild(imagesBlock);
+                    imagesNode.appendChild(imagesDiv);
+                }
             }
 
             // Loads images from the files in the file selector.
@@ -281,6 +426,7 @@ limitations under the License.
             document.getElementById("fileselector").addEventListener("change", handleFileSelect, false);
             document.getElementById("fileselectorbutton").onclick = clickFileSelector;
             document.getElementById("loadimagesbutton").onclick = loadImages;
+            document.getElementById("cleartextbutton").onclick = clearText;
             document.getElementById("zoomselect").onchange = rescaleImages;
             document.getElementById("clearimagesbutton").onclick = clearImages;
         </script>

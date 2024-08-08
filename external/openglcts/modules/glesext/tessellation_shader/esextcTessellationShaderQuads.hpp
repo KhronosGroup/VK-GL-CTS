@@ -37,18 +37,18 @@ namespace glcts
 class TessellationShaderQuadsTests : public glcts::TestCaseGroupBase
 {
 public:
-	/* Public methods */
-	TessellationShaderQuadsTests(glcts::Context& context, const ExtParameters& extParams);
-	virtual ~TessellationShaderQuadsTests(void)
-	{
-	}
+    /* Public methods */
+    TessellationShaderQuadsTests(glcts::Context &context, const ExtParameters &extParams);
+    virtual ~TessellationShaderQuadsTests(void)
+    {
+    }
 
-	void init(void);
+    void init(void);
 
 private:
-	/* Private methods */
-	TessellationShaderQuadsTests(const TessellationShaderQuadsTests& other);
-	TessellationShaderQuadsTests& operator=(const TessellationShaderQuadsTests& other);
+    /* Private methods */
+    TessellationShaderQuadsTests(const TessellationShaderQuadsTests &other);
+    TessellationShaderQuadsTests &operator=(const TessellationShaderQuadsTests &other);
 };
 
 /** Implementation of Test Case 32
@@ -70,45 +70,45 @@ private:
 class TessellationShaderQuadsDegenerateCase : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderQuadsDegenerateCase(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderQuadsDegenerateCase(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderQuadsDegenerateCase(void)
-	{
-	}
+    virtual ~TessellationShaderQuadsDegenerateCase(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private type definitions */
-	typedef struct _run
-	{
-		float								inner[2];
-		float								outer[4];
-		_tessellation_shader_vertex_spacing vertex_spacing;
+    /* Private type definitions */
+    typedef struct _run
+    {
+        float inner[2];
+        float outer[4];
+        _tessellation_shader_vertex_spacing vertex_spacing;
 
-		std::vector<char> data;
-		unsigned int	  n_vertices;
+        std::vector<char> data;
+        unsigned int n_vertices;
 
-		_run()
-		{
-			memset(inner, 0, sizeof(inner));
-			memset(outer, 0, sizeof(outer));
+        _run()
+        {
+            memset(inner, 0, sizeof(inner));
+            memset(outer, 0, sizeof(outer));
 
-			n_vertices	 = 0;
-			vertex_spacing = TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
-		}
-	} _run;
+            n_vertices     = 0;
+            vertex_spacing = TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
+        }
+    } _run;
 
-	typedef std::vector<_run>	 _runs;
-	typedef _runs::const_iterator _runs_const_iterator;
+    typedef std::vector<_run> _runs;
+    typedef _runs::const_iterator _runs_const_iterator;
 
-	/* Private variables */
-	glw::GLuint				 m_vao_id;
-	_runs					 m_runs;
-	TessellationShaderUtils* m_utils;
+    /* Private variables */
+    glw::GLuint m_vao_id;
+    _runs m_runs;
+    TessellationShaderUtils *m_utils;
 };
 
 /** Implementation of Test Case 33
@@ -149,54 +149,54 @@ private:
 class TessellationShaderQuadsInnerTessellationLevelRounding : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TessellationShaderQuadsInnerTessellationLevelRounding(Context& context, const ExtParameters& extParams);
+    /* Public methods */
+    TessellationShaderQuadsInnerTessellationLevelRounding(Context &context, const ExtParameters &extParams);
 
-	virtual ~TessellationShaderQuadsInnerTessellationLevelRounding(void)
-	{
-	}
+    virtual ~TessellationShaderQuadsInnerTessellationLevelRounding(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	void				  initTest(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    void initTest(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private type definitions */
-	typedef struct _run
-	{
-		float								set1_inner[2];
-		float								set1_outer[4];
-		float								set2_inner[2];
-		float								set2_outer[4];
-		_tessellation_shader_vertex_spacing vertex_spacing;
+    /* Private type definitions */
+    typedef struct _run
+    {
+        float set1_inner[2];
+        float set1_outer[4];
+        float set2_inner[2];
+        float set2_outer[4];
+        _tessellation_shader_vertex_spacing vertex_spacing;
 
-		std::vector<char> set1_data;
-		std::vector<char> set2_data;
-		unsigned int	  n_vertices;
+        std::vector<char> set1_data;
+        std::vector<char> set2_data;
+        unsigned int n_vertices;
 
-		_run()
-		{
-			memset(set1_inner, 0, sizeof(set1_inner));
-			memset(set1_outer, 0, sizeof(set1_outer));
-			memset(set2_inner, 0, sizeof(set2_inner));
-			memset(set2_outer, 0, sizeof(set2_outer));
+        _run()
+        {
+            memset(set1_inner, 0, sizeof(set1_inner));
+            memset(set1_outer, 0, sizeof(set1_outer));
+            memset(set2_inner, 0, sizeof(set2_inner));
+            memset(set2_outer, 0, sizeof(set2_outer));
 
-			n_vertices	 = 0;
-			vertex_spacing = TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
-		}
-	} _run;
+            n_vertices     = 0;
+            vertex_spacing = TESSELLATION_SHADER_VERTEX_SPACING_UNKNOWN;
+        }
+    } _run;
 
-	typedef std::vector<_run>	 _runs;
-	typedef _runs::const_iterator _runs_const_iterator;
+    typedef std::vector<_run> _runs;
+    typedef _runs::const_iterator _runs_const_iterator;
 
-	/* Private methods */
-	std::vector<_vec2> getUniqueTessCoordinatesFromVertexDataSet(const float*		raw_data,
-																 const unsigned int n_raw_data_vertices);
+    /* Private methods */
+    std::vector<_vec2> getUniqueTessCoordinatesFromVertexDataSet(const float *raw_data,
+                                                                 const unsigned int n_raw_data_vertices);
 
-	/* Private variables */
-	glw::GLuint				 m_vao_id;
-	_runs					 m_runs;
-	TessellationShaderUtils* m_utils;
+    /* Private variables */
+    glw::GLuint m_vao_id;
+    _runs m_runs;
+    TessellationShaderUtils *m_utils;
 };
 
 } // namespace glcts

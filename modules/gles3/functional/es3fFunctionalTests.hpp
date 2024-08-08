@@ -36,18 +36,31 @@ namespace Functional
 class FunctionalTests : public TestCaseGroup
 {
 public:
-						FunctionalTests		(Context& context);
-						~FunctionalTests	(void);
+    FunctionalTests(Context &context);
+    ~FunctionalTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						FunctionalTests		(const FunctionalTests& other);
-	FunctionalTests&	operator=			(const FunctionalTests& other);
+    FunctionalTests(const FunctionalTests &other);
+    FunctionalTests &operator=(const FunctionalTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+class GL45ES3FunctionalTests : public TestCaseGroup
+{
+public:
+    GL45ES3FunctionalTests(Context &context);
+    ~GL45ES3FunctionalTests(void);
+
+    void init(void);
+
+private:
+    GL45ES3FunctionalTests(const GL45ES3FunctionalTests &other);
+    GL45ES3FunctionalTests &operator=(const GL45ES3FunctionalTests &other);
+};
+
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FFUNCTIONALTESTS_HPP

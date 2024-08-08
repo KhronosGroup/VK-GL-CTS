@@ -75,7 +75,7 @@ SHADER vertex variant_vertex_shader PASSTHROUGH
 #  S myS = S(1, transpose(gl_FragCoord.x < 0.0 ? mat2(1.0, 2.0, 3.0, 4.0) : mat2(0.5, -0.5, -0.5, 0.5)));
 #  _GLF_color = vec4(float(myS.f1), myS.f2[0][0] + myS.f2[1][0], myS.f2[0][1] + myS.f2[1][1], float(myS.f1));
 # }
-SHADER fragment variant_fragment_shader SPIRV-ASM
+SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 8

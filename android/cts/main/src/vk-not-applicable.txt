@@ -1,0 +1,37 @@
+# WSI tests for other platforms
+dEQP-VK.wsi.xlib.*
+dEQP-VK.wsi.xcb.*
+dEQP-VK.wsi.wayland.*
+dEQP-VK.wsi.win32.*
+dEQP-VK.wsi.macos.*
+dEQP-VK.wsi.metal.*
+
+# Vulkan Video extensions are not supported on Android
+# https://source.android.com/docs/compatibility/13/android-13-cdd#7142_vulkan
+dEQP-VK.video.*
+
+# Other platform specific tests
+dEQP-VK.api.frame_boundary.wsi.macos
+dEQP-VK.api.frame_boundary.wsi.metal
+dEQP-VK.api.frame_boundary.wsi.wayland
+dEQP-VK.api.frame_boundary.wsi.win32
+dEQP-VK.api.frame_boundary.wsi.xcb
+dEQP-VK.api.frame_boundary.wsi.xlib
+dEQP-VK.api.image_compression_control.swapchain.macos.*
+dEQP-VK.api.image_compression_control.swapchain.metal.*
+dEQP-VK.api.image_compression_control.swapchain.wayland.*
+dEQP-VK.api.image_compression_control.swapchain.win32.*
+dEQP-VK.api.image_compression_control.swapchain.xcb.*
+dEQP-VK.api.image_compression_control.swapchain.xlib.*
+dEQP-VK.image.swapchain_mutable.macos.*
+dEQP-VK.image.swapchain_mutable.metal.*
+dEQP-VK.image.swapchain_mutable.wayland.*
+dEQP-VK.image.swapchain_mutable.win32.*
+dEQP-VK.image.swapchain_mutable.xcb.*
+dEQP-VK.image.swapchain_mutable.xlib.*
+dEQP-VK.protected_memory.interaction.wsi.macos.*
+dEQP-VK.protected_memory.interaction.wsi.metal.*
+dEQP-VK.protected_memory.interaction.wsi.wayland.*
+dEQP-VK.protected_memory.interaction.wsi.win32.*
+dEQP-VK.protected_memory.interaction.wsi.xcb.*
+dEQP-VK.protected_memory.interaction.wsi.xlib.*

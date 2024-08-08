@@ -29,14 +29,19 @@
 
 DE_BEGIN_EXTERN_C
 
-void	qpPrint			(const char* message);
-void	qpPrintf		(const char* fmt, ...);
-void	qpPrintErrorf	(const char* fmt, ...);
-void	qpPrintv		(const char* fmt, va_list va);
-void	qpPrintErrorv	(const char* fmt, va_list va);
+void qpPrint(const char *message);
+void qpPrintf(const char *fmt, ...);
+void qpPrintErrorf(const char *fmt, ...);
+void qpPrintv(const char *fmt, va_list va);
+void qpPrintErrorv(const char *fmt, va_list va);
 
-void	qpDief			(const char* fmt, ...);
-void	qpDiev			(const char* fmt, va_list va);
+void qpDief(const char *fmt, ...);
+void qpDiev(const char *fmt, va_list va);
+
+typedef bool (*writePtr)(int, const char *);
+typedef bool (*writeFtmPtr)(int, const char *, va_list);
+
+void qpRedirectOut(writePtr w, writeFtmPtr wftm);
 
 DE_END_EXTERN_C
 

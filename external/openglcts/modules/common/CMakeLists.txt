@@ -6,12 +6,19 @@ if (DEQP_SUPPORT_WGL)
 endif ()
 
 add_subdirectory(subgroups)
+include_directories(subgroups)
 
 set(GLCTS_COMMON_SRCS
 	glcAggressiveShaderOptimizationsTests.cpp
 	glcAggressiveShaderOptimizationsTests.hpp
+	glcApiCoverageTests.cpp
+	glcApiCoverageTests.hpp
 	glcBlendEquationAdvancedTests.cpp
 	glcBlendEquationAdvancedTests.hpp
+	glcBufferObjectsTests.cpp
+	glcBufferObjectsTests.hpp
+	glcClipDistance.cpp
+	glcClipDistance.hpp
 	glcConfigList.hpp
 	glcConfigList.cpp
 	glcConfigListCase.cpp
@@ -26,10 +33,14 @@ set(GLCTS_COMMON_SRCS
 	glcContext.hpp
 	glcContextFlagsTests.cpp
 	glcContextFlagsTests.hpp
+	glcCullDistance.cpp
+	glcCullDistance.hpp
 	glcExposedExtensionsTests.cpp
 	glcExposedExtensionsTests.hpp
 	glcFragDepthTests.cpp
 	glcFragDepthTests.hpp
+	glcFramebufferBlitTests.cpp
+	glcFramebufferBlitTests.hpp
 	glcInfoTests.cpp
 	glcInfoTests.hpp
 	glcInternalformatTests.cpp
@@ -62,6 +73,8 @@ set(GLCTS_COMMON_SRCS
 	glcSeparableProgramsTransformFeedbackTests.hpp
 	glcShaderConstExprTests.hpp
 	glcShaderConstExprTests.cpp
+	glcShaderFunctionTests.cpp
+	glcShaderFunctionTests.hpp
 	glcShaderGroupVoteTests.cpp
 	glcShaderGroupVoteTests.hpp
 	glcShaderIndexingTests.cpp
@@ -84,8 +97,6 @@ set(GLCTS_COMMON_SRCS
 	glcShaderRenderCase.hpp
 	glcShaderStructTests.cpp
 	glcShaderStructTests.hpp
-	glcShaderSwitchTests.cpp
-	glcShaderSwitchTests.hpp
 	glcSampleVariablesTests.cpp
 	glcSampleVariablesTests.hpp
 	glcSpirvUtils.cpp
@@ -96,14 +107,24 @@ set(GLCTS_COMMON_SRCS
 	glcTestCaseWrapper.hpp
 	glcTestPackage.cpp
 	glcTestPackage.hpp
+	glcTextureCompatibilityTests.cpp
+	glcTextureCompatibilityTests.hpp
+	glcTextureLodBiasTests.cpp
+	glcTextureLodBiasTests.hpp
 	glcTextureFilterAnisotropicTests.cpp
 	glcTextureFilterAnisotropicTests.hpp
+	glcTextureLodBasicTests.cpp
+	glcTextureLodBasicTests.hpp
 	glcTextureRepeatModeTests.cpp
 	glcTextureRepeatModeTests.hpp
+	glcTransformFeedbackTests.cpp
+	glcTransformFeedbackTests.hpp
 	glcUniformBlockCase.cpp
 	glcUniformBlockCase.hpp
 	glcUniformBlockTests.cpp
 	glcUniformBlockTests.hpp
+	glcUniformBlockNegativeTests.cpp
+	glcUniformBlockNegativeTests.hpp
 	glcViewportArrayTests.cpp
 	glcViewportArrayTests.hpp
 	glcTestSubcase.cpp
@@ -119,11 +140,15 @@ set(GLCTS_COMMON_SRCS
 	glcGLSLVectorConstructorTests.hpp
 	glcFramebufferCompleteness.cpp
 	glcFramebufferCompleteness.hpp
+	glcCompressedFormatTests_data.inl
+	glcCompressedFormatTests.cpp
+	glcCompressedFormatTests.hpp
 	)
 
 set(GLCTS_COMMON_LIBS
 	glutil
 	tcutil
+	tcutil-platform
 	eglutil
 	deqp-gl-subgroups
 	)
@@ -144,6 +169,7 @@ set(GLCTS_COMMON_LIBS ${GLCTS_COMMON_LIBS} ${GLSLANG_LIBRARIES})
 # Add spirv-tools
 include_directories(${spirv-tools_SOURCE_DIR}/include)
 include_directories(${spirv-tools_SOURCE_DIR}/external/include)
+include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
 
 set(GLCTS_COMMON_LIBS ${GLCTS_COMMON_LIBS} SPIRV-Tools)
 
@@ -151,6 +177,7 @@ set(GLCTS_COMMON_LIBS ${GLCTS_COMMON_LIBS} SPIRV-Tools)
 PCH(GLCTS_COMMON_SRCS ../pch.cpp)
 
 add_library(glcts-common STATIC ${GLCTS_COMMON_SRCS})
+add_dependencies(glcts-common deqp-vk-inl)
 target_link_libraries(glcts-common ${GLCTS_COMMON_LIBS})
 
 set(GLCTS_COMMON_NOCONTEXTPACKAGE_SRCS

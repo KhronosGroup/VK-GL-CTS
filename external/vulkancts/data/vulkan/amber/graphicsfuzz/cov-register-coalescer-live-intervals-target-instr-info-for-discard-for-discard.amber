@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+DEVICE_EXTENSION VK_KHR_shader_terminate_invocation
 
 # A test for a coverage-gap found by the GraphicsFuzz project.
 
@@ -75,6 +76,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; Bound: 90
 ; Schema: 0
                OpCapability Shader
+               OpExtension "SPV_KHR_terminate_invocation"
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %59 %71
@@ -158,7 +160,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpSelectionMerge %43 None
                OpBranchConditional %41 %42 %43
          %42 = OpLabel
-               OpKill
+               OpTerminateInvocation
          %43 = OpLabel
          %46 = OpAccessChain %17 %14 %15 %16
          %47 = OpLoad %6 %46
@@ -182,7 +184,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpSelectionMerge %68 None
                OpBranchConditional %66 %67 %68
          %67 = OpLabel
-               OpKill
+               OpTerminateInvocation
          %68 = OpLabel
          %73 = OpAccessChain %17 %14 %15 %72
          %74 = OpLoad %6 %73
@@ -232,7 +234,7 @@ BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
 PIPELINE graphics variant_pipeline
   ATTACH variant_vertex_shader
   ATTACH variant_fragment_shader
-  FRAMEBUFFER_SIZE 256 256
+  FRAMEBUFFER_SIZE 16 16
   BIND BUFFER variant_framebuffer AS color LOCATION 0
   BIND BUFFER variant__GLF_uniform_int_values AS uniform DESCRIPTOR_SET 0 BINDING 1
   BIND BUFFER variant__GLF_uniform_float_values AS uniform DESCRIPTOR_SET 0 BINDING 0
@@ -240,6 +242,6 @@ END
 CLEAR_COLOR variant_pipeline 0 0 0 255
 
 CLEAR variant_pipeline
-RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 16 16
 
-EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
+EXPECT variant_framebuffer IDX 0 0 SIZE 16 16 EQ_RGBA 255 0 0 255

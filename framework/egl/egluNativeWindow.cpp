@@ -30,77 +30,84 @@ using namespace eglw;
 
 // NativeWindow
 
-NativeWindow::NativeWindow (Capability capabilities)
-	: m_capabilities(capabilities)
+NativeWindow::NativeWindow(Capability capabilities) : m_capabilities(capabilities)
 {
 }
 
-EGLNativeWindowType NativeWindow::getLegacyNative (void)
+EGLNativeWindowType NativeWindow::getLegacyNative(void)
 {
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_LEGACY) == 0);
-	throw tcu::NotSupportedError("eglu::NativeWindow doesn't support eglCreateWindowSurface()", DE_NULL, __FILE__, __LINE__);
+    TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_LEGACY) == 0);
+    throw tcu::NotSupportedError("eglu::NativeWindow doesn't support eglCreateWindowSurface()", nullptr, __FILE__,
+                                 __LINE__);
 }
 
-void* NativeWindow::getPlatformExtension (void)
+void *NativeWindow::getPlatformExtension(void)
 {
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION) == 0);
-	throw tcu::NotSupportedError("eglu::NativeWindow doesn't support eglCreatePlatformWindowSurfaceEXT()", DE_NULL, __FILE__, __LINE__);
+    TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION) == 0);
+    throw tcu::NotSupportedError("eglu::NativeWindow doesn't support eglCreatePlatformWindowSurfaceEXT()", nullptr,
+                                 __FILE__, __LINE__);
 }
 
-void* NativeWindow::getPlatformNative (void)
+void *NativeWindow::getPlatformNative(void)
 {
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_PLATFORM) == 0);
-	throw tcu::NotSupportedError("eglu::NativeWindow doesn't support eglCreatePlatformWindowSurface()", DE_NULL, __FILE__, __LINE__);
+    TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_PLATFORM) == 0);
+    throw tcu::NotSupportedError("eglu::NativeWindow doesn't support eglCreatePlatformWindowSurface()", nullptr,
+                                 __FILE__, __LINE__);
 }
 
-tcu::IVec2 NativeWindow::getSurfaceSize (void) const
+tcu::IVec2 NativeWindow::getSurfaceSize(void) const
 {
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_GET_SURFACE_SIZE) == 0);
-	throw tcu::NotSupportedError("eglu::NativeWindow doesn't support querying the surface size", DE_NULL, __FILE__, __LINE__);
+    TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_GET_SURFACE_SIZE) == 0);
+    throw tcu::NotSupportedError("eglu::NativeWindow doesn't support querying the surface size", nullptr, __FILE__,
+                                 __LINE__);
 }
 
-void NativeWindow::setSurfaceSize (tcu::IVec2 size)
+void NativeWindow::setSurfaceSize(tcu::IVec2 size)
 {
-	DE_UNREF(size);
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_SET_SURFACE_SIZE) == 0);
-	throw tcu::NotSupportedError("eglu::NativeWindow doesn't support resizing the surface", DE_NULL, __FILE__, __LINE__);
+    DE_UNREF(size);
+    TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_SET_SURFACE_SIZE) == 0);
+    throw tcu::NotSupportedError("eglu::NativeWindow doesn't support resizing the surface", nullptr, __FILE__,
+                                 __LINE__);
 }
 
-tcu::IVec2 NativeWindow::getScreenSize (void) const
+tcu::IVec2 NativeWindow::getScreenSize(void) const
 {
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_GET_SCREEN_SIZE) == 0);
-	throw tcu::NotSupportedError("eglu::NativeWindow doesn't support querying the size of the window on the screen", DE_NULL, __FILE__, __LINE__);
+    TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_GET_SCREEN_SIZE) == 0);
+    throw tcu::NotSupportedError("eglu::NativeWindow doesn't support querying the size of the window on the screen",
+                                 nullptr, __FILE__, __LINE__);
 }
 
-void NativeWindow::readScreenPixels (tcu::TextureLevel*) const
+void NativeWindow::readScreenPixels(tcu::TextureLevel *) const
 {
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_READ_SCREEN_PIXELS) == 0);
-	throw tcu::NotSupportedError("eglu::NativeWindow doesn't support readScreenPixels", DE_NULL, __FILE__, __LINE__);
+    TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_READ_SCREEN_PIXELS) == 0);
+    throw tcu::NotSupportedError("eglu::NativeWindow doesn't support readScreenPixels", nullptr, __FILE__, __LINE__);
 }
 
-void NativeWindow::setVisibility (WindowParams::Visibility visibility)
+void NativeWindow::setVisibility(WindowParams::Visibility visibility)
 {
-	DE_UNREF(visibility);
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CHANGE_VISIBILITY) == 0);
-	throw tcu::NotSupportedError("eglu::NativeWindow doesn't support changing visibility", DE_NULL, __FILE__, __LINE__);
+    DE_UNREF(visibility);
+    TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CHANGE_VISIBILITY) == 0);
+    throw tcu::NotSupportedError("eglu::NativeWindow doesn't support changing visibility", nullptr, __FILE__, __LINE__);
 }
 
 // NativeWindowFactory
 
-NativeWindowFactory::NativeWindowFactory (const std::string& name, const std::string& description, NativeWindow::Capability capabilities)
-	: FactoryBase		(name, description)
-	, m_capabilities	(capabilities)
+NativeWindowFactory::NativeWindowFactory(const std::string &name, const std::string &description,
+                                         NativeWindow::Capability capabilities)
+    : FactoryBase(name, description)
+    , m_capabilities(capabilities)
 {
 }
 
-NativeWindowFactory::~NativeWindowFactory (void)
+NativeWindowFactory::~NativeWindowFactory(void)
 {
 }
 
-NativeWindow* NativeWindowFactory::createWindow (NativeDisplay* nativeDisplay, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, const WindowParams& params) const
+NativeWindow *NativeWindowFactory::createWindow(NativeDisplay *nativeDisplay, EGLDisplay display, EGLConfig config,
+                                                const EGLAttrib *attribList, const WindowParams &params) const
 {
-	DE_UNREF(display && config && attribList);
-	return createWindow(nativeDisplay, params);
+    DE_UNREF(display && config && attribList);
+    return createWindow(nativeDisplay, params);
 }
 
-} // eglu
+} // namespace eglu

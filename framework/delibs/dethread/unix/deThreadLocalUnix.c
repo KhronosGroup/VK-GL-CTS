@@ -23,10 +23,11 @@
 
 #include "deThreadLocal.h"
 
-#if (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_OSX || DE_OS == DE_OS_ANDROID || DE_OS == DE_OS_SYMBIAN || DE_OS == DE_OS_IOS || DE_OS == DE_OS_QNX)
+#if (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_OSX || DE_OS == DE_OS_ANDROID || DE_OS == DE_OS_SYMBIAN || \
+     DE_OS == DE_OS_IOS || DE_OS == DE_OS_QNX || DE_OS == DE_OS_FUCHSIA)
 
 #if !defined(_XOPEN_SOURCE) || (_XOPEN_SOURCE < 500)
-#	error You are using too old posix API!
+#error You are using too old posix API!
 #endif
 
 #include <pthread.h>
@@ -35,44 +36,44 @@ DE_STATIC_ASSERT(sizeof(pthread_key_t) <= sizeof(deThreadLocal));
 
 /* \note 0 is valid pthread_key_t, but not valid for deThreadLocal */
 
-DE_INLINE deThreadLocal keyToThreadLocal (pthread_key_t key)
+DE_INLINE deThreadLocal keyToThreadLocal(pthread_key_t key)
 {
-	return (deThreadLocal)(key + 1);
+    return (deThreadLocal)(key + 1);
 }
 
-DE_INLINE pthread_key_t threadLocalToKey (deThreadLocal threadLocal)
+DE_INLINE pthread_key_t threadLocalToKey(deThreadLocal threadLocal)
 {
-	DE_ASSERT(threadLocal != 0);
-	return (pthread_key_t)(threadLocal - 1);
+    DE_ASSERT(threadLocal != 0);
+    return (pthread_key_t)(threadLocal - 1);
 }
 
-deThreadLocal deThreadLocal_create (void)
+deThreadLocal deThreadLocal_create(void)
 {
-	pthread_key_t key = (pthread_key_t)0;
-	if (pthread_key_create(&key, DE_NULL) != 0)
-		return 0;
-	return keyToThreadLocal(key);
+    pthread_key_t key = (pthread_key_t)0;
+    if (pthread_key_create(&key, NULL) != 0)
+        return 0;
+    return keyToThreadLocal(key);
 }
 
-void deThreadLocal_destroy (deThreadLocal threadLocal)
+void deThreadLocal_destroy(deThreadLocal threadLocal)
 {
-	int ret = 0;
-	ret = pthread_key_delete(threadLocalToKey(threadLocal));
-	DE_ASSERT(ret == 0);
-	DE_UNREF(ret);
+    int ret = 0;
+    ret     = pthread_key_delete(threadLocalToKey(threadLocal));
+    DE_ASSERT(ret == 0);
+    DE_UNREF(ret);
 }
 
-void* deThreadLocal_get (deThreadLocal threadLocal)
+void *deThreadLocal_get(deThreadLocal threadLocal)
 {
-	return pthread_getspecific(threadLocalToKey(threadLocal));
+    return pthread_getspecific(threadLocalToKey(threadLocal));
 }
 
-void deThreadLocal_set (deThreadLocal threadLocal, void* value)
+void deThreadLocal_set(deThreadLocal threadLocal, void *value)
 {
-	int ret = 0;
-	ret = pthread_setspecific(threadLocalToKey(threadLocal), value);
-	DE_ASSERT(ret == 0);
-	DE_UNREF(ret);
+    int ret = 0;
+    ret     = pthread_setspecific(threadLocalToKey(threadLocal), value);
+    DE_ASSERT(ret == 0);
+    DE_UNREF(ret);
 }
 
 #endif /* DE_OS */

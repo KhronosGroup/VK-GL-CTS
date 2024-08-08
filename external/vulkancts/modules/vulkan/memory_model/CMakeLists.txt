@@ -1,16 +1,24 @@
-include_directories(..)
+include_directories(
+	..
+    ../amber
+	${DEQP_INL_DIR}
+)
 
-set(DEQP_VK_DEVICE_GROUP_SRCS
+set(DEQP_VK_MEMORY_MODEL_SRCS
 	vktMemoryModelTests.hpp
 	vktMemoryModelMessagePassing.cpp
 	vktMemoryModelPadding.hpp
 	vktMemoryModelPadding.cpp
+	vktMemoryModelSharedLayout.cpp
+	vktMemoryModelSharedLayout.hpp
+	vktMemoryModelSharedLayoutCase.cpp
+	vktMemoryModelSharedLayoutCase.hpp
+	../util/vktTypeComparisonUtil.hpp
+	../util/vktTypeComparisonUtil.cpp
 )
 
-set(DEQP_VK_DEVICE_GROUP_LIBS
-	tcutil
-	vkutil
-)
+add_library(deqp-vk-memory-model STATIC ${DEQP_VK_MEMORY_MODEL_SRCS})
+target_link_libraries(deqp-vk-memory-model tcutil vkutil)
 
-add_library(deqp-vk-memory-model STATIC ${DEQP_VK_DEVICE_GROUP_SRCS})
-target_link_libraries(deqp-vk-memory-model ${DEQP_VK_DEVICE_GROUP_LIBS})
+add_library(deqp-vksc-memory-model STATIC ${DEQP_VK_MEMORY_MODEL_SRCS})
+target_link_libraries(deqp-vksc-memory-model PUBLIC deqp-vksc-util tcutil vkscutil)

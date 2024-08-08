@@ -46,22 +46,21 @@ namespace gl4cts
 class SparseTextureClampLookupResidencyTestCase : public SparseTexture2LookupTestCase
 {
 public:
-	/* Public methods */
-	SparseTextureClampLookupResidencyTestCase(deqp::Context& context);
+    /* Public methods */
+    SparseTextureClampLookupResidencyTestCase(deqp::Context &context, const char *name, const char *description,
+                                              GLint target, GLint format);
 
-	SparseTextureClampLookupResidencyTestCase(deqp::Context& context, const char* name, const char* description);
-
-	virtual void						 init();
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual void init();
+    virtual tcu::TestNode::IterateResult iterate();
 
 protected:
-	/* Protected methods */
-	virtual bool funcAllowed(GLint target, GLint format, FunctionToken& funcToken);
+    /* Protected methods */
+    virtual bool funcAllowed(GLint target, GLint format, FunctionToken &funcToken);
 
-	virtual bool verifyLookupTextureData(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level,
-										 FunctionToken& funcToken);
+    virtual bool verifyLookupTextureData(const Functions &gl, GLint target, GLint format, GLuint &texture, GLint level,
+                                         FunctionToken &funcToken);
 
-	virtual void draw(GLint target, GLint layer, const ShaderProgram& program);
+    virtual void draw(GLint target, GLint layer, const ShaderProgram &program);
 };
 
 /** Test verifies if sparse and non-sparse texture clamp lookup functions works as expected
@@ -69,44 +68,48 @@ protected:
 class SparseTextureClampLookupColorTestCase : public SparseTextureClampLookupResidencyTestCase
 {
 public:
-	/* Public methods */
-	SparseTextureClampLookupColorTestCase(deqp::Context& context);
+    /* Public methods */
+    SparseTextureClampLookupColorTestCase(deqp::Context &context, const char *name, const char *description,
+                                          GLint target, GLint format);
 
-	virtual void						 init();
-	virtual tcu::TestNode::IterateResult iterate();
-
-private:
-	/* Private methods */
-	virtual bool writeDataToTexture(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level);
-	virtual bool verifyLookupTextureData(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level,
-										 FunctionToken& funcToken);
-
-	virtual bool prepareTexture(const Functions& gl, GLint target, GLint format, GLuint& texture);
-	virtual bool commitTexturePage(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level);
-
-	virtual bool isInPageSizesRange(GLint target, GLint level);
-	virtual bool isPageSizesMultiplication(GLint target, GLint level);
+    virtual void init();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	std::string generateFunctionDef(std::string funcName);
-	std::string generateExpectedResult(std::string returnType, GLint level, GLint format);
+    /* Private methods */
+    virtual bool writeDataToTexture(const Functions &gl, GLint target, GLint format, GLuint &texture, GLint level);
+    virtual bool verifyLookupTextureData(const Functions &gl, GLint target, GLint format, GLuint &texture, GLint level,
+                                         FunctionToken &funcToken);
+
+    virtual bool prepareTexture(const Functions &gl, GLint target, GLint format, GLuint &texture);
+    virtual bool commitTexturePage(const Functions &gl, GLint target, GLint format, GLuint &texture, GLint level);
+
+    virtual bool isInPageSizesRange(GLint target, GLint level);
+    virtual bool isPageSizesMultiplication(GLint target, GLint level);
+
+private:
+    /* Private methods */
+    std::string generateFunctionDef(std::string funcName);
+    std::string generateExpectedResult(std::string returnType, GLint level, GLint format);
 };
 
 /** Test group which encapsulates all sparse texture conformance tests */
 class SparseTextureClampTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	SparseTextureClampTests(deqp::Context& context);
+    /* Public methods */
+    SparseTextureClampTests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	SparseTextureClampTests(const SparseTextureClampTests& other);
-	SparseTextureClampTests& operator=(const SparseTextureClampTests& other);
+    SparseTextureClampTests(const SparseTextureClampTests &other);
+    SparseTextureClampTests &operator=(const SparseTextureClampTests &other);
+
+    void addSparseTextureClampLookupResidencyTestCase();
+    void addSparseTextureClampLookupColorTestCase();
 };
 
-} /* glcts namespace */
+} // namespace gl4cts
 
 #endif // _GL4CSPARSETEXTURECLAMPTESTS_HPP

@@ -66,6 +66,7 @@ DE_MAKE_ENV_BOOL("DE_OS" "WINCE")
 DE_MAKE_ENV_BOOL("DE_OS" "OSX")
 DE_MAKE_ENV_BOOL("DE_OS" "ANDROID")
 DE_MAKE_ENV_BOOL("DE_OS" "IOS")
+DE_MAKE_ENV_BOOL("DE_OS" "FUCHSIA")
 
 # Prevent mixed compile with GCC and Clang
 if (NOT (CMAKE_C_COMPILER_ID MATCHES "GNU") EQUAL (CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
@@ -149,6 +150,14 @@ if (DE_OS_IS_ANDROID AND NOT DEFINED DE_ANDROID_API)
 	set(DE_ANDROID_API 5)
 endif ()
 
+# MinGW
+if (CMAKE_CXX_COMPILER MATCHES ".*-mingw32-.*")
+	set(DE_MINGW 1)
+	set(BUILD_SHARED_LIBS OFF)
+else()
+	set(DE_MINGW 0)
+endif()
+
 message(STATUS "DE_OS          = ${DE_OS}")
 message(STATUS "DE_COMPILER    = ${DE_COMPILER}")
 message(STATUS "DE_CPU         = ${DE_CPU}")
@@ -157,6 +166,7 @@ message(STATUS "DE_DEBUG       = ${DE_DEBUG}")
 if (DE_OS_IS_ANDROID)
 	message(STATUS "DE_ANDROID_API = ${DE_ANDROID_API}")
 endif ()
+message(STATUS "DE_MINGW       = ${DE_MINGW}")
 
 # Expose definitions
 if (DE_DEBUG)
@@ -167,6 +177,46 @@ add_definitions("-DDE_OS=${DE_OS}")
 add_definitions("-DDE_COMPILER=${DE_COMPILER}")
 add_definitions("-DDE_CPU=${DE_CPU}")
 add_definitions("-DDE_PTR_SIZE=${DE_PTR_SIZE}")
+add_definitions("-DDE_MINGW=${DE_MINGW}")
+
+
+include(CheckCSourceCompiles)
+set(FENV_ACCESS_PRAGMA "")
+
+macro(check_fenv_access_support PRAGMA)
+	if (DE_COMPILER_IS_CLANG OR DE_COMPILER_IS_GCC)
+		set(CMAKE_REQUIRED_FLAGS "-Wall")
+	endif ()
+	# In addition to failing the test if "unknown-pragmas" is
+	# given, also fail if "ignored-pragmas" is generated,
+	# indicating the platform does not support the pragma, which
+	# currently happens on 32-bit ARM builds with Clang.
+	check_c_source_compiles("
+#include <fenv.h>
+${PRAGMA}
+int main() {
+#ifdef FE_INEXACT
+	return 0;
+#else
+	#error \"FENV_ACCESS not available\"
+#endif
+}" HAVE_FENV_ACCESS FAIL_REGEX "unknown-pragmas" "ignored-pragmas")
+	if (HAVE_FENV_ACCESS)
+		set(FENV_ACCESS_PRAGMA ${PRAGMA})
+	endif()
+endmacro()
+
+if (DE_COMPILER_IS_MSC)
+	check_fenv_access_support("__pragma(fenv_access (on))")
+elseif (DE_COMPILER_IS_CLANG OR DE_COMPILER_IS_GCC)
+	# Note that GCC does not provide a way to inform the implementation of FP environment access. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=34678.
+	# Until that is implemented this check will never enable the FENV_ACCESS pragma.
+	check_fenv_access_support("_Pragma(\"STDC FENV_ACCESS ON\")")
+else ()
+	message(FATAL_ERROR "Unsupported compiler!")
+endif ()
+
+add_definitions("-DDE_FENV_ACCESS_ON=${FENV_ACCESS_PRAGMA}")
 
 if (DE_OS_IS_ANDROID)
 	add_definitions("-DDE_ANDROID_API=${DE_ANDROID_API}")

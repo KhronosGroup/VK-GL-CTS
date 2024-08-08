@@ -33,9 +33,9 @@ namespace vkt
 namespace texture
 {
 
-tcu::TestCaseGroup*	createTextureFilteringTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTextureFilteringTests(tcu::TestContext &testCtx);
 
-} // texture
-} // vkt
+} // namespace texture
+} // namespace vkt
 
 #endif // _VKTTEXTUREFILTERINGTESTS_HPP

@@ -20,8 +20,10 @@
  *
  *//*!
  * \file
- * \brief VK_MVK_macos_surface compatible view
+ * \brief VK_EXT_metal_surface compatible view
  *//*--------------------------------------------------------------------*/
+
+#include "vkDefs.hpp"
 
 namespace tcu
 {
@@ -31,21 +33,21 @@ namespace osx
 class MetalView
 {
 public:
-				MetalView			(int width, int height);
-				~MetalView			(void);
+    MetalView(int width, int height);
+    ~MetalView(void);
 
-	void		setSize				(int width, int height);
+    void setSize(int width, int height);
 
-	void*		getView				(void) const { return m_view;	}
+    vk::pt::CAMetalLayer getLayer(void) const;
 
 private:
-				MetalView			(const MetalView&);
-	MetalView	operator=			(const MetalView&);
+    MetalView(const MetalView &);
+    MetalView operator=(const MetalView &);
 
-	void*		m_view;
+    void *m_view;
 };
 
-} // osx
-} // tcu
+} // namespace osx
+} // namespace tcu
 
 #endif // _TCUOSXMETALVIEW_HPP

@@ -47,281 +47,401 @@ namespace
 class SimpleDraw : public DrawTestsBaseClass
 {
 public:
-	typedef TestSpecBase	TestSpec;
-							SimpleDraw				(Context &context, TestSpec testSpec);
-	virtual tcu::TestStatus iterate					(void);
+    typedef TestSpecBase TestSpec;
+    SimpleDraw(Context &context, TestSpec testSpec);
+    virtual tcu::TestStatus iterate(void);
+    void draw(vk::VkCommandBuffer cmdBuffer, uint32_t instanceCount = 1u, uint32_t firstInstance = 0u);
 };
 
 class SimpleDrawInstanced : public SimpleDraw
 {
 public:
-	typedef TestSpec		TestSpec;
-							SimpleDrawInstanced		(Context &context, TestSpec testSpec);
-	tcu::TestStatus			iterate					(void);
+    typedef TestSpec TestSpec;
+    SimpleDrawInstanced(Context &context, TestSpec testSpec);
+    tcu::TestStatus iterate(void);
 };
 
-SimpleDraw::SimpleDraw (Context &context, TestSpec testSpec)
-	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.topology)
+SimpleDraw::SimpleDraw(Context &context, TestSpec testSpec)
+    : DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT],
+                         testSpec.groupParams, testSpec.topology)
 {
-	m_data.push_back(VertexElementData(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
-	m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
+    m_data.push_back(VertexElementData(tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
+    m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
 
-	int refVertexIndex = 2;
+    int refVertexIndex = 2;
 
-	switch (m_topology)
-	{
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
-			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
-			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
-			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
-			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
-			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
-			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
-			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
-			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
-			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
-			DE_FATAL("Topology not implemented");
-			break;
-		default:
-			DE_FATAL("Unknown topology");
-			break;
-	}
+    switch (m_topology)
+    {
+    case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+        m_data.push_back(
+            VertexElementData(tcu::Vec4(-0.3f, -0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+        m_data.push_back(
+            VertexElementData(tcu::Vec4(-0.3f, 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+        m_data.push_back(
+            VertexElementData(tcu::Vec4(0.3f, -0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+        m_data.push_back(
+            VertexElementData(tcu::Vec4(0.3f, -0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+        m_data.push_back(
+            VertexElementData(tcu::Vec4(0.3f, 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+        m_data.push_back(
+            VertexElementData(tcu::Vec4(-0.3f, 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+        break;
+    case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+        m_data.push_back(
+            VertexElementData(tcu::Vec4(-0.3f, -0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+        m_data.push_back(
+            VertexElementData(tcu::Vec4(-0.3f, 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+        m_data.push_back(
+            VertexElementData(tcu::Vec4(0.3f, -0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+        m_data.push_back(
+            VertexElementData(tcu::Vec4(0.3f, 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+        m_data.push_back(
+            VertexElementData(tcu::Vec4(-0.3f, 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+        break;
+    case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+    case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+    case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+    case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+    case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+    case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+    case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+    case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+    case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+    case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
+        DE_FATAL("Topology not implemented");
+        break;
+    default:
+        DE_FATAL("Unknown topology");
+        break;
+    }
 
-	m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
+    m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
 
-	initialize();
+    initialize();
 }
 
-tcu::TestStatus SimpleDraw::iterate (void)
+tcu::TestStatus SimpleDraw::iterate(void)
 {
-	tcu::TestLog&			log					= m_context.getTestContext().getLog();
-	const vk::VkQueue		queue				= m_context.getUniversalQueue();
-	const vk::VkDevice		device				= m_context.getDevice();
+    tcu::TestLog &log                         = m_context.getTestContext().getLog();
+    const vk::VkQueue queue                   = m_context.getUniversalQueue();
+    const vk::VkDevice device                 = m_context.getDevice();
+    const vk::VkDeviceSize vertexBufferOffset = 0;
+    const vk::VkBuffer vertexBuffer           = m_vertexBuffer->object();
 
-	beginRenderPass();
+#ifndef CTS_USES_VULKANSC
+    if (m_groupParams->useSecondaryCmdBuffer)
+    {
+        // record secondary command buffer
+        if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+        {
+            beginSecondaryCmdBuffer(m_vk, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+            beginDynamicRender(*m_secCmdBuffer);
+        }
+        else
+            beginSecondaryCmdBuffer(m_vk);
 
-	const vk::VkDeviceSize	vertexBufferOffset	= 0;
-	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
+        m_vk.cmdBindVertexBuffers(*m_secCmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+        m_vk.cmdBindPipeline(*m_secCmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+        draw(*m_secCmdBuffer);
 
-	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+        if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+            endDynamicRender(*m_secCmdBuffer);
 
-	switch (m_topology)
-	{
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-			m_vk.cmdDraw(*m_cmdBuffer, 6, 1, 2, 0);
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-			m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 2, 0);
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
-			DE_FATAL("Topology not implemented");
-			break;
-		default:
-			DE_FATAL("Unknown topology");
-			break;
-	}
+        endCommandBuffer(m_vk, *m_secCmdBuffer);
 
-	endRenderPass(m_vk, *m_cmdBuffer);
-	endCommandBuffer(m_vk, *m_cmdBuffer);
+        // record primary command buffer
+        beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+        preRenderBarriers();
 
-	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
+        if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+            beginDynamicRender(*m_cmdBuffer, vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-	// Validation
-	tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)), (int)(0.5f + static_cast<float>(HEIGHT)));
+        m_vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
 
-	referenceFrame.allocLevel(0);
+        if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+            endDynamicRender(*m_cmdBuffer);
 
-	const deInt32 frameWidth	= referenceFrame.getWidth();
-	const deInt32 frameHeight	= referenceFrame.getHeight();
+        endCommandBuffer(m_vk, *m_cmdBuffer);
+    }
+    else if (m_groupParams->useDynamicRendering)
+    {
+        beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+        preRenderBarriers();
+        beginDynamicRender(*m_cmdBuffer);
 
-	tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+        m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+        m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+        draw(*m_cmdBuffer);
 
-	ReferenceImageCoordinates refCoords;
+        endDynamicRender(*m_cmdBuffer);
+        endCommandBuffer(m_vk, *m_cmdBuffer);
+    }
+#endif // CTS_USES_VULKANSC
 
-	for (int y = 0; y < frameHeight; y++)
-	{
-		const float yCoord = (float)(y / (0.5*frameHeight)) - 1.0f;
+    if (!m_groupParams->useDynamicRendering)
+    {
+        beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+        preRenderBarriers();
+        beginLegacyRender(*m_cmdBuffer);
 
-		for (int x = 0; x < frameWidth; x++)
-		{
-			const float xCoord = (float)(x / (0.5*frameWidth)) - 1.0f;
+        m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+        m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+        draw(*m_cmdBuffer);
 
-			if ((yCoord >= refCoords.bottom	&&
-				 yCoord <= refCoords.top	&&
-				 xCoord >= refCoords.left	&&
-				 xCoord <= refCoords.right))
-				referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), x, y);
-		}
-	}
+        endLegacyRender(*m_cmdBuffer);
+        endCommandBuffer(m_vk, *m_cmdBuffer);
+    }
 
-	const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
-	const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-		vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+    submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
-	qpTestResult res = QP_TEST_RESULT_PASS;
+    // Validation
+    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)),
+                                  (int)(0.5f + static_cast<float>(HEIGHT)));
 
-	if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
-		referenceFrame.getLevel(0), renderedFrame, 0.05f,
-		tcu::COMPARE_LOG_RESULT)) {
-		res = QP_TEST_RESULT_FAIL;
-	}
+    referenceFrame.allocLevel(0);
 
-	return tcu::TestStatus(res, qpGetTestResultName(res));
+    const int32_t frameWidth  = referenceFrame.getWidth();
+    const int32_t frameHeight = referenceFrame.getHeight();
 
+    tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    ReferenceImageCoordinates refCoords;
+
+    for (int y = 0; y < frameHeight; y++)
+    {
+        const float yCoord = (float)(y / (0.5 * frameHeight)) - 1.0f;
+
+        for (int x = 0; x < frameWidth; x++)
+        {
+            const float xCoord = (float)(x / (0.5 * frameWidth)) - 1.0f;
+
+            if ((yCoord >= refCoords.bottom && yCoord <= refCoords.top && xCoord >= refCoords.left &&
+                 xCoord <= refCoords.right))
+                referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), x, y);
+        }
+    }
+
+    const vk::VkOffset3D zeroOffset = {0, 0, 0};
+    const tcu::ConstPixelBufferAccess renderedFrame =
+        m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset,
+                                        WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+
+    qpTestResult res = QP_TEST_RESULT_PASS;
+
+    if (!tcu::fuzzyCompare(log, "Result", "Image comparison result", referenceFrame.getLevel(0), renderedFrame, 0.05f,
+                           tcu::COMPARE_LOG_RESULT))
+    {
+        res = QP_TEST_RESULT_FAIL;
+    }
+
+    return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
-SimpleDrawInstanced::SimpleDrawInstanced (Context &context, TestSpec testSpec)
-	: SimpleDraw	(context, testSpec) {}
-
-tcu::TestStatus SimpleDrawInstanced::iterate (void)
+void SimpleDraw::draw(vk::VkCommandBuffer cmdBuffer, uint32_t instanceCount, uint32_t firstInstance)
 {
-	tcu::TestLog&		log						= m_context.getTestContext().getLog();
-	const vk::VkQueue	queue					= m_context.getUniversalQueue();
-	const vk::VkDevice	device					= m_context.getDevice();
-
-	beginRenderPass();
-
-	const vk::VkDeviceSize	vertexBufferOffset	= 0;
-	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
-
-	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-
-	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-
-	switch (m_topology)
-	{
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-			m_vk.cmdDraw(*m_cmdBuffer, 6, 4, 2, 2);
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-			m_vk.cmdDraw(*m_cmdBuffer, 4, 4, 2, 2);
-			break;
-		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
-		case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-		case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
-			DE_FATAL("Topology not implemented");
-			break;
-		default:
-			DE_FATAL("Unknown topology");
-			break;
-	}
-
-	endRenderPass(m_vk, *m_cmdBuffer);
-	endCommandBuffer(m_vk, *m_cmdBuffer);
-
-	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
-
-	// Validation
-	VK_CHECK(m_vk.queueWaitIdle(queue));
-
-	tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)), (int)(0.5f + static_cast<float>(HEIGHT)));
-
-	referenceFrame.allocLevel(0);
-
-	const deInt32 frameWidth	= referenceFrame.getWidth();
-	const deInt32 frameHeight	= referenceFrame.getHeight();
-
-	tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
-
-	ReferenceImageInstancedCoordinates refInstancedCoords;
-
-	for (int y = 0; y < frameHeight; y++)
-	{
-		const float yCoord = (float)(y / (0.5*frameHeight)) - 1.0f;
-
-		for (int x = 0; x < frameWidth; x++)
-		{
-			const float xCoord = (float)(x / (0.5*frameWidth)) - 1.0f;
-
-			if ((yCoord >= refInstancedCoords.bottom	&&
-				 yCoord <= refInstancedCoords.top		&&
-				 xCoord >= refInstancedCoords.left		&&
-				 xCoord <= refInstancedCoords.right))
-				referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), x, y);
-		}
-	}
-
-	const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
-	const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-		vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
-
-	qpTestResult res = QP_TEST_RESULT_PASS;
-
-	if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
-		referenceFrame.getLevel(0), renderedFrame, 0.05f,
-		tcu::COMPARE_LOG_RESULT)) {
-		res = QP_TEST_RESULT_FAIL;
-	}
-
-	return tcu::TestStatus(res, qpGetTestResultName(res));
+    switch (m_topology)
+    {
+    case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+        m_vk.cmdDraw(cmdBuffer, 6, instanceCount, 2, firstInstance);
+        break;
+    case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+        m_vk.cmdDraw(cmdBuffer, 4, instanceCount, 2, firstInstance);
+        break;
+    case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+    case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+    case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+    case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+    case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+    case vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+    case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+    case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+    case vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+    case vk::VK_PRIMITIVE_TOPOLOGY_LAST:
+        DE_FATAL("Topology not implemented");
+        break;
+    default:
+        DE_FATAL("Unknown topology");
+        break;
+    }
 }
 
-}	// anonymous
-
-SimpleDrawTests::SimpleDrawTests (tcu::TestContext &testCtx)
-: TestCaseGroup	(testCtx, "simple_draw", "drawing simple geometry")
+SimpleDrawInstanced::SimpleDrawInstanced(Context &context, TestSpec testSpec) : SimpleDraw(context, testSpec)
 {
-	/* Left blank on purpose */
 }
 
-SimpleDrawTests::~SimpleDrawTests (void) {}
-
-
-void SimpleDrawTests::init (void)
+tcu::TestStatus SimpleDrawInstanced::iterate(void)
 {
-	{
-		SimpleDraw::TestSpec testSpec;
-		testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetch.vert";
-		testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
+    tcu::TestLog &log                         = m_context.getTestContext().getLog();
+    const vk::VkQueue queue                   = m_context.getUniversalQueue();
+    const vk::VkDevice device                 = m_context.getDevice();
+    const vk::VkDeviceSize vertexBufferOffset = 0;
+    const vk::VkBuffer vertexBuffer           = m_vertexBuffer->object();
 
-		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		addChild(new InstanceFactory<SimpleDraw>(m_testCtx, "simple_draw_triangle_list", "Draws triangle list", testSpec));
-		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-		addChild(new InstanceFactory<SimpleDraw>(m_testCtx, "simple_draw_triangle_strip", "Draws triangle strip", testSpec));
-	}
-	{
-		SimpleDrawInstanced::TestSpec testSpec;
-		testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/draw/VertexFetchInstancedFirstInstance.vert";
-		testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/draw/VertexFetch.frag";
+#ifndef CTS_USES_VULKANSC
+    if (m_groupParams->useSecondaryCmdBuffer)
+    {
+        // record secondary command buffer
+        if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+        {
+            beginSecondaryCmdBuffer(m_vk, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+            beginDynamicRender(*m_secCmdBuffer);
+        }
+        else
+            beginSecondaryCmdBuffer(m_vk);
 
-		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		addChild(new InstanceFactory<SimpleDrawInstanced>(m_testCtx, "simple_draw_instanced_triangle_list", "Draws an instanced triangle list", testSpec));
-		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-		addChild(new InstanceFactory<SimpleDrawInstanced>(m_testCtx, "simple_draw_instanced_triangle_strip", "Draws an instanced triangle strip", testSpec));
-	}
+        m_vk.cmdBindVertexBuffers(*m_secCmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+        m_vk.cmdBindPipeline(*m_secCmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+        draw(*m_secCmdBuffer, 4u, 2u);
+
+        if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+            endDynamicRender(*m_secCmdBuffer);
+
+        endCommandBuffer(m_vk, *m_secCmdBuffer);
+
+        // record primary command buffer
+        beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+        preRenderBarriers();
+
+        if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+            beginDynamicRender(*m_cmdBuffer, vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+        m_vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+
+        if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+            endDynamicRender(*m_cmdBuffer);
+
+        endCommandBuffer(m_vk, *m_cmdBuffer);
+    }
+    else if (m_groupParams->useDynamicRendering)
+    {
+        beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+        preRenderBarriers();
+
+        beginDynamicRender(*m_cmdBuffer);
+        m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+        m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+        draw(*m_cmdBuffer, 4u, 2u);
+        endDynamicRender(*m_cmdBuffer);
+
+        endCommandBuffer(m_vk, *m_cmdBuffer);
+    }
+#endif // CTS_USES_VULKANSC
+
+    if (!m_groupParams->useDynamicRendering)
+    {
+        beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+        preRenderBarriers();
+
+        beginLegacyRender(*m_cmdBuffer);
+        m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+        m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+        draw(*m_cmdBuffer, 4u, 2u);
+        endLegacyRender(*m_cmdBuffer);
+
+        endCommandBuffer(m_vk, *m_cmdBuffer);
+    }
+
+    submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
+
+    // Validation
+    VK_CHECK(m_vk.queueWaitIdle(queue));
+
+    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)),
+                                  (int)(0.5f + static_cast<float>(HEIGHT)));
+
+    referenceFrame.allocLevel(0);
+
+    const int32_t frameWidth  = referenceFrame.getWidth();
+    const int32_t frameHeight = referenceFrame.getHeight();
+
+    tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    ReferenceImageInstancedCoordinates refInstancedCoords;
+
+    for (int y = 0; y < frameHeight; y++)
+    {
+        const float yCoord = (float)(y / (0.5 * frameHeight)) - 1.0f;
+
+        for (int x = 0; x < frameWidth; x++)
+        {
+            const float xCoord = (float)(x / (0.5 * frameWidth)) - 1.0f;
+
+            if ((yCoord >= refInstancedCoords.bottom && yCoord <= refInstancedCoords.top &&
+                 xCoord >= refInstancedCoords.left && xCoord <= refInstancedCoords.right))
+                referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), x, y);
+        }
+    }
+
+    const vk::VkOffset3D zeroOffset = {0, 0, 0};
+    const tcu::ConstPixelBufferAccess renderedFrame =
+        m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset,
+                                        WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+
+    qpTestResult res = QP_TEST_RESULT_PASS;
+
+    if (!tcu::fuzzyCompare(log, "Result", "Image comparison result", referenceFrame.getLevel(0), renderedFrame, 0.05f,
+                           tcu::COMPARE_LOG_RESULT))
+    {
+        res = QP_TEST_RESULT_FAIL;
+    }
+
+    return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
-}	// DrawTests
-}	// vkt
+void checkSupport(Context &context, SimpleDraw::TestSpec testSpec)
+{
+    if (testSpec.groupParams->useDynamicRendering)
+        context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+}
+
+} // namespace
+
+SimpleDrawTests::SimpleDrawTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams)
+    : TestCaseGroup(testCtx, "simple_draw")
+    , m_groupParams(groupParams)
+{
+    /* Left blank on purpose */
+}
+
+SimpleDrawTests::~SimpleDrawTests(void)
+{
+}
+
+void SimpleDrawTests::init(void)
+{
+    {
+        SimpleDraw::TestSpec testSpec{
+            {// ShaderMap shaders;
+             {glu::SHADERTYPE_VERTEX, "vulkan/draw/VertexFetch.vert"},
+             {glu::SHADERTYPE_FRAGMENT, "vulkan/draw/VertexFetch.frag"}},
+            vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // vk::VkPrimitiveTopology topology;
+            m_groupParams                            // const SharedGroupParams groupParams;
+        };
+
+        addChild(new InstanceFactory<SimpleDraw, FunctionSupport1<SimpleDraw::TestSpec>>(
+            m_testCtx, "simple_draw_triangle_list", testSpec,
+            FunctionSupport1<SimpleDraw::TestSpec>::Args(checkSupport, testSpec)));
+        testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+        addChild(new InstanceFactory<SimpleDraw, FunctionSupport1<SimpleDraw::TestSpec>>(
+            m_testCtx, "simple_draw_triangle_strip", testSpec,
+            FunctionSupport1<SimpleDraw::TestSpec>::Args(checkSupport, testSpec)));
+    }
+    {
+        SimpleDrawInstanced::TestSpec testSpec{
+            {{glu::SHADERTYPE_VERTEX, "vulkan/draw/VertexFetchInstancedFirstInstance.vert"},
+             {glu::SHADERTYPE_FRAGMENT, "vulkan/draw/VertexFetch.frag"}},
+            vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            m_groupParams};
+
+        addChild(new InstanceFactory<SimpleDrawInstanced, FunctionSupport1<SimpleDrawInstanced::TestSpec>>(
+            m_testCtx, "simple_draw_instanced_triangle_list", testSpec,
+            FunctionSupport1<SimpleDrawInstanced::TestSpec>::Args(checkSupport, testSpec)));
+        testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+        addChild(new InstanceFactory<SimpleDrawInstanced, FunctionSupport1<SimpleDrawInstanced::TestSpec>>(
+            m_testCtx, "simple_draw_instanced_triangle_strip", testSpec,
+            FunctionSupport1<SimpleDrawInstanced::TestSpec>::Args(checkSupport, testSpec)));
+    }
+}
+
+} // namespace Draw
+} // namespace vkt

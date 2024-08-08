@@ -19,11 +19,13 @@
  * be lost! Modify the generating script instead.
  */
 
-const char* mustpassDir = "gl_cts/data/mustpass/gl/khronos_mustpass_single/4.6.1.x/";
+const char* mustpassDir = "gl_cts/data/mustpass/gl/khronos_mustpass_single/main/";
 
 static const RunParams khronos_mustpass_gl_single_config_first_cfg[] = {
-	{ glu::ApiType::core(4, 5), "khr-single", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
-	{ glu::ApiType::core(4, 6), "khr-single", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+	{ glu::ApiType::core(4, 3), "khr-single", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 4), "khr-single", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 5), "khr-single", nullptr, "unspecified", 1, nullptr, 64, 64 },
+	{ glu::ApiType::core(4, 6), "khr-single", nullptr, "unspecified", 1, nullptr, 64, 64 },
 };
 
 #endif // _GLCKHRONOSMUSTPASSGLSINGLECONFIG_HPP

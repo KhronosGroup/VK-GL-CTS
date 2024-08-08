@@ -1,10 +1,15 @@
-include_directories(..)
+include_directories(
+	..
+	${DEQP_INL_DIR}
+	)
 
 set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesBase.cpp
 	vktSparseResourcesBase.hpp
 	vktSparseResourcesBufferMemoryAliasing.cpp
 	vktSparseResourcesBufferMemoryAliasing.hpp
+	vktSparseResourcesBufferRebind.cpp
+	vktSparseResourcesBufferRebind.hpp
 	vktSparseResourcesBufferSparseBinding.cpp
 	vktSparseResourcesBufferSparseBinding.hpp
 	vktSparseResourcesBufferSparseResidency.cpp
@@ -13,6 +18,8 @@ set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesBufferTests.hpp
 	vktSparseResourcesImageMemoryAliasing.cpp
 	vktSparseResourcesImageMemoryAliasing.hpp
+	vktSparseResourcesImageRebind.cpp
+	vktSparseResourcesImageRebind.hpp
 	vktSparseResourcesImageSparseBinding.cpp
 	vktSparseResourcesImageSparseBinding.hpp
 	vktSparseResourcesImageSparseResidency.cpp
@@ -37,14 +44,11 @@ set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesTests.hpp
 	vktSparseResourcesTestsUtil.cpp
 	vktSparseResourcesTestsUtil.hpp
-	)
-
-set(DEQP_VK_SPARSE_RESOURCES_LIBS
-	tcutil
-	vkutil
+	vktSparseResourcesTransferQueueTests.cpp
+	vktSparseResourcesTransferQueueTests.hpp
 	)
 
 PCH(DEQP_VK_SPARSE_RESOURCES_SRCS ../pch.cpp)
 
 add_library(deqp-vk-sparse-resources STATIC ${DEQP_VK_SPARSE_RESOURCES_SRCS})
-target_link_libraries(deqp-vk-sparse-resources ${DEQP_VK_SPARSE_RESOURCES_LIBS})
+target_link_libraries(deqp-vk-sparse-resources tcutil vkutil)

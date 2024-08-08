@@ -34,17 +34,17 @@ namespace gles2
 class CapabilityTests : public TestCaseGroup
 {
 public:
-						CapabilityTests		(Context& context);
-						~CapabilityTests	(void);
+    CapabilityTests(Context &context);
+    ~CapabilityTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						CapabilityTests		(const CapabilityTests& other);
-	CapabilityTests&	operator=			(const CapabilityTests& other);
+    CapabilityTests(const CapabilityTests &other);
+    CapabilityTests &operator=(const CapabilityTests &other);
 };
 
-} // gles2
-} // deqp
+} // namespace gles2
+} // namespace deqp
 
 #endif // _TES2CAPABILITYTESTS_HPP

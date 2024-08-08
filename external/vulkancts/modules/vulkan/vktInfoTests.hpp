@@ -28,9 +28,12 @@
 
 namespace vkt
 {
+namespace info
+{
 
-void	createInfoTests		(tcu::TestCaseGroup* testGroup);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
-} // vkt
+} // namespace info
+} // namespace vkt
 
 #endif // _VKTINFOTESTS_HPP

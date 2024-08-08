@@ -35,7 +35,6 @@
 using namespace glw; // GLint and other GL types
 using deqp::gls::StateQueryUtil::StateQueryMemoryWriteGuard;
 
-
 namespace deqp
 {
 namespace gles2
@@ -45,92 +44,96 @@ namespace Functional
 namespace BufferParamVerifiers
 {
 
-void checkIntEquals (tcu::TestContext& testCtx, GLint got, GLint expected)
+void checkIntEquals(tcu::TestContext &testCtx, GLint got, GLint expected)
 {
-	using tcu::TestLog;
+    using tcu::TestLog;
 
-	if (got != expected)
-	{
-		testCtx.getLog() << TestLog::Message << "// ERROR: Expected " << expected << "; got " << got << TestLog::EndMessage;
-		if (testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got invalid value");
-	}
+    if (got != expected)
+    {
+        testCtx.getLog() << TestLog::Message << "// ERROR: Expected " << expected << "; got " << got
+                         << TestLog::EndMessage;
+        if (testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got invalid value");
+    }
 }
 
-void checkPointerEquals (tcu::TestContext& testCtx, const void* got, const void* expected)
+void checkPointerEquals(tcu::TestContext &testCtx, const void *got, const void *expected)
 {
-	using tcu::TestLog;
+    using tcu::TestLog;
 
-	if (got != expected)
-	{
-		testCtx.getLog() << TestLog::Message << "// ERROR: Expected " << expected << "; got " << got << TestLog::EndMessage;
-		if (testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got invalid value");
-	}
+    if (got != expected)
+    {
+        testCtx.getLog() << TestLog::Message << "// ERROR: Expected " << expected << "; got " << got
+                         << TestLog::EndMessage;
+        if (testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            testCtx.setTestResult(QP_TEST_RESULT_FAIL, "got invalid value");
+    }
 }
 
 class BufferParamVerifier : protected glu::CallLogWrapper
 {
 public:
-						BufferParamVerifier		(const glw::Functions& gl, tcu::TestLog& log, const char* testNamePostfix);
-	virtual				~BufferParamVerifier	(); // make GCC happy
+    BufferParamVerifier(const glw::Functions &gl, tcu::TestLog &log, const char *testNamePostfix);
+    virtual ~BufferParamVerifier(); // make GCC happy
 
-	const char*			getTestNamePostfix		(void) const;
+    const char *getTestNamePostfix(void) const;
 
-	virtual void		verifyInteger			(tcu::TestContext& testCtx, GLenum target, GLenum name, GLint reference)	= DE_NULL;
+    virtual void verifyInteger(tcu::TestContext &testCtx, GLenum target, GLenum name, GLint reference) = 0;
+
 private:
-	const char*	const	m_testNamePostfix;
+    const char *const m_testNamePostfix;
 };
 
-BufferParamVerifier::BufferParamVerifier (const glw::Functions& gl, tcu::TestLog& log, const char* testNamePostfix)
-	: glu::CallLogWrapper	(gl, log)
-	, m_testNamePostfix		(testNamePostfix)
+BufferParamVerifier::BufferParamVerifier(const glw::Functions &gl, tcu::TestLog &log, const char *testNamePostfix)
+    : glu::CallLogWrapper(gl, log)
+    , m_testNamePostfix(testNamePostfix)
 {
-	enableLogging(true);
+    enableLogging(true);
 }
 
-BufferParamVerifier::~BufferParamVerifier ()
+BufferParamVerifier::~BufferParamVerifier()
 {
 }
 
-const char* BufferParamVerifier::getTestNamePostfix (void) const
+const char *BufferParamVerifier::getTestNamePostfix(void) const
 {
-	return m_testNamePostfix;
+    return m_testNamePostfix;
 }
 
 class GetBufferParameterIVerifier : public BufferParamVerifier
 {
 public:
-			GetBufferParameterIVerifier					(const glw::Functions& gl, tcu::TestLog& log);
+    GetBufferParameterIVerifier(const glw::Functions &gl, tcu::TestLog &log);
 
-	void	verifyInteger								(tcu::TestContext& testCtx, GLenum target, GLenum name, GLint reference);
+    void verifyInteger(tcu::TestContext &testCtx, GLenum target, GLenum name, GLint reference);
 };
 
-GetBufferParameterIVerifier::GetBufferParameterIVerifier (const glw::Functions& gl, tcu::TestLog& log)
-	: BufferParamVerifier(gl, log, "_getbufferparameteri")
+GetBufferParameterIVerifier::GetBufferParameterIVerifier(const glw::Functions &gl, tcu::TestLog &log)
+    : BufferParamVerifier(gl, log, "_getbufferparameteri")
 {
 }
 
-void GetBufferParameterIVerifier::verifyInteger (tcu::TestContext& testCtx, GLenum target, GLenum name, GLint reference)
+void GetBufferParameterIVerifier::verifyInteger(tcu::TestContext &testCtx, GLenum target, GLenum name, GLint reference)
 {
-	using tcu::TestLog;
+    using tcu::TestLog;
 
-	StateQueryMemoryWriteGuard<GLint> state;
-	glGetBufferParameteriv(target, name, &state);
+    StateQueryMemoryWriteGuard<GLint> state;
+    glGetBufferParameteriv(target, name, &state);
 
-	if (!state.verifyValidity(testCtx))
-		return;
+    if (!state.verifyValidity(testCtx))
+        return;
 
-	if (state != reference)
-	{
-		testCtx.getLog() << TestLog::Message << "// ERROR: expected " << reference << "; got " << state << TestLog::EndMessage;
+    if (state != reference)
+    {
+        testCtx.getLog() << TestLog::Message << "// ERROR: expected " << reference << "; got " << state
+                         << TestLog::EndMessage;
 
-		if (testCtx.getTestResult() == QP_TEST_RESULT_PASS)
-			testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
-	}
+        if (testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+            testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid value");
+    }
 }
 
-} // BufferParamVerifiers
+} // namespace BufferParamVerifiers
 
 namespace
 {
@@ -142,143 +145,144 @@ using namespace BufferParamVerifiers;
 class BufferCase : public ApiCase
 {
 public:
-	BufferCase (Context& context, BufferParamVerifier* verifier, const char* name, const char* description)
-		: ApiCase			(context, name, description)
-		, m_bufferTarget	(0)
-		, m_verifier		(verifier)
-	{
-	}
+    BufferCase(Context &context, BufferParamVerifier *verifier, const char *name, const char *description)
+        : ApiCase(context, name, description)
+        , m_bufferTarget(0)
+        , m_verifier(verifier)
+    {
+    }
 
-	virtual void testBuffer (void) = DE_NULL;
+    virtual void testBuffer(void) = 0;
 
-	void test (void)
-	{
-		const GLenum bufferTargets[] =
-		{
-			GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER
-		};
-		const int targets = DE_LENGTH_OF_ARRAY(bufferTargets);
+    void test(void)
+    {
+        const GLenum bufferTargets[] = {GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER};
+        const int targets            = DE_LENGTH_OF_ARRAY(bufferTargets);
 
-		for (int ndx = 0; ndx < targets; ++ndx)
-		{
-			m_bufferTarget = bufferTargets[ndx];
+        for (int ndx = 0; ndx < targets; ++ndx)
+        {
+            m_bufferTarget = bufferTargets[ndx];
 
-			GLuint bufferId = 0;
-			glGenBuffers(1, &bufferId);
-			glBindBuffer(m_bufferTarget, bufferId);
-			expectError(GL_NO_ERROR);
+            GLuint bufferId = 0;
+            glGenBuffers(1, &bufferId);
+            glBindBuffer(m_bufferTarget, bufferId);
+            expectError(GL_NO_ERROR);
 
-			testBuffer();
+            testBuffer();
 
-			glDeleteBuffers(1, &bufferId);
-			expectError(GL_NO_ERROR);
-		}
-	}
+            glDeleteBuffers(1, &bufferId);
+            expectError(GL_NO_ERROR);
+        }
+    }
 
 protected:
-	GLenum					m_bufferTarget;
-	BufferParamVerifier*	m_verifier;
+    GLenum m_bufferTarget;
+    BufferParamVerifier *m_verifier;
 };
 
 class BufferSizeCase : public BufferCase
 {
 public:
-	BufferSizeCase (Context& context, BufferParamVerifier* verifier, const char* name, const char* description)
-		: BufferCase(context, verifier, name, description)
-	{
-	}
+    BufferSizeCase(Context &context, BufferParamVerifier *verifier, const char *name, const char *description)
+        : BufferCase(context, verifier, name, description)
+    {
+    }
 
-	void testBuffer (void)
-	{
-		const int numIteration = 16;
-		de::Random rnd(0xabcdef);
+    void testBuffer(void)
+    {
+        const int numIteration = 16;
+        de::Random rnd(0xabcdef);
 
-		m_verifier->verifyInteger(m_testCtx, m_bufferTarget, GL_BUFFER_SIZE, 0);
+        m_verifier->verifyInteger(m_testCtx, m_bufferTarget, GL_BUFFER_SIZE, 0);
 
-		for (int i = 0; i < numIteration; ++i)
-		{
-			const GLint len = rnd.getInt(0, 1024);
-			glBufferData(m_bufferTarget, len, DE_NULL, GL_STREAM_DRAW);
-			expectError(GL_NO_ERROR);
+        for (int i = 0; i < numIteration; ++i)
+        {
+            const GLint len = rnd.getInt(0, 1024);
+            glBufferData(m_bufferTarget, len, nullptr, GL_STREAM_DRAW);
+            expectError(GL_NO_ERROR);
 
-			m_verifier->verifyInteger(m_testCtx, m_bufferTarget, GL_BUFFER_SIZE, len);
-			expectError(GL_NO_ERROR);
-		}
-	}
+            m_verifier->verifyInteger(m_testCtx, m_bufferTarget, GL_BUFFER_SIZE, len);
+            expectError(GL_NO_ERROR);
+        }
+    }
 };
 
 class BufferUsageCase : public BufferCase
 {
 public:
-	BufferUsageCase (Context& context, BufferParamVerifier* verifier, const char* name, const char* description)
-		: BufferCase(context, verifier, name, description)
-	{
-	}
+    BufferUsageCase(Context &context, BufferParamVerifier *verifier, const char *name, const char *description)
+        : BufferCase(context, verifier, name, description)
+    {
+    }
 
-	void testBuffer (void)
-	{
-		const GLenum usages[] =
-		{
-			GL_STATIC_DRAW, GL_DYNAMIC_DRAW, GL_STREAM_DRAW
-		};
+    void testBuffer(void)
+    {
+        const GLenum usages[] = {GL_STATIC_DRAW, GL_DYNAMIC_DRAW, GL_STREAM_DRAW};
 
-		m_verifier->verifyInteger(m_testCtx, m_bufferTarget, GL_BUFFER_USAGE, GL_STATIC_DRAW);
+        m_verifier->verifyInteger(m_testCtx, m_bufferTarget, GL_BUFFER_USAGE, GL_STATIC_DRAW);
 
-		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(usages); ++ndx)
-		{
-			glBufferData(m_bufferTarget, 16, DE_NULL, usages[ndx]);
-			expectError(GL_NO_ERROR);
+        for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(usages); ++ndx)
+        {
+            glBufferData(m_bufferTarget, 16, nullptr, usages[ndx]);
+            expectError(GL_NO_ERROR);
 
-			m_verifier->verifyInteger(m_testCtx, m_bufferTarget, GL_BUFFER_USAGE, usages[ndx]);
-			expectError(GL_NO_ERROR);
-		}
-	}
+            m_verifier->verifyInteger(m_testCtx, m_bufferTarget, GL_BUFFER_USAGE, usages[ndx]);
+            expectError(GL_NO_ERROR);
+        }
+    }
 };
 
-} // anonymous
+} // namespace
 
-#define FOR_EACH_VERIFIER(VERIFIERS, CODE_BLOCK)												\
-	for (int _verifierNdx = 0; _verifierNdx < DE_LENGTH_OF_ARRAY(VERIFIERS); _verifierNdx++)	\
-	{																							\
-		BufferParamVerifier* verifier = (VERIFIERS)[_verifierNdx];								\
-		CODE_BLOCK;																				\
-	}
+#define FOR_EACH_VERIFIER(VERIFIERS, CODE_BLOCK)                                             \
+    for (int _verifierNdx = 0; _verifierNdx < DE_LENGTH_OF_ARRAY(VERIFIERS); _verifierNdx++) \
+    {                                                                                        \
+        BufferParamVerifier *verifier = (VERIFIERS)[_verifierNdx];                           \
+        CODE_BLOCK;                                                                          \
+    }
 
-BufferObjectQueryTests::BufferObjectQueryTests (Context& context)
-	: TestCaseGroup		(context, "buffer_object", "Buffer Object Query tests")
-	, m_verifierInt		(DE_NULL)
+BufferObjectQueryTests::BufferObjectQueryTests(Context &context)
+    : TestCaseGroup(context, "buffer_object", "Buffer Object Query tests")
+    , m_verifierInt(nullptr)
 {
 }
 
-BufferObjectQueryTests::~BufferObjectQueryTests (void)
+BufferObjectQueryTests::~BufferObjectQueryTests(void)
 {
-	deinit();
+    deinit();
 }
 
-void BufferObjectQueryTests::init (void)
+void BufferObjectQueryTests::init(void)
 {
-	using namespace BufferParamVerifiers;
+    using namespace BufferParamVerifiers;
 
-	DE_ASSERT(m_verifierInt == DE_NULL);
+    DE_ASSERT(m_verifierInt == nullptr);
 
-	m_verifierInt		= new GetBufferParameterIVerifier	(m_context.getRenderContext().getFunctions(), m_context.getTestContext().getLog());
-	BufferParamVerifier* verifiers[] = {m_verifierInt};
+    m_verifierInt                    = new GetBufferParameterIVerifier(m_context.getRenderContext().getFunctions(),
+                                                                       m_context.getTestContext().getLog());
+    BufferParamVerifier *verifiers[] = {m_verifierInt};
 
-	FOR_EACH_VERIFIER(verifiers, addChild(new BufferSizeCase		(m_context, verifier,	(std::string("buffer_size")				+ verifier->getTestNamePostfix()).c_str(), "BUFFER_SIZE")));
-	FOR_EACH_VERIFIER(verifiers, addChild(new BufferUsageCase		(m_context, verifier,	(std::string("buffer_usage")			+ verifier->getTestNamePostfix()).c_str(), "BUFFER_USAGE")));
+    FOR_EACH_VERIFIER(verifiers,
+                      addChild(new BufferSizeCase(m_context, verifier,
+                                                  (std::string("buffer_size") + verifier->getTestNamePostfix()).c_str(),
+                                                  "BUFFER_SIZE")))
+    FOR_EACH_VERIFIER(
+        verifiers, addChild(new BufferUsageCase(m_context, verifier,
+                                                (std::string("buffer_usage") + verifier->getTestNamePostfix()).c_str(),
+                                                "BUFFER_USAGE")))
 }
 
-void BufferObjectQueryTests::deinit (void)
+void BufferObjectQueryTests::deinit(void)
 {
-	if (m_verifierInt)
-	{
-		delete m_verifierInt;
-		m_verifierInt = NULL;
-	}
+    if (m_verifierInt)
+    {
+        delete m_verifierInt;
+        m_verifierInt = NULL;
+    }
 
-	this->TestCaseGroup::deinit();
+    this->TestCaseGroup::deinit();
 }
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp

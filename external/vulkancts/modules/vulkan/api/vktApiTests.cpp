@@ -24,11 +24,9 @@
 #include "vktApiTests.hpp"
 
 #include "vktTestGroupUtil.hpp"
-#include "vktApiSmokeTests.hpp"
 #include "vktApiDeviceInitializationTests.hpp"
 #include "vktApiDriverPropertiesTests.hpp"
 #include "vktApiObjectManagementTests.hpp"
-#include "vktApiBufferMarkerTests.hpp"
 #include "vktApiBufferTests.hpp"
 #include "vktApiBufferViewCreateTests.hpp"
 #include "vktApiBufferViewAccessTests.hpp"
@@ -41,13 +39,29 @@
 #include "vktApiNullHandleTests.hpp"
 #include "vktApiGranularityTests.hpp"
 #include "vktApiGetMemoryCommitment.hpp"
-#include "vktApiExternalMemoryTests.hpp"
 #include "vktApiVersionCheck.hpp"
 #include "vktApiMaintenance3Check.hpp"
 #include "vktApiDescriptorSetTests.hpp"
 #include "vktApiPipelineTests.hpp"
 #include "vktApiMemoryRequirementInvarianceTests.hpp"
+#include "vktApiBufferMemoryRequirementsTests.hpp"
+#include "vktApiGetDeviceProcAddrTests.hpp"
+#include "vktApiMaintenance6Check.hpp"
+#include "vktApiExtensionDuplicatesTests.hpp"
+#include "vktApiMaintenance7Tests.hpp"
+
+#ifndef CTS_USES_VULKANSC
+#include "vktApiSmokeTests.hpp"
+#include "vktApiBufferMarkerTests.hpp"
+#include "vktApiDeviceDrmPropertiesTests.hpp"
+#include "vktApiExternalMemoryTests.hpp"
 #include "vktApiToolingInfoTests.hpp"
+#include "vktApiFormatPropertiesExtendedKHRtests.hpp"
+#include "vktApiImageCompressionControlTests.hpp"
+#include "vktApiFrameBoundaryTests.hpp"
+#include "vktApiPhysicalDeviceFormatPropertiesMaint5Tests.hpp"
+#include "vktApiFragmentShaderOutputTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 namespace vkt
 {
@@ -57,49 +71,72 @@ namespace api
 namespace
 {
 
-void createBufferViewTests (tcu::TestCaseGroup* bufferViewTests)
+void createBufferViewTests(tcu::TestCaseGroup *bufferViewTests)
 {
-	tcu::TestContext&	testCtx		= bufferViewTests->getTestContext();
+    tcu::TestContext &testCtx = bufferViewTests->getTestContext();
 
-	bufferViewTests->addChild(createBufferViewCreateTests	(testCtx));
-	bufferViewTests->addChild(createBufferViewAccessTests	(testCtx));
+    bufferViewTests->addChild(createBufferViewCreateTests(testCtx));
+    bufferViewTests->addChild(createBufferViewAccessTests(testCtx));
 }
 
-void createApiTests (tcu::TestCaseGroup* apiTests)
+void createApiTests(tcu::TestCaseGroup *apiTests)
 {
-	tcu::TestContext&	testCtx		= apiTests->getTestContext();
+    tcu::TestContext &testCtx = apiTests->getTestContext();
 
-	apiTests->addChild(createVersionSanityCheckTests			(testCtx));
-	apiTests->addChild(createDriverPropertiesTests				(testCtx));
-	apiTests->addChild(createSmokeTests							(testCtx));
-	apiTests->addChild(api::createFeatureInfoTests				(testCtx));
-	apiTests->addChild(createDeviceInitializationTests			(testCtx));
-	apiTests->addChild(createObjectManagementTests				(testCtx));
-	apiTests->addChild(createBufferTests						(testCtx));
-	apiTests->addChild(createBufferMarkerTests					(testCtx));
-	apiTests->addChild(createTestGroup							(testCtx, "buffer_view",	"BufferView tests",		createBufferViewTests));
-	apiTests->addChild(createCommandBuffersTests				(testCtx));
-	apiTests->addChild(createCopiesAndBlittingTests				(testCtx));
-	apiTests->addChild(createImageClearingTests					(testCtx));
-	apiTests->addChild(createFillAndUpdateBufferTests			(testCtx));
-	apiTests->addChild(createDescriptorPoolTests				(testCtx));
-	apiTests->addChild(createNullHandleTests					(testCtx));
-	apiTests->addChild(createGranularityQueryTests				(testCtx));
-	apiTests->addChild(createMemoryCommitmentTests				(testCtx));
-	apiTests->addChild(createExternalMemoryTests				(testCtx));
-	apiTests->addChild(createMaintenance3Tests					(testCtx));
-	apiTests->addChild(createDescriptorSetTests					(testCtx));
-	apiTests->addChild(createPipelineTests						(testCtx));
-	apiTests->addChild(createMemoryRequirementInvarianceTests	(testCtx));
-	apiTests->addChild(createToolingInfoTests					(testCtx));
+    apiTests->addChild(createVersionSanityCheckTests(testCtx));
+    apiTests->addChild(createDriverPropertiesTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+    apiTests->addChild(createSmokeTests(testCtx));
+#endif // CTS_USES_VULKANSC
+    apiTests->addChild(api::createFeatureInfoTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+    apiTests->addChild(createDeviceDrmPropertiesTests(testCtx));
+#endif // CTS_USES_VULKANSC
+    apiTests->addChild(createDeviceInitializationTests(testCtx));
+    apiTests->addChild(createObjectManagementTests(testCtx));
+    apiTests->addChild(createBufferTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+    apiTests->addChild(createBufferMarkerTests(testCtx));
+#endif // CTS_USES_VULKANSC
+    apiTests->addChild(createTestGroup(testCtx, "buffer_view", createBufferViewTests));
+    apiTests->addChild(createCommandBuffersTests(testCtx));
+    apiTests->addChild(createCopiesAndBlittingTests(testCtx));
+    apiTests->addChild(createImageClearingTests(testCtx));
+    apiTests->addChild(createFillAndUpdateBufferTests(testCtx));
+    apiTests->addChild(createDescriptorPoolTests(testCtx));
+    apiTests->addChild(createNullHandleTests(testCtx));
+    apiTests->addChild(createGranularityQueryTests(testCtx));
+    apiTests->addChild(createMemoryCommitmentTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+    apiTests->addChild(createExternalMemoryTests(testCtx));
+#endif // CTS_USES_VULKANSC
+    apiTests->addChild(createMaintenance3Tests(testCtx));
+    apiTests->addChild(createDescriptorSetTests(testCtx));
+    apiTests->addChild(createPipelineTests(testCtx));
+    apiTests->addChild(createMemoryRequirementInvarianceTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+    apiTests->addChild(createToolingInfoTests(testCtx));
+    apiTests->addChild(createFormatPropertiesExtendedKHRTests(testCtx));
+#endif // CTS_USES_VULKANSC
+    apiTests->addChild(createBufferMemoryRequirementsTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+    apiTests->addChild(createImageCompressionControlTests(testCtx));
+    apiTests->addChild(createGetDeviceProcAddrTests(testCtx));
+    apiTests->addChild(createMaintenance6Tests(testCtx));
+    apiTests->addChild(createFrameBoundaryTests(testCtx));
+    apiTests->addChild(createMaintenance5Tests(testCtx));
+    apiTests->addChild(createFragmentShaderOutputTests(testCtx));
+    apiTests->addChild(createMaintenance7Tests(testCtx));
+#endif
+    apiTests->addChild(createExtensionDuplicatesTests(testCtx));
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	return createTestGroup(testCtx, "api", "API Tests", createApiTests);
+    return createTestGroup(testCtx, name, createApiTests);
 }
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt

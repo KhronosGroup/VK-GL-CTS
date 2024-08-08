@@ -33,10 +33,10 @@ namespace gles31
 namespace Functional
 {
 
-TestCaseGroup* createTextureBufferTests (Context& context);
+TestCaseGroup *createTextureBufferTests(Context &context);
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FTEXTUREBUFFERTESTS_HPP

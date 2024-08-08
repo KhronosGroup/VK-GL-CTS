@@ -36,18 +36,18 @@ namespace Performance
 class TextureCountTests : public TestCaseGroup
 {
 public:
-							TextureCountTests		(Context& context);
-							~TextureCountTests		(void);
+    TextureCountTests(Context &context);
+    ~TextureCountTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							TextureCountTests		(const TextureCountTests& other);
-	TextureCountTests&		operator=				(const TextureCountTests& other);
+    TextureCountTests(const TextureCountTests &other);
+    TextureCountTests &operator=(const TextureCountTests &other);
 };
 
-} // Performance
-} // gles2
-} // deqp
+} // namespace Performance
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2PTEXTURECOUNTTESTS_HPP

@@ -1,15 +1,14 @@
 include_directories(
-        ..
-        ../amber
-        )
+	..
+	../amber
+	${DEQP_INL_DIR}
+	)
 
-set(DEQP_VK_COMPUTE_SRCS
+set(DEQP_VK_VKSC_COMPUTE_SRCS
 	vktComputeTests.cpp
 	vktComputeTests.hpp
 	vktComputeBasicComputeShaderTests.cpp
 	vktComputeBasicComputeShaderTests.hpp
-	vktComputeCooperativeMatrixTests.cpp
-	vktComputeCooperativeMatrixTests.hpp
 	vktComputeIndirectComputeDispatchTests.cpp
 	vktComputeIndirectComputeDispatchTests.hpp
 	vktComputeShaderBuiltinVarTests.cpp
@@ -18,16 +17,19 @@ set(DEQP_VK_COMPUTE_SRCS
 	vktComputeTestsUtil.hpp
 	vktComputeZeroInitializeWorkgroupMemoryTests.cpp
 	vktComputeZeroInitializeWorkgroupMemoryTests.hpp
+	)
+
+set(DEQP_VK_COMPUTE_SRCS
+	vktComputeCooperativeMatrixTests.cpp
+	vktComputeCooperativeMatrixTests.hpp
 	vktComputeWorkgroupMemoryExplicitLayoutTests.cpp
 	vktComputeWorkgroupMemoryExplicitLayoutTests.hpp
 	)
 
-set(DEQP_VK_COMPUTE_LIBS
-	tcutil
-	vkutil
-	)
-
 PCH(DEQP_VK_COMPUTE_SRCS ../pch.cpp)
 
-add_library(deqp-vk-compute STATIC ${DEQP_VK_COMPUTE_SRCS})
-target_link_libraries(deqp-vk-compute ${DEQP_VK_COMPUTE_LIBS})
+add_library(deqp-vk-compute STATIC ${DEQP_VK_VKSC_COMPUTE_SRCS} ${DEQP_VK_COMPUTE_SRCS})
+target_link_libraries(deqp-vk-compute tcutil vkutil)
+
+add_library(deqp-vksc-compute STATIC ${DEQP_VK_VKSC_COMPUTE_SRCS})
+target_link_libraries(deqp-vksc-compute PUBLIC deqp-vksc-util tcutil vkscutil)

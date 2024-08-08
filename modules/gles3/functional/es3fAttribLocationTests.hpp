@@ -33,10 +33,10 @@ namespace gles3
 namespace Functional
 {
 
-TestCaseGroup* createAttributeLocationTests	(Context& context);
+TestCaseGroup *createAttributeLocationTests(Context &context);
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FATTRIBLOCATIONTESTS_HPP

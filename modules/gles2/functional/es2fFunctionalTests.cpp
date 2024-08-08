@@ -25,6 +25,7 @@
 
 #include "es2fColorClearTest.hpp"
 #include "es2fLightAmountTest.hpp"
+#include "es2fMultisampledRenderToTextureTests.hpp"
 #include "es2fShaderExecuteTest.hpp"
 #include "es2fFboApiTest.hpp"
 #include "es2fFboRenderTest.hpp"
@@ -76,6 +77,7 @@
 #include "es2fShaderBuiltinVarTests.hpp"
 #include "es2fShaderConstExprTests.hpp"
 #include "es2fShaderDiscardTests.hpp"
+#include "es2fShaderFunctionTests.hpp"
 #include "es2fShaderIndexingTests.hpp"
 #include "es2fShaderLoopTests.hpp"
 #include "es2fShaderOperatorTests.hpp"
@@ -113,49 +115,48 @@ namespace Functional
 class ShadersTestGroup : public TestCaseGroup
 {
 public:
-	ShadersTestGroup (Context& context)
-		: TestCaseGroup(context, "shaders", "Shader Tests")
-	{
-	}
+    ShadersTestGroup(Context &context) : TestCaseGroup(context, "shaders", "Shader Tests")
+    {
+    }
 
-	virtual ~ShadersTestGroup (void)
-	{
-	}
+    virtual ~ShadersTestGroup(void)
+    {
+    }
 
-	virtual void init (void)
-	{
-		addChild(new ShaderExecuteTest(m_context, "preprocessor",					"Preprocessor Tests"));
-		addChild(new ShaderExecuteTest(m_context, "constants",						"Constant Literal Tests"));
-		addChild(new ShaderExecuteTest(m_context, "linkage",						"Linkage Tests"));
-		addChild(new ShaderExecuteTest(m_context, "conversions",					"Type Conversion Tests"));
-		addChild(new ShaderExecuteTest(m_context, "conditionals",					"Conditionals Tests"));
-		addChild(new ShaderExecuteTest(m_context, "declarations",					"Declarations Tests"));
-		addChild(new ShaderExecuteTest(m_context, "swizzles",						"Swizzle Tests"));
-		addChild(new ShaderExecuteTest(m_context, "functions",						"Function Tests"));
-		addChild(new ShaderExecuteTest(m_context, "keywords",						"Keyword Tests"));
-		addChild(new ShaderExecuteTest(m_context, "reserved_operators",				"Reserved Operator Tests"));
-		addChild(new ShaderExecuteTest(m_context, "qualification_order",			"Order of Qualification Tests"));
-		addChild(new ShaderExecuteTest(m_context, "scoping",						"Scoping of Declarations"));
-		addChild(new ShaderExecuteTest(m_context, "invalid_implicit_conversions",	"Invalid Implicit Conversions"));
-		addChild(new ShaderExecuteTest(m_context, "misc",							"Miscellaneous Tests"));
+    virtual void init(void)
+    {
+        addChild(new ShaderExecuteTest(m_context, "preprocessor", "Preprocessor Tests"));
+        addChild(new ShaderExecuteTest(m_context, "constants", "Constant Literal Tests"));
+        addChild(new ShaderExecuteTest(m_context, "linkage", "Linkage Tests"));
+        addChild(new ShaderExecuteTest(m_context, "conversions", "Type Conversion Tests"));
+        addChild(new ShaderExecuteTest(m_context, "conditionals", "Conditionals Tests"));
+        addChild(new ShaderExecuteTest(m_context, "declarations", "Declarations Tests"));
+        addChild(new ShaderExecuteTest(m_context, "swizzles", "Swizzle Tests"));
+        addChild(new ShaderExecuteTest(m_context, "functions", "Function Tests"));
+        addChild(new ShaderExecuteTest(m_context, "keywords", "Keyword Tests"));
+        addChild(new ShaderExecuteTest(m_context, "reserved_operators", "Reserved Operator Tests"));
+        addChild(new ShaderExecuteTest(m_context, "qualification_order", "Order of Qualification Tests"));
+        addChild(new ShaderExecuteTest(m_context, "scoping", "Scoping of Declarations"));
+        addChild(new ShaderExecuteTest(m_context, "invalid_implicit_conversions", "Invalid Implicit Conversions"));
+        addChild(new ShaderExecuteTest(m_context, "misc", "Miscellaneous Tests"));
 
+        addChild(new ShaderIndexingTests(m_context));
+        addChild(new ShaderLoopTests(m_context));
+        addChild(new ShaderOperatorTests(m_context));
+        addChild(new ShaderMatrixTests(m_context));
+        addChild(new ShaderReturnTests(m_context));
+        addChild(new ShaderDiscardTests(m_context));
+        addChild(new ShaderStructTests(m_context));
+        addChild(new ShaderBuiltinVarTests(m_context));
+        addChild(new ShaderTextureFunctionTests(m_context));
+        addChild(new ShaderInvarianceTests(m_context));
+        addChild(new ShaderFragDataTests(m_context));
+        addChild(new ShaderAlgorithmTests(m_context));
+        addChild(new ShaderConstExprTests(m_context));
+        addChild(new ShaderFunctionTests(m_context));
 
-		addChild(new ShaderIndexingTests		(m_context));
-		addChild(new ShaderLoopTests			(m_context));
-		addChild(new ShaderOperatorTests		(m_context));
-		addChild(new ShaderMatrixTests			(m_context));
-		addChild(new ShaderReturnTests			(m_context));
-		addChild(new ShaderDiscardTests			(m_context));
-		addChild(new ShaderStructTests			(m_context));
-		addChild(new ShaderBuiltinVarTests		(m_context));
-		addChild(new ShaderTextureFunctionTests	(m_context));
-		addChild(new ShaderInvarianceTests		(m_context));
-		addChild(new ShaderFragDataTests		(m_context));
-		addChild(new ShaderAlgorithmTests		(m_context));
-		addChild(new ShaderConstExprTests		(m_context));
-
-		addChild(new RandomShaderTests(m_context));
-	}
+        addChild(new RandomShaderTests(m_context));
+    }
 };
 
 // TextureTestGroup
@@ -163,45 +164,43 @@ public:
 class TextureTestGroup : public TestCaseGroup
 {
 public:
-	TextureTestGroup (Context& context)
-		: TestCaseGroup(context, "texture", "Texture Tests")
-	{
-	}
+    TextureTestGroup(Context &context) : TestCaseGroup(context, "texture", "Texture Tests")
+    {
+    }
 
-	virtual ~TextureTestGroup (void)
-	{
-	}
+    virtual ~TextureTestGroup(void)
+    {
+    }
 
-	virtual void init (void)
-	{
-		addChild(new TextureFormatTests			(m_context));
-		addChild(new TextureSizeTests			(m_context));
-		addChild(new TextureWrapTests			(m_context));
-		addChild(new TextureFilteringTests		(m_context));
-		addChild(new TextureMipmapTests			(m_context));
-		addChild(new TextureSpecificationTests	(m_context));
-		addChild(new TextureCompletenessTests	(m_context));
-		addChild(new VertexTextureTests			(m_context));
-		addChild(new TextureUnitTests			(m_context));
-	}
+    virtual void init(void)
+    {
+        addChild(new TextureFormatTests(m_context));
+        addChild(new TextureSizeTests(m_context));
+        addChild(new TextureWrapTests(m_context));
+        addChild(new TextureFilteringTests(m_context));
+        addChild(new TextureMipmapTests(m_context));
+        addChild(new TextureSpecificationTests(m_context));
+        addChild(new TextureCompletenessTests(m_context));
+        addChild(new VertexTextureTests(m_context));
+        addChild(new TextureUnitTests(m_context));
+    }
 
-	virtual void deinit (void)
-	{
-	}
+    virtual void deinit(void)
+    {
+    }
 };
 
 class BufferTests : public TestCaseGroup
 {
 public:
-	BufferTests (Context& context)
-		: TestCaseGroup(context, "buffer", "Buffer object tests")
-	{
-	}
+    BufferTests(Context &context) : TestCaseGroup(context, "buffer", "Buffer object tests")
+    {
+    }
 
-	void init (void)
-	{
-		addChild(new BufferWriteTests(m_context));
-	}
+    void init(void)
+    {
+        addChild(new BufferWriteTests(m_context));
+    }
 };
 
 // FboTestGroup
@@ -209,21 +208,20 @@ public:
 class FboTestGroup : public TestCaseGroup
 {
 public:
-	FboTestGroup (Context& context)
-		: TestCaseGroup(context, "fbo", "Framebuffer Object Tests")
-	{
-	}
+    FboTestGroup(Context &context) : TestCaseGroup(context, "fbo", "Framebuffer Object Tests")
+    {
+    }
 
-	virtual ~FboTestGroup (void)
-	{
-	}
+    virtual ~FboTestGroup(void)
+    {
+    }
 
-	virtual void init (void)
-	{
-		addChild(new FboApiTestGroup(m_context));
-		addChild(new FboRenderTestGroup(m_context));
-		addChild(createFboCompletenessTests(m_context));
-	}
+    virtual void init(void)
+    {
+        addChild(new FboApiTestGroup(m_context));
+        addChild(new FboRenderTestGroup(m_context));
+        addChild(createFboCompletenessTests(m_context));
+    }
 };
 
 // NegativeApiTestGroup
@@ -231,24 +229,23 @@ public:
 class NegativeApiTestGroup : public TestCaseGroup
 {
 public:
-	NegativeApiTestGroup (Context& context)
-		: TestCaseGroup(context, "negative_api", "Negative API Tests")
-	{
-	}
+    NegativeApiTestGroup(Context &context) : TestCaseGroup(context, "negative_api", "Negative API Tests")
+    {
+    }
 
-	virtual ~NegativeApiTestGroup (void)
-	{
-	}
+    virtual ~NegativeApiTestGroup(void)
+    {
+    }
 
-	virtual void init (void)
-	{
-		addChild(new NegativeBufferApiTests			(m_context));
-		addChild(new NegativeFragmentApiTests		(m_context));
-		addChild(new NegativeShaderApiTests			(m_context));
-		addChild(new NegativeStateApiTests			(m_context));
-		addChild(new NegativeTextureApiTests		(m_context));
-		addChild(new NegativeVertexArrayApiTests	(m_context));
-	}
+    virtual void init(void)
+    {
+        addChild(new NegativeBufferApiTests(m_context));
+        addChild(new NegativeFragmentApiTests(m_context));
+        addChild(new NegativeShaderApiTests(m_context));
+        addChild(new NegativeStateApiTests(m_context));
+        addChild(new NegativeTextureApiTests(m_context));
+        addChild(new NegativeVertexArrayApiTests(m_context));
+    }
 };
 
 // FragmentOpTests
@@ -256,21 +253,20 @@ public:
 class FragmentOpTests : public TestCaseGroup
 {
 public:
-	FragmentOpTests (Context& context)
-		: TestCaseGroup(context, "fragment_ops", "Per-Fragment Operation Tests")
-	{
-	}
+    FragmentOpTests(Context &context) : TestCaseGroup(context, "fragment_ops", "Per-Fragment Operation Tests")
+    {
+    }
 
-	void init (void)
-	{
-		addChild(new DepthTests				(m_context));
-		addChild(new StencilTests			(m_context));
-		addChild(new DepthStencilTests		(m_context));
-		addChild(new ScissorTests			(m_context));
-		addChild(new BlendTests				(m_context));
-		addChild(new RandomFragmentOpTests	(m_context));
-		addChild(new FragOpInteractionTests	(m_context));
-	}
+    void init(void)
+    {
+        addChild(new DepthTests(m_context));
+        addChild(new StencilTests(m_context));
+        addChild(new DepthStencilTests(m_context));
+        addChild(new ScissorTests(m_context));
+        addChild(new BlendTests(m_context));
+        addChild(new RandomFragmentOpTests(m_context));
+        addChild(new FragOpInteractionTests(m_context));
+    }
 };
 
 // StateQueryTests
@@ -278,69 +274,68 @@ public:
 class StateQueryTests : public TestCaseGroup
 {
 public:
-	StateQueryTests (Context& context)
-		: TestCaseGroup(context, "state_query", "State Query Tests")
-	{
-	}
+    StateQueryTests(Context &context) : TestCaseGroup(context, "state_query", "State Query Tests")
+    {
+    }
 
-	void init (void)
-	{
-		addChild(new BooleanStateQueryTests		(m_context));
-		addChild(new IntegerStateQueryTests		(m_context));
-		addChild(new FloatStateQueryTests		(m_context));
-		addChild(new TextureStateQueryTests		(m_context));
-		addChild(new StringQueryTests			(m_context));
-		addChild(new BufferObjectQueryTests		(m_context));
-		addChild(new FboStateQueryTests			(m_context));
-		addChild(new RboStateQueryTests			(m_context));
-		addChild(new ShaderStateQueryTests		(m_context));
-	}
+    void init(void)
+    {
+        addChild(new BooleanStateQueryTests(m_context));
+        addChild(new IntegerStateQueryTests(m_context));
+        addChild(new FloatStateQueryTests(m_context));
+        addChild(new TextureStateQueryTests(m_context));
+        addChild(new StringQueryTests(m_context));
+        addChild(new BufferObjectQueryTests(m_context));
+        addChild(new FboStateQueryTests(m_context));
+        addChild(new RboStateQueryTests(m_context));
+        addChild(new ShaderStateQueryTests(m_context));
+    }
 };
 
 // FunctionalTestGroup
 
-FunctionalTests::FunctionalTests (Context& context)
-	: TestCaseGroup(context, "functional", "Functionality Tests")
+FunctionalTests::FunctionalTests(Context &context) : TestCaseGroup(context, "functional", "Functionality Tests")
 {
 }
 
-FunctionalTests::~FunctionalTests (void)
+FunctionalTests::~FunctionalTests(void)
 {
 }
 
-void FunctionalTests::init (void)
+void FunctionalTests::init(void)
 {
-	addChild(new PrerequisiteTests			(m_context));
-	addChild(new ImplementationLimitTests	(m_context));
-	addChild(new ClipControlTests			(m_context));
-	addChild(new ColorClearTest				(m_context));
-	addChild(new DepthStencilClearTests		(m_context));
-	addChild(new BufferTests				(m_context));
-	addChild(new LightAmountTest			(m_context));
-	addChild(new ShadersTestGroup			(m_context));
-	addChild(new TextureTestGroup			(m_context));
-	addChild(new FragmentOpTests			(m_context));
-	addChild(new FboTestGroup				(m_context));
-	addChild(new VertexArrayTestGroup		(m_context));
-	addChild(new ShaderApiTests				(m_context));
-	addChild(new NegativeApiTestGroup		(m_context));
-	addChild(new RasterizationTests			(m_context));
-	addChild(createAttributeLocationTests	(m_context));
-	addChild(new MultisampleTests			(m_context));
-	addChild(new UniformApiTests			(m_context));
-	addChild(new ReadPixelsTests			(m_context));
-	addChild(new DepthRangeTests			(m_context));
-	addChild(new DitheringTests				(m_context));
-	addChild(new StateQueryTests			(m_context));
-	addChild(new ClippingTests				(m_context));
-	addChild(new PolygonOffsetTests			(m_context));
-	addChild(new DrawTests					(m_context));
-	addChild(new FlushFinishTests			(m_context));
-	addChild(new DefaultVertexAttributeTests(m_context));
-	addChild(createLifetimeTests			(m_context));
-	addChild(createDebugMarkerTests			(m_context));
+    addChild(new PrerequisiteTests(m_context));
+    addChild(new ImplementationLimitTests(m_context));
+    addChild(new ClipControlTests(m_context));
+    addChild(new ColorClearTest(m_context));
+    addChild(new DepthStencilClearTests(m_context));
+    addChild(new BufferTests(m_context));
+    addChild(new LightAmountTest(m_context));
+    addChild(new MultisampledRenderToTextureTests(m_context));
+    addChild(new ShadersTestGroup(m_context));
+    addChild(new TextureTestGroup(m_context));
+    addChild(new FragmentOpTests(m_context));
+    addChild(new FboTestGroup(m_context));
+    addChild(new VertexArrayTestGroup(m_context));
+    addChild(new ShaderApiTests(m_context));
+    addChild(new NegativeApiTestGroup(m_context));
+    addChild(new RasterizationTests(m_context));
+    addChild(createAttributeLocationTests(m_context));
+    addChild(new MultisampleTests(m_context));
+    addChild(new UniformApiTests(m_context));
+    addChild(new ReadPixelsTests(m_context));
+    addChild(new DepthRangeTests(m_context));
+    addChild(new DitheringTests(m_context));
+    addChild(new StateQueryTests(m_context));
+    addChild(new ClippingTests(m_context));
+    addChild(new PolygonOffsetTests(m_context));
+    addChild(new DrawTests(m_context));
+    addChild(new FlushFinishTests(m_context));
+    addChild(new DefaultVertexAttributeTests(m_context));
+    addChild(createLifetimeTests(m_context));
+    addChild(createDebugMarkerTests(m_context));
 }
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp

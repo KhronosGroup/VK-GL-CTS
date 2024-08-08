@@ -32,9 +32,10 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createDirectionTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDirectionLengthTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createInsideAABBsTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGDIRECTIONTESTS_HPP

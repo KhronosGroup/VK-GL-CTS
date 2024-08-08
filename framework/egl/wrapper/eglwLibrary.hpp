@@ -37,35 +37,39 @@ namespace eglw
 class Library
 {
 public:
-	// Entry points:
-	// virtual EGLBoolean		initialize	(EGLDisplay ...) const = 0;
+    virtual ~Library()
+    {
+    }
+
+    // Entry points:
+    // virtual EGLBoolean initialize (EGLDisplay ...) const = 0;
 #include "eglwLibrary.inl"
 };
 
 class FuncPtrLibrary : public Library
 {
 public:
-				FuncPtrLibrary		(void);
-				~FuncPtrLibrary		(void);
+    FuncPtrLibrary(void);
+    ~FuncPtrLibrary(void);
 
 #include "eglwFuncPtrLibraryDecl.inl"
 
 protected:
-	Functions	m_egl;
+    Functions m_egl;
 };
 
 class DefaultLibrary : public FuncPtrLibrary
 {
 public:
-						DefaultLibrary		(const char* dynamicLibraryName = getLibraryFileName());
-						~DefaultLibrary		(void);
+    DefaultLibrary(const char *dynamicLibraryName = getLibraryFileName());
+    ~DefaultLibrary(void);
 
-	static const char*	getLibraryFileName	(void);
+    static const char *getLibraryFileName(void);
 
 protected:
-	de::DynamicLibrary*	m_dynLib;
+    de::DynamicLibrary *m_dynLib;
 };
 
-} // eglw
+} // namespace eglw
 
 #endif // _EGLWLIBRARY_HPP

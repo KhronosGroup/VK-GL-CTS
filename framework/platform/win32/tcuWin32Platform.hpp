@@ -38,23 +38,32 @@ namespace win32
 class Platform : public tcu::Platform, private glu::Platform, private eglu::Platform
 {
 public:
-								Platform			(void);
-								~Platform			(void);
+    Platform(void);
+    ~Platform(void);
 
-	bool						processEvents		(void);
+    bool processEvents(void);
 
-	const glu::Platform&		getGLPlatform		(void) const { return static_cast<const glu::Platform&>(*this);	}
+    const glu::Platform &getGLPlatform(void) const
+    {
+        return static_cast<const glu::Platform &>(*this);
+    }
 
-	const eglu::Platform&		getEGLPlatform		(void) const { return static_cast<const eglu::Platform&>(*this);}
+    const eglu::Platform &getEGLPlatform(void) const
+    {
+        return static_cast<const eglu::Platform &>(*this);
+    }
 
-	const vk::Platform&			getVulkanPlatform	(void) const { return m_vulkanPlatform;							}
+    const vk::Platform &getVulkanPlatform(void) const
+    {
+        return m_vulkanPlatform;
+    }
 
 private:
-	const HINSTANCE				m_instance;
-	const VulkanPlatform		m_vulkanPlatform;
+    const HINSTANCE m_instance;
+    const VulkanPlatform m_vulkanPlatform;
 };
 
-} // win32
-} // tcu
+} // namespace win32
+} // namespace tcu
 
 #endif // _TCUWIN32PLATFORM_HPP

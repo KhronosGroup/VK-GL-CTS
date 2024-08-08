@@ -32,9 +32,10 @@ namespace vkt
 namespace RayQuery
 {
 
-tcu::TestCaseGroup*	createDirectionTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDirectionLengthTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createInsideAABBsTests(tcu::TestContext &testCtx);
 
-} // RayQuery
-} // vkt
+} // namespace RayQuery
+} // namespace vkt
 
 #endif // _VKTRAYQUERYDIRECTIONTESTS_HPP

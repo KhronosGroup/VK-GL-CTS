@@ -1,0 +1,126 @@
+#!amber
+# Copyright 2021 Google LLC.
+# Copyright 2021 The Khronos Group Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Matrix 3x3 inverse precision test float32_t
+
+SHADER compute compute_shader GLSL
+#version 450
+#extension GL_EXT_shader_explicit_arithmetic_types_float32 : enable
+
+const int NUMMATRICES = 10;
+
+layout(set = 0, binding = 0) buffer block0
+{
+  f32mat3 matIns[NUMMATRICES];
+};
+
+layout(set = 0, binding = 1) buffer block1
+{
+  f32mat3 invOutM[NUMMATRICES];
+};
+
+void main()
+{
+  for (int ndx = 0; ndx < NUMMATRICES; ndx++)
+  {
+    f32mat3 matIn = matIns[ndx];
+    invOutM[ndx]  = inverse(matIn);
+  }
+}
+END
+
+BUFFER bufIn DATA_TYPE mat3x3<float> DATA
+      1.0                5.0                   3.0
+      2.0                4.0                   7.0
+      4.0                6.0                   2.0
+
+      1.0                0.0                   1.0
+      0.0                0.0                   1.0
+      1.0                1.0                   1.0
+
+     -0.00400000019     -2.9000001           -41.0
+     -0.419999987        0.00490000006        -0.0170000009
+     -0.699999988        0.00500000035        -0.00260000001
+
+     -0.140000000596046  0.00109999999403954  -0.399999976158142
+    -32.0                1.80000007152557     -0.046000003814697
+      5.0                0.00500000035390258 -27.0
+
+     -1.39999997615814  -0.449999988079071    -0.0
+    260.0                0.399999976158142    90.0
+     -3.40000009536743  -0.419999986886978   -40.0
+
+      6.0                4.80000019073486      0.149999991059303
+   -100.0                3.60000014305115      3.10000014305115
+    -50.0                0.0399999991059303   80.0
+
+ -16132.9695         59037.9967           -24574.7252
+  35850.322          46793.3449          -328946.914
+ -22869.431          26404.5123            21301.7202
+
+   -251.256059         -18.9422633           -28.2466605
+    -27.4345721         77.0803571            27.8791292
+    -41.9989703         31.9438685           -44.1174942
+
+  -1690.54461       -17438.4039            -1783.23503
+  -2073.71794        23603.1964           -51459.9156
+  -1908.4221          3618.75624            3788.92769
+
+    -16.8431843         84.5075181           -18.2598076
+    -14.9214002        -84.4076786           -15.1675014
+     21.3443665       -146.383183            -48.9589896
+END
+
+BUFFER bufOut DATA_TYPE mat3x3<float> SIZE 10 FILL 0.0
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER bufIn AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER bufOut AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipeline 1 1 1
+
+# Decimals between 0.25 and 0.5: 5.960464478e-08
+EXPECT bufOut IDX   0 TOLERANCE 0.000000059604644775390625 EQ -0.459459483623505     0.10810811072588      0.310810804367065      0.32432433962822      -0.135135143995285      -0.013513513840735    -0.0540540553629398     0.189189195632935    -0.0810810849070549
+
+# Decimals between 0.5 and 1: 1.192092896e-07
+EXPECT bufOut IDX  48 TOLERANCE 0.00000011920929           EQ  1.0000000            -1.0000000             0.0000000             -1.0000000              0.0000000               1.000000              0.0000000              1.0000000             0.0000000
+
+# Decimals between 256 and 512: 0.000030517578
+EXPECT bufOut IDX  96 TOLERANCE 0.0001220703125            EQ -0.000841470318846405  2.47503590583801     -2.91358804702759      -0.125859543681145    334.21240234375        -200.526702880859       -0.0154878990724683   -23.6396560668945      14.1838817596436
+
+# Decimals between 64 and 128: 0.0000152587890625
+EXPECT bufOut IDX 144 TOLERANCE 0.0000152587890625         EQ -5.10645771026611      0.002910484559834     0.0756462663412094   -90.8060684204102        0.607314109802246       1.34424042701721     -0.962456285953522      0.000651444192044437 -0.0227795336395502
+
+# Decimals between 2 and 4: 2.384185791e-07
+EXPECT bufOut IDX 192 TOLERANCE 0.00000095367431640625     EQ -0.0047673             0.0039363             0.00885668            -2.20739               -0.0122463              -0.0275541             0.0235828             -0.000206             -0.0254635
+
+# Decimals between 0.125 and 0.25: 2.980232239e-08
+EXPECT bufOut IDX 240 TOLERANCE 0.000000029802322          EQ  0.00730470707640052  -0.0097436523064971    0.000363870232831687   0.199062883853912      0.0123700648546219     -0.000852582859806716  0.00446591060608625   -0.00609596818685532   0.0127278454601765
+
+# Decimals between 6.103515625e-05 and 0.0001220703125: 0.000000000116415322
+EXPECT bufOut IDX 288 TOLERANCE 0.000000000116415322       EQ  0.0000500957         -9.86394e-6           -0.0000945288           0.000034971           -4.68581e-6             -0.0000320154          0.0000104344          -4.78159e-6           -0.0000148565
+
+# Decimals between 0.015625 and 0.03125: 3.725290298e-09
+EXPECT bufOut IDX 336 TOLERANCE 0.0000000037252903         EQ -0.0040613            -0.0016448958          0.0015608298         -0.00225368627           0.00936823816           0.00736300733         0.00223446417          0.0083491074         -0.0188213388
+
+# Decimals between 0.000244140625 and 0.00048828125: 5.820766091e-11
+EXPECT bufOut IDX 384 TOLERANCE 0.000000000058207661       EQ -0.000115696606951049 -2.50236218021531e-05 -0.000394314125406909 -4.45173829379519e-05    4.11683327090298e-06    3.49615898742737e-05 -1.57565435895695e-05  -1.65359315572978e-05  3.19258500321063e-05
+
+# Decimals between 0.03125 and 0.0625: 7.450580597e-09
+EXPECT bufOut IDX 432 TOLERANCE 0.0000000074505806         EQ -0.00985268340612319  -0.0350896203754492    0.0145454384440486    0.00543206941934669    -0.00625692866381362    -8.75542619249871e-05 -0.0205368392142981     0.00340986236312195  -0.0138221880175656

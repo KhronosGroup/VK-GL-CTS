@@ -1,11 +1,12 @@
 # dEQP-VK.binding_model
 
 include_directories(
-        ..
-        ../amber
-        )
+	..
+	../amber
+	${DEQP_INL_DIR}
+	)
 
-set(DEQP_VK_BINDING_MODEL_SRCS
+set(DEQP_VK_VKSC_BINDING_MODEL_SRCS
 	vktBindingModelTests.cpp
 	vktBindingModelTests.hpp
 	vktBindingShaderAccessTests.cpp
@@ -16,18 +17,31 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingDescriptorSetRandomTests.hpp
 	vktBindingDescriptorCopyTests.cpp
 	vktBindingDescriptorCopyTests.hpp
-	vktBindingDynamicOffsetTests.cpp
-	vktBindingDynamicOffsetTests.hpp
 	vktBindingBufferDeviceAddressTests.cpp
 	vktBindingBufferDeviceAddressTests.hpp
 	)
 
-set(DEQP_VK_BINDING_MODEL_LIBS
-	tcutil
-	vkutil
+set(DEQP_VK_BINDING_MODEL_SRCS
+	vktBindingDescriptorUpdateASTests.cpp
+	vktBindingDescriptorUpdateASTests.hpp
+	vktBindingDynamicOffsetTests.cpp
+	vktBindingDynamicOffsetTests.hpp
+	vktBindingMutableTests.cpp
+	vktBindingMutableTests.hpp
+	vktBindingDescriptorCombinationTests.cpp
+	vktBindingDescriptorCombinationTests.hpp
+	vktBindingDescriptorBufferTests.cpp
+	vktBindingDescriptorBufferTests.hpp
+	vktBindingStagesTests.cpp
+	vktBindingStagesTests.hpp
+	vktBindingDescriptorInlineUniformTests.cpp
+	vktBindingDescriptorInlineUniformTests.hpp
 	)
 
 PCH(DEQP_VK_BINDING_MODEL_SRCS ../pch.cpp)
 
-add_library(deqp-vk-binding-model STATIC ${DEQP_VK_BINDING_MODEL_SRCS})
-target_link_libraries(deqp-vk-binding-model ${DEQP_VK_BINDING_MODEL_LIBS})
+add_library(deqp-vk-binding-model STATIC ${DEQP_VK_VKSC_BINDING_MODEL_SRCS} ${DEQP_VK_BINDING_MODEL_SRCS} )
+target_link_libraries(deqp-vk-binding-model tcutil vkutil)
+
+add_library(deqp-vksc-binding-model STATIC ${DEQP_VK_VKSC_BINDING_MODEL_SRCS})
+target_link_libraries(deqp-vksc-binding-model PUBLIC deqp-vksc-util tcutil vkscutil)

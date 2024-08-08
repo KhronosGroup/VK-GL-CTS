@@ -49,86 +49,86 @@ namespace Utils
 struct Type
 {
 public:
-	enum TYPES
-	{
-		Float,
-		Double,
-		Int,
-		Uint,
-	};
+    enum TYPES
+    {
+        Float,
+        Double,
+        Int,
+        Uint,
+    };
 
-	/* Public methods */
-	/* Functionality */
-	std::vector<glw::GLubyte> GenerateData() const;
-	std::vector<glw::GLubyte> GenerateDataPacked() const;
-	glw::GLuint GetActualAlignment(glw::GLuint align, bool is_array) const;
-	glw::GLuint GetBaseAlignment(bool is_array) const;
-	std::string GetGLSLConstructor(const glw::GLvoid* data) const;
-	const glw::GLchar* GetGLSLTypeName() const;
-	glw::GLuint GetLocations(bool is_vs_input = false) const;
-	glw::GLuint GetSize(const bool is_std140 = false) const;
-	glw::GLenum GetTypeGLenum() const;
-	glw::GLuint GetNumComponents() const;
-	std::vector<glw::GLuint> GetValidComponents() const;
+    /* Public methods */
+    /* Functionality */
+    std::vector<glw::GLubyte> GenerateData() const;
+    std::vector<glw::GLubyte> GenerateDataPacked() const;
+    glw::GLuint GetActualAlignment(glw::GLuint align, bool is_array) const;
+    glw::GLuint GetBaseAlignment(bool is_array) const;
+    std::string GetGLSLConstructor(const glw::GLvoid *data) const;
+    const glw::GLchar *GetGLSLTypeName() const;
+    glw::GLuint GetLocations(bool is_vs_input = false) const;
+    glw::GLuint GetSize(const bool is_std140 = false) const;
+    glw::GLenum GetTypeGLenum() const;
+    glw::GLuint GetNumComponents() const;
+    std::vector<glw::GLuint> GetValidComponents() const;
 
-	/* Public static routines */
-	/* Functionality */
-	static glw::GLuint CalculateStd140Stride(glw::GLuint alignment, glw::GLuint n_columns,
-											 glw::GLuint n_array_elements);
+    /* Public static routines */
+    /* Functionality */
+    static glw::GLuint CalculateStd140Stride(glw::GLuint alignment, glw::GLuint n_columns,
+                                             glw::GLuint n_array_elements);
 
-	static bool DoesTypeSupportMatrix(TYPES type);
+    static bool DoesTypeSupportMatrix(TYPES type);
 
-	static glw::GLuint GetActualOffset(glw::GLuint start_offset, glw::GLuint actual_alignment);
+    static glw::GLuint GetActualOffset(glw::GLuint start_offset, glw::GLuint actual_alignment);
 
-	static Type GetType(TYPES basic_type, glw::GLuint n_columns, glw::GLuint n_rows);
+    static Type GetType(TYPES basic_type, glw::GLuint n_columns, glw::GLuint n_rows);
 
-	static glw::GLuint GetTypeSize(TYPES type);
+    static glw::GLuint GetTypeSize(TYPES type);
 
-	/* GL gets */
-	static glw::GLenum GetTypeGLenum(TYPES type);
+    /* GL gets */
+    static glw::GLenum GetTypeGLenum(TYPES type);
 
-	static bool CanTypesShareLocation(TYPES first, TYPES second);
+    static bool CanTypesShareLocation(TYPES first, TYPES second);
 
-	/* Public fields */
-	TYPES		m_basic_type;
-	glw::GLuint m_n_columns;
-	glw::GLuint m_n_rows;
+    /* Public fields */
+    TYPES m_basic_type;
+    glw::GLuint m_n_columns;
+    glw::GLuint m_n_rows;
 
-	/* Public constants */
-	static const Type _double;
-	static const Type dmat2;
-	static const Type dmat2x3;
-	static const Type dmat2x4;
-	static const Type dmat3x2;
-	static const Type dmat3;
-	static const Type dmat3x4;
-	static const Type dmat4x2;
-	static const Type dmat4x3;
-	static const Type dmat4;
-	static const Type dvec2;
-	static const Type dvec3;
-	static const Type dvec4;
-	static const Type _float;
-	static const Type _int;
-	static const Type ivec2;
-	static const Type ivec3;
-	static const Type ivec4;
-	static const Type mat2;
-	static const Type mat2x3;
-	static const Type mat2x4;
-	static const Type mat3x2;
-	static const Type mat3;
-	static const Type mat3x4;
-	static const Type mat4x2;
-	static const Type mat4x3;
-	static const Type mat4;
-	static const Type vec2;
-	static const Type vec3;
-	static const Type vec4;
-	static const Type uint;
-	static const Type uvec2;
-	static const Type uvec3;
-	static const Type uvec4;
+    /* Public constants */
+    static const Type _double;
+    static const Type dmat2;
+    static const Type dmat2x3;
+    static const Type dmat2x4;
+    static const Type dmat3x2;
+    static const Type dmat3;
+    static const Type dmat3x4;
+    static const Type dmat4x2;
+    static const Type dmat4x3;
+    static const Type dmat4;
+    static const Type dvec2;
+    static const Type dvec3;
+    static const Type dvec4;
+    static const Type _float;
+    static const Type _int;
+    static const Type ivec2;
+    static const Type ivec3;
+    static const Type ivec4;
+    static const Type mat2;
+    static const Type mat2x3;
+    static const Type mat2x4;
+    static const Type mat3x2;
+    static const Type mat3;
+    static const Type mat3x4;
+    static const Type mat4x2;
+    static const Type mat4x3;
+    static const Type mat4;
+    static const Type vec2;
+    static const Type vec3;
+    static const Type vec4;
+    static const Type uint;
+    static const Type uvec2;
+    static const Type uvec3;
+    static const Type uvec4;
 };
 
 /** Represents buffer instance
@@ -137,100 +137,100 @@ public:
 class Buffer
 {
 public:
-	/* Public enums */
-	enum BUFFERS
-	{
-		Array,
-		Element,
-		Shader_Storage,
-		Texture,
-		Transform_feedback,
-		Uniform,
-	};
+    /* Public enums */
+    enum BUFFERS
+    {
+        Array,
+        Element,
+        Shader_Storage,
+        Texture,
+        Transform_feedback,
+        Uniform,
+    };
 
-	enum USAGE
-	{
-		DynamicCopy,
-		DynamicDraw,
-		DynamicRead,
-		StaticCopy,
-		StaticDraw,
-		StaticRead,
-		StreamCopy,
-		StreamDraw,
-		StreamRead,
-	};
+    enum USAGE
+    {
+        DynamicCopy,
+        DynamicDraw,
+        DynamicRead,
+        StaticCopy,
+        StaticDraw,
+        StaticRead,
+        StreamCopy,
+        StreamDraw,
+        StreamRead,
+    };
 
-	enum ACCESS
-	{
-		ReadOnly,
-		WriteOnly,
-		ReadWrite,
-	};
+    enum ACCESS
+    {
+        ReadOnly,
+        WriteOnly,
+        ReadWrite,
+    };
 
-	/* Public methods */
-	/* Ctr & Dtr */
-	Buffer(deqp::Context& context);
-	~Buffer();
+    /* Public methods */
+    /* Ctr & Dtr */
+    Buffer(deqp::Context &context);
+    ~Buffer();
 
-	/* Init & Release */
-	void Init(BUFFERS buffer, USAGE usage, glw::GLsizeiptr size, glw::GLvoid* data);
-	void Release();
+    /* Init & Release */
+    void Init(BUFFERS buffer, USAGE usage, glw::GLsizeiptr size, glw::GLvoid *data);
+    void Release();
 
-	/* Functionality */
-	void Bind() const;
-	void BindBase(glw::GLuint index) const;
+    /* Functionality */
+    void Bind() const;
+    void BindBase(glw::GLuint index) const;
 
-	void BindRange(glw::GLuint index, glw::GLintptr offset, glw::GLsizeiptr size) const;
+    void BindRange(glw::GLuint index, glw::GLintptr offset, glw::GLsizeiptr size) const;
 
-	void Data(USAGE usage, glw::GLsizeiptr size, glw::GLvoid* data);
+    void Data(USAGE usage, glw::GLsizeiptr size, glw::GLvoid *data);
 
-	glw::GLvoid* Map(ACCESS access);
+    glw::GLvoid *Map(ACCESS access);
 
-	void SubData(glw::GLintptr offset, glw::GLsizeiptr size, glw::GLvoid* data);
+    void SubData(glw::GLintptr offset, glw::GLsizeiptr size, glw::GLvoid *data);
 
-	void UnMap();
+    void UnMap();
 
-	/* Public static routines */
-	/* Functionality */
-	static void Bind(const glw::Functions& gl, glw::GLuint id, BUFFERS buffer);
+    /* Public static routines */
+    /* Functionality */
+    static void Bind(const glw::Functions &gl, glw::GLuint id, BUFFERS buffer);
 
-	static void BindBase(const glw::Functions& gl, glw::GLuint id, BUFFERS buffer, glw::GLuint index);
+    static void BindBase(const glw::Functions &gl, glw::GLuint id, BUFFERS buffer, glw::GLuint index);
 
-	static void BindRange(const glw::Functions& gl, glw::GLuint id, BUFFERS buffer, glw::GLuint index,
-						  glw::GLintptr offset, glw::GLsizeiptr size);
+    static void BindRange(const glw::Functions &gl, glw::GLuint id, BUFFERS buffer, glw::GLuint index,
+                          glw::GLintptr offset, glw::GLsizeiptr size);
 
-	static void Data(const glw::Functions& gl, BUFFERS buffer, USAGE usage, glw::GLsizeiptr size, glw::GLvoid* data);
+    static void Data(const glw::Functions &gl, BUFFERS buffer, USAGE usage, glw::GLsizeiptr size, glw::GLvoid *data);
 
-	static void Generate(const glw::Functions& gl, glw::GLuint& out_id);
+    static void Generate(const glw::Functions &gl, glw::GLuint &out_id);
 
-	static void* Map(const glw::Functions& gl, BUFFERS buffer, ACCESS access);
+    static void *Map(const glw::Functions &gl, BUFFERS buffer, ACCESS access);
 
-	static void SubData(const glw::Functions& gl, BUFFERS buffer, glw::GLintptr offset, glw::GLsizeiptr size,
-						glw::GLvoid* data);
+    static void SubData(const glw::Functions &gl, BUFFERS buffer, glw::GLintptr offset, glw::GLsizeiptr size,
+                        glw::GLvoid *data);
 
-	static void UnMap(const glw::Functions& gl, BUFFERS buffer);
+    static void UnMap(const glw::Functions &gl, BUFFERS buffer);
 
-	/* GL gets */
-	static glw::GLenum GetAccessGLenum(ACCESS access);
-	static glw::GLenum GetBufferGLenum(BUFFERS buffer);
-	static glw::GLenum GetUsageGLenum(USAGE usage);
+    /* GL gets */
+    static glw::GLenum GetAccessGLenum(ACCESS access);
+    static glw::GLenum GetBufferGLenum(BUFFERS buffer);
+    static glw::GLenum GetUsageGLenum(USAGE usage);
 
-	/* Gets */
-	static const glw::GLchar* GetBufferName(BUFFERS buffer);
+    /* Gets */
+    static const glw::GLchar *GetBufferName(BUFFERS buffer);
 
-	/* Public fields */
-	glw::GLuint m_id;
+    /* Public fields */
+    glw::GLuint m_id;
 
-	/* Public constants */
-	static const glw::GLuint m_invalid_id;
+    /* Public constants */
+    static const glw::GLuint m_invalid_id;
 
-	/* Buffer type maybe changed for different cases*/
-	BUFFERS m_buffer;
+    /* Buffer type maybe changed for different cases*/
+    BUFFERS m_buffer;
 
 private:
-	/* Private fields */
-	deqp::Context& m_context;
+    /* Private fields */
+    deqp::Context &m_context;
 };
 
 /** Represents framebuffer
@@ -239,45 +239,45 @@ private:
 class Framebuffer
 {
 public:
-	/* Public methods */
-	/* Ctr & Dtr */
-	Framebuffer(deqp::Context& context);
-	~Framebuffer();
+    /* Public methods */
+    /* Ctr & Dtr */
+    Framebuffer(deqp::Context &context);
+    ~Framebuffer();
 
-	/* Init & Release */
-	void Init();
-	void Release();
+    /* Init & Release */
+    void Init();
+    void Release();
 
-	/* Functionality */
-	void AttachTexture(glw::GLenum attachment, glw::GLuint texture_id, glw::GLuint width, glw::GLuint height);
+    /* Functionality */
+    void AttachTexture(glw::GLenum attachment, glw::GLuint texture_id, glw::GLuint width, glw::GLuint height);
 
-	void Bind();
-	void Clear(glw::GLenum mask);
+    void Bind();
+    void Clear(glw::GLenum mask);
 
-	void ClearColor(glw::GLfloat red, glw::GLfloat green, glw::GLfloat blue, glw::GLfloat alpha);
+    void ClearColor(glw::GLfloat red, glw::GLfloat green, glw::GLfloat blue, glw::GLfloat alpha);
 
-	/* Public static routines */
-	static void AttachTexture(const glw::Functions& gl, glw::GLenum attachment, glw::GLuint texture_id,
-							  glw::GLuint width, glw::GLuint height);
+    /* Public static routines */
+    static void AttachTexture(const glw::Functions &gl, glw::GLenum attachment, glw::GLuint texture_id,
+                              glw::GLuint width, glw::GLuint height);
 
-	static void Bind(const glw::Functions& gl, glw::GLuint id);
+    static void Bind(const glw::Functions &gl, glw::GLuint id);
 
-	static void Clear(const glw::Functions& gl, glw::GLenum mask);
+    static void Clear(const glw::Functions &gl, glw::GLenum mask);
 
-	static void ClearColor(const glw::Functions& gl, glw::GLfloat red, glw::GLfloat green, glw::GLfloat blue,
-						   glw::GLfloat alpha);
+    static void ClearColor(const glw::Functions &gl, glw::GLfloat red, glw::GLfloat green, glw::GLfloat blue,
+                           glw::GLfloat alpha);
 
-	static void Generate(const glw::Functions& gl, glw::GLuint& out_id);
+    static void Generate(const glw::Functions &gl, glw::GLuint &out_id);
 
-	/* Public fields */
-	glw::GLuint m_id;
+    /* Public fields */
+    glw::GLuint m_id;
 
-	/* Public constants */
-	static const glw::GLuint m_invalid_id;
+    /* Public constants */
+    static const glw::GLuint m_invalid_id;
 
 private:
-	/* Private fields */
-	deqp::Context& m_context;
+    /* Private fields */
+    deqp::Context &m_context;
 };
 
 /** Represents shader instance.
@@ -286,90 +286,90 @@ private:
 class Shader
 {
 public:
-	/* Public enums */
-	enum STAGES
-	{
-		COMPUTE = 0,
-		VERTEX,
-		TESS_CTRL,
-		TESS_EVAL,
-		GEOMETRY,
-		FRAGMENT,
+    /* Public enums */
+    enum STAGES
+    {
+        COMPUTE = 0,
+        VERTEX,
+        TESS_CTRL,
+        TESS_EVAL,
+        GEOMETRY,
+        FRAGMENT,
 
-		/* */
-		STAGE_MAX
-	};
+        /* */
+        STAGE_MAX
+    };
 
-	/* Public types */
+    /* Public types */
 
-	class InvalidSourceException : public std::exception
-	{
-	public:
-		InvalidSourceException(const glw::GLchar* error_message, const std::string& source, STAGES stage);
+    class InvalidSourceException : public std::exception
+    {
+    public:
+        InvalidSourceException(const glw::GLchar *error_message, const std::string &source, STAGES stage);
 
-		virtual ~InvalidSourceException() throw()
-		{
-		}
+        virtual ~InvalidSourceException() throw()
+        {
+        }
 
-		virtual const char* what() const throw();
+        virtual const char *what() const throw();
 
-		void log(deqp::Context& context) const;
+        void log(deqp::Context &context) const;
 
-		std::string m_message;
-		std::string m_source;
-		STAGES		m_stage;
-	};
+        std::string m_message;
+        std::string m_source;
+        STAGES m_stage;
+    };
 
-	/* Public methods */
-	/* Ctr & Dtr */
-	Shader(deqp::Context& context);
-	~Shader();
+    /* Public methods */
+    /* Ctr & Dtr */
+    Shader(deqp::Context &context);
+    ~Shader();
 
-	/* Init & Realese */
-	void Init(STAGES stage, const std::string& source);
-	void Release();
+    /* Init & Realese */
+    void Init(STAGES stage, const std::string &source);
+    void Release();
 
-	/* Public static routines */
-	/* Functionality */
-	static void Compile(const glw::Functions& gl, glw::GLuint id);
+    /* Public static routines */
+    /* Functionality */
+    static void Compile(const glw::Functions &gl, glw::GLuint id);
 
-	static void Create(const glw::Functions& gl, STAGES stage, glw::GLuint& out_id);
+    static void Create(const glw::Functions &gl, STAGES stage, glw::GLuint &out_id);
 
-	static void Source(const glw::Functions& gl, glw::GLuint id, const std::string& source);
+    static void Source(const glw::Functions &gl, glw::GLuint id, const std::string &source);
 
-	/* GL gets */
-	static glw::GLenum GetShaderStageGLenum(STAGES stage);
+    /* GL gets */
+    static glw::GLenum GetShaderStageGLenum(STAGES stage);
 
-	/* Get stage name */
-	static const glw::GLchar* GetStageName(STAGES stage);
+    /* Get stage name */
+    static const glw::GLchar *GetStageName(STAGES stage);
 
-	/* Logs sources */
-	static void LogSource(deqp::Context& context, const std::string& source, STAGES stage);
+    /* Logs sources */
+    static void LogSource(deqp::Context &context, const std::string &source, STAGES stage);
 
-	/* Public fields */
-	glw::GLuint m_id;
+    /* Public fields */
+    glw::GLuint m_id;
 
-	/* Public constants */
-	static const glw::GLuint m_invalid_id;
+    /* Public constants */
+    static const glw::GLuint m_invalid_id;
 
 private:
-	/* Private types */
-	class CompilationException : public std::exception
-	{
-	public:
-		CompilationException(const glw::GLchar* message);
+    /* Private types */
+    class CompilationException : public std::exception
+    {
+    public:
+        CompilationException(const glw::GLchar *message);
 
-		virtual ~CompilationException() throw()
-		{
-		}
+        virtual ~CompilationException() throw()
+        {
+        }
 
-		virtual const char* what() const throw();
+        virtual const char *what() const throw();
 
-		std::string m_message;
-	};
+        std::string m_message;
+    };
 
-	/* Private fields */
-	deqp::Context& m_context;
+    /* Private fields */
+    deqp::Context &m_context;
 };
 
 /* Forward declaration */
@@ -381,160 +381,161 @@ struct Interface;
 struct Variable
 {
 public:
-	/* Typedefs */
-	typedef std::vector<Variable>  Vector;
-	typedef std::vector<Variable*> PtrVector;
+    /* Typedefs */
+    typedef std::vector<Variable> Vector;
+    typedef std::vector<Variable *> PtrVector;
 
-	/* Enums */
-	enum STORAGE
-	{
-		VARYING_INPUT,
-		VARYING_OUTPUT,
-		UNIFORM,
-		SSB,
-		MEMBER,
+    /* Enums */
+    enum STORAGE
+    {
+        VARYING_INPUT,
+        VARYING_OUTPUT,
+        UNIFORM,
+        SSB,
+        MEMBER,
 
-		/* */
-		STORAGE_MAX
-	};
+        /* */
+        STORAGE_MAX
+    };
 
-	enum VARYING_DIRECTION
-	{
-		INPUT,
-		OUTPUT,
-	};
+    enum VARYING_DIRECTION
+    {
+        INPUT,
+        OUTPUT,
+    };
 
-	enum FLAVOUR
-	{
-		BASIC,
-		ARRAY,
-		INDEXED_BY_INVOCATION_ID,
-	};
+    enum FLAVOUR
+    {
+        BASIC,
+        ARRAY,
+        INDEXED_BY_INVOCATION_ID,
+    };
 
-	/**/
-	enum TYPE
-	{
-		BUILTIN,
-		INTERFACE,
-	};
+    /**/
+    enum TYPE
+    {
+        BUILTIN,
+        INTERFACE,
+    };
 
-	/* Types */
-	struct Descriptor
-	{
-		/* */
-		typedef std::vector<Descriptor> Vector;
+    /* Types */
+    struct Descriptor
+    {
+        /* */
+        typedef std::vector<Descriptor> Vector;
 
-		/* */
-		Descriptor(const glw::GLchar* name, const glw::GLchar* qualifiers, glw::GLint expected_component,
-				   glw::GLint expected_location, const Type& type, glw::GLboolean normalized,
-				   glw::GLuint n_array_elements, glw::GLint expected_stride_of_element, glw::GLuint offset);
+        /* */
+        Descriptor(const glw::GLchar *name, const glw::GLchar *qualifiers, glw::GLint expected_component,
+                   glw::GLint expected_location, const Type &type, glw::GLboolean normalized,
+                   glw::GLuint n_array_elements, glw::GLint expected_stride_of_element, glw::GLuint offset);
 
-		Descriptor(const glw::GLchar* name, const glw::GLchar* qualifiers, glw::GLint expected_componenet,
-				   glw::GLint expected_location, Interface* interface, glw::GLuint n_array_elements,
-				   glw::GLint expected_stride_of_element, glw::GLuint offset);
+        Descriptor(const glw::GLchar *name, const glw::GLchar *qualifiers, glw::GLint expected_componenet,
+                   glw::GLint expected_location, Interface *interface, glw::GLuint n_array_elements,
+                   glw::GLint expected_stride_of_element, glw::GLuint offset);
 
-		/* */
-		std::string GetDefinition(FLAVOUR flavour, STORAGE storage) const;
+        /* */
+        std::string GetDefinition(FLAVOUR flavour, STORAGE storage) const;
 
-		/* */
-		glw::GLint	 m_expected_component;
-		glw::GLint	 m_expected_location;
-		glw::GLint	 m_expected_stride_of_element;
-		glw::GLuint	m_n_array_elements;
-		std::string	m_name;
-		glw::GLboolean m_normalized;
-		glw::GLuint	m_offset;
-		std::string	m_qualifiers;
+        /* */
+        glw::GLint m_expected_component;
+        glw::GLint m_expected_location;
+        glw::GLint m_expected_stride_of_element;
+        glw::GLuint m_n_array_elements;
+        std::string m_name;
+        glw::GLboolean m_normalized;
+        glw::GLuint m_offset;
+        std::string m_qualifiers;
 
-		TYPE m_type;
-		union {
-			Type	   m_builtin;
-			Interface* m_interface;
-		};
-	};
+        TYPE m_type;
+        union
+        {
+            Type m_builtin;
+            Interface *m_interface;
+        };
+    };
 
-	/* Constructors */
-	template <typename T>
-	Variable(const glw::GLchar* name, const glw::GLchar* qualifiers, glw::GLint expected_component,
-			 glw::GLint expected_location, const Type& type, glw::GLboolean normalized, glw::GLuint n_array_elements,
-			 glw::GLint expected_stride_of_element, glw::GLuint offset, const T* data, size_t data_size,
-			 STORAGE storage)
-		: m_data((glw::GLvoid*)data)
-		, m_data_size(data_size)
-		, m_descriptor(name, qualifiers, expected_component, expected_location, type, normalized, n_array_elements,
-					   expected_stride_of_element, offset)
-		, m_storage(storage)
-	{
-	}
+    /* Constructors */
+    template <typename T>
+    Variable(const glw::GLchar *name, const glw::GLchar *qualifiers, glw::GLint expected_component,
+             glw::GLint expected_location, const Type &type, glw::GLboolean normalized, glw::GLuint n_array_elements,
+             glw::GLint expected_stride_of_element, glw::GLuint offset, const T *data, size_t data_size,
+             STORAGE storage)
+        : m_data((glw::GLvoid *)data)
+        , m_data_size(data_size)
+        , m_descriptor(name, qualifiers, expected_component, expected_location, type, normalized, n_array_elements,
+                       expected_stride_of_element, offset)
+        , m_storage(storage)
+    {
+    }
 
-	template <typename T>
-	Variable(const glw::GLchar* name, const glw::GLchar* qualifiers, glw::GLint expected_component,
-			 glw::GLint expected_location, Interface* interface, glw::GLuint n_array_elements,
-			 glw::GLint expected_stride_of_element, glw::GLuint offset, const T* data, size_t data_size,
-			 STORAGE storage)
-		: m_data((glw::GLvoid*)data)
-		, m_data_size(data_size)
-		, m_descriptor(name, qualifiers, expected_component, expected_location, interface, n_array_elements,
-					   expected_stride_of_element, offset)
-		, m_storage(storage)
-	{
-	}
+    template <typename T>
+    Variable(const glw::GLchar *name, const glw::GLchar *qualifiers, glw::GLint expected_component,
+             glw::GLint expected_location, Interface *interface, glw::GLuint n_array_elements,
+             glw::GLint expected_stride_of_element, glw::GLuint offset, const T *data, size_t data_size,
+             STORAGE storage)
+        : m_data((glw::GLvoid *)data)
+        , m_data_size(data_size)
+        , m_descriptor(name, qualifiers, expected_component, expected_location, interface, n_array_elements,
+                       expected_stride_of_element, offset)
+        , m_storage(storage)
+    {
+    }
 
-	Variable(const Variable& var);
+    Variable(const Variable &var);
 
-	/* Functionality */
-	std::string GetDefinition(FLAVOUR flavour) const;
-	glw::GLuint GetSize() const;
-	glw::GLuint GetStride() const;
-	bool		IsBlock() const;
-	bool		IsStruct() const;
-	/* Static routines */
-	static FLAVOUR GetFlavour(Shader::STAGES stage, VARYING_DIRECTION direction);
-	static std::string GetReference(const std::string& parent_name, const Descriptor& variable, FLAVOUR flavour,
-									glw::GLuint array_index);
+    /* Functionality */
+    std::string GetDefinition(FLAVOUR flavour) const;
+    glw::GLuint GetSize() const;
+    glw::GLuint GetStride() const;
+    bool IsBlock() const;
+    bool IsStruct() const;
+    /* Static routines */
+    static FLAVOUR GetFlavour(Shader::STAGES stage, VARYING_DIRECTION direction);
+    static std::string GetReference(const std::string &parent_name, const Descriptor &variable, FLAVOUR flavour,
+                                    glw::GLuint array_index);
 
-	/* Fields */
-	glw::GLvoid* m_data;
-	size_t		 m_data_size;
-	Descriptor   m_descriptor;
-	STORAGE		 m_storage;
+    /* Fields */
+    glw::GLvoid *m_data;
+    size_t m_data_size;
+    Descriptor m_descriptor;
+    STORAGE m_storage;
 
-	/* Constants */
-	static const glw::GLint m_automatic_location;
+    /* Constants */
+    static const glw::GLint m_automatic_location;
 };
 
-/* Define the methods NAME, that will add new variable to VECTOR with STORAGE set		*/
+/* Define the methods NAME, that will add new variable to VECTOR with STORAGE set        */
 #define DEFINE_VARIABLE_CLASS(NAME, STORAGE, VECTOR)                                                                  \
-	template <typename T>                                                                                             \
-	Variable* NAME(const glw::GLchar* name, const glw::GLchar* qualifiers, glw::GLint expected_component,             \
-				   glw::GLint expected_location, const Type& type, glw::GLboolean normalized,                         \
-				   glw::GLuint n_array_elements, glw::GLint expected_stride_of_element, glw::GLuint offset,           \
-				   const T* data, size_t data_size)                                                                   \
-	{                                                                                                                 \
-		Variable* var = new Variable(name, qualifiers, expected_component, expected_location, type, normalized,       \
-									 n_array_elements, expected_stride_of_element, offset, data, data_size, STORAGE); \
-		if (0 == var)                                                                                                 \
-		{                                                                                                             \
-			TCU_FAIL("Memory allocation");                                                                            \
-		}                                                                                                             \
-		VECTOR.push_back(var);                                                                                        \
-		return VECTOR.back();                                                                                         \
-	}                                                                                                                 \
+    template <typename T>                                                                                             \
+    Variable *NAME(const glw::GLchar *name, const glw::GLchar *qualifiers, glw::GLint expected_component,             \
+                   glw::GLint expected_location, const Type &type, glw::GLboolean normalized,                         \
+                   glw::GLuint n_array_elements, glw::GLint expected_stride_of_element, glw::GLuint offset,           \
+                   const T *data, size_t data_size)                                                                   \
+    {                                                                                                                 \
+        Variable *var = new Variable(name, qualifiers, expected_component, expected_location, type, normalized,       \
+                                     n_array_elements, expected_stride_of_element, offset, data, data_size, STORAGE); \
+        if (0 == var)                                                                                                 \
+        {                                                                                                             \
+            TCU_FAIL("Memory allocation");                                                                            \
+        }                                                                                                             \
+        VECTOR.push_back(var);                                                                                        \
+        return VECTOR.back();                                                                                         \
+    }                                                                                                                 \
                                                                                                                       \
-	template <typename T>                                                                                             \
-	Variable* NAME(const glw::GLchar* name, const glw::GLchar* qualifiers, glw::GLint expected_component,             \
-				   glw::GLint expected_location, Interface* interface, glw::GLuint n_array_elements,                  \
-				   glw::GLint expected_stride_of_element, glw::GLuint offset, const T* data, size_t data_size)        \
-	{                                                                                                                 \
-		Variable* var = new Variable(name, qualifiers, expected_component, expected_location, interface,              \
-									 n_array_elements, expected_stride_of_element, offset, data, data_size, STORAGE); \
-		if (0 == var)                                                                                                 \
-		{                                                                                                             \
-			TCU_FAIL("Memory allocation");                                                                            \
-		}                                                                                                             \
-		VECTOR.push_back(var);                                                                                        \
-		return VECTOR.back();                                                                                         \
-	}
+    template <typename T>                                                                                             \
+    Variable *NAME(const glw::GLchar *name, const glw::GLchar *qualifiers, glw::GLint expected_component,             \
+                   glw::GLint expected_location, Interface *interface, glw::GLuint n_array_elements,                  \
+                   glw::GLint expected_stride_of_element, glw::GLuint offset, const T *data, size_t data_size)        \
+    {                                                                                                                 \
+        Variable *var = new Variable(name, qualifiers, expected_component, expected_location, interface,              \
+                                     n_array_elements, expected_stride_of_element, offset, data, data_size, STORAGE); \
+        if (0 == var)                                                                                                 \
+        {                                                                                                             \
+            TCU_FAIL("Memory allocation");                                                                            \
+        }                                                                                                             \
+        VECTOR.push_back(var);                                                                                        \
+        return VECTOR.back();                                                                                         \
+    }
 
 /** Represents structures and block
  *
@@ -542,142 +543,142 @@ public:
 struct Interface
 {
 public:
-	/* Typedefs */
-	typedef std::vector<Interface>  Vector;
-	typedef std::vector<Interface*> PtrVector;
+    /* Typedefs */
+    typedef std::vector<Interface> Vector;
+    typedef std::vector<Interface *> PtrVector;
 
-	/**/
-	enum TYPE
-	{
-		STRUCT,
-		BLOCK
-	};
+    /**/
+    enum TYPE
+    {
+        STRUCT,
+        BLOCK
+    };
 
-	/* Constructor */
-	Interface(const glw::GLchar* name, TYPE type);
+    /* Constructor */
+    Interface(const glw::GLchar *name, TYPE type);
 
-	/*  */
-	Variable::Descriptor* Member(const glw::GLchar* name, const glw::GLchar* qualifiers, glw::GLint expected_component,
-								 glw::GLint expected_location, const Type& type, glw::GLboolean normalized,
-								 glw::GLuint n_array_elements, glw::GLint expected_stride_of_element,
-								 glw::GLuint offset);
-	Variable::Descriptor* Member(const glw::GLchar* name, const glw::GLchar* qualifiers, glw::GLint expected_component,
-								 glw::GLint expected_location, Interface* interface, glw::GLuint n_array_elements,
-								 glw::GLint expected_stride_of_element, glw::GLuint offset);
+    /*  */
+    Variable::Descriptor *Member(const glw::GLchar *name, const glw::GLchar *qualifiers, glw::GLint expected_component,
+                                 glw::GLint expected_location, const Type &type, glw::GLboolean normalized,
+                                 glw::GLuint n_array_elements, glw::GLint expected_stride_of_element,
+                                 glw::GLuint offset);
+    Variable::Descriptor *Member(const glw::GLchar *name, const glw::GLchar *qualifiers, glw::GLint expected_component,
+                                 glw::GLint expected_location, Interface *interface, glw::GLuint n_array_elements,
+                                 glw::GLint expected_stride_of_element, glw::GLuint offset);
 
-	/**/
-	Variable::Descriptor* AddMember(const Variable::Descriptor& member);
+    /**/
+    Variable::Descriptor *AddMember(const Variable::Descriptor &member);
 
-	std::string GetDefinition() const;
+    std::string GetDefinition() const;
 
-	/**/
-	Variable::Descriptor::Vector m_members;
-	std::string					 m_name;
-	TYPE						 m_type;
+    /**/
+    Variable::Descriptor::Vector m_members;
+    std::string m_name;
+    TYPE m_type;
 };
 
 struct ShaderInterface
 {
-	ShaderInterface(Shader::STAGES stage);
+    ShaderInterface(Shader::STAGES stage);
 
-	DEFINE_VARIABLE_CLASS(Input, Variable::VARYING_INPUT, m_inputs);
-	DEFINE_VARIABLE_CLASS(Output, Variable::VARYING_OUTPUT, m_outputs);
-	DEFINE_VARIABLE_CLASS(Uniform, Variable::UNIFORM, m_uniforms);
-	DEFINE_VARIABLE_CLASS(SSB, Variable::SSB, m_ssb_blocks);
+    DEFINE_VARIABLE_CLASS(Input, Variable::VARYING_INPUT, m_inputs)
+    DEFINE_VARIABLE_CLASS(Output, Variable::VARYING_OUTPUT, m_outputs)
+    DEFINE_VARIABLE_CLASS(Uniform, Variable::UNIFORM, m_uniforms)
+    DEFINE_VARIABLE_CLASS(SSB, Variable::SSB, m_ssb_blocks)
 
-	/**/
-	std::string GetDefinitionsGlobals() const;
-	std::string GetDefinitionsInputs() const;
-	std::string GetDefinitionsOutputs() const;
-	std::string GetDefinitionsSSBs() const;
-	std::string GetDefinitionsUniforms() const;
+    /**/
+    std::string GetDefinitionsGlobals() const;
+    std::string GetDefinitionsInputs() const;
+    std::string GetDefinitionsOutputs() const;
+    std::string GetDefinitionsSSBs() const;
+    std::string GetDefinitionsUniforms() const;
 
-	std::string			m_globals;
-	Variable::PtrVector m_inputs;
-	Variable::PtrVector m_outputs;
-	Variable::PtrVector m_uniforms;
-	Variable::PtrVector m_ssb_blocks;
+    std::string m_globals;
+    Variable::PtrVector m_inputs;
+    Variable::PtrVector m_outputs;
+    Variable::PtrVector m_uniforms;
+    Variable::PtrVector m_ssb_blocks;
 
-	Shader::STAGES m_stage;
+    Shader::STAGES m_stage;
 };
 
 struct VaryingConnection
 {
-	/* */
-	typedef std::vector<VaryingConnection> Vector;
+    /* */
+    typedef std::vector<VaryingConnection> Vector;
 
-	/* */
-	VaryingConnection(Variable* in, Variable* out);
+    /* */
+    VaryingConnection(Variable *in, Variable *out);
 
-	/* */
-	Variable* m_in;
-	Variable* m_out;
+    /* */
+    Variable *m_in;
+    Variable *m_out;
 };
 
 struct VaryingPassthrough
 {
-	/* */
-	void Add(Shader::STAGES stage, Variable* in, Variable* out);
+    /* */
+    void Add(Shader::STAGES stage, Variable *in, Variable *out);
 
-	VaryingConnection::Vector& Get(Shader::STAGES stage);
+    VaryingConnection::Vector &Get(Shader::STAGES stage);
 
-	/**/
-	VaryingConnection::Vector m_fragment;
-	VaryingConnection::Vector m_geometry;
-	VaryingConnection::Vector m_tess_ctrl;
-	VaryingConnection::Vector m_tess_eval;
-	VaryingConnection::Vector m_vertex;
+    /**/
+    VaryingConnection::Vector m_fragment;
+    VaryingConnection::Vector m_geometry;
+    VaryingConnection::Vector m_tess_ctrl;
+    VaryingConnection::Vector m_tess_eval;
+    VaryingConnection::Vector m_vertex;
 };
 
 struct ProgramInterface
 {
 
-	/* */
-	ProgramInterface();
-	~ProgramInterface();
+    /* */
+    ProgramInterface();
+    ~ProgramInterface();
 
-	/* */
-	Interface* AddInterface(const glw::GLchar* name, Interface::TYPE type);
-	Interface* Block(const glw::GLchar* name);
-	Interface* GetBlock(const glw::GLchar* name);
-	ShaderInterface& GetShaderInterface(Shader::STAGES stage);
-	const ShaderInterface& GetShaderInterface(Shader::STAGES stage) const;
-	Interface* GetStructure(const glw::GLchar* name);
-	Interface* Structure(const glw::GLchar* name);
+    /* */
+    Interface *AddInterface(const glw::GLchar *name, Interface::TYPE type);
+    Interface *Block(const glw::GLchar *name);
+    Interface *GetBlock(const glw::GLchar *name);
+    ShaderInterface &GetShaderInterface(Shader::STAGES stage);
+    const ShaderInterface &GetShaderInterface(Shader::STAGES stage) const;
+    Interface *GetStructure(const glw::GLchar *name);
+    Interface *Structure(const glw::GLchar *name);
 
-	/**/
-	std::string GetDefinitionsStructures() const;
-	std::string GetInterfaceForStage(Shader::STAGES stage) const;
+    /**/
+    std::string GetDefinitionsStructures() const;
+    std::string GetInterfaceForStage(Shader::STAGES stage) const;
 
-	/* */
-	Interface* CloneBlockForStage(const Interface& block, Shader::STAGES stage, Variable::STORAGE storage,
-								  const glw::GLchar* prefix);
-	void CloneVertexInterface(VaryingPassthrough& variable_pass);
+    /* */
+    Interface *CloneBlockForStage(const Interface &block, Shader::STAGES stage, Variable::STORAGE storage,
+                                  const glw::GLchar *prefix);
+    void CloneVertexInterface(VaryingPassthrough &variable_pass);
 
-	/* */
-	static const glw::GLchar* GetStagePrefix(Shader::STAGES stage, Variable::STORAGE storage);
+    /* */
+    static const glw::GLchar *GetStagePrefix(Shader::STAGES stage, Variable::STORAGE storage);
 
-	/* */
-	Interface::PtrVector m_structures;
-	Interface::PtrVector m_blocks;
+    /* */
+    Interface::PtrVector m_structures;
+    Interface::PtrVector m_blocks;
 
-	ShaderInterface m_compute;
-	ShaderInterface m_vertex;
-	ShaderInterface m_tess_ctrl;
-	ShaderInterface m_tess_eval;
-	ShaderInterface m_geometry;
-	ShaderInterface m_fragment;
+    ShaderInterface m_compute;
+    ShaderInterface m_vertex;
+    ShaderInterface m_tess_ctrl;
+    ShaderInterface m_tess_eval;
+    ShaderInterface m_geometry;
+    ShaderInterface m_fragment;
 
-	//Variable::Vector     m_fragment_outputs;
-	//Variable::PtrVector  m_captured_varyings;
+    //Variable::Vector     m_fragment_outputs;
+    //Variable::PtrVector  m_captured_varyings;
 
 private:
-	/* */
-	void cloneVariableForStage(const Variable& variable, Shader::STAGES stage, const glw::GLchar* prefix,
-							   VaryingPassthrough& varying_passthrough);
-	Variable* cloneVariableForStage(const Variable& variable, Shader::STAGES stage, Variable::STORAGE storage,
-									const glw::GLchar* prefix);
-	void replaceBinding(Variable& variable, Shader::STAGES stage);
+    /* */
+    void cloneVariableForStage(const Variable &variable, Shader::STAGES stage, const glw::GLchar *prefix,
+                               VaryingPassthrough &varying_passthrough);
+    Variable *cloneVariableForStage(const Variable &variable, Shader::STAGES stage, Variable::STORAGE storage,
+                                    const glw::GLchar *prefix);
+    void replaceBinding(Variable &variable, Shader::STAGES stage);
 };
 
 /** Represents program pipeline
@@ -686,33 +687,33 @@ private:
 class Pipeline
 {
 public:
-	/* Public methods */
-	/* Ctr & Dtr */
-	Pipeline(deqp::Context& context);
-	~Pipeline();
+    /* Public methods */
+    /* Ctr & Dtr */
+    Pipeline(deqp::Context &context);
+    ~Pipeline();
 
-	/* Init & Release */
-	void Init();
-	void Release();
+    /* Init & Release */
+    void Init();
+    void Release();
 
-	/* Functionality */
-	void Bind();
-	void UseProgramStages(glw::GLuint program_id, glw::GLenum stages);
+    /* Functionality */
+    void Bind();
+    void UseProgramStages(glw::GLuint program_id, glw::GLenum stages);
 
-	/* Public static routines */
-	/* Functionality */
-	void Bind(const glw::Functions& gl, glw::GLuint id);
-	void UseProgramStages(const glw::Functions& gl, glw::GLuint id, glw::GLuint program_id, glw::GLenum stages);
+    /* Public static routines */
+    /* Functionality */
+    void Bind(const glw::Functions &gl, glw::GLuint id);
+    void UseProgramStages(const glw::Functions &gl, glw::GLuint id, glw::GLuint program_id, glw::GLenum stages);
 
-	/* Public fields */
-	glw::GLuint m_id;
+    /* Public fields */
+    glw::GLuint m_id;
 
-	/* Public constants */
-	static const glw::GLuint m_invalid_id;
+    /* Public constants */
+    static const glw::GLuint m_invalid_id;
 
 private:
-	/* Private fields */
-	deqp::Context& m_context;
+    /* Private fields */
+    deqp::Context &m_context;
 };
 
 /** Represents program instance.
@@ -721,194 +722,194 @@ private:
 class Program
 {
 public:
-	/* Public types */
-	class BuildException : public std::exception
-	{
-	public:
-		BuildException(const glw::GLchar* error_message, const std::string compute_shader,
-					   const std::string fragment_shader, const std::string geometry_shader,
-					   const std::string tess_ctrl_shader, const std::string tess_eval_shader,
-					   const std::string vertex_shader);
-		virtual ~BuildException() throw()
-		{
-		}
+    /* Public types */
+    class BuildException : public std::exception
+    {
+    public:
+        BuildException(const glw::GLchar *error_message, const std::string compute_shader,
+                       const std::string fragment_shader, const std::string geometry_shader,
+                       const std::string tess_ctrl_shader, const std::string tess_eval_shader,
+                       const std::string vertex_shader);
+        virtual ~BuildException() throw()
+        {
+        }
 
-		virtual const char* what() const throw();
+        virtual const char *what() const throw();
 
-		void log(deqp::Context& context) const;
+        void log(deqp::Context &context) const;
 
-		std::string m_error_message;
-		std::string m_compute_shader;
-		std::string m_fragment_shader;
-		std::string m_geometry_shader;
-		std::string m_tess_ctrl_shader;
-		std::string m_tess_eval_shader;
-		std::string m_vertex_shader;
-	};
+        std::string m_error_message;
+        std::string m_compute_shader;
+        std::string m_fragment_shader;
+        std::string m_geometry_shader;
+        std::string m_tess_ctrl_shader;
+        std::string m_tess_eval_shader;
+        std::string m_vertex_shader;
+    };
 
-	typedef std::vector<std::string> NameVector;
+    typedef std::vector<std::string> NameVector;
 
-	/* Public methods */
-	/* Ctr & Dtr */
-	Program(deqp::Context& context);
-	~Program();
+    /* Public methods */
+    /* Ctr & Dtr */
+    Program(deqp::Context &context);
+    ~Program();
 
-	/* Init & Release */
-	void Init(const std::string& compute_shader, const std::string& fragment_shader, const std::string& geometry_shader,
-			  const std::string& tessellation_control_shader, const std::string& tessellation_evaluation_shader,
-			  const std::string& vertex_shader, const NameVector& captured_varyings, bool capture_interleaved,
-			  bool is_separable);
+    /* Init & Release */
+    void Init(const std::string &compute_shader, const std::string &fragment_shader, const std::string &geometry_shader,
+              const std::string &tessellation_control_shader, const std::string &tessellation_evaluation_shader,
+              const std::string &vertex_shader, const NameVector &captured_varyings, bool capture_interleaved,
+              bool is_separable);
 
-	void Init(const std::string& compute_shader, const std::string& fragment_shader, const std::string& geometry_shader,
-			  const std::string& tessellation_control_shader, const std::string& tessellation_evaluation_shader,
-			  const std::string& vertex_shader, bool is_separable);
+    void Init(const std::string &compute_shader, const std::string &fragment_shader, const std::string &geometry_shader,
+              const std::string &tessellation_control_shader, const std::string &tessellation_evaluation_shader,
+              const std::string &vertex_shader, bool is_separable);
 
-	void Release();
+    void Release();
 
-	/* Functionality */
-	void GetActiveUniformsiv(glw::GLsizei count, const glw::GLuint* indices, glw::GLenum pname,
-							 glw::GLint* params) const;
+    /* Functionality */
+    void GetActiveUniformsiv(glw::GLsizei count, const glw::GLuint *indices, glw::GLenum pname,
+                             glw::GLint *params) const;
 
-	glw::GLint GetAttribLocation(const std::string& name) const;
+    glw::GLint GetAttribLocation(const std::string &name) const;
 
-	void GetResource(glw::GLenum interface, glw::GLuint index, glw::GLenum property, glw::GLsizei buf_size,
-					 glw::GLint* params) const;
+    void GetResource(glw::GLenum interface, glw::GLuint index, glw::GLenum property, glw::GLsizei buf_size,
+                     glw::GLint *params) const;
 
-	glw::GLuint GetResourceIndex(const std::string& name, glw::GLenum interface) const;
+    glw::GLuint GetResourceIndex(const std::string &name, glw::GLenum interface) const;
 
-	void GetUniformIndices(glw::GLsizei count, const glw::GLchar** names, glw::GLuint* indices) const;
+    void GetUniformIndices(glw::GLsizei count, const glw::GLchar **names, glw::GLuint *indices) const;
 
-	glw::GLint GetUniformLocation(const std::string& name) const;
-	void Use() const;
+    glw::GLint GetUniformLocation(const std::string &name) const;
+    void Use() const;
 
-	/* Public static routines */
-	/* Functionality */
-	static void Attach(const glw::Functions& gl, glw::GLuint program_id, glw::GLuint shader_id);
+    /* Public static routines */
+    /* Functionality */
+    static void Attach(const glw::Functions &gl, glw::GLuint program_id, glw::GLuint shader_id);
 
-	static void Capture(const glw::Functions& gl, glw::GLuint id, const NameVector& captured_varyings,
-						bool capture_interleaved);
+    static void Capture(const glw::Functions &gl, glw::GLuint id, const NameVector &captured_varyings,
+                        bool capture_interleaved);
 
-	static void Create(const glw::Functions& gl, glw::GLuint& out_id);
+    static void Create(const glw::Functions &gl, glw::GLuint &out_id);
 
-	static void GetActiveUniformsiv(const glw::Functions& gl, glw::GLuint program_id, glw::GLsizei count,
-									const glw::GLuint* indices, glw::GLenum pname, glw::GLint* params);
+    static void GetActiveUniformsiv(const glw::Functions &gl, glw::GLuint program_id, glw::GLsizei count,
+                                    const glw::GLuint *indices, glw::GLenum pname, glw::GLint *params);
 
-	static void GetUniformIndices(const glw::Functions& gl, glw::GLuint program_id, glw::GLsizei count,
-								  const glw::GLchar** names, glw::GLuint* indices);
+    static void GetUniformIndices(const glw::Functions &gl, glw::GLuint program_id, glw::GLsizei count,
+                                  const glw::GLchar **names, glw::GLuint *indices);
 
-	static void Link(const glw::Functions& gl, glw::GLuint id);
+    static void Link(const glw::Functions &gl, glw::GLuint id);
 
-	static void Uniform(const glw::Functions& gl, const Type& type, glw::GLsizei count, glw::GLint location,
-						const glw::GLvoid* data);
+    static void Uniform(const glw::Functions &gl, const Type &type, glw::GLsizei count, glw::GLint location,
+                        const glw::GLvoid *data);
 
-	static void Use(const glw::Functions& gl, glw::GLuint id);
+    static void Use(const glw::Functions &gl, glw::GLuint id);
 
-	/* Get locations */
-	static glw::GLint GetAttribLocation(const glw::Functions& gl, glw::GLuint id, const std::string& name);
+    /* Get locations */
+    static glw::GLint GetAttribLocation(const glw::Functions &gl, glw::GLuint id, const std::string &name);
 
-	static void GetResource(const glw::Functions& gl, glw::GLuint id, glw::GLenum interface, glw::GLuint index,
-							glw::GLenum property, glw::GLsizei buf_size, glw::GLint* params);
+    static void GetResource(const glw::Functions &gl, glw::GLuint id, glw::GLenum interface, glw::GLuint index,
+                            glw::GLenum property, glw::GLsizei buf_size, glw::GLint *params);
 
-	static glw::GLuint GetResourceIndex(const glw::Functions& gl, glw::GLuint id, const std::string& name,
-										glw::GLenum interface);
+    static glw::GLuint GetResourceIndex(const glw::Functions &gl, glw::GLuint id, const std::string &name,
+                                        glw::GLenum interface);
 
-	static glw::GLint GetUniformLocation(const glw::Functions& gl, glw::GLuint id, const std::string& name);
+    static glw::GLint GetUniformLocation(const glw::Functions &gl, glw::GLuint id, const std::string &name);
 
-	/* Public fields */
-	glw::GLuint m_id;
+    /* Public fields */
+    glw::GLuint m_id;
 
-	Shader m_compute;
-	Shader m_fragment;
-	Shader m_geometry;
-	Shader m_tess_ctrl;
-	Shader m_tess_eval;
-	Shader m_vertex;
+    Shader m_compute;
+    Shader m_fragment;
+    Shader m_geometry;
+    Shader m_tess_ctrl;
+    Shader m_tess_eval;
+    Shader m_vertex;
 
-	/* Public constants */
-	static const glw::GLuint m_invalid_id;
+    /* Public constants */
+    static const glw::GLuint m_invalid_id;
 
 private:
-	/* Private types */
-	class LinkageException : public std::exception
-	{
-	public:
-		LinkageException(const glw::GLchar* error_message);
+    /* Private types */
+    class LinkageException : public std::exception
+    {
+    public:
+        LinkageException(const glw::GLchar *error_message);
 
-		virtual ~LinkageException() throw()
-		{
-		}
+        virtual ~LinkageException() throw()
+        {
+        }
 
-		virtual const char* what() const throw();
+        virtual const char *what() const throw();
 
-		std::string m_error_message;
-	};
+        std::string m_error_message;
+    };
 
-	/* Private fields */
-	deqp::Context& m_context;
+    /* Private fields */
+    deqp::Context &m_context;
 };
 
 class Texture
 {
 public:
-	/* Public enums */
-	enum TYPES
-	{
-		TEX_BUFFER,
-		TEX_2D,
-		TEX_2D_RECT,
-		TEX_2D_ARRAY,
-		TEX_3D,
-		TEX_CUBE,
-		TEX_1D,
-		TEX_1D_ARRAY,
-	};
+    /* Public enums */
+    enum TYPES
+    {
+        TEX_BUFFER,
+        TEX_2D,
+        TEX_2D_RECT,
+        TEX_2D_ARRAY,
+        TEX_3D,
+        TEX_CUBE,
+        TEX_1D,
+        TEX_1D_ARRAY,
+    };
 
-	/* Public methods */
-	/* Ctr & Dtr */
-	Texture(deqp::Context& context);
-	~Texture();
+    /* Public methods */
+    /* Ctr & Dtr */
+    Texture(deqp::Context &context);
+    ~Texture();
 
-	/* Init & Release */
-	void Init(TYPES tex_type, glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLenum internal_format,
-			  glw::GLenum format, glw::GLenum type, glw::GLvoid* data);
+    /* Init & Release */
+    void Init(TYPES tex_type, glw::GLuint width, glw::GLuint height, glw::GLuint depth, glw::GLenum internal_format,
+              glw::GLenum format, glw::GLenum type, glw::GLvoid *data);
 
-	void Init(glw::GLenum internal_format, glw::GLuint buffer_id);
+    void Init(glw::GLenum internal_format, glw::GLuint buffer_id);
 
-	void Release();
+    void Release();
 
-	/* Functionality */
-	void Bind() const;
-	void Get(glw::GLenum format, glw::GLenum type, glw::GLvoid* out_data) const;
+    /* Functionality */
+    void Bind() const;
+    void Get(glw::GLenum format, glw::GLenum type, glw::GLvoid *out_data) const;
 
-	/* Public static routines */
-	/* Functionality */
-	static void Bind(const glw::Functions& gl, glw::GLuint id, TYPES tex_type);
+    /* Public static routines */
+    /* Functionality */
+    static void Bind(const glw::Functions &gl, glw::GLuint id, TYPES tex_type);
 
-	static void Generate(const glw::Functions& gl, glw::GLuint& out_id);
+    static void Generate(const glw::Functions &gl, glw::GLuint &out_id);
 
-	static void Get(const glw::Functions& gl, TYPES tex_type, glw::GLenum format, glw::GLenum type,
-					glw::GLvoid* out_data);
+    static void Get(const glw::Functions &gl, TYPES tex_type, glw::GLenum format, glw::GLenum type,
+                    glw::GLvoid *out_data);
 
-	static void Storage(const glw::Functions& gl, TYPES tex_type, glw::GLuint width, glw::GLuint height,
-						glw::GLuint depth, glw::GLenum internal_format);
+    static void Storage(const glw::Functions &gl, TYPES tex_type, glw::GLuint width, glw::GLuint height,
+                        glw::GLuint depth, glw::GLenum internal_format);
 
-	static void TexBuffer(const glw::Functions& gl, glw::GLenum internal_format, glw::GLuint& buffer_id);
+    static void TexBuffer(const glw::Functions &gl, glw::GLenum internal_format, glw::GLuint &buffer_id);
 
-	static void Update(const glw::Functions& gl, TYPES tex_type, glw::GLuint width, glw::GLuint height,
-					   glw::GLuint depth, glw::GLenum format, glw::GLenum type, glw::GLvoid* data);
+    static void Update(const glw::Functions &gl, TYPES tex_type, glw::GLuint width, glw::GLuint height,
+                       glw::GLuint depth, glw::GLenum format, glw::GLenum type, glw::GLvoid *data);
 
-	/* GL gets */
-	static glw::GLenum GetTargetGLenum(TYPES tex_type);
+    /* GL gets */
+    static glw::GLenum GetTargetGLenum(TYPES tex_type);
 
-	/* Public fields */
-	glw::GLuint m_id;
+    /* Public fields */
+    glw::GLuint m_id;
 
-	/* Public constants */
-	static const glw::GLuint m_invalid_id;
+    /* Public constants */
+    static const glw::GLuint m_invalid_id;
 
 private:
-	deqp::Context& m_context;
-	TYPES		   m_type;
+    deqp::Context &m_context;
+    TYPES m_type;
 };
 
 /** Represents Vertex array object
@@ -917,317 +918,321 @@ private:
 class VertexArray
 {
 public:
-	/* Public methods */
-	/* Ctr & Dtr */
-	VertexArray(deqp::Context& Context);
-	~VertexArray();
+    /* Public methods */
+    /* Ctr & Dtr */
+    VertexArray(deqp::Context &Context);
+    ~VertexArray();
 
-	/* Init & Release */
-	void Init();
-	//void Init(const ProgramInterface& program_interface,
-	//                glw::GLuint       vertex_buffer,
-	//                glw::GLuint       index_buffer);
-	void Release();
+    /* Init & Release */
+    void Init();
+    //void Init(const ProgramInterface& program_interface,
+    //                glw::GLuint       vertex_buffer,
+    //                glw::GLuint       index_buffer);
+    void Release();
 
-	void Attribute(glw::GLuint index, const Type& type, glw::GLuint n_array_elements, glw::GLboolean normalized,
-				   glw::GLsizei stride, const glw::GLvoid* pointer);
+    void Attribute(glw::GLuint index, const Type &type, glw::GLuint n_array_elements, glw::GLboolean normalized,
+                   glw::GLsizei stride, const glw::GLvoid *pointer);
 
-	void Bind();
+    void Bind();
 
-	/* Public static methods */
-	static void AttribPointer(const glw::Functions& gl, glw::GLuint index, const Type& type,
-							  glw::GLuint n_array_elements, glw::GLboolean normalized, glw::GLsizei stride,
-							  const glw::GLvoid* pointer);
+    /* Public static methods */
+    static void AttribPointer(const glw::Functions &gl, glw::GLuint index, const Type &type,
+                              glw::GLuint n_array_elements, glw::GLboolean normalized, glw::GLsizei stride,
+                              const glw::GLvoid *pointer);
 
-	static void Bind(const glw::Functions& gl, glw::GLuint id);
+    static void Bind(const glw::Functions &gl, glw::GLuint id);
 
-	static void Disable(const glw::Functions& gl, glw::GLuint index, const Type& type, glw::GLuint n_array_elements);
+    static void Disable(const glw::Functions &gl, glw::GLuint index, const Type &type, glw::GLuint n_array_elements);
 
-	static void Divisor(const glw::Functions& gl, glw::GLuint index, glw::GLuint divisor);
+    static void Divisor(const glw::Functions &gl, glw::GLuint index, glw::GLuint divisor);
 
-	static void Enable(const glw::Functions& gl, glw::GLuint index, const Type& type, glw::GLuint n_array_elements);
+    static void Enable(const glw::Functions &gl, glw::GLuint index, const Type &type, glw::GLuint n_array_elements);
 
-	static void Generate(const glw::Functions& gl, glw::GLuint& out_id);
+    static void Generate(const glw::Functions &gl, glw::GLuint &out_id);
 
-	/* Public fields */
-	glw::GLuint m_id;
+    /* Public fields */
+    glw::GLuint m_id;
 
-	/* Public constants */
-	static const glw::GLuint m_invalid_id;
+    /* Public constants */
+    static const glw::GLuint m_invalid_id;
 
 private:
-	deqp::Context& m_context;
+    deqp::Context &m_context;
 };
 
 /* UniformN*v prototypes */
-typedef GLW_APICALL void(GLW_APIENTRY* uniformNdv)(glw::GLint, glw::GLsizei, const glw::GLdouble*);
-typedef GLW_APICALL void(GLW_APIENTRY* uniformNfv)(glw::GLint, glw::GLsizei, const glw::GLfloat*);
-typedef GLW_APICALL void(GLW_APIENTRY* uniformNiv)(glw::GLint, glw::GLsizei, const glw::GLint*);
-typedef GLW_APICALL void(GLW_APIENTRY* uniformNuiv)(glw::GLint, glw::GLsizei, const glw::GLuint*);
-typedef GLW_APICALL void(GLW_APIENTRY* uniformMatrixNdv)(glw::GLint, glw::GLsizei, glw::GLboolean,
-														 const glw::GLdouble*);
-typedef GLW_APICALL void(GLW_APIENTRY* uniformMatrixNfv)(glw::GLint, glw::GLsizei, glw::GLboolean, const glw::GLfloat*);
+typedef GLW_APICALL void(GLW_APIENTRY *uniformNdv)(glw::GLint, glw::GLsizei, const glw::GLdouble *);
+typedef GLW_APICALL void(GLW_APIENTRY *uniformNfv)(glw::GLint, glw::GLsizei, const glw::GLfloat *);
+typedef GLW_APICALL void(GLW_APIENTRY *uniformNiv)(glw::GLint, glw::GLsizei, const glw::GLint *);
+typedef GLW_APICALL void(GLW_APIENTRY *uniformNuiv)(glw::GLint, glw::GLsizei, const glw::GLuint *);
+typedef GLW_APICALL void(GLW_APIENTRY *uniformMatrixNdv)(glw::GLint, glw::GLsizei, glw::GLboolean,
+                                                         const glw::GLdouble *);
+typedef GLW_APICALL void(GLW_APIENTRY *uniformMatrixNfv)(glw::GLint, glw::GLsizei, glw::GLboolean,
+                                                         const glw::GLfloat *);
 
 /* Public static methods */
 /* UniformN*v routine getters */
-uniformNdv getUniformNdv(const glw::Functions& gl, glw::GLuint n_rows);
-uniformNfv getUniformNfv(const glw::Functions& gl, glw::GLuint n_rows);
-uniformNiv getUniformNiv(const glw::Functions& gl, glw::GLuint n_rows);
-uniformNuiv getUniformNuiv(const glw::Functions& gl, glw::GLuint n_rows);
-uniformMatrixNdv getUniformMatrixNdv(const glw::Functions& gl, glw::GLuint n_columns, glw::GLuint n_rows);
-uniformMatrixNfv getUniformMatrixNfv(const glw::Functions& gl, glw::GLuint n_columns, glw::GLuint n_rows);
+uniformNdv getUniformNdv(const glw::Functions &gl, glw::GLuint n_rows);
+uniformNfv getUniformNfv(const glw::Functions &gl, glw::GLuint n_rows);
+uniformNiv getUniformNiv(const glw::Functions &gl, glw::GLuint n_rows);
+uniformNuiv getUniformNuiv(const glw::Functions &gl, glw::GLuint n_rows);
+uniformMatrixNdv getUniformMatrixNdv(const glw::Functions &gl, glw::GLuint n_columns, glw::GLuint n_rows);
+uniformMatrixNfv getUniformMatrixNfv(const glw::Functions &gl, glw::GLuint n_columns, glw::GLuint n_rows);
 
 /* Stuff */
-bool checkProgramInterface(const ProgramInterface& program_interface, Program& program, std::stringstream& stream);
+bool checkProgramInterface(const ProgramInterface &program_interface, Program &program, std::stringstream &stream);
 
-bool isExtensionSupported(deqp::Context& context, const glw::GLchar* extension_name);
+bool isExtensionSupported(deqp::Context &context, const glw::GLchar *extension_name);
 
-bool isGLVersionAtLeast(const glw::Functions& gl, glw::GLint required_major, glw::GLint required_minor);
+bool isGLVersionAtLeast(const glw::Functions &gl, glw::GLint required_major, glw::GLint required_minor);
 
-void replaceToken(const glw::GLchar* token, size_t& search_position, const glw::GLchar* text, std::string& string);
+void replaceToken(const glw::GLchar *token, size_t &search_position, const glw::GLchar *text, std::string &string);
 
-void replaceAllTokens(const glw::GLchar* token, const glw::GLchar* text, std::string& string);
+void replaceAllTokens(const glw::GLchar *token, const glw::GLchar *text, std::string &string);
 
 glw::GLuint roundUpToPowerOf2(glw::GLuint value);
 
-void insertElementOfList(const glw::GLchar* element, const glw::GLchar* separator, size_t& search_position,
-						 std::string& string);
+void insertElementOfList(const glw::GLchar *element, const glw::GLchar *separator, size_t &search_position,
+                         std::string &string);
 
-void endList(const glw::GLchar* separator, size_t& search_position, std::string& string);
-} /* Utils namespace */
+void endList(const glw::GLchar *separator, size_t &search_position, std::string &string);
+} // namespace Utils
 
 /** Base class for tests **/
 class TestBase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TestBase(deqp::Context& context, const glw::GLchar* test_name, const glw::GLchar* test_description);
+    /* Public methods */
+    TestBase(deqp::Context &context, const glw::GLchar *test_name, const glw::GLchar *test_description);
 
-	virtual ~TestBase()
-	{
-	}
+    virtual ~TestBase()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool testCase(glw::GLuint test_case_index) = 0;
-	virtual void testInit();
+    /* Methods to be implemented by child class */
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool testCase(glw::GLuint test_case_index) = 0;
+    virtual void testInit();
 
-	/* Routines avaiable for children */
-	glw::GLuint calculateStride(const Utils::Interface& interface) const;
-	void generateData(const Utils::Interface& interface, glw::GLuint offset, std::vector<glw::GLubyte>& out_data) const;
+    /* Routines avaiable for children */
+    glw::GLuint calculateStride(const Utils::Interface &interface) const;
+    void generateData(const Utils::Interface &interface, glw::GLuint offset, std::vector<glw::GLubyte> &out_data) const;
 
-	glw::GLint getLastInputLocation(Utils::Shader::STAGES stage, const Utils::Type& type, glw::GLuint array_lenth, bool ignore_prev_stage);
+    glw::GLint getLastInputLocation(Utils::Shader::STAGES stage, const Utils::Type &type, glw::GLuint array_lenth,
+                                    bool ignore_prev_stage);
 
-	glw::GLint getLastOutputLocation(Utils::Shader::STAGES stage, const Utils::Type& type, glw::GLuint array_lenth, bool ignore_next_stage);
+    glw::GLint getLastOutputLocation(Utils::Shader::STAGES stage, const Utils::Type &type, glw::GLuint array_lenth,
+                                     bool ignore_next_stage);
 
-	Utils::Type getType(glw::GLuint index) const;
-	std::string getTypeName(glw::GLuint index) const;
-	glw::GLuint getTypesNumber() const;
+    Utils::Type getType(glw::GLuint index) const;
+    std::string getTypeName(glw::GLuint index) const;
+    glw::GLuint getTypesNumber() const;
 
-	bool isFlatRequired(Utils::Shader::STAGES stage, const Utils::Type& type, Utils::Variable::STORAGE storage,
-						const bool coherent = false) const;
+    bool isFlatRequired(Utils::Shader::STAGES stage, const Utils::Type &type, Utils::Variable::STORAGE storage,
+                        const bool coherent = false) const;
 
 private:
-	/* Private methods */
-	bool test();
+    /* Private methods */
+    bool test();
 };
 
 /** Base class for test doing Buffer alghorithm **/
 class BufferTestBase : public TestBase
 {
 public:
-	/* Public methods */
-	BufferTestBase(deqp::Context& context, const glw::GLchar* test_name, const glw::GLchar* test_description);
+    /* Public methods */
+    BufferTestBase(deqp::Context &context, const glw::GLchar *test_name, const glw::GLchar *test_description);
 
-	virtual ~BufferTestBase()
-	{
-	}
+    virtual ~BufferTestBase()
+    {
+    }
 
 protected:
-	/* */
-	struct bufferDescriptor
-	{
-		/* Typedefs */
-		typedef std::vector<bufferDescriptor> Vector;
+    /* */
+    struct bufferDescriptor
+    {
+        /* Typedefs */
+        typedef std::vector<bufferDescriptor> Vector;
 
-		/* Fileds */
-		std::vector<glw::GLubyte> m_expected_data;
-		std::vector<glw::GLubyte> m_initial_data;
-		glw::GLuint				  m_index;
-		Utils::Buffer::BUFFERS	m_target;
+        /* Fileds */
+        std::vector<glw::GLubyte> m_expected_data;
+        std::vector<glw::GLubyte> m_initial_data;
+        glw::GLuint m_index;
+        Utils::Buffer::BUFFERS m_target;
 
-		/* Constants */
-		static const glw::GLuint m_non_indexed;
-	};
+        /* Constants */
+        static const glw::GLuint m_non_indexed;
+    };
 
-	class bufferCollection
-	{
-	public:
-		struct pair
-		{
-			Utils::Buffer*	m_buffer;
-			bufferDescriptor* m_descriptor;
-		};
+    class bufferCollection
+    {
+    public:
+        struct pair
+        {
+            Utils::Buffer *m_buffer;
+            bufferDescriptor *m_descriptor;
+        };
 
-		~bufferCollection();
+        ~bufferCollection();
 
-		typedef std::vector<pair> Vector;
+        typedef std::vector<pair> Vector;
 
-		Vector m_vector;
-	};
+        Vector m_vector;
+    };
 
-	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
+    virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
 
-	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
 
-	virtual void getCapturedVaryings(glw::GLuint test_case_index, Utils::Program::NameVector& captured_varyings, glw::GLint* xfb_components);
+    virtual void getCapturedVaryings(glw::GLuint test_case_index, Utils::Program::NameVector &captured_varyings,
+                                     glw::GLint *xfb_components);
 
-	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
-							   std::string& out_calculations);
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
 
-	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
-									std::string& out_interface);
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
 
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual bool inspectProgram(glw::GLuint test_case_index, Utils::Program& program, std::stringstream& out_stream);
+    virtual bool inspectProgram(glw::GLuint test_case_index, Utils::Program &program, std::stringstream &out_stream);
 
-	virtual bool testCase(glw::GLuint test_case_index);
-	virtual bool verifyBuffers(bufferCollection& buffers);
+    virtual bool testCase(glw::GLuint test_case_index);
+    virtual bool verifyBuffers(bufferCollection &buffers);
 
 private:
-	void		cleanBuffers();
-	std::string getShaderTemplate(Utils::Shader::STAGES stage);
-	void prepareBuffer(Utils::Buffer& buffer, bufferDescriptor& descriptor);
-	void prepareBuffers(bufferDescriptor::Vector& descriptors, bufferCollection& out_buffers);
+    void cleanBuffers();
+    std::string getShaderTemplate(Utils::Shader::STAGES stage);
+    void prepareBuffer(Utils::Buffer &buffer, bufferDescriptor &descriptor);
+    void prepareBuffers(bufferDescriptor::Vector &descriptors, bufferCollection &out_buffers);
 
-	/* */
+    /* */
 };
 
 class NegativeTestBase : public TestBase
 {
 public:
-	/* Public methods */
-	NegativeTestBase(deqp::Context& context, const glw::GLchar* test_name, const glw::GLchar* test_description);
+    /* Public methods */
+    NegativeTestBase(deqp::Context &context, const glw::GLchar *test_name, const glw::GLchar *test_description);
 
-	virtual ~NegativeTestBase()
-	{
-	}
+    virtual ~NegativeTestBase()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage) = 0;
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool isFailureExpected(glw::GLuint test_case_index);
-	virtual bool isSeparable(const glw::GLuint test_case_index);
-	virtual bool testCase(glw::GLuint test_case_index);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage) = 0;
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isFailureExpected(glw::GLuint test_case_index);
+    virtual bool isSeparable(const glw::GLuint test_case_index);
+    virtual bool testCase(glw::GLuint test_case_index);
 };
 
 /** Base class for test doing Texture algorithm **/
 class TextureTestBase : public TestBase
 {
 public:
-	/* Public methods */
-	TextureTestBase(deqp::Context& context, const glw::GLchar* test_name, const glw::GLchar* test_description);
+    /* Public methods */
+    TextureTestBase(deqp::Context &context, const glw::GLchar *test_name, const glw::GLchar *test_description);
 
-	virtual ~TextureTestBase()
-	{
-	}
+    virtual ~TextureTestBase()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual bool checkResults(glw::GLuint test_case_index, Utils::Texture& color_0);
+    /* Methods to be implemented by child class */
+    virtual bool checkResults(glw::GLuint test_case_index, Utils::Texture &color_0);
 
-	virtual void executeDispatchCall(glw::GLuint test_case_index);
-	virtual void executeDrawCall(glw::GLuint test_case_index);
+    virtual void executeDispatchCall(glw::GLuint test_case_index);
+    virtual void executeDrawCall(glw::GLuint test_case_index);
 
-	virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-									 Utils::VaryingPassthrough& varying_passthrough);
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
 
-	virtual std::string getPassSnippet(glw::GLuint test_case_index, Utils::VaryingPassthrough& varying_passthrough,
-									   Utils::Shader::STAGES stage);
+    virtual std::string getPassSnippet(glw::GLuint test_case_index, Utils::VaryingPassthrough &varying_passthrough,
+                                       Utils::Shader::STAGES stage);
 
-	virtual std::string getVerificationSnippet(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-											   Utils::Shader::STAGES stage);
+    virtual std::string getVerificationSnippet(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                               Utils::Shader::STAGES stage);
 
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool isDrawRelevant(glw::GLuint test_case_index);
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isDrawRelevant(glw::GLuint test_case_index);
 
-	virtual void prepareAttributes(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-								   Utils::Buffer& buffer, Utils::VertexArray& vao);
+    virtual void prepareAttributes(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                   Utils::Buffer &buffer, Utils::VertexArray &vao);
 
-	virtual void prepareAttribLocation(Utils::Program& program, Utils::ProgramInterface& program_interface);
+    virtual void prepareAttribLocation(Utils::Program &program, Utils::ProgramInterface &program_interface);
 
-	virtual void prepareFragmentDataLoc(Utils::Program& program, Utils::ProgramInterface& program_interface);
+    virtual void prepareFragmentDataLoc(Utils::Program &program, Utils::ProgramInterface &program_interface);
 
-	virtual void prepareFramebuffer(Utils::Framebuffer& framebuffer, Utils::Texture& color_0_texture);
+    virtual void prepareFramebuffer(Utils::Framebuffer &framebuffer, Utils::Texture &color_0_texture);
 
-	virtual void prepareImage(glw::GLint location, Utils::Texture& image_texture) const;
+    virtual void prepareImage(glw::GLint location, Utils::Texture &image_texture) const;
 
-	virtual void prepareSSBs(glw::GLuint test_case_index, Utils::ShaderInterface& si, Utils::Program& program,
-							 Utils::Buffer& buffer);
+    virtual void prepareSSBs(glw::GLuint test_case_index, Utils::ShaderInterface &si, Utils::Program &program,
+                             Utils::Buffer &buffer);
 
-	virtual void prepareSSBs(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-							 Utils::Program& program, Utils::Buffer& cs_buffer);
+    virtual void prepareSSBs(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                             Utils::Program &program, Utils::Buffer &cs_buffer);
 
-	virtual void prepareSSBs(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-							 Utils::Program& program, Utils::Buffer& fs_buffer, Utils::Buffer& gs_buffer,
-							 Utils::Buffer& tcs_buffer, Utils::Buffer& tes_buffer, Utils::Buffer& vs_buffer);
+    virtual void prepareSSBs(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                             Utils::Program &program, Utils::Buffer &fs_buffer, Utils::Buffer &gs_buffer,
+                             Utils::Buffer &tcs_buffer, Utils::Buffer &tes_buffer, Utils::Buffer &vs_buffer);
 
-	virtual void prepareUniforms(glw::GLuint test_case_index, Utils::ShaderInterface& si, Utils::Program& program,
-								 Utils::Buffer& buffer);
+    virtual void prepareUniforms(glw::GLuint test_case_index, Utils::ShaderInterface &si, Utils::Program &program,
+                                 Utils::Buffer &buffer);
 
-	virtual void prepareUniforms(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-								 Utils::Program& program, Utils::Buffer& cs_buffer);
+    virtual void prepareUniforms(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                 Utils::Program &program, Utils::Buffer &cs_buffer);
 
-	virtual void prepareUniforms(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-								 Utils::Program& program, Utils::Buffer& fs_buffer, Utils::Buffer& gs_buffer,
-								 Utils::Buffer& tcs_buffer, Utils::Buffer& tes_buffer, Utils::Buffer& vs_buffer);
+    virtual void prepareUniforms(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                 Utils::Program &program, Utils::Buffer &fs_buffer, Utils::Buffer &gs_buffer,
+                                 Utils::Buffer &tcs_buffer, Utils::Buffer &tes_buffer, Utils::Buffer &vs_buffer);
 
-	virtual void prepareUniforms(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-								 Utils::Program& fs_program, Utils::Program& gs_program, Utils::Program& tcs_program,
-								 Utils::Program& tes_program, Utils::Program& vs_program, Utils::Buffer& fs_buffer,
-								 Utils::Buffer& gs_buffer, Utils::Buffer& tcs_buffer, Utils::Buffer& tes_buffer,
-								 Utils::Buffer& vs_buffer);
-	//virtual void        prepareDrawPrograms   (glw::GLuint                 test_case_index,
-	//                                           Utils::Program&             fragment,
-	//                                           Utils::Program&             geometry,
-	//                                           Utils::Program&             tess_ctrl,
-	//                                           Utils::Program&             tess_eval,
-	//                                           Utils::Program&             vertex);
-	virtual bool testCase(glw::GLuint test_case_index);
-	virtual bool testMonolithic(glw::GLuint test_case_index);
-	virtual bool testSeparable(glw::GLuint test_case_index);
-	virtual bool useComponentQualifier(glw::GLuint test_case_index);
-	virtual bool useMonolithicProgram(glw::GLuint test_case_index);
+    virtual void prepareUniforms(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                 Utils::Program &fs_program, Utils::Program &gs_program, Utils::Program &tcs_program,
+                                 Utils::Program &tes_program, Utils::Program &vs_program, Utils::Buffer &fs_buffer,
+                                 Utils::Buffer &gs_buffer, Utils::Buffer &tcs_buffer, Utils::Buffer &tes_buffer,
+                                 Utils::Buffer &vs_buffer);
+    //virtual void        prepareDrawPrograms   (glw::GLuint                 test_case_index,
+    //                                           Utils::Program&             fragment,
+    //                                           Utils::Program&             geometry,
+    //                                           Utils::Program&             tess_ctrl,
+    //                                           Utils::Program&             tess_eval,
+    //                                           Utils::Program&             vertex);
+    virtual bool testCase(glw::GLuint test_case_index);
+    virtual bool testMonolithic(glw::GLuint test_case_index);
+    virtual bool testSeparable(glw::GLuint test_case_index);
+    virtual bool useComponentQualifier(glw::GLuint test_case_index);
+    virtual bool useMonolithicProgram(glw::GLuint test_case_index);
 
-	/* Protected constants */
-	static const glw::GLuint m_width;
-	static const glw::GLuint m_height;
+    /* Protected constants */
+    static const glw::GLuint m_width;
+    static const glw::GLuint m_height;
 
 private:
-	std::string getShaderSource(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-								Utils::VaryingPassthrough& varying_passthrough, Utils::Shader::STAGES stage);
+    std::string getShaderSource(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                Utils::VaryingPassthrough &varying_passthrough, Utils::Shader::STAGES stage);
 
-	const glw::GLchar* getShaderTemplate(Utils::Shader::STAGES stage);
+    const glw::GLchar *getShaderTemplate(Utils::Shader::STAGES stage);
 
-	std::string getVariablePassthrough(const std::string&				  in_parent_name,
-									   const Utils::Variable::Descriptor& in_variable,
-									   Utils::Variable::FLAVOUR in_flavour, const std::string& out_parent_name,
-									   const Utils::Variable::Descriptor& out_variable,
-									   Utils::Variable::FLAVOUR			  out_flavour);
+    std::string getVariablePassthrough(const std::string &in_parent_name,
+                                       const Utils::Variable::Descriptor &in_variable,
+                                       Utils::Variable::FLAVOUR in_flavour, const std::string &out_parent_name,
+                                       const Utils::Variable::Descriptor &out_variable,
+                                       Utils::Variable::FLAVOUR out_flavour);
 
-	std::string getVariableVerification(const std::string& parent_name, const glw::GLvoid* data,
-										const Utils::Variable::Descriptor& variable, Utils::Variable::FLAVOUR flavour);
+    std::string getVariableVerification(const std::string &parent_name, const glw::GLvoid *data,
+                                        const Utils::Variable::Descriptor &variable, Utils::Variable::FLAVOUR flavour);
 
-	void prepareSSB(Utils::Program& program, Utils::Variable& variable, Utils::Buffer& buffer);
+    void prepareSSB(Utils::Program &program, Utils::Variable &variable, Utils::Buffer &buffer);
 
-	void prepareUniform(Utils::Program& program, Utils::Variable& variable, Utils::Buffer& buffer);
+    void prepareUniform(Utils::Program &program, Utils::Variable &variable, Utils::Buffer &buffer);
 };
 
 /** Implementation of test APIConstantValues. Description follows:
@@ -1239,14 +1244,14 @@ private:
 class APIConstantValuesTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	APIConstantValuesTest(deqp::Context& context);
-	virtual ~APIConstantValuesTest()
-	{
-	}
+    /* Public methods */
+    APIConstantValuesTest(deqp::Context &context);
+    virtual ~APIConstantValuesTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test APIErrors. Description follows:
@@ -1263,17 +1268,17 @@ public:
 class APIErrorsTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	APIErrorsTest(deqp::Context& context);
-	virtual ~APIErrorsTest()
-	{
-	}
+    /* Public methods */
+    APIErrorsTest(deqp::Context &context);
+    virtual ~APIErrorsTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	void checkError(glw::GLenum expected_error, const glw::GLchar* message, bool& test_result);
+    void checkError(glw::GLenum expected_error, const glw::GLchar *message, bool &test_result);
 };
 
 /** Implementation of test GLSLContantValues. Description follows:
@@ -1304,16 +1309,16 @@ private:
 class GLSLContantValuesTest : public TextureTestBase
 {
 public:
-	GLSLContantValuesTest(deqp::Context& context);
-	~GLSLContantValuesTest()
-	{
-	}
+    GLSLContantValuesTest(deqp::Context &context);
+    ~GLSLContantValuesTest()
+    {
+    }
 
 protected:
-	virtual std::string getVerificationSnippet(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-											   Utils::Shader::STAGES stage);
+    virtual std::string getVerificationSnippet(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                               Utils::Shader::STAGES stage);
 
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
 };
 
 /** Implementation of test GLSLContantImmutablity. Description follows:
@@ -1335,46 +1340,48 @@ protected:
 class GLSLContantImmutablityTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	GLSLContantImmutablityTest(deqp::Context& context);
+    /* Private enums */
+    enum CONSTANTS
+    {
+        GL_ARB_ENHANCED_LAYOUTS,
+        GL_MAX_XFB,
+        GL_MAX_XFB_INT_COMP,
 
-	virtual ~GLSLContantImmutablityTest()
-	{
-	}
+        /* */
+        CONSTANTS_MAX,
+    };
+
+    /* Public methods */
+    GLSLContantImmutablityTest(deqp::Context &context, glw::GLuint constant, glw::GLuint stage);
+
+    virtual ~GLSLContantImmutablityTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private enums */
-	enum CONSTANTS
-	{
-		GL_ARB_ENHANCED_LAYOUTS,
-		GL_MAX_XFB,
-		GL_MAX_XFB_INT_COMP,
+    /* Private types */
+    struct testCase
+    {
+        CONSTANTS m_constant;
+        Utils::Shader::STAGES m_stage;
+    };
 
-		/* */
-		CONSTANTS_MAX,
-	};
+    /* Private methods */
+    const glw::GLchar *getConstantName(CONSTANTS constant);
 
-	/* Private types */
-	struct testCase
-	{
-		CONSTANTS			  m_constant;
-		Utils::Shader::STAGES m_stage;
-	};
-
-	/* Private methods */
-	const glw::GLchar* getConstantName(CONSTANTS constant);
-
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_constant;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test GLSLConstantIntegralExpression. Description follows:
@@ -1413,31 +1420,31 @@ private:
 class GLSLConstantIntegralExpressionTest : public TextureTestBase
 {
 public:
-	/* Public methods */
-	GLSLConstantIntegralExpressionTest(deqp::Context& context);
+    /* Public methods */
+    GLSLConstantIntegralExpressionTest(deqp::Context &context);
 
-	virtual ~GLSLConstantIntegralExpressionTest()
-	{
-	}
+    virtual ~GLSLConstantIntegralExpressionTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-									 Utils::VaryingPassthrough& varying_passthrough);
+    /* Protected methods */
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
 
-	virtual std::string getVerificationSnippet(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-											   Utils::Shader::STAGES stage);
+    virtual std::string getVerificationSnippet(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                               Utils::Shader::STAGES stage);
 
-	virtual void prepareUniforms(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-								 Utils::Program& program, Utils::Buffer& cs_buffer);
+    virtual void prepareUniforms(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                 Utils::Program &program, Utils::Buffer &cs_buffer);
 
-	virtual void prepareUniforms(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-								 Utils::Program& program, Utils::Buffer& fs_buffer, Utils::Buffer& gs_buffer,
-								 Utils::Buffer& tcs_buffer, Utils::Buffer& tes_buffer, Utils::Buffer& vs_buffer);
+    virtual void prepareUniforms(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                 Utils::Program &program, Utils::Buffer &fs_buffer, Utils::Buffer &gs_buffer,
+                                 Utils::Buffer &tcs_buffer, Utils::Buffer &tes_buffer, Utils::Buffer &vs_buffer);
 
 private:
-	glw::GLint m_gohan_length;
-	glw::GLint m_goten_length;
+    glw::GLint m_gohan_length;
+    glw::GLint m_goten_length;
 };
 
 /** Implementation of test UniformBlockMemberOffsetAndAlign. Description follows:
@@ -1483,26 +1490,26 @@ private:
 class UniformBlockMemberOffsetAndAlignTest : public TextureTestBase
 {
 public:
-	/* Public methods */
-	UniformBlockMemberOffsetAndAlignTest(deqp::Context& context);
+    /* Public methods */
+    UniformBlockMemberOffsetAndAlignTest(deqp::Context &context);
 
-	virtual ~UniformBlockMemberOffsetAndAlignTest()
-	{
-	}
+    virtual ~UniformBlockMemberOffsetAndAlignTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-									 Utils::VaryingPassthrough& varying_passthrough);
+    /* Protected methods */
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
 
-	virtual std::string getVerificationSnippet(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-											   Utils::Shader::STAGES stage);
+    virtual std::string getVerificationSnippet(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                               Utils::Shader::STAGES stage);
 
 private:
-	std::vector<glw::GLubyte> m_data;
+    std::vector<glw::GLubyte> m_data;
 };
 
 /** Implementation of test UniformBlockLayoutQualifierConflict. Description follows:
@@ -1513,8 +1520,8 @@ private:
  * Test following code snippet with all shader stages:
  *
  *     layout(QUALIFIER) uniform Block {
- *         layout(offset = 16) vec4 boy;
- *         layout(align  = 48) vec4 man;
+ *         layout(offset = 16) vec4 b;
+ *         layout(align  = 48) vec4 a;
  *     };
  *
  * Test following block qualifiers and all types:
@@ -1532,49 +1539,51 @@ private:
 class UniformBlockLayoutQualifierConflictTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	UniformBlockLayoutQualifierConflictTest(deqp::Context& context);
+    /* Private enums */
+    enum QUALIFIERS
+    {
+        DEFAULT,
+        STD140,
+        SHARED,
+        PACKED,
 
-	virtual ~UniformBlockLayoutQualifierConflictTest()
-	{
-	}
+        /* */
+        QUALIFIERS_MAX,
+    };
+
+    /* Public methods */
+    UniformBlockLayoutQualifierConflictTest(deqp::Context &context, glw::GLuint qualifier, glw::GLuint stage);
+
+    virtual ~UniformBlockLayoutQualifierConflictTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
 
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool isFailureExpected(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isFailureExpected(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private enums */
-	enum QUALIFIERS
-	{
-		DEFAULT,
-		STD140,
-		SHARED,
-		PACKED,
+    /* Private types */
+    struct testCase
+    {
+        QUALIFIERS m_qualifier;
+        Utils::Shader::STAGES m_stage;
+    };
 
-		/* */
-		QUALIFIERS_MAX,
-	};
+    /* Private methods */
+    const glw::GLchar *getQualifierName(QUALIFIERS qualifier);
 
-	/* Private types */
-	struct testCase
-	{
-		QUALIFIERS			  m_qualifier;
-		Utils::Shader::STAGES m_stage;
-	};
-
-	/* Private methods */
-	const glw::GLchar* getQualifierName(QUALIFIERS qualifier);
-
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_qualifier;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test UniformBlockMemberInvalidOffsetAlignment. Description follows:
@@ -1599,40 +1608,48 @@ private:
 class UniformBlockMemberInvalidOffsetAlignmentTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	UniformBlockMemberInvalidOffsetAlignmentTest(deqp::Context& context);
+    /* Public methods */
+    UniformBlockMemberInvalidOffsetAlignmentTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
 
-	UniformBlockMemberInvalidOffsetAlignmentTest(deqp::Context& context, const glw::GLchar* name,
-												 const glw::GLchar* description);
+    UniformBlockMemberInvalidOffsetAlignmentTest(deqp::Context &context, const glw::GLchar *name,
+                                                 const glw::GLchar *description, glw::GLuint type, glw::GLuint stage);
 
-	virtual ~UniformBlockMemberInvalidOffsetAlignmentTest()
-	{
-	}
+    virtual ~UniformBlockMemberInvalidOffsetAlignmentTest()
+    {
+    }
 
-protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
-
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual glw::GLint  getMaxBlockSize();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool isFailureExpected(glw::GLuint test_case_index);
-	virtual bool isStageSupported(Utils::Shader::STAGES stage);
-	virtual void testInit();
+    inline bool stageAllowed(glw::GLuint stage)
+    {
+        return isStageSupported(static_cast<Utils::Shader::STAGES>(stage));
+    }
 
 protected:
-	/* Protected types */
-	struct testCase
-	{
-		glw::GLuint			  m_offset;
-		bool				  m_should_fail;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type;
-	};
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	/* Protected fields */
-	std::vector<testCase> m_test_cases;
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual glw::GLint getMaxBlockSize();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isFailureExpected(glw::GLuint test_case_index);
+    virtual bool isStageSupported(Utils::Shader::STAGES stage);
+    virtual void testInit();
+
+protected:
+    /* Protected types */
+    struct testCase
+    {
+        glw::GLuint m_offset;
+        bool m_should_fail;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+    };
+
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
+
+    /* Protected fields */
+    std::vector<testCase> m_test_cases;
 };
 
 /** Implementation of test UniformBlockMemberOverlappingOffsets. Description follows:
@@ -1642,8 +1659,8 @@ protected:
  * Use following code snippet:
  *
  *     layout (std140) uniform Block {
- *         layout (offset = boy_offset) boy_type boy;
- *         layout (offset = man_offset) man_type man;
+ *         layout (offset = b_offset) b_type b;
+ *         layout (offset = a_offset) a_type a;
  *     };
  *
  * It is expected that overlapping members will cause compilation failure.
@@ -1665,43 +1682,46 @@ protected:
 class UniformBlockMemberOverlappingOffsetsTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	UniformBlockMemberOverlappingOffsetsTest(deqp::Context& context);
+    /* Public methods */
+    UniformBlockMemberOverlappingOffsetsTest(deqp::Context &context, glw::GLuint type_i, glw::GLuint type_j);
 
-	UniformBlockMemberOverlappingOffsetsTest(deqp::Context& context, const glw::GLchar* name,
-											 const glw::GLchar* description);
+    UniformBlockMemberOverlappingOffsetsTest(deqp::Context &context, const glw::GLchar *name,
+                                             const glw::GLchar *description, glw::GLuint type_i, glw::GLuint type_j);
 
-	virtual ~UniformBlockMemberOverlappingOffsetsTest()
-	{
-	}
-
-protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
-
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool isStageSupported(Utils::Shader::STAGES stage);
-	virtual void testInit();
+    virtual ~UniformBlockMemberOverlappingOffsetsTest()
+    {
+    }
 
 protected:
-	/* Protected types */
-	struct testCase
-	{
-		glw::GLuint			  m_boy_offset;
-		Utils::Type			  m_boy_type;
-		glw::GLuint			  m_man_offset;
-		Utils::Type			  m_man_type;
-		Utils::Shader::STAGES m_stage;
-	};
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	/* Protected methods */
-	glw::GLuint gcd(glw::GLuint a, glw::GLuint b);
-	glw::GLuint lcm(glw::GLuint a, glw::GLuint b);
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isStageSupported(Utils::Shader::STAGES stage);
+    virtual void testInit();
 
-	/* Protected fields */
-	std::vector<testCase> m_test_cases;
+protected:
+    /* Protected types */
+    struct testCase
+    {
+        glw::GLuint m_b_offset;
+        Utils::Type m_b_type;
+        glw::GLuint m_a_offset;
+        Utils::Type m_a_type;
+        Utils::Shader::STAGES m_stage;
+    };
+
+    /* Protected methods */
+    glw::GLuint gcd(glw::GLuint a, glw::GLuint b);
+    glw::GLuint lcm(glw::GLuint a, glw::GLuint b);
+
+    /* Protected fields */
+    std::vector<testCase> m_test_cases;
+
+    glw::GLuint m_type_i;
+    glw::GLuint m_type_j;
 };
 
 /** Implementation of test UniformBlockMemberAlignNonPowerOf2. Description follows:
@@ -1711,11 +1731,11 @@ protected:
  * Test following code snippet:
  *
  *     layout (std140, offset = 8) uniform Block {
- *         vec4 boy;
- *         layout (align = man_alignment) type man;
+ *         vec4 b;
+ *         layout (align = a_alignment) type a;
  *     };
  *
- * It is expected that compilation will fail whenever man_alignment is not
+ * It is expected that compilation will fail whenever a_alignment is not
  * a power of 2.
  *
  * Test all alignment in range <0, sizeof(dmat4)>. Test all shader stages.
@@ -1724,42 +1744,43 @@ protected:
 class UniformBlockMemberAlignNonPowerOf2Test : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	UniformBlockMemberAlignNonPowerOf2Test(deqp::Context& context);
+    /* Public methods */
+    UniformBlockMemberAlignNonPowerOf2Test(deqp::Context &context, glw::GLuint type);
 
-	UniformBlockMemberAlignNonPowerOf2Test(deqp::Context& context, const glw::GLchar* name,
-										   const glw::GLchar* description);
+    UniformBlockMemberAlignNonPowerOf2Test(deqp::Context &context, const glw::GLchar *name,
+                                           const glw::GLchar *description, glw::GLuint type);
 
-	virtual ~UniformBlockMemberAlignNonPowerOf2Test()
-	{
-	}
-
-protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
-
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool isFailureExpected(glw::GLuint test_case_index);
-	virtual bool isStageSupported(Utils::Shader::STAGES stage);
-	virtual void testInit();
+    virtual ~UniformBlockMemberAlignNonPowerOf2Test()
+    {
+    }
 
 protected:
-	/* Protected types */
-	struct testCase
-	{
-		glw::GLuint			  m_alignment;
-		Utils::Type			  m_type;
-		bool				  m_should_fail;
-		Utils::Shader::STAGES m_stage;
-	};
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	/* Protected methods */
-	bool isPowerOf2(glw::GLuint val);
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isFailureExpected(glw::GLuint test_case_index);
+    virtual bool isStageSupported(Utils::Shader::STAGES stage);
+    virtual void testInit();
 
-	/* Protected fields */
-	std::vector<testCase> m_test_cases;
+protected:
+    /* Protected types */
+    struct testCase
+    {
+        glw::GLuint m_alignment;
+        Utils::Type m_type;
+        bool m_should_fail;
+        Utils::Shader::STAGES m_stage;
+    };
+
+    /* Protected methods */
+    bool isPowerOf2(glw::GLuint val);
+
+    /* Protected fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test UniformBlockAlignment. Description follows:
@@ -1790,20 +1811,20 @@ protected:
 class UniformBlockAlignmentTest : public TextureTestBase
 {
 public:
-	/* Public methods */
-	UniformBlockAlignmentTest(deqp::Context& context);
+    /* Public methods */
+    UniformBlockAlignmentTest(deqp::Context &context);
 
-	virtual ~UniformBlockAlignmentTest()
-	{
-	}
+    virtual ~UniformBlockAlignmentTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-									 Utils::VaryingPassthrough& varying_passthrough);
+    /* Protected methods */
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
 
 private:
-	std::vector<glw::GLubyte> m_data;
+    std::vector<glw::GLubyte> m_data;
 };
 
 /** Implementation of test SSBMemberOffsetAndAlign. Description follows:
@@ -1821,27 +1842,27 @@ private:
 class SSBMemberOffsetAndAlignTest : public TextureTestBase
 {
 public:
-	/* Public methods */
-	SSBMemberOffsetAndAlignTest(deqp::Context& context);
-	virtual ~SSBMemberOffsetAndAlignTest()
-	{
-	}
+    /* Public methods */
+    SSBMemberOffsetAndAlignTest(deqp::Context &context);
+    virtual ~SSBMemberOffsetAndAlignTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-									 Utils::VaryingPassthrough& varying_passthrough);
+    /* Protected methods */
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
 
-	virtual std::string getVerificationSnippet(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-											   Utils::Shader::STAGES stage);
+    virtual std::string getVerificationSnippet(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                               Utils::Shader::STAGES stage);
 
-	virtual bool isDrawRelevant(glw::GLuint test_case_index);
+    virtual bool isDrawRelevant(glw::GLuint test_case_index);
 
 private:
-	std::vector<glw::GLubyte> m_data;
+    std::vector<glw::GLubyte> m_data;
 };
 
 /** Implementation of test SSBLayoutQualifierConflict. Description follows:
@@ -1858,50 +1879,56 @@ private:
 class SSBLayoutQualifierConflictTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	SSBLayoutQualifierConflictTest(deqp::Context& context);
+    enum QUALIFIERS
+    {
+        DEFAULT,
+        STD140,
+        STD430,
+        SHARED,
+        PACKED,
 
-	virtual ~SSBLayoutQualifierConflictTest()
-	{
-	}
+        /* */
+        QUALIFIERS_MAX,
+    };
+
+    /* Public methods */
+    SSBLayoutQualifierConflictTest(deqp::Context &context, glw::GLuint qualifier, glw::GLuint stage);
+
+    virtual ~SSBLayoutQualifierConflictTest()
+    {
+    }
+
+    inline bool stageAllowed(glw::GLuint stage)
+    {
+        return isStageSupported(static_cast<Utils::Shader::STAGES>(stage));
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool isFailureExpected(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isFailureExpected(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private enums */
-	enum QUALIFIERS
-	{
-		DEFAULT,
-		STD140,
-		STD430,
-		SHARED,
-		PACKED,
+    /* Private types */
+    struct testCase
+    {
+        QUALIFIERS m_qualifier;
+        Utils::Shader::STAGES m_stage;
+    };
 
-		/* */
-		QUALIFIERS_MAX,
-	};
+    /* Private methods */
+    const glw::GLchar *getQualifierName(QUALIFIERS qualifier);
+    bool isStageSupported(Utils::Shader::STAGES stage);
 
-	/* Private types */
-	struct testCase
-	{
-		QUALIFIERS			  m_qualifier;
-		Utils::Shader::STAGES m_stage;
-	};
-
-	/* Private methods */
-	const glw::GLchar* getQualifierName(QUALIFIERS qualifier);
-	bool isStageSupported(Utils::Shader::STAGES stage);
-
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_qualifier;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test SSBMemberInvalidOffsetAlignment. Description follows:
@@ -1915,19 +1942,24 @@ private:
 class SSBMemberInvalidOffsetAlignmentTest : public UniformBlockMemberInvalidOffsetAlignmentTest
 {
 public:
-	/* Public methods */
-	SSBMemberInvalidOffsetAlignmentTest(deqp::Context& context);
+    /* Public methods */
+    SSBMemberInvalidOffsetAlignmentTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
 
-	virtual ~SSBMemberInvalidOffsetAlignmentTest()
-	{
-	}
+    virtual ~SSBMemberInvalidOffsetAlignmentTest()
+    {
+    }
+
+    inline bool stageAllowed(glw::GLuint stage)
+    {
+        return isStageSupported(static_cast<Utils::Shader::STAGES>(stage));
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual glw::GLint  getMaxBlockSize();
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual glw::GLint getMaxBlockSize();
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual bool isStageSupported(Utils::Shader::STAGES stage);
+    virtual bool isStageSupported(Utils::Shader::STAGES stage);
 };
 
 /** Implementation of test SSBMemberOverlappingOffsets. Description follows:
@@ -1940,17 +1972,17 @@ protected:
 class SSBMemberOverlappingOffsetsTest : public UniformBlockMemberOverlappingOffsetsTest
 {
 public:
-	/* Public methods */
-	SSBMemberOverlappingOffsetsTest(deqp::Context& context);
-	virtual ~SSBMemberOverlappingOffsetsTest()
-	{
-	}
+    /* Public methods */
+    SSBMemberOverlappingOffsetsTest(deqp::Context &context, glw::GLuint type_i, glw::GLuint type_j);
+    virtual ~SSBMemberOverlappingOffsetsTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual bool isStageSupported(Utils::Shader::STAGES stage);
+    virtual bool isStageSupported(Utils::Shader::STAGES stage);
 };
 
 /** Implementation of test SSBMemberAlignNonPowerOf2. Description follows:
@@ -1963,18 +1995,18 @@ protected:
 class SSBMemberAlignNonPowerOf2Test : public UniformBlockMemberAlignNonPowerOf2Test
 {
 public:
-	/* Public methods */
-	SSBMemberAlignNonPowerOf2Test(deqp::Context& context);
+    /* Public methods */
+    SSBMemberAlignNonPowerOf2Test(deqp::Context &context, glw::GLuint type);
 
-	virtual ~SSBMemberAlignNonPowerOf2Test()
-	{
-	}
+    virtual ~SSBMemberAlignNonPowerOf2Test()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual bool isStageSupported(Utils::Shader::STAGES stage);
+    virtual bool isStageSupported(Utils::Shader::STAGES stage);
 };
 
 /** Implementation of test SSBAlignment. Description follows:
@@ -1987,22 +2019,22 @@ protected:
 class SSBAlignmentTest : public TextureTestBase
 {
 public:
-	/* Public methods */
-	SSBAlignmentTest(deqp::Context& context);
+    /* Public methods */
+    SSBAlignmentTest(deqp::Context &context);
 
-	virtual ~SSBAlignmentTest()
-	{
-	}
+    virtual ~SSBAlignmentTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-									 Utils::VaryingPassthrough& varying_passthrough);
+    /* Protected methods */
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
 
-	virtual bool isDrawRelevant(glw::GLuint test_case_index);
+    virtual bool isDrawRelevant(glw::GLuint test_case_index);
 
 private:
-	std::vector<glw::GLubyte> m_data;
+    std::vector<glw::GLubyte> m_data;
 };
 
 /** Implementation of test VaryingLocations. Description follows:
@@ -2033,35 +2065,35 @@ private:
 class VaryingLocationsTest : public TextureTestBase
 {
 public:
-	VaryingLocationsTest(deqp::Context& context);
+    VaryingLocationsTest(deqp::Context &context);
 
-	VaryingLocationsTest(deqp::Context& context, const glw::GLchar* test_name, const glw::GLchar* test_description);
+    VaryingLocationsTest(deqp::Context &context, const glw::GLchar *test_name, const glw::GLchar *test_description);
 
-	~VaryingLocationsTest()
-	{
-	}
+    ~VaryingLocationsTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-									 Utils::VaryingPassthrough& varying_passthrough);
+    /* Protected methods */
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool useMonolithicProgram(glw::GLuint test_case_index);
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool useMonolithicProgram(glw::GLuint test_case_index);
 
-	/* To be implemented by children */
-	virtual void prepareShaderStage(Utils::Shader::STAGES stage, const Utils::Type& type,
-									Utils::ProgramInterface&   program_interface,
-									Utils::VaryingPassthrough& varying_passthrough);
+    /* To be implemented by children */
+    virtual void prepareShaderStage(Utils::Shader::STAGES stage, const Utils::Type &type,
+                                    Utils::ProgramInterface &program_interface,
+                                    Utils::VaryingPassthrough &varying_passthrough);
 
-	/* Protected methods */
-	std::string prepareGlobals(glw::GLint last_in_loc, glw::GLint last_out_loc);
+    /* Protected methods */
+    std::string prepareGlobals(glw::GLint last_in_loc, glw::GLint last_out_loc);
 
-	/* Protected fields */
-	std::vector<glw::GLubyte> m_first_data;
-	std::vector<glw::GLubyte> m_last_data;
+    /* Protected fields */
+    std::vector<glw::GLubyte> m_first_data;
+    std::vector<glw::GLubyte> m_last_data;
 };
 
 /** Implementation of test VertexAttribLocations. Description follows:
@@ -2102,55 +2134,55 @@ protected:
 class VertexAttribLocationsTest : public TextureTestBase
 {
 public:
-	VertexAttribLocationsTest(deqp::Context& context);
+    VertexAttribLocationsTest(deqp::Context &context);
 
-	~VertexAttribLocationsTest()
-	{
-	}
+    ~VertexAttribLocationsTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void executeDrawCall(glw::GLuint test_case_index);
+    /* Protected methods */
+    virtual void executeDrawCall(glw::GLuint test_case_index);
 
-	virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-									 Utils::VaryingPassthrough& varying_passthrough);
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
 
-	virtual std::string getVerificationSnippet(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-											   Utils::Shader::STAGES stage);
+    virtual std::string getVerificationSnippet(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                               Utils::Shader::STAGES stage);
 
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
 
-	virtual void prepareAttributes(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-								   Utils::Buffer& buffer, Utils::VertexArray& vao);
+    virtual void prepareAttributes(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                   Utils::Buffer &buffer, Utils::VertexArray &vao);
 
-	virtual bool useMonolithicProgram(glw::GLuint test_case_index);
+    virtual bool useMonolithicProgram(glw::GLuint test_case_index);
 
 private:
-	/* Private enums */
-	enum TESTCASES
-	{
-		DRAWARRAYS,
-		DRAWARRAYSINSTANCED,
-		DRAWELEMENTS,
-		DRAWELEMENTSBASEVERTEX,
-		DRAWELEMENTSINSTANCED,
-		DRAWELEMENTSINSTANCEDBASEINSTANCE,
-		DRAWELEMENTSINSTANCEDBASEVERTEX,
-		DRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCE,
+    /* Private enums */
+    enum TESTCASES
+    {
+        DRAWARRAYS,
+        DRAWARRAYSINSTANCED,
+        DRAWELEMENTS,
+        DRAWELEMENTSBASEVERTEX,
+        DRAWELEMENTSINSTANCED,
+        DRAWELEMENTSINSTANCEDBASEINSTANCE,
+        DRAWELEMENTSINSTANCEDBASEVERTEX,
+        DRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCE,
 
-		/* */
-		TESTCASES_MAX
-	};
+        /* */
+        TESTCASES_MAX
+    };
 
-	/* Private constants */
-	static const glw::GLuint m_base_vertex;
-	static const glw::GLuint m_base_instance;
-	static const glw::GLuint m_loc_vertex;
-	static const glw::GLuint m_loc_instance;
-	static const glw::GLuint m_n_instances;
+    /* Private constants */
+    static const glw::GLuint m_base_vertex;
+    static const glw::GLuint m_base_instance;
+    static const glw::GLuint m_loc_vertex;
+    static const glw::GLuint m_loc_instance;
+    static const glw::GLuint m_n_instances;
 };
 
 /** Implementation of test VaryingArrayLocations. Description follows:
@@ -2198,17 +2230,17 @@ private:
 class VaryingArrayLocationsTest : public VaryingLocationsTest
 {
 public:
-	VaryingArrayLocationsTest(deqp::Context& context);
+    VaryingArrayLocationsTest(deqp::Context &context);
 
-	~VaryingArrayLocationsTest()
-	{
-	}
+    ~VaryingArrayLocationsTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void prepareShaderStage(Utils::Shader::STAGES stage, const Utils::Type& type,
-									Utils::ProgramInterface&   program_interface,
-									Utils::VaryingPassthrough& varying_passthrough);
+    /* Protected methods */
+    virtual void prepareShaderStage(Utils::Shader::STAGES stage, const Utils::Type &type,
+                                    Utils::ProgramInterface &program_interface,
+                                    Utils::VaryingPassthrough &varying_passthrough);
 };
 
 /** Implementation of test VaryingStructureLocations. Description follows:
@@ -2250,29 +2282,29 @@ protected:
 class VaryingStructureLocationsTest : public TextureTestBase
 {
 public:
-	VaryingStructureLocationsTest(deqp::Context& context);
+    VaryingStructureLocationsTest(deqp::Context &context);
 
-	~VaryingStructureLocationsTest()
-	{
-	}
+    ~VaryingStructureLocationsTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual std::string getPassSnippet(glw::GLuint test_case_index, Utils::VaryingPassthrough& varying_passthrough,
-									   Utils::Shader::STAGES stage);
+    /* Protected methods */
+    virtual std::string getPassSnippet(glw::GLuint test_case_index, Utils::VaryingPassthrough &varying_passthrough,
+                                       Utils::Shader::STAGES stage);
 
-	virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-									 Utils::VaryingPassthrough& varying_passthrough);
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool useMonolithicProgram(glw::GLuint test_case_index);
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool useMonolithicProgram(glw::GLuint test_case_index);
 
-	/* Protected fields */
-	std::vector<glw::GLubyte> m_single_data;
-	std::vector<glw::GLubyte> m_array_data;
-	std::vector<glw::GLubyte> m_data;
+    /* Protected fields */
+    std::vector<glw::GLubyte> m_single_data;
+    std::vector<glw::GLubyte> m_array_data;
+    std::vector<glw::GLubyte> m_data;
 };
 
 /** Implementation of test VaryingStructureMemberLocation. Description follows:
@@ -2298,31 +2330,32 @@ protected:
 class VaryingStructureMemberLocationTest : public NegativeTestBase
 {
 public:
-	VaryingStructureMemberLocationTest(deqp::Context& context);
+    VaryingStructureMemberLocationTest(deqp::Context &context, glw::GLuint m_stage);
 
-	~VaryingStructureMemberLocationTest()
-	{
-	}
+    ~VaryingStructureMemberLocationTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		bool				  m_is_input;
-		Utils::Shader::STAGES m_stage;
-	};
+    /* Private types */
+    struct testCase
+    {
+        bool m_is_input;
+        Utils::Shader::STAGES m_stage;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test VaryingBlockLocations. Description follows:
@@ -2362,27 +2395,27 @@ private:
 class VaryingBlockLocationsTest : public TextureTestBase
 {
 public:
-	VaryingBlockLocationsTest(deqp::Context& context);
-	~VaryingBlockLocationsTest()
-	{
-	}
+    VaryingBlockLocationsTest(deqp::Context &context);
+    ~VaryingBlockLocationsTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual std::string getPassSnippet(glw::GLuint test_case_index, Utils::VaryingPassthrough& varying_passthrough,
-									   Utils::Shader::STAGES stage);
+    /* Protected methods */
+    virtual std::string getPassSnippet(glw::GLuint test_case_index, Utils::VaryingPassthrough &varying_passthrough,
+                                       Utils::Shader::STAGES stage);
 
-	virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-									 Utils::VaryingPassthrough& varying_passthrough);
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
 
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool useMonolithicProgram(glw::GLuint test_case_index);
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool useMonolithicProgram(glw::GLuint test_case_index);
 
-	/* Protected fields */
-	std::vector<glw::GLubyte> m_third_data;
-	std::vector<glw::GLubyte> m_fourth_data;
-	std::vector<glw::GLubyte> m_fifth_data;
-	std::vector<glw::GLubyte> m_data;
+    /* Protected fields */
+    std::vector<glw::GLubyte> m_third_data;
+    std::vector<glw::GLubyte> m_fourth_data;
+    std::vector<glw::GLubyte> m_fifth_data;
+    std::vector<glw::GLubyte> m_data;
 };
 
 /** Implementation of test VaryingBlockMemberLocations. Description follows:
@@ -2419,34 +2452,35 @@ protected:
 class VaryingBlockMemberLocationsTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	VaryingBlockMemberLocationsTest(deqp::Context& context);
+    /* Public methods */
+    VaryingBlockMemberLocationsTest(deqp::Context &context, glw::GLuint stage);
 
-	virtual ~VaryingBlockMemberLocationsTest()
-	{
-	}
+    virtual ~VaryingBlockMemberLocationsTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool isFailureExpected(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isFailureExpected(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		bool				  m_is_input;
-		bool				  m_qualify_all;
-		Utils::Shader::STAGES m_stage;
-	};
+    /* Private types */
+    struct testCase
+    {
+        bool m_is_input;
+        bool m_qualify_all;
+        Utils::Shader::STAGES m_stage;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test VaryingBlockAutomaticMemberLocations. Description follows:
@@ -2472,32 +2506,33 @@ private:
 class VaryingBlockAutomaticMemberLocationsTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	VaryingBlockAutomaticMemberLocationsTest(deqp::Context& context);
+    /* Public methods */
+    VaryingBlockAutomaticMemberLocationsTest(deqp::Context &context, glw::GLuint stage);
 
-	virtual ~VaryingBlockAutomaticMemberLocationsTest()
-	{
-	}
+    virtual ~VaryingBlockAutomaticMemberLocationsTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		bool				  m_is_input;
-		Utils::Shader::STAGES m_stage;
-	};
+    /* Private types */
+    struct testCase
+    {
+        bool m_is_input;
+        Utils::Shader::STAGES m_stage;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test VaryingLocationLimit. Description follows:
@@ -2517,34 +2552,36 @@ private:
 class VaryingLocationLimitTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	VaryingLocationLimitTest(deqp::Context& context);
+    /* Public methods */
+    VaryingLocationLimitTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
 
-	virtual ~VaryingLocationLimitTest()
-	{
-	}
+    virtual ~VaryingLocationLimitTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool isSeparable(const glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isSeparable(const glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		bool				  m_is_input;
-		Utils::Type			  m_type;
-		Utils::Shader::STAGES m_stage;
-	};
+    /* Private types */
+    struct testCase
+    {
+        bool m_is_input;
+        Utils::Type m_type;
+        Utils::Shader::STAGES m_stage;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test VaryingComponents. Description follows:
@@ -2572,87 +2609,92 @@ private:
 class VaryingComponentsTest : public VaryingLocationsTest
 {
 public:
-	VaryingComponentsTest(deqp::Context& context);
+    enum COMPONENTS_LAYOUT
+    {
+        G64VEC2,
+        G64SCALAR_G64SCALAR,
+        GVEC4,
+        SCALAR_GVEC3,
+        GVEC3_SCALAR,
+        GVEC2_GVEC2,
+        GVEC2_SCALAR_SCALAR,
+        SCALAR_GVEC2_SCALAR,
+        SCALAR_SCALAR_GVEC2,
+        SCALAR_SCALAR_SCALAR_SCALAR,
+    };
 
-	VaryingComponentsTest(deqp::Context& context, const glw::GLchar* test_name, const glw::GLchar* test_description);
+    VaryingComponentsTest(deqp::Context &context, COMPONENTS_LAYOUT layout, Utils::Type::TYPES type);
 
-	~VaryingComponentsTest()
-	{
-	}
+    VaryingComponentsTest(deqp::Context &context, const glw::GLchar *test_name, const glw::GLchar *test_description,
+                          COMPONENTS_LAYOUT layout, Utils::Type::TYPES type);
+
+    ~VaryingComponentsTest()
+    {
+    }
+
+    std::string getComponentsLayoutName(COMPONENTS_LAYOUT layout);
+    std::string getTypesName(Utils::Type::TYPES type);
 
 protected:
-	/* Protected methods */
-	virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-									 Utils::VaryingPassthrough& varying_passthrough);
+    /* Protected methods */
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual void		testInit();
-	virtual bool useComponentQualifier(glw::GLuint test_case_index);
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual void testInit();
+    virtual bool useComponentQualifier(glw::GLuint test_case_index);
 
-	/* To be implemented by children */
-	virtual glw::GLuint getArrayLength();
+    /* To be implemented by children */
+    virtual glw::GLuint getArrayLength();
+    COMPONENTS_LAYOUT m_layout;
+    Utils::Type::TYPES m_type;
 
 private:
-	/* Private enums */
-	enum COMPONENTS_LAYOUT
-	{
-		G64VEC2,
-		G64SCALAR_G64SCALAR,
-		GVEC4,
-		SCALAR_GVEC3,
-		GVEC3_SCALAR,
-		GVEC2_GVEC2,
-		GVEC2_SCALAR_SCALAR,
-		SCALAR_GVEC2_SCALAR,
-		SCALAR_SCALAR_GVEC2,
-		SCALAR_SCALAR_SCALAR_SCALAR,
-	};
+    /* Private struct */
+    struct descriptor
+    {
+        void assign(glw::GLint component, const glw::GLchar *component_str, glw::GLint location,
+                    const glw::GLchar *location_str, glw::GLuint n_rows, const glw::GLchar *name);
 
-	/* Private struct */
-	struct descriptor
-	{
-		void assign(glw::GLint component, const glw::GLchar* component_str, glw::GLint location,
-					const glw::GLchar* location_str, glw::GLuint n_rows, const glw::GLchar* name);
+        glw::GLint m_component;
+        const glw::GLchar *m_component_str;
+        glw::GLint m_location;
+        const glw::GLchar *m_location_str;
+        glw::GLuint m_n_rows;
+        const glw::GLchar *m_name;
+    };
 
-		glw::GLint		   m_component;
-		const glw::GLchar* m_component_str;
-		glw::GLint		   m_location;
-		const glw::GLchar* m_location_str;
-		glw::GLuint		   m_n_rows;
-		const glw::GLchar* m_name;
-	};
+    struct testCase
+    {
+        testCase(COMPONENTS_LAYOUT layout, Utils::Type::TYPES type);
 
-	struct testCase
-	{
-		testCase(COMPONENTS_LAYOUT layout, Utils::Type::TYPES type);
+        COMPONENTS_LAYOUT m_layout;
+        Utils::Type::TYPES m_type;
+    };
 
-		COMPONENTS_LAYOUT  m_layout;
-		Utils::Type::TYPES m_type;
-	};
+    /* Private routines */
+    std::string prepareGlobals(glw::GLuint last_in_location, glw::GLuint last_out_location);
 
-	/* Private routines */
-	std::string prepareGlobals(glw::GLuint last_in_location, glw::GLuint last_out_location);
+    std::string prepareName(const glw::GLchar *name, glw::GLint location, glw::GLint component,
+                            Utils::Shader::STAGES stage, Utils::Variable::STORAGE storage);
 
-	std::string prepareName(const glw::GLchar* name, glw::GLint location, glw::GLint component,
-							Utils::Shader::STAGES stage, Utils::Variable::STORAGE storage);
+    std::string prepareQualifiers(const glw::GLchar *location, const glw::GLchar *component,
+                                  const glw::GLchar *interpolation);
 
-	std::string prepareQualifiers(const glw::GLchar* location, const glw::GLchar* component,
-								  const glw::GLchar* interpolation);
+    using VaryingLocationsTest::prepareShaderStage;
 
-	using VaryingLocationsTest::prepareShaderStage;
+    void prepareShaderStage(Utils::Shader::STAGES stage, const Utils::Type &vector_type,
+                            Utils::ProgramInterface &program_interface, const testCase &test_case,
+                            Utils::VaryingPassthrough &varying_passthrough);
 
-	void prepareShaderStage(Utils::Shader::STAGES stage, const Utils::Type& vector_type,
-							Utils::ProgramInterface& program_interface, const testCase& test_case,
-							Utils::VaryingPassthrough& varying_passthrough);
+    Utils::Variable *prepareVarying(const Utils::Type &basic_type, const descriptor &desc,
+                                    const glw::GLchar *interpolation, Utils::ShaderInterface &si,
+                                    Utils::Shader::STAGES stage, Utils::Variable::STORAGE storage);
 
-	Utils::Variable* prepareVarying(const Utils::Type& basic_type, const descriptor& desc,
-									const glw::GLchar* interpolation, Utils::ShaderInterface& si,
-									Utils::Shader::STAGES stage, Utils::Variable::STORAGE storage);
-
-	/* Private fields */
-	std::vector<testCase>	 m_test_cases;
-	std::vector<glw::GLubyte> m_data;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    std::vector<glw::GLubyte> m_data;
 };
 
 /** Implementation of test VaryingArrayComponents. Description follows:
@@ -2665,15 +2707,15 @@ private:
 class VaryingArrayComponentsTest : public VaryingComponentsTest
 {
 public:
-	VaryingArrayComponentsTest(deqp::Context& context);
+    VaryingArrayComponentsTest(deqp::Context &context, COMPONENTS_LAYOUT layout, Utils::Type::TYPES type);
 
-	~VaryingArrayComponentsTest()
-	{
-	}
+    ~VaryingArrayComponentsTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual glw::GLuint getArrayLength();
+    /* Protected methods */
+    virtual glw::GLuint getArrayLength();
 };
 
 /** Implementation of test VaryingInvalidValueComponent. Description follows:
@@ -2701,35 +2743,41 @@ protected:
 class VaryingInvalidValueComponentTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	VaryingInvalidValueComponentTest(deqp::Context& context);
+    /* Public methods */
+    VaryingInvalidValueComponentTest(deqp::Context &context, glw::GLuint type);
 
-	virtual ~VaryingInvalidValueComponentTest()
-	{
-	}
+    virtual ~VaryingInvalidValueComponentTest()
+    {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLuint			  m_component;
-		bool				  m_is_input;
-		bool				  m_is_array;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLuint m_component;
+        bool m_is_input;
+        bool m_is_array;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test VaryingExceedingComponents. Description follows:
@@ -2754,34 +2802,40 @@ private:
 class VaryingExceedingComponentsTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	VaryingExceedingComponentsTest(deqp::Context& context);
+    /* Public methods */
+    VaryingExceedingComponentsTest(deqp::Context &context, glw::GLuint type);
 
-	virtual ~VaryingExceedingComponentsTest()
-	{
-	}
+    virtual ~VaryingExceedingComponentsTest()
+    {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		bool				  m_is_input;
-		bool				  m_is_array;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type;
-	};
+    /* Private types */
+    struct testCase
+    {
+        bool m_is_input;
+        bool m_is_array;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test VaryingComponentWithoutLocation. Description follows:
@@ -2801,34 +2855,40 @@ private:
 class VaryingComponentWithoutLocationTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	VaryingComponentWithoutLocationTest(deqp::Context& context);
+    /* Public methods */
+    VaryingComponentWithoutLocationTest(deqp::Context &context, glw::GLuint type);
 
-	virtual ~VaryingComponentWithoutLocationTest()
-	{
-	}
+    virtual ~VaryingComponentWithoutLocationTest()
+    {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLuint			  m_component;
-		bool				  m_is_input;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLuint m_component;
+        bool m_is_input;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test VaryingComponentOfInvalidType. Description follows:
@@ -2884,49 +2944,51 @@ private:
 class VaryingComponentOfInvalidTypeTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	VaryingComponentOfInvalidTypeTest(deqp::Context& context);
+    /* Public methods */
+    VaryingComponentOfInvalidTypeTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
 
-	virtual ~VaryingComponentOfInvalidTypeTest()
-	{
-	}
+    virtual ~VaryingComponentOfInvalidTypeTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
 
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private enums */
-	enum CASES
-	{
-		MATRIX = 0,
-		DVEC3_DVEC4,
-		BLOCK,
-		STRUCT,
+    /* Private enums */
+    enum CASES
+    {
+        MATRIX = 0,
+        DVEC3_DVEC4,
+        BLOCK,
+        STRUCT,
 
-		/* */
-		MAX_CASES
-	};
+        /* */
+        MAX_CASES
+    };
 
-	/* Private types */
-	struct testCase
-	{
-		CASES				  m_case;
-		glw::GLuint			  m_component;
-		bool				  m_is_array;
-		bool				  m_is_input;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type;
-	};
+    /* Private types */
+    struct testCase
+    {
+        CASES m_case;
+        glw::GLuint m_component;
+        bool m_is_array;
+        bool m_is_input;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test InputComponentAliasing. Description follows:
@@ -2957,36 +3019,42 @@ private:
 class InputComponentAliasingTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	InputComponentAliasingTest(deqp::Context& context);
+    /* Public methods */
+    InputComponentAliasingTest(deqp::Context &context, glw::GLuint type);
 
-	virtual ~InputComponentAliasingTest()
-	{
-	}
+    virtual ~InputComponentAliasingTest()
+    {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
 
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool isFailureExpected(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isFailureExpected(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLuint			  m_component_gohan;
-		glw::GLuint			  m_component_goten;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLuint m_component_gohan;
+        glw::GLuint m_component_goten;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test OutputComponentAliasing. Description follows:
@@ -3007,34 +3075,40 @@ private:
 class OutputComponentAliasingTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	OutputComponentAliasingTest(deqp::Context& context);
+    /* Public methods */
+    OutputComponentAliasingTest(deqp::Context &context, glw::GLuint type);
 
-	virtual ~OutputComponentAliasingTest()
-	{
-	}
+    virtual ~OutputComponentAliasingTest()
+    {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLuint			  m_component_gohan;
-		glw::GLuint			  m_component_goten;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLuint m_component_gohan;
+        glw::GLuint m_component_goten;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test VaryingLocationAliasingWithMixedTypes. Description follows:
@@ -3056,36 +3130,43 @@ private:
 class VaryingLocationAliasingWithMixedTypesTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	VaryingLocationAliasingWithMixedTypesTest(deqp::Context& context);
+    /* Public methods */
+    VaryingLocationAliasingWithMixedTypesTest(deqp::Context &context, glw::GLuint type_gohan, glw::GLuint type_goten);
 
-	virtual ~VaryingLocationAliasingWithMixedTypesTest()
-	{
-	}
+    virtual ~VaryingLocationAliasingWithMixedTypesTest()
+    {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLuint			  m_component_gohan;
-		glw::GLuint			  m_component_goten;
-		bool				  m_is_input;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type_gohan;
-		Utils::Type			  m_type_goten;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLuint m_component_gohan;
+        glw::GLuint m_component_goten;
+        bool m_is_input;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type_gohan;
+        Utils::Type m_type_goten;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type_gohan;
+    glw::GLuint m_type_goten;
 };
 
 /** Implementation of test VaryingLocationAliasingWithMixedInterpolation. Description follows:
@@ -3112,51 +3193,59 @@ private:
 class VaryingLocationAliasingWithMixedInterpolationTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	VaryingLocationAliasingWithMixedInterpolationTest(deqp::Context& context);
+    /* Public methods */
+    VaryingLocationAliasingWithMixedInterpolationTest(deqp::Context &context, glw::GLuint type_gohan,
+                                                      glw::GLuint type_goten);
 
-	virtual ~VaryingLocationAliasingWithMixedInterpolationTest()
-	{
-	}
+    virtual ~VaryingLocationAliasingWithMixedInterpolationTest()
+    {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	enum INTERPOLATIONS
-	{
-		SMOOTH = 0,
-		FLAT,
-		NO_PERSPECTIVE,
+    enum INTERPOLATIONS
+    {
+        SMOOTH = 0,
+        FLAT,
+        NO_PERSPECTIVE,
 
-		/* */
-		INTERPOLATION_MAX
-	};
+        /* */
+        INTERPOLATION_MAX
+    };
 
-	/* Private types */
-	struct testCase
-	{
-		glw::GLuint			  m_component_gohan;
-		glw::GLuint			  m_component_goten;
-		INTERPOLATIONS		  m_interpolation_gohan;
-		INTERPOLATIONS		  m_interpolation_goten;
-		bool				  m_is_input;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type_gohan;
-		Utils::Type			  m_type_goten;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLuint m_component_gohan;
+        glw::GLuint m_component_goten;
+        INTERPOLATIONS m_interpolation_gohan;
+        INTERPOLATIONS m_interpolation_goten;
+        bool m_is_input;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type_gohan;
+        Utils::Type m_type_goten;
+    };
 
-	/* Private routines */
-	const glw::GLchar* getInterpolationQualifier(INTERPOLATIONS interpolation);
+    /* Private routines */
+    const glw::GLchar *getInterpolationQualifier(INTERPOLATIONS interpolation);
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type_gohan;
+    glw::GLuint m_type_goten;
 };
 
 /** Implementation of test VaryingLocationAliasingWithMixedAuxiliaryStorage. Description follows:
@@ -3180,52 +3269,60 @@ private:
 class VaryingLocationAliasingWithMixedAuxiliaryStorageTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	VaryingLocationAliasingWithMixedAuxiliaryStorageTest(deqp::Context& context);
+    /* Public methods */
+    VaryingLocationAliasingWithMixedAuxiliaryStorageTest(deqp::Context &context, glw::GLuint type_gohan,
+                                                         glw::GLuint type_goten);
 
-	virtual ~VaryingLocationAliasingWithMixedAuxiliaryStorageTest()
-	{
-	}
+    virtual ~VaryingLocationAliasingWithMixedAuxiliaryStorageTest()
+    {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	enum AUXILIARIES
-	{
-		NONE = 0,
-		PATCH,
-		CENTROID,
-		SAMPLE,
+    enum AUXILIARIES
+    {
+        NONE = 0,
+        PATCH,
+        CENTROID,
+        SAMPLE,
 
-		/* */
-		AUXILIARY_MAX
-	};
+        /* */
+        AUXILIARY_MAX
+    };
 
-	/* Private types */
-	struct testCase
-	{
-		glw::GLuint			  m_component_gohan;
-		glw::GLuint			  m_component_goten;
-		AUXILIARIES			  m_aux_gohan;
-		AUXILIARIES			  m_aux_goten;
-		bool				  m_is_input;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type_gohan;
-		Utils::Type			  m_type_goten;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLuint m_component_gohan;
+        glw::GLuint m_component_goten;
+        AUXILIARIES m_aux_gohan;
+        AUXILIARIES m_aux_goten;
+        bool m_is_input;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type_gohan;
+        Utils::Type m_type_goten;
+    };
 
-	/* Private routines */
-	const glw::GLchar* getAuxiliaryQualifier(AUXILIARIES aux);
+    /* Private routines */
+    const glw::GLchar *getAuxiliaryQualifier(AUXILIARIES aux);
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type_gohan;
+    glw::GLuint m_type_goten;
 };
 
 /** Implementation of test VertexAttribLocationAPI. Description follows:
@@ -3261,30 +3358,30 @@ private:
 class VertexAttribLocationAPITest : public TextureTestBase
 {
 public:
-	VertexAttribLocationAPITest(deqp::Context& context);
+    VertexAttribLocationAPITest(deqp::Context &context);
 
-	~VertexAttribLocationAPITest()
-	{
-	}
+    ~VertexAttribLocationAPITest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void prepareAttribLocation(Utils::Program& program, Utils::ProgramInterface& program_interface);
+    /* Protected methods */
+    virtual void prepareAttribLocation(Utils::Program &program, Utils::ProgramInterface &program_interface);
 
-	virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-									 Utils::VaryingPassthrough& varying_passthrough);
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
 
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
 
 private:
-	/* Private fields */
-	std::vector<glw::GLubyte> m_goku_data;
-	std::vector<glw::GLubyte> m_gohan_data;
-	std::vector<glw::GLubyte> m_goten_data;
-	std::vector<glw::GLubyte> m_chichi_data;
+    /* Private fields */
+    std::vector<glw::GLubyte> m_goku_data;
+    std::vector<glw::GLubyte> m_gohan_data;
+    std::vector<glw::GLubyte> m_goten_data;
+    std::vector<glw::GLubyte> m_chichi_data;
 
-	/* Private constants */
-	static const glw::GLuint m_goten_location;
+    /* Private constants */
+    static const glw::GLuint m_goten_location;
 };
 /** Implementation of test FragmentDataLocationAPI. Description follows:
  *
@@ -3317,41 +3414,41 @@ private:
 class FragmentDataLocationAPITest : public TextureTestBase
 {
 public:
-	FragmentDataLocationAPITest(deqp::Context& context);
+    FragmentDataLocationAPITest(deqp::Context &context);
 
-	~FragmentDataLocationAPITest()
-	{
-	}
+    ~FragmentDataLocationAPITest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual bool checkResults(glw::GLuint test_case_index, Utils::Texture& color_0);
+    /* Protected methods */
+    virtual bool checkResults(glw::GLuint test_case_index, Utils::Texture &color_0);
 
-	virtual std::string getPassSnippet(glw::GLuint test_case_index, Utils::VaryingPassthrough& varying_passthrough,
-									   Utils::Shader::STAGES stage);
+    virtual std::string getPassSnippet(glw::GLuint test_case_index, Utils::VaryingPassthrough &varying_passthrough,
+                                       Utils::Shader::STAGES stage);
 
-	virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface& program_interface,
-									 Utils::VaryingPassthrough& varying_passthrough);
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
 
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
 
-	virtual void prepareFragmentDataLoc(Utils::Program& program, Utils::ProgramInterface& program_interface);
+    virtual void prepareFragmentDataLoc(Utils::Program &program, Utils::ProgramInterface &program_interface);
 
-	virtual void prepareFramebuffer(Utils::Framebuffer& framebuffer, Utils::Texture& color_0_texture);
+    virtual void prepareFramebuffer(Utils::Framebuffer &framebuffer, Utils::Texture &color_0_texture);
 
 private:
-	/* Private fields */
-	Utils::Texture m_goku;
-	Utils::Texture m_gohan;
-	Utils::Texture m_goten;
-	Utils::Texture m_chichi;
+    /* Private fields */
+    Utils::Texture m_goku;
+    Utils::Texture m_gohan;
+    Utils::Texture m_goten;
+    Utils::Texture m_chichi;
 
-	glw::GLint m_goku_location;
-	glw::GLint m_gohan_location;
-	glw::GLint m_chichi_location;
+    glw::GLint m_goku_location;
+    glw::GLint m_gohan_location;
+    glw::GLint m_chichi_location;
 
-	/* Private constants */
-	static const glw::GLuint m_goten_location;
+    /* Private constants */
+    static const glw::GLuint m_goten_location;
 };
 
 /** Implementation of test XFBInput. Description follows:
@@ -3364,41 +3461,45 @@ private:
 class XFBInputTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	XFBInputTest(deqp::Context& context);
-	virtual ~XFBInputTest()
-	{
-	}
+    enum QUALIFIERS
+    {
+        BUFFER = 0,
+        STRIDE,
+        OFFSET,
+
+        /* */
+        QUALIFIERS_MAX
+    };
+
+    /* Public methods */
+    XFBInputTest(deqp::Context &context, glw::GLuint qualifier, glw::GLuint stage);
+    virtual ~XFBInputTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	enum QUALIFIERS
-	{
-		BUFFER = 0,
-		STRIDE,
-		OFFSET,
+    /* Private types */
+    struct testCase
+    {
+        QUALIFIERS m_qualifier;
+        Utils::Shader::STAGES m_stage;
+    };
 
-		/* */
-		QUALIFIERS_MAX
-	};
+    const glw::GLchar *getQualifierName(QUALIFIERS qualifier);
 
-	/* Private types */
-	struct testCase
-	{
-		QUALIFIERS			  m_qualifier;
-		Utils::Shader::STAGES m_stage;
-	};
-
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_qualifier;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBAllStages. Description follows:
@@ -3417,25 +3518,25 @@ private:
 class XFBAllStagesTest : public BufferTestBase
 {
 public:
-	XFBAllStagesTest(deqp::Context& context);
+    XFBAllStagesTest(deqp::Context &context);
 
-	~XFBAllStagesTest()
-	{
-	}
+    ~XFBAllStagesTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+    /* Protected methods */
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
 
-	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
-							   std::string& out_calculations);
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
 
-	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
-									std::string& out_interface);
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
 
 private:
-	/* Constants */
-	static const glw::GLuint m_gs_index;
+    /* Constants */
+    static const glw::GLuint m_gs_index;
 };
 
 /** Implementation of test XFBStrideOfEmptyList. Description follows:
@@ -3464,38 +3565,38 @@ private:
 class XFBStrideOfEmptyListTest : public BufferTestBase
 {
 public:
-	XFBStrideOfEmptyListTest(deqp::Context& context);
+    XFBStrideOfEmptyListTest(deqp::Context &context);
 
-	~XFBStrideOfEmptyListTest()
-	{
-	}
+    ~XFBStrideOfEmptyListTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	using BufferTestBase::executeDrawCall;
-	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
+    /* Protected methods */
+    using BufferTestBase::executeDrawCall;
+    virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
 
-	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
 
-	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
-							   std::string& out_calculations);
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
 
-	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
-									std::string& out_interface);
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
 
 private:
-	enum CASES
-	{
-		VALID = 0,
-		FIRST_MISSING,
-		SECOND_MISSING,
-	};
+    enum CASES
+    {
+        VALID = 0,
+        FIRST_MISSING,
+        SECOND_MISSING,
+    };
 
-	/* Private constants */
-	static const glw::GLuint m_stride;
+    /* Private constants */
+    static const glw::GLuint m_stride;
 };
 
 /** Implementation of test XFBStrideOfEmptyListAndAPI. Description follows:
@@ -3526,39 +3627,40 @@ private:
 class XFBStrideOfEmptyListAndAPITest : public BufferTestBase
 {
 public:
-	XFBStrideOfEmptyListAndAPITest(deqp::Context& context);
+    XFBStrideOfEmptyListAndAPITest(deqp::Context &context);
 
-	~XFBStrideOfEmptyListAndAPITest()
-	{
-	}
+    ~XFBStrideOfEmptyListAndAPITest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	using BufferTestBase::executeDrawCall;
-	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
-	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+    /* Protected methods */
+    using BufferTestBase::executeDrawCall;
+    virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
 
-	virtual void getCapturedVaryings(glw::GLuint test_case_index, Utils::Program::NameVector& captured_varyings, glw::GLint* xfb_components);
+    virtual void getCapturedVaryings(glw::GLuint test_case_index, Utils::Program::NameVector &captured_varyings,
+                                     glw::GLint *xfb_components);
 
-	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
-							   std::string& out_calculations);
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
 
-	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
-									std::string& out_interface);
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
 
 private:
-	enum CASES
-	{
-		VALID = 0,
-		FIRST_MISSING,
-		SECOND_MISSING,
-	};
+    enum CASES
+    {
+        VALID = 0,
+        FIRST_MISSING,
+        SECOND_MISSING,
+    };
 
-	/* Private constants */
-	static const glw::GLuint m_stride;
+    /* Private constants */
+    static const glw::GLuint m_stride;
 };
 
 /** Implementation of test XFBTooSmallStride. Description follows:
@@ -3614,43 +3716,46 @@ private:
 class XFBTooSmallStrideTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	XFBTooSmallStrideTest(deqp::Context& context);
+    enum CASES
+    {
+        OFFSET = 0,
+        STRIDE,
+        BLOCK,
+        ARRAY,
 
-	virtual ~XFBTooSmallStrideTest()
-	{
-	}
+        /* */
+        CASE_MAX
+    };
+
+    /* Public methods */
+    XFBTooSmallStrideTest(deqp::Context &context, glw::GLuint constant, glw::GLuint stage);
+
+    virtual ~XFBTooSmallStrideTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
+    std::string getCaseEnumName(glw::GLuint case_index);
 
 private:
-	enum CASES
-	{
-		OFFSET = 0,
-		STRIDE,
-		BLOCK,
-		ARRAY,
+    /* Private types */
+    struct testCase
+    {
+        CASES m_case;
+        Utils::Shader::STAGES m_stage;
+    };
 
-		/* */
-		CASE_MAX
-	};
-
-	/* Private types */
-	struct testCase
-	{
-		CASES				  m_case;
-		Utils::Shader::STAGES m_stage;
-	};
-
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_constant;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBVariableStride. Description follows:
@@ -3679,42 +3784,46 @@ private:
 class XFBVariableStrideTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	XFBVariableStrideTest(deqp::Context& context);
-	virtual ~XFBVariableStrideTest()
-	{
-	}
+    enum CASES
+    {
+        VALID = 0,
+        INVALID,
+
+        /* */
+        CASE_MAX
+    };
+
+    /* Public methods */
+    XFBVariableStrideTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage, glw::GLuint constant);
+    virtual ~XFBVariableStrideTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool isFailureExpected(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isFailureExpected(glw::GLuint test_case_index);
+    virtual void testInit();
+    std::string getCaseEnumName(glw::GLuint case_index);
 
 private:
-	enum CASES
-	{
-		VALID = 0,
-		INVALID,
+    /* Private types */
+    struct testCase
+    {
+        CASES m_case;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+    };
 
-		/* */
-		CASE_MAX
-	};
-
-	/* Private types */
-	struct testCase
-	{
-		CASES				  m_case;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type;
-	};
-
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
+    glw::GLuint m_constant;
 };
 
 /** Implementation of test XFBBlockStride. Description follows:
@@ -3736,28 +3845,29 @@ private:
 class XFBBlockStrideTest : public TestBase
 {
 public:
-	/* Public methods */
-	XFBBlockStrideTest(deqp::Context& context);
+    /* Public methods */
+    XFBBlockStrideTest(deqp::Context &context, glw::GLuint stage);
 
-	virtual ~XFBBlockStrideTest()
-	{
-	}
+    virtual ~XFBBlockStrideTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool testCase(glw::GLuint test_case_index);
-	virtual void testInit();
+    /* Methods to be implemented by child class */
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool testCase(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private methods */
-	std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Private methods */
+    std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	bool inspectProgram(Utils::Program& program);
+    bool inspectProgram(Utils::Program &program);
 
-	/* Private fields */
-	std::vector<Utils::Shader::STAGES> m_test_cases;
+    /* Private fields */
+    std::vector<Utils::Shader::STAGES> m_test_cases;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBBlockMemberStride. Description follows:
@@ -3787,22 +3897,22 @@ private:
 class XFBBlockMemberStrideTest : public BufferTestBase
 {
 public:
-	XFBBlockMemberStrideTest(deqp::Context& context);
-	~XFBBlockMemberStrideTest()
-	{
-	}
+    XFBBlockMemberStrideTest(deqp::Context &context);
+    ~XFBBlockMemberStrideTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+    /* Protected methods */
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
 
-	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
-							   std::string& out_calculations);
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
 
-	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
-									std::string& out_interface);
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
 
-	virtual bool inspectProgram(glw::GLuint test_case_index, Utils::Program& program, std::stringstream& out_stream);
+    virtual bool inspectProgram(glw::GLuint test_case_index, Utils::Program &program, std::stringstream &out_stream);
 };
 
 /** Implementation of test XFBDuplicatedStride. Description follows:
@@ -3827,42 +3937,45 @@ protected:
 class XFBDuplicatedStrideTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	XFBDuplicatedStrideTest(deqp::Context& context);
+    enum CASES
+    {
+        VALID = 0,
+        INVALID,
 
-	virtual ~XFBDuplicatedStrideTest()
-	{
-	}
+        /* */
+        CASE_MAX
+    };
+
+    /* Public methods */
+    XFBDuplicatedStrideTest(deqp::Context &context, glw::GLuint constant, glw::GLuint stage);
+
+    virtual ~XFBDuplicatedStrideTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual bool isFailureExpected(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isFailureExpected(glw::GLuint test_case_index);
+    virtual void testInit();
+    std::string getCaseEnumName(glw::GLuint test_case_index);
 
 private:
-	enum CASES
-	{
-		VALID = 0,
-		INVALID,
+    /* Private types */
+    struct testCase
+    {
+        CASES m_case;
+        Utils::Shader::STAGES m_stage;
+    };
 
-		/* */
-		CASE_MAX
-	};
-
-	/* Private types */
-	struct testCase
-	{
-		CASES				  m_case;
-		Utils::Shader::STAGES m_stage;
-	};
-
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_constant;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBGetProgramResourceAPI. Description follows:
@@ -3906,45 +4019,51 @@ private:
 class XFBGetProgramResourceAPITest : public TestBase
 {
 public:
-	/* Public methods */
-	XFBGetProgramResourceAPITest(deqp::Context& context);
+    /* Public methods */
+    XFBGetProgramResourceAPITest(deqp::Context &context, glw::GLuint type);
 
-	virtual ~XFBGetProgramResourceAPITest()
-	{
-	}
+    virtual ~XFBGetProgramResourceAPITest()
+    {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool testCase(glw::GLuint test_case_index);
-	virtual void testInit();
-	virtual void insertSkipComponents(int num_components, Utils::Program::NameVector& varyings);
+    /* Methods to be implemented by child class */
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool testCase(glw::GLuint test_case_index);
+    virtual void testInit();
+    virtual void insertSkipComponents(int num_components, Utils::Program::NameVector &varyings);
 
 private:
-	/* Private enums */
-	enum CASES
-	{
-		INTERLEAVED,
-		SEPARATED,
-		XFB,
-	};
+    /* Private enums */
+    enum CASES
+    {
+        INTERLEAVED,
+        SEPARATED,
+        XFB,
+    };
 
-	/* Private types */
-	struct test_Case
-	{
-		CASES				  m_case;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type;
-	};
+    /* Private types */
+    struct test_Case
+    {
+        CASES m_case;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+    };
 
-	/* Private methods */
-	std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Private methods */
+    std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	bool inspectProgram(glw::GLuint test_case_index, Utils::Program& program);
+    bool inspectProgram(glw::GLuint test_case_index, Utils::Program &program);
 
-	/* Private fields */
-	std::vector<test_Case> m_test_cases;
+    /* Private fields */
+    std::vector<test_Case> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test XFBOverrideQualifiersWithAPI. Description follows:
@@ -3977,28 +4096,29 @@ private:
 class XFBOverrideQualifiersWithAPITest : public BufferTestBase
 {
 public:
-	XFBOverrideQualifiersWithAPITest(deqp::Context& context);
+    XFBOverrideQualifiersWithAPITest(deqp::Context &context);
 
-	~XFBOverrideQualifiersWithAPITest()
-	{
-	}
+    ~XFBOverrideQualifiersWithAPITest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+    /* Protected methods */
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
 
-	virtual void getCapturedVaryings(glw::GLuint test_case_index, Utils::Program::NameVector& captured_varyings, glw::GLint* xfb_components);
+    virtual void getCapturedVaryings(glw::GLuint test_case_index, Utils::Program::NameVector &captured_varyings,
+                                     glw::GLint *xfb_components);
 
-	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
-							   std::string& out_calculations);
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
 
-	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
-									std::string& out_interface);
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
 
-	virtual bool inspectProgram(glw::GLuint test_case_index, Utils::Program& program, std::stringstream& out_stream);
+    virtual bool inspectProgram(glw::GLuint test_case_index, Utils::Program &program, std::stringstream &out_stream);
 };
 
 /** Implementation of test XFBVertexStreams. Description follows:
@@ -4033,21 +4153,21 @@ protected:
 class XFBVertexStreamsTest : public BufferTestBase
 {
 public:
-	XFBVertexStreamsTest(deqp::Context& context);
+    XFBVertexStreamsTest(deqp::Context &context);
 
-	~XFBVertexStreamsTest()
-	{
-	}
+    ~XFBVertexStreamsTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+    /* Protected methods */
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
 
-	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
-							   std::string& out_calculations);
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
 
-	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
-									std::string& out_interface);
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
 };
 
 /** Implementation of test XFBMultipleVertexStreams. Description follows:
@@ -4069,18 +4189,18 @@ protected:
 class XFBMultipleVertexStreamsTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	XFBMultipleVertexStreamsTest(deqp::Context& context);
+    /* Public methods */
+    XFBMultipleVertexStreamsTest(deqp::Context &context);
 
-	virtual ~XFBMultipleVertexStreamsTest()
-	{
-	}
+    virtual ~XFBMultipleVertexStreamsTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
 };
 
 /** Implementation of test XFBExceedBufferLimit. Description follows:
@@ -4108,41 +4228,44 @@ protected:
 class XFBExceedBufferLimitTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	XFBExceedBufferLimitTest(deqp::Context& context);
-	virtual ~XFBExceedBufferLimitTest()
-	{
-	}
+    enum CASES
+    {
+        BLOCK = 0,
+        GLOBAL,
+        VECTOR,
+
+        /* */
+        CASE_MAX
+    };
+
+    /* Public methods */
+    XFBExceedBufferLimitTest(deqp::Context &context, glw::GLuint constant, glw::GLuint stage);
+    virtual ~XFBExceedBufferLimitTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
+    std::string getCaseEnumName(glw::GLuint test_case_index);
 
 private:
-	enum CASES
-	{
-		BLOCK = 0,
-		GLOBAL,
-		VECTOR,
+    /* Private types */
+    struct testCase
+    {
+        CASES m_case;
+        Utils::Shader::STAGES m_stage;
+    };
 
-		/* */
-		CASE_MAX
-	};
-
-	/* Private types */
-	struct testCase
-	{
-		CASES				  m_case;
-		Utils::Shader::STAGES m_stage;
-	};
-
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_constant;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBExceedOffsetLimit. Description follows:
@@ -4177,41 +4300,44 @@ private:
 class XFBExceedOffsetLimitTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	XFBExceedOffsetLimitTest(deqp::Context& context);
-	virtual ~XFBExceedOffsetLimitTest()
-	{
-	}
+    enum CASES
+    {
+        BLOCK = 0,
+        GLOBAL,
+        VECTOR,
+
+        /* */
+        CASE_MAX
+    };
+
+    /* Public methods */
+    XFBExceedOffsetLimitTest(deqp::Context &context, glw::GLuint constant, glw::GLuint stage);
+    virtual ~XFBExceedOffsetLimitTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
+    std::string getCaseEnumName(glw::GLuint test_case_index);
 
 private:
-	enum CASES
-	{
-		BLOCK = 0,
-		GLOBAL,
-		VECTOR,
+    /* Private types */
+    struct testCase
+    {
+        CASES m_case;
+        Utils::Shader::STAGES m_stage;
+    };
 
-		/* */
-		CASE_MAX
-	};
-
-	/* Private types */
-	struct testCase
-	{
-		CASES				  m_case;
-		Utils::Shader::STAGES m_stage;
-	};
-
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_constant;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBGlobalBuffer. Description follows:
@@ -4248,32 +4374,38 @@ private:
 class XFBGlobalBufferTest : public BufferTestBase
 {
 public:
-	XFBGlobalBufferTest(deqp::Context& context);
+    XFBGlobalBufferTest(deqp::Context &context, glw::GLuint type);
 
-	~XFBGlobalBufferTest()
-	{
-	}
+    ~XFBGlobalBufferTest()
+    {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
+    }
 
 protected:
-	/* Protected methods */
-	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+    /* Protected methods */
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
 
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual void		testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct _testCase
-	{
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type;
-	};
+    /* Private types */
+    struct _testCase
+    {
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+    };
 
-	/* Private fields */
-	std::vector<_testCase> m_test_cases;
+    /* Private fields */
+    std::vector<_testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test XFBStride. Description follows:
@@ -4291,40 +4423,42 @@ private:
 class XFBStrideTest : public BufferTestBase
 {
 public:
-	XFBStrideTest(deqp::Context& context);
-	~XFBStrideTest()
-	{
-	}
+    XFBStrideTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
+    ~XFBStrideTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	using BufferTestBase::executeDrawCall;
+    /* Protected methods */
+    using BufferTestBase::executeDrawCall;
 
-	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
-	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+    virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
 
-	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
-							   std::string& out_calculations);
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
 
-	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
-									std::string& out_interface);
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
 
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual void		testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type;
-	};
+    /* Private types */
+    struct testCase
+    {
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBBlockMemberBuffer. Description follows:
@@ -4346,31 +4480,32 @@ private:
 class XFBBlockMemberBufferTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	XFBBlockMemberBufferTest(deqp::Context& context);
+    /* Public methods */
+    XFBBlockMemberBufferTest(deqp::Context &context, glw::GLuint stage);
 
-	virtual ~XFBBlockMemberBufferTest()
-	{
-	}
+    virtual ~XFBBlockMemberBufferTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		Utils::Shader::STAGES m_stage;
-	};
+    /* Private types */
+    struct testCase
+    {
+        Utils::Shader::STAGES m_stage;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBOutputOverlapping. Description follows:
@@ -4392,33 +4527,40 @@ private:
 class XFBOutputOverlappingTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	XFBOutputOverlappingTest(deqp::Context& context);
+    /* Public methods */
+    XFBOutputOverlappingTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
 
-	virtual ~XFBOutputOverlappingTest()
-	{
-	}
+    virtual ~XFBOutputOverlappingTest()
+    {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLuint			  m_offset;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLuint m_offset;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBInvalidOffsetAlignment. Description follows:
@@ -4441,33 +4583,35 @@ private:
 class XFBInvalidOffsetAlignmentTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	XFBInvalidOffsetAlignmentTest(deqp::Context& context);
+    /* Public methods */
+    XFBInvalidOffsetAlignmentTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
 
-	virtual ~XFBInvalidOffsetAlignmentTest()
-	{
-	}
+    virtual ~XFBInvalidOffsetAlignmentTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLuint			  m_offset;
-		Utils::Shader::STAGES m_stage;
-		Utils::Type			  m_type;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLuint m_offset;
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBCaptureInactiveOutputVariable. Description follows:
@@ -4494,42 +4638,42 @@ private:
 class XFBCaptureInactiveOutputVariableTest : public BufferTestBase
 {
 public:
-	XFBCaptureInactiveOutputVariableTest(deqp::Context& context);
-	~XFBCaptureInactiveOutputVariableTest()
-	{
-	}
+    XFBCaptureInactiveOutputVariableTest(deqp::Context &context);
+    ~XFBCaptureInactiveOutputVariableTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	using BufferTestBase::executeDrawCall;
-	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
-	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+    /* Protected methods */
+    using BufferTestBase::executeDrawCall;
+    virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
 
-	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
-							   std::string& out_calculations);
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
 
-	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
-									std::string& out_interface);
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
 
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
 
-	virtual bool inspectProgram(glw::GLuint test_case_index, Utils::Program& program, std::stringstream& out_stream);
+    virtual bool inspectProgram(glw::GLuint test_case_index, Utils::Program &program, std::stringstream &out_stream);
 
-	virtual bool verifyBuffers(bufferCollection& buffers);
+    virtual bool verifyBuffers(bufferCollection &buffers);
 
 private:
-	enum test_cases
-	{
-		TEST_VS = 0,
-		TEST_TES,
-		TEST_GS,
+    enum test_cases
+    {
+        TEST_VS = 0,
+        TEST_TES,
+        TEST_GS,
 
-		/* */
-		TEST_MAX
-	};
+        /* */
+        TEST_MAX
+    };
 };
 
 /** Implementation of test XFBCaptureInactiveOutputComponent. Description follows:
@@ -4569,40 +4713,40 @@ private:
 class XFBCaptureInactiveOutputComponentTest : public BufferTestBase
 {
 public:
-	XFBCaptureInactiveOutputComponentTest(deqp::Context& context);
-	~XFBCaptureInactiveOutputComponentTest()
-	{
-	}
+    XFBCaptureInactiveOutputComponentTest(deqp::Context &context);
+    ~XFBCaptureInactiveOutputComponentTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	using BufferTestBase::executeDrawCall;
-	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
+    /* Protected methods */
+    using BufferTestBase::executeDrawCall;
+    virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
 
-	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
 
-	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
-							   std::string& out_calculations);
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
 
-	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
-									std::string& out_interface);
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
 
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool verifyBuffers(bufferCollection& buffers);
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool verifyBuffers(bufferCollection &buffers);
 
 private:
-	enum test_cases
-	{
-		TEST_VS = 0,
-		TEST_TES,
-		TEST_GS,
+    enum test_cases
+    {
+        TEST_VS = 0,
+        TEST_TES,
+        TEST_GS,
 
-		/* */
-		TEST_MAX
-	};
+        /* */
+        TEST_MAX
+    };
 };
 
 /** Implementation of test XFBCaptureInactiveOutputBlockMember. Description follows:
@@ -4629,40 +4773,40 @@ private:
 class XFBCaptureInactiveOutputBlockMemberTest : public BufferTestBase
 {
 public:
-	XFBCaptureInactiveOutputBlockMemberTest(deqp::Context& context);
+    XFBCaptureInactiveOutputBlockMemberTest(deqp::Context &context);
 
-	~XFBCaptureInactiveOutputBlockMemberTest()
-	{
-	}
+    ~XFBCaptureInactiveOutputBlockMemberTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	using BufferTestBase::executeDrawCall;
-	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
-	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+    /* Protected methods */
+    using BufferTestBase::executeDrawCall;
+    virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
 
-	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
-							   std::string& out_calculations);
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
 
-	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
-									std::string& out_interface);
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
 
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool verifyBuffers(bufferCollection& buffers);
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool verifyBuffers(bufferCollection &buffers);
 
 private:
-	enum test_cases
-	{
-		TEST_VS = 0,
-		TEST_TES,
-		TEST_GS,
+    enum test_cases
+    {
+        TEST_VS = 0,
+        TEST_TES,
+        TEST_GS,
 
-		/* */
-		TEST_MAX
-	};
+        /* */
+        TEST_MAX
+    };
 };
 
 /** Implementation of test XFBCaptureStruct. Description follows:
@@ -4691,41 +4835,41 @@ private:
 class XFBCaptureStructTest : public BufferTestBase
 {
 public:
-	XFBCaptureStructTest(deqp::Context& context);
+    XFBCaptureStructTest(deqp::Context &context);
 
-	~XFBCaptureStructTest()
-	{
-	}
+    ~XFBCaptureStructTest()
+    {
+    }
 
 protected:
-	/* Protected methods */
-	using BufferTestBase::executeDrawCall;
-	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
+    /* Protected methods */
+    using BufferTestBase::executeDrawCall;
+    virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
 
-	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
 
-	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
-							   std::string& out_calculations);
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
 
-	virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
-									std::string& out_interface);
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
 
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool verifyBuffers(bufferCollection& buffers);
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool verifyBuffers(bufferCollection &buffers);
 
 private:
-	enum test_cases
-	{
-		TEST_VS = 0,
-		TEST_TES,
-		TEST_GS,
+    enum test_cases
+    {
+        TEST_VS = 0,
+        TEST_TES,
+        TEST_GS,
 
-		/* */
-		TEST_MAX
-	};
+        /* */
+        TEST_MAX
+    };
 };
 
 /** Implementation of test XFBCaptureUnsizedArray. Description follows:
@@ -4745,53 +4889,228 @@ private:
 class XFBCaptureUnsizedArrayTest : public NegativeTestBase
 {
 public:
-	/* Public methods */
-	XFBCaptureUnsizedArrayTest(deqp::Context& context);
-	virtual ~XFBCaptureUnsizedArrayTest()
-	{
-	}
+    /* Public methods */
+    XFBCaptureUnsizedArrayTest(deqp::Context &context, glw::GLuint stage);
+    virtual ~XFBCaptureUnsizedArrayTest()
+    {
+    }
 
 protected:
-	/* Methods to be implemented by child class */
-	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+    /* Methods to be implemented by child class */
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
 
-	virtual std::string getTestCaseName(glw::GLuint test_case_index);
-	virtual glw::GLuint getTestCaseNumber();
-	virtual bool isComputeRelevant(glw::GLuint test_case_index);
-	virtual void testInit();
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual bool isComputeRelevant(glw::GLuint test_case_index);
+    virtual void testInit();
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		Utils::Shader::STAGES m_stage;
-	};
+    /* Private types */
+    struct testCase
+    {
+        Utils::Shader::STAGES m_stage;
+    };
 
-	/* Private fields */
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_stage;
 };
 
-} /* EnhancedLayouts namespace */
+/** Implementation of test XFBExplicitLocationTest. Description follows:
+ *
+ * Test verifies that explicit location on matrices and arrays does not impact xfb output.
+ *
+ * Test following code snippet:
+ *
+ *     layout (location = 0, xfb_offset = 0) out vec2 goku[3];
+ *
+ * Is expected to have the same output as:
+ *
+ *     layout (xfb_offset = 0) out vec2 goku[3];
+ *
+ * While explicit location does impact varyings layout of matrices and arrays, see
+ * Ref. GLSL 4.60, Section 4.4.2. "Output Layout Qualifiers" - it shall not impact
+ * xfb output.
+ *
+ * Test all shader stages.
+ **/
+class XFBExplicitLocationTest : public BufferTestBase
+{
+public:
+    XFBExplicitLocationTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
+    ~XFBExplicitLocationTest()
+    {
+    }
+
+protected:
+    /* Protected methods */
+    using BufferTestBase::executeDrawCall;
+
+    virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
+
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
+
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
+
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual void testInit();
+
+private:
+    /* Private types */
+    struct testCase
+    {
+        Utils::Shader::STAGES m_stage;
+        Utils::Type m_type;
+        glw::GLuint m_array_size;
+    };
+
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
+};
+
+/** Implementation of test XFBExplicitLocationStructTest. Description follows:
+ *
+ * Test verifies that explicit location on struct does not impact xfb output.
+ *
+ * Test following code snippet:
+ *     struct TestStruct {
+ *        float a;
+ *        double b;
+ *      };
+ *
+ *     layout (location = 0, xfb_offset = 0) flat out TestStruct goku;
+ *
+ * Is expected to have the same output as:
+ *
+ *     layout (xfb_offset = 0) flat out TestStruct goku;
+ *
+ * While explicit location does impact varyings layout of structs, see
+ * Ref. GLSL 4.60, Section 4.4.2. "Output Layout Qualifiers" - it shall not impact
+ * xfb output.
+ *
+ * Test all shader stages.
+ **/
+class XFBExplicitLocationStructTest : public BufferTestBase
+{
+public:
+    XFBExplicitLocationStructTest(deqp::Context &context, glw::GLuint stage);
+    ~XFBExplicitLocationStructTest()
+    {
+    }
+
+protected:
+    /* Protected methods */
+    using BufferTestBase::executeDrawCall;
+
+    virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
+    virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector &out_descriptors);
+
+    virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string &out_assignments,
+                               std::string &out_calculations);
+
+    virtual void getShaderInterface(glw::GLuint test_case_index, Utils::Shader::STAGES stage,
+                                    std::string &out_interface);
+
+    virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual void testInit();
+
+private:
+    /* Private types */
+
+    struct testType
+    {
+        Utils::Type m_type;
+        glw::GLuint m_array_size;
+    };
+
+    struct testCase
+    {
+        Utils::Shader::STAGES m_stage;
+        std::vector<testType> m_types;
+        bool m_nested_struct;
+    };
+
+    /* Private fields */
+    std::vector<testCase> m_test_cases;
+    glw::GLuint m_stage;
+};
+
+} // namespace EnhancedLayouts
 
 /** Group class for Shader Language 420Pack conformance tests */
 class EnhancedLayoutsTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	EnhancedLayoutsTests(deqp::Context& context);
+    /* Public methods */
+    EnhancedLayoutsTests(deqp::Context &context);
 
-	virtual ~EnhancedLayoutsTests(void)
-	{
-	}
+    virtual ~EnhancedLayoutsTests(void)
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
+
+    void addGLSLContantImmutablityTest();
+    void addUniformBlockLayoutQualifierConflictTest();
+    void addSSBMemberInvalidOffsetAlignmentTest();
+    void addSSBMemberOverlappingOffsetsTest();
+    void addVaryingInvalidValueComponentTest();
+    void addVaryingExceedingComponentsTest();
+    void addVaryingComponentOfInvalidTypeTest();
+    void addOutputComponentAliasingTest();
+    void addXFBInputTest();
+    void addXFBStrideTest();
+    void addUniformBlockMemberInvalidOffsetAlignmentTest();
+    void addUniformBlockMemberOverlappingOffsetsTest();
+    void addUniformBlockMemberAlignNonPowerOf2Test();
+    void addSSBLayoutQualifierConflictTest();
+    void addSSBMemberAlignNonPowerOf2Test();
+    void addVaryingStructureMemberLocationTest();
+    void addVaryingBlockAutomaticMemberLocationsTest();
+    void addVaryingComponentWithoutLocationTest();
+    void addInputComponentAliasingTest();
+    void addVaryingLocationAliasingWithMixedTypesTest();
+    void addVaryingLocationAliasingWithMixedInterpolationTest();
+    void addVaryingLocationAliasingWithMixedAuxiliaryStorageTest();
+    void addXFBTooSmallStrideTest();
+    void addXFBDuplicatedStrideTest();
+    void addXFBGetProgramResourceAPITest();
+    void addXFBExceedBufferLimitTest();
+    void addXFBExceedOffsetLimitTest();
+    void addXFBBlockMemberBufferTest();
+    void addXFBOutputOverlappingTest();
+    void addXFBInvalidOffsetAlignmentTest();
+    void addXFBCaptureUnsizedArrayTest();
+    void addVaryingBlockMemberLocationsTest();
+    void addXFBVariableStrideTest();
+    void addXFBBlockStrideTest();
+    void addXFBGlobalBufferTest();
+    void addXFBExplicitLocationTest();
+    void addXFBExplicitLocationStructTest();
+    void addVaryingLocationLimitTest();
+    void addVaryingComponentsTest();
+    void addVaryingArrayComponentsTest();
 
 private:
-	/* Private methods */
-	EnhancedLayoutsTests(const EnhancedLayoutsTests& other);
-	EnhancedLayoutsTests& operator=(const EnhancedLayoutsTests& other);
+    /* Private methods */
+    EnhancedLayoutsTests(const EnhancedLayoutsTests &other);
+    EnhancedLayoutsTests &operator=(const EnhancedLayoutsTests &other);
+
+    template <class varyingClass>
+    void addVaryingTest();
 };
 
-} // gl4cts
+} // namespace gl4cts
 
 #endif // _GL4CENHANCEDLAYOUTSTESTS_HPP

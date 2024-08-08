@@ -19,11 +19,11 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			win32/tcuWin32VulkanPlatform.cpp
 			)
 
-	elseif ((DE_OS_IS_UNIX OR DE_OS_IS_OSX) AND (DEQP_USE_X11 OR DEQP_USE_WAYLAND))
+	elseif ((DE_OS_IS_UNIX OR DE_OS_IS_OSX) AND (DEQP_USE_X11 OR DEQP_USE_WAYLAND OR DEQP_USE_HEADLESS))
 
 		set(TCUTIL_PLATFORM_SRCS
 			lnx/tcuLnx.cpp
-			lnx/tcuLnx.cpp
+			lnx/tcuLnx.hpp
 			lnx/tcuLnxPlatform.cpp
 			lnx/tcuLnxPlatform.hpp
 			lnx/tcuLnxEglPlatform.hpp
@@ -73,17 +73,53 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			add_definitions(-DDEQP_SUPPORT_WAYLAND=1)
 			include_directories(lnx/wayland)
 
+			set(DEQP_XDG_SHELL_GEN_OUTPUTS_DIR ${PROJECT_BINARY_DIR}/framework/platform)
+			set(DEQP_XDG_SHELL_OUTPUTS
+				${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.c
+				${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.h)
+
+			if (WAYLAND_XDG_SHELL_SRC_DIR)
+				# Allow xdg-shell.c and xdg-shell.h to be source files specified in an external directory
+				configure_file(${WAYLAND_XDG_SHELL_SRC_DIR}/xdg-shell.c ${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.c COPYONLY)
+				configure_file(${WAYLAND_XDG_SHELL_SRC_DIR}/xdg-shell.h ${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.h COPYONLY)
+			else ()
+				pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
+
+				if (NOT WAYLAND_SCANNER)
+					pkg_get_variable(WAYLAND_SCANNER wayland-scanner wayland_scanner)
+				endif()
+
+				set(DEQP_XDG_SHELL_PROTOCOL ${WAYLAND_PROTOCOLS_DIR}/stable/xdg-shell/xdg-shell.xml)
+				add_custom_command(
+					COMMAND ${WAYLAND_SCANNER} ARGS client-header ${DEQP_XDG_SHELL_PROTOCOL} xdg-shell.h
+					COMMAND ${WAYLAND_SCANNER} ARGS public-code ${DEQP_XDG_SHELL_PROTOCOL} xdg-shell.c
+					DEPENDS ${DEQP_XDG_SHELL_PROTOCOL}
+					OUTPUT ${DEQP_XDG_SHELL_OUTPUTS})
+			endif()
+
+			add_custom_target(
+				deqp-xdg-shell ALL
+				DEPENDS ${DEQP_XDG_SHELL_OUTPUTS})
+
 			set(TCUTIL_PLATFORM_SRCS
 				${TCUTIL_PLATFORM_SRCS}
 				lnx/wayland/tcuLnxWayland.hpp
 				lnx/wayland/tcuLnxWayland.cpp
 				lnx/wayland/tcuLnxWaylandEglDisplayFactory.cpp
 				lnx/wayland/tcuLnxWaylandEglDisplayFactory.hpp
+				${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.c
+				${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.h
 				)
+			include_directories(${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR})
 			include_directories(wayland)
 		endif()
 
+		if (DEQP_USE_HEADLESS)
+			add_definitions(-DDEQP_SUPPORT_HEADLESS=1)
+		endif()
+
 	elseif (DE_OS_IS_UNIX AND DEQP_USE_SURFACELESS)
+		add_definitions(-DDEQP_SURFACELESS=1)
 		set(TCUTIL_PLATFORM_SRCS
 			surfaceless/tcuSurfacelessPlatform.hpp
 			surfaceless/tcuSurfacelessPlatform.cpp
@@ -101,8 +137,6 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 				${TCUTIL_PLATFORM_SRCS}
 				android/tcuAndroidAssets.cpp
 				android/tcuAndroidAssets.hpp
-				android/tcuAndroidInternals.cpp
-				android/tcuAndroidInternals.hpp
 				android/tcuAndroidNativeActivity.cpp
 				android/tcuAndroidNativeActivity.hpp
 				android/tcuAndroidPlatform.cpp
@@ -135,6 +169,12 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			osx/tcuOSXMetalView.mm
 			osx/tcuOSXMetalView.hpp
 			)
+		list(APPEND TCUTIL_PLATFORM_LIBS ${QUARTZCORE_LIBRARY} ${COCOA_LIBRARY})
+
+	elseif (DE_OS_IS_FUCHSIA)
+		set(TCUTIL_PLATFORM_SRCS
+			fuchsia/tcuFuchsiaPlatform.cpp
+			)
 
 	else ()
 		set(TCUTIL_PLATFORM_SRCS
@@ -144,7 +184,12 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 	endif ()
 endif ()
 
+include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
+
 add_library(tcutil-platform STATIC ${TCUTIL_PLATFORM_SRCS})
+if (DEQP_USE_WAYLAND)
+	add_dependencies(tcutil-platform deqp-xdg-shell)
+endif()
 
 # Add vkutil to the deps before tcutil so that it picks up the c++11 dependencies
 target_link_libraries(tcutil-platform vkutil)
@@ -164,7 +209,7 @@ if (DEQP_USE_X11)
 	if (DEQP_USE_XCB)
 		find_package(XCB REQUIRED)
 		target_link_libraries(tcutil-platform ${XCB_LIBRARIES})
-		add_definitions(-DDEQP_SUPPORT_XCB=1)
+		target_compile_definitions(tcutil-platform PUBLIC DEQP_SUPPORT_XCB=1)
 	endif ()
 	if (DEQP_SUPPORT_GLX)
 	  # GLX functions don't currently have wrappers, so link directly to libGL.
@@ -173,6 +218,49 @@ if (DEQP_USE_X11)
 	if (DEQP_USE_WAYLAND)
 		find_package(Wayland REQUIRED)
 		target_link_libraries(tcutil-platform ${WAYLAND_LIBRARIES})
-		add_definitions(-DDEQP_SUPPORT_WAYLAND=1)
+		target_compile_definitions(tcutil-platform PUBLIC DEQP_SUPPORT_WAYLAND=1)
 	endif ()
 endif ()
+
+if (DE_OS_IS_WIN32)
+	target_link_libraries(tcutil-platform "version")
+endif()
+
+# Add similar library for Vulkan SC ( uses same code as vkutil, but with different INL files. These
+# are picked up via the version of vkutil that is linked against )
+add_library(tcutil-sc-platform STATIC ${TCUTIL_PLATFORM_SRCS})
+
+# Add vkscutil to the deps before tcutil so that it picks up the c++11 dependencies
+target_link_libraries(tcutil-sc-platform vkscutil)
+
+target_link_libraries(tcutil-sc-platform tcutil ${TCUTIL_PLATFORM_LIBS})
+
+# Always link to glutil as some platforms such as Win32 always support GL
+target_link_libraries(tcutil-sc-platform glutil)
+
+# Always link to eglutil
+target_link_libraries(tcutil-sc-platform eglutil)
+
+# X11 libraries
+if (DEQP_USE_X11)
+	find_package(X11 REQUIRED)
+	target_link_libraries(tcutil-sc-platform ${X11_LIBRARIES})
+	if (DEQP_USE_XCB)
+		find_package(XCB REQUIRED)
+		target_link_libraries(tcutil-sc-platform ${XCB_LIBRARIES})
+		target_compile_definitions(tcutil-sc-platform PUBLIC DEQP_SUPPORT_XCB=1)
+	endif ()
+	if (DEQP_SUPPORT_GLX)
+	  # GLX functions don't currently have wrappers, so link directly to libGL.
+	  target_link_libraries(tcutil-sc-platform GL)
+	endif ()
+	if (DEQP_USE_WAYLAND)
+		find_package(Wayland REQUIRED)
+		target_link_libraries(tcutil-sc-platform ${WAYLAND_LIBRARIES})
+		target_compile_definitions(tcutil-sc-platform PUBLIC DEQP_SUPPORT_WAYLAND=1)
+	endif ()
+endif ()
+
+if (DE_OS_IS_WIN32)
+	target_link_libraries(tcutil-sc-platform "version")
+endif()

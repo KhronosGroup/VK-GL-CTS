@@ -1,14 +1,10 @@
 # GL-CTS.es2
 
 set(GLCTS_GL_SRCS
-	gl3cClipDistance.cpp
-	gl3cClipDistance.hpp
 	gl3cCommonBugsTests.cpp
 	gl3cCommonBugsTests.hpp
 	gl3cTestPackages.cpp
 	gl3cTestPackages.hpp
-	gl3cCullDistanceTests.cpp
-	gl3cCullDistanceTests.hpp
 	gl3cGPUShader5Tests.cpp
 	gl3cGPUShader5Tests.hpp
 	gl3cGLSLnoperspectiveTests.cpp
@@ -21,6 +17,8 @@ set(GLCTS_GL_SRCS
 	gl3cTransformFeedbackTests.hpp
 	gl3cTransformFeedbackOverflowQueryTests.cpp
 	gl3cTransformFeedbackOverflowQueryTests.hpp
+	gl3cTransformFeedback3Tests.cpp
+	gl3cTransformFeedback3Tests.hpp
 	gl4cTestPackages.cpp
 	gl4cTestPackages.hpp
 	gl4cBufferStorageTests.cpp
@@ -136,5 +134,8 @@ endif ()
 
 PCH(GLCTS_GL_SRCS ../pch.cpp)
 
+include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
+
 add_library(glcts-gl STATIC ${GLCTS_GL_SRCS})
+add_dependencies(glcts-gl deqp-vk-inl)
 target_link_libraries(glcts-gl ${GLCTS_GL_LIBS})

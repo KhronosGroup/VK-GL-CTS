@@ -1,8 +1,18 @@
 # dEQP cmake file
 
 # Module FindGit requires cmake >= 2.8.2
-cmake_minimum_required(VERSION 3.10.2)
+# Using AFTER in target_include_directories requires >= 3.20.0
+cmake_minimum_required(VERSION 3.20.0)
 
+option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" OFF)
+
+# Target selection:
+# SELECTED_BUILD_TARGETS is a CMake option that can be set to a list of targets
+# that will be built. If the variable is empty (as is the default), all targets
+# will be built normally.
+set(SELECTED_BUILD_TARGETS "" CACHE STRING "Select some specific targets to build, separated by spaces")
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/framework/delibs/cmake")
 find_package(Git)
 find_package(PythonInterp 3)
 
@@ -54,6 +64,21 @@ include_directories(
 # Include target-specific definitions
 include(targets/${DEQP_TARGET}/${DEQP_TARGET}.cmake)
 
+# Handle target selection list.
+string(STRIP "${SELECTED_BUILD_TARGETS}" SBT_STRIPPED)
+if ("${SBT_STRIPPED}" STREQUAL "" OR (NOT (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)))
+	set(MAYBE_EXCLUDE_FROM_ALL)
+else ()
+	# If a non-empty target selection list is provided, exclude all subdirectories by default.
+	set(MAYBE_EXCLUDE_FROM_ALL EXCLUDE_FROM_ALL)
+
+	# Each target in the target selection list will be added as a dependency of a new fake target.
+	# The new fake target will be added as a dependency of the default build target.
+	string(REGEX REPLACE "[ \t\r\n]+" ";" SBT_LIST "${SBT_STRIPPED}")
+	add_custom_target(sbt_list_target ALL)
+	add_dependencies(sbt_list_target ${SBT_LIST})
+endif ()
+
 # zlib
 find_package(ZLIB)
 # dEQP CMake compatibility (as for libpng)
@@ -62,8 +87,15 @@ set(ZLIB_LIBRARY ${ZLIB_LIBRARIES})
 
 if (NOT ZLIB_INCLUDE_PATH OR NOT ZLIB_LIBRARY)
 	message(STATUS "System version of zlib not found, using external/zlib")
-	add_subdirectory(external/zlib)
+	add_subdirectory(external/zlib EXCLUDE_FROM_ALL)
 	# \note ZLIB_LIBRARY and ZLIB_INCLUDE_PATH are promoted from external/zlib/CMakeLists.txt
+endif ()
+
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/renderdoc/src/renderdoc_app.h")
+	message(STATUS "Renderdoc header found, integration enabled")
+	set(DEQP_HAVE_RENDERDOC_HEADER 1)
+else ()
+	message(STATUS "Renderdoc header not found, integration will not work")
 endif ()
 
 include_directories(${ZLIB_INCLUDE_PATH})
@@ -80,15 +112,20 @@ set(PNG_LIBRARY ${PNG_LIBRARIES})
 
 if (NOT PNG_INCLUDE_PATH OR NOT PNG_LIBRARY)
 	message(STATUS "System version of libpng not found, using external/libpng")
-	add_subdirectory(external/libpng)
+	add_subdirectory(external/libpng EXCLUDE_FROM_ALL)
 	# \note PNG_LIBRARY and PNG_INCLUDE_PATH are promoted from external/libpng/CMakeLists.txt
 endif ()
 
-# glslang
-add_subdirectory(external/glslang)
+# vulkan-validationlayers.  Supported only on 64-bit
+if ("${DE_CPU}" STREQUAL "DE_CPU_X86_64" OR "${DE_CPU}" STREQUAL "DE_CPU_ARM_64")
+	add_subdirectory(external/vulkan-validationlayers ${MAYBE_EXCLUDE_FROM_ALL})
+endif ()
 
 # spirv-tools
-add_subdirectory(external/spirv-tools)
+add_subdirectory(external/spirv-tools EXCLUDE_FROM_ALL)
+
+# glslang
+add_subdirectory(external/glslang EXCLUDE_FROM_ALL)
 
 # spirv-headers
 set(SPIRV_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/spirv-headers/src/include")
@@ -98,13 +135,37 @@ endif()
 include_directories(${SPIRV_INCLUDE_PATH})
 
 # Amber
-add_subdirectory(external/amber)
+add_subdirectory(external/amber EXCLUDE_FROM_ALL)
 include_directories(external/amber)
+
+# jsoncpp
+add_subdirectory(external/jsoncpp EXCLUDE_FROM_ALL)
+include_directories(external/jsoncpp/src/include)
 
 # RenderDoc API
 include_directories(external/renderdoc/src)
 
+# Vulkan video support libraries
+if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
+   # Some of the parsing / codec code is used from here.
+   add_subdirectory(external/nvidia-video-samples EXCLUDE_FROM_ALL)
+endif()
+
 include_directories(${PNG_INCLUDE_PATH})
+
+# DRM (Direct Rendering Manager) Headers
+find_path(XF86DRM_H_PATH NAMES xf86drm.h)
+find_path(DRM_H_PATH NAMES drm.h PATH_SUFFIXES libdrm drm)
+
+if (XF86DRM_H_PATH AND DRM_H_PATH)
+	include_directories(${XF86DRM_H_PATH})
+	include_directories(${DRM_H_PATH})
+	set(DEQP_SUPPORT_DRM ON CACHE BOOL "Build code requiring the Linux/Unix Direct Rendering Manager")
+	mark_as_advanced(XF86DRM_H_PATH)
+	mark_as_advanced(DRM_H_PATH)
+else ()
+	set(DEQP_SUPPORT_DRM OFF CACHE BOOL "Build code requiring the Linux/Unix Direct Rendering Manager")
+endif ()
 
 message(STATUS "DEQP_TARGET_NAME        = ${DEQP_TARGET_NAME}")
 message(STATUS "DEQP_SUPPORT_GLES1      = ${DEQP_SUPPORT_GLES1}")
@@ -117,28 +178,29 @@ message(STATUS "DEQP_SUPPORT_VG         = ${DEQP_SUPPORT_VG}")
 message(STATUS "DEQP_VG_LIBRARIES       = ${DEQP_VG_LIBRARIES}")
 message(STATUS "DEQP_EGL_LIBRARIES      = ${DEQP_EGL_LIBRARIES}")
 message(STATUS "DEQP_PLATFORM_LIBRARIES = ${DEQP_PLATFORM_LIBRARIES}")
+message(STATUS "DEQP_SUPPORT_DRM        = ${DEQP_SUPPORT_DRM}")
 
 # Defines
 add_definitions(-DDEQP_TARGET_NAME="${DEQP_TARGET_NAME}")
 
 # Entry points loaded directly by linking to libGL*?
-if (DEFINED DEQP_GLES2_LIBRARIES)
+if (DEFINED DEQP_GLES2_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES2_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_GLES3_LIBRARIES)
+if (DEFINED DEQP_GLES3_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES3_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_GLES31_LIBRARIES)
+if (DEFINED DEQP_GLES31_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES31_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_GLES32_LIBRARIES)
+if (DEFINED DEQP_GLES32_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_GLES32_DIRECT_LINK=1)
 endif ()
 
-if (DEFINED DEQP_EGL_LIBRARIES)
+if (DEFINED DEQP_EGL_LIBRARIES AND GLES_ALLOW_DIRECT_LINK)
 	add_definitions(-DDEQP_EGL_DIRECT_LINK=1)
 endif ()
 
@@ -159,6 +221,12 @@ if (DEQP_SUPPORT_VG)
 	endif ()
 endif ()
 
+if (DEQP_SUPPORT_DRM)
+	add_definitions(-DDEQP_SUPPORT_DRM=1)
+else ()
+	add_definitions(-DDEQP_SUPPORT_DRM=0)
+endif ()
+
 if (DE_COMPILER_IS_MSC)
 	# Don't nag about std::copy for example
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_SCL_SECURE_NO_WARNINGS")
@@ -177,19 +245,19 @@ macro(PCH SRCS PCHCPP)
 endmacro(PCH)
 
 # delibs projects
-add_subdirectory(framework/delibs/debase)
-add_subdirectory(framework/delibs/depool)
-add_subdirectory(framework/delibs/dethread)
-add_subdirectory(framework/delibs/destream)
-add_subdirectory(framework/delibs/deutil)
-add_subdirectory(framework/delibs/decpp)
+add_subdirectory(framework/delibs/debase ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/depool ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/dethread ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/destream ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/deutil ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/decpp ${MAYBE_EXCLUDE_FROM_ALL})
 
 # ExecServer
-add_subdirectory(execserver)
+add_subdirectory(execserver ${MAYBE_EXCLUDE_FROM_ALL})
 
 # Executor framework and tools
 if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/executor)
-	add_subdirectory(executor)
+	add_subdirectory(executor ${MAYBE_EXCLUDE_FROM_ALL})
 endif ()
 
 # Test framework include directories
@@ -238,7 +306,7 @@ set(MODULE_DATA_TARGET_POSTFIX	"-data")
 #	${MODULE_NAME}-package:		Static library that contains all SRCS and links to LIBS
 #	${MODULE_NAME}-data:		Custom target that is used for data file copies
 #	${MODULE_NAME}:				Executable binary (if supported by the platform)
-macro (add_deqp_module MODULE_NAME SRCS LIBS ENTRY)
+macro (add_deqp_module MODULE_NAME SRCS LIBS EXECLIBS ENTRY)
 
 	# Library target
 	add_library("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" STATIC ${SRCS})
@@ -254,7 +322,7 @@ macro (add_deqp_module MODULE_NAME SRCS LIBS ENTRY)
 	if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
 		# Executable target
 		add_executable(${MODULE_NAME} ${PROJECT_SOURCE_DIR}/framework/platform/tcuMain.cpp ${ENTRY})
-		target_link_libraries(${MODULE_NAME} tcutil-platform "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
+		target_link_libraries(${MODULE_NAME} PUBLIC "${EXECLIBS}" "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
 		target_copy_files(${MODULE_NAME} platform-libs-${MODULE_NAME} "${DEQP_PLATFORM_COPY_LIBRARIES}")
 	endif ()
 
@@ -262,6 +330,28 @@ macro (add_deqp_module MODULE_NAME SRCS LIBS ENTRY)
 	add_custom_target("${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}")
 	add_dependencies("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}")
 endmacro (add_deqp_module)
+
+# Macro add_deqp_module_skip_android does not add module to DEQP_MODULE_LIBRARIES, so that it is not created on Android.
+# It's a temporary solution to disable Vulkan SC tests on Android, because later defined deqp library
+# uses both deqp-vk and deqp-vksc and this means that definitions CTS_USES_VULKAN and CTS_USES_VULKANSC
+# exist in deqp library at the same time which causes code to not compile.
+macro (add_deqp_module_skip_android MODULE_NAME SRCS LIBS EXECLIBS ENTRY)
+
+	# Library target
+	add_library("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" STATIC ${SRCS})
+	target_link_libraries("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" ${LIBS})
+
+	if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
+		# Executable target
+		add_executable(${MODULE_NAME} ${PROJECT_SOURCE_DIR}/framework/platform/tcuMain.cpp ${ENTRY})
+		target_link_libraries(${MODULE_NAME} PUBLIC "${EXECLIBS}" "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
+		target_copy_files(${MODULE_NAME} platform-libs-${MODULE_NAME} "${DEQP_PLATFORM_COPY_LIBRARIES}")
+	endif ()
+
+	# Data file target
+	add_custom_target("${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}")
+	add_dependencies("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}")
+endmacro (add_deqp_module_skip_android)
 
 # Macro for adding data dirs to module
 macro (add_data_dir MODULE_NAME SRC_DIR DST_DIR)
@@ -289,20 +379,23 @@ macro (add_data_file MODULE_NAME SRC_FILE DST_FILE)
 	endif ()
 endmacro (add_data_file)
 
-add_subdirectory(framework)
-add_subdirectory(external/vulkancts/framework/vulkan)
+add_subdirectory(framework ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/vulkancts/framework/vulkan ${MAYBE_EXCLUDE_FROM_ALL})
 
 if (DE_COMPILER_IS_MSC)
 	add_compile_options(/bigobj) # Required by glsBuiltinPrecisionTests.cpp
 endif ()
 
-add_subdirectory(modules)
-add_subdirectory(external/vulkancts/modules/vulkan)
-add_subdirectory(external/openglcts)
+add_subdirectory(modules ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/vulkancts/modules/vulkan ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/vulkancts/vkscserver ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/vulkancts/vkscpc ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/openglcts ${MAYBE_EXCLUDE_FROM_ALL})
 
 # Single-binary targets
 if (DE_OS_IS_ANDROID)
 	include_directories(executor)
+	include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
 
 	set(DEQP_SRCS
 		framework/platform/android/tcuAndroidMain.cpp
@@ -353,4 +446,10 @@ elseif (DE_OS_IS_IOS)
 	target_link_libraries(deqp tcutil-platform xscore ${DEQP_MODULE_LIBRARIES})
 	set_target_properties(deqp PROPERTIES XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2")
 	set_target_properties(deqp PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer: ${DEQP_IOS_CODE_SIGN_IDENTITY}")
+endif ()
+
+if (DE_OS_IS_FUCHSIA)
+	# The default Fuchsia stack is small, so the size needs to be increased to at
+	# least 2**20 bytes, but 2**24 is chosen for safety.
+	set_target_properties(deqp-vk PROPERTIES LINK_FLAGS "-Wl,-z,stack-size=0x1000000")
 endif ()

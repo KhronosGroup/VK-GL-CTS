@@ -53,28 +53,28 @@ namespace KHRDebug
 class TestBase
 {
 public:
-	/* Public methods */
-	TestBase(tcu::TestContext& testContext, glu::ApiType apiType, bool is_debug);
-	virtual ~TestBase();
+    /* Public methods */
+    TestBase(tcu::TestContext &testContext, glu::ApiType apiType, bool is_debug);
+    virtual ~TestBase();
 
 protected:
-	/* Protected methods */
-	void init();
-	void done();
+    /* Protected methods */
+    void init();
+    void done();
 
-	/* Protected fields */
-	const glw::Functions* m_gl;
-	const bool			  m_is_debug;
-	glu::RenderContext*   m_rc;
+    /* Protected fields */
+    const glw::Functions *m_gl;
+    const bool m_is_debug;
+    glu::RenderContext *m_rc;
 
 private:
-	/* Private methods */
-	void initDebug();
-	void initNonDebug();
+    /* Private methods */
+    void initDebug();
+    void initNonDebug();
 
-	/* Private fields */
-	tcu::TestContext&	m_testContext;
-	glu::ApiType		m_apiType;
+    /* Private fields */
+    tcu::TestContext &m_testContext;
+    glu::ApiType m_apiType;
 };
 
 /** Implementation of test APIErrors. Description follows:
@@ -142,15 +142,15 @@ private:
 class APIErrorsTest : public TestBase, public tcu::TestCase
 {
 public:
-	/* Public methods */
-	APIErrorsTest(tcu::TestContext& testCtx, glu::ApiType apiType, bool is_debug, const glw::GLchar* name);
+    /* Public methods */
+    APIErrorsTest(tcu::TestContext &testCtx, glu::ApiType apiType, bool is_debug, const glw::GLchar *name);
 
-	virtual ~APIErrorsTest()
-	{
-	}
+    virtual ~APIErrorsTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 };
 
 /** Implementation of test Labels. Description follows:
@@ -183,41 +183,41 @@ public:
 class LabelsTest : public tcu::TestCase, public TestBase
 {
 public:
-	/* Public methods */
-	LabelsTest(tcu::TestContext& testCtx, glu::ApiType apiType, bool is_debug, const glw::GLchar* name);
+    /* Public methods */
+    LabelsTest(tcu::TestContext &testCtx, glu::ApiType apiType, bool is_debug, const glw::GLchar *name);
 
-	virtual ~LabelsTest()
-	{
-	}
+    virtual ~LabelsTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	/* Private routines */
-	static glw::GLuint createBuffer(const glw::Functions* gl, const glu::RenderContext* rc);
-	static glw::GLuint createFramebuffer(const glw::Functions* gl, const glu::RenderContext* rc);
-	static glw::GLuint createProgram(const glw::Functions* gl, const glu::RenderContext* rc);
-	static glw::GLuint createProgramPipeline(const glw::Functions* gl, const glu::RenderContext* rc);
-	static glw::GLuint createQuery(const glw::Functions* gl, const glu::RenderContext* rc);
-	static glw::GLuint createRenderbuffer(const glw::Functions* gl, const glu::RenderContext* rc);
-	static glw::GLuint createSampler(const glw::Functions* gl, const glu::RenderContext* rc);
-	static glw::GLuint createShader(const glw::Functions* gl, const glu::RenderContext* rc);
-	static glw::GLuint createTexture(const glw::Functions* gl, const glu::RenderContext* rc);
-	static glw::GLuint createTransformFeedback(const glw::Functions* gl, const glu::RenderContext* rc);
-	static glw::GLuint createVertexArray(const glw::Functions* gl, const glu::RenderContext* rc);
+    /* Private routines */
+    static glw::GLuint createBuffer(const glw::Functions *gl, const glu::RenderContext *rc);
+    static glw::GLuint createFramebuffer(const glw::Functions *gl, const glu::RenderContext *rc);
+    static glw::GLuint createProgram(const glw::Functions *gl, const glu::RenderContext *rc);
+    static glw::GLuint createProgramPipeline(const glw::Functions *gl, const glu::RenderContext *rc);
+    static glw::GLuint createQuery(const glw::Functions *gl, const glu::RenderContext *rc);
+    static glw::GLuint createRenderbuffer(const glw::Functions *gl, const glu::RenderContext *rc);
+    static glw::GLuint createSampler(const glw::Functions *gl, const glu::RenderContext *rc);
+    static glw::GLuint createShader(const glw::Functions *gl, const glu::RenderContext *rc);
+    static glw::GLuint createTexture(const glw::Functions *gl, const glu::RenderContext *rc);
+    static glw::GLuint createTransformFeedback(const glw::Functions *gl, const glu::RenderContext *rc);
+    static glw::GLuint createVertexArray(const glw::Functions *gl, const glu::RenderContext *rc);
 
-	static glw::GLvoid deleteBuffer(const glw::Functions* gl, glw::GLuint id);
-	static glw::GLvoid deleteFramebuffer(const glw::Functions* gl, glw::GLuint id);
-	static glw::GLvoid deleteProgram(const glw::Functions* gl, glw::GLuint id);
-	static glw::GLvoid deleteProgramPipeline(const glw::Functions* gl, glw::GLuint id);
-	static glw::GLvoid deleteQuery(const glw::Functions* gl, glw::GLuint id);
-	static glw::GLvoid deleteRenderbuffer(const glw::Functions* gl, glw::GLuint id);
-	static glw::GLvoid deleteSampler(const glw::Functions* gl, glw::GLuint id);
-	static glw::GLvoid deleteShader(const glw::Functions* gl, glw::GLuint id);
-	static glw::GLvoid deleteTexture(const glw::Functions* gl, glw::GLuint id);
-	static glw::GLvoid deleteTransformFeedback(const glw::Functions* gl, glw::GLuint id);
-	static glw::GLvoid deleteVertexArray(const glw::Functions* gl, glw::GLuint id);
+    static glw::GLvoid deleteBuffer(const glw::Functions *gl, glw::GLuint id);
+    static glw::GLvoid deleteFramebuffer(const glw::Functions *gl, glw::GLuint id);
+    static glw::GLvoid deleteProgram(const glw::Functions *gl, glw::GLuint id);
+    static glw::GLvoid deleteProgramPipeline(const glw::Functions *gl, glw::GLuint id);
+    static glw::GLvoid deleteQuery(const glw::Functions *gl, glw::GLuint id);
+    static glw::GLvoid deleteRenderbuffer(const glw::Functions *gl, glw::GLuint id);
+    static glw::GLvoid deleteSampler(const glw::Functions *gl, glw::GLuint id);
+    static glw::GLvoid deleteShader(const glw::Functions *gl, glw::GLuint id);
+    static glw::GLvoid deleteTexture(const glw::Functions *gl, glw::GLuint id);
+    static glw::GLvoid deleteTransformFeedback(const glw::Functions *gl, glw::GLuint id);
+    static glw::GLvoid deleteVertexArray(const glw::Functions *gl, glw::GLuint id);
 };
 
 /** Implementation of test ReceivingMessages. Description follows:
@@ -305,27 +305,27 @@ private:
 class ReceivingMessagesTest : public tcu::TestCase, public TestBase
 {
 public:
-	/* Public methods */
-	ReceivingMessagesTest(tcu::TestContext& testCtx, glu::ApiType apiType);
+    /* Public methods */
+    ReceivingMessagesTest(tcu::TestContext &testCtx, glu::ApiType apiType);
 
-	virtual ~ReceivingMessagesTest()
-	{
-	}
+    virtual ~ReceivingMessagesTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	/* Private routines */
-	static void GLW_APIENTRY debug_proc(glw::GLenum source, glw::GLenum type, glw::GLuint id, glw::GLenum severity,
-										glw::GLsizei length, const glw::GLchar* message, const void* info);
+    /* Private routines */
+    static void GLW_APIENTRY debug_proc(glw::GLenum source, glw::GLenum type, glw::GLuint id, glw::GLenum severity,
+                                        glw::GLsizei length, const glw::GLchar *message, const void *info);
 
-	void inspectCallbackCounter(glw::GLuint& callback_counter, glw::GLuint expected_number_of_messages) const;
+    void inspectCallbackCounter(glw::GLuint &callback_counter, glw::GLuint expected_number_of_messages) const;
 
-	void inspectDebugState(glw::GLboolean expected_state, glw::GLDEBUGPROC expected_callback,
-						   glw::GLvoid* expected_user_info) const;
+    void inspectDebugState(glw::GLboolean expected_state, glw::GLDEBUGPROC expected_callback,
+                           glw::GLvoid *expected_user_info) const;
 
-	void inspectMessageLog(glw::GLuint expected_number_of_messages) const;
+    void inspectMessageLog(glw::GLuint expected_number_of_messages) const;
 };
 
 /** Implementation of test Groups. Description follows:
@@ -386,23 +386,23 @@ private:
 class GroupsTest : public tcu::TestCase, public TestBase
 {
 public:
-	/* Public methods */
-	GroupsTest(tcu::TestContext& testCtx, glu::ApiType apiType);
+    /* Public methods */
+    GroupsTest(tcu::TestContext &testCtx, glu::ApiType apiType);
 
-	virtual ~GroupsTest()
-	{
-	}
+    virtual ~GroupsTest()
+    {
+    }
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	/* Private routines */
-	void inspectGroupStack(glw::GLuint expected_depth) const;
-	void inspectMessageLog(glw::GLenum expected_source, glw::GLenum expected_type, glw::GLuint expected_id,
-						   glw::GLenum expected_severity, glw::GLsizei expected_length,
-						   const glw::GLchar* expected_label) const;
-	void verifyEmptyLog() const;
+    /* Private routines */
+    void inspectGroupStack(glw::GLuint expected_depth) const;
+    void inspectMessageLog(glw::GLenum expected_source, glw::GLenum expected_type, glw::GLuint expected_id,
+                           glw::GLenum expected_severity, glw::GLsizei expected_length,
+                           const glw::GLchar *expected_label) const;
+    void verifyEmptyLog() const;
 };
 
 /** Implementation of test SynchronousCalls. Description follows:
@@ -436,45 +436,45 @@ private:
 class SynchronousCallsTest : public tcu::TestCase, public TestBase
 {
 public:
-	/* Public methods */
-	SynchronousCallsTest(tcu::TestContext& testCtx, glu::ApiType apiType);
-	~SynchronousCallsTest(void);
+    /* Public methods */
+    SynchronousCallsTest(tcu::TestContext &testCtx, glu::ApiType apiType);
+    ~SynchronousCallsTest(void);
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+    /* Public methods inherited from TestCase */
+    virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	/* Private routines */
-	static void GLW_APIENTRY debug_proc(glw::GLenum source, glw::GLenum type, glw::GLuint id, glw::GLenum severity,
-										glw::GLsizei length, const glw::GLchar* message, const void* info);
+    /* Private routines */
+    static void GLW_APIENTRY debug_proc(glw::GLenum source, glw::GLenum type, glw::GLuint id, glw::GLenum severity,
+                                        glw::GLsizei length, const glw::GLchar *message, const void *info);
 
-	de::ThreadLocal m_tls;
-	deUint32		m_uid;
+    de::ThreadLocal m_tls;
+    uint32_t m_uid;
 };
-} /* KHRDebug */
+} // namespace KHRDebug
 
 /** Group class for khr debug conformance tests */
 class KHRDebugTests : public tcu::TestCaseGroup
 {
 public:
-	/* Public methods */
-	KHRDebugTests(tcu::TestContext& testCtx, glu::ApiType apiType);
+    /* Public methods */
+    KHRDebugTests(tcu::TestContext &testCtx, glu::ApiType apiType);
 
-	virtual ~KHRDebugTests(void)
-	{
-	}
+    virtual ~KHRDebugTests(void)
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	KHRDebugTests(const KHRDebugTests& other);
-	KHRDebugTests& operator=(const KHRDebugTests& other);
+    /* Private methods */
+    KHRDebugTests(const KHRDebugTests &other);
+    KHRDebugTests &operator=(const KHRDebugTests &other);
 
-	/* Private members */
-	glu::ApiType m_apiType;
+    /* Private members */
+    glu::ApiType m_apiType;
 };
 
-} /* glcts */
+} // namespace glcts
 
 #endif // _GLCKHRDEBUGTESTS_HPP

@@ -42,8 +42,19 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	# \note Remove -Wno-sign-conversion for more warnings
 	set(WARNING_FLAGS			"-Wall -Wextra -Wno-long-long -Wshadow -Wundef -Wconversion -Wno-sign-conversion")
 
-	set(CMAKE_C_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_C_FLAGS} -std=c99 -pedantic ")
-	set(CMAKE_CXX_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS} -std=c++11 -Wno-delete-non-virtual-dtor")
+	# Need to specify c++ standard version through CMAKE_C_STANDARD and CMAKE_CXX_STANDARD
+	# Avoids incorrect addition of argument -std=gnu++XX that may result in build failure to usage of features in
+	# greater standard version than the one specified
+	set(CMAKE_C_STANDARD 99)
+	set(CMAKE_CXX_STANDARD 17)
+	set(CMAKE_C_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_C_FLAGS} -pedantic ")
+	set(CMAKE_CXX_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS}")
+
+	# Set _FILE_OFFSET_BITS=64 on 32-bit build on Linux to enable output log files to exceed 2GB
+	if ((DE_CPU_X86) AND (DE_OS_UNIX))
+		set(CMAKE_C_FLAGS		"${CMAKE_C_FLAGS} -D_FILE_OFFSET_BITS=64")
+		set(CMAKE_CXX_FLAGS		"${CMAKE_CXX_FLAGS} -D_FILE_OFFSET_BITS=64")
+	endif ()
 
 	# Force compiler to generate code where integers have well defined overflow
 	# Turn on -Wstrict-overflow=5 and check all warnings before removing
@@ -71,7 +82,7 @@ elseif (DE_COMPILER_IS_MSC)
 	set(MSC_WARNING_FLAGS "/W3 /wd4820 /wd4255 /wd4668 /wd4738 /wd4711")
 
 	set(CMAKE_C_FLAGS			"${CMAKE_C_FLAGS} ${MSC_BASE_FLAGS} ${MSC_WARNING_FLAGS}")
-	set(CMAKE_CXX_FLAGS			"${CMAKE_CXX_FLAGS} ${MSC_BASE_FLAGS} /EHsc ${MSC_WARNING_FLAGS}")
+	set(CMAKE_CXX_FLAGS			"${CMAKE_CXX_FLAGS} ${MSC_BASE_FLAGS} /EHsc ${MSC_WARNING_FLAGS} /std:c++17")
 
 	# For 3rd party sw disable all warnings
 	set(DE_3RD_PARTY_C_FLAGS	"${CMAKE_C_FLAGS} ${MSC_BASE_FLAGS} /W0")
@@ -79,3 +90,13 @@ elseif (DE_COMPILER_IS_MSC)
 else ()
 	message(FATAL_ERROR "DE_COMPILER is not valid")
 endif ()
+
+if (DE_MINGW AND DE_PTR_SIZE EQUAL 8)
+	# Pass -mbig-obj to mingw gas on Win64. COFF has a 2**16 section limit, and
+	# on Win64, every COMDAT function creates at least 3 sections: .text, .pdata,
+	# and .xdata.
+	# Enable static libgcc and libstdc++ also to avoid needing to have
+	# Windows builds of the standard libraries distributed.
+	set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wa,-mbig-obj -static -static-libgcc")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj -static -static-libgcc -static-libstdc++")
+endif()

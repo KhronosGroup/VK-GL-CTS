@@ -33,9 +33,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createAhbTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createAhbTests(tcu::TestContext &testCtx);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWAHBTESTS_HPP

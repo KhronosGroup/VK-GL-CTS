@@ -1,0 +1,6 @@
+dEQP-VK.query_pool.statistics_query.compute_shader_invocations.32bits_primary
+dEQP-VK.query_pool.statistics_query.compute_shader_invocations.32bits_secondary
+dEQP-VK.query_pool.statistics_query.compute_shader_invocations.32bits_secondary_inherited
+dEQP-VK.query_pool.statistics_query.compute_shader_invocations.64bits_primary
+dEQP-VK.query_pool.statistics_query.compute_shader_invocations.64bits_secondary
+dEQP-VK.query_pool.statistics_query.compute_shader_invocations.64bits_secondary_inherited

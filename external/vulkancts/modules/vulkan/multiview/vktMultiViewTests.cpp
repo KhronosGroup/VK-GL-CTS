@@ -31,10 +31,10 @@ namespace vkt
 namespace MultiView
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	return createTestGroup(testCtx, "multiview", "MultiView render tests", multiViewRenderCreateTests);
+    return createTestGroup(testCtx, name.c_str(), multiViewRenderCreateTests);
 }
 
-} // MultiView
-} // vkt
+} // namespace MultiView
+} // namespace vkt

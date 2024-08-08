@@ -1,0 +1,137 @@
+#!amber
+# Copyright 2021 Google LLC.
+# Copyright 2021 The Khronos Group Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Matrix 4x4 determinant precision test 64bit
+
+DEVICE_FEATURE shaderFloat64
+
+SHADER compute compute_shader GLSL
+#version 450
+
+const int NUMMATRICES = 10;
+
+layout(set = 0, binding = 0) buffer block0
+{
+  dmat4 matIns[NUMMATRICES];
+};
+
+layout(set = 0, binding = 1) buffer block1
+{
+  double detM[NUMMATRICES];
+};
+
+void main()
+{
+  for (int ndx = 0; ndx < NUMMATRICES; ndx++)
+  {
+    dmat4 matIn = matIns[ndx];
+    detM[ndx]   = determinant(matIn);
+  }
+}
+END
+
+BUFFER bufIn DATA_TYPE mat4x4<double> DATA
+     -1.0             1.0              4.0             2.0
+      2.0            -1.0              2.0             5.0
+      1.0             2.0              3.0             4.0
+      3.0             4.0             -1.0             2.0
+
+      1.0             0.0              0.0             0.0
+      0.0             0.0              1.0             0.0
+      0.0             1.0              0.0             0.0
+      0.0             0.0              0.0             1.0
+
+     -0.0883788988    0.156982005      0.00129985996   0.245116994
+      0.0380859002    0.712401986     -0.00320053007   0.911132991
+      0.0759887993    0.097778298     -1.06054997      1.90429997
+     -0.496825993     1.59570003       0.0130997002   -2.69531012
+
+     42.0             0.300049007     -0.0480041988 -270.0
+     15.0             4.80077982      -4.89843988    -41.0
+     -0.180053994    -0.700195014     -0.0229950007    0.370117009
+     -0.000500202004 -0.00279998989   -0.799804986    -0.290039003
+
+    500.0            -3.5999999      -15.0            37.0
+      2.9000001      -0.469999999      3.20000005      4.69999981
+      0.100000001     0.0439999998     0.00499999989  -0.0280000009
+    -48.0            19.0             -1.10000002      0.0379999988
+
+    -17.0         -1100.0           -100.0            -0.0180054009
+      6.0            43.0             -3.09961009     20.0
+     -2.30078006      0.00270081009   -0.000500202004 -1.90039003
+      0.360107005     0.310059011     -0.00479889009   0.026992799
+
+     19.623375       16.395330        23.824263       16.653233
+    -28.074343      -23.819447        24.132942       52.970188
+    -19.421518      -22.756260       -17.654331      -18.975327
+     16.584002       19.627544        18.864560       20.070559
+
+     -0.00622151     -0.006746047     -0.002207905    -0.02056567
+     -0.030076593    -0.0267689        0.01095024     -0.09132
+     -0.01297636      0.04533594      -0.01379582     -0.01475323
+     -0.004602736    -0.01200175      0.01090538       0.02836178
+
+     -0.0119948      -0.03789127     -0.00611719       0.0448515
+      0.04644695     -0.02320256     -0.03514489      -1.3571429
+     -0.03181969      0.008329804     0.13061533       0.287190083
+     -0.0098646      -0.587016575     0.040482634     -0.66131907
+
+    -49.9153838     -21.0593973    -46.518005         59.6618775
+    -32.0837048     -15.4093261     22.1520919        32.4487472
+    -18.0335364      19.6343962     40.2818031       -16.6847517
+     30.3650256     430.773516     335.057641         84.5618449
+END
+
+BUFFER bufOut DATA_TYPE double SIZE 10 FILL 0.0
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER bufIn AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER bufOut AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipeline 1 1 1
+
+# Decimals between 16 and 32: 3.552713679e-15
+EXPECT bufOut  IDX  0 EQ      -26
+
+# Decimals between 0.5 and 1: 2.220446049e-16
+EXPECT bufOut  IDX  8 EQ       -1
+
+# Decimals between 0.25 and 0.5: 1.110223025e-16
+EXPECT bufOut  IDX 16 EQ       -0.364101678133011
+
+# Decimals between 1024 and 2048: 2.273736754e-13
+EXPECT bufOut  IDX 24 EQ     1219.946419379439168064366576570556410934016
+
+# Decimals between 1024 and 2048: 2.273736754e-13
+EXPECT bufOut  IDX 32 EQ    -1924.85973816225951203237126921896020732
+
+# Decimals between 4096 and 8192: 9.094947018e-13
+EXPECT bufOut  IDX 40 EQ     6034.51084090743653255911117932092367232645
+
+# Decimals between 8192 and 16384: 1.818989404e-12
+EXPECT bufOut  IDX 48 EQ   -10978.146941518156549970360707
+
+# Decimals between 2.384185791e-07 and 4.768371582e-07: 1.058791184e-22
+EXPECT bufOut  IDX 56 EQ        0.0000003679074841726843985005892741
+
+# Decimals between 0.0009765625 and 0.001953125: 4.33680869e-19
+EXPECT bufOut  IDX 64 EQ        0.0009920748085783632901867328594585
+
+# Decimals between 4194304 and 8388608: 7.450580597e-09
+EXPECT bufOut  IDX 72 EQ 47256976.9201866878572731957034908014

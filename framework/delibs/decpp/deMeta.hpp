@@ -31,42 +31,44 @@ namespace meta
 {
 
 template <typename T, bool Cond>
-struct EnableIf { };
+struct EnableIf
+{
+};
 
 template <typename T>
 struct EnableIf<T, true>
 {
-	typedef T Type;
+    typedef T Type;
 };
 
 template <bool Cond>
 struct Not
 {
-	enum
-	{
-		Value = !Cond
-	};
+    enum
+    {
+        Value = !Cond
+    };
 };
 
 template <typename A, typename B>
 struct TypesSame
 {
-	enum
-	{
-		Value = false
-	};
+    enum
+    {
+        Value = false
+    };
 };
 
 template <typename A>
 struct TypesSame<A, A>
 {
-	enum
-	{
-		Value = true
-	};
+    enum
+    {
+        Value = true
+    };
 };
 
-} // meta
-} // de
+} // namespace meta
+} // namespace de
 
 #endif // _DEMETA_HPP

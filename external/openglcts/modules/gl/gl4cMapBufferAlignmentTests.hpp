@@ -37,21 +37,21 @@ namespace gl4cts
 class MapBufferAlignmentTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	MapBufferAlignmentTests(deqp::Context& context);
+    /* Public methods */
+    MapBufferAlignmentTests(deqp::Context &context);
 
-	virtual ~MapBufferAlignmentTests(void)
-	{
-	}
+    virtual ~MapBufferAlignmentTests(void)
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	MapBufferAlignmentTests(const MapBufferAlignmentTests& other);
-	MapBufferAlignmentTests& operator=(const MapBufferAlignmentTests& other);
+    /* Private methods */
+    MapBufferAlignmentTests(const MapBufferAlignmentTests &other);
+    MapBufferAlignmentTests &operator=(const MapBufferAlignmentTests &other);
 };
 
-} /* gl4cts */
+} // namespace gl4cts
 
 #endif // _GL4CMAPBUFFERALIGNMENTTESTS_HPP

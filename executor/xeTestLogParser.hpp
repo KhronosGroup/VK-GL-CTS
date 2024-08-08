@@ -39,37 +39,39 @@ namespace xe
 class TestLogHandler
 {
 public:
-	virtual						~TestLogHandler				(void) {}
+    virtual ~TestLogHandler(void)
+    {
+    }
 
-	virtual void				setSessionInfo				(const SessionInfo& sessionInfo)		= DE_NULL;
+    virtual void setSessionInfo(const SessionInfo &sessionInfo) = 0;
 
-	virtual TestCaseResultPtr	startTestCaseResult			(const char* casePath)					= DE_NULL;
-	virtual void				testCaseResultUpdated		(const TestCaseResultPtr& resultData)	= DE_NULL;
-	virtual void				testCaseResultComplete		(const TestCaseResultPtr& resultData)	= DE_NULL;
+    virtual TestCaseResultPtr startTestCaseResult(const char *casePath)      = 0;
+    virtual void testCaseResultUpdated(const TestCaseResultPtr &resultData)  = 0;
+    virtual void testCaseResultComplete(const TestCaseResultPtr &resultData) = 0;
 };
 
 class TestLogParser
 {
 public:
-							TestLogParser			(TestLogHandler* handler);
-							~TestLogParser			(void);
+    TestLogParser(TestLogHandler *handler);
+    ~TestLogParser(void);
 
-	void					reset					(void);
+    void reset(void);
 
-	void					parse					(const deUint8* bytes, size_t numBytes);
+    void parse(const uint8_t *bytes, size_t numBytes);
 
 private:
-							TestLogParser			(const TestLogParser& other);
-	TestLogParser&			operator=				(const TestLogParser& other);
+    TestLogParser(const TestLogParser &other);
+    TestLogParser &operator=(const TestLogParser &other);
 
-	ContainerFormatParser	m_containerParser;
-	TestLogHandler*			m_handler;
+    ContainerFormatParser m_containerParser;
+    TestLogHandler *m_handler;
 
-	SessionInfo				m_sessionInfo;
-	TestCaseResultPtr		m_currentCaseData;
-	bool					m_inSession;
+    SessionInfo m_sessionInfo;
+    TestCaseResultPtr m_currentCaseData;
+    bool m_inSession;
 };
 
-} // xe
+} // namespace xe
 
 #endif // _XETESTLOGPARSER_HPP

@@ -42,38 +42,40 @@ template <typename DataType>
 class LimitCase : public deqp::TestCase
 {
 public:
-	LimitCase(deqp::Context& context, const char* caseName, deUint32 limitToken, DataType limitBoundry,
-			  bool isBoundryMaximum, const char* glslVersion = "", const char* glslBuiltin = "",
-			  const char* glslExtension = "");
-	virtual ~LimitCase(void);
+    LimitCase(deqp::Context &context, const char *caseName, uint32_t limitToken, DataType limitBoundary,
+              bool isBoundaryMaximum, const char *glslVersion = "", const char *glslBuiltin = "",
+              const char *glslExtension = "");
+    virtual ~LimitCase(void);
 
-	tcu::TestNode::IterateResult iterate(void);
+    tcu::TestNode::IterateResult iterate(void);
 
 protected:
-	bool isWithinBoundry(DataType value, bool isBuiltin = false) const;
-	std::string createShader() const;
+    bool isWithinBoundary(DataType value, bool isBuiltin = false) const;
+    std::string createShader() const;
 
-	// those functions require specialization for some data types
-	DataType getLimitValue(const glw::Functions& gl) const;
-	std::string getGLSLDataType() const;
-	bool isEqual(DataType a, DataType b) const;
-	bool isGreater(DataType a, DataType b) const;
-	bool isSmaller(DataType a, DataType b) const;
+    // those functions require specialization for some data types
+    DataType getLimitValue(const glw::Functions &gl) const;
+    std::string getGLSLDataType() const;
+    bool isEqual(DataType a, DataType b) const;
+    bool isGreater(DataType a, DataType b) const;
+    bool isSmaller(DataType a, DataType b) const;
 
 private:
-	LimitCase(const LimitCase&);			// not allowed!
-	LimitCase& operator=(const LimitCase&); // not allowed!
+    LimitCase(const LimitCase &);            // not allowed!
+    LimitCase &operator=(const LimitCase &); // not allowed!
 
-	deUint32		  m_limitToken;
-	DataType		  m_limitBoundry; // min/max value
-	bool			  m_isBoundryMaximum;
-	const std::string m_glslVersion;
-	const std::string m_glslBuiltin;
-	const std::string m_glslExtension;
+    void adjustBoundaryForMaxFragmentInterpolationOffset();
+
+    uint32_t m_limitToken;
+    DataType m_limitBoundary; // min/max value
+    bool m_isBoundaryMaximum;
+    const std::string m_glslVersion;
+    const std::string m_glslBuiltin;
+    const std::string m_glslExtension;
 };
 
 #include "glcLimitTest.inl"
 
-} // glcts
+} // namespace glcts
 
 #endif // _GLCLIMITTEST_HPP

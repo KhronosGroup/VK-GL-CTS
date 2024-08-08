@@ -25,13 +25,14 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vktRenderPassGroupParams.hpp"
 
 namespace vkt
 {
 
-tcu::TestCaseGroup*	createRenderPassMultisampleResolveTests	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createRenderPass2MultisampleResolveTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createRenderPassMultisampleResolveTests(tcu::TestContext &testCtx,
+                                                            const renderpass::SharedGroupParams groupParams);
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTRENDERPASSMULTISAMPLERESOLVETESTS_HPP

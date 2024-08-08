@@ -35,19 +35,22 @@ namespace rsg
 class FunctionGenerator
 {
 public:
-							FunctionGenerator			(GeneratorState& state, Function& function);
-							~FunctionGenerator			(void);
+    FunctionGenerator(GeneratorState &state, Function &function);
+    ~FunctionGenerator(void);
 
-	void					requireAssignment			(Variable* variable) { m_requiredAssignments.push_back(variable); }
+    void requireAssignment(Variable *variable)
+    {
+        m_requiredAssignments.push_back(variable);
+    }
 
-	void					generate					(void);
+    void generate(void);
 
 private:
-	GeneratorState&			m_state;
-	Function&				m_function;
-	std::vector<Variable*>	m_requiredAssignments;
+    GeneratorState &m_state;
+    Function &m_function;
+    std::vector<Variable *> m_requiredAssignments;
 };
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGFUNCTIONGENERATOR_HPP

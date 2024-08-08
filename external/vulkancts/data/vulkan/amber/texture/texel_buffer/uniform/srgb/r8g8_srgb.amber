@@ -1,0 +1,102 @@
+#!amber
+# Copyright 2022 Google LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SHADER vertex vertShaderTex GLSL
+#version 430
+layout(location = 0) in vec4 position;
+layout(location = 1) in vec2 texCoordsIn;
+layout(location = 0) out vec2 texCoordsOut;
+void main() {
+  gl_Position = position;
+  texCoordsOut = texCoordsIn;
+}
+END
+
+SHADER fragment fragShaderTex GLSL
+#version 430
+layout(location = 0) in vec2 texCoordsIn;
+layout(location = 0) out vec4 colorOut;
+layout(set=0, binding=0) uniform sampler2D referenceSampler;
+layout(set=0, binding=1) uniform samplerBuffer bufferSampler;
+void main() {
+
+  vec4 referenceValue = texture(referenceSampler, texCoordsIn);
+  vec4 bufferValue = texelFetch(bufferSampler, int((gl_FragCoord.y-0.5) * 8 + (gl_FragCoord.x-0.5)));
+
+  if (bufferValue == referenceValue)
+      colorOut = vec4(0., 1., 0., 1.);
+  else
+      colorOut = vec4(1., 0., 0., 1.);
+}
+END
+
+IMAGE texture FORMAT R8G8_SRGB DIM_2D WIDTH 8 HEIGHT 8 DATA
+152 10 255 20 254 3 255 7 255 55 255 255 251 255 255
+272 81 205 22 244 20 255 20 255 155 112 255 111 215 190 255 0
+126 44 201 23 133 229 255 10 255 207 255 255 125 255 255
+56 120 101 48 177 2 255 10 255 207 0 255 132 33 0 255 0
+45 130 189 89 77 88 255 120 255 201 255 211 233 255 255
+135 134 202 42 88 76 255 9 255 41 0 255 36 244 0 255 0
+185 34 133 199 87 176 255 12 255 244 255 255 2 255 255
+142 88 177 99 150 190 255 16 17 25 39 39 11 151 23 255 0
+END
+
+IMAGE texture2 FORMAT R8G8_SRGB DIM_2D WIDTH 8 HEIGHT 8 DATA
+152 10 255 20 254 3 255 7 255 55 255 255 251 255 255
+272 81 205 22 244 20 255 20 255 155 112 255 111 215 190 255 0
+126 44 201 23 133 229 255 10 255 207 255 255 125 255 255
+56 120 101 48 177 2 255 10 255 207 0 255 132 33 0 255 0
+45 130 189 89 77 88 255 120 255 201 255 211 233 255 255
+135 134 202 42 88 76 255 9 255 41 0 255 36 244 0 255 0
+185 34 133 199 87 176 255 12 255 244 255 255 2 255 255
+142 88 177 99 150 190 255 16 17 25 39 39 11 151 23 255 0
+END
+
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+SAMPLER sampler
+
+BUFFER position DATA_TYPE vec2<float> DATA
+-1. -1.
+ 1. -1.
+-1.  1.
+ 1. -1.
+ 1.  1.
+-1.  1.
+END
+
+BUFFER texcoords DATA_TYPE vec2<float> DATA
+0.0 0.0
+1.0 0.0
+0.0 1.0
+1.0 0.0
+1.0 1.0
+0.0 1.0
+END
+
+PIPELINE graphics pipeline
+  ATTACH vertShaderTex
+  ATTACH fragShaderTex
+  BIND BUFFER texture AS combined_image_sampler SAMPLER sampler DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER texture2 AS uniform_texel_buffer DESCRIPTOR_SET 0 BINDING 1
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA texcoords LOCATION 1
+  FRAMEBUFFER_SIZE 8 8
+  BIND BUFFER framebuffer AS color LOCATION 0
+END
+
+CLEAR_COLOR pipeline 0 0 0 0
+CLEAR pipeline
+RUN pipeline DRAW_ARRAY AS TRIANGLE_LIST START_IDX 0 COUNT 6
+EXPECT framebuffer IDX 0 0 SIZE 8 8 EQ_RGBA 0 255 0 255

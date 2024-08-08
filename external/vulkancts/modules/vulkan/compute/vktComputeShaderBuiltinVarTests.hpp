@@ -5,6 +5,8 @@
  * ------------------------
  *
  * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +27,15 @@
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vkComputePipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace compute
 {
-	tcu::TestCaseGroup* createComputeShaderBuiltinVarTests (tcu::TestContext& testCtx);
-} // compute
-} // vkt
+tcu::TestCaseGroup *createComputeShaderBuiltinVarTests(
+    tcu::TestContext &testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType);
+} // namespace compute
+} // namespace vkt
 
 #endif // _VKTCOMPUTESHADERBUILTINVARTESTS_HPP

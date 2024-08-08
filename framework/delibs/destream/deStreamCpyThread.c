@@ -25,62 +25,62 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void cpyStream (void* arg)
+void cpyStream(void *arg)
 {
-	deStreamCpyThread* thread = (deStreamCpyThread*)arg;
-	deUint8* buffer = malloc(sizeof(deUint8) * (size_t)thread->bufferSize);
+    deStreamCpyThread *thread = (deStreamCpyThread *)arg;
+    uint8_t *buffer           = malloc(sizeof(uint8_t) * (size_t)thread->bufferSize);
 
-	for(;;)
-	{
-		deInt32 read	= 0;
-		deInt32 written	= 0;
-		deStreamResult readResult = DE_STREAMRESULT_ERROR;
+    for (;;)
+    {
+        int32_t read              = 0;
+        int32_t written           = 0;
+        deStreamResult readResult = DE_STREAMRESULT_ERROR;
 
-		readResult = deInStream_read(thread->input, buffer, thread->bufferSize, &read);
-		DE_ASSERT(readResult != DE_STREAMRESULT_ERROR);
-		while (written < read)
-		{
-			deInt32 wrote = 0;
-			deOutStream_write(thread->output, buffer, read - written, &wrote);
+        readResult = deInStream_read(thread->input, buffer, thread->bufferSize, &read);
+        DE_ASSERT(readResult != DE_STREAMRESULT_ERROR);
+        while (written < read)
+        {
+            int32_t wrote = 0;
+            deOutStream_write(thread->output, buffer, read - written, &wrote);
 
-			/* \todo [mika] Handle errors */
-			written += wrote;
-		}
+            /* \todo [mika] Handle errors */
+            written += wrote;
+        }
 
-		if (readResult == DE_STREAMRESULT_END_OF_STREAM)
-		{
-			break;
-		}
-	}
+        if (readResult == DE_STREAMRESULT_END_OF_STREAM)
+        {
+            break;
+        }
+    }
 
-	deOutStream_flush(thread->output);
-	free(buffer);
+    deOutStream_flush(thread->output);
+    free(buffer);
 }
 
-deStreamCpyThread* deStreamCpyThread_create (deInStream* input, deOutStream* output, deInt32 bufferSize)
+deStreamCpyThread *deStreamCpyThread_create(deInStream *input, deOutStream *output, int32_t bufferSize)
 {
-	deStreamCpyThread* thread = malloc(sizeof(deStreamCpyThread));
+    deStreamCpyThread *thread = malloc(sizeof(deStreamCpyThread));
 
-	DE_ASSERT(thread);
-	DE_ASSERT(input);
-	DE_ASSERT(output);
+    DE_ASSERT(thread);
+    DE_ASSERT(input);
+    DE_ASSERT(output);
 
-	thread->input		= input;
-	thread->output		= output;
-	thread->bufferSize	= bufferSize;
-	thread->thread		= deThread_create(cpyStream, thread, DE_NULL);
+    thread->input      = input;
+    thread->output     = output;
+    thread->bufferSize = bufferSize;
+    thread->thread     = deThread_create(cpyStream, thread, NULL);
 
-	return thread;
+    return thread;
 }
 
-void deStreamCpyThread_destroy (deStreamCpyThread* thread)
+void deStreamCpyThread_destroy(deStreamCpyThread *thread)
 {
-	deThread_destroy(thread->thread);
+    deThread_destroy(thread->thread);
 
-	free(thread);
+    free(thread);
 }
 
-void deStreamCpyThread_join (deStreamCpyThread* thread)
+void deStreamCpyThread_join(deStreamCpyThread *thread)
 {
-	deThread_join(thread->thread);
+    deThread_join(thread->thread);
 }

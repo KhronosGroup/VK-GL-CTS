@@ -26,6 +26,7 @@
 
 #include "gluPlatform.hpp"
 #include "tcuDefs.hpp"
+#include "tcuTestPackage.hpp"
 
 #include <string>
 #include <vector>
@@ -35,7 +36,7 @@ namespace tcu
 
 class Archive;
 
-} // tcu
+} // namespace tcu
 
 namespace glcts
 {
@@ -44,41 +45,43 @@ struct Config;
 
 struct RunParams
 {
-	glu::ApiType apiType;
-	const char*  configName;
-	const char*  glConfigName;
-	const char*  screenRotation;
-	int			 baseSeed;
-	const char*  fboConfig;
-	int			 surfaceWidth;
-	int			 surfaceHeight;
+    glu::ApiType apiType;
+    const char *configName;
+    const char *glConfigName;
+    const char *screenRotation;
+    int baseSeed;
+    const char *fboConfig;
+    int surfaceWidth;
+    int surfaceHeight;
 };
 
 struct TestRunParams
 {
-	std::vector<std::string> args;
-	std::string				 logFilename;
+    std::vector<std::string> args;
+    std::string logFilename;
 };
 
 // Conformance test run summary - written to cts-run-summary.xml
 struct TestRunSummary
 {
-	glu::ApiType			   runType;
-	bool					   isConformant;
-	std::string				   configLogFilename;
-	std::vector<TestRunParams> runParams;
+    glu::ApiType runType;
+    bool isConformant;
+    std::string configLogFilename;
+    std::vector<TestRunParams> runParams;
+    std::vector<tcu::TestRunStatus> results;
 
-	TestRunSummary(void) : isConformant(false)
-	{
-	}
+    TestRunSummary(void) : isConformant(false)
+    {
+    }
 
-	void clear(void)
-	{
-		runType		 = glu::ApiType();
-		isConformant = false;
-		configLogFilename.clear();
-		runParams.clear();
-	}
+    void clear(void)
+    {
+        runType      = glu::ApiType();
+        isConformant = false;
+        configLogFilename.clear();
+        runParams.clear();
+        results.clear();
+    }
 };
 
 class RunSession;
@@ -86,67 +89,89 @@ class RunSession;
 class TestRunner
 {
 public:
-	enum Flags
-	{
-		VERBOSE_COMMANDS = (1 << 0),
-		VERBOSE_IMAGES   = (1 << 1),
-		VERBOSE_SHADERS  = (1 << 2),
+    enum Flags
+    {
+        VERBOSE_COMMANDS = (1 << 0),
+        VERBOSE_IMAGES   = (1 << 1),
+        VERBOSE_SHADERS  = (1 << 2),
 
-		VERBOSE_ALL = VERBOSE_COMMANDS | VERBOSE_IMAGES,
+        VERBOSE_ALL = VERBOSE_COMMANDS | VERBOSE_IMAGES,
 
-		PRINT_SUMMARY = (1 << 3)
-	};
+        PRINT_SUMMARY = (1 << 3)
+    };
 
-	TestRunner(tcu::Platform& platform, tcu::Archive& archive, const char* waiverPath, const char* logDirPath,
-			   glu::ApiType type, deUint32 flags);
-	~TestRunner(void);
+    TestRunner(tcu::Platform &platform, tcu::Archive &archive, const char *waiverPath, const char *logDirPath,
+               glu::ApiType type, uint32_t flags);
+    ~TestRunner(void);
 
-	bool iterate(void);
-	bool isConformant() const { return m_summary.isConformant; }
+    bool iterate(void);
+    bool isConformant() const
+    {
+        return m_summary.isConformant;
+    }
 
 private:
-	TestRunner(const TestRunner& other);
-	TestRunner operator=(const TestRunner& other);
+    TestRunner(const TestRunner &other);
+    TestRunner operator=(const TestRunner &other);
 
-	void init(void);
-	void deinit(void);
+    void init(void);
+    void deinit(void);
 
-	void initSession(const TestRunParams& runParams);
-	void deinitSession(void);
-	bool iterateSession(void);
+    void initSession(const TestRunParams &runParams);
+    void deinitSession(void);
+    bool iterateSession(void);
 
-	enum IterateState
-	{
-		ITERATE_INIT = 0, //!< Call init() on this iteration.
-		ITERATE_DEINIT,   //!< Call deinit() on this iteration.
+    enum IterateState
+    {
+        ITERATE_INIT = 0, //!< Call init() on this iteration.
+        ITERATE_DEINIT,   //!< Call deinit() on this iteration.
 
-		ITERATE_INIT_SESSION,	//!< Init current session.
-		ITERATE_DEINIT_SESSION,  //!< Deinit session and move to next.
-		ITERATE_ITERATE_SESSION, //!< Iterate current session.
+        ITERATE_INIT_SESSION,    //!< Init current session.
+        ITERATE_DEINIT_SESSION,  //!< Deinit session and move to next.
+        ITERATE_ITERATE_SESSION, //!< Iterate current session.
 
-		ITERATESTATE_LAST
-	};
+        ITERATESTATE_LAST
+    };
 
-	tcu::Platform& m_platform;
-	tcu::Archive&  m_archive;
-	std::string    m_waiverPath;
-	std::string    m_logDirPath;
-	glu::ApiType   m_type;
-	deUint32	   m_flags;
+    tcu::Platform &m_platform;
+    tcu::Archive &m_archive;
+    std::string m_waiverPath;
+    std::string m_logDirPath;
+    glu::ApiType m_type;
+    uint32_t m_flags;
 
-	// Iteration state.
-	IterateState							   m_iterState;
-	std::vector<TestRunParams>				   m_runSessions;
-	std::vector<TestRunParams>::const_iterator m_sessionIter;
-	RunSession*								   m_curSession;
+    // Iteration state.
+    IterateState m_iterState;
+    std::vector<TestRunParams> m_runSessions;
+    std::vector<TestRunParams>::const_iterator m_sessionIter;
+    RunSession *m_curSession;
 
-	// Totals / stats.
-	int			   m_sessionsExecuted;
-	int			   m_sessionsPassed;
-	int			   m_sessionsFailed;
-	TestRunSummary m_summary;
+    // Totals / stats.
+    int m_sessionsExecuted;
+    int m_sessionsPassed;
+    int m_sessionsFailed;
+    TestRunSummary m_summary;
 };
 
-} // glcts
+class TestParamCollectorRunner
+{
+public:
+    TestParamCollectorRunner(tcu::Platform &platform, const char *testParamsFilePath, glu::ApiType type);
+    ~TestParamCollectorRunner(void);
+
+    bool iterate(void);
+
+private:
+    TestParamCollectorRunner(const TestRunner &other);
+    TestParamCollectorRunner operator=(const TestRunner &other);
+
+    tcu::Platform &m_platform;
+    std::string m_testParamsFilePath;
+    glu::ApiType m_type;
+
+    std::vector<TestRunParams> m_runSessionsParams;
+};
+
+} // namespace glcts
 
 #endif // _GLCTESTRUNNER_HPP

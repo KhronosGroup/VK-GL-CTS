@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 9d534f9312e56c72df763207e449c6719576fd54.
+ * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
  */
 void					glActiveShaderProgram								(glw::GLuint pipeline, glw::GLuint program);
 void					glActiveTexture										(glw::GLenum texture);
@@ -217,6 +217,7 @@ void					glFramebufferDrawBuffersEXT							(glw::GLuint framebuffer, glw::GLsize
 void					glFramebufferParameteri								(glw::GLenum target, glw::GLenum pname, glw::GLint param);
 void					glFramebufferReadBufferEXT							(glw::GLuint framebuffer, glw::GLenum mode);
 void					glFramebufferRenderbuffer							(glw::GLenum target, glw::GLenum attachment, glw::GLenum renderbuffertarget, glw::GLuint renderbuffer);
+void					glFramebufferShadingRateEXT							(glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint baseLayer, glw::GLsizei numLayers, glw::GLsizei texelWidth, glw::GLsizei texelHeight);
 void					glFramebufferTexture								(glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint level);
 void					glFramebufferTexture1D								(glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level);
 void					glFramebufferTexture2D								(glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level);
@@ -242,8 +243,8 @@ void					glGenerateTextureMipmap								(glw::GLuint texture);
 void					glGenerateTextureMipmapEXT							(glw::GLuint texture, glw::GLenum target);
 void					glGetActiveAtomicCounterBufferiv					(glw::GLuint program, glw::GLuint bufferIndex, glw::GLenum pname, glw::GLint *params);
 void					glGetActiveAttrib									(glw::GLuint program, glw::GLuint index, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLint *size, glw::GLenum *type, glw::GLchar *name);
-void					glGetActiveSubroutineName							(glw::GLuint program, glw::GLenum shadertype, glw::GLuint index, glw::GLsizei bufsize, glw::GLsizei *length, glw::GLchar *name);
-void					glGetActiveSubroutineUniformName					(glw::GLuint program, glw::GLenum shadertype, glw::GLuint index, glw::GLsizei bufsize, glw::GLsizei *length, glw::GLchar *name);
+void					glGetActiveSubroutineName							(glw::GLuint program, glw::GLenum shadertype, glw::GLuint index, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *name);
+void					glGetActiveSubroutineUniformName					(glw::GLuint program, glw::GLenum shadertype, glw::GLuint index, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *name);
 void					glGetActiveSubroutineUniformiv						(glw::GLuint program, glw::GLenum shadertype, glw::GLuint index, glw::GLenum pname, glw::GLint *values);
 void					glGetActiveUniform									(glw::GLuint program, glw::GLuint index, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLint *size, glw::GLenum *type, glw::GLchar *name);
 void					glGetActiveUniformBlockName							(glw::GLuint program, glw::GLuint uniformBlockIndex, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *uniformBlockName);
@@ -271,6 +272,7 @@ void					glGetFloati_v										(glw::GLenum target, glw::GLuint index, glw::GLf
 void					glGetFloatv											(glw::GLenum pname, glw::GLfloat *data);
 glw::GLint				glGetFragDataIndex									(glw::GLuint program, const glw::GLchar *name);
 glw::GLint				glGetFragDataLocation								(glw::GLuint program, const glw::GLchar *name);
+void					glGetFragmentShadingRatesEXT						(glw::GLsizei samples, glw::GLsizei maxCount, glw::GLsizei *count, glw::GLenum *shadingRates);
 void					glGetFramebufferAttachmentParameteriv				(glw::GLenum target, glw::GLenum attachment, glw::GLenum pname, glw::GLint *params);
 void					glGetFramebufferParameteriv							(glw::GLenum target, glw::GLenum pname, glw::GLint *params);
 void					glGetFramebufferParameterivEXT						(glw::GLuint framebuffer, glw::GLenum pname, glw::GLint *params);
@@ -279,9 +281,9 @@ void					glGetInteger64i_v									(glw::GLenum target, glw::GLuint index, glw::
 void					glGetInteger64v										(glw::GLenum pname, glw::GLint64 *data);
 void					glGetIntegeri_v										(glw::GLenum target, glw::GLuint index, glw::GLint *data);
 void					glGetIntegerv										(glw::GLenum pname, glw::GLint *data);
-void					glGetInternalformatSampleivNV						(glw::GLenum target, glw::GLenum internalformat, glw::GLsizei samples, glw::GLenum pname, glw::GLsizei bufSize, glw::GLint *params);
-void					glGetInternalformati64v								(glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei bufSize, glw::GLint64 *params);
-void					glGetInternalformativ								(glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei bufSize, glw::GLint *params);
+void					glGetInternalformatSampleivNV						(glw::GLenum target, glw::GLenum internalformat, glw::GLsizei samples, glw::GLenum pname, glw::GLsizei count, glw::GLint *params);
+void					glGetInternalformati64v								(glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei count, glw::GLint64 *params);
+void					glGetInternalformativ								(glw::GLenum target, glw::GLenum internalformat, glw::GLenum pname, glw::GLsizei count, glw::GLint *params);
 void					glGetMultiTexEnvfvEXT								(glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLfloat *params);
 void					glGetMultiTexEnvivEXT								(glw::GLenum texunit, glw::GLenum target, glw::GLenum pname, glw::GLint *params);
 void					glGetMultiTexGendvEXT								(glw::GLenum texunit, glw::GLenum coord, glw::GLenum pname, glw::GLdouble *params);
@@ -328,7 +330,7 @@ glw::GLuint				glGetProgramResourceIndex							(glw::GLuint program, glw::GLenum
 glw::GLint				glGetProgramResourceLocation						(glw::GLuint program, glw::GLenum programInterface, const glw::GLchar *name);
 glw::GLint				glGetProgramResourceLocationIndex					(glw::GLuint program, glw::GLenum programInterface, const glw::GLchar *name);
 void					glGetProgramResourceName							(glw::GLuint program, glw::GLenum programInterface, glw::GLuint index, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLchar *name);
-void					glGetProgramResourceiv								(glw::GLuint program, glw::GLenum programInterface, glw::GLuint index, glw::GLsizei propCount, const glw::GLenum *props, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLint *params);
+void					glGetProgramResourceiv								(glw::GLuint program, glw::GLenum programInterface, glw::GLuint index, glw::GLsizei propCount, const glw::GLenum *props, glw::GLsizei count, glw::GLsizei *length, glw::GLint *params);
 void					glGetProgramStageiv									(glw::GLuint program, glw::GLenum shadertype, glw::GLenum pname, glw::GLint *values);
 void					glGetProgramiv										(glw::GLuint program, glw::GLenum pname, glw::GLint *params);
 void					glGetQueryBufferObjecti64v							(glw::GLuint id, glw::GLuint buffer, glw::GLenum pname, glw::GLintptr offset);
@@ -354,7 +356,7 @@ const glw::GLubyte *	glGetString											(glw::GLenum name);
 const glw::GLubyte *	glGetStringi										(glw::GLenum name, glw::GLuint index);
 glw::GLuint				glGetSubroutineIndex								(glw::GLuint program, glw::GLenum shadertype, const glw::GLchar *name);
 glw::GLint				glGetSubroutineUniformLocation						(glw::GLuint program, glw::GLenum shadertype, const glw::GLchar *name);
-void					glGetSynciv											(glw::GLsync sync, glw::GLenum pname, glw::GLsizei bufSize, glw::GLsizei *length, glw::GLint *values);
+void					glGetSynciv											(glw::GLsync sync, glw::GLenum pname, glw::GLsizei count, glw::GLsizei *length, glw::GLint *values);
 void					glGetTexImage										(glw::GLenum target, glw::GLint level, glw::GLenum format, glw::GLenum type, void *pixels);
 void					glGetTexLevelParameterfv							(glw::GLenum target, glw::GLint level, glw::GLenum pname, glw::GLfloat *params);
 void					glGetTexLevelParameteriv							(glw::GLenum target, glw::GLint level, glw::GLenum pname, glw::GLint *params);
@@ -661,9 +663,11 @@ void					glScissor											(glw::GLint x, glw::GLint y, glw::GLsizei width, gl
 void					glScissorArrayv										(glw::GLuint first, glw::GLsizei count, const glw::GLint *v);
 void					glScissorIndexed									(glw::GLuint index, glw::GLint left, glw::GLint bottom, glw::GLsizei width, glw::GLsizei height);
 void					glScissorIndexedv									(glw::GLuint index, const glw::GLint *v);
-void					glShaderBinary										(glw::GLsizei count, const glw::GLuint *shaders, glw::GLenum binaryformat, const void *binary, glw::GLsizei length);
+void					glShaderBinary										(glw::GLsizei count, const glw::GLuint *shaders, glw::GLenum binaryFormat, const void *binary, glw::GLsizei length);
 void					glShaderSource										(glw::GLuint shader, glw::GLsizei count, const glw::GLchar *const*string, const glw::GLint *length);
 void					glShaderStorageBlockBinding							(glw::GLuint program, glw::GLuint storageBlockIndex, glw::GLuint storageBlockBinding);
+void					glShadingRateEXT									(glw::GLenum rate);
+void					glShadingRateCombinerOpsEXT							(glw::GLenum combinerOp0, glw::GLenum combinerOp1);
 void					glSpecializeShader									(glw::GLuint shader, const glw::GLchar *pEntryPoint, glw::GLuint numSpecializationConstants, const glw::GLuint *pConstantIndex, const glw::GLuint *pConstantValue);
 void					glStencilFunc										(glw::GLenum func, glw::GLint ref, glw::GLuint mask);
 void					glStencilFuncSeparate								(glw::GLenum face, glw::GLenum func, glw::GLint ref, glw::GLuint mask);

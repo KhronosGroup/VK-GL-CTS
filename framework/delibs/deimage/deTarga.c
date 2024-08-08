@@ -27,150 +27,151 @@
 
 #include <stdio.h>
 
-deImage* deImage_loadTarga (const char* fileName)
+deImage *deImage_loadTarga(const char *fileName)
 {
-	deImage*	image = DE_NULL;
-	FILE*		file;
+    deImage *image = NULL;
+    FILE *file;
 
-	file = fopen(fileName, "rb");
+    file = fopen(fileName, "rb");
 
-	if (file != DE_NULL)
-	{
-		int				bytesRead;
-		int				width;
-		int				height;
-		int				bufSize;
-		int				stride;
-		int				bitsPerPixel;
-		deUint8*		buffer;
-		deImageFormat	format;
-		deBool			yFlipped;
+    if (file != NULL)
+    {
+        int bytesRead;
+        int width;
+        int height;
+        int bufSize;
+        int stride;
+        int bitsPerPixel;
+        uint8_t *buffer;
+        deImageFormat format;
+        bool yFlipped;
 
-		deUint8 tgaHeader[18];
+        uint8_t tgaHeader[18];
 
-		bytesRead = (int)fread(&tgaHeader, 1, 18, file);
-		DE_TEST_ASSERT(bytesRead == 18);
-		DE_TEST_ASSERT(tgaHeader[2] == 2);								/* truecolor, no encoding */
-		DE_TEST_ASSERT(tgaHeader[17] == 0x00 || tgaHeader[17] == 0x20);	/* both y-directions supported, non-interlaced */
+        bytesRead = (int)fread(&tgaHeader, 1, 18, file);
+        DE_TEST_ASSERT(bytesRead == 18);
+        DE_TEST_ASSERT(tgaHeader[2] == 2); /* truecolor, no encoding */
+        DE_TEST_ASSERT(tgaHeader[17] == 0x00 ||
+                       tgaHeader[17] == 0x20); /* both y-directions supported, non-interlaced */
 
-		yFlipped = (tgaHeader[17] & 0x20) == 0;
+        yFlipped = (tgaHeader[17] & 0x20) == 0;
 
-		/* Decode header. */
-		width			= (int)(tgaHeader[12]) | ((int)(tgaHeader[13]) << 8);
-		height			= (int)(tgaHeader[14]) | ((int)(tgaHeader[15]) << 8);
-		bitsPerPixel	= tgaHeader[16];
-		stride			= width * bitsPerPixel / 8;
+        /* Decode header. */
+        width        = (int)(tgaHeader[12]) | ((int)(tgaHeader[13]) << 8);
+        height       = (int)(tgaHeader[14]) | ((int)(tgaHeader[15]) << 8);
+        bitsPerPixel = tgaHeader[16];
+        stride       = width * bitsPerPixel / 8;
 
-		/* Allocate buffer. */
-		bufSize	= stride;
-		buffer	= deMalloc(bufSize);
-		DE_TEST_ASSERT(buffer);
+        /* Allocate buffer. */
+        bufSize = stride;
+        buffer  = deMalloc(bufSize);
+        DE_TEST_ASSERT(buffer);
 
-		/* Figure out format. */
-		DE_TEST_ASSERT(bitsPerPixel == 24 || bitsPerPixel == 32);
-		format = (bitsPerPixel == 32) ? DE_IMAGEFORMAT_ARGB8888 : DE_IMAGEFORMAT_XRGB8888;
+        /* Figure out format. */
+        DE_TEST_ASSERT(bitsPerPixel == 24 || bitsPerPixel == 32);
+        format = (bitsPerPixel == 32) ? DE_IMAGEFORMAT_ARGB8888 : DE_IMAGEFORMAT_XRGB8888;
 
-		/* Create image. */
-		image = deImage_create(width, height, format);
-		DE_TEST_ASSERT(image);
+        /* Create image. */
+        image = deImage_create(width, height, format);
+        DE_TEST_ASSERT(image);
 
-		/* Copy pixel data. */
-		{
-			int	bpp = 4;
-			int	x, y;
+        /* Copy pixel data. */
+        {
+            int bpp = 4;
+            int x, y;
 
-			for (y = 0; y < height; y++)
-			{
-				const deUint8*	src		= buffer;
-				int				dstY	= yFlipped ? (height-1 - y) : y;
-				deARGB*			dst		= (deUint32*)((deUint8*)image->pixels + dstY*image->width*bpp);
-				fread(buffer, 1, bufSize, file);
+            for (y = 0; y < height; y++)
+            {
+                const uint8_t *src = buffer;
+                int dstY           = yFlipped ? (height - 1 - y) : y;
+                deARGB *dst        = (uint32_t *)((uint8_t *)image->pixels + dstY * image->width * bpp);
+                fread(buffer, 1, bufSize, file);
 
-				if (bitsPerPixel == 24)
-				{
-					for (x = 0; x < width; x++)
-					{
-						deUint8 b = *src++;
-						deUint8 g = *src++;
-						deUint8 r = *src++;
-						*dst++ = deARGB_set(r, g, b, 0xFF);
-					}
-				}
-				else
-				{
-					/* \todo [petri] Component order? */
-					deUint8 a = *src++;
-					deUint8 b = *src++;
-					deUint8 g = *src++;
-					deUint8 r = *src++;
-					DE_ASSERT(bitsPerPixel == 32);
-					*dst++ = deARGB_set(r, g, b, a);
-				}
-			}
-		}
+                if (bitsPerPixel == 24)
+                {
+                    for (x = 0; x < width; x++)
+                    {
+                        uint8_t b = *src++;
+                        uint8_t g = *src++;
+                        uint8_t r = *src++;
+                        *dst++    = deARGB_set(r, g, b, 0xFF);
+                    }
+                }
+                else
+                {
+                    /* \todo [petri] Component order? */
+                    uint8_t a = *src++;
+                    uint8_t b = *src++;
+                    uint8_t g = *src++;
+                    uint8_t r = *src++;
+                    DE_ASSERT(bitsPerPixel == 32);
+                    *dst++ = deARGB_set(r, g, b, a);
+                }
+            }
+        }
 
-		deFree(buffer);
-		fclose(file);
-	}
+        deFree(buffer);
+        fclose(file);
+    }
 
-	return image;
+    return image;
 }
 
-deBool deImage_saveTarga (const deImage* image, const char* fileName)
+bool deImage_saveTarga(const deImage *image, const char *fileName)
 {
-	deImage*	imageCopy	= DE_NULL;
-	int			width		= image->width;
-	int			height		= image->height;
-	char		tgaHeader[18];
-	FILE*		file;
+    deImage *imageCopy = NULL;
+    int width          = image->width;
+    int height         = image->height;
+    char tgaHeader[18];
+    FILE *file;
 
-	/* \todo [petri] Handle non-alpha images. */
-	if (image->format != DE_IMAGEFORMAT_ARGB8888)
-	{
-		imageCopy = deImage_convertFormat(image, DE_IMAGEFORMAT_ARGB8888);
-		if (!imageCopy)
-			return DE_FALSE;
+    /* \todo [petri] Handle non-alpha images. */
+    if (image->format != DE_IMAGEFORMAT_ARGB8888)
+    {
+        imageCopy = deImage_convertFormat(image, DE_IMAGEFORMAT_ARGB8888);
+        if (!imageCopy)
+            return false;
 
-		image = imageCopy;
-	}
+        image = imageCopy;
+    }
 
-	file = fopen(fileName, "wb");
-	if (!file)
-		return DE_FALSE;
+    file = fopen(fileName, "wb");
+    if (!file)
+        return false;
 
-	/* Set unused fields of header to 0 */
-	memset(tgaHeader, 0, sizeof(tgaHeader));
+    /* Set unused fields of header to 0 */
+    memset(tgaHeader, 0, sizeof(tgaHeader));
 
-	tgaHeader[1] = 0;	/* no palette */
-	tgaHeader[2] = 2;	/* uncompressed RGB */
+    tgaHeader[1] = 0; /* no palette */
+    tgaHeader[2] = 2; /* uncompressed RGB */
 
-	tgaHeader[12] = (char)(width & 0xFF);
-	tgaHeader[13] = (char)(width >> 8);
-	tgaHeader[14] = (char)(height & 0xFF);
-	tgaHeader[15] = (char)(height >> 8);
-	tgaHeader[16] = 24;		/* bytes per pixel */
-	tgaHeader[17] = 0x20;	/* Top-down, non-interlaced */
+    tgaHeader[12] = (char)(width & 0xFF);
+    tgaHeader[13] = (char)(width >> 8);
+    tgaHeader[14] = (char)(height & 0xFF);
+    tgaHeader[15] = (char)(height >> 8);
+    tgaHeader[16] = 24;   /* bytes per pixel */
+    tgaHeader[17] = 0x20; /* Top-down, non-interlaced */
 
-	fwrite(tgaHeader, 1, 18, file);
+    fwrite(tgaHeader, 1, 18, file);
 
-	/* Store pixels. */
-	{
-		const deUint32*	pixels	= image->pixels;
-		int				ndx;
+    /* Store pixels. */
+    {
+        const uint32_t *pixels = image->pixels;
+        int ndx;
 
-		for (ndx = 0; ndx < width * height; ndx++)
-		{
-			deUint32 c = pixels[ndx];
-			fputc((deUint8)(c>>0), file);
-			fputc((deUint8)(c>>8), file);
-			fputc((deUint8)(c>>16), file);
-		}
-	}
+        for (ndx = 0; ndx < width * height; ndx++)
+        {
+            uint32_t c = pixels[ndx];
+            fputc((uint8_t)(c >> 0), file);
+            fputc((uint8_t)(c >> 8), file);
+            fputc((uint8_t)(c >> 16), file);
+        }
+    }
 
-	/* Cleanup and return. */
-	fclose(file);
-	if (imageCopy)
-		deImage_destroy(imageCopy);
+    /* Cleanup and return. */
+    fclose(file);
+    if (imageCopy)
+        deImage_destroy(imageCopy);
 
-	return DE_TRUE;
+    return true;
 }

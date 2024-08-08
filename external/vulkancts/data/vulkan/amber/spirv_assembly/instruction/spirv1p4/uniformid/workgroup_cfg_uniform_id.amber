@@ -1,6 +1,5 @@
 [require]
 VK_KHR_spirv_1_4
-VK_KHR_storage_buffer_storage_class
 
 [compute shader spirv]
 OpCapability Shader

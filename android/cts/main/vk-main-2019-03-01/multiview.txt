@@ -1,0 +1,16 @@
+dEQP-VK.multiview.queries.get_query_pool_results.15
+dEQP-VK.multiview.queries.get_query_pool_results.15_15_15_15
+dEQP-VK.multiview.queries.get_query_pool_results.1_2_4_8
+dEQP-VK.multiview.queries.get_query_pool_results.1_2_4_8_16_32
+dEQP-VK.multiview.queries.get_query_pool_results.5_10_5_10
+dEQP-VK.multiview.queries.get_query_pool_results.8
+dEQP-VK.multiview.queries.get_query_pool_results.8_1_1_8
+dEQP-VK.multiview.queries.get_query_pool_results.max_multi_view_view_count
+dEQP-VK.multiview.renderpass2.queries.get_query_pool_results.15
+dEQP-VK.multiview.renderpass2.queries.get_query_pool_results.15_15_15_15
+dEQP-VK.multiview.renderpass2.queries.get_query_pool_results.1_2_4_8
+dEQP-VK.multiview.renderpass2.queries.get_query_pool_results.1_2_4_8_16_32
+dEQP-VK.multiview.renderpass2.queries.get_query_pool_results.5_10_5_10
+dEQP-VK.multiview.renderpass2.queries.get_query_pool_results.8
+dEQP-VK.multiview.renderpass2.queries.get_query_pool_results.8_1_1_8
+dEQP-VK.multiview.renderpass2.queries.get_query_pool_results.max_multi_view_view_count

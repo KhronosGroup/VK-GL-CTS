@@ -36,75 +36,19 @@ namespace vkt
 {
 namespace compute
 {
+vk::VkBufferImageCopy makeBufferImageCopy(const vk::VkExtent3D extent, const uint32_t arraySize);
 
-class Buffer
+inline vk::VkExtent3D makeExtent3D(const tcu::IVec3 &vec)
 {
-public:
-									Buffer			(const vk::DeviceInterface&		vk,
-													 const vk::VkDevice				device,
-													 vk::Allocator&					allocator,
-													 const vk::VkBufferCreateInfo&	bufferCreateInfo,
-													 const vk::MemoryRequirement	memoryRequirement);
-
-	const vk::VkBuffer&				get				(void) const { return *m_buffer; }
-	const vk::VkBuffer&				operator*		(void) const { return get(); }
-	vk::Allocation&					getAllocation	(void) const { return *m_allocation; }
-
-private:
-	de::MovePtr<vk::Allocation>		m_allocation;
-	vk::Move<vk::VkBuffer>			m_buffer;
-
-									Buffer			(const Buffer&);  // "deleted"
-	Buffer&							operator=		(const Buffer&);
-};
-
-class Image
-{
-public:
-									Image			(const vk::DeviceInterface&		vk,
-													 const vk::VkDevice				device,
-													 vk::Allocator&					allocator,
-													 const vk::VkImageCreateInfo&	imageCreateInfo,
-													 const vk::MemoryRequirement	memoryRequirement);
-
-	const vk::VkImage&				get				(void) const { return *m_image; }
-	const vk::VkImage&				operator*		(void) const { return get(); }
-	vk::Allocation&					getAllocation	(void) const { return *m_allocation; }
-
-private:
-	de::MovePtr<vk::Allocation>		m_allocation;
-	vk::Move<vk::VkImage>			m_image;
-
-									Image			(const Image&);  // "deleted"
-	Image&							operator=		(const Image&);
-};
-
-vk::Move<vk::VkPipeline>		makeComputePipeline				(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkPipelineLayout					pipelineLayout,
-																 const vk::VkShaderModule					shaderModule);
-
-vk::Move<vk::VkPipeline>		makeComputePipeline				(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkPipelineLayout					pipelineLayout,
-																 const vk::VkPipelineCreateFlags			pipelineFlags,
-																 const vk::VkShaderModule					shaderModule,
-																 const vk::VkPipelineShaderStageCreateFlags	shaderFlags);
-
-vk::VkBufferImageCopy			makeBufferImageCopy				(const vk::VkExtent3D						extent,
-																 const deUint32								arraySize);
-
-inline vk::VkExtent3D makeExtent3D (const tcu::IVec3& vec)
-{
-	return vk::makeExtent3D(vec.x(), vec.y(), vec.z());
+    return vk::makeExtent3D(vec.x(), vec.y(), vec.z());
 }
 
-inline vk::VkDeviceSize getImageSizeBytes (const tcu::IVec3& imageSize, const vk::VkFormat format)
+inline vk::VkDeviceSize getImageSizeBytes(const tcu::IVec3 &imageSize, const vk::VkFormat format)
 {
-	return tcu::getPixelSize(vk::mapVkFormat(format)) * imageSize.x() * imageSize.y() * imageSize.z();
+    return tcu::getPixelSize(vk::mapVkFormat(format)) * imageSize.x() * imageSize.y() * imageSize.z();
 }
 
-} // compute
-} // vkt
+} // namespace compute
+} // namespace vkt
 
 #endif // _VKTCOMPUTETESTSUTIL_HPP

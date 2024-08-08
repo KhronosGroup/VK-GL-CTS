@@ -36,18 +36,18 @@ namespace Functional
 class FragDepthTests : public TestCaseGroup
 {
 public:
-						FragDepthTests		(Context& context);
-						~FragDepthTests		(void);
+    FragDepthTests(Context &context);
+    ~FragDepthTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						FragDepthTests		(const FragDepthTests& other);
-	FragDepthTests&		operator=			(const FragDepthTests& other);
+    FragDepthTests(const FragDepthTests &other);
+    FragDepthTests &operator=(const FragDepthTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FFRAGDEPTHTESTS_HPP

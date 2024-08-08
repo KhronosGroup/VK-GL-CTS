@@ -24,15 +24,17 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createMultisampleShaderBuiltInTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMultisampleShaderBuiltInTests(tcu::TestContext &testCtx,
+                                                        vk::PipelineConstructionType pipelineConstructionType);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEMULTISAMPLESHADERBUILTINTESTS_HPP

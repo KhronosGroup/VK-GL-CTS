@@ -34,30 +34,24 @@ namespace tcu
 class SessionInfo
 {
 public:
+    SessionInfo(uint32_t vendorId, uint32_t deviceId, const std::string &deviceName, const std::string &cmdLine);
+    SessionInfo(std::string vendor, std::string renderer, const std::string &cmdLine);
 
-					SessionInfo		(deUint32				vendorId,
-									 deUint32				deviceId,
-									 const std::string&		cmdLine);
-					SessionInfo		(std::string			vendor,
-									 std::string			renderer,
-									 const std::string&		cmdLine);
-
-	std::string		get				();
+    std::string get();
 
 private:
+    // WaiverTreeBuilder fills private fields of this class.
+    friend class WaiverTreeBuilder;
 
-	// WaiverTreeBuilder fills private fields of this class.
-	friend class WaiverTreeBuilder;
+    // String containing urls to gitlab issues
+    // that enable currently used waivers
+    std::string m_waiverUrls;
 
-	// String containing urls to gitlab issues
-	// that enable currently used waivers
-	std::string			m_waiverUrls;
+    // String containing command line
+    std::string m_cmdLine;
 
-	// String containing command line
-	std::string			m_cmdLine;
-
-	// Stream containing all info
-	std::stringstream	m_info;
+    // Stream containing all info
+    std::stringstream m_info;
 };
 
 // Class that uses paths to waived tests represented in a form of tree.
@@ -66,34 +60,26 @@ private:
 class WaiverUtil
 {
 public:
-			WaiverUtil		() = default;
+    WaiverUtil() = default;
 
-	void	setup			(const std::string	waiverFile,
-							 std::string		packageName,
-							 deUint32			vendorId,
-							 deUint32			deviceId,
-							 SessionInfo&		sessionInfo);
-	void	setup			(const std::string	waiverFile,
-							 std::string		packageName,
-							 std::string		vendor,
-							 std::string		renderer,
-							 SessionInfo&		sessionInfo);
+    void setup(const std::string waiverFile, std::string packageName, uint32_t vendorId, uint32_t deviceId,
+               SessionInfo &sessionInfo);
+    void setup(const std::string waiverFile, std::string packageName, std::string vendor, std::string renderer,
+               SessionInfo &sessionInfo);
 
-	bool	isOnWaiverList	(const std::string& casePath) const;
+    bool isOnWaiverList(const std::string &casePath) const;
 
 public:
-
-	struct WaiverComponent
-	{
-		std::string						name;
-		std::vector<WaiverComponent*>	children;
-	};
+    struct WaiverComponent
+    {
+        std::string name;
+        std::vector<WaiverComponent *> children;
+    };
 
 private:
-
-	std::vector<WaiverComponent> m_waiverTree;
+    std::vector<WaiverComponent> m_waiverTree;
 };
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUWAIVERUTIL_HPP

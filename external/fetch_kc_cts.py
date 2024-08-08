@@ -27,26 +27,27 @@ import argparse
 import subprocess
 
 from fetch_sources import *
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "scripts")
+sys.path.insert(0, scriptPath)
 
-from build.common import *
+from ctsbuild.common import *
 
-EXTERNAL_DIR	= os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
-SHA1 = "64f5eea1e492de4664b39115ad82d330e019464b"
+EXTERNAL_DIR = os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
+SHA1 = "05025a1aa6707063b1f4a72acd02cb56c7311413"
 
 PACKAGES = [
-	GitRepo(
-		"https://gitlab.khronos.org/opengl/kc-cts.git",
-		"git@gitlab.khronos.org:opengl/kc-cts.git",
-		SHA1,
-		"kc-cts"),
+    GitRepo(
+        "https://gitlab.khronos.org/opengl/kc-cts.git",
+        "git@gitlab.khronos.org:opengl/kc-cts.git",
+        SHA1,
+        "kc-cts"),
 ]
 
 if __name__ == "__main__":
-	args = parseArgs()
+    args = parseArgs()
 
-	for pkg in PACKAGES:
-		if args.clean:
-			pkg.clean()
-		else:
-			pkg.update(args.protocol)
+    for pkg in PACKAGES:
+        if args.clean:
+            pkg.clean()
+        else:
+            pkg.update(args.protocol)
