@@ -58,11 +58,14 @@ enum class TestType
     CREATE_INCOMPLETE = 0,
     NOT_ENOUGH_SPACE,
     DESTROY_NULL_BINARY,
+    CREATE_WITH_ZERO_BINARY_COUNT,
     GRAPHICS_PIPELINE_FROM_INTERNAL_CACHE,
+    GRAPHICS_PIPELINE_WITH_ZERO_BINARY_COUNT,
     COMPUTE_PIPELINE_FROM_INTERNAL_CACHE,
     RAY_TRACING_PIPELINE_FROM_INTERNAL_CACHE,
     RAY_TRACING_PIPELINE_FROM_PIPELINE,
     RAY_TRACING_PIPELINE_FROM_BINARY_DATA,
+    RAY_TRACING_PIPELINE_WITH_ZERO_BINARY_COUNT,
     UNIQUE_KEY_PAIRS,
 };
 
@@ -182,6 +185,13 @@ tcu::TestStatus BasicComputePipelineTestInstance::iterate(void)
         binaries.createPipelineBinariesFromPipeline(*pipeline);
 
         vk.destroyPipelineBinaryKHR(device, VK_NULL_HANDLE, nullptr);
+        return tcu::TestStatus::pass("Pass");
+    }
+    else if (m_testParams.type == TestType::CREATE_WITH_ZERO_BINARY_COUNT)
+    {
+        VkPipelineBinaryInfoKHR binaryInfo = initVulkanStructure();
+        pipelineCreateInfo.pNext           = &binaryInfo;
+        auto testPipeline                  = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
         return tcu::TestStatus::pass("Pass");
     }
 
@@ -375,6 +385,16 @@ tcu::TestStatus GraphicsPipelineInternalCacheTestInstance::iterate(void)
             .setupFragmentOutputState(*renderPass)
             .buildPipeline();
 
+        // reuse code to check 0 binary count
+        if (m_testParams.type == TestType::GRAPHICS_PIPELINE_WITH_ZERO_BINARY_COUNT)
+        {
+            auto pipelineCreateInfo            = pipelineWrapper.getPipelineCreateInfo();
+            VkPipelineBinaryInfoKHR binaryInfo = initVulkanStructure();
+            pipelineCreateInfo.pNext           = &binaryInfo;
+            auto testPipeline                  = createGraphicsPipeline(vk, device, 0, &pipelineCreateInfo);
+            return tcu::TestStatus::pass("Pass");
+        }
+
         if (pipelineConstructionType == PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
         {
             const auto &pipelineCreateInfo = pipelineWrapper.getPipelineCreateInfo();
@@ -443,9 +463,6 @@ tcu::TestStatus GraphicsPipelineInternalCacheTestInstance::iterate(void)
     {
         for (uint32_t i = 0; i < usedBinaryWrappersCount; ++i)
         {
-            if (pipelineBinaryWrapper[i].getBinariesCount() == 0)
-                continue;
-
             binaryInfo[i]    = pipelineBinaryWrapper[i].preparePipelineBinaryInfo();
             binaryInfoPtr[i] = &binaryInfo[i];
         }
@@ -709,6 +726,13 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
             if (std::all_of(pipelineDataBlob[0].cbegin(), pipelineDataBlob[0].cend(), [](uint8_t d) { return d == 0; }))
                 binariesStatus = BinariesStatus::INVALID;
         }
+    }
+    else if (m_testParams.type == TestType::RAY_TRACING_PIPELINE_WITH_ZERO_BINARY_COUNT)
+    {
+        VkPipelineBinaryInfoKHR binaryInfo = initVulkanStructure();
+        pipelineCreateInfo.pNext           = &binaryInfo;
+        auto testPipeline                  = createRayTracingPipelineKHR(vk, device, 0, 0, &pipelineCreateInfo);
+        return tcu::TestStatus::pass("Pass");
     }
 
     // recreate pipeline using binaries or fallback to normal pipelines when binaries aren't found
@@ -1061,7 +1085,8 @@ protected:
 
 void BaseTestCase::initPrograms(SourceCollections &programCollection) const
 {
-    if (m_testParams.type == TestType::GRAPHICS_PIPELINE_FROM_INTERNAL_CACHE)
+    if ((m_testParams.type == TestType::GRAPHICS_PIPELINE_FROM_INTERNAL_CACHE) ||
+        (m_testParams.type == TestType::GRAPHICS_PIPELINE_WITH_ZERO_BINARY_COUNT))
     {
         programCollection.glslSources.add("vert")
             << glu::VertexSource("#version 450\n"
@@ -1083,6 +1108,7 @@ void BaseTestCase::initPrograms(SourceCollections &programCollection) const
     }
     else if ((m_testParams.type == TestType::CREATE_INCOMPLETE) || (m_testParams.type == TestType::NOT_ENOUGH_SPACE) ||
              (m_testParams.type == TestType::DESTROY_NULL_BINARY) ||
+             (m_testParams.type == TestType::CREATE_WITH_ZERO_BINARY_COUNT) ||
              (m_testParams.type == TestType::COMPUTE_PIPELINE_FROM_INTERNAL_CACHE))
     {
         programCollection.glslSources.add("comp")
@@ -1099,7 +1125,8 @@ void BaseTestCase::initPrograms(SourceCollections &programCollection) const
     }
     else if ((m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_INTERNAL_CACHE) ||
              (m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_PIPELINE) ||
-             (m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_BINARY_DATA))
+             (m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_BINARY_DATA) ||
+             (m_testParams.type == TestType::RAY_TRACING_PIPELINE_WITH_ZERO_BINARY_COUNT))
     {
         const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
 
@@ -1206,7 +1233,8 @@ void BaseTestCase::checkSupport(Context &context) const
 
     if ((m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_INTERNAL_CACHE) ||
         (m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_PIPELINE) ||
-        (m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_BINARY_DATA))
+        (m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_BINARY_DATA) ||
+        (m_testParams.type == TestType::RAY_TRACING_PIPELINE_WITH_ZERO_BINARY_COUNT))
     {
         context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
         context.requireDeviceFunctionality("VK_KHR_buffer_device_address");
@@ -1229,15 +1257,18 @@ void BaseTestCase::checkSupport(Context &context) const
 TestInstance *BaseTestCase::createInstance(Context &context) const
 {
     if ((m_testParams.type == TestType::CREATE_INCOMPLETE) || (m_testParams.type == TestType::NOT_ENOUGH_SPACE) ||
-        (m_testParams.type == TestType::DESTROY_NULL_BINARY))
+        (m_testParams.type == TestType::DESTROY_NULL_BINARY) ||
+        (m_testParams.type == TestType::CREATE_WITH_ZERO_BINARY_COUNT))
         return new BasicComputePipelineTestInstance(context, m_testParams);
-    if (m_testParams.type == TestType::GRAPHICS_PIPELINE_FROM_INTERNAL_CACHE)
+    if ((m_testParams.type == TestType::GRAPHICS_PIPELINE_FROM_INTERNAL_CACHE) ||
+        (m_testParams.type == TestType::GRAPHICS_PIPELINE_WITH_ZERO_BINARY_COUNT))
         return new GraphicsPipelineInternalCacheTestInstance(context, m_testParams);
     if (m_testParams.type == TestType::COMPUTE_PIPELINE_FROM_INTERNAL_CACHE)
         return new ComputePipelineInternalCacheTestInstance(context);
     if ((m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_INTERNAL_CACHE) ||
         (m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_PIPELINE) ||
-        (m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_BINARY_DATA))
+        (m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_BINARY_DATA) ||
+        (m_testParams.type == TestType::RAY_TRACING_PIPELINE_WITH_ZERO_BINARY_COUNT))
         return new RayTracingPipelineTestInstance(context, m_testParams);
 
     return new UniqueKayPairsTestInstance(context, m_testParams);
@@ -1265,8 +1296,15 @@ de::MovePtr<tcu::TestCaseGroup> addPipelineBinaryDedicatedTests(tcu::TestContext
         dedicatedTests->addChild(new BaseTestCase(testCtx, "destroy_null_binary",
                                                   {pipelineConstructionType, TestType::DESTROY_NULL_BINARY, false}));
         dedicatedTests->addChild(
+            new BaseTestCase(testCtx, "compute_pipeline_with_zero_binary_count",
+                             {pipelineConstructionType, TestType::CREATE_WITH_ZERO_BINARY_COUNT, false}));
+        dedicatedTests->addChild(
             new BaseTestCase(testCtx, "compute_pipeline_from_internal_cache",
                              {pipelineConstructionType, TestType::COMPUTE_PIPELINE_FROM_INTERNAL_CACHE, false}));
+
+        dedicatedTests->addChild(
+            new BaseTestCase(testCtx, "graphics_pipeline_with_zero_binary_count",
+                             {pipelineConstructionType, TestType::GRAPHICS_PIPELINE_WITH_ZERO_BINARY_COUNT, false}));
 
         dedicatedTests->addChild(
             new BaseTestCase(testCtx, "ray_tracing_pipeline_from_internal_cache",
@@ -1287,6 +1325,9 @@ de::MovePtr<tcu::TestCaseGroup> addPipelineBinaryDedicatedTests(tcu::TestContext
         dedicatedTests->addChild(
             new BaseTestCase(testCtx, "ray_tracing_pipeline_library_from_binary_data",
                              {pipelineConstructionType, TestType::RAY_TRACING_PIPELINE_FROM_BINARY_DATA, true}));
+        dedicatedTests->addChild(
+            new BaseTestCase(testCtx, "ray_tracing_pipeline_with_zero_binary_count",
+                             {pipelineConstructionType, TestType::RAY_TRACING_PIPELINE_WITH_ZERO_BINARY_COUNT, true}));
     }
 
     binaryGroup->addChild(dedicatedTests.release());

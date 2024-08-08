@@ -7409,7 +7409,7 @@ struct VkDescriptorAddressInfoEXT
 struct VkDescriptorBufferBindingInfoEXT
 {
 	VkStructureType		sType;
-	void*				pNext;
+	const void*			pNext;
 	VkDeviceAddress		address;
 	VkBufferUsageFlags	usage;
 };
@@ -7417,7 +7417,7 @@ struct VkDescriptorBufferBindingInfoEXT
 struct VkDescriptorBufferBindingPushDescriptorBufferHandleEXT
 {
 	VkStructureType	sType;
-	void*			pNext;
+	const void*		pNext;
 	VkBuffer		buffer;
 };
 
@@ -9141,6 +9141,30 @@ struct VkDispatchGraphCountInfoAMDX
 	uint64_t						stride;
 };
 
+struct VkPhysicalDeviceAntiLagFeaturesAMD
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		antiLag;
+};
+
+struct VkAntiLagPresentationInfoAMD
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkAntiLagStageAMD	stage;
+	uint64_t			frameIndex;
+};
+
+struct VkAntiLagDataAMD
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkAntiLagModeAMD					mode;
+	uint32_t							maxFPS;
+	const VkAntiLagPresentationInfoAMD*	pPresentationInfo;
+};
+
 struct VkBindMemoryStatusKHR
 {
 	VkStructureType	sType;
@@ -9583,6 +9607,13 @@ struct VkPhysicalDeviceRawAccessChainsFeaturesNV
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shaderRawAccessChains;
+};
+
+struct VkPhysicalDeviceCommandBufferInheritanceFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		commandBufferInheritance;
 };
 
 struct VkPhysicalDeviceImageAlignmentControlFeaturesMESA

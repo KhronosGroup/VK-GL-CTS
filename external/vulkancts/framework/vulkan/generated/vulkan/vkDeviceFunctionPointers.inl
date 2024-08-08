@@ -328,6 +328,7 @@ GetDeferredOperationResultKHRFunc							getDeferredOperationResultKHR;
 DeferredOperationJoinKHRFunc								deferredOperationJoinKHR;
 GetPipelineIndirectMemoryRequirementsNVFunc					getPipelineIndirectMemoryRequirementsNV;
 GetPipelineIndirectDeviceAddressNVFunc						getPipelineIndirectDeviceAddressNV;
+AntiLagUpdateAMDFunc										antiLagUpdateAMD;
 CmdSetCullModeFunc											cmdSetCullMode;
 CmdSetFrontFaceFunc											cmdSetFrontFace;
 CmdSetPrimitiveTopologyFunc									cmdSetPrimitiveTopology;

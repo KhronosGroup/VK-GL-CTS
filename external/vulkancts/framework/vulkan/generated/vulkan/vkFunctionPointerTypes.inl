@@ -464,6 +464,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeferredOperationResultKHRFunc)		
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* DeferredOperationJoinKHRFunc)											(VkDevice device, VkDeferredOperationKHR operation);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPipelineIndirectMemoryRequirementsNVFunc)							(VkDevice device, const VkComputePipelineCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements);
 typedef VKAPI_ATTR VkDeviceAddress		(VKAPI_CALL* GetPipelineIndirectDeviceAddressNVFunc)								(VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* AntiLagUpdateAMDFunc)													(VkDevice device, const VkAntiLagDataAMD* pData);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetCullModeFunc)													(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetCullModeEXTFunc)													(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFrontFaceFunc)													(VkCommandBuffer commandBuffer, VkFrontFace frontFace);

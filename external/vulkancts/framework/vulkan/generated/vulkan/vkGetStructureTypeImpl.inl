@@ -4278,6 +4278,21 @@ template<> VkStructureType getStructureType<VkExecutionGraphPipelineScratchSizeA
 	return VK_STRUCTURE_TYPE_EXECUTION_GRAPH_PIPELINE_SCRATCH_SIZE_AMDX;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceAntiLagFeaturesAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD;
+}
+
+template<> VkStructureType getStructureType<VkAntiLagDataAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD;
+}
+
+template<> VkStructureType getStructureType<VkAntiLagPresentationInfoAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD;
+}
+
 template<> VkStructureType getStructureType<VkBindMemoryStatusKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS_KHR;
@@ -4551,6 +4566,11 @@ template<> VkStructureType getStructureType<VkMemoryMapPlacedInfoEXT> (void)
 template<> VkStructureType getStructureType<VkPhysicalDeviceRawAccessChainsFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCommandBufferInheritanceFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceImageAlignmentControlFeaturesMESA> (void)

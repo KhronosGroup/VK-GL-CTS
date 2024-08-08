@@ -166,10 +166,6 @@ VkPipelineBinaryInfoKHR PipelineBinaryWrapper::preparePipelineBinaryInfo(void) c
 {
     const std::size_t binaryCount = m_binariesRaw.size();
 
-    // VUID-VkPipelineBinaryInfoKHR-binaryCount-arraylength
-    // binaryCount must be greater than 0
-    DE_ASSERT(binaryCount > 0);
-
     return {
         VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR, DE_NULL,
         static_cast<uint32_t>(binaryCount), // uint32_t binaryCount;

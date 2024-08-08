@@ -1440,6 +1440,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_AMD_anti_lag")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_ray_tracing_position_fetch")
 	{
 		return;
@@ -1591,6 +1595,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_KHR_shader_relaxed_extended_instruction")
+	{
+		return;
+	}
+	if (extName == "VK_NV_command_buffer_inheritance")
 	{
 		return;
 	}
@@ -1991,12 +1999,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_KHR_push_descriptor")
 	{
 		functions.push_back("vkCmdPushDescriptorSetKHR");
-		// Dependencies: VK_VERSION_1_1
-		if (checkVersion(1, 1, apiVersion)) {
-			functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
-		}
-		// Dependencies: VK_KHR_descriptor_update_template
-		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_descriptor_update_template"))) {
+		// Dependencies: VK_VERSION_1_1,VK_KHR_descriptor_update_template
+		if (checkVersion(1, 1, apiVersion) || (checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_descriptor_update_template"))) {
 			functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
 		}
 		return;
@@ -2695,12 +2699,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkAcquireFullScreenExclusiveModeEXT");
 		functions.push_back("vkReleaseFullScreenExclusiveModeEXT");
-		// Dependencies: VK_KHR_device_group
+		// Dependencies: VK_KHR_device_group,VK_VERSION_1_1
 		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_device_group"))) {
-			functions.push_back("vkGetDeviceGroupSurfacePresentModes2EXT");
-		}
-		// Dependencies: VK_VERSION_1_1
-		if (checkVersion(1, 1, apiVersion)) {
 			functions.push_back("vkGetDeviceGroupSurfacePresentModes2EXT");
 		}
 		return;
@@ -3443,6 +3443,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkGetImageSubresourceLayout2KHR");
 		return;
 	}
+	if (extName == "VK_AMD_anti_lag")
+	{
+		functions.push_back("vkAntiLagUpdateAMD");
+		return;
+	}
 	if (extName == "VK_KHR_ray_tracing_position_fetch")
 	{
 		return;
@@ -3718,6 +3723,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_KHR_shader_relaxed_extended_instruction")
+	{
+		return;
+	}
+	if (extName == "VK_NV_command_buffer_inheritance")
 	{
 		return;
 	}
@@ -4119,6 +4128,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_pipeline_protected_access",
 	"VK_ANDROID_external_format_resolve",
 	"VK_KHR_maintenance5",
+	"VK_AMD_anti_lag",
 	"VK_KHR_ray_tracing_position_fetch",
 	"VK_EXT_shader_object",
 	"VK_KHR_pipeline_binary",
@@ -4156,6 +4166,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_descriptor_pool_overallocation",
 	"VK_NV_raw_access_chains",
 	"VK_KHR_shader_relaxed_extended_instruction",
+	"VK_NV_command_buffer_inheritance",
 	"VK_KHR_maintenance7",
 	"VK_NV_shader_atomic_float16_vector",
 	"VK_EXT_shader_replicated_composites",

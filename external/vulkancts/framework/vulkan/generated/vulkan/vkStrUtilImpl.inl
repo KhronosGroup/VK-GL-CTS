@@ -2306,6 +2306,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEVICE_IMAGE_SUBRESOURCE_INFO_KHR:									return "VK_STRUCTURE_TYPE_DEVICE_IMAGE_SUBRESOURCE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD";
+		case VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD:													return "VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD";
+		case VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD:										return "VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT";
@@ -2389,6 +2392,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_LIST_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_LIST_KHR";
@@ -3692,6 +3696,27 @@ const char* getDirectDriverLoadingModeLUNARGName (VkDirectDriverLoadingModeLUNAR
 		case VK_DIRECT_DRIVER_LOADING_MODE_EXCLUSIVE_LUNARG:	return "VK_DIRECT_DRIVER_LOADING_MODE_EXCLUSIVE_LUNARG";
 		case VK_DIRECT_DRIVER_LOADING_MODE_INCLUSIVE_LUNARG:	return "VK_DIRECT_DRIVER_LOADING_MODE_INCLUSIVE_LUNARG";
 		default:												return nullptr;
+	}
+}
+
+const char* getAntiLagModeAMDName (VkAntiLagModeAMD value)
+{
+	switch (value)
+	{
+		case VK_ANTI_LAG_MODE_DRIVER_CONTROL_AMD:	return "VK_ANTI_LAG_MODE_DRIVER_CONTROL_AMD";
+		case VK_ANTI_LAG_MODE_ON_AMD:				return "VK_ANTI_LAG_MODE_ON_AMD";
+		case VK_ANTI_LAG_MODE_OFF_AMD:				return "VK_ANTI_LAG_MODE_OFF_AMD";
+		default:									return nullptr;
+	}
+}
+
+const char* getAntiLagStageAMDName (VkAntiLagStageAMD value)
+{
+	switch (value)
+	{
+		case VK_ANTI_LAG_STAGE_INPUT_AMD:	return "VK_ANTI_LAG_STAGE_INPUT_AMD";
+		case VK_ANTI_LAG_STAGE_PRESENT_AMD:	return "VK_ANTI_LAG_STAGE_PRESENT_AMD";
+		default:							return nullptr;
 	}
 }
 
@@ -18216,6 +18241,39 @@ std::ostream& operator<< (std::ostream& s, const VkDispatchGraphCountInfoAMDX& v
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAntiLagFeaturesAMD& value)
+{
+	s << "VkPhysicalDeviceAntiLagFeaturesAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tantiLag = " << value.antiLag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAntiLagDataAMD& value)
+{
+	s << "VkAntiLagDataAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmode = " << value.mode << '\n';
+	s << "\tmaxFPS = " << value.maxFPS << '\n';
+	s << "\tpPresentationInfo = " << value.pPresentationInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAntiLagPresentationInfoAMD& value)
+{
+	s << "VkAntiLagPresentationInfoAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstage = " << value.stage << '\n';
+	s << "\tframeIndex = " << value.frameIndex << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkBindMemoryStatusKHR& value)
 {
 	s << "VkBindMemoryStatusKHR = {\n";
@@ -18821,6 +18879,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRawAccessChains
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderRawAccessChains = " << value.shaderRawAccessChains << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCommandBufferInheritanceFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceCommandBufferInheritanceFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcommandBufferInheritance = " << value.commandBufferInheritance << '\n';
 	s << '}';
 	return s;
 }
