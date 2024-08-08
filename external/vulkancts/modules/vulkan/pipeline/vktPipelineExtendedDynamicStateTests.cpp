@@ -4785,6 +4785,8 @@ public:
 #ifndef CTS_USES_VULKANSC
         if (options.shadingRateImage)
             extensions.push_back("VK_NV_shading_rate_image");
+        else if (meshFeatures.primitiveFragmentShadingRateMeshShader)
+            extensions.push_back("VK_KHR_fragment_shading_rate");
 
         if (eds3Support)
             extensions.push_back("VK_EXT_extended_dynamic_state3");
@@ -4810,6 +4812,9 @@ public:
             extensions.push_back("VK_KHR_dynamic_rendering");
             extensions.push_back("VK_EXT_shader_object");
         }
+
+        if (options.disableAdvBlendingCoherentOps && blendFeaturesSupport)
+            extensions.push_back("VK_EXT_blend_operation_advanced");
 #endif // CTS_USES_VULKANSC
 
         for (const auto &ext : extensions)
