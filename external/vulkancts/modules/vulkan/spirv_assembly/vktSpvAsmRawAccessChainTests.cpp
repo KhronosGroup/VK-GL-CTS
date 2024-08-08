@@ -209,7 +209,7 @@ Move<VkPipelineLayout> createPipelineLayout(const DeviceInterface &vkdi, const V
 Move<VkBuffer> createBufferAndBindMemory(const DeviceInterface &vkdi, const VkDevice &device, Allocator &allocator,
                                          size_t numBytes, AllocationMp *outMemory, bool physStorageBuffer)
 {
-    VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
     const VkBufferCreateInfo bufferCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
@@ -226,8 +226,9 @@ Move<VkBuffer> createBufferAndBindMemory(const DeviceInterface &vkdi, const VkDe
     MemoryRequirement physicalBufferRequirement =
         (physStorageBuffer ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any);
     const VkMemoryRequirements requirements = getBufferMemoryRequirements(vkdi, device, *buffer);
-    AllocationMp bufferMemory               = allocator.allocate(
-        requirements, MemoryRequirement::Coherent | MemoryRequirement::HostVisible | physicalBufferRequirement);
+    AllocationMp bufferMemory =
+        allocator.allocate(requirements, MemoryRequirement::Coherent | MemoryRequirement::HostVisible |
+                                             MemoryRequirement::DeviceAddress | physicalBufferRequirement);
 
     VK_CHECK(vkdi.bindBufferMemory(device, *buffer, bufferMemory->getMemory(), bufferMemory->getOffset()));
     *outMemory = bufferMemory;
