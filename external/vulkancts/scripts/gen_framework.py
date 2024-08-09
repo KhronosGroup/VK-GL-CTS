@@ -2302,7 +2302,7 @@ def writeSupportedExtensions(api, filename):
             # save array containing 'device' or 'instance' string followed by the optional vulkan version in which this extension is core;
             # note that register_extension section is also required for partialy promoted extensions like VK_EXT_extended_dynamic_state2
             # but those extensions should not fill 'core' tag
-            match = re.match("(\d).(\d).(\d).(\d)", data['register_extension']['core'])
+            match = re.match(r"(\d).(\d).(\d).(\d)", data['register_extension']['core'])
             if match == None:
                 continue
             major = int(match.group(2))
@@ -2693,8 +2693,8 @@ def writeDeviceFeatures2(api, filename):
                 continue
             for requirement in feature.requirementsList:
                 for type in requirement.typeList:
-                    matchedStructType = re.search(f'VkPhysicalDevice(\w+)Features', type, re.IGNORECASE)
-                    matchedCoreStructType = re.search(f'VkPhysicalDeviceVulkan(\d+)Features', type, re.IGNORECASE)
+                    matchedStructType = re.search(r'VkPhysicalDevice(\w+)Features', type, re.IGNORECASE)
+                    matchedCoreStructType = re.search(r'VkPhysicalDeviceVulkan(\d+)Features', type, re.IGNORECASE)
                     if matchedStructType and not matchedCoreStructType:
                         promotedFeatures.append(type)
             if promotedFeatures:
@@ -2799,11 +2799,11 @@ def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
     assert(FeaturesOrProperties in ['Features', 'Properties'])
     defs = []
     foundStructureEnums = []
-    structureEnumPattern = f'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_(\w+)_{FeaturesOrProperties.upper()}(\w+)'
+    structureEnumPattern = fr'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_(\w+)_{FeaturesOrProperties.upper()}(\w+)'
     structureEnumPatternNotExtension = structureEnumPattern[:-5] + '$'
-    structureTypePattern = f'VkPhysicalDevice(\w+){FeaturesOrProperties}(\w+)'
+    structureTypePattern = fr'VkPhysicalDevice(\w+){FeaturesOrProperties}(\w+)'
     structureTypePatternNotExtension = structureTypePattern[:-5] + '$'
-    structureTypeToSkipPattern = f'VkPhysicalDeviceVulkan\d\d{FeaturesOrProperties}'
+    structureTypeToSkipPattern = fr'VkPhysicalDeviceVulkan\d\d{FeaturesOrProperties}'
     structureExtendsPattern = f'VkPhysicalDevice{FeaturesOrProperties}2'
     # iterate over all extensions to find extension that adds enum value matching pattern;
     # this will always be in first requirement section
@@ -2889,8 +2889,8 @@ def writeDeviceFeatures(api, dfDefs, filename):
     initFromBlobDefinitions = []
     emptyInitDefinitions = []
     # iterate over all feature structures
-    allFeaturesPattern = re.compile("^VkPhysicalDevice\w+Features[1-9]*")
-    nonExtFeaturesPattern = re.compile("^VkPhysicalDevice\w+Features[1-9]*$")
+    allFeaturesPattern = re.compile(r"^VkPhysicalDevice\w+Features[1-9]*")
+    nonExtFeaturesPattern = re.compile(r"^VkPhysicalDevice\w+Features[1-9]*$")
     for structureType in api.compositeTypes:
         # skip structures that are not feature structures
         if not allFeaturesPattern.match(structureType.name):
@@ -2999,7 +2999,7 @@ def writeDeviceFeatureTest(api, filename):
     featureItems = []
     testFunctions = []
     # iterate over all feature structures
-    allFeaturesPattern = re.compile("^VkPhysicalDevice\w+Features[1-9]*")
+    allFeaturesPattern = re.compile(r"^VkPhysicalDevice\w+Features[1-9]*")
     for structureType in api.compositeTypes:
         # skip structures that are not feature structures
         if not allFeaturesPattern.match(structureType.name):
@@ -3087,8 +3087,8 @@ def writeDeviceProperties(api, dpDefs, filename):
     initFromBlobDefinitions = []
     emptyInitDefinitions = []
     # iterate over all property structures
-    allPropertiesPattern = re.compile("^VkPhysicalDevice\w+Properties[1-9]*")
-    nonExtPropertiesPattern = re.compile("^VkPhysicalDevice\w+Properties[1-9]*$")
+    allPropertiesPattern = re.compile(r"^VkPhysicalDevice\w+Properties[1-9]*")
+    nonExtPropertiesPattern = re.compile(r"^VkPhysicalDevice\w+Properties[1-9]*$")
     for structureType in api.compositeTypes:
         # skip structures that are not property structures
         if not allPropertiesPattern.match(structureType.name):
@@ -3732,7 +3732,7 @@ def writeApiExtensionDependencyInfo(api, filename):
             if match is not None:
                 if len(match[0]) != len(extDeps):
                     # there is more than just a version; check if it's accompanied by AND operator(s)
-                    ext_pattern = ".*\+*"+versionPattern+"\++.*|.*\++"+versionPattern+"\+*.*"
+                    ext_pattern = r".*\+*"+versionPattern+r"\++.*|.*\++"+versionPattern+r"\+*.*"
                     match = re.search(ext_pattern, ungroupPart[0])
                 if match is not None:
                     # specific version is explicitly requested
@@ -3762,7 +3762,7 @@ def writeApiExtensionDependencyInfo(api, filename):
                 major, minor, requiredVerFound = parseExtensionDependencies(ext.depends, ext)
                 if not requiredVerFound:
                     # find all extensions that are dependencies of this one
-                    matches = re.findall("VK_\w+", ext.depends, re.M)
+                    matches = re.findall(r"VK_\w+", ext.depends, re.M)
                     for m in matches:
                         for de in api.extensions:
                             if de.name == m:
@@ -3904,14 +3904,15 @@ def writeConformanceVersions(api, filename):
     # get list of all vulkan/vulkansc tags from git
     remote_urls = os.popen("git remote -v").read().split('\n')
     remote_url = None
+    url_regexp = r'\bgerrit\.khronos\.org\b.*\bvk-gl-cts\b'
     for line in remote_urls:
-        if "gerrit.khronos.org:29418/vk-gl-cts" in line:
+        if re.search(url_regexp, line, re.IGNORECASE) is not None:
             remote_url = line.split()[1]
             break
     listOfTags = os.popen("git ls-remote -t %s" % (remote_url)).read()
-    pattern = "vulkan-cts-(\d).(\d).(\d).(\d)"
+    pattern = r"vulkan-cts-(\d).(\d).(\d).(\d)"
     if args.api == 'SC':
-        pattern = "vulkansc-cts-(\d).(\d).(\d).(\d)"
+        pattern = r"vulkansc-cts-(\d).(\d).(\d).(\d)"
     matches = re.findall(pattern, listOfTags, re.M)
     if len(matches) == 0:
         return
