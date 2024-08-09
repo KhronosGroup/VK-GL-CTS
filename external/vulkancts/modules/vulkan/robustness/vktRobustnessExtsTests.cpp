@@ -460,6 +460,27 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 	if ((m_data.useTemplate || formatIsR64(m_data.format)) && !context.contextSupports(vk::ApiVersion(1, 1, 0)))
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
 
+        // In vkApiVersion 1.2.7,
+        // VK_FORMAT_FEATURE_2_STORAGE_(READ/WRITE)_WITHOUT_FORMAT_BIT flag is
+        // not present which can be used to read or write a
+        // VK_FORMAT_R64_(U/S)INT through storage operations without specifying
+        // the format in the shader. Also in this case, as per spec this feature
+        // availability cannot be checked using only physical device feature
+        // shaderStorageImage(Read/Write)WithoutFormat
+        if (formatIsR64(m_data.format) && !m_data.formatQualifier) {
+                if (m_data.descriptorType ==
+                    VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER) {
+                        TCU_THROW(NotSupportedError,
+                                  "Format does not support reading or writing "
+                                  "without format for Storage Texel Buffer");
+                }
+                if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+                        TCU_THROW(NotSupportedError,
+                                  "Format does not support reading or writing "
+                                  "without format for Storage Image");
+                }
+        }
+
 	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) &&
 		!m_data.formatQualifier &&
 		(!features2.features.shaderStorageImageReadWithoutFormat || !features2.features.shaderStorageImageWriteWithoutFormat))
