@@ -45,6 +45,7 @@
 #include <set>
 #include <string>
 #include <sstream>
+#include <atomic>
 
 using std::ostringstream;
 using std::pair;
@@ -163,7 +164,7 @@ public:
 private:
     MultiThreadedTest &m_test;
     const int m_id;
-    ThreadStatus m_status;
+    std::atomic<ThreadStatus> m_status;
     ThreadLog m_log;
 };
 
