@@ -1764,7 +1764,7 @@ tcu::TestStatus ShaderObjectUnbindInstance::iterate(void)
     else if (m_params.testType == UNBIND_MESH_DRAW_VERTEX)
     {
         vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions,
-                                                vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, true);
+                                                vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
         vk.cmdSetPrimitiveTopology(*cmdBuffer, vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
         vk.cmdSetPrimitiveRestartEnable(*cmdBuffer, VK_FALSE);
         vk::bindNullRasterizationShaders(vk, *cmdBuffer, m_context.getDeviceFeatures());
