@@ -247,6 +247,9 @@ void NonLineDrawCase::checkSupport(Context &context) const
 
     if (!(*requiredFeature))
         TCU_THROW(NotSupportedError, "Required line type not supported");
+
+    if (m_params.polygonMode != VK_POLYGON_MODE_FILL && !context.getDeviceFeatures().fillModeNonSolid)
+        TCU_THROW(NotSupportedError, "Required polygon mode not supported");
 }
 
 void NonLineDrawCase::initPrograms(SourceCollections &dst) const
