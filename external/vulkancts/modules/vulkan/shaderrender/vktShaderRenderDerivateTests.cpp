@@ -207,13 +207,6 @@ static inline tcu::BVec4 getDerivateMask(glu::DataType type)
     }
 }
 
-static inline bool isSkippedPixel(const tcu::ConstPixelBufferAccess &surface, int x, int y)
-{
-    const tcu::Vec4 skipValue(0.7843f, 0.2039f, 0.4706f, 0.0f);
-    const tcu::Vec4 value = surface.getPixel(x, y);
-    return tcu::allEqual(tcu::lessThanEqual(tcu::abs(value - skipValue), tcu::Vec4(0.01f)), tcu::BVec4(true));
-}
-
 static inline tcu::Vec4 readDerivate(const tcu::ConstPixelBufferAccess &surface, const tcu::Vec4 &derivScale,
                                      const tcu::Vec4 &derivBias, int x, int y)
 {
@@ -412,9 +405,6 @@ static bool verifyConstantDerivate(tcu::TestLog &log, const tcu::ConstPixelBuffe
     {
         for (int x = 0; x < result.getWidth(); x++)
         {
-            if (isSkippedPixel(result, x, y))
-                continue;
-
             if (demoteToHelperInvocation && deMod(y, 2) == 1)
                 continue;
 
@@ -490,9 +480,6 @@ static bool reverifyConstantDerivateWithFlushRelaxations(tcu::TestLog &log, cons
     for (int y = 0; y < result.getHeight(); ++y)
         for (int x = 0; x < result.getWidth(); ++x)
         {
-            if (isSkippedPixel(result, x, y))
-                continue;
-
             //                 flushToZero?(f2z?(functionValueCurrent) - f2z?(functionValueBefore))
             // flushToZero? ( ------------------------------------------------------------------------ +- 2.5 ULP )
             //                                                  dx
