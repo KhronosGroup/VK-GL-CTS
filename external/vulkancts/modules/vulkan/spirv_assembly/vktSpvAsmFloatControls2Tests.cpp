@@ -1663,7 +1663,7 @@ void TestCasesBuilder::init()
                                  "                      OpBranch %comp_merge\n"
                                  "%comp_merge         = OpLabel\n"
                                  "%result             = OpPhi %type_float %arg2 %true_branch %arg1 %false_branch\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT, {"comp", "result"});
+                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT, {"arg1", "arg2", "comp", "result"});
     mo[OID_SELECT]    = Op("select", FLOAT_ARITHMETIC,
                            "%always_true        = OpFOrdGreaterThan %type_bool %c_float_1 %c_float_0\n"
                               "%result             = OpSelect %type_float %always_true %arg1 %arg2\n",
