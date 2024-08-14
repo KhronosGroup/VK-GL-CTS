@@ -358,7 +358,12 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
 
     tcu::SessionInfo sessionInfo(m_deviceProperties.vendorID, m_deviceProperties.deviceID,
                                  m_deviceProperties.deviceName, testCtx.getCommandLine().getInitialCmdLine());
-    m_waiverMechanism.setup(testCtx.getCommandLine().getWaiverFileName(), "dEQP-VK", m_deviceProperties.vendorID,
+#ifdef CTS_USES_VULKANSC
+    const char *testname_prefix = "dEQP-VKSC";
+#else
+    const char *testname_prefix = "dEQP-VK";
+#endif
+    m_waiverMechanism.setup(testCtx.getCommandLine().getWaiverFileName(), testname_prefix, m_deviceProperties.vendorID,
                             m_deviceProperties.deviceID, sessionInfo);
 
 #ifdef CTS_USES_VULKANSC
