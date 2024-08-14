@@ -2974,7 +2974,13 @@ class LoadStoreMachine : public ShaderImageLoadStoreBase
             glDrawArrays(GL_POINTS, 0, kSize);
         }
         bool status = true;
-        glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
+        // `program_store` reads from the buffer and writes to the images.  `program_load` reads
+        // from the images and writes to the buffer.  The buffer write-after-read needs the
+        // GL_SHADER_STORAGE_BARRIER_BIT barrier and the image read-after-write needs the
+        // GL_SHADER_IMAGE_ACCESS_BARRIER_BIT.  Additionally, the following updates the texture need
+        // the GL_TEXTURE_UPDATE_BARRIER_BIT barrier.
+        glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT |
+                        GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
         glBindImageTexture(3, textures[0], 0, GL_FALSE, 0, GL_READ_ONLY, internalformat); // 2D
         glBindImageTexture(2, textures[1], 0, GL_TRUE, 0, GL_READ_ONLY, internalformat);  // 3D
