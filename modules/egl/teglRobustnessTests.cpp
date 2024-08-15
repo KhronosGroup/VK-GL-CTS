@@ -522,7 +522,6 @@ RenderingContext::~RenderingContext(void)
 void RenderingContext::createContext(const EGLConfig &sharedContext)
 {
     m_context = m_egl.createContext(m_display, m_config, sharedContext, m_attribList);
-    EGLU_CHECK_MSG(m_egl, "eglCreateContext()");
 }
 
 void RenderingContext::destroyContext(void)
@@ -1147,6 +1146,7 @@ public:
     TestCase::IterateResult iterate(void)
     {
         TestLog &log = m_testCtx.getLog();
+        const Library &egl = m_eglTestCtx.getLibrary();
 
         log << tcu::TestLog::Message
             << "Check that after successfully creating a robust context the robust access query returned by "
@@ -1164,6 +1164,21 @@ public:
         checkRequiredEGLExtensions(attribList);
 
         RenderingContext context(m_eglTestCtx, attribList, m_eglConfig, m_eglDisplay, EGL_NO_CONTEXT);
+
+        const EGLenum error = egl.getError();
+        if (error != EGL_SUCCESS)
+        {
+            if (error == EGL_BAD_CONFIG)
+            {
+                m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED,
+                                        "Got EGL_BAD_CONFIG, assuming GL_KHR_robustness is not supported");
+            } else
+            {
+                m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+            }
+            return STOP;
+        }
+
         context.makeCurrent(m_eglSurface);
 
         glw::Functions gl;
@@ -1202,6 +1217,7 @@ public:
     TestCase::IterateResult iterate(void)
     {
         TestLog &log = m_testCtx.getLog();
+        const Library &egl = m_eglTestCtx.getLibrary();
 
         log << tcu::TestLog::Message
             << "Check the reset notification strategy returned by glGetIntegerv() equals GL_NO_RESET_NOTIFICATION\n\n"
@@ -1220,6 +1236,21 @@ public:
         checkRequiredEGLExtensions(attribList);
 
         RenderingContext context(m_eglTestCtx, attribList, m_eglConfig, m_eglDisplay, EGL_NO_CONTEXT);
+
+        const EGLenum error = egl.getError();
+        if (error != EGL_SUCCESS)
+        {
+            if (error == EGL_BAD_CONFIG)
+            {
+                m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED,
+                                        "Got EGL_BAD_CONFIG, assuming GL_KHR_robustness is not supported");
+            } else
+            {
+                m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+            }
+            return STOP;
+        }
+
         context.makeCurrent(m_eglSurface);
 
         glw::Functions gl;
@@ -1265,6 +1296,7 @@ public:
     TestCase::IterateResult iterate(void)
     {
         TestLog &log = m_testCtx.getLog();
+        const Library &egl = m_eglTestCtx.getLibrary();
 
         log << tcu::TestLog::Message
             << "Check the reset notification strategy returned by glGetIntegerv() equals GL_LOSE_CONTEXT_ON_RESET\n\n"
@@ -1283,6 +1315,21 @@ public:
         checkRequiredEGLExtensions(attribList);
 
         RenderingContext context(m_eglTestCtx, attribList, m_eglConfig, m_eglDisplay, EGL_NO_CONTEXT);
+
+        const EGLenum error = egl.getError();
+        if (error != EGL_SUCCESS)
+        {
+            if (error == EGL_BAD_CONFIG)
+            {
+                m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED,
+                                        "Got EGL_BAD_CONFIG, assuming GL_KHR_robustness is not supported");
+            } else
+            {
+                m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+            }
+            return STOP;
+        }
+
         context.makeCurrent(m_eglSurface);
 
         glw::Functions gl;
@@ -1360,6 +1407,7 @@ ContextResetCase::ContextResetCase(EglTestContext &eglTestCtx, const char *name,
 TestCase::IterateResult ContextResetCase::iterate(void)
 {
     glw::Functions gl;
+    const Library &egl = m_eglTestCtx.getLibrary();
 
     const EGLint attribList[] = {EGL_CONTEXT_CLIENT_VERSION,
                                  3,
@@ -1374,6 +1422,21 @@ TestCase::IterateResult ContextResetCase::iterate(void)
     checkRequiredEGLExtensions(attribList);
 
     RenderingContext context(m_eglTestCtx, attribList, m_eglConfig, m_eglDisplay, EGL_NO_CONTEXT);
+
+    const EGLenum error = egl.getError();
+    if (error != EGL_SUCCESS)
+    {
+        if (error == EGL_BAD_CONFIG)
+        {
+            m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED,
+                                    "Got EGL_BAD_CONFIG, assuming GL_KHR_robustness is not supported");
+        } else
+        {
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+        }
+        return STOP;
+    }
+
     context.makeCurrent(m_eglSurface);
 
     {
@@ -1523,6 +1586,20 @@ public:
 
         log << tcu::TestLog::Message << "Create context A (share_context = EGL_NO_CONTEXT)" << tcu::TestLog::EndMessage;
         RenderingContext contextA(m_eglTestCtx, attribListA, m_eglConfig, m_eglDisplay, EGL_NO_CONTEXT);
+
+        const EGLenum error0 = egl.getError();
+        if (error0 != EGL_SUCCESS)
+        {
+            if (error0 == EGL_BAD_CONFIG)
+            {
+                m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED,
+                                        "Got EGL_BAD_CONFIG, assuming GL_KHR_robustness is not supported");
+            } else
+            {
+                m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+            }
+            return STOP;
+        }
 
         log << tcu::TestLog::Message << "Create context B (share_context = context A)" << tcu::TestLog::EndMessage;
         logAttribList(m_eglTestCtx, attribListB);
