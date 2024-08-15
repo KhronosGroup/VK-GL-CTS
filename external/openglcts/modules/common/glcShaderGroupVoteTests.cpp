@@ -262,6 +262,11 @@ ShaderGroupVoteTestCaseBase::ShaderGroupVoteTestCaseBase(deqp::Context &context,
     }
 }
 
+ShaderGroupVoteTestCaseBase::~ShaderGroupVoteTestCaseBase()
+{
+    ShaderGroupVoteTestCaseBase::deinit();
+}
+
 void ShaderGroupVoteTestCaseBase::init()
 {
     if (m_extensionSupported)
@@ -279,6 +284,7 @@ void ShaderGroupVoteTestCaseBase::deinit()
     {
         delete (*iter);
     }
+    m_shaders.clear();
 }
 
 tcu::TestNode::IterateResult ShaderGroupVoteTestCaseBase::iterate()

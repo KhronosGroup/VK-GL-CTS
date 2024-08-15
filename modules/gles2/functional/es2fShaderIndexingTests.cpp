@@ -27,11 +27,9 @@
 #include "tcuStringTemplate.hpp"
 
 #include "deInt32.h"
-#include "deMemory.h"
 
 #include <map>
 
-#include "glwEnums.hpp"
 #include "glwFunctions.hpp"
 
 using namespace std;
@@ -193,7 +191,7 @@ ShaderIndexingCase::ShaderIndexingCase(Context &context, const char *name, const
                                        DataType varType, ShaderEvalFunc evalFunc, uint32_t requirements,
                                        const char *vertShaderSource, const char *fragShaderSource)
     : ShaderRenderCase(context.getTestContext(), context.getRenderContext(), context.getContextInfo(), name,
-                       description, isVertexCase, evalFunc)
+                       description, isVertexCase, evalFunc, true /*useLevel*/)
     , m_requirements(requirements)
 {
     m_varType          = varType;

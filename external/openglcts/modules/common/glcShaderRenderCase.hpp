@@ -24,13 +24,12 @@
  * \brief Shader execute test.
  */ /*-------------------------------------------------------------------*/
 
-#include "glcTestCase.hpp"
 #include "gluContextInfo.hpp"
 #include "gluRenderContext.hpp"
 #include "gluShaderProgram.hpp"
-#include "tcuDefs.hpp"
 #include "tcuMatrix.hpp"
 #include "tcuSurface.hpp"
+#include "tcuTestCase.hpp"
 #include "tcuTexture.hpp"
 #include "tcuVector.hpp"
 
@@ -273,9 +272,11 @@ class ShaderRenderCase : public tcu::TestCase
 {
 public:
     ShaderRenderCase(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const glu::ContextInfo &ctxInfo,
-                     const char *name, const char *description, bool isVertexCase, ShaderEvalFunc evalFunc);
+                     const char *name, const char *description, bool isVertexCase, ShaderEvalFunc evalFunc,
+                     bool useLevel = false);
     ShaderRenderCase(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const glu::ContextInfo &ctxInfo,
-                     const char *name, const char *description, bool isVertexCase, ShaderEvaluator &evaluator);
+                     const char *name, const char *description, bool isVertexCase, ShaderEvaluator &evaluator,
+                     bool useLevel = false);
     virtual ~ShaderRenderCase(void);
 
     void init(void);
@@ -290,14 +291,35 @@ protected:
     tcu::IVec2 getViewportSize(void) const;
 
 private:
+    // Auxiliar class that allows us to work with tcu::Surface and tcu::TextureLevel.
+    class InternalSurface
+    {
+    public:
+        explicit InternalSurface(tcu::Surface &surface);
+        explicit InternalSurface(tcu::TextureLevel &level);
+
+        int getWidth() const;
+        int getHeight() const;
+
+        tcu::ConstPixelBufferAccess getAccess(void) const;
+        tcu::PixelBufferAccess getAccess(void);
+
+        void setPixel(int x, int y, const tcu::Vec4 &color) const;
+
+    protected:
+        tcu::Surface *m_surfacePtr;
+        tcu::TextureLevel *m_levelPtr;
+        tcu::PixelBufferAccess m_levelAccess;
+    };
+
     ShaderRenderCase(const ShaderRenderCase &);            // not allowed!
     ShaderRenderCase &operator=(const ShaderRenderCase &); // not allowed!
 
     void setupDefaultInputs(int programID);
 
-    void render(tcu::Surface &result, int programID, const QuadGrid &quadGrid);
-    void computeVertexReference(tcu::Surface &result, const QuadGrid &quadGrid);
-    void computeFragmentReference(tcu::Surface &result, const QuadGrid &quadGrid);
+    void render(InternalSurface &result, int programID, const QuadGrid &quadGrid);
+    void computeVertexReference(InternalSurface &result, const QuadGrid &quadGrid);
+    void computeFragmentReference(InternalSurface &result, const QuadGrid &quadGrid);
     bool compareImages(const tcu::Surface &resImage, const tcu::Surface &refImage, float errorThreshold);
 
 protected:
@@ -305,6 +327,7 @@ protected:
     const glu::ContextInfo &m_ctxInfo;
 
     bool m_isVertexCase;
+    bool m_useLevel;
     ShaderEvaluator m_defaultEvaluator;
     ShaderEvaluator &m_evaluator;
     std::string m_vertShaderSource;
