@@ -31,9 +31,9 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createDynamicRenderingLocalReadTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testCtx);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTDYNAMICRENDERINGLOCALREADTESTS_HPP

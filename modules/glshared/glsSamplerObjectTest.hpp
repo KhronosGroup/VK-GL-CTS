@@ -40,123 +40,122 @@ namespace gls
 class TextureSamplerTest : public tcu::TestCase
 {
 public:
-	struct SamplingState
-	{
-		GLenum	minFilter;
-		GLenum	magFilter;
-		GLenum	wrapT;
-		GLenum	wrapS;
-		GLenum	wrapR;
-		GLfloat	minLod;
-		GLfloat	maxLod;
-	};
+    struct SamplingState
+    {
+        GLenum minFilter;
+        GLenum magFilter;
+        GLenum wrapT;
+        GLenum wrapS;
+        GLenum wrapR;
+        GLfloat minLod;
+        GLfloat maxLod;
+    };
 
-	struct TestSpec
-	{
-		const char*		name;
-		const char*		desc;
-		GLenum			target;
-		SamplingState	textureState;
-		SamplingState	samplerState;
-	};
+    struct TestSpec
+    {
+        const char *name;
+        const char *desc;
+        GLenum target;
+        SamplingState textureState;
+        SamplingState samplerState;
+    };
 
-						TextureSamplerTest	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const TestSpec& spec);
-						~TextureSamplerTest	(void);
+    TextureSamplerTest(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const TestSpec &spec);
+    ~TextureSamplerTest(void);
 
-	void				init				(void);
-	void				deinit				(void);
+    void init(void);
+    void deinit(void);
 
-	IterateResult		iterate				(void);
+    IterateResult iterate(void);
 
 private:
-	void				renderReferences		(tcu::Surface& textureRef, tcu::Surface& samplerRef, int x, int y);
-	void				renderResults			(tcu::Surface& textureResult, tcu::Surface& samplerResult, int x, int y);
+    void renderReferences(tcu::Surface &textureRef, tcu::Surface &samplerRef, int x, int y);
+    void renderResults(tcu::Surface &textureResult, tcu::Surface &samplerResult, int x, int y);
 
-	void				render					(void);
+    void render(void);
 
-	static void			setTextureState			(const glw::Functions& gl, GLenum target, SamplingState state);
-	static void			setSamplerState			(const glw::Functions& gl, SamplingState state, GLuint sampler);
+    static void setTextureState(const glw::Functions &gl, GLenum target, SamplingState state);
+    static void setSamplerState(const glw::Functions &gl, SamplingState state, GLuint sampler);
 
-	static GLuint		createTexture2D			(const glw::Functions& gl);
-	static GLuint		createTexture3D			(const glw::Functions& gl);
-	static GLuint		createTextureCube		(const glw::Functions& gl);
-	static GLuint		createTexture			(const glw::Functions& gl, GLenum target);
+    static GLuint createTexture2D(const glw::Functions &gl);
+    static GLuint createTexture3D(const glw::Functions &gl);
+    static GLuint createTextureCube(const glw::Functions &gl);
+    static GLuint createTexture(const glw::Functions &gl, GLenum target);
 
-	static const char*	selectVertexShader		(GLenum target);
-	static const char*	selectFragmentShader	(GLenum target);
+    static const char *selectVertexShader(GLenum target);
+    static const char *selectFragmentShader(GLenum target);
 
-	glu::RenderContext& m_renderCtx;
-	glu::ShaderProgram*	m_program;
+    glu::RenderContext &m_renderCtx;
+    glu::ShaderProgram *m_program;
 
-	GLenum				m_target;
-	SamplingState		m_textureState;
-	SamplingState		m_samplerState;
+    GLenum m_target;
+    SamplingState m_textureState;
+    SamplingState m_samplerState;
 
-	de::Random			m_random;
+    de::Random m_random;
 };
 
 class MultiTextureSamplerTest : public tcu::TestCase
 {
 public:
-	struct SamplingState
-	{
-		GLenum	minFilter;
-		GLenum	magFilter;
-		GLenum	wrapT;
-		GLenum	wrapS;
-		GLenum	wrapR;
-		GLfloat	minLod;
-		GLfloat	maxLod;
-	};
+    struct SamplingState
+    {
+        GLenum minFilter;
+        GLenum magFilter;
+        GLenum wrapT;
+        GLenum wrapS;
+        GLenum wrapR;
+        GLfloat minLod;
+        GLfloat maxLod;
+    };
 
-	struct TestSpec
-	{
-		const char*		name;
-		const char*		desc;
-		GLenum			target;
-		SamplingState	textureState1;
-		SamplingState	textureState2;
-		SamplingState	samplerState;
-	};
+    struct TestSpec
+    {
+        const char *name;
+        const char *desc;
+        GLenum target;
+        SamplingState textureState1;
+        SamplingState textureState2;
+        SamplingState samplerState;
+    };
 
-						MultiTextureSamplerTest		(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const TestSpec& spec);
-						~MultiTextureSamplerTest	(void);
+    MultiTextureSamplerTest(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const TestSpec &spec);
+    ~MultiTextureSamplerTest(void);
 
-	void				init						(void);
-	void				deinit						(void);
+    void init(void);
+    void deinit(void);
 
-	IterateResult		iterate						(void);
+    IterateResult iterate(void);
 
 private:
-	void				renderReferences			(tcu::Surface& textureRef, tcu::Surface& samplerRef, int x, int y);
-	void				renderResults				(tcu::Surface& textureResult, tcu::Surface& samplerResult, int x, int y);
+    void renderReferences(tcu::Surface &textureRef, tcu::Surface &samplerRef, int x, int y);
+    void renderResults(tcu::Surface &textureResult, tcu::Surface &samplerResult, int x, int y);
 
-	void				render						(void);
+    void render(void);
 
-	static void			setTextureState				(const glw::Functions& gl, GLenum target, SamplingState state);
-	static void			setSamplerState				(const glw::Functions& gl, SamplingState state, GLuint sampler);
+    static void setTextureState(const glw::Functions &gl, GLenum target, SamplingState state);
+    static void setSamplerState(const glw::Functions &gl, SamplingState state, GLuint sampler);
 
-	static GLuint		createTexture2D				(const glw::Functions& gl, int id);
-	static GLuint		createTexture3D				(const glw::Functions& gl, int id);
-	static GLuint		createTextureCube			(const glw::Functions& gl, int id);
-	static GLuint		createTexture				(const glw::Functions& gl, GLenum target, int id);
+    static GLuint createTexture2D(const glw::Functions &gl, int id);
+    static GLuint createTexture3D(const glw::Functions &gl, int id);
+    static GLuint createTextureCube(const glw::Functions &gl, int id);
+    static GLuint createTexture(const glw::Functions &gl, GLenum target, int id);
 
-	static const char*	selectVertexShader			(GLenum target);
-	static const char*	selectFragmentShader		(GLenum target);
+    static const char *selectVertexShader(GLenum target);
+    static const char *selectFragmentShader(GLenum target);
 
-	glu::RenderContext& m_renderCtx;
-	glu::ShaderProgram*	m_program;
+    glu::RenderContext &m_renderCtx;
+    glu::ShaderProgram *m_program;
 
-	GLenum				m_target;
-	SamplingState		m_textureState1;
-	SamplingState		m_textureState2;
-	SamplingState		m_samplerState;
+    GLenum m_target;
+    SamplingState m_textureState1;
+    SamplingState m_textureState2;
+    SamplingState m_samplerState;
 
-	de::Random			m_random;
+    de::Random m_random;
 };
 
-
-} // gls
-} // deqp
+} // namespace gls
+} // namespace deqp
 
 #endif // _GLSSAMPLEROBJECTTEST_HPP

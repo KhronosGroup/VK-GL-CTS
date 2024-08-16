@@ -26,24 +26,24 @@
 #include <stdexcept>
 
 #if defined(DEQP_GLES3_DIRECT_LINK)
-#	if (DE_OS == DE_OS_IOS)
-#		include <OpenGLES/ES3/gl.h>
-#	else
-#		include <GLES3/gl3.h>
-#	endif
+#if (DE_OS == DE_OS_IOS)
+#include <OpenGLES/ES3/gl.h>
+#else
+#include <GLES3/gl3.h>
+#endif
 #endif
 
 namespace glw
 {
 
-void initES30Direct (Functions* gl)
+void initES30Direct(Functions *gl)
 {
 #if defined(DEQP_GLES3_DIRECT_LINK)
-#	include "glwInitES30Direct.inl"
+#include "glwInitES30Direct.inl"
 #else
-	DE_UNREF(gl);
-	throw std::runtime_error("Binaries were compiled without ES3 direct loading support");
+    DE_UNREF(gl);
+    throw std::runtime_error("Binaries were compiled without ES3 direct loading support");
 #endif
 }
 
-} // glw
+} // namespace glw

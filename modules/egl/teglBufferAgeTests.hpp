@@ -34,15 +34,15 @@ namespace egl
 class BufferAgeTests : public TestCaseGroup
 {
 public:
-						BufferAgeTests	(EglTestContext& eglTestCtx);
-	void				init			(void);
+    BufferAgeTests(EglTestContext &eglTestCtx);
+    void init(void);
 
 private:
-						BufferAgeTests  (const BufferAgeTests&);
-	BufferAgeTests&		operator=		(const BufferAgeTests&);
+    BufferAgeTests(const BufferAgeTests &);
+    BufferAgeTests &operator=(const BufferAgeTests &);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLBUFFERAGETESTS_HPP

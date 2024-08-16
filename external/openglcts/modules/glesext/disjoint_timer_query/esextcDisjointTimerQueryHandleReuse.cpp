@@ -44,19 +44,19 @@ namespace glcts
  *  @param name        Test case's name
  *  @param description Test case's description
  **/
-DisjointTimerQueryHandleReuse::DisjointTimerQueryHandleReuse (Context& context, const ExtParameters& extParams,
-														      const char* name, const char* description)
-	: DisjointTimerQueryBase(context, extParams, name, description)
+DisjointTimerQueryHandleReuse::DisjointTimerQueryHandleReuse(Context &context, const ExtParameters &extParams,
+                                                             const char *name, const char *description)
+    : DisjointTimerQueryBase(context, extParams, name, description)
 {
 }
 
 /** Initializes GLES objects used during the test */
-void DisjointTimerQueryHandleReuse::initTest (void)
+void DisjointTimerQueryHandleReuse::initTest(void)
 {
-	if (!isExtensionSupported("GL_EXT_disjoint_timer_query"))
-	{
-		throw tcu::NotSupportedError(DISJOINT_TIMER_QUERY_NOT_SUPPORTED);
-	}
+    if (!isExtensionSupported("GL_EXT_disjoint_timer_query"))
+    {
+        throw tcu::NotSupportedError(DISJOINT_TIMER_QUERY_NOT_SUPPORTED);
+    }
 }
 
 /** Executes the test.
@@ -69,50 +69,50 @@ void DisjointTimerQueryHandleReuse::initTest (void)
  **/
 tcu::TestNode::IterateResult DisjointTimerQueryHandleReuse::iterate(void)
 {
-	/* Initialize */
-	initTest();
+    /* Initialize */
+    initTest();
 
-	/* Get Gl entry points */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-		/* Running tests. */
-	bool is_ok = true;
+    /* Get Gl entry points */
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+    /* Running tests. */
+    bool is_ok = true;
 
-	glw::GLuint query_id_a = 0;
-	glw::GLuint query_id_b = 0;
-	/* Allocate query object */
-	glGenQueriesEXT(1, &query_id_a);
-	/* Associate object with GL_TIMESTAMP */
-	glQueryCounterEXT(query_id_a, GL_TIMESTAMP);
-	/* Deallocate query object */
-	glDeleteQueriesEXT(1, &query_id_a);
+    glw::GLuint query_id_a = 0;
+    glw::GLuint query_id_b = 0;
+    /* Allocate query object */
+    glGenQueriesEXT(1, &query_id_a);
+    /* Associate object with GL_TIMESTAMP */
+    glQueryCounterEXT(query_id_a, GL_TIMESTAMP);
+    /* Deallocate query object */
+    glDeleteQueriesEXT(1, &query_id_a);
 
-	/* Allocate query object again - should result in the same id */
-	glGenQueriesEXT(1, &query_id_b);
-	/* Use the id with something else */
-	glBeginQueryEXT(GL_TIME_ELAPSED, query_id_b);
-	if (gl.getError() != 0) /* Crash was reported here. */
-		is_ok = false;
-	glEndQueryEXT(GL_TIME_ELAPSED);
-	/* Clean up */
-	glDeleteQueriesEXT(1, &query_id_b);
+    /* Allocate query object again - should result in the same id */
+    glGenQueriesEXT(1, &query_id_b);
+    /* Use the id with something else */
+    glBeginQueryEXT(GL_TIME_ELAPSED, query_id_b);
+    if (gl.getError() != 0) /* Crash was reported here. */
+        is_ok = false;
+    glEndQueryEXT(GL_TIME_ELAPSED);
+    /* Clean up */
+    glDeleteQueriesEXT(1, &query_id_b);
 
-	if (query_id_a != query_id_b)
-	{
-		m_context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "Note: Queries got different id:s, so no actual reuse occurred."
-			<< tcu::TestLog::EndMessage;
-	}
+    if (query_id_a != query_id_b)
+    {
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Note: Queries got different id:s, so no actual reuse occurred."
+            << tcu::TestLog::EndMessage;
+    }
 
-	/* Result's setup. */
-	if (is_ok)
-	{
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	}
-	else
-	{
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-	}
-	return STOP;
+    /* Result's setup. */
+    if (is_ok)
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    }
+    else
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+    }
+    return STOP;
 }
 
 } // namespace glcts

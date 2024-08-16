@@ -38,96 +38,138 @@ namespace xe
 class SessionInfo
 {
 public:
-	// Produced by test binary.
-	std::string			releaseName;
-	std::string			releaseId;
-	std::string			targetName;
-	std::string			qpaCommandLineParameters;
+    // Produced by test binary.
+    std::string releaseName;
+    std::string releaseId;
+    std::string targetName;
+    std::string qpaCommandLineParameters;
 
-	// Produced by Candy.
-	std::string			candyTargetName;
-	std::string			configName;
-	std::string			resultName;
-	std::string			timestamp;
+    // Produced by Candy.
+    std::string candyTargetName;
+    std::string configName;
+    std::string resultName;
+    std::string timestamp;
 };
 
 class InfoLog
 {
 public:
-							InfoLog			(void);
+    InfoLog(void);
 
-	size_t					getSize			(void) const { return m_data.size();							}
-	const deUint8*			getBytes		(void) const { return !m_data.empty() ? &m_data[0] : DE_NULL;	}
+    size_t getSize(void) const
+    {
+        return m_data.size();
+    }
+    const uint8_t *getBytes(void) const
+    {
+        return !m_data.empty() ? &m_data[0] : DE_NULL;
+    }
 
-	void					append			(const deUint8* bytes, size_t numBytes);
+    void append(const uint8_t *bytes, size_t numBytes);
 
 private:
-							InfoLog			(const InfoLog& other);
-	InfoLog&				operator=		(const InfoLog& other);
+    InfoLog(const InfoLog &other);
+    InfoLog &operator=(const InfoLog &other);
 
-	std::vector<deUint8>	m_data;
+    std::vector<uint8_t> m_data;
 };
 
 class TestCaseResultData
 {
 public:
-								TestCaseResultData				(const char* casePath);
-								~TestCaseResultData				(void);
+    TestCaseResultData(const char *casePath);
+    ~TestCaseResultData(void);
 
-	const char*					getTestCasePath					(void) const	{ return m_casePath.c_str();		}
+    const char *getTestCasePath(void) const
+    {
+        return m_casePath.c_str();
+    }
 
-	void						setTestResult					(TestStatusCode code, const char* details);
+    void setTestResult(TestStatusCode code, const char *details);
 
-	TestStatusCode				getStatusCode					(void) const	{ return m_statusCode;				}
-	const char*					getStatusDetails				(void) const	{ return m_statusDetails.c_str();	}
+    TestStatusCode getStatusCode(void) const
+    {
+        return m_statusCode;
+    }
+    const char *getStatusDetails(void) const
+    {
+        return m_statusDetails.c_str();
+    }
 
-	int							getDataSize						(void) const	{ return (int)m_data.size();		}
-	void						setDataSize						(int size)		{ m_data.resize(size);				}
+    int getDataSize(void) const
+    {
+        return (int)m_data.size();
+    }
+    void setDataSize(int size)
+    {
+        m_data.resize(size);
+    }
 
-	const deUint8*				getData							(void) const	{ return !m_data.empty() ? &m_data[0] : DE_NULL;	}
-	deUint8*					getData							(void)			{ return !m_data.empty() ? &m_data[0] : DE_NULL;	}
+    const uint8_t *getData(void) const
+    {
+        return !m_data.empty() ? &m_data[0] : DE_NULL;
+    }
+    uint8_t *getData(void)
+    {
+        return !m_data.empty() ? &m_data[0] : DE_NULL;
+    }
 
-	void						clear							(void);
+    void clear(void);
 
 private:
-	// \note statusCode and statusDetails are either set by BatchExecutor or later parsed from data.
-	std::string					m_casePath;
-	TestStatusCode				m_statusCode;
-	std::string					m_statusDetails;
-	std::vector<deUint8>		m_data;
+    // \note statusCode and statusDetails are either set by BatchExecutor or later parsed from data.
+    std::string m_casePath;
+    TestStatusCode m_statusCode;
+    std::string m_statusDetails;
+    std::vector<uint8_t> m_data;
 };
 
-typedef de::SharedPtr<TestCaseResultData>			TestCaseResultPtr;
-typedef de::SharedPtr<const TestCaseResultData>		ConstTestCaseResultPtr;
+typedef de::SharedPtr<TestCaseResultData> TestCaseResultPtr;
+typedef de::SharedPtr<const TestCaseResultData> ConstTestCaseResultPtr;
 
 class BatchResult
 {
 public:
-										BatchResult				(void);
-										~BatchResult			(void);
+    BatchResult(void);
+    ~BatchResult(void);
 
-	const SessionInfo&					getSessionInfo			(void) const	{ return m_sessionInfo;	}
-	SessionInfo&						getSessionInfo			(void)			{ return m_sessionInfo;	}
+    const SessionInfo &getSessionInfo(void) const
+    {
+        return m_sessionInfo;
+    }
+    SessionInfo &getSessionInfo(void)
+    {
+        return m_sessionInfo;
+    }
 
-	int									getNumTestCaseResults	(void) const	{ return (int)m_testCaseResults.size();							}
-	ConstTestCaseResultPtr				getTestCaseResult		(int ndx) const	{ return ConstTestCaseResultPtr(m_testCaseResults[ndx]);		}
-	TestCaseResultPtr					getTestCaseResult		(int ndx)		{ return m_testCaseResults[ndx];								}
+    int getNumTestCaseResults(void) const
+    {
+        return (int)m_testCaseResults.size();
+    }
+    ConstTestCaseResultPtr getTestCaseResult(int ndx) const
+    {
+        return ConstTestCaseResultPtr(m_testCaseResults[ndx]);
+    }
+    TestCaseResultPtr getTestCaseResult(int ndx)
+    {
+        return m_testCaseResults[ndx];
+    }
 
-	bool								hasTestCaseResult		(const char* casePath) const;
-	ConstTestCaseResultPtr				getTestCaseResult		(const char* casePath) const;
-	TestCaseResultPtr					getTestCaseResult		(const char* casePath);
+    bool hasTestCaseResult(const char *casePath) const;
+    ConstTestCaseResultPtr getTestCaseResult(const char *casePath) const;
+    TestCaseResultPtr getTestCaseResult(const char *casePath);
 
-	TestCaseResultPtr					createTestCaseResult	(const char* casePath);
+    TestCaseResultPtr createTestCaseResult(const char *casePath);
 
 private:
-										BatchResult				(const BatchResult& other);
-	BatchResult&						operator=				(const BatchResult& other);
+    BatchResult(const BatchResult &other);
+    BatchResult &operator=(const BatchResult &other);
 
-	SessionInfo							m_sessionInfo;
-	std::vector<TestCaseResultPtr>		m_testCaseResults;
-	std::map<std::string, int>			m_resultMap;
+    SessionInfo m_sessionInfo;
+    std::vector<TestCaseResultPtr> m_testCaseResults;
+    std::map<std::string, int> m_resultMap;
 };
 
-} // xe
+} // namespace xe
 
 #endif // _XEBATCHRESULT_HPP

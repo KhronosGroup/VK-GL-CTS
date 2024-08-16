@@ -31,9 +31,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createMisalignedCubeTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMisalignedCubeTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGEMISALIGNEDCUBETESTS_HPP

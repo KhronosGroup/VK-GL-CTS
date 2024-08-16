@@ -24,10 +24,10 @@
  *//*--------------------------------------------------------------------*/
 
 #ifndef _TCUDEFS_HPP
-#	include "tcuDefs.hpp"
+#include "tcuDefs.hpp"
 #endif
 #ifndef _TES3TESTCASE_HPP
-#	include "tes31TestCase.hpp"
+#include "tes31TestCase.hpp"
 #endif
 
 namespace deqp
@@ -40,18 +40,18 @@ namespace Functional
 class TextureFilteringTests : public TestCaseGroup
 {
 public:
-								TextureFilteringTests		(Context& context);
-								~TextureFilteringTests		(void);
+    TextureFilteringTests(Context &context);
+    ~TextureFilteringTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								TextureFilteringTests		(const TextureFilteringTests& other);
-	TextureFilteringTests&		operator=					(const TextureFilteringTests& other);
+    TextureFilteringTests(const TextureFilteringTests &other);
+    TextureFilteringTests &operator=(const TextureFilteringTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FTEXTUREFILTERINGTESTS_HPP

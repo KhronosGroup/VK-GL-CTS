@@ -36,18 +36,18 @@ namespace Functional
 class UniformBlockTests : public TestCaseGroup
 {
 public:
-							UniformBlockTests		(Context& context);
-							~UniformBlockTests		(void);
+    UniformBlockTests(Context &context);
+    ~UniformBlockTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							UniformBlockTests		(const UniformBlockTests& other);
-	UniformBlockTests&		operator=				(const UniformBlockTests& other);
+    UniformBlockTests(const UniformBlockTests &other);
+    UniformBlockTests &operator=(const UniformBlockTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FUNIFORMBLOCKTESTS_HPP

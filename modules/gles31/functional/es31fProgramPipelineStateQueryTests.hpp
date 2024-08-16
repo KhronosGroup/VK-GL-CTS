@@ -36,18 +36,18 @@ namespace Functional
 class ProgramPipelineStateQueryTests : public TestCaseGroup
 {
 public:
-										ProgramPipelineStateQueryTests		(Context& context);
-										~ProgramPipelineStateQueryTests		(void);
+    ProgramPipelineStateQueryTests(Context &context);
+    ~ProgramPipelineStateQueryTests(void);
 
-	void								init								(void);
+    void init(void);
 
 private:
-										ProgramPipelineStateQueryTests		(const ProgramPipelineStateQueryTests& other);
-	ProgramPipelineStateQueryTests&		operator=							(const ProgramPipelineStateQueryTests& other);
+    ProgramPipelineStateQueryTests(const ProgramPipelineStateQueryTests &other);
+    ProgramPipelineStateQueryTests &operator=(const ProgramPipelineStateQueryTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FPROGRAMPIPELINESTATEQUERYTESTS_HPP

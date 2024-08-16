@@ -32,9 +32,9 @@ namespace vkt
 namespace pipeline
 {
 
-void createLegacyVertexAttributesTests (tcu::TestCaseGroup*, vk::PipelineConstructionType);
+void createLegacyVertexAttributesTests(tcu::TestCaseGroup *, vk::PipelineConstructionType);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINELEGACYATTRTESTS_HPP

@@ -31,9 +31,9 @@ namespace vkt
 namespace RayQuery
 {
 
-tcu::TestCaseGroup*	createWatertightnessTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createWatertightnessTests(tcu::TestContext &testCtx);
 
-} // RayQuery
-} // vkt
+} // namespace RayQuery
+} // namespace vkt
 
 #endif // _VKTRAYQUERYWATERTIGHTNESSTESTS_HPP

@@ -32,29 +32,29 @@
 namespace de
 {
 
-void StringUtil_selfTest (void);
+void StringUtil_selfTest(void);
 
-template<typename T>
-inline std::string toString (const T& value)
+template <typename T>
+inline std::string toString(const T &value)
 {
-	std::ostringstream s;
-	s << value;
-	return s.str();
+    std::ostringstream s;
+    s << value;
+    return s.str();
 }
 
-std::string					toLower			(const std::string& s);
-std::string					toUpper			(const std::string& s);
-std::string					capitalize		(const std::string& s);
-std::vector<std::string>	splitString		(const std::string& s, char delim='\0');
-std::string					floatToString	(float val, int precision);
-bool						beginsWith		(const std::string& s, const std::string& prefix);
-bool						endsWith		(const std::string& s, const std::string& suffix);
-char						toUpper			(char c);
-char						toLower			(char c);
-bool						isUpper			(char c);
-bool						isLower			(char c);
-bool						isDigit			(char c);
+std::string toLower(const std::string &s);
+std::string toUpper(const std::string &s);
+std::string capitalize(const std::string &s);
+std::vector<std::string> splitString(const std::string &s, char delim = '\0');
+std::string floatToString(float val, int precision);
+bool beginsWith(const std::string &s, const std::string &prefix);
+bool endsWith(const std::string &s, const std::string &suffix);
+char toUpper(char c);
+char toLower(char c);
+bool isUpper(char c);
+bool isLower(char c);
+bool isDigit(char c);
 
-} // de
+} // namespace de
 
 #endif // _DESTRINGUTIL_HPP

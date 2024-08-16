@@ -34,11 +34,11 @@ namespace egl
 class MemoryStressTests : public TestCaseGroup
 {
 public:
-			MemoryStressTests	(EglTestContext& eglTestCtx);
-	void	init				(void);
+    MemoryStressTests(EglTestContext &eglTestCtx);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLMEMORYSTRESSTESTS_HPP

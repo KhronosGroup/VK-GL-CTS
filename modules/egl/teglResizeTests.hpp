@@ -34,15 +34,15 @@ namespace egl
 class ResizeTests : public TestCaseGroup
 {
 public:
-					ResizeTests		(EglTestContext& eglTestCtx);
-	void			init			(void);
+    ResizeTests(EglTestContext &eglTestCtx);
+    void init(void);
 
 private:
-					ResizeTests		(const ResizeTests&);
-	ResizeTests&	operator=		(const ResizeTests&);
+    ResizeTests(const ResizeTests &);
+    ResizeTests &operator=(const ResizeTests &);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLRESIZETESTS_HPP

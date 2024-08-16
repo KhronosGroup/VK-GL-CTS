@@ -28,95 +28,111 @@
 namespace rsg
 {
 
-Variable::Variable (const VariableType& type, Storage storage, const char* name)
-	: m_type			(type)
-	, m_storage			(storage)
-	, m_name			(name)
-	, m_layoutLocation	(-1)
+Variable::Variable(const VariableType &type, Storage storage, const char *name)
+    : m_type(type)
+    , m_storage(storage)
+    , m_name(name)
+    , m_layoutLocation(-1)
 {
 }
 
-Variable::~Variable (void)
+Variable::~Variable(void)
 {
 }
 
-void Variable::tokenizeDeclaration (GeneratorState& state, TokenStream& str) const
+void Variable::tokenizeDeclaration(GeneratorState &state, TokenStream &str) const
 {
-	Version targetVersion = state.getProgramParameters().version;
+    Version targetVersion = state.getProgramParameters().version;
 
-	// \todo [2011-03-10 pyry] Remove precision hacks once precision handling is implemented
-	switch (m_storage)
-	{
-		case STORAGE_CONST:				str << Token::CONST;		break;
-		case STORAGE_PARAMETER_IN:		str << Token::IN;			break;
-		case STORAGE_PARAMETER_OUT:		str << Token::OUT;			break;
-		case STORAGE_PARAMETER_INOUT:	str << Token::INOUT;		break;
+    // \todo [2011-03-10 pyry] Remove precision hacks once precision handling is implemented
+    switch (m_storage)
+    {
+    case STORAGE_CONST:
+        str << Token::CONST;
+        break;
+    case STORAGE_PARAMETER_IN:
+        str << Token::IN;
+        break;
+    case STORAGE_PARAMETER_OUT:
+        str << Token::OUT;
+        break;
+    case STORAGE_PARAMETER_INOUT:
+        str << Token::INOUT;
+        break;
 
-		case STORAGE_UNIFORM:
-		{
-			str << Token::UNIFORM;
-			if (m_type.isFloatOrVec() || m_type.isIntOrVec())
-				str << Token::MEDIUM_PRECISION;
-			break;
-		}
+    case STORAGE_UNIFORM:
+    {
+        str << Token::UNIFORM;
+        if (m_type.isFloatOrVec() || m_type.isIntOrVec())
+            str << Token::MEDIUM_PRECISION;
+        break;
+    }
 
-		case STORAGE_SHADER_IN:
-		{
-			if (targetVersion >= VERSION_300)
-			{
-				if (hasLayoutLocation())
-					str << Token::LAYOUT << Token::LEFT_PAREN << Token::LOCATION << Token::EQUAL << m_layoutLocation << Token::RIGHT_PAREN;
+    case STORAGE_SHADER_IN:
+    {
+        if (targetVersion >= VERSION_300)
+        {
+            if (hasLayoutLocation())
+                str << Token::LAYOUT << Token::LEFT_PAREN << Token::LOCATION << Token::EQUAL << m_layoutLocation
+                    << Token::RIGHT_PAREN;
 
-				str << Token::IN;
+            str << Token::IN;
 
-				if (state.getShader().getType() == Shader::TYPE_FRAGMENT)
-					str << Token::MEDIUM_PRECISION;
-			}
-			else
-			{
-				DE_ASSERT(!hasLayoutLocation());
+            if (state.getShader().getType() == Shader::TYPE_FRAGMENT)
+                str << Token::MEDIUM_PRECISION;
+        }
+        else
+        {
+            DE_ASSERT(!hasLayoutLocation());
 
-				switch (state.getShader().getType())
-				{
-					case Shader::TYPE_VERTEX:	str << Token::ATTRIBUTE;								break;
-					case Shader::TYPE_FRAGMENT:	str << Token::VARYING << Token::MEDIUM_PRECISION;		break;
-					default:					DE_ASSERT(DE_FALSE);									break;
-				}
-			}
-			break;
-		}
+            switch (state.getShader().getType())
+            {
+            case Shader::TYPE_VERTEX:
+                str << Token::ATTRIBUTE;
+                break;
+            case Shader::TYPE_FRAGMENT:
+                str << Token::VARYING << Token::MEDIUM_PRECISION;
+                break;
+            default:
+                DE_ASSERT(false);
+                break;
+            }
+        }
+        break;
+    }
 
-		case STORAGE_SHADER_OUT:
-		{
-			if (targetVersion >= VERSION_300)
-			{
-				if (hasLayoutLocation())
-					str << Token::LAYOUT << Token::LEFT_PAREN << Token::LOCATION << Token::EQUAL << m_layoutLocation << Token::RIGHT_PAREN;
+    case STORAGE_SHADER_OUT:
+    {
+        if (targetVersion >= VERSION_300)
+        {
+            if (hasLayoutLocation())
+                str << Token::LAYOUT << Token::LEFT_PAREN << Token::LOCATION << Token::EQUAL << m_layoutLocation
+                    << Token::RIGHT_PAREN;
 
-				str << Token::OUT << Token::MEDIUM_PRECISION;
-			}
-			else
-			{
-				DE_ASSERT(!hasLayoutLocation());
+            str << Token::OUT << Token::MEDIUM_PRECISION;
+        }
+        else
+        {
+            DE_ASSERT(!hasLayoutLocation());
 
-				if (state.getShader().getType() == Shader::TYPE_VERTEX)
-					str << Token::VARYING << Token::MEDIUM_PRECISION;
-				else
-					DE_ASSERT(DE_FALSE);
-			}
-			break;
-		}
+            if (state.getShader().getType() == Shader::TYPE_VERTEX)
+                str << Token::VARYING << Token::MEDIUM_PRECISION;
+            else
+                DE_ASSERT(false);
+        }
+        break;
+    }
 
-		case STORAGE_LOCAL:
-		default:
-			/* nothing */
-			break;
-	}
+    case STORAGE_LOCAL:
+    default:
+        /* nothing */
+        break;
+    }
 
-	m_type.tokenizeShortType(str);
+    m_type.tokenizeShortType(str);
 
-	DE_ASSERT(m_name != "");
-	str << Token(m_name.c_str());
+    DE_ASSERT(m_name != "");
+    str << Token(m_name.c_str());
 }
 
-} // rsg
+} // namespace rsg

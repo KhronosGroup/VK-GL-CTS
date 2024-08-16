@@ -34,19 +34,19 @@ namespace Draw
 class DrawIndexedTests : public tcu::TestCaseGroup
 {
 public:
-							DrawIndexedTests		(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
-							~DrawIndexedTests		(void);
-	void					init					(void);
+    DrawIndexedTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
+    ~DrawIndexedTests(void);
+    void init(void);
 
 private:
-	void					init					(bool useMaintenance5Ext);
-	DrawIndexedTests								(const DrawIndexedTests &other);
-	DrawIndexedTests&		operator=				(const DrawIndexedTests &other);
+    void init(bool useMaintenance5Ext);
+    DrawIndexedTests(const DrawIndexedTests &other);
+    DrawIndexedTests &operator=(const DrawIndexedTests &other);
 
 private:
-	const SharedGroupParams	m_groupParams;
+    const SharedGroupParams m_groupParams;
 };
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWINDEXEDTEST_HPP

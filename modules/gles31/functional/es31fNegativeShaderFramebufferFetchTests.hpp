@@ -35,11 +35,11 @@ namespace Functional
 namespace NegativeTestShared
 {
 
-std::vector<FunctionContainer> getNegativeShaderFramebufferFetchTestFunctions (void);
+std::vector<FunctionContainer> getNegativeShaderFramebufferFetchTestFunctions(void);
 
-} // NegativeTestShared
-} // Functional
-} // gles3
-} // deqp
+} // namespace NegativeTestShared
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FNEGATIVESHADERFRAMEBUFFERFETCHTESTS_HPP

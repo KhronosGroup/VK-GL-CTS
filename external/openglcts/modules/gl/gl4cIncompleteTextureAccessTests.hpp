@@ -45,15 +45,15 @@ namespace IncompleteTextureAccess
 class Tests : public deqp::TestCaseGroup
 {
 public:
-	/* Public member functions */
-	Tests(deqp::Context& context);
+    /* Public member functions */
+    Tests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	/* Private member functions */
-	Tests(const Tests& other);
-	Tests& operator=(const Tests& other);
+    /* Private member functions */
+    Tests(const Tests &other);
+    Tests &operator=(const Tests &other);
 };
 /* Tests class */
 
@@ -97,50 +97,50 @@ private:
 class SamplerTest : public deqp::TestCase
 {
 public:
-	/* Public member functions */
-	SamplerTest(deqp::Context& context);
+    /* Public member functions */
+    SamplerTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private member functions */
-	SamplerTest(const SamplerTest& other);
-	SamplerTest& operator=(const SamplerTest& other);
+    /* Private member functions */
+    SamplerTest(const SamplerTest &other);
+    SamplerTest &operator=(const SamplerTest &other);
 
-	glw::GLuint m_po;
-	glw::GLuint m_to;
-	glw::GLuint m_fbo;
-	glw::GLuint m_rbo;
-	glw::GLuint m_vao;
+    glw::GLuint m_po;
+    glw::GLuint m_to;
+    glw::GLuint m_fbo;
+    glw::GLuint m_rbo;
+    glw::GLuint m_vao;
 
-	static const struct Configuration
-	{
-		glw::GLenum		   texture_target;
-		const glw::GLchar* sampler_template;
-		const glw::GLchar* fetch_template;
-		glw::GLfloat	   expected_result[4];
-		bool               is_shadow;
-	} s_configurations[];
+    static const struct Configuration
+    {
+        glw::GLenum texture_target;
+        const glw::GLchar *sampler_template;
+        const glw::GLchar *fetch_template;
+        glw::GLfloat expected_result[4];
+        bool is_shadow;
+    } s_configurations[];
 
-	static const glw::GLuint s_configurations_count;
+    static const glw::GLuint s_configurations_count;
 
-	static const glw::GLchar* s_vertex_shader;
-	static const glw::GLchar* s_fragment_shader_head;
-	static const glw::GLchar* s_fragment_shader_body;
-	static const glw::GLchar* s_fragment_shader_tail;
+    static const glw::GLchar *s_vertex_shader;
+    static const glw::GLchar *s_fragment_shader_head;
+    static const glw::GLchar *s_fragment_shader_body;
+    static const glw::GLchar *s_fragment_shader_tail;
 
-	void PrepareProgram(Configuration configuration);
-	void PrepareTexture(Configuration configuration);
-	void PrepareVertexArrays();
-	void PrepareFramebuffer();
-	void Draw();
-	bool Check(Configuration configuration);
-	void CleanCase();
-	void CleanTest();
+    void PrepareProgram(Configuration configuration);
+    void PrepareTexture(Configuration configuration);
+    void PrepareVertexArrays();
+    void PrepareFramebuffer();
+    void Draw();
+    bool Check(Configuration configuration);
+    void CleanCase();
+    void CleanTest();
 };
 
 /* SamplerTest class */
-} /* IncompleteTextureAccess namespace */
-} /* gl4cts */
+} // namespace IncompleteTextureAccess
+} // namespace gl4cts
 
 #endif // _GL4CINCOMPLETETEXTUREACCESSTESTS_HPP

@@ -62,30 +62,30 @@ namespace gl3cts
 class FunctionalTest : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	FunctionalTest(deqp::Context& context);
+    /* Public methods */
+    FunctionalTest(deqp::Context &context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+    virtual tcu::TestNode::IterateResult iterate();
 };
 
 /** Group class for GPU Shader FP64 conformance tests */
 class GLSLnoperspectiveTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	GLSLnoperspectiveTests(deqp::Context& context);
+    /* Public methods */
+    GLSLnoperspectiveTests(deqp::Context &context);
 
-	virtual ~GLSLnoperspectiveTests()
-	{
-	}
+    virtual ~GLSLnoperspectiveTests()
+    {
+    }
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	/* Private methods */
-	GLSLnoperspectiveTests(const GLSLnoperspectiveTests&);
-	GLSLnoperspectiveTests& operator=(const GLSLnoperspectiveTests&);
+    /* Private methods */
+    GLSLnoperspectiveTests(const GLSLnoperspectiveTests &);
+    GLSLnoperspectiveTests &operator=(const GLSLnoperspectiveTests &);
 };
-} /* gl3cts namespace */
+} // namespace gl3cts
 
 #endif // _GL3CGLSLNOPERSPECTIVETESTS_HPP

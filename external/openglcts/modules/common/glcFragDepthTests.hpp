@@ -34,18 +34,18 @@ namespace deqp
 class FragDepthTests : public TestCaseGroup
 {
 public:
-	FragDepthTests(Context& context, glu::GLSLVersion glslVersion);
-	~FragDepthTests(void);
+    FragDepthTests(Context &context, glu::GLSLVersion glslVersion);
+    ~FragDepthTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	FragDepthTests(const FragDepthTests& other);
-	FragDepthTests& operator=(const FragDepthTests& other);
+    FragDepthTests(const FragDepthTests &other);
+    FragDepthTests &operator=(const FragDepthTests &other);
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
-} // deqp
+} // namespace deqp
 
 #endif // _GLCFRAGDEPTHTESTS_HPP

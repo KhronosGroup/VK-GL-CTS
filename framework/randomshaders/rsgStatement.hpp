@@ -37,12 +37,12 @@ namespace rsg
 class Statement
 {
 public:
-								Statement			(void);
-	virtual						~Statement			(void);
+    Statement(void);
+    virtual ~Statement(void);
 
-	virtual Statement*			createNextChild		(GeneratorState& state)							= DE_NULL;
-	virtual void				tokenize			(GeneratorState& state, TokenStream& str) const	= DE_NULL;
-	virtual void				execute				(ExecutionContext& execCtx) const				= DE_NULL;
+    virtual Statement *createNextChild(GeneratorState &state)            = DE_NULL;
+    virtual void tokenize(GeneratorState &state, TokenStream &str) const = DE_NULL;
+    virtual void execute(ExecutionContext &execCtx) const                = DE_NULL;
 
 protected:
 };
@@ -55,80 +55,90 @@ protected:
 class ExpressionStatement : public Statement
 {
 public:
-							ExpressionStatement		(GeneratorState& state);
-	virtual					~ExpressionStatement	(void);
+    ExpressionStatement(GeneratorState &state);
+    virtual ~ExpressionStatement(void);
 
-	Statement*				createNextChild			(GeneratorState& state) { DE_UNREF(state); return DE_NULL; }
-	void					tokenize				(GeneratorState& state, TokenStream& str) const;
-	void					execute					(ExecutionContext& execCtx) const;
+    Statement *createNextChild(GeneratorState &state)
+    {
+        DE_UNREF(state);
+        return DE_NULL;
+    }
+    void tokenize(GeneratorState &state, TokenStream &str) const;
+    void execute(ExecutionContext &execCtx) const;
 
-	static float			getWeight				(const GeneratorState& state);
+    static float getWeight(const GeneratorState &state);
 
 protected:
-	Expression*				m_expression;
+    Expression *m_expression;
 };
 
 class DeclarationStatement : public Statement
 {
 public:
-							DeclarationStatement	(GeneratorState& state, Variable* variable = DE_NULL);
-	virtual					~DeclarationStatement	(void);
+    DeclarationStatement(GeneratorState &state, Variable *variable = DE_NULL);
+    virtual ~DeclarationStatement(void);
 
-	Statement*				createNextChild			(GeneratorState& state) { DE_UNREF(state); return DE_NULL; }
-	void					tokenize				(GeneratorState& state, TokenStream& str) const;
-	void					execute					(ExecutionContext& execCtx) const;
+    Statement *createNextChild(GeneratorState &state)
+    {
+        DE_UNREF(state);
+        return DE_NULL;
+    }
+    void tokenize(GeneratorState &state, TokenStream &str) const;
+    void execute(ExecutionContext &execCtx) const;
 
-	static float			getWeight				(const GeneratorState& state);
+    static float getWeight(const GeneratorState &state);
 
 protected:
-	const Variable*			m_variable;
-	Expression*				m_expression;
+    const Variable *m_variable;
+    Expression *m_expression;
 };
 
 class BlockStatement : public Statement
 {
 public:
-							BlockStatement			(GeneratorState& state);
-	virtual					~BlockStatement			(void);
+    BlockStatement(GeneratorState &state);
+    virtual ~BlockStatement(void);
 
-							BlockStatement			(void) : m_numChildrenToCreate(0) {}
-	void					init					(GeneratorState& state);
+    BlockStatement(void) : m_numChildrenToCreate(0)
+    {
+    }
+    void init(GeneratorState &state);
 
-	Statement*				createNextChild			(GeneratorState& state);
-	void					tokenize				(GeneratorState& state, TokenStream& str) const;
-	void					execute					(ExecutionContext& execCtx) const;
+    Statement *createNextChild(GeneratorState &state);
+    void tokenize(GeneratorState &state, TokenStream &str) const;
+    void execute(ExecutionContext &execCtx) const;
 
-	static float			getWeight				(const GeneratorState& state);
+    static float getWeight(const GeneratorState &state);
 
-	void					addChild				(Statement* statement);
+    void addChild(Statement *statement);
 
 private:
-	VariableScope			m_scope;
+    VariableScope m_scope;
 
-	int						m_numChildrenToCreate;
-	std::vector<Statement*>	m_children;
+    int m_numChildrenToCreate;
+    std::vector<Statement *> m_children;
 };
 
 class ConditionalStatement : public Statement
 {
 public:
-							ConditionalStatement	(GeneratorState& state);
-	virtual					~ConditionalStatement	(void);
+    ConditionalStatement(GeneratorState &state);
+    virtual ~ConditionalStatement(void);
 
-	Statement*				createNextChild			(GeneratorState& state);
-	void					tokenize				(GeneratorState& state, TokenStream& str) const;
-	void					execute					(ExecutionContext& execCtx) const;
+    Statement *createNextChild(GeneratorState &state);
+    void tokenize(GeneratorState &state, TokenStream &str) const;
+    void execute(ExecutionContext &execCtx) const;
 
-	static float			getWeight				(const GeneratorState& state);
+    static float getWeight(const GeneratorState &state);
 
 private:
-	bool					isElseBlockRequired		(const GeneratorState& state) const;
+    bool isElseBlockRequired(const GeneratorState &state) const;
 
-	Expression*				m_condition;
-	Statement*				m_trueStatement;
-	Statement*				m_falseStatement;
+    Expression *m_condition;
+    Statement *m_trueStatement;
+    Statement *m_falseStatement;
 
-	ValueScope				m_conditionalScope;
+    ValueScope m_conditionalScope;
 };
 
 // \note Used for generating mandatory assignments (shader outputs, function outputs).
@@ -137,19 +147,23 @@ private:
 class AssignStatement : public Statement
 {
 public:
-							AssignStatement			(const Variable* variable, Expression* value);
-							AssignStatement			(GeneratorState& state, const Variable* variable, ConstValueRangeAccess valueRange);
-	virtual					~AssignStatement		(void);
+    AssignStatement(const Variable *variable, Expression *value);
+    AssignStatement(GeneratorState &state, const Variable *variable, ConstValueRangeAccess valueRange);
+    virtual ~AssignStatement(void);
 
-	Statement*				createNextChild			(GeneratorState& state) { DE_UNREF(state); return DE_NULL; }
-	void					tokenize				(GeneratorState& state, TokenStream& str) const;
-	void					execute					(ExecutionContext& execCtx) const;
+    Statement *createNextChild(GeneratorState &state)
+    {
+        DE_UNREF(state);
+        return DE_NULL;
+    }
+    void tokenize(GeneratorState &state, TokenStream &str) const;
+    void execute(ExecutionContext &execCtx) const;
 
 private:
-	const Variable*			m_variable;
-	Expression*				m_valueExpr;
+    const Variable *m_variable;
+    Expression *m_valueExpr;
 };
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGSTATEMENT_HPP

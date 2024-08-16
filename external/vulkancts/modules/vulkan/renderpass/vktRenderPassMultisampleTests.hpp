@@ -31,9 +31,9 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup*	createRenderPassMultisampleTests	(tcu::TestContext& testCtx, const SharedGroupParams groupParams);
+tcu::TestCaseGroup *createRenderPassMultisampleTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTRENDERPASSMULTISAMPLETESTS_HPP

@@ -29,10 +29,10 @@ typedef struct tcuIOSApp_s tcuIOSApp;
 
 DE_BEGIN_EXTERN_C
 
-tcuIOSApp*		tcuIOSApp_create		(void* view);
-void			tcuIOSApp_destroy		(tcuIOSApp* app);
+tcuIOSApp *tcuIOSApp_create(void *view);
+void tcuIOSApp_destroy(tcuIOSApp *app);
 
-deBool			tcuIOSApp_iterate		(tcuIOSApp* app);
+bool tcuIOSApp_iterate(tcuIOSApp *app);
 
 DE_END_EXTERN_C
 

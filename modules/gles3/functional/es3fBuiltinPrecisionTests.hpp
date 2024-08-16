@@ -33,10 +33,10 @@ namespace gles3
 namespace Functional
 {
 
-TestCaseGroup* createBuiltinPrecisionTests (Context& context);
+TestCaseGroup *createBuiltinPrecisionTests(Context &context);
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FBUILTINPRECISIONTESTS_HPP

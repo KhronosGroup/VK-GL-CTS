@@ -32,9 +32,9 @@ namespace vkt
 namespace ubo
 {
 
-tcu::TestCaseGroup*		createTests		(tcu::TestContext& testCtx, const std::string& name);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
-} // ubo
-} // vkt
+} // namespace ubo
+} // namespace vkt
 
 #endif // _VKTUNIFORMBLOCKTESTS_HPP

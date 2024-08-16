@@ -33,110 +33,115 @@
 namespace glu
 {
 
-static inline int getTransferAlignment (tcu::TextureFormat format)
+static inline int getTransferAlignment(tcu::TextureFormat format)
 {
-	int pixelSize = format.getPixelSize();
-	if (deIsPowerOfTwo32(pixelSize))
-		return de::min(pixelSize, 8);
-	else
-		return 1;
+    int pixelSize = format.getPixelSize();
+    if (deIsPowerOfTwo32(pixelSize))
+        return de::min(pixelSize, 8);
+    else
+        return 1;
 }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Read pixels to pixel buffer access.
  * \note Stride must be default stride for format.
  *//*--------------------------------------------------------------------*/
-void readPixels (const RenderContext& context, int x, int y, const tcu::PixelBufferAccess& dst)
+void readPixels(const RenderContext &context, int x, int y, const tcu::PixelBufferAccess &dst)
 {
-	const glw::Functions& gl = context.getFunctions();
+    const glw::Functions &gl = context.getFunctions();
 
-	TCU_CHECK_INTERNAL(dst.getDepth() == 1);
-	TCU_CHECK_INTERNAL(dst.getRowPitch() == dst.getFormat().getPixelSize()*dst.getWidth());
+    TCU_CHECK_INTERNAL(dst.getDepth() == 1);
+    TCU_CHECK_INTERNAL(dst.getRowPitch() == dst.getFormat().getPixelSize() * dst.getWidth());
 
-	int				width		= dst.getWidth();
-	int				height		= dst.getHeight();
-	TransferFormat	format		= getTransferFormat(dst.getFormat());
+    int width             = dst.getWidth();
+    int height            = dst.getHeight();
+    TransferFormat format = getTransferFormat(dst.getFormat());
 
-	gl.pixelStorei(GL_PACK_ALIGNMENT, getTransferAlignment(dst.getFormat()));
-	gl.readPixels(x, y, width, height, format.format, format.dataType, dst.getDataPtr());
+    gl.pixelStorei(GL_PACK_ALIGNMENT, getTransferAlignment(dst.getFormat()));
+    gl.readPixels(x, y, width, height, format.format, format.dataType, dst.getDataPtr());
 }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Upload pixels from pixel buffer access.
  * \note Stride must be default stride for format.
  *//*--------------------------------------------------------------------*/
-void texImage2D (const RenderContext& context, deUint32 target, int level, deUint32 internalFormat, const tcu::ConstPixelBufferAccess& src)
+void texImage2D(const RenderContext &context, uint32_t target, int level, uint32_t internalFormat,
+                const tcu::ConstPixelBufferAccess &src)
 {
-	const glw::Functions& gl = context.getFunctions();
+    const glw::Functions &gl = context.getFunctions();
 
-	TCU_CHECK_INTERNAL(src.getDepth() == 1);
-	TCU_CHECK_INTERNAL(src.getRowPitch() == src.getFormat().getPixelSize()*src.getWidth());
+    TCU_CHECK_INTERNAL(src.getDepth() == 1);
+    TCU_CHECK_INTERNAL(src.getRowPitch() == src.getFormat().getPixelSize() * src.getWidth());
 
-	int				width		= src.getWidth();
-	int				height		= src.getHeight();
-	TransferFormat	format		= getTransferFormat(src.getFormat());
+    int width             = src.getWidth();
+    int height            = src.getHeight();
+    TransferFormat format = getTransferFormat(src.getFormat());
 
-	gl.pixelStorei(GL_UNPACK_ALIGNMENT, getTransferAlignment(src.getFormat()));
-	gl.texImage2D(target, level, internalFormat, width, height, 0, format.format, format.dataType, src.getDataPtr());
+    gl.pixelStorei(GL_UNPACK_ALIGNMENT, getTransferAlignment(src.getFormat()));
+    gl.texImage2D(target, level, internalFormat, width, height, 0, format.format, format.dataType, src.getDataPtr());
 }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Upload pixels from pixel buffer access.
  * \note Stride must be default stride for format.
  *//*--------------------------------------------------------------------*/
-void texImage3D (const RenderContext& context, deUint32 target, int level, deUint32 internalFormat, const tcu::ConstPixelBufferAccess& src)
+void texImage3D(const RenderContext &context, uint32_t target, int level, uint32_t internalFormat,
+                const tcu::ConstPixelBufferAccess &src)
 {
-	const glw::Functions& gl = context.getFunctions();
+    const glw::Functions &gl = context.getFunctions();
 
-	TCU_CHECK_INTERNAL(src.getRowPitch() == src.getFormat().getPixelSize()*src.getWidth());
-	TCU_CHECK_INTERNAL(src.getSlicePitch() == src.getRowPitch()*src.getHeight());
+    TCU_CHECK_INTERNAL(src.getRowPitch() == src.getFormat().getPixelSize() * src.getWidth());
+    TCU_CHECK_INTERNAL(src.getSlicePitch() == src.getRowPitch() * src.getHeight());
 
-	int				width		= src.getWidth();
-	int				height		= src.getHeight();
-	int				depth		= src.getDepth();
-	TransferFormat	format		= getTransferFormat(src.getFormat());
+    int width             = src.getWidth();
+    int height            = src.getHeight();
+    int depth             = src.getDepth();
+    TransferFormat format = getTransferFormat(src.getFormat());
 
-	gl.pixelStorei(GL_UNPACK_ALIGNMENT, getTransferAlignment(src.getFormat()));
-	gl.texImage3D(target, level, internalFormat, width, height, depth, 0, format.format, format.dataType, src.getDataPtr());
+    gl.pixelStorei(GL_UNPACK_ALIGNMENT, getTransferAlignment(src.getFormat()));
+    gl.texImage3D(target, level, internalFormat, width, height, depth, 0, format.format, format.dataType,
+                  src.getDataPtr());
 }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Upload pixels from pixel buffer access.
  * \note Stride must be default stride for format.
  *//*--------------------------------------------------------------------*/
-void texSubImage2D (const RenderContext& context, deUint32 target, int level, int x, int y, const tcu::ConstPixelBufferAccess& src)
+void texSubImage2D(const RenderContext &context, uint32_t target, int level, int x, int y,
+                   const tcu::ConstPixelBufferAccess &src)
 {
-	const glw::Functions& gl = context.getFunctions();
+    const glw::Functions &gl = context.getFunctions();
 
-	TCU_CHECK_INTERNAL(src.getDepth() == 1);
-	TCU_CHECK_INTERNAL(src.getRowPitch() == src.getFormat().getPixelSize()*src.getWidth());
+    TCU_CHECK_INTERNAL(src.getDepth() == 1);
+    TCU_CHECK_INTERNAL(src.getRowPitch() == src.getFormat().getPixelSize() * src.getWidth());
 
-	int				width		= src.getWidth();
-	int				height		= src.getHeight();
-	TransferFormat	format		= getTransferFormat(src.getFormat());
+    int width             = src.getWidth();
+    int height            = src.getHeight();
+    TransferFormat format = getTransferFormat(src.getFormat());
 
-	gl.pixelStorei(GL_UNPACK_ALIGNMENT, getTransferAlignment(src.getFormat()));
-	gl.texSubImage2D(target, level, x, y, width, height, format.format, format.dataType, src.getDataPtr());
+    gl.pixelStorei(GL_UNPACK_ALIGNMENT, getTransferAlignment(src.getFormat()));
+    gl.texSubImage2D(target, level, x, y, width, height, format.format, format.dataType, src.getDataPtr());
 }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Upload pixels from pixel buffer access.
  * \note Stride must be default stride for format.
  *//*--------------------------------------------------------------------*/
-void texSubImage3D (const RenderContext& context, deUint32 target, int level, int x, int y, int z, const tcu::ConstPixelBufferAccess& src)
+void texSubImage3D(const RenderContext &context, uint32_t target, int level, int x, int y, int z,
+                   const tcu::ConstPixelBufferAccess &src)
 {
-	const glw::Functions& gl = context.getFunctions();
+    const glw::Functions &gl = context.getFunctions();
 
-	TCU_CHECK_INTERNAL(src.getRowPitch() == src.getFormat().getPixelSize()*src.getWidth());
-	TCU_CHECK_INTERNAL(src.getSlicePitch() == src.getRowPitch()*src.getHeight());
+    TCU_CHECK_INTERNAL(src.getRowPitch() == src.getFormat().getPixelSize() * src.getWidth());
+    TCU_CHECK_INTERNAL(src.getSlicePitch() == src.getRowPitch() * src.getHeight());
 
-	int				width		= src.getWidth();
-	int				height		= src.getHeight();
-	int				depth		= src.getDepth();
-	TransferFormat	format		= getTransferFormat(src.getFormat());
+    int width             = src.getWidth();
+    int height            = src.getHeight();
+    int depth             = src.getDepth();
+    TransferFormat format = getTransferFormat(src.getFormat());
 
-	gl.pixelStorei(GL_UNPACK_ALIGNMENT, getTransferAlignment(src.getFormat()));
-	gl.texSubImage3D(target, level, x, y, z, width, height, depth, format.format, format.dataType, src.getDataPtr());
+    gl.pixelStorei(GL_UNPACK_ALIGNMENT, getTransferAlignment(src.getFormat()));
+    gl.texSubImage3D(target, level, x, y, z, width, height, depth, format.format, format.dataType, src.getDataPtr());
 }
 
-} // glu
+} // namespace glu

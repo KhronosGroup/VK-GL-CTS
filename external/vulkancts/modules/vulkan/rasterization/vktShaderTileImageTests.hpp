@@ -32,7 +32,7 @@ namespace vkt
 namespace rasterization
 {
 
-tcu::TestCaseGroup* createShaderTileImageTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createShaderTileImageTests(tcu::TestContext &testCtx);
 
 }
 } // namespace vkt

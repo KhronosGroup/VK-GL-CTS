@@ -28,102 +28,104 @@
 namespace vksc_server
 {
 
-void StringToAddress (const string& str, string& host, int& port)
+void StringToAddress(const string &str, string &host, int &port)
 {
-	auto pos = str.find_last_of(':');
-	if (pos == string::npos)
-	{
-		host = str.c_str();
-		port = DefaultPort;
-	}
-	else
-	{
-		host = str.substr(0, pos);
-		std::stringstream{str.substr(pos+1)} >> port;
-	}
+    auto pos = str.find_last_of(':');
+    if (pos == string::npos)
+    {
+        host = str.c_str();
+        port = DefaultPort;
+    }
+    else
+    {
+        host = str.substr(0, pos);
+        std::stringstream{str.substr(pos + 1)} >> port;
+    }
 }
 
-bool ProccessNetworkData (vector<u8>& buffer, const std::function<void(u32, vector<u8>)>& packetInterpreter)
+bool ProccessNetworkData(vector<u8> &buffer, const std::function<void(u32, vector<u8>)> &packetInterpreter)
 {
-	constexpr msize headerSize = 8;
+    constexpr msize headerSize = 8;
 
-	if (buffer.size() >= headerSize)
-	{
-		u32 classHash;
-		u32 packetSize;
+    if (buffer.size() >= headerSize)
+    {
+        u32 classHash;
+        u32 packetSize;
 
-		Serializer<ToRead>{buffer}.Serialize(classHash, packetSize);
+        Serializer<ToRead>{buffer}.Serialize(classHash, packetSize);
 
-		if (buffer.size() >= packetSize + headerSize)
-		{
-			auto itbeging	= buffer.begin() + headerSize;
-			auto itend		= itbeging + packetSize;
-			packetInterpreter(classHash, vector<u8>(itbeging, itend));
-			buffer.erase(buffer.begin(), itend);
-			return buffer.size() >= headerSize; // Try again?
-		}
-	}
+        if (buffer.size() >= packetSize + headerSize)
+        {
+            auto itbeging = buffer.begin() + headerSize;
+            auto itend    = itbeging + packetSize;
+            packetInterpreter(classHash, vector<u8>(itbeging, itend));
+            buffer.erase(buffer.begin(), itend);
+            return buffer.size() >= headerSize; // Try again?
+        }
+    }
 
-	return false;
+    return false;
 }
 
-void Send (de::Socket* socket, const vector<u8>& buffer)
+void Send(de::Socket *socket, const vector<u8> &buffer)
 {
-	msize sent_total{};
-	do
-	{
-		msize sent{};
-		auto result = socket->send(buffer.data() + sent_total, buffer.size() - sent_total, &sent);
-		if (result != DE_SOCKETRESULT_SUCCESS)
-			throw std::runtime_error("Can't send data to socket");
-		sent_total += sent;
-	} while (sent_total < buffer.size());
+    msize sent_total{};
+    do
+    {
+        msize sent{};
+        auto result = socket->send(buffer.data() + sent_total, buffer.size() - sent_total, &sent);
+        if (result != DE_SOCKETRESULT_SUCCESS)
+            throw std::runtime_error("Can't send data to socket");
+        sent_total += sent;
+    } while (sent_total < buffer.size());
 }
 
-void RecvSome (de::Socket* socket, vector<u8>& recvb)
+void RecvSome(de::Socket *socket, vector<u8> &recvb)
 {
-	msize received;
-	u8 data[8 * 1024];
-	auto result = socket->receive(data, sizeof(data), &received);
-	if (result != DE_SOCKETRESULT_SUCCESS)
-		throw std::runtime_error("Can't receive data from socket");
-	recvb.insert(recvb.end(), data, data + received);
+    msize received;
+    u8 data[8 * 1024];
+    auto result = socket->receive(data, sizeof(data), &received);
+    if (result != DE_SOCKETRESULT_SUCCESS)
+        throw std::runtime_error("Can't receive data from socket");
+    recvb.insert(recvb.end(), data, data + received);
 }
 
-void SendPayloadWithHeader (de::Socket* socket, u32 type, const std::vector<u8>& payload)
+void SendPayloadWithHeader(de::Socket *socket, u32 type, const std::vector<u8> &payload)
 {
-	u32 size = static_cast<u32>(payload.size());
+    u32 size = static_cast<u32>(payload.size());
 
-	vector<u8> header;
-	Serializer<ToWrite> header_serializer(header);
-	header_serializer.Serialize(type, size);
+    vector<u8> header;
+    Serializer<ToWrite> header_serializer(header);
+    header_serializer.Serialize(type, size);
 
-	Send(socket, header);
-	Send(socket, payload);
+    Send(socket, header);
+    Send(socket, payload);
 }
 
-vector<u8> RecvPacket (de::Socket* socket, vector<u8>& recvb, u32 type)
+vector<u8> RecvPacket(de::Socket *socket, vector<u8> &recvb, u32 type)
 {
-	bool result = false;
-	vector<u8> packet;
+    bool result = false;
+    vector<u8> packet;
 
-	while (socket->isConnected() && !result)
-	{
-		RecvSome(socket, recvb);
+    while (socket->isConnected() && !result)
+    {
+        RecvSome(socket, recvb);
 
-		auto interpret = [&](u32 classHash, vector<u8> bufferData)
-		{
-			if (classHash != type) throw std::runtime_error("Unexpected packet type received");
-			packet = std::move(bufferData);
-			result = true;
-		};
+        auto interpret = [&](u32 classHash, vector<u8> bufferData)
+        {
+            if (classHash != type)
+                throw std::runtime_error("Unexpected packet type received");
+            packet = std::move(bufferData);
+            result = true;
+        };
 
-		ProccessNetworkData(recvb, interpret);
-	}
+        ProccessNetworkData(recvb, interpret);
+    }
 
-	if (!result) throw std::runtime_error("connection lost before we could get data");
+    if (!result)
+        throw std::runtime_error("connection lost before we could get data");
 
-	return packet;
+    return packet;
 }
 
-};
+}; // namespace vksc_server

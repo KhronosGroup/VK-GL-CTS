@@ -28,21 +28,21 @@
 DE_BEGIN_EXTERN_C
 
 /* Basic types associated with threads. */
-typedef deUintptr	deThread;
-typedef void		(*deThreadFunc)			(void* arg);
+typedef uintptr_t deThread;
+typedef void (*deThreadFunc)(void *arg);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Thread scheduling priority.
  *//*--------------------------------------------------------------------*/
 typedef enum deThreadPriority_e
 {
-	DE_THREADPRIORITY_LOWEST = 0,
-	DE_THREADPRIORITY_LOW,
-	DE_THREADPRIORITY_NORMAL,
-	DE_THREADPRIORITY_HIGH,
-	DE_THREADPRIORITY_HIGHEST,
+    DE_THREADPRIORITY_LOWEST = 0,
+    DE_THREADPRIORITY_LOW,
+    DE_THREADPRIORITY_NORMAL,
+    DE_THREADPRIORITY_HIGH,
+    DE_THREADPRIORITY_HIGHEST,
 
-	DE_THREADPRIORITY_LAST
+    DE_THREADPRIORITY_LAST
 } deThreadPriority;
 
 /*--------------------------------------------------------------------*//*!
@@ -50,19 +50,19 @@ typedef enum deThreadPriority_e
  *//*--------------------------------------------------------------------*/
 typedef struct deThreadAttributes_s
 {
-	deThreadPriority		priority;
+    deThreadPriority priority;
 } deThreadAttributes;
 
-void			deSleep							(deUint32 milliseconds);
-void			deYield							(void);
+void deSleep(uint32_t milliseconds);
+void deYield(void);
 
-deThread		deThread_create					(deThreadFunc func, void* arg, const deThreadAttributes* attributes);
-deBool			deThread_join					(deThread thread);
-void			deThread_destroy				(deThread thread);
+deThread deThread_create(deThreadFunc func, void *arg, const deThreadAttributes *attributes);
+bool deThread_join(deThread thread);
+void deThread_destroy(deThread thread);
 
-deUint32		deGetNumTotalPhysicalCores		(void);
-deUint32		deGetNumTotalLogicalCores		(void);
-deUint32		deGetNumAvailableLogicalCores	(void);
+uint32_t deGetNumTotalPhysicalCores(void);
+uint32_t deGetNumTotalLogicalCores(void);
+uint32_t deGetNumAvailableLogicalCores(void);
 
 DE_END_EXTERN_C
 

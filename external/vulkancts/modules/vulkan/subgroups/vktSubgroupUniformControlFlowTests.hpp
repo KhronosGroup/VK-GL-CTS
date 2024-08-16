@@ -32,9 +32,9 @@ namespace vkt
 namespace subgroups
 {
 
-tcu::TestCaseGroup*	createSubgroupUniformControlFlowTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSubgroupUniformControlFlowTests(tcu::TestContext &testCtx);
 
-} // subgroups
-} // vkt
+} // namespace subgroups
+} // namespace vkt
 
 #endif // _VKTSUBGROUPUNIFORMCONTROLFLOWTESTS_HPP

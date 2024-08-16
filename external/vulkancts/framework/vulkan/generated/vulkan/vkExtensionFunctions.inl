@@ -4,7 +4,7 @@
  */
 
 
-bool checkVersion(deUint32 major, deUint32 minor, const uint32_t testedApiVersion)
+bool checkVersion(uint32_t major, uint32_t minor, const uint32_t testedApiVersion)
 {
 	uint32_t testedMajor = VK_API_VERSION_MAJOR(testedApiVersion);
 	uint32_t testedMinor = VK_API_VERSION_MINOR(testedApiVersion);

@@ -36,18 +36,18 @@ namespace Functional
 class MultisampleTests : public TestCaseGroup
 {
 public:
-						MultisampleTests	(Context& context);
-						~MultisampleTests	(void);
+    MultisampleTests(Context &context);
+    ~MultisampleTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						MultisampleTests	(const MultisampleTests& other);
-	MultisampleTests&	operator=			(const MultisampleTests& other);
+    MultisampleTests(const MultisampleTests &other);
+    MultisampleTests &operator=(const MultisampleTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FMULTISAMPLETESTS_HPP

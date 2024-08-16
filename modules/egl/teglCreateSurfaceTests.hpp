@@ -34,13 +34,13 @@ namespace egl
 class CreateSurfaceTests : public TestCaseGroup
 {
 public:
-							CreateSurfaceTests			(EglTestContext& eglTestCtx);
-	virtual					~CreateSurfaceTests			(void);
+    CreateSurfaceTests(EglTestContext &eglTestCtx);
+    virtual ~CreateSurfaceTests(void);
 
-	void					init						(void);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLCREATESURFACETESTS_HPP

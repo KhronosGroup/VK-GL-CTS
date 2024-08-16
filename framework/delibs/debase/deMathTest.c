@@ -26,82 +26,82 @@
 
 DE_BEGIN_EXTERN_C
 
-static deBool conversionToFloatLosesPrecision (deInt32 x)
+static bool conversionToFloatLosesPrecision(int32_t x)
 {
-	if (x == -0x7FFFFFFF - 1)
-		return DE_FALSE;
-	else if (x < 0)
-		return conversionToFloatLosesPrecision(-x);
-	else if (x == 0)
-		return DE_FALSE;
-	else if (((deUint32)x & 0x1) == 0)
-		return conversionToFloatLosesPrecision(x >> 1); /* remove trailing zeros */
-	else
-		return x > ((1 << 24) - 1); /* remaining part does not fit in the mantissa? */
+    if (x == -0x7FFFFFFF - 1)
+        return false;
+    else if (x < 0)
+        return conversionToFloatLosesPrecision(-x);
+    else if (x == 0)
+        return false;
+    else if (((uint32_t)x & 0x1) == 0)
+        return conversionToFloatLosesPrecision(x >> 1); /* remove trailing zeros */
+    else
+        return x > ((1 << 24) - 1); /* remaining part does not fit in the mantissa? */
 }
 
-static void testSingleInt32ToFloat (deInt32 x)
+static void testSingleInt32ToFloat(int32_t x)
 {
-	/* roundTowardsToNegInf(x) <= round(x) <= roundTowardsPosInf(x). */
-	/* \note: Need to use inequalities since round(x) returns arbitrary precision floats. */
-	DE_TEST_ASSERT(deInt32ToFloatRoundToNegInf(x) <= deInt32ToFloat(x));
-	DE_TEST_ASSERT(deInt32ToFloat(x) <= deInt32ToFloatRoundToPosInf(x));
+    /* roundTowardsToNegInf(x) <= round(x) <= roundTowardsPosInf(x). */
+    /* \note: Need to use inequalities since round(x) returns arbitrary precision floats. */
+    DE_TEST_ASSERT(deInt32ToFloatRoundToNegInf(x) <= deInt32ToFloat(x));
+    DE_TEST_ASSERT(deInt32ToFloat(x) <= deInt32ToFloatRoundToPosInf(x));
 
-	/* if precision is lost, floor(x) < ceil(x). Else floor(x) == ceil(x) */
-	if (conversionToFloatLosesPrecision(x))
-		DE_TEST_ASSERT(deInt32ToFloatRoundToNegInf(x) < deInt32ToFloatRoundToPosInf(x));
-	else
-		DE_TEST_ASSERT(deInt32ToFloatRoundToNegInf(x) == deInt32ToFloatRoundToPosInf(x));
+    /* if precision is lost, floor(x) < ceil(x). Else floor(x) == ceil(x) */
+    if (conversionToFloatLosesPrecision(x))
+        DE_TEST_ASSERT(deInt32ToFloatRoundToNegInf(x) < deInt32ToFloatRoundToPosInf(x));
+    else
+        DE_TEST_ASSERT(deInt32ToFloatRoundToNegInf(x) == deInt32ToFloatRoundToPosInf(x));
 
-	/* max one ulp from each other */
-	if (deInt32ToFloatRoundToNegInf(x) < deInt32ToFloatRoundToPosInf(x))
-	{
-		union
-		{
-			float f;
-			deInt32 u;
-		} v0, v1;
+    /* max one ulp from each other */
+    if (deInt32ToFloatRoundToNegInf(x) < deInt32ToFloatRoundToPosInf(x))
+    {
+        union
+        {
+            float f;
+            int32_t u;
+        } v0, v1;
 
-		v0.f = deInt32ToFloatRoundToNegInf(x);
-		v1.f = deInt32ToFloatRoundToPosInf(x);
+        v0.f = deInt32ToFloatRoundToNegInf(x);
+        v1.f = deInt32ToFloatRoundToPosInf(x);
 
-		DE_TEST_ASSERT(v0.u + 1 == v1.u || v0.u == v1.u + 1);
-	}
+        DE_TEST_ASSERT(v0.u + 1 == v1.u || v0.u == v1.u + 1);
+    }
 }
 
-static void testInt32ToFloat (void)
+static void testInt32ToFloat(void)
 {
-	const int	numIterations = 2500000;
+    const int numIterations = 2500000;
 
-	int			sign;
-	int			numBits;
-	int			delta;
-	int			ndx;
-	deRandom	rnd;
+    int sign;
+    int numBits;
+    int delta;
+    int ndx;
+    deRandom rnd;
 
-	deRandom_init(&rnd, 0xdeadbeefu-1);
+    deRandom_init(&rnd, 0xdeadbeefu - 1);
 
-	for (sign = -1; sign < 1; ++sign)
-	for (numBits = 0; numBits < 32; ++numBits)
-	for (delta = -2; delta < 3; ++delta)
-	{
-		const deInt64 x = (deInt64)(sign == -1 ? (-1) : (+1)) * (1LL << (deInt64)numBits) + (deInt64)delta;
+    for (sign = -1; sign < 1; ++sign)
+        for (numBits = 0; numBits < 32; ++numBits)
+            for (delta = -2; delta < 3; ++delta)
+            {
+                const int64_t x = (int64_t)(sign == -1 ? (-1) : (+1)) * (1LL << (int64_t)numBits) + (int64_t)delta;
 
-		/* would overflow */
-		if (x > 0x7FFFFFFF || x < -0x7FFFFFFF - 1)
-			continue;
+                /* would overflow */
+                if (x > 0x7FFFFFFF || x < -0x7FFFFFFF - 1)
+                    continue;
 
-		testSingleInt32ToFloat((deInt32)x);
-	}
+                testSingleInt32ToFloat((int32_t)x);
+            }
 
-	for (ndx = 0; ndx < numIterations; ++ndx)
-		testSingleInt32ToFloat((deInt32)deRandom_getUint32(&rnd));
+    for (ndx = 0; ndx < numIterations; ++ndx)
+        testSingleInt32ToFloat((int32_t)deRandom_getUint32(&rnd));
 }
 
-void deMath_selfTest (void)
+void deMath_selfTest(void)
 {
-	/* Test Int32ToFloat*(). */
-	testInt32ToFloat();
+    /* Test Int32ToFloat*(). */
+    testInt32ToFloat();
 }
 
 DE_END_EXTERN_C

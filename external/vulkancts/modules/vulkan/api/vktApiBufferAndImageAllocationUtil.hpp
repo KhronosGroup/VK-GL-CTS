@@ -34,7 +34,7 @@ namespace vk
 class Allocator;
 class MemoryRequirement;
 class Allocation;
-}
+} // namespace vk
 
 namespace vkt
 {
@@ -47,92 +47,66 @@ using namespace vk;
 class IBufferAllocator
 {
 public:
-	virtual ~IBufferAllocator () {}
+    virtual ~IBufferAllocator()
+    {
+    }
 
-	virtual void						createTestBuffer				(const DeviceInterface&		vk,
-																		 VkDevice					vkDevice,
-																		 deUint32					queueFamilyIndex,
-																		 VkDeviceSize				size,
-																		 VkBufferUsageFlags			usage,
-																		 Context&					context,
-																		 Allocator&					allocator,
-																		 Move<VkBuffer>&			buffer,
-																		 const MemoryRequirement&	requirement,
-																		 de::MovePtr<Allocation>&	memory) const = 0;
+    virtual void createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, uint32_t queueFamilyIndex,
+                                  VkDeviceSize size, VkBufferUsageFlags usage, Context &context, Allocator &allocator,
+                                  Move<VkBuffer> &buffer, const MemoryRequirement &requirement,
+                                  de::MovePtr<Allocation> &memory) const = 0;
 };
 
 class BufferSuballocation : public IBufferAllocator
 {
 public:
-	virtual void						createTestBuffer				(const DeviceInterface&		vk,
-																		 VkDevice					vkDevice,
-																		 deUint32					queueFamilyIndex,
-																		 VkDeviceSize				size,
-																		 VkBufferUsageFlags			usage,
-																		 Context&					context,
-																		 Allocator&					allocator,
-																		 Move<VkBuffer>&			buffer,
-																		 const MemoryRequirement&	requirement,
-																		 de::MovePtr<Allocation>&	memory) const; // override
+    virtual void createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, uint32_t queueFamilyIndex,
+                                  VkDeviceSize size, VkBufferUsageFlags usage, Context &context, Allocator &allocator,
+                                  Move<VkBuffer> &buffer, const MemoryRequirement &requirement,
+                                  de::MovePtr<Allocation> &memory) const; // override
 };
 
-class BufferDedicatedAllocation	: public IBufferAllocator
+class BufferDedicatedAllocation : public IBufferAllocator
 {
 public:
-	virtual void						createTestBuffer				(const DeviceInterface&		vk,
-																		 VkDevice					vkDevice,
-																		 deUint32					queueFamilyIndex,
-																		 VkDeviceSize				size,
-																		 VkBufferUsageFlags			usage,
-																		 Context&					context,
-																		 Allocator&					allocator,
-																		 Move<VkBuffer>&			buffer,
-																		 const MemoryRequirement&	requirement,
-																		 de::MovePtr<Allocation>&	memory) const; // override
+    virtual void createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, uint32_t queueFamilyIndex,
+                                  VkDeviceSize size, VkBufferUsageFlags usage, Context &context, Allocator &allocator,
+                                  Move<VkBuffer> &buffer, const MemoryRequirement &requirement,
+                                  de::MovePtr<Allocation> &memory) const; // override
 };
 
 class IImageAllocator
 {
 public:
-	virtual ~IImageAllocator () {}
+    virtual ~IImageAllocator()
+    {
+    }
 
-	virtual void						createTestImage					(tcu::IVec2					size,
-																		 VkFormat					format,
-																		 Context&					context,
-																		 Allocator&					allocator,
-																		 Move<VkImage>&				image,
-																		 const MemoryRequirement&	requirement,
-																		 de::MovePtr<Allocation>&	memory,
-																		 VkImageTiling				tiling = VK_IMAGE_TILING_OPTIMAL) const = 0;
+    virtual void createTestImage(tcu::IVec2 size, VkFormat format, Context &context, Allocator &allocator,
+                                 Move<VkImage> &image, const MemoryRequirement &requirement,
+                                 de::MovePtr<Allocation> &memory,
+                                 VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL) const = 0;
 };
 
 class ImageSuballocation : public IImageAllocator
 {
 public:
-	virtual void						createTestImage					(tcu::IVec2					size,
-																		 VkFormat					format,
-																		 Context&					context,
-																		 Allocator&					allocator,
-																		 Move<VkImage>&				image,
-																		 const MemoryRequirement&	requirement,
-																		 de::MovePtr<Allocation>&	memory,
-																		 VkImageTiling				tiling = VK_IMAGE_TILING_OPTIMAL) const; // override
+    virtual void createTestImage(tcu::IVec2 size, VkFormat format, Context &context, Allocator &allocator,
+                                 Move<VkImage> &image, const MemoryRequirement &requirement,
+                                 de::MovePtr<Allocation> &memory,
+                                 VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL) const; // override
 };
 
-class ImageDedicatedAllocation	: public IImageAllocator
+class ImageDedicatedAllocation : public IImageAllocator
 {
 public:
-	virtual void						createTestImage					(tcu::IVec2					size,
-																		 VkFormat					format,
-																		 Context&					context,
-																		 Allocator&					allocator,
-																		 Move<VkImage>&				image,
-																		 const MemoryRequirement&	requirement,
-																		 de::MovePtr<Allocation>&	memory,
-																		 VkImageTiling				tiling = VK_IMAGE_TILING_OPTIMAL) const; // override
+    virtual void createTestImage(tcu::IVec2 size, VkFormat format, Context &context, Allocator &allocator,
+                                 Move<VkImage> &image, const MemoryRequirement &requirement,
+                                 de::MovePtr<Allocation> &memory,
+                                 VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL) const; // override
 };
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIBUFFERANDIMAGEALLOCATIONUTIL_HPP

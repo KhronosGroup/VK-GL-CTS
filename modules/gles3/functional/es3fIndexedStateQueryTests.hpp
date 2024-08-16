@@ -36,17 +36,17 @@ namespace Functional
 class IndexedStateQueryTests : public TestCaseGroup
 {
 public:
-									IndexedStateQueryTests		(Context& context);
+    IndexedStateQueryTests(Context &context);
 
-	void							init						(void);
+    void init(void);
 
 private:
-									IndexedStateQueryTests		(const IndexedStateQueryTests& other);
-	IndexedStateQueryTests&			operator=					(const IndexedStateQueryTests& other);
+    IndexedStateQueryTests(const IndexedStateQueryTests &other);
+    IndexedStateQueryTests &operator=(const IndexedStateQueryTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FINDEXEDSTATEQUERYTESTS_HPP

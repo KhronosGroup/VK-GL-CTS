@@ -32,101 +32,99 @@ namespace glw
 
 // \todo [2014-03-19 pyry] Replace this with more generic system based on upstream XML spec desc.
 
-void initES20 (Functions* gl, const FunctionLoader* loader)
+void initES20(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitES20.inl"
 }
 
-void initES30 (Functions* gl, const FunctionLoader* loader)
+void initES30(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitES30.inl"
 }
 
-void initES31 (Functions* gl, const FunctionLoader* loader)
+void initES31(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitES31.inl"
 }
 
-void initES32 (Functions* gl, const FunctionLoader* loader)
+void initES32(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitES32.inl"
 }
 
-void initGL30Core (Functions* gl, const FunctionLoader* loader)
+void initGL30Core(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitGL30.inl"
 }
 
-void initGL31Core (Functions* gl, const FunctionLoader* loader)
+void initGL31Core(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitGL31.inl"
 }
 
-void initGL32Core (Functions* gl, const FunctionLoader* loader)
+void initGL32Core(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitGL32.inl"
 }
 
-void initGL33Core (Functions* gl, const FunctionLoader* loader)
+void initGL33Core(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitGL33.inl"
 }
 
-void initGL40Core (Functions* gl, const FunctionLoader* loader)
+void initGL40Core(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitGL40.inl"
 }
 
-void initGL41Core (Functions* gl, const FunctionLoader* loader)
+void initGL41Core(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitGL41.inl"
 }
 
-void initGL42Core (Functions* gl, const FunctionLoader* loader)
+void initGL42Core(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitGL42.inl"
 }
 
-void initGL43Core (Functions* gl, const FunctionLoader* loader)
+void initGL43Core(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitGL43.inl"
 }
 
-void initGL44Core (Functions* gl, const FunctionLoader* loader)
+void initGL44Core(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitGL44.inl"
 }
 
-void initGL45Core (Functions* gl, const FunctionLoader* loader)
+void initGL45Core(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitGL45.inl"
 }
 
-void initGL46Core (Functions* gl, const FunctionLoader* loader)
+void initGL46Core(Functions *gl, const FunctionLoader *loader)
 {
 #include "glwInitGL46.inl"
 }
 
-void initExtensionsGL (Functions* gl, const FunctionLoader* loader, int numExtensions, const char* const* extensions)
+void initExtensionsGL(Functions *gl, const FunctionLoader *loader, int numExtensions, const char *const *extensions)
 {
-	using std::string;
-	using std::set;
+    using std::set;
+    using std::string;
 
-	const set<string> extSet(extensions, extensions+numExtensions);
+    const set<string> extSet(extensions, extensions + numExtensions);
 
 #include "glwInitExtGL.inl"
-
 }
 
-void initExtensionsES (Functions* gl, const FunctionLoader* loader, int numExtensions, const char* const* extensions)
+void initExtensionsES(Functions *gl, const FunctionLoader *loader, int numExtensions, const char *const *extensions)
 {
-	using std::string;
-	using std::set;
+    using std::set;
+    using std::string;
 
-	const set<string> extSet(extensions, extensions+numExtensions);
+    const set<string> extSet(extensions, extensions + numExtensions);
 
 #include "glwInitExtES.inl"
-
 }
 
-} // glw
+} // namespace glw

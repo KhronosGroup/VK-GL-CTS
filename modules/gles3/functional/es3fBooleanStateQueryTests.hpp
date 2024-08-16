@@ -41,30 +41,30 @@ class GetIntegerVerifier;
 class GetInteger64Verifier;
 class GetFloatVerifier;
 
-} // BooleanStateQueryVerifiers
+} // namespace BooleanStateQueryVerifiers
 
 class BooleanStateQueryTests : public TestCaseGroup
 {
 public:
-																BooleanStateQueryTests	(Context& context);
-																~BooleanStateQueryTests	(void);
+    BooleanStateQueryTests(Context &context);
+    ~BooleanStateQueryTests(void);
 
-	void														init					(void);
-	void														deinit					(void);
+    void init(void);
+    void deinit(void);
 
 private:
-																BooleanStateQueryTests	(const BooleanStateQueryTests& other);
-	BooleanStateQueryTests&										operator=				(const BooleanStateQueryTests& other);
+    BooleanStateQueryTests(const BooleanStateQueryTests &other);
+    BooleanStateQueryTests &operator=(const BooleanStateQueryTests &other);
 
-	BooleanStateQueryVerifiers::IsEnabledVerifier*				m_verifierIsEnabled;
-	BooleanStateQueryVerifiers::GetBooleanVerifier*				m_verifierBoolean;
-	BooleanStateQueryVerifiers::GetIntegerVerifier*				m_verifierInteger;
-	BooleanStateQueryVerifiers::GetInteger64Verifier*			m_verifierInteger64;
-	BooleanStateQueryVerifiers::GetFloatVerifier*				m_verifierFloat;
+    BooleanStateQueryVerifiers::IsEnabledVerifier *m_verifierIsEnabled;
+    BooleanStateQueryVerifiers::GetBooleanVerifier *m_verifierBoolean;
+    BooleanStateQueryVerifiers::GetIntegerVerifier *m_verifierInteger;
+    BooleanStateQueryVerifiers::GetInteger64Verifier *m_verifierInteger64;
+    BooleanStateQueryVerifiers::GetFloatVerifier *m_verifierFloat;
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FBOOLEANSTATEQUERYTESTS_HPP

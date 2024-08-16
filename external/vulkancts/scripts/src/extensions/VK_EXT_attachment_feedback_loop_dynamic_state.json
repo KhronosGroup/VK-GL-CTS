@@ -1,14 +1,24 @@
 {
-	"register_extension":
-	{
-		"type": "device",
-		"core": ""
-	},
-	"mandatory_features":
-	{
-		"VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT":
-		[
-			{ "features": ["attachmentFeedbackLoopDynamicState"], "requirements": ["VK_EXT_attachment_feedback_loop_dynamic_state"], "mandatory_variant": ["vulkan"]}
-		]
-	}
+    "register_extension":
+        {
+            "type": "device",
+            "core": ""
+        },
+    "mandatory_features":
+        {
+            "VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT":
+                [
+                    {
+                        "features": [
+                            "attachmentFeedbackLoopDynamicState"
+                        ],
+                        "requirements": [
+                            "VK_EXT_attachment_feedback_loop_dynamic_state"
+                        ],
+                        "mandatory_variant": [
+                            "vulkan"
+                        ]
+                    }
+                ]
+        }
 }

@@ -37,89 +37,102 @@ namespace eglu
 class UniqueDisplay
 {
 public:
-							UniqueDisplay	(const eglw::Library& egl, eglw::EGLDisplay display);
-							~UniqueDisplay	(void);
+    UniqueDisplay(const eglw::Library &egl, eglw::EGLDisplay display);
+    ~UniqueDisplay(void);
 
-	eglw::EGLDisplay		operator*		(void) const { return m_display; }
-	operator				bool			(void) const;
+    eglw::EGLDisplay operator*(void) const
+    {
+        return m_display;
+    }
+    operator bool(void) const;
 
 private:
-	const eglw::Library&	m_egl;
-	eglw::EGLDisplay		m_display;
+    const eglw::Library &m_egl;
+    eglw::EGLDisplay m_display;
 
-	// Disabled
-	UniqueDisplay&			operator=		(const UniqueDisplay&);
-							UniqueDisplay	(const UniqueDisplay&);
+    // Disabled
+    UniqueDisplay &operator=(const UniqueDisplay &);
+    UniqueDisplay(const UniqueDisplay &);
 };
 
 class UniqueSurface
 {
 public:
-							UniqueSurface	(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLSurface surface);
-							~UniqueSurface	(void);
+    UniqueSurface(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLSurface surface);
+    ~UniqueSurface(void);
 
-	eglw::EGLSurface		operator*		(void) const { return m_surface; }
-	operator				bool			(void) const;
+    eglw::EGLSurface operator*(void) const
+    {
+        return m_surface;
+    }
+    operator bool(void) const;
 
 private:
-	const eglw::Library&	m_egl;
-	eglw::EGLDisplay		m_display;
-	eglw::EGLSurface		m_surface;
+    const eglw::Library &m_egl;
+    eglw::EGLDisplay m_display;
+    eglw::EGLSurface m_surface;
 
-	// Disabled
-	UniqueSurface&			operator=		(const UniqueSurface&);
-							UniqueSurface	(const UniqueSurface&);
+    // Disabled
+    UniqueSurface &operator=(const UniqueSurface &);
+    UniqueSurface(const UniqueSurface &);
 };
 
 class UniqueContext
 {
 public:
-							UniqueContext	(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLContext context);
-							~UniqueContext	(void);
+    UniqueContext(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLContext context);
+    ~UniqueContext(void);
 
-	eglw::EGLContext		operator*		(void) const { return m_context; }
-	operator				bool			(void) const;
+    eglw::EGLContext operator*(void) const
+    {
+        return m_context;
+    }
+    operator bool(void) const;
 
 private:
-	const eglw::Library&	m_egl;
-	eglw::EGLDisplay		m_display;
-	eglw::EGLContext		m_context;
+    const eglw::Library &m_egl;
+    eglw::EGLDisplay m_display;
+    eglw::EGLContext m_context;
 
-	// Disabled
-	UniqueContext			operator=		(const UniqueContext&);
-							UniqueContext	(const UniqueContext&);
+    // Disabled
+    UniqueContext operator=(const UniqueContext &);
+    UniqueContext(const UniqueContext &);
 };
 
 class ScopedCurrentContext
 {
 public:
-	ScopedCurrentContext	(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLSurface draw, eglw::EGLSurface read, eglw::EGLContext context);
-	~ScopedCurrentContext	(void);
+    ScopedCurrentContext(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLSurface draw,
+                         eglw::EGLSurface read, eglw::EGLContext context);
+    ~ScopedCurrentContext(void);
 
 private:
-	const eglw::Library&	m_egl;
-	eglw::EGLDisplay		m_display;
+    const eglw::Library &m_egl;
+    eglw::EGLDisplay m_display;
 };
 
 class UniqueImage
 {
 public:
-							UniqueImage		(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLImage image);
-							~UniqueImage	(void);
+    UniqueImage(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLImage image);
+    ~UniqueImage(void);
 
-	eglw::EGLImage			operator*		(void) const { return m_image; }
-	operator				bool			(void) const;
+    eglw::EGLImage operator*(void) const
+    {
+        return m_image;
+    }
+    operator bool(void) const;
 
 private:
-	const eglw::Library&	m_egl;
-	eglw::EGLDisplay		m_display;
-	eglw::EGLImage			m_image;
+    const eglw::Library &m_egl;
+    eglw::EGLDisplay m_display;
+    eglw::EGLImage m_image;
 
-	// Disabled
-	UniqueImage				operator=		(const UniqueImage&);
-							UniqueImage		(const UniqueImage&);
+    // Disabled
+    UniqueImage operator=(const UniqueImage &);
+    UniqueImage(const UniqueImage &);
 };
 
-} // eglu
+} // namespace eglu
 
 #endif // _EGLUUNIQUE_HPP

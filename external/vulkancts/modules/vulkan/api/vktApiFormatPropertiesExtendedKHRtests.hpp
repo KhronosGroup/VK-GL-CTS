@@ -31,9 +31,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*	createFormatPropertiesExtendedKHRTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createFormatPropertiesExtendedKHRTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIFORMATPROPERTIESEXTENDEDKHRTESTS_HPP

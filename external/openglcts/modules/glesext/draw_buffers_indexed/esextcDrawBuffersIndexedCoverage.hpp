@@ -38,20 +38,20 @@ namespace glcts
 class DrawBuffersIndexedCoverage : public TestCaseBase
 {
 public:
-	/** Public methods
-	 **/
-	DrawBuffersIndexedCoverage(Context& context, const ExtParameters& extParams, const char* name,
-							   const char* description);
+    /** Public methods
+     **/
+    DrawBuffersIndexedCoverage(Context &context, const ExtParameters &extParams, const char *name,
+                               const char *description);
 
-	virtual ~DrawBuffersIndexedCoverage()
-	{
-	}
+    virtual ~DrawBuffersIndexedCoverage()
+    {
+    }
 
 private:
-	/** Private methods
-	 **/
-	virtual void		  init();
-	virtual IterateResult iterate();
+    /** Private methods
+     **/
+    virtual void init();
+    virtual IterateResult iterate();
 };
 
 } // namespace glcts

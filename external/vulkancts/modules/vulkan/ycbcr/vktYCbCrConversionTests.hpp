@@ -31,9 +31,9 @@ namespace vkt
 namespace ycbcr
 {
 
-tcu::TestCaseGroup*	createConversionTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createConversionTests(tcu::TestContext &testCtx);
 
-} // ycbcr
-} // vkt
+} // namespace ycbcr
+} // namespace vkt
 
 #endif // _VKTYCBCRCONVERSIONTESTS_HPP

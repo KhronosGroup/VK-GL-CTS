@@ -32,9 +32,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createImageHostImageCopyTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageHostImageCopyTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGEHOSTIMAGECOPYTESTS_HPP

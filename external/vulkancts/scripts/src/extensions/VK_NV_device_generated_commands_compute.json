@@ -1,14 +1,24 @@
 {
-	"register_extension":
-	{
-		"type": "device",
-		"core": ""
-	},
-	"mandatory_features":
-	{
-		"VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV":
-		[
-			{ "features": ["deviceGeneratedCompute"], "requirements": ["VK_NV_device_generated_commands_compute"], "mandatory_variant": ["vulkan"] }
-		]
-	}
+    "register_extension":
+        {
+            "type": "device",
+            "core": ""
+        },
+    "mandatory_features":
+        {
+            "VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV":
+                [
+                    {
+                        "features": [
+                            "deviceGeneratedCompute"
+                        ],
+                        "requirements": [
+                            "VK_NV_device_generated_commands_compute"
+                        ],
+                        "mandatory_variant": [
+                            "vulkan"
+                        ]
+                    }
+                ]
+        }
 }

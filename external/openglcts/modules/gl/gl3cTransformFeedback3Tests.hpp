@@ -48,45 +48,52 @@ namespace gl3cts
 class TransformFeedbackBaseTestCase : public deqp::TestCase
 {
 public:
-	TransformFeedbackBaseTestCase(deqp::Context& context, const char* name, const char* desc)
-		: TestCase(context, name, desc), m_testSupported(false), m_vao(0), m_vbo(0), m_program(0)
-	{
-	}
+    TransformFeedbackBaseTestCase(deqp::Context &context, const char *name, const char *desc)
+        : TestCase(context, name, desc)
+        , m_testSupported(false)
+        , m_vao(0)
+        , m_vbo(0)
+        , m_program(0)
+    {
+    }
 
-	void deinit() override;
-	void init() override;
+    void deinit() override;
+    void init() override;
 
-	bool createTransformBuffer(const int size, const glw::GLint buffer, const glw::GLint index);
+    bool createTransformBuffer(const int size, const glw::GLint buffer, const glw::GLint index);
 
-	void createVertexBuffers(const glw::GLuint& program, std::vector<glw::GLfloat>& verts);
-	void releaseVertexBuffers();
+    void createVertexBuffers(const glw::GLuint &program, std::vector<glw::GLfloat> &verts);
+    void releaseVertexBuffers();
 
-	bool readBuffer(const int size, const glw::GLint buffer, std::vector<char>& data);
-	bool compareArrays(const glw::GLfloat* const d1, const int s1, const glw::GLfloat* d2, int s2);
+    bool readBuffer(const int size, const glw::GLint buffer, std::vector<char> &data);
+    bool compareArrays(const glw::GLfloat *const d1, const int s1, const glw::GLfloat *d2, int s2);
 
-	void buildTransformFeedbackProgram(const char* vsSource, const char* gsSource, const char* fsSource);
+    void buildTransformFeedbackProgram(const char *vsSource, const char *gsSource, const char *fsSource);
 
-	/* Returns the number of transform feedback varyings. */
-	virtual glw::GLsizei varyingsCount() = 0;
+    /* Returns the number of transform feedback varyings. */
+    virtual glw::GLsizei varyingsCount() = 0;
 
-	/* Returns the array of transform feedback varying names. */
-	virtual const char** varyings() = 0;
+    /* Returns the array of transform feedback varying names. */
+    virtual const char **varyings() = 0;
 
-	/* Returns the transform feedback buffer mode. */
-	virtual glw::GLenum bufferMode() { return GL_INTERLEAVED_ATTRIBS; }
+    /* Returns the transform feedback buffer mode. */
+    virtual glw::GLenum bufferMode()
+    {
+        return GL_INTERLEAVED_ATTRIBS;
+    }
 
 protected:
-	std::map<std::string, std::string> specializationMap;
+    std::map<std::string, std::string> specializationMap;
 
-	bool m_testSupported;
+    bool m_testSupported;
 
-	glw::GLuint m_vao;
-	glw::GLuint m_vbo;
+    glw::GLuint m_vao;
+    glw::GLuint m_vbo;
 
-	glw::GLuint	m_program;
+    glw::GLuint m_program;
 
-	static const glw::GLchar* m_shader_vert;
-	static const glw::GLchar* m_shader_frag;
+    static const glw::GLchar *m_shader_vert;
+    static const glw::GLchar *m_shader_frag;
 };
 
 /*
@@ -110,21 +117,24 @@ varying definition. Values are therefore captured tightly to a buffer.
 class TransformFeedbackMultipleStreamsTestCase : public TransformFeedbackBaseTestCase
 {
 public:
-	/* Public methods */
-	TransformFeedbackMultipleStreamsTestCase(deqp::Context& context);
+    /* Public methods */
+    TransformFeedbackMultipleStreamsTestCase(deqp::Context &context);
 
-	void init() override;
+    void init() override;
 
-	tcu::TestNode::IterateResult iterate() override;
+    tcu::TestNode::IterateResult iterate() override;
 
-	glw::GLsizei varyingsCount() override { return 5; }
+    glw::GLsizei varyingsCount() override
+    {
+        return 5;
+    }
 
-	const char** varyings() override;
+    const char **varyings() override;
 
 private:
-	/* Private members */
-	static const glw::GLchar* m_shader_mult_streams_vert;
-	static const glw::GLchar* m_shader_mult_streams_geom;
+    /* Private members */
+    static const glw::GLchar *m_shader_mult_streams_vert;
+    static const glw::GLchar *m_shader_mult_streams_geom;
 };
 
 /*
@@ -146,14 +156,17 @@ immutability.
 class TransformFeedbackSkipComponentsTestCase : public TransformFeedbackBaseTestCase
 {
 public:
-	/* Public methods */
-	TransformFeedbackSkipComponentsTestCase(deqp::Context& context);
+    /* Public methods */
+    TransformFeedbackSkipComponentsTestCase(deqp::Context &context);
 
-	tcu::TestNode::IterateResult iterate() override;
+    tcu::TestNode::IterateResult iterate() override;
 
-	glw::GLsizei varyingsCount() override { return 10; }
+    glw::GLsizei varyingsCount() override
+    {
+        return 10;
+    }
 
-	const char** varyings() override;
+    const char **varyings() override;
 };
 
 /*
@@ -171,28 +184,31 @@ before actual values.
 class TransformFeedbackSkipMultipleBuffersTestCase : public TransformFeedbackBaseTestCase
 {
 public:
-	/* Public methods */
-	TransformFeedbackSkipMultipleBuffersTestCase(deqp::Context& context);
+    /* Public methods */
+    TransformFeedbackSkipMultipleBuffersTestCase(deqp::Context &context);
 
-	tcu::TestNode::IterateResult iterate() override;
+    tcu::TestNode::IterateResult iterate() override;
 
-	glw::GLsizei varyingsCount() override { return 11; }
+    glw::GLsizei varyingsCount() override
+    {
+        return 11;
+    }
 
-	const char** varyings() override;
+    const char **varyings() override;
 };
 
 /** Test group which encapsulates all conformance tests */
 class TransformFeedback3Tests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	TransformFeedback3Tests(deqp::Context& context);
+    /* Public methods */
+    TransformFeedback3Tests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	TransformFeedback3Tests(const TransformFeedback3Tests& other);
-	TransformFeedback3Tests& operator=(const TransformFeedback3Tests& other);
+    TransformFeedback3Tests(const TransformFeedback3Tests &other);
+    TransformFeedback3Tests &operator=(const TransformFeedback3Tests &other);
 };
 
 } // namespace gl3cts

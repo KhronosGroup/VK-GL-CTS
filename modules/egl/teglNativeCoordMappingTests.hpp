@@ -34,11 +34,11 @@ namespace egl
 class NativeCoordMappingTests : public TestCaseGroup
 {
 public:
-			NativeCoordMappingTests	(EglTestContext& eglTestCtx);
-	void	init					(void);
+    NativeCoordMappingTests(EglTestContext &eglTestCtx);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLNATIVECOORDMAPPINGTESTS_HPP

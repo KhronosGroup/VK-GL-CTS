@@ -30,10 +30,10 @@ namespace gles3
 {
 
 using deqp::Context;
-using deqp::TestCaseGroup;
 using deqp::TestCase;
+using deqp::TestCaseGroup;
 
-} // gles3
-} // deqp
+} // namespace gles3
+} // namespace deqp
 
 #endif // _TES3TESTCASE_HPP

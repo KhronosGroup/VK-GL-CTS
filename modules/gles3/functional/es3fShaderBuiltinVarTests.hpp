@@ -35,18 +35,18 @@ namespace Functional
 class ShaderBuiltinVarTests : public TestCaseGroup
 {
 public:
-								ShaderBuiltinVarTests		(Context& context);
-	virtual						~ShaderBuiltinVarTests		(void);
+    ShaderBuiltinVarTests(Context &context);
+    virtual ~ShaderBuiltinVarTests(void);
 
-	virtual void				init						(void);
+    virtual void init(void);
 
 private:
-								ShaderBuiltinVarTests		(const ShaderBuiltinVarTests&);		// not allowed!
-	ShaderBuiltinVarTests&		operator=					(const ShaderBuiltinVarTests&);		// not allowed!
+    ShaderBuiltinVarTests(const ShaderBuiltinVarTests &);            // not allowed!
+    ShaderBuiltinVarTests &operator=(const ShaderBuiltinVarTests &); // not allowed!
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSHADERBUILTINVARTESTS_HPP

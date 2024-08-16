@@ -38,47 +38,46 @@ namespace
 class VertexAttributeDivisorCase : public TestCase
 {
 public:
-					VertexAttributeDivisorCase	(Context& context, const char* name, const char* description);
-	IterateResult	iterate						(void);
+    VertexAttributeDivisorCase(Context &context, const char *name, const char *description);
+    IterateResult iterate(void);
 };
 
-VertexAttributeDivisorCase::VertexAttributeDivisorCase (Context& context, const char* name, const char* description)
-	: TestCase(context, name, description)
+VertexAttributeDivisorCase::VertexAttributeDivisorCase(Context &context, const char *name, const char *description)
+    : TestCase(context, name, description)
 {
 }
 
-VertexAttributeDivisorCase::IterateResult VertexAttributeDivisorCase::iterate (void)
+VertexAttributeDivisorCase::IterateResult VertexAttributeDivisorCase::iterate(void)
 {
-	glu::CallLogWrapper gl(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
+    glu::CallLogWrapper gl(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 
-	m_testCtx.getLog()	<< tcu::TestLog::Message
-						<< "Using VertexAttribDivisor with default VAO.\n"
-						<< "Expecting no error."
-						<< tcu::TestLog::EndMessage;
+    m_testCtx.getLog() << tcu::TestLog::Message << "Using VertexAttribDivisor with default VAO.\n"
+                       << "Expecting no error." << tcu::TestLog::EndMessage;
 
-	gl.enableLogging(true);
-	gl.glBindVertexArray(0);
+    gl.enableLogging(true);
+    gl.glBindVertexArray(0);
 
-	// Using vertexAttribDivisor with default vao is not an error in ES 3.0.
-	gl.glVertexAttribDivisor(0, 3);
-	GLU_EXPECT_NO_ERROR(gl.glGetError(), "VertexAttribDivisor");
+    // Using vertexAttribDivisor with default vao is not an error in ES 3.0.
+    gl.glVertexAttribDivisor(0, 3);
+    GLU_EXPECT_NO_ERROR(gl.glGetError(), "VertexAttribDivisor");
 
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	return STOP;
+    m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    return STOP;
 }
 
-} // anonymous
+} // namespace
 
-DefaultVertexArrayObjectTests::DefaultVertexArrayObjectTests (Context& context)
-	: TestCaseGroup(context, "default_vertex_array_object", "Default vertex array object")
+DefaultVertexArrayObjectTests::DefaultVertexArrayObjectTests(Context &context)
+    : TestCaseGroup(context, "default_vertex_array_object", "Default vertex array object")
 {
 }
 
-void DefaultVertexArrayObjectTests::init (void)
+void DefaultVertexArrayObjectTests::init(void)
 {
-	addChild(new VertexAttributeDivisorCase(m_context, "vertex_attrib_divisor", "Use VertexAttribDivisor with default VAO"));
+    addChild(
+        new VertexAttributeDivisorCase(m_context, "vertex_attrib_divisor", "Use VertexAttribDivisor with default VAO"));
 }
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp

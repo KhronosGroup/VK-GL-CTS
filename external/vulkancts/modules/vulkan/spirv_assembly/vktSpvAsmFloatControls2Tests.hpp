@@ -31,10 +31,10 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createFloatControls2ComputeGroup		(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createFloatControls2GraphicsGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createFloatControls2ComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createFloatControls2GraphicsGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMFLOATCONTROLS2TESTS_HPP

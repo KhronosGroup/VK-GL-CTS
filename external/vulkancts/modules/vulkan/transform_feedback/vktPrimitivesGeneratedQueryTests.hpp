@@ -31,9 +31,9 @@ namespace vkt
 namespace TransformFeedback
 {
 
-tcu::TestCaseGroup* createPrimitivesGeneratedQueryTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createPrimitivesGeneratedQueryTests(tcu::TestContext &testCtx);
 
-} // TransformFeedback
-} // vkt
+} // namespace TransformFeedback
+} // namespace vkt
 
 #endif // _VKTPRIMITIVESGENERATEDQUERYTESTS_HPP

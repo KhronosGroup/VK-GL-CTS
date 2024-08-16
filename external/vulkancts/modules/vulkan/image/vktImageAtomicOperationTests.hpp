@@ -31,9 +31,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageAtomicOperationTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGEATOMICOPERATIONTESTS_HPP
