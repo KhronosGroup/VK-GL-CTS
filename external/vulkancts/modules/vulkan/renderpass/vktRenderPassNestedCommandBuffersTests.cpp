@@ -147,7 +147,7 @@ void NestedCommandBuffersTestInstance::createRenderPass(void)
             vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,            // VkAttachmentLoadOp stencilLoadOp;
             vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,           // VkAttachmentStoreOp stencilStoreOp;
             vk::VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout initialLayout;
-            vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,       // VkImageLayout finalLayout;
+            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,   // VkImageLayout finalLayout;
         };
 
         vk::VkAttachmentReference2 colorAttachment = {
@@ -193,15 +193,15 @@ void NestedCommandBuffersTestInstance::createRenderPass(void)
     else if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
     {
         vk::VkAttachmentDescription attachmentDescription = {
-            (vk::VkAttachmentDescriptionFlags)0u,     // VkAttachmentDescriptionFlags flags;
-            format,                                   // VkFormat format;
-            vk::VK_SAMPLE_COUNT_1_BIT,                // VkSampleCountFlagBits samples;
-            vk::VK_ATTACHMENT_LOAD_OP_CLEAR,          // VkAttachmentLoadOp loadOp;
-            vk::VK_ATTACHMENT_STORE_OP_STORE,         // VkAttachmentStoreOp storeOp;
-            vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,      // VkAttachmentLoadOp stencilLoadOp;
-            vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,     // VkAttachmentStoreOp stencilStoreOp;
-            vk::VK_IMAGE_LAYOUT_UNDEFINED,            // VkImageLayout initialLayout;
-            vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout finalLayout;
+            (vk::VkAttachmentDescriptionFlags)0u,         // VkAttachmentDescriptionFlags flags;
+            format,                                       // VkFormat format;
+            vk::VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits samples;
+            vk::VK_ATTACHMENT_LOAD_OP_CLEAR,              // VkAttachmentLoadOp loadOp;
+            vk::VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp storeOp;
+            vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp stencilLoadOp;
+            vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp stencilStoreOp;
+            vk::VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout initialLayout;
+            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout finalLayout;
         };
 
         vk::VkAttachmentReference colorAttachment = {
@@ -251,16 +251,15 @@ void NestedCommandBuffersTestInstance::beginRenderPass(void)
     const vk::VkClearValue attachmentClearValue = vk::makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
     const vk::VkRect2D renderArea               = {{0, 0}, {width, height}};
 
+    const auto preImageBarrier = makeImageMemoryBarrier(
+        vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+        vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, **m_image, outputSubresourceRange);
+    vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &preImageBarrier);
+
     if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
     {
-        const auto preImageBarrier = makeImageMemoryBarrier(
-            vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
-            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, **m_image, outputSubresourceRange);
-        vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                              &preImageBarrier);
-
         vk::VkRenderingAttachmentInfo colorAttachment = {
             vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
             DE_NULL,                                             // const void* pNext;
@@ -332,15 +331,6 @@ void NestedCommandBuffersTestInstance::endRenderPass(void)
     if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
     {
         vk.cmdEndRendering(*m_cmdBuffer);
-
-        const auto postImageBarrier =
-            makeImageMemoryBarrier(vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
-                                   vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                   vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_image, outputSubresourceRange);
-        vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                              &postImageBarrier);
     }
     else if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
     {
@@ -355,6 +345,14 @@ void NestedCommandBuffersTestInstance::endRenderPass(void)
     {
         vk.cmdEndRenderPass(*m_cmdBuffer);
     }
+
+    const auto postImageBarrier =
+        makeImageMemoryBarrier(vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
+                               vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                               **m_image, outputSubresourceRange);
+    vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u,
+                          &postImageBarrier);
 }
 
 tcu::TestStatus NestedCommandBuffersTestInstance::iterate(void)
@@ -522,6 +520,8 @@ tcu::TestStatus NestedCommandBuffersTestInstance::iterate(void)
                             &copyRegion);
     vk::endCommandBuffer(vk, *m_cmdBuffer);
     vk::submitCommandsAndWait(vk, device, queue, m_cmdBuffer.get());
+
+    invalidateAlloc(vk, device, colorOutputBuffer->getAllocation());
 
     tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(
         vk::mapVkFormat(format), width, height, 1, (const void *)colorOutputBuffer->getAllocation().getHostPtr());
