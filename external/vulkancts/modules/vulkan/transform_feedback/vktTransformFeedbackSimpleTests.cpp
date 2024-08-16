@@ -6228,7 +6228,7 @@ public:
     {
     }
 
-    virtual ~TestGroupWithClean(void)
+    void deinit(void) override
     {
         cleanupDevices();
     }
