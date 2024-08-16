@@ -440,11 +440,11 @@ public:
         auto appendPipelineLibrary = [this, &pipelineLayout](RayTracingPipeline *pl) -> void
         { m_libraries.emplace_back(makeVkSharedPtr(pl->createPipeline(m_vkd, m_device, pipelineLayout))); };
 
-        DE_ASSERT((VkShaderModule(0) != *m_rgenModule));
-        DE_ASSERT((VkShaderModule(0) != *m_missModule));
-        DE_ASSERT(m_params.ahit() == (VkShaderModule(0) != *m_ahitModule));
-        DE_ASSERT((VkShaderModule(0) != *m_chitModule));
-        DE_ASSERT(checkIsect == (VkShaderModule(0) != *m_isectModule));
+        DE_ASSERT((*m_rgenModule != VK_NULL_HANDLE));
+        DE_ASSERT((*m_missModule != VK_NULL_HANDLE));
+        DE_ASSERT(m_params.ahit() == (*m_ahitModule != VK_NULL_HANDLE));
+        DE_ASSERT((*m_chitModule != VK_NULL_HANDLE));
+        DE_ASSERT(checkIsect == (*m_isectModule != VK_NULL_HANDLE));
 
         // rgen in the main pipeline only
         addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, *m_rgenModule, groupIndex++);
@@ -760,7 +760,7 @@ VkImageCreateInfo PipelineFlagsInstance::makeImageCreateInfo() const
     const uint32_t familyIndex              = m_context.getUniversalQueueFamilyIndex();
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,               // VkStructureType sType;
-        DE_NULL,                                           // const void* pNext;
+        nullptr,                                           // const void* pNext;
         (VkImageCreateFlags)0u,                            // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                  // VkImageType imageType;
         m_format,                                          // VkFormat format;
@@ -1329,7 +1329,7 @@ tcu::TestStatus PipelineFlagsInstance::iterate(void)
     const Move<VkImageView> imageView =
         makeImageView(vkd, device, **image, VK_IMAGE_VIEW_TYPE_2D, m_format, imageSubresourceRange);
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     const uint32_t resultBufferSize = (m_params.width * m_params.height * mapVkFormat(m_format).getPixelSize());
     const VkBufferCreateInfo resultBufferCreateInfo =
@@ -1373,8 +1373,7 @@ tcu::TestStatus PipelineFlagsInstance::iterate(void)
     std::tie(hitShaderBindingTable, hitShaderBindingTableRegion) =
         rayTracingPipeline->createHitShaderBindingTable(*pipeline);
 
-    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
-        makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     const Move<VkCommandPool> cmdPool = createCommandPool(vkd, device, 0, familyIndex);
     const Move<VkCommandBuffer> cmdBuffer =
@@ -1387,7 +1386,7 @@ tcu::TestStatus PipelineFlagsInstance::iterate(void)
 
     VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-        DE_NULL,                                                           //  const void* pNext;
+        nullptr,                                                           //  const void* pNext;
         1u,                                                                //  uint32_t accelerationStructureCount;
         tlasPtr->getPtr() //  const VkAccelerationStructureKHR* pAccelerationStructures;
     };
@@ -1400,7 +1399,7 @@ tcu::TestStatus PipelineFlagsInstance::iterate(void)
         .update(vkd, device);
 
     vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                              &descriptorSet.get(), 0, DE_NULL);
+                              &descriptorSet.get(), 0, nullptr);
 
     vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 

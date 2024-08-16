@@ -44,7 +44,7 @@ const char *getCommLinkStateName(CommLinkState state)
         return "COMMLINKSTATE_ERROR";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

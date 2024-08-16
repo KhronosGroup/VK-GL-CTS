@@ -288,9 +288,9 @@ tcu::TestStatus WorkgroupStorageTestInstance::iterate(void)
         vk::DescriptorSetUpdateBuilder updateBuilder;
 
         vk::VkDescriptorImageInfo descStorageImgDst =
-            makeDescriptorImageInfo((vk::VkSampler)0, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
         vk::VkDescriptorImageInfo descStorageImgSrc =
-            makeDescriptorImageInfo((vk::VkSampler)0, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
 
         updateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                                   vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descStorageImgDst);
@@ -311,7 +311,7 @@ tcu::TestStatus WorkgroupStorageTestInstance::iterate(void)
 
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                 &*descriptorSet, 0u, DE_NULL);
+                                 &*descriptorSet, 0u, nullptr);
         vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
         endCommandBuffer(vk, *cmdBuffer);
 

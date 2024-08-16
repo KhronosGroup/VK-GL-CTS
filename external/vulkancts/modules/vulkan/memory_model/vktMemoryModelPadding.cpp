@@ -313,10 +313,10 @@ tcu::TestStatus PaddingTestInstance::iterate(void)
             nullptr,                                                 // const VkSpecializationInfo* pSpecializationInfo;
         },
         pipelineLayout.get(), // layout
-        DE_NULL,              // basePipelineHandle
+        VK_NULL_HANDLE,       // basePipelineHandle
         0,                    // basePipelineIndex
     };
-    auto pipeline = vk::createComputePipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+    auto pipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
     // Synchronization barriers.
     auto inputBufferHostToDevBarrier = vk::makeBufferMemoryBarrier(

@@ -127,13 +127,13 @@ void allocateStagingBuffers(const DeviceInterface &vkd, VkDevice device, Allocat
     {
         const VkBufferCreateInfo bufferInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             (VkBufferCreateFlags)0u,
             (VkDeviceSize)imageData.getPlaneSize(planeNdx),
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             VK_SHARING_MODE_EXCLUSIVE,
             0u,
-            (const uint32_t *)DE_NULL,
+            nullptr,
         };
         Move<VkBuffer> buffer(createBuffer(vkd, device, &bufferInfo));
         MovePtr<Allocation> allocation(allocator.allocate(getBufferMemoryRequirements(vkd, device, *buffer),
@@ -392,7 +392,7 @@ void uploadImage(const DeviceInterface &vkd, VkDevice device, uint32_t queueFami
 
         {
             const VkImageMemoryBarrier preCopyBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                         DE_NULL,
+                                                         nullptr,
                                                          (VkAccessFlags)0,
                                                          VK_ACCESS_TRANSFER_WRITE_BIT,
                                                          VK_IMAGE_LAYOUT_UNDEFINED,
@@ -404,8 +404,7 @@ void uploadImage(const DeviceInterface &vkd, VkDevice device, uint32_t queueFami
 
             vkd.cmdPipelineBarrier(*cmdBuffer, (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT,
                                    (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0u, 0u,
-                                   (const VkMemoryBarrier *)DE_NULL, 0u, (const VkBufferMemoryBarrier *)DE_NULL, 1u,
-                                   &preCopyBarrier);
+                                   nullptr, 0u, nullptr, 1u, &preCopyBarrier);
         }
 
         vkd.cmdCopyBufferToImage(*cmdBuffer, **stagingBuffers[planeNdx], image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -413,7 +412,7 @@ void uploadImage(const DeviceInterface &vkd, VkDevice device, uint32_t queueFami
 
         {
             const VkImageMemoryBarrier postCopyBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                          DE_NULL,
+                                                          nullptr,
                                                           VK_ACCESS_TRANSFER_WRITE_BIT,
                                                           nextAccess,
                                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -425,8 +424,7 @@ void uploadImage(const DeviceInterface &vkd, VkDevice device, uint32_t queueFami
 
             vkd.cmdPipelineBarrier(*cmdBuffer, (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
                                    (VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlags)0u, 0u,
-                                   (const VkMemoryBarrier *)DE_NULL, 0u, (const VkBufferMemoryBarrier *)DE_NULL, 1u,
-                                   &postCopyBarrier);
+                                   nullptr, 0u, nullptr, 1u, &postCopyBarrier);
         }
     }
 
@@ -477,7 +475,7 @@ void fillImageMemory(const vk::DeviceInterface &vkd, vk::VkDevice device, uint32
 
     {
         const VkImageMemoryBarrier postCopyBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                      DE_NULL,
+                                                      nullptr,
                                                       0u,
                                                       nextAccess,
                                                       VK_IMAGE_LAYOUT_PREINITIALIZED,
@@ -489,8 +487,7 @@ void fillImageMemory(const vk::DeviceInterface &vkd, vk::VkDevice device, uint32
 
         vkd.cmdPipelineBarrier(*cmdBuffer, (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT,
                                (VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlags)0u, 0u,
-                               (const VkMemoryBarrier *)DE_NULL, 0u, (const VkBufferMemoryBarrier *)DE_NULL, 1u,
-                               &postCopyBarrier);
+                               nullptr, 0u, nullptr, 1u, &postCopyBarrier);
     }
 
     endCommandBuffer(vkd, *cmdBuffer);
@@ -522,7 +519,7 @@ void downloadImage(const DeviceInterface &vkd, VkDevice device, uint32_t queueFa
         {
             const VkImageMemoryBarrier preCopyBarrier = {
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                DE_NULL,
+                nullptr,
                 prevAccess,
                 VK_ACCESS_TRANSFER_READ_BIT,
                 initialLayout,
@@ -534,8 +531,7 @@ void downloadImage(const DeviceInterface &vkd, VkDevice device, uint32_t queueFa
 
             vkd.cmdPipelineBarrier(*cmdBuffer, (VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                                    (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0u, 0u,
-                                   (const VkMemoryBarrier *)DE_NULL, 0u, (const VkBufferMemoryBarrier *)DE_NULL, 1u,
-                                   &preCopyBarrier);
+                                   nullptr, 0u, nullptr, 1u, &preCopyBarrier);
         }
         {
             const VkExtent3D imageExtent = makeExtent3D(imageData->getSize().x(), imageData->getSize().y(), 1u);
@@ -552,7 +548,7 @@ void downloadImage(const DeviceInterface &vkd, VkDevice device, uint32_t queueFa
         }
         {
             const VkBufferMemoryBarrier postCopyBarrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            VK_ACCESS_TRANSFER_WRITE_BIT,
                                                            VK_ACCESS_HOST_READ_BIT,
                                                            VK_QUEUE_FAMILY_IGNORED,
@@ -562,9 +558,8 @@ void downloadImage(const DeviceInterface &vkd, VkDevice device, uint32_t queueFa
                                                            VK_WHOLE_SIZE};
 
             vkd.cmdPipelineBarrier(*cmdBuffer, (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0u, 0u,
-                                   (const VkMemoryBarrier *)DE_NULL, 1u, &postCopyBarrier, 0u,
-                                   (const VkImageMemoryBarrier *)DE_NULL);
+                                   (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0u, 0u, nullptr,
+                                   1u, &postCopyBarrier, 0u, nullptr);
         }
     }
 
@@ -589,7 +584,7 @@ void readImageMemory(const vk::DeviceInterface &vkd, vk::VkDevice device, uint32
 
     {
         const VkImageMemoryBarrier preCopyBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                     DE_NULL,
+                                                     nullptr,
                                                      prevAccess,
                                                      vk::VK_ACCESS_HOST_READ_BIT,
                                                      initialLayout,
@@ -600,9 +595,8 @@ void readImageMemory(const vk::DeviceInterface &vkd, vk::VkDevice device, uint32
                                                      {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
 
         vkd.cmdPipelineBarrier(*cmdBuffer, (VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                               (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0u, 0u,
-                               (const VkMemoryBarrier *)DE_NULL, 0u, (const VkBufferMemoryBarrier *)DE_NULL, 1u,
-                               &preCopyBarrier);
+                               (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0u, 0u, nullptr, 0u,
+                               nullptr, 1u, &preCopyBarrier);
     }
 
     endCommandBuffer(vkd, *cmdBuffer);
@@ -1404,8 +1398,18 @@ tcu::Interval lookupWrapped(const ChannelAccess &access, const tcu::FloatFormat 
                             vk::VkSamplerAddressMode addressModeU, vk::VkSamplerAddressMode addressModeV,
                             const tcu::IVec2 &coord)
 {
-    return access.getChannel(conversionFormat, tcu::IVec3(wrap(addressModeU, coord.x(), access.getSize().x()),
-                                                          wrap(addressModeV, coord.y(), access.getSize().y()), 0));
+    tcu::Interval interval =
+        access.getChannel(conversionFormat, tcu::IVec3(wrap(addressModeU, coord.x(), access.getSize().x()),
+                                                       wrap(addressModeV, coord.y(), access.getSize().y()), 0));
+
+    // Expand range for 10-bit conversions to +/-1.0 ULP
+    if (conversionFormat.getFractionBits() == 10)
+    {
+        interval |= interval.lo() - interval.length() / 2.0;
+        interval |= interval.hi() + interval.length() / 2.0;
+    }
+
+    return interval;
 }
 
 tcu::Interval linearInterpolate(const tcu::FloatFormat &filteringFormat, const tcu::Interval &a, const tcu::Interval &b,

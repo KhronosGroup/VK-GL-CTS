@@ -198,7 +198,7 @@ void TestActivity::onDestroy(void)
 {
     if (m_started)
     {
-        setThread(DE_NULL);
+        setThread(nullptr);
         m_testThread.stop();
         m_started = false;
     }
@@ -248,7 +248,7 @@ void GetTestParamActivity::onDestroy(void)
 {
     if (m_started)
     {
-        setThread(DE_NULL);
+        setThread(nullptr);
         m_testThread.stop();
         m_started = false;
     }

@@ -147,35 +147,35 @@ tcu::TestStatus EntryPointsTest::iterate(void)
 
     const VkPipelineShaderStageCreateInfo pipelineAShaderStageParams{
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         static_cast<VkPipelineShaderStageCreateFlags>(0u),
         VK_SHADER_STAGE_COMPUTE_BIT,
         *shaderModule,
         "mainA",
-        DE_NULL,
+        nullptr,
     };
     const VkPipelineShaderStageCreateInfo pipelineBShaderStageParams{
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         static_cast<VkPipelineShaderStageCreateFlags>(0u),
         VK_SHADER_STAGE_COMPUTE_BIT,
         *shaderModule,
         "mainB",
-        DE_NULL,
+        nullptr,
     };
     VkComputePipelineCreateInfo pipelineCreateInfo{
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         static_cast<VkPipelineCreateFlags>(0u),
         pipelineBShaderStageParams,
         *pipelineLayout,
-        DE_NULL,
+        VK_NULL_HANDLE,
         0,
     };
 
-    Unique<VkPipeline> pipelineB(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+    Unique<VkPipeline> pipelineB(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
     pipelineCreateInfo.stage = pipelineAShaderStageParams;
-    Unique<VkPipeline> pipelineA(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+    Unique<VkPipeline> pipelineA(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     const VkMemoryBarrier hostWriteBarrier(makeMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT));
     const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));

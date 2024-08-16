@@ -213,7 +213,7 @@ DefaultFBOMultisampleCase::DefaultFBOMultisampleCase(Context &context, const cha
     , m_numSamples(0)
     , m_viewportSize(0)
     , m_desiredViewportSize(desiredViewportSize)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_attrPositionLoc(-1)
     , m_attrColorLoc(-1)
     , m_viewportX(0)
@@ -276,7 +276,7 @@ void DefaultFBOMultisampleCase::init(void)
         glu::ProgramSources() << glu::VertexSource(tcu::StringTemplate(vertShaderSource).specialize(args))
                               << glu::FragmentSource(tcu::StringTemplate(fragShaderSource).specialize(args)));
     if (!m_program->isOk())
-        throw tcu::TestError("Failed to compile program", DE_NULL, __FILE__, __LINE__);
+        throw tcu::TestError("Failed to compile program", nullptr, __FILE__, __LINE__);
 
     m_attrPositionLoc = gl.getAttribLocation(m_program->getProgram(), "a_position");
     m_attrColorLoc    = gl.getAttribLocation(m_program->getProgram(), "a_color");
@@ -285,7 +285,7 @@ void DefaultFBOMultisampleCase::init(void)
     if (m_attrPositionLoc < 0 || m_attrColorLoc < 0)
     {
         delete m_program;
-        throw tcu::TestError("Invalid attribute locations", DE_NULL, __FILE__, __LINE__);
+        throw tcu::TestError("Invalid attribute locations", nullptr, __FILE__, __LINE__);
     }
 
     // Get suitable viewport size.
@@ -302,7 +302,7 @@ void DefaultFBOMultisampleCase::deinit(void)
         return;
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 void DefaultFBOMultisampleCase::renderTriangle(const Vec3 &p0, const Vec3 &p1, const Vec3 &p2, const Vec4 &c0,
@@ -327,7 +327,7 @@ void DefaultFBOMultisampleCase::renderTriangle(const Vec3 &p0, const Vec3 &p1, c
     GLU_EXPECT_NO_ERROR(gl.getError(), "vtx buf");
 
     gl.enableVertexAttribArray(m_attrPositionLoc);
-    gl.vertexAttribPointer(m_attrPositionLoc, 4, GL_FLOAT, false, 0, DE_NULL);
+    gl.vertexAttribPointer(m_attrPositionLoc, 4, GL_FLOAT, false, 0, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "vtx vertexAttribPointer");
 
     gl.bindBuffer(GL_ARRAY_BUFFER, *colBuf);
@@ -335,7 +335,7 @@ void DefaultFBOMultisampleCase::renderTriangle(const Vec3 &p0, const Vec3 &p1, c
     GLU_EXPECT_NO_ERROR(gl.getError(), "col buf");
 
     gl.enableVertexAttribArray(m_attrColorLoc);
-    gl.vertexAttribPointer(m_attrColorLoc, 4, GL_FLOAT, false, 0, DE_NULL);
+    gl.vertexAttribPointer(m_attrColorLoc, 4, GL_FLOAT, false, 0, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "col vertexAttribPointer");
 
     gl.useProgram(m_program->getProgram());

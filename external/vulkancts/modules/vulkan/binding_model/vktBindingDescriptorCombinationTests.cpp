@@ -330,12 +330,12 @@ Move<VkPipeline> DescriptorCombinationTestInstance::createBasicPipeline(VkPipeli
             "main",                                              //        const char*                            pName
             nullptr, //        const VkSpecializationInfo*            pSpecializationInfo
         },
-        layout,  // VkPipelineLayout                        layout
-        DE_NULL, // VkPipeline                            basePipelineHandle
-        0,       // int32_t                                basePipelineIndex
+        layout,         // VkPipelineLayout                        layout
+        VK_NULL_HANDLE, // VkPipeline                            basePipelineHandle
+        0,              // int32_t                                basePipelineIndex
     };
 
-    return createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    return createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 class DescriptorCombinationTestCase : public TestCase

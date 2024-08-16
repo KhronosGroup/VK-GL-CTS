@@ -499,7 +499,7 @@ uint32_t ShaderSet::getReferencingMask(void) const
 class TransformFeedbackTarget : public Node
 {
 public:
-    TransformFeedbackTarget(const SharedPtr &enclosing, const char *builtinVarName = DE_NULL)
+    TransformFeedbackTarget(const SharedPtr &enclosing, const char *builtinVarName = nullptr)
         : Node(TYPE_TRANSFORM_FEEDBACK_TARGET, enclosing)
         , m_builtinVarName(builtinVarName)
     {
@@ -600,7 +600,7 @@ static de::MovePtr<ProgramInterfaceDefinition::Program> generateProgramDefinitio
             {
                 const ResourceDefinition::LayoutQualifier *qualifier =
                     static_cast<const ResourceDefinition::LayoutQualifier *>(head);
-                glu::Layout *targetLayout = DE_NULL;
+                glu::Layout *targetLayout = nullptr;
 
                 DE_ASSERT(dynamic_cast<const ResourceDefinition::LayoutQualifier *>(head));
 
@@ -783,7 +783,7 @@ static de::MovePtr<ProgramInterfaceDefinition::Program> generateProgramDefinitio
                 const ResourceDefinition::TransformFeedbackTarget *feedbackTarget =
                     static_cast<const ResourceDefinition::TransformFeedbackTarget *>(head);
 
-                DE_ASSERT(feedbackTarget->m_builtinVarName == DE_NULL);
+                DE_ASSERT(feedbackTarget->m_builtinVarName == nullptr);
                 DE_UNREF(feedbackTarget);
 
                 feedbackTargetSet = true;
@@ -799,7 +799,7 @@ static de::MovePtr<ProgramInterfaceDefinition::Program> generateProgramDefinitio
     else if (head->getType() == ResourceDefinition::Node::TYPE_DEFAULT_BLOCK ||
              head->getType() == ResourceDefinition::Node::TYPE_TRANSFORM_FEEDBACK_TARGET)
     {
-        const char *feedbackTargetVaryingName = DE_NULL;
+        const char *feedbackTargetVaryingName = nullptr;
 
         // empty default block
 
@@ -845,7 +845,7 @@ static de::MovePtr<ProgramInterfaceDefinition::Program> generateProgramDefinitio
                 const ResourceDefinition::TransformFeedbackTarget *feedbackTarget =
                     static_cast<const ResourceDefinition::TransformFeedbackTarget *>(head);
 
-                DE_ASSERT(feedbackTarget->m_builtinVarName != DE_NULL);
+                DE_ASSERT(feedbackTarget->m_builtinVarName != nullptr);
 
                 feedbackTargetVaryingName = feedbackTarget->m_builtinVarName;
             }
@@ -893,7 +893,7 @@ class ResourceListTestCase : public TestCase
 {
 public:
     ResourceListTestCase(Context &context, const ResourceDefinition::Node::SharedPtr &targetResource,
-                         ProgramInterface interface, const char *name = DE_NULL);
+                         ProgramInterface interface, const char *name = nullptr);
     ~ResourceListTestCase(void);
 
 protected:
@@ -918,10 +918,10 @@ protected:
 
 ResourceListTestCase::ResourceListTestCase(Context &context, const ResourceDefinition::Node::SharedPtr &targetResource,
                                            ProgramInterface interface, const char *name)
-    : TestCase(context, (name == DE_NULL) ? (genTestCaseName(interface, targetResource.get()).c_str()) : (name), "")
+    : TestCase(context, (name == nullptr) ? (genTestCaseName(interface, targetResource.get()).c_str()) : (name), "")
     , m_programInterface(interface)
     , m_targetResource(targetResource)
-    , m_programDefinition(DE_NULL)
+    , m_programDefinition(nullptr)
 {
     // GL_ATOMIC_COUNTER_BUFFER: no resource names
     DE_ASSERT(m_programInterface != PROGRAMINTERFACE_ATOMIC_COUNTER_BUFFER);
@@ -960,7 +960,7 @@ void ResourceListTestCase::deinit(void)
     m_targetResource.clear();
 
     delete m_programDefinition;
-    m_programDefinition = DE_NULL;
+    m_programDefinition = nullptr;
 }
 
 ResourceListTestCase::IterateResult ResourceListTestCase::iterate(void)
@@ -1318,7 +1318,7 @@ class ResourceTestCase : public ProgramInterfaceQueryTestCase
 {
 public:
     ResourceTestCase(Context &context, const ResourceDefinition::Node::SharedPtr &targetResource,
-                     const ProgramResourceQueryTestTarget &queryTarget, const char *name = DE_NULL);
+                     const ProgramResourceQueryTestTarget &queryTarget, const char *name = nullptr);
     ~ResourceTestCase(void);
 
 private:
@@ -1338,9 +1338,9 @@ private:
 ResourceTestCase::ResourceTestCase(Context &context, const ResourceDefinition::Node::SharedPtr &targetResource,
                                    const ProgramResourceQueryTestTarget &queryTarget, const char *name)
     : ProgramInterfaceQueryTestCase(
-          context, (name == DE_NULL) ? (genTestCaseName(targetResource.get()).c_str()) : (name), "", queryTarget)
+          context, (name == nullptr) ? (genTestCaseName(targetResource.get()).c_str()) : (name), "", queryTarget)
     , m_targetResource(targetResource)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -1367,7 +1367,7 @@ void ResourceTestCase::deinit(void)
     m_targetResource.clear();
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     m_targetResources = std::vector<std::string>();
 }
@@ -1551,7 +1551,7 @@ ResourceNameBufferLimitCase::IterateResult ResourceNameBufferLimitCase::iterate(
                                    << tcu::TestLog::EndMessage;
 
             gl.getProgramResourceName(program.getProgram(), GL_UNIFORM, uniformIndex, querySizes[ndx].querySize,
-                                      (querySizes[ndx].returnLength) ? (&written) : (DE_NULL), buffer);
+                                      (querySizes[ndx].returnLength) ? (&written) : (nullptr), buffer);
             GLU_EXPECT_NO_ERROR(gl.getError(), "query resource name");
 
             if (querySizes[ndx].returnLength && written != expectedWriteLen)
@@ -1674,7 +1674,7 @@ ResourceQueryBufferLimitCase::IterateResult ResourceQueryBufferLimitCase::iterat
                                << tcu::TestLog::EndMessage;
 
             gl.getProgramResourceiv(program.getProgram(), GL_UNIFORM, uniformIndex, querySizes[ndx].numProps, props,
-                                    querySizes[ndx].bufferSize, (querySizes[ndx].returnLength) ? (&written) : (DE_NULL),
+                                    querySizes[ndx].bufferSize, (querySizes[ndx].returnLength) ? (&written) : (nullptr),
                                     params);
             GLU_EXPECT_NO_ERROR(gl.getError(), "query program resources");
 
@@ -1728,7 +1728,7 @@ InterfaceBlockBaseCase::InterfaceBlockBaseCase(Context &context, const char *nam
     : TestCase(context, name, description)
     , m_storage(storage)
     , m_caseType(caseType)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
     DE_ASSERT(storage == glu::STORAGE_UNIFORM || storage == glu::STORAGE_BUFFER);
 }
@@ -1838,7 +1838,7 @@ void InterfaceBlockBaseCase::init(void)
 void InterfaceBlockBaseCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 class InterfaceBlockActiveVariablesTestCase : public InterfaceBlockBaseCase
@@ -2055,7 +2055,7 @@ InterfaceBlockActiveVariablesTestCase::IterateResult InterfaceBlockActiveVariabl
 
         // verify names
         {
-            glu::InterfaceBlock *block  = DE_NULL;
+            glu::InterfaceBlock *block  = nullptr;
             const std::string blockName = glu::parseVariableName(blockNames[blockNdx].c_str());
             std::vector<std::string> referenceList;
 
@@ -2210,7 +2210,7 @@ InterfaceBlockDataSizeTestCase::IterateResult InterfaceBlockDataSizeTestCase::it
         {
             const glw::GLenum prop = GL_BUFFER_DATA_SIZE;
 
-            gl.getProgramResourceiv(program.getProgram(), programGLInterfaceValue, resourceNdx, 1, &prop, 1, DE_NULL,
+            gl.getProgramResourceiv(program.getProgram(), programGLInterfaceValue, resourceNdx, 1, &prop, 1, nullptr,
                                     &queryDataSize);
             GLU_EXPECT_NO_ERROR(gl.getError(), "query resource BUFFER_DATA_SIZE");
         }
@@ -2270,7 +2270,7 @@ protected:
 
 AtomicCounterCase::AtomicCounterCase(Context &context, const char *name, const char *description)
     : TestCase(context, name, description)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -2314,7 +2314,7 @@ void AtomicCounterCase::init(void)
 void AtomicCounterCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 int AtomicCounterCase::getNumAtomicCounterBuffers(void) const
@@ -2855,7 +2855,7 @@ AtomicCounterReferencedByCase::AtomicCounterReferencedByCase(Context &context, c
     , m_separable(separable)
     , m_presentStagesMask(presentStagesMask)
     , m_activeStagesMask(activeStagesMask)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
     DE_ASSERT((activeStagesMask & presentStagesMask) == activeStagesMask);
 }
@@ -2909,7 +2909,7 @@ void AtomicCounterReferencedByCase::init(void)
 void AtomicCounterReferencedByCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 AtomicCounterReferencedByCase::IterateResult AtomicCounterReferencedByCase::iterate(void)
@@ -2924,15 +2924,15 @@ AtomicCounterReferencedByCase::IterateResult AtomicCounterReferencedByCase::iter
         glu::ShaderType shaderType;
         const char *extension;
     } targetProps[] = {
-        {GL_REFERENCED_BY_VERTEX_SHADER, glu::SHADERTYPE_VERTEX, DE_NULL},
-        {GL_REFERENCED_BY_FRAGMENT_SHADER, glu::SHADERTYPE_FRAGMENT, DE_NULL},
-        {GL_REFERENCED_BY_COMPUTE_SHADER, glu::SHADERTYPE_COMPUTE, DE_NULL},
+        {GL_REFERENCED_BY_VERTEX_SHADER, glu::SHADERTYPE_VERTEX, nullptr},
+        {GL_REFERENCED_BY_FRAGMENT_SHADER, glu::SHADERTYPE_FRAGMENT, nullptr},
+        {GL_REFERENCED_BY_COMPUTE_SHADER, glu::SHADERTYPE_COMPUTE, nullptr},
         {GL_REFERENCED_BY_TESS_CONTROL_SHADER, glu::SHADERTYPE_TESSELLATION_CONTROL,
-         (isES32orGL45 ? DE_NULL : "GL_EXT_tessellation_shader")},
+         (isES32orGL45 ? nullptr : "GL_EXT_tessellation_shader")},
         {GL_REFERENCED_BY_TESS_EVALUATION_SHADER, glu::SHADERTYPE_TESSELLATION_EVALUATION,
-         (isES32orGL45 ? DE_NULL : "GL_EXT_tessellation_shader")},
+         (isES32orGL45 ? nullptr : "GL_EXT_tessellation_shader")},
         {GL_REFERENCED_BY_GEOMETRY_SHADER, glu::SHADERTYPE_GEOMETRY,
-         (isES32orGL45 ? DE_NULL : "GL_EXT_geometry_shader")},
+         (isES32orGL45 ? nullptr : "GL_EXT_geometry_shader")},
     };
 
     const glw::Functions &gl = rc.getFunctions();
@@ -2944,7 +2944,7 @@ AtomicCounterReferencedByCase::IterateResult AtomicCounterReferencedByCase::iter
     // check props
     for (int propNdx = 0; propNdx < DE_LENGTH_OF_ARRAY(targetProps); ++propNdx)
     {
-        if (targetProps[propNdx].extension == DE_NULL ||
+        if (targetProps[propNdx].extension == nullptr ||
             m_context.getContextInfo().isExtensionSupported(targetProps[propNdx].extension))
         {
             const glw::GLenum prop = targetProps[propNdx].propName;
@@ -3022,7 +3022,7 @@ ProgramInputOutputReferencedByCase::ProgramInputOutputReferencedByCase(Context &
     : TestCase(context, name, description)
     , m_caseType(caseType)
     , m_targetStorage(targetStorage)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
     DE_ASSERT(caseType < CASE_LAST);
 }
@@ -3157,7 +3157,7 @@ void ProgramInputOutputReferencedByCase::init(void)
 void ProgramInputOutputReferencedByCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 ProgramInputOutputReferencedByCase::IterateResult ProgramInputOutputReferencedByCase::iterate(void)
@@ -3168,9 +3168,9 @@ ProgramInputOutputReferencedByCase::IterateResult ProgramInputOutputReferencedBy
         glu::ShaderType shaderType;
         const char *extension;
     } targetProps[] = {
-        {GL_REFERENCED_BY_VERTEX_SHADER, glu::SHADERTYPE_VERTEX, DE_NULL},
-        {GL_REFERENCED_BY_FRAGMENT_SHADER, glu::SHADERTYPE_FRAGMENT, DE_NULL},
-        {GL_REFERENCED_BY_COMPUTE_SHADER, glu::SHADERTYPE_COMPUTE, DE_NULL},
+        {GL_REFERENCED_BY_VERTEX_SHADER, glu::SHADERTYPE_VERTEX, nullptr},
+        {GL_REFERENCED_BY_FRAGMENT_SHADER, glu::SHADERTYPE_FRAGMENT, nullptr},
+        {GL_REFERENCED_BY_COMPUTE_SHADER, glu::SHADERTYPE_COMPUTE, nullptr},
         {GL_REFERENCED_BY_TESS_CONTROL_SHADER, glu::SHADERTYPE_TESSELLATION_CONTROL, "GL_EXT_tessellation_shader"},
         {GL_REFERENCED_BY_TESS_EVALUATION_SHADER, glu::SHADERTYPE_TESSELLATION_EVALUATION,
          "GL_EXT_tessellation_shader"},
@@ -3203,7 +3203,7 @@ ProgramInputOutputReferencedByCase::IterateResult ProgramInputOutputReferencedBy
     // check props
     for (int propNdx = 0; propNdx < DE_LENGTH_OF_ARRAY(targetProps); ++propNdx)
     {
-        if (targetProps[propNdx].extension == DE_NULL ||
+        if (targetProps[propNdx].extension == nullptr ||
             m_context.getContextInfo().isExtensionSupported(targetProps[propNdx].extension))
         {
             const glw::GLenum prop = targetProps[propNdx].propName;
@@ -4651,7 +4651,7 @@ static void generateReferencedByShaderCaseBlocks(
                                                   (selectedStageBit == glu::SHADERTYPE_GEOMETRY) ? ("geo") :
                                                   (selectedStageBit == glu::SHADERTYPE_TESSELLATION_CONTROL) ? ("tess_ctrl") :
                                                   (selectedStageBit == glu::SHADERTYPE_TESSELLATION_EVALUATION) ? ("tess_eval") :
-                                                                                                                  (DE_NULL);
+                                                                                                                  (nullptr);
                 const std::string setName       = std::string() + pipelines[pipelineNdx].name + "_only_" + stageName;
                 TestCaseGroup *const blockGroup = new TestCaseGroup(context, setName.c_str(), "");
                 const ResourceDefinition::Node::SharedPtr shaders(shaderSet);
@@ -5371,7 +5371,7 @@ const char *BufferBackedBlockInterfaceTestGroup::getGroupName(glu::Storage stora
         return "shader_storage_block";
     default:
         DE_FATAL("invalid storage enum value");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -5385,7 +5385,7 @@ const char *BufferBackedBlockInterfaceTestGroup::getGroupDescription(glu::Storag
         return "Shader storage block interface";
     default:
         DE_FATAL("invalid storage enum value");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -5468,7 +5468,7 @@ void AtomicCounterTestGroup::init(void)
                                         (stageNdx == glu::SHADERTYPE_GEOMETRY)                ? ("geo") :
                                         (stageNdx == glu::SHADERTYPE_TESSELLATION_CONTROL)    ? ("tess_ctrl") :
                                         (stageNdx == glu::SHADERTYPE_TESSELLATION_EVALUATION) ? ("tess_eval") :
-                                                                                                (DE_NULL);
+                                                                                                (nullptr);
                 const std::string name =
                     std::string() + "referenced_by_" + pipelines[pipelineNdx].name + "_only_" + stageName;
 

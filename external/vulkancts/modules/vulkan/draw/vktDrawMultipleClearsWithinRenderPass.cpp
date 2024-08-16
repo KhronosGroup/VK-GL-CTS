@@ -284,13 +284,13 @@ MultipleClearsTest::MultipleClearsTest(Context &context, const TestParams &param
             SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS,                // pipelineBindPoint
                                (VkSubpassDescriptionFlags)0,                   // flags
                                0u,                                             // inputAttachmentCount
-                               DE_NULL,                                        // inputAttachments
+                               nullptr,                                        // inputAttachments
                                hasColor ? 1 : 0,                               // colorAttachmentCount
-                               hasColor ? &colorAttachmentReference : DE_NULL, // colorAttachments
-                               DE_NULL,                                        // resolveAttachments
+                               hasColor ? &colorAttachmentReference : nullptr, // colorAttachments
+                               nullptr,                                        // resolveAttachments
                                depthAttachmentReference,                       // depthStencilAttachment
                                0u,                                             // preserveAttachmentCount
-                               DE_NULL));                                      // preserveAttachments
+                               nullptr));                                      // preserveAttachments
         m_renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
         std::vector<VkImageView> attachments;
@@ -327,7 +327,7 @@ MultipleClearsTest::MultipleClearsTest(Context &context, const TestParams &param
 
     const VkPushConstantRange pcRange =
         vk::VkPushConstantRange{VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ClearStep::color)};
-    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(0u, DE_NULL, 1u, &pcRange);
+    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(0u, nullptr, 1u, &pcRange);
     m_pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 
     const VkRect2D scissor    = makeRect2D(WIDTH, HEIGHT);
@@ -360,10 +360,10 @@ MultipleClearsTest::MultipleClearsTest(Context &context, const TestParams &param
 
 #ifndef CTS_USES_VULKANSC
     vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              0u,
                                                              hasColor,
-                                                             (hasColor ? &m_params.colorFormat : DE_NULL),
+                                                             (hasColor ? &m_params.colorFormat : nullptr),
                                                              m_params.depthFormat,
                                                              VK_FORMAT_UNDEFINED};
 
@@ -371,7 +371,7 @@ MultipleClearsTest::MultipleClearsTest(Context &context, const TestParams &param
         pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-    m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 void MultipleClearsTest::preRenderCommands(VkCommandBuffer cmdBuffer) const
@@ -475,7 +475,7 @@ void MultipleClearsTest::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkRe
 {
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                         // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         renderingFlags,                                                  // VkRenderingFlagsKHR flags;
         0u,                                                              // uint32_t viewMask;
         (m_params.colorFormat != VK_FORMAT_UNDEFINED),                   // uint32_t colorAttachmentCount;
@@ -493,7 +493,7 @@ void MultipleClearsTest::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkRe
 
     const VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
@@ -516,11 +516,11 @@ void MultipleClearsTest::beginDynamicRender(VkCommandBuffer cmdBuffer, VkRenderi
 
     vk::VkRenderingAttachmentInfoKHR colorAttachment{
         vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                             // const void* pNext;
+        nullptr,                                             // const void* pNext;
         *m_colorTargetView,                                  // VkImageView imageView;
         vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
         vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                             // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
         vk::VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
         vk::VK_ATTACHMENT_LOAD_OP_LOAD,                      // VkAttachmentLoadOp loadOp;
         vk::VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -529,11 +529,11 @@ void MultipleClearsTest::beginDynamicRender(VkCommandBuffer cmdBuffer, VkRenderi
 
     vk::VkRenderingAttachmentInfoKHR depthAttachment{
         vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,  // VkStructureType sType;
-        DE_NULL,                                              // const void* pNext;
+        nullptr,                                              // const void* pNext;
         *m_depthTargetView,                                   // VkImageView imageView;
         vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout imageLayout;
         vk::VK_RESOLVE_MODE_NONE,                             // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                              // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                       // VkImageView resolveImageView;
         vk::VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout resolveImageLayout;
         vk::VK_ATTACHMENT_LOAD_OP_LOAD,                       // VkAttachmentLoadOp loadOp;
         vk::VK_ATTACHMENT_STORE_OP_STORE,                     // VkAttachmentStoreOp storeOp;
@@ -545,15 +545,15 @@ void MultipleClearsTest::beginDynamicRender(VkCommandBuffer cmdBuffer, VkRenderi
 
     vk::VkRenderingInfoKHR renderingInfo{
         vk::VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-        DE_NULL,
+        nullptr,
         renderingFlags,                          // VkRenderingFlagsKHR flags;
         renderArea,                              // VkRect2D renderArea;
         1u,                                      // uint32_t layerCount;
         0u,                                      // uint32_t viewMask;
         hasColor,                                // uint32_t colorAttachmentCount;
-        (hasColor ? &colorAttachment : DE_NULL), // const VkRenderingAttachmentInfoKHR* pColorAttachments;
-        (hasDepth ? &depthAttachment : DE_NULL), // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-        DE_NULL,                                 // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+        (hasColor ? &colorAttachment : nullptr), // const VkRenderingAttachmentInfoKHR* pColorAttachments;
+        (hasDepth ? &depthAttachment : nullptr), // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+        nullptr,                                 // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
     };
 
     vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
@@ -630,18 +630,18 @@ tcu::TestStatus MultipleClearsTest::iterate(void)
 
     if (hasDepth)
     {
-        const VkMemoryBarrier memBarrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, VK_ACCESS_TRANSFER_WRITE_BIT,
+        const VkMemoryBarrier memBarrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_TRANSFER_WRITE_BIT,
                                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
                                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT};
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 0,
-                              1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+                              1, &memBarrier, 0, nullptr, 0, nullptr);
     }
     if (hasColor)
     {
-        const VkMemoryBarrier memBarrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, VK_ACCESS_TRANSFER_WRITE_BIT,
+        const VkMemoryBarrier memBarrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_TRANSFER_WRITE_BIT,
                                             VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT};
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                              0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+                              0, 1, &memBarrier, 0, nullptr, 0, nullptr);
     }
 
     if (hasColor)

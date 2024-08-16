@@ -225,7 +225,7 @@ public:
     const void *getValuesBuffer(void) const
     {
         if (valuesBuffer.size() == 0)
-            return DE_NULL;
+            return nullptr;
         else
             return static_cast<const void *>(&valuesBuffer[0]);
     }

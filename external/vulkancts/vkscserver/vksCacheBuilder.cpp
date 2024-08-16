@@ -238,7 +238,7 @@ void exportFilesForExternalCompiler(const VulkanPipelineCacheInput &input, const
                     // copy samplers
                     for (uint32_t j = 0; j < it2->second.bindingCount; ++j)
                     {
-                        if (it2->second.pBindings[j].pImmutableSamplers != DE_NULL)
+                        if (it2->second.pBindings[j].pImmutableSamplers != nullptr)
                         {
                             for (uint32_t k = 0; k < it2->second.pBindings[j].descriptorCount; ++k)
                             {
@@ -248,7 +248,7 @@ void exportFilesForExternalCompiler(const VulkanPipelineCacheInput &input, const
                                 samplers.insert({it3->first, it3->second});
 
                                 // copy sampler YcbcrConversion
-                                if (it3->second.pNext != DE_NULL)
+                                if (it3->second.pNext != nullptr)
                                 {
                                     VkSamplerYcbcrConversionInfo *info =
                                         (VkSamplerYcbcrConversionInfo *)findStructureInChain(
@@ -363,7 +363,7 @@ void exportFilesForExternalCompiler(const VulkanPipelineCacheInput &input, const
                     // copy samplers
                     for (uint32_t j = 0; j < it2->second.bindingCount; ++j)
                     {
-                        if (it2->second.pBindings[j].pImmutableSamplers != DE_NULL)
+                        if (it2->second.pBindings[j].pImmutableSamplers != nullptr)
                         {
                             for (uint32_t k = 0; k < it2->second.pBindings[j].descriptorCount; ++k)
                             {
@@ -373,7 +373,7 @@ void exportFilesForExternalCompiler(const VulkanPipelineCacheInput &input, const
                                 samplers.insert({it3->first, it3->second});
 
                                 // copy sampler YcbcrConversion
-                                if (it3->second.pNext != DE_NULL)
+                                if (it3->second.pNext != nullptr)
                                 {
                                     VkSamplerYcbcrConversionInfo *info =
                                         (VkSamplerYcbcrConversionInfo *)(it3->second.pNext);
@@ -537,26 +537,26 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
     VkPipelineCache pipelineCache;
     vector<u8> resultCacheData;
 
-    GetDeviceProcAddrFunc getDeviceProcAddrFunc                         = DE_NULL;
-    CreateSamplerYcbcrConversionFunc createSamplerYcbcrConversionFunc   = DE_NULL;
-    DestroySamplerYcbcrConversionFunc destroySamplerYcbcrConversionFunc = DE_NULL;
-    CreateSamplerFunc createSamplerFunc                                 = DE_NULL;
-    DestroySamplerFunc destroySamplerFunc                               = DE_NULL;
-    CreateShaderModuleFunc createShaderModuleFunc                       = DE_NULL;
-    DestroyShaderModuleFunc destroyShaderModuleFunc                     = DE_NULL;
-    CreateRenderPassFunc createRenderPassFunc                           = DE_NULL;
-    CreateRenderPass2Func createRenderPass2Func                         = DE_NULL;
-    DestroyRenderPassFunc destroyRenderPassFunc                         = DE_NULL;
-    CreateDescriptorSetLayoutFunc createDescriptorSetLayoutFunc         = DE_NULL;
-    DestroyDescriptorSetLayoutFunc destroyDescriptorSetLayoutFunc       = DE_NULL;
-    CreatePipelineLayoutFunc createPipelineLayoutFunc                   = DE_NULL;
-    DestroyPipelineLayoutFunc destroyPipelineLayoutFunc                 = DE_NULL;
-    CreateGraphicsPipelinesFunc createGraphicsPipelinesFunc             = DE_NULL;
-    CreateComputePipelinesFunc createComputePipelinesFunc               = DE_NULL;
-    CreatePipelineCacheFunc createPipelineCacheFunc                     = DE_NULL;
-    DestroyPipelineCacheFunc destroyPipelineCacheFunc                   = DE_NULL;
-    DestroyPipelineFunc destroyPipelineFunc                             = DE_NULL;
-    GetPipelineCacheDataFunc getPipelineCacheDataFunc                   = DE_NULL;
+    GetDeviceProcAddrFunc getDeviceProcAddrFunc                         = nullptr;
+    CreateSamplerYcbcrConversionFunc createSamplerYcbcrConversionFunc   = nullptr;
+    DestroySamplerYcbcrConversionFunc destroySamplerYcbcrConversionFunc = nullptr;
+    CreateSamplerFunc createSamplerFunc                                 = nullptr;
+    DestroySamplerFunc destroySamplerFunc                               = nullptr;
+    CreateShaderModuleFunc createShaderModuleFunc                       = nullptr;
+    DestroyShaderModuleFunc destroyShaderModuleFunc                     = nullptr;
+    CreateRenderPassFunc createRenderPassFunc                           = nullptr;
+    CreateRenderPass2Func createRenderPass2Func                         = nullptr;
+    DestroyRenderPassFunc destroyRenderPassFunc                         = nullptr;
+    CreateDescriptorSetLayoutFunc createDescriptorSetLayoutFunc         = nullptr;
+    DestroyDescriptorSetLayoutFunc destroyDescriptorSetLayoutFunc       = nullptr;
+    CreatePipelineLayoutFunc createPipelineLayoutFunc                   = nullptr;
+    DestroyPipelineLayoutFunc destroyPipelineLayoutFunc                 = nullptr;
+    CreateGraphicsPipelinesFunc createGraphicsPipelinesFunc             = nullptr;
+    CreateComputePipelinesFunc createComputePipelinesFunc               = nullptr;
+    CreatePipelineCacheFunc createPipelineCacheFunc                     = nullptr;
+    DestroyPipelineCacheFunc destroyPipelineCacheFunc                   = nullptr;
+    DestroyPipelineFunc destroyPipelineFunc                             = nullptr;
+    GetPipelineCacheDataFunc getPipelineCacheDataFunc                   = nullptr;
 
     std::map<VkSamplerYcbcrConversion, VkSamplerYcbcrConversion> falseToRealSamplerYcbcrConversions;
     std::map<VkSampler, VkSampler> falseToRealSamplers;
@@ -569,32 +569,32 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
     for (auto &&pipeline : pipelines)
     {
         // check if we need to create new device
-        if (pcDevice.get() == DE_NULL || deviceFeatures != pipeline.deviceFeatures ||
+        if (pcDevice.get() == nullptr || deviceFeatures != pipeline.deviceFeatures ||
             deviceExtensions != pipeline.deviceExtensions)
         {
             // remove old device
-            if (pcDevice.get() != DE_NULL)
+            if (pcDevice.get() != nullptr)
             {
                 // collect cache data
                 std::size_t cacheSize;
-                VK_CHECK(getPipelineCacheDataFunc(*pcDevice, pipelineCache, &cacheSize, DE_NULL));
+                VK_CHECK(getPipelineCacheDataFunc(*pcDevice, pipelineCache, &cacheSize, nullptr));
                 resultCacheData.resize(cacheSize);
                 VK_CHECK(getPipelineCacheDataFunc(*pcDevice, pipelineCache, &cacheSize, resultCacheData.data()));
 
                 // clean up resources - in ResourceInterfaceStandard we just simulate Vulkan SC driver after all...
                 for (auto &&it : falseToRealPipelineLayouts)
-                    destroyPipelineLayoutFunc(*pcDevice, it.second, DE_NULL);
+                    destroyPipelineLayoutFunc(*pcDevice, it.second, nullptr);
                 for (auto &&it : falseToRealDescriptorSetLayouts)
-                    destroyDescriptorSetLayoutFunc(*pcDevice, it.second, DE_NULL);
+                    destroyDescriptorSetLayoutFunc(*pcDevice, it.second, nullptr);
                 for (auto &&it : falseToRealRenderPasses)
-                    destroyRenderPassFunc(*pcDevice, it.second, DE_NULL);
+                    destroyRenderPassFunc(*pcDevice, it.second, nullptr);
                 for (auto &&it : falseToRealShaderModules)
-                    destroyShaderModuleFunc(*pcDevice, it.second, DE_NULL);
+                    destroyShaderModuleFunc(*pcDevice, it.second, nullptr);
                 for (auto &&it : falseToRealSamplers)
-                    destroySamplerFunc(*pcDevice, it.second, DE_NULL);
+                    destroySamplerFunc(*pcDevice, it.second, nullptr);
                 for (auto &&it : falseToRealSamplerYcbcrConversions)
-                    destroySamplerYcbcrConversionFunc(*pcDevice, it.second, DE_NULL);
-                destroyPipelineCacheFunc(*pcDevice, pipelineCache, DE_NULL);
+                    destroySamplerYcbcrConversionFunc(*pcDevice, it.second, nullptr);
+                destroyPipelineCacheFunc(*pcDevice, pipelineCache, nullptr);
 
                 // clear maps
                 falseToRealSamplerYcbcrConversions.clear();
@@ -612,7 +612,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
             const float queuePriority                           = 1.0f;
             const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                DE_NULL,
+                nullptr,
                 (VkDeviceQueueCreateFlags)0u,
                 queueIndex,     //queueFamilyIndex;
                 1,              //queueCount;
@@ -634,19 +634,19 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
             VkPhysicalDeviceVulkanSC10Features localSC10Features = createDefaultSC10Features();
 
             void *pNext = pNextChain;
-            if (chainedFeatures == DE_NULL)
+            if (chainedFeatures == nullptr)
             {
                 chainedFeatures     = &localFeatures;
                 localFeatures.pNext = pNext;
                 pNext               = &localFeatures;
             }
-            if (chainedObjReservation == DE_NULL)
+            if (chainedObjReservation == nullptr)
             {
                 chainedObjReservation     = &localObjReservation;
                 localObjReservation.pNext = pNext;
                 pNext                     = &localObjReservation;
             }
-            if (chainedSC10Features == DE_NULL)
+            if (chainedSC10Features == nullptr)
             {
                 chainedSC10Features     = &localSC10Features;
                 localSC10Features.pNext = pNext;
@@ -671,7 +671,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
             // declare pipeline pool size
             VkPipelinePoolSize poolSize = {
                 VK_STRUCTURE_TYPE_PIPELINE_POOL_SIZE, // VkStructureType sType;
-                DE_NULL,                              // const void* pNext;
+                nullptr,                              // const void* pNext;
                 VKSC_DEFAULT_PIPELINE_POOL_SIZE,      // VkDeviceSize poolEntrySize;
                 gPipelineCount + cPipelineCount       // uint32_t poolEntryCount;
             };
@@ -681,10 +681,10 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
             // declare pipeline cache
             VkPipelineCacheCreateInfo pcCI = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,              // VkStructureType sType;
-                DE_NULL,                                                   // const void* pNext;
+                nullptr,                                                   // const void* pNext;
                 (VkPipelineCacheCreateFlags)0u,                            // VkPipelineCacheCreateFlags flags;
                 resultCacheData.size(),                                    // size_t initialDataSize;
-                resultCacheData.empty() ? DE_NULL : resultCacheData.data() // const void* pInitialData;
+                resultCacheData.empty() ? nullptr : resultCacheData.data() // const void* pInitialData;
             };
             chainedObjReservation->pipelineCacheCreateInfoCount = 1u;
             chainedObjReservation->pPipelineCacheCreateInfos    = &pcCI;
@@ -734,9 +734,9 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                 1,                                                // queueRecordCount
                 &deviceQueueCreateInfo,                           // pRequestedQueues
                 0,                                                // layerCount
-                DE_NULL,                                          // ppEnabledLayerNames
+                nullptr,                                          // ppEnabledLayerNames
                 (uint32_t)deviceExts.size(),                      // extensionCount
-                deviceExts.empty() ? DE_NULL : deviceExts.data(), // ppEnabledExtensionNames
+                deviceExts.empty() ? nullptr : deviceExts.data(), // ppEnabledExtensionNames
                 &(chainedFeatures->features)                      // pEnabledFeatures
             };
 
@@ -779,7 +779,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
             getPipelineCacheDataFunc =
                 (GetPipelineCacheDataFunc)getDeviceProcAddrFunc(*pcDevice, "vkGetPipelineCacheData");
 
-            VK_CHECK(createPipelineCacheFunc(*pcDevice, &pcCI, DE_NULL, &pipelineCache));
+            VK_CHECK(createPipelineCacheFunc(*pcDevice, &pcCI, nullptr, &pipelineCache));
 
             // decode VkSamplerYcbcrConversionCreateInfo structs and create VkSamplerYcbcrConversions
             for (auto &&samplerYcbcr : input.samplerYcbcrConversions)
@@ -787,7 +787,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                 VkSamplerYcbcrConversionCreateInfo sycCI{};
                 readJSON_VkSamplerYcbcrConversionCreateInfo(jsonReader, samplerYcbcr.second, sycCI);
                 VkSamplerYcbcrConversion realConversion;
-                VK_CHECK(createSamplerYcbcrConversionFunc(*pcDevice, &sycCI, DE_NULL, &realConversion));
+                VK_CHECK(createSamplerYcbcrConversionFunc(*pcDevice, &sycCI, nullptr, &realConversion));
                 falseToRealSamplerYcbcrConversions.insert({samplerYcbcr.first, realConversion});
             }
 
@@ -800,7 +800,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                 // replace ycbcr conversions if required
                 if (sCI.pNext != NULL)
                 {
-                    if (sCI.pNext != DE_NULL)
+                    if (sCI.pNext != nullptr)
                     {
                         VkSamplerYcbcrConversionInfo *info = (VkSamplerYcbcrConversionInfo *)(sCI.pNext);
                         if (info->sType == VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO)
@@ -814,7 +814,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                 }
 
                 VkSampler realSampler;
-                VK_CHECK(createSamplerFunc(*pcDevice, &sCI, DE_NULL, &realSampler));
+                VK_CHECK(createSamplerFunc(*pcDevice, &sCI, nullptr, &realSampler));
                 falseToRealSamplers.insert({sampler.first, realSampler});
             }
 
@@ -825,7 +825,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                 std::vector<uint8_t> spirvShader;
                 readJSON_VkShaderModuleCreateInfo(jsonReader, shader.second, smCI, spirvShader);
                 VkShaderModule realShaderModule;
-                VK_CHECK(createShaderModuleFunc(*pcDevice, &smCI, DE_NULL, &realShaderModule));
+                VK_CHECK(createShaderModuleFunc(*pcDevice, &smCI, nullptr, &realShaderModule));
                 falseToRealShaderModules.insert({shader.first, realShaderModule});
             }
 
@@ -837,7 +837,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                     VkRenderPassCreateInfo2 rpCI{};
                     readJSON_VkRenderPassCreateInfo2(jsonReader, renderPass.second, rpCI);
                     VkRenderPass realRenderPass;
-                    VK_CHECK(createRenderPass2Func(*pcDevice, &rpCI, DE_NULL, &realRenderPass));
+                    VK_CHECK(createRenderPass2Func(*pcDevice, &rpCI, nullptr, &realRenderPass));
                     falseToRealRenderPasses.insert({renderPass.first, realRenderPass});
                 }
                 else if (renderPass.second.find("VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO") != std::string::npos)
@@ -845,7 +845,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                     VkRenderPassCreateInfo rpCI{};
                     readJSON_VkRenderPassCreateInfo(jsonReader, renderPass.second, rpCI);
                     VkRenderPass realRenderPass;
-                    VK_CHECK(createRenderPassFunc(*pcDevice, &rpCI, DE_NULL, &realRenderPass));
+                    VK_CHECK(createRenderPassFunc(*pcDevice, &rpCI, nullptr, &realRenderPass));
                     falseToRealRenderPasses.insert({renderPass.first, realRenderPass});
                 }
                 else
@@ -862,7 +862,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                 bool needReplaceSamplers = false;
                 for (uint32_t i = 0; i < dsCI.second.bindingCount; ++i)
                 {
-                    if (dsCI.second.pBindings[i].pImmutableSamplers != DE_NULL)
+                    if (dsCI.second.pBindings[i].pImmutableSamplers != nullptr)
                         needReplaceSamplers = true;
                 }
 
@@ -870,7 +870,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                 {
                     for (uint32_t i = 0; i < dsCI.second.bindingCount; ++i)
                     {
-                        if (dsCI.second.pBindings[i].pImmutableSamplers == DE_NULL)
+                        if (dsCI.second.pBindings[i].pImmutableSamplers == nullptr)
                         {
                             newDescriptorBindings.push_back(dsCI.second.pBindings[i]);
                             continue;
@@ -879,9 +879,9 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                         realSamplers.push_back(std::vector<VkSampler>(dsCI.second.pBindings[i].descriptorCount));
                         for (uint32_t j = 0; j < dsCI.second.pBindings[i].descriptorCount; ++j)
                         {
-                            if (dsCI.second.pBindings[i].pImmutableSamplers[j] == DE_NULL)
+                            if (dsCI.second.pBindings[i].pImmutableSamplers[j] == VK_NULL_HANDLE)
                             {
-                                realSamplers.back()[j] = DE_NULL;
+                                realSamplers.back()[j] = VK_NULL_HANDLE;
                                 continue;
                             }
                             else
@@ -905,7 +905,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                 }
 
                 VkDescriptorSetLayout realDescriptorSetLayout;
-                VK_CHECK(createDescriptorSetLayoutFunc(*pcDevice, &dsCI.second, DE_NULL, &realDescriptorSetLayout));
+                VK_CHECK(createDescriptorSetLayoutFunc(*pcDevice, &dsCI.second, nullptr, &realDescriptorSetLayout));
                 falseToRealDescriptorSetLayouts.insert({dsCI.first, realDescriptorSetLayout});
             }
 
@@ -926,7 +926,7 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                 plCI.pSetLayouts = newSetLayouts.data();
 
                 VkPipelineLayout realPipelineLayout;
-                VK_CHECK(createPipelineLayoutFunc(*pcDevice, &plCI, DE_NULL, &realPipelineLayout));
+                VK_CHECK(createPipelineLayoutFunc(*pcDevice, &plCI, nullptr, &realPipelineLayout));
                 falseToRealPipelineLayouts.insert({pipelineLayout.first, realPipelineLayout});
             }
         }
@@ -935,13 +935,13 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
         if (pipeline.pipelineContents.find("VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO") != std::string::npos)
         {
             VkGraphicsPipelineCreateInfo gpCI{};
-            gpCI.basePipelineHandle = VkPipeline(0);
+            gpCI.basePipelineHandle = VK_NULL_HANDLE;
             readJSON_VkGraphicsPipelineCreateInfo(jsonReader, pipeline.pipelineContents, gpCI);
 
             // set poolEntrySize for pipeline
             VkPipelineOfflineCreateInfo *offlineCreateInfo = (VkPipelineOfflineCreateInfo *)findStructureInChain(
                 gpCI.pNext, VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO);
-            if (offlineCreateInfo != DE_NULL)
+            if (offlineCreateInfo != nullptr)
                 offlineCreateInfo->poolEntrySize = VKSC_DEFAULT_PIPELINE_POOL_SIZE;
 
             // replace VkShaderModules with real ones. Requires creation of new pStages to bypass constness
@@ -973,21 +973,21 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                 gpCI.layout = jt->second;
             }
 
-            VkPipeline gPipeline(0u);
-            VK_CHECK(createGraphicsPipelinesFunc(*pcDevice, pipelineCache, 1, &gpCI, DE_NULL, &gPipeline));
+            VkPipeline gPipeline = VK_NULL_HANDLE;
+            VK_CHECK(createGraphicsPipelinesFunc(*pcDevice, pipelineCache, 1, &gpCI, nullptr, &gPipeline));
             // pipeline was added to cache. We may remove it immediately
-            destroyPipelineFunc(*pcDevice, gPipeline, DE_NULL);
+            destroyPipelineFunc(*pcDevice, gPipeline, nullptr);
         }
         else if (pipeline.pipelineContents.find("VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO") != std::string::npos)
         {
             VkComputePipelineCreateInfo cpCI{};
-            cpCI.basePipelineHandle = VkPipeline(0);
+            cpCI.basePipelineHandle = VK_NULL_HANDLE;
             readJSON_VkComputePipelineCreateInfo(jsonReader, pipeline.pipelineContents, cpCI);
 
             // set poolEntrySize for pipeline
             VkPipelineOfflineCreateInfo *offlineCreateInfo = (VkPipelineOfflineCreateInfo *)findStructureInChain(
                 cpCI.pNext, VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO);
-            if (offlineCreateInfo != DE_NULL)
+            if (offlineCreateInfo != nullptr)
                 offlineCreateInfo->poolEntrySize = VKSC_DEFAULT_PIPELINE_POOL_SIZE;
 
             // replace VkShaderModule with real one
@@ -1006,38 +1006,38 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
                 cpCI.layout = jt->second;
             }
 
-            VkPipeline cPipeline(0u);
-            VK_CHECK(createComputePipelinesFunc(*pcDevice, pipelineCache, 1, &cpCI, DE_NULL, &cPipeline));
+            VkPipeline cPipeline = VK_NULL_HANDLE;
+            VK_CHECK(createComputePipelinesFunc(*pcDevice, pipelineCache, 1, &cpCI, nullptr, &cPipeline));
             // pipeline was added to cache. We may remove it immediately
-            destroyPipelineFunc(*pcDevice, cPipeline, DE_NULL);
+            destroyPipelineFunc(*pcDevice, cPipeline, nullptr);
         }
         else
             TCU_THROW(InternalError, "Could not recognize pipeline type");
     }
 
-    if (pcDevice.get() != DE_NULL)
+    if (pcDevice.get() != nullptr)
     {
         // getPipelineCacheData() binary data, store it in m_cacheData
         std::size_t cacheSize;
-        VK_CHECK(getPipelineCacheDataFunc(*pcDevice, pipelineCache, &cacheSize, DE_NULL));
+        VK_CHECK(getPipelineCacheDataFunc(*pcDevice, pipelineCache, &cacheSize, nullptr));
         resultCacheData.resize(cacheSize);
         VK_CHECK(getPipelineCacheDataFunc(*pcDevice, pipelineCache, &cacheSize, resultCacheData.data()));
 
         // clean up resources - in ResourceInterfaceStandard we just simulate Vulkan SC driver after all...
         for (auto &&it : falseToRealPipelineLayouts)
-            destroyPipelineLayoutFunc(*pcDevice, it.second, DE_NULL);
+            destroyPipelineLayoutFunc(*pcDevice, it.second, nullptr);
         for (auto &&it : falseToRealDescriptorSetLayouts)
-            destroyDescriptorSetLayoutFunc(*pcDevice, it.second, DE_NULL);
+            destroyDescriptorSetLayoutFunc(*pcDevice, it.second, nullptr);
         for (auto &&it : falseToRealRenderPasses)
-            destroyRenderPassFunc(*pcDevice, it.second, DE_NULL);
+            destroyRenderPassFunc(*pcDevice, it.second, nullptr);
         for (auto &&it : falseToRealShaderModules)
-            destroyShaderModuleFunc(*pcDevice, it.second, DE_NULL);
+            destroyShaderModuleFunc(*pcDevice, it.second, nullptr);
         for (auto &&it : falseToRealSamplers)
-            destroySamplerFunc(*pcDevice, it.second, DE_NULL);
+            destroySamplerFunc(*pcDevice, it.second, nullptr);
         for (auto &&it : falseToRealSamplerYcbcrConversions)
-            destroySamplerYcbcrConversionFunc(*pcDevice, it.second, DE_NULL);
+            destroySamplerYcbcrConversionFunc(*pcDevice, it.second, nullptr);
 
-        destroyPipelineCacheFunc(*pcDevice, pipelineCache, DE_NULL);
+        destroyPipelineCacheFunc(*pcDevice, pipelineCache, nullptr);
     }
 
     return resultCacheData;

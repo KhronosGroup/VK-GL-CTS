@@ -717,7 +717,7 @@ void BBoxRenderCase::init(void)
                            (m_bboxSize == BBOXSIZE_EQUAL)   ? ("to exactly cover rendered grid") :
                            (m_bboxSize == BBOXSIZE_LARGER)  ? ("to cover the grid and include some padding") :
                            (m_bboxSize == BBOXSIZE_SMALLER) ? ("to cover only a subset of the grid") :
-                                                              (DE_NULL))
+                                                              (nullptr))
                        << ".\n"
                        << "Rendering with vertex" << ((m_hasTessellationStage) ? ("-tessellation{ctrl,eval}") : (""))
                        << ((m_hasGeometryStage) ? ("-geometry") : ("")) << "-fragment program.\n"
@@ -4699,7 +4699,7 @@ void ClearCase::renderTo(tcu::Surface &dst, bool useBBox)
         gl.useProgram(programHandle);
         gl.bindVertexArray(*vao);
         gl.enableVertexAttribArray(positionAttribLoc);
-        gl.vertexAttribPointer(positionAttribLoc, 4, GL_FLOAT, GL_FALSE, (int)sizeof(tcu::Vec4), DE_NULL);
+        gl.vertexAttribPointer(positionAttribLoc, 4, GL_FLOAT, GL_FALSE, (int)sizeof(tcu::Vec4), nullptr);
         gl.patchParameteri(GL_PATCH_VERTICES, 3);
     }
 
@@ -5057,7 +5057,7 @@ ViewportCallOrderCase::IterateResult ViewportCallOrderCase::iterate(void)
                        << tcu::TestLog::EndMessage;
 
     gl.bindBuffer(GL_ARRAY_BUFFER, **m_vbo);
-    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, sizeof(float[4]), (const float *)DE_NULL);
+    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, sizeof(float[4]), nullptr);
     gl.enableVertexAttribArray(posLocation);
     gl.useProgram(m_program->getProgram());
     gl.patchParameteri(GL_PATCH_VERTICES, 3);

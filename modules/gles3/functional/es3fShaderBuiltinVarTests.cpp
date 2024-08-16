@@ -148,7 +148,7 @@ ShaderBuiltinConstantCase::IterateResult ShaderBuiltinConstantCase::iterate(void
     }
 
     shaderExecutor->useProgram();
-    shaderExecutor->execute(1, DE_NULL, &outputs);
+    shaderExecutor->execute(1, nullptr, &outputs);
 
     m_testCtx.getLog() << TestLog::Integer(m_varName, m_varName, "", QP_KEY_TAG_NONE, result);
 
@@ -737,7 +737,7 @@ private:
 
 VertexIDCase::VertexIDCase(Context &context)
     : TestCase(context, "vertex_id", "gl_VertexID Test")
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_positionBuffer(0)
     , m_elementBuffer(0)
     , m_viewportW(0)
@@ -800,7 +800,7 @@ void VertexIDCase::init(void)
     if (!m_program->isOk())
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
         throw tcu::TestError("Compile failed");
     }
 
@@ -874,7 +874,7 @@ void VertexIDCase::init(void)
 void VertexIDCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     if (m_positionBuffer)
     {
@@ -1002,7 +1002,7 @@ VertexIDCase::IterateResult VertexIDCase::iterate(void)
     gl.useProgram(m_program->getProgram());
     gl.bindBuffer(GL_ARRAY_BUFFER, m_positionBuffer);
     gl.enableVertexAttribArray(posLoc);
-    gl.vertexAttribPointer(posLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(posLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.uniform4fv(colorsLoc, (int)m_colors.size(), (const float *)&m_colors[0]);
 
     // Clear render target to black.
@@ -1075,7 +1075,7 @@ VertexIDCase::IterateResult VertexIDCase::iterate(void)
         gl.bufferData(GL_ELEMENT_ARRAY_BUFFER, (int)(indices.size() * sizeof(uint16_t)), &indices[0], GL_DYNAMIC_DRAW);
 
         gl.bufferData(GL_ARRAY_BUFFER, (int)(m_positions.size() * sizeof(tcu::Vec4)), &mappedPos[0], GL_DYNAMIC_DRAW);
-        gl.drawElements(GL_TRIANGLES, (int)indices.size(), GL_UNSIGNED_SHORT, DE_NULL);
+        gl.drawElements(GL_TRIANGLES, (int)indices.size(), GL_UNSIGNED_SHORT, nullptr);
 
         glu::readPixels(m_context.getRenderContext(), viewportX, viewportY, testImg.getAccess());
         GLU_EXPECT_NO_ERROR(gl.getError(), "Draw");

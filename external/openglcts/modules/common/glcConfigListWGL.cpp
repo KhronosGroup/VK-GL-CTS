@@ -40,7 +40,7 @@ namespace glcts
 
 static void getDefaultWglConfigList(tcu::win32::Platform &wglPlatform, glu::ApiType type, ConfigList &configList)
 {
-    const HINSTANCE instance = GetModuleHandle(DE_NULL);
+    const HINSTANCE instance = GetModuleHandle(nullptr);
     const tcu::wgl::Core &wgl(instance);
     const tcu::win32::Window tmpWindow(instance, 1, 1);
     const std::vector<int> pixelFormats = wgl.getPixelFormats(tmpWindow.getDeviceContext());

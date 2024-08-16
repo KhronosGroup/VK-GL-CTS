@@ -68,7 +68,7 @@ tcu::TestStatus createSamplerTest (Context& context)
         const struct VkSamplerCreateInfo        samplerInfo =
         {
             VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,  //  VkStructureType sType;
-            DE_NULL,                                //  const void*     pNext;
+            nullptr,                                //  const void*     pNext;
             VK_TEX_FILTER_NEAREST,                  //  VkTexFilter     magFilter;
             VK_TEX_FILTER_NEAREST,                  //  VkTexFilter     minFilter;
             VK_TEX_MIPMAP_MODE_BASE,                //  VkTexMipmapMode mipMode;

@@ -43,7 +43,7 @@ public:
 
     eglw::EGLNativeWindowType getLegacyNative()
     {
-        return DE_NULL;
+        return nullptr;
     }
 };
 
@@ -71,7 +71,7 @@ public:
 
     eglw::EGLNativePixmapType getLegacyNative()
     {
-        return DE_NULL;
+        return nullptr;
     }
 };
 
@@ -120,7 +120,7 @@ public:
         m_nativePixmapRegistry.registerFactory(new PixmapFactory());
     }
 
-    eglu::NativeDisplay *createDisplay(const eglw::EGLAttrib *attribList = DE_NULL) const
+    eglu::NativeDisplay *createDisplay(const eglw::EGLAttrib *attribList = nullptr) const
     {
         return new Display();
     }

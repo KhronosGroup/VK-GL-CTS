@@ -41,7 +41,7 @@ public:
     TcpServer(deSocketFamily family, int port);
     virtual ~TcpServer(void);
 
-    virtual ConnectionHandler *createHandler(de::Socket *socket, const de::SocketAddress &clientAddress) = DE_NULL;
+    virtual ConnectionHandler *createHandler(de::Socket *socket, const de::SocketAddress &clientAddress) = 0;
 
     virtual void runServer(void);
     void stopServer(void);
@@ -74,7 +74,7 @@ public:
     void run(void);
 
 protected:
-    virtual void handle(void) = DE_NULL;
+    virtual void handle(void) = 0;
 
 protected:
     TcpServer *m_server;

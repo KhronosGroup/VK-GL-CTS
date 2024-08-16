@@ -59,7 +59,7 @@ GLLibraryCache::~GLLibraryCache(void)
 
 const tcu::FunctionLibrary *GLLibraryCache::getLibrary(glu::ApiType apiType)
 {
-    tcu::FunctionLibrary *library = DE_NULL;
+    tcu::FunctionLibrary *library = nullptr;
     const uint32_t key            = apiType.getPacked();
     LibraryMap::iterator iter     = m_libraries.find(key);
 

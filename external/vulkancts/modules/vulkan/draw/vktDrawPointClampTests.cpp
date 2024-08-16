@@ -132,7 +132,7 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
 
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-        DE_NULL,                              // pNext
+        nullptr,                              // pNext
         0u,                                   // flags
         (VkDeviceSize)sizeof(vertices),       // size
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // usage
@@ -150,7 +150,7 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
     const VkDeviceSize imageSizeBytes              = (VkDeviceSize)(sizeof(uint32_t) * renderSize.x() * renderSize.y());
     const VkBufferCreateInfo readImageBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-        DE_NULL,                              // pNext
+        nullptr,                              // pNext
         (VkBufferCreateFlags)0u,              // flags
         imageSizeBytes,                       // size
         VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // usage
@@ -167,7 +167,7 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
 
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // sType
-        DE_NULL,                                                               // pNext
+        nullptr,                                                               // pNext
         0u,                                                                    // flags
         VK_IMAGE_TYPE_2D,                                                      // imageType
         colorFormat,                                                           // format
@@ -193,7 +193,7 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
 
     const VkImageViewCreateInfo colorAttViewParams = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,                                                         // sType
-        DE_NULL,                                                                                          // pNext
+        nullptr,                                                                                          // pNext
         0u,                                                                                               // flags
         *image,                                                                                           // image
         VK_IMAGE_VIEW_TYPE_2D,                                                                            // viewType
@@ -212,10 +212,10 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
     // Pipeline layout
     const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (vk::VkPipelineLayoutCreateFlags)0,
         0u,           // setLayoutCount
-        DE_NULL,      // pSetLayouts
+        nullptr,      // pSetLayouts
         1u,           // pushConstantRangeCount
         &pcPointSize, // pPushConstantRanges
     };
@@ -258,7 +258,7 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType
-        DE_NULL,                                                   // const void*                                 pNext
+        nullptr,                                                   // const void*                                 pNext
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags
         1u,                             // uint32_t                                    vertexBindingDescriptionCount
         &vertexInputBindingDescription, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions
@@ -272,9 +272,9 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
         vkDevice,                         // const VkDevice                    device
         *pipelineLayout,                  // const VkPipelineLayout            pipelineLayout
         *vertShaderModule,                // const VkShaderModule              vertexShaderModule
-        DE_NULL,                          // const VkShaderModule              tessellationControlModule
-        DE_NULL,                          // const VkShaderModule              tessellationEvalModule
-        DE_NULL,                          // const VkShaderModule              geometryShaderModule
+        VK_NULL_HANDLE,                   // const VkShaderModule              tessellationControlModule
+        VK_NULL_HANDLE,                   // const VkShaderModule              tessellationEvalModule
+        VK_NULL_HANDLE,                   // const VkShaderModule              geometryShaderModule
         *fragShaderModule,                // const VkShaderModule              fragmentShaderModule
         *renderPass,                      // const VkRenderPass                renderPass
         viewports,                        // const std::vector<VkViewport>&    viewports
@@ -287,7 +287,7 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
     // Framebuffer
     const VkFramebufferCreateInfo framebufferParams = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-        DE_NULL,                                   // pNext
+        nullptr,                                   // pNext
         0u,                                        // flags
         *renderPass,                               // renderPass
         1u,                                        // attachmentCount
@@ -300,7 +300,7 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType
-        DE_NULL,                                         // pNext
+        nullptr,                                         // pNext
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags
         queueFamilyIndex,                                // queueFamilyIndex
     };
@@ -309,7 +309,7 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
-        DE_NULL,                                        // pNext
+        nullptr,                                        // pNext
         *cmdPool,                                       // pool
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level
         1u,                                             // bufferCount
@@ -322,13 +322,13 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
     {
         const VkMemoryBarrier vertFlushBarrier = {
             VK_STRUCTURE_TYPE_MEMORY_BARRIER,    // sType
-            DE_NULL,                             // pNext
+            nullptr,                             // pNext
             VK_ACCESS_HOST_WRITE_BIT,            // srcAccessMask
             VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT, // dstAccessMask
         };
         const VkImageMemoryBarrier colorAttBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,                                       // sType
-            DE_NULL,                                                                      // pNext
+            nullptr,                                                                      // pNext
             0u,                                                                           // srcAccessMask
             (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT), // dstAccessMask
             VK_IMAGE_LAYOUT_UNDEFINED,                                                    // oldLayout
@@ -345,8 +345,7 @@ tcu::TestStatus renderPointSizeClampTest(Context &context)
             }                              // subresourceRange
         };
         vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                              (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                              &colorAttBarrier);
+                              (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, nullptr, 1, &colorAttBarrier);
     }
 
     beginRenderPass(vk, *cmdBuf, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()),

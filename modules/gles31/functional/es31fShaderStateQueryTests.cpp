@@ -180,7 +180,7 @@ private:
 };
 
 CoreSamplerTypeCase::CoreSamplerTypeCase(Context &ctx, const char *name, const char *desc)
-    : BaseTypeCase(ctx, name, desc, DE_NULL)
+    : BaseTypeCase(ctx, name, desc, nullptr)
 {
 }
 
@@ -446,7 +446,7 @@ ShaderLogCase::IterateResult ShaderLogCase::iterate(void)
     shader = gl.glCreateShader(glu::getGLShaderType(m_shaderType));
     GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "create shader");
 
-    gl.glShaderSource(shader, 1, &brokenSource, DE_NULL);
+    gl.glShaderSource(shader, 1, &brokenSource, nullptr);
     gl.glCompileShader(shader);
     GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "compile");
 

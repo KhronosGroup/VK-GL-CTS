@@ -577,7 +577,7 @@ tcu::TestStatus NoPositionInstance::iterate(void)
         .setDefaultDepthStencilState()
         .setDefaultColorBlendState()
         .setupVertexInputState()
-        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vert, DE_NULL, tesc,
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vert, nullptr, tesc,
                                           tese, geom)
         .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, frag)
         .setupFragmentOutputState(*renderPass)

@@ -1080,10 +1080,10 @@ LayoutBindingBaseCase::LayoutBindingBaseCase(Context &context, const char *name,
                                              StageType stage, LayoutBindingParameters &samplerType,
                                              glu::GLSLVersion glslVersion)
     : TestCase(context, name, description)
-    , m_drawTest(DE_NULL)
+    , m_drawTest(nullptr)
     , m_testParams(samplerType)
     , m_stage(stage)
-    , m_uniformDeclTemplate(DE_NULL)
+    , m_uniformDeclTemplate(nullptr)
     , m_glslVersion(glslVersion)
 {
 }

@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!-- Coverage test for OpenGL 3.3 tokens and entry points -->
+<test mode="gl" pattern="coverage">
+    <enums>
+    <!-- GL_VERSION_3_3 -->
+    <enum>
+        <name>GL_VERSION_3_3</name>
+        <value>1</value>
+    </enum>
+    <!-- reuse GL_SRC1_COLOR -->
+    <!-- reuse GL_ONE_MINUS_SRC1_COLOR -->
+    <!-- reuse GL_ONE_MINUS_SRC1_ALPHA -->
+    <!-- reuse GL_MAX_DUAL_SOURCE_DRAW_BUFFERS -->
+    <!-- reuse GL_ANY_SAMPLES_PASSED -->
+    <!-- reuse GL_SAMPLER_BINDING -->
+    <!-- reuse GL_RGB10_A2UI -->
+    <!-- reuse GL_TEXTURE_SWIZZLE_R -->
+    <!-- reuse GL_TEXTURE_SWIZZLE_G -->
+    <!-- reuse GL_TEXTURE_SWIZZLE_B -->
+    <!-- reuse GL_TEXTURE_SWIZZLE_A -->
+    <!-- reuse GL_TEXTURE_SWIZZLE_RGBA -->
+    <!-- reuse GL_TIME_ELAPSED -->
+    <!-- reuse GL_TIMESTAMP -->
+    <!-- reuse GL_INT_2_10_10_10_REV -->
+    <!-- Reuse tokens from GL_ARB_blend_func_extended -->
+    <enum>
+        <name>GL_SRC1_COLOR</name>
+        <value>0x88F9</value>
+    </enum>
+    <!-- reuse GL_SRC1_ALPHA -->
+    <enum>
+        <name>GL_ONE_MINUS_SRC1_COLOR</name>
+        <value>0x88FA</value>
+    </enum>
+    <enum>
+        <name>GL_ONE_MINUS_SRC1_ALPHA</name>
+        <value>0x88FB</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_DUAL_SOURCE_DRAW_BUFFERS</name>
+        <value>0x88FC</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_explicit_attrib_location -->
+    <!-- Reuse tokens from GL_ARB_occlusion_query2 -->
+    <enum>
+        <name>GL_ANY_SAMPLES_PASSED</name>
+        <value>0x8C2F</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_sampler_objects -->
+    <enum>
+        <name>GL_SAMPLER_BINDING</name>
+        <value>0x8919</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_shader_bit_encoding -->
+    <!-- Reuse tokens from GL_ARB_texture_rgb10_a2ui -->
+    <enum>
+        <name>GL_RGB10_A2UI</name>
+        <value>0x906F</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_texture_swizzle -->
+    <enum>
+        <name>GL_TEXTURE_SWIZZLE_R</name>
+        <value>0x8E42</value>
+    </enum>
+    <enum>
+        <name>GL_TEXTURE_SWIZZLE_G</name>
+        <value>0x8E43</value>
+    </enum>
+    <enum>
+        <name>GL_TEXTURE_SWIZZLE_B</name>
+        <value>0x8E44</value>
+    </enum>
+    <enum>
+        <name>GL_TEXTURE_SWIZZLE_A</name>
+        <value>0x8E45</value>
+    </enum>
+    <enum>
+        <name>GL_TEXTURE_SWIZZLE_RGBA</name>
+        <value>0x8E46</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_timer_query -->
+    <enum>
+        <name>GL_TIME_ELAPSED</name>
+        <value>0x88BF</value>
+    </enum>
+    <enum>
+        <name>GL_TIMESTAMP</name>
+        <value>0x8E28</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_vertex_type_2_10_10_10_rev -->
+    <!-- reuse GL_UNSIGNED_INT_2_10_10_10_REV -->
+    <enum>
+        <name>GL_INT_2_10_10_10_REV</name>
+        <value>0x8D9F</value>
+    </enum>
+    </enums>
+    <funcs>
+    <!-- GL_VERSION_3_3 -->
+    <!-- Reuse entry points from GL_ARB_blend_func_extended -->
+    <func>
+        <name>glBindFragDataLocationIndexed</name>
+    </func>
+    <func>
+        <name>glGetFragDataIndex</name>
+    </func>
+    <!-- Reuse entry points from GL_ARB_sampler_objects -->
+    <func>
+        <name>glGenSamplers</name>
+    </func>
+    <func>
+        <name>glDeleteSamplers</name>
+    </func>
+    <func>
+        <name>glIsSampler</name>
+    </func>
+    <func>
+        <name>glBindSampler</name>
+    </func>
+    <func>
+        <name>glSamplerParameteri</name>
+    </func>
+    <func>
+        <name>glSamplerParameteriv</name>
+    </func>
+    <func>
+        <name>glSamplerParameterf</name>
+    </func>
+    <func>
+        <name>glSamplerParameterfv</name>
+    </func>
+    <func>
+        <name>glSamplerParameterIiv</name>
+    </func>
+    <func>
+        <name>glSamplerParameterIuiv</name>
+    </func>
+    <func>
+        <name>glGetSamplerParameteriv</name>
+    </func>
+    <func>
+        <name>glGetSamplerParameterIiv</name>
+    </func>
+    <func>
+        <name>glGetSamplerParameterfv</name>
+    </func>
+    <func>
+        <name>glGetSamplerParameterIfv</name>
+    </func>
+    <!-- Reuse entry points from GL_ARB_timer_query -->
+    <func>
+        <name>glQueryCounter</name>
+    </func>
+    <func>
+        <name>glGetQueryObjecti64v</name>
+    </func>
+    <func>
+        <name>glGetQueryObjectui64v</name>
+    </func>
+    <!-- Reuse entry points from GL_ARB_vertex_type_2_10_10_10_rev -->
+    <func>
+        <name>glVertexP2ui</name>
+    </func>
+    <func>
+        <name>glVertexP2uiv</name>
+    </func>
+    <func>
+        <name>glVertexP3ui</name>
+    </func>
+    <func>
+        <name>glVertexP3uiv</name>
+    </func>
+    <func>
+        <name>glVertexP4ui</name>
+    </func>
+    <func>
+        <name>glVertexP4uiv</name>
+    </func>
+    <func>
+        <name>glTexCoordP1ui</name>
+    </func>
+    <func>
+        <name>glTexCoordP1uiv</name>
+    </func>
+    <func>
+        <name>glTexCoordP2ui</name>
+    </func>
+    <func>
+        <name>glTexCoordP2uiv</name>
+    </func>
+    <func>
+        <name>glTexCoordP3ui</name>
+    </func>
+    <func>
+        <name>glTexCoordP3uiv</name>
+    </func>
+    <func>
+        <name>glTexCoordP4ui</name>
+    </func>
+    <func>
+        <name>glTexCoordP4uiv</name>
+    </func>
+    <func>
+        <name>glMultiTexCoordP1ui</name>
+    </func>
+    <func>
+        <name>glMultiTexCoordP1uiv</name>
+    </func>
+    <func>
+        <name>glMultiTexCoordP2ui</name>
+    </func>
+    <func>
+        <name>glMultiTexCoordP2uiv</name>
+    </func>
+    <func>
+        <name>glMultiTexCoordP3ui</name>
+    </func>
+    <func>
+        <name>glMultiTexCoordP3uiv</name>
+    </func>
+    <func>
+        <name>glMultiTexCoordP4ui</name>
+    </func>
+    <func>
+        <name>glMultiTexCoordP4uiv</name>
+    </func>
+    <func>
+        <name>glNormalP3ui</name>
+    </func>
+    <func>
+        <name>glNormalP3uiv</name>
+    </func>
+    <func>
+        <name>glColorP3ui</name>
+    </func>
+    <func>
+        <name>glColorP3uiv</name>
+    </func>
+    <func>
+        <name>glColorP4ui</name>
+    </func>
+    <func>
+        <name>glColorP4uiv</name>
+    </func>
+    <func>
+        <name>glSecondaryColorP3ui</name>
+    </func>
+    <func>
+        <name>glSecondaryColorP3uiv</name>
+    </func>
+    <func>
+        <name>glVertexAttribP1ui</name>
+    </func>
+    <func>
+        <name>glVertexAttribP1uiv</name>
+    </func>
+    <func>
+        <name>glVertexAttribP2ui</name>
+    </func>
+    <func>
+        <name>glVertexAttribP2uiv</name>
+    </func>
+    <func>
+        <name>glVertexAttribP3ui</name>
+    </func>
+    <func>
+        <name>glVertexAttribP3uiv</name>
+    </func>
+    <func>
+        <name>glVertexAttribP4ui</name>
+    </func>
+    <func>
+        <name>glVertexAttribP4uiv</name>
+    </func>
+    </funcs>
+</test>

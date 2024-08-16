@@ -92,7 +92,7 @@ Move<VkDevice> createImageRobustnessDevice(Context &context, const vk::VkInstanc
     // Create a universal queue
     const VkDeviceQueueCreateInfo queueParams = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         0u,                                         // VkDeviceQueueCreateFlags flags;
         context.getUniversalQueueFamilyIndex(),     // uint32_t queueFamilyIndex;
         1u,                                         // uint32_t queueCount;
@@ -111,7 +111,7 @@ Move<VkDevice> createImageRobustnessDevice(Context &context, const vk::VkInstanc
 
     VkPhysicalDeviceFragmentShadingRateFeaturesKHR fsrFeatures = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR, // VkStructureType sType;
-        DE_NULL,                                                              // void* pNext;
+        nullptr,                                                              // void* pNext;
         false,                                                                // VkBool32 pipelineFragmentShadingRate;
         false,                                                                // VkBool32 primitiveFragmentShadingRate;
         false,                                                                // VkBool32 attachmentFragmentShadingRate;
@@ -130,10 +130,10 @@ Move<VkDevice> createImageRobustnessDevice(Context &context, const vk::VkInstanc
         1u,                                                        // uint32_t queueCreateInfoCount;
         &queueParams,                                              // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                                        // uint32_t enabledLayerCount;
-        DE_NULL,                                                   // const char* const* ppEnabledLayerNames;
+        nullptr,                                                   // const char* const* ppEnabledLayerNames;
         static_cast<uint32_t>(deviceExtensions.size()),            // uint32_t enabledExtensionCount;
-        deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0], // const char* const* ppEnabledExtensionNames;
-        DE_NULL,                                                   // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        deviceExtensions.empty() ? nullptr : &deviceExtensions[0], // const char* const* ppEnabledExtensionNames;
+        nullptr,                                                   // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
     return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
@@ -166,7 +166,7 @@ FSRPixelConsistencyInstance::FSRPixelConsistencyInstance(Context &context, const
 {
     // Fetch information about supported fragment shading rates
     context.getInstanceInterface().getPhysicalDeviceFragmentShadingRatesKHR(
-        context.getPhysicalDevice(), &m_supportedFragmentShadingRateCount, DE_NULL);
+        context.getPhysicalDevice(), &m_supportedFragmentShadingRateCount, nullptr);
 
     m_supportedFragmentShadingRates.resize(m_supportedFragmentShadingRateCount);
     for (uint32_t i = 0; i < m_supportedFragmentShadingRateCount; ++i)
@@ -526,7 +526,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
         const VkImageCreateInfo imageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
             imageFormat,                         // VkFormat format;
@@ -542,7 +542,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             cbUsage,                             // VkImageUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
             0u,                                  // uint32_t queueFamilyIndexCount;
-            DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+            nullptr,                             // const uint32_t* pQueueFamilyIndices;
             VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
         };
         cbImagePass0 = de::MovePtr<ImageWithMemory>(
@@ -550,7 +550,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
         VkImageViewCreateInfo imageViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             (VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags flags;
             **cbImagePass0,                           // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -581,7 +581,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
         const VkImageCreateInfo imageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
             imageFormat,                         // VkFormat format;
@@ -597,7 +597,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             cbUsage,                             // VkImageUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
             0u,                                  // uint32_t queueFamilyIndexCount;
-            DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+            nullptr,                             // const uint32_t* pQueueFamilyIndices;
             VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
         };
         cbImagePass1 = de::MovePtr<ImageWithMemory>(
@@ -605,7 +605,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
         VkImageViewCreateInfo imageViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             (VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags flags;
             **cbImagePass1,                           // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -671,13 +671,13 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
                 (vk::VkSubpassDescriptionFlags)0,    // flags
                 vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
                 0u,                                  // inputCount
-                DE_NULL,                             // pInputAttachments
+                nullptr,                             // pInputAttachments
                 1u,                                  // colorCount
                 &colorAttachment0Reference,          // pColorAttachments
-                DE_NULL,                             // pResolveAttachments
-                DE_NULL,                             // depthStencilAttachment
+                nullptr,                             // pResolveAttachments
+                nullptr,                             // depthStencilAttachment
                 0u,                                  // preserveCount
-                DE_NULL,                             // pPreserveAttachments
+                nullptr,                             // pPreserveAttachments
             },
             {
                 (vk::VkSubpassDescriptionFlags)0,    // flags
@@ -686,10 +686,10 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
                 &colorAttachment0Reference,          // pInputAttachments
                 1u,                                  // colorCount
                 &colorAttachment1Reference,          // pColorAttachments
-                DE_NULL,                             // pResolveAttachments
-                DE_NULL,                             // depthStencilAttachment
+                nullptr,                             // pResolveAttachments
+                nullptr,                             // depthStencilAttachment
                 0u,                                  // preserveCount
-                DE_NULL,                             // pPreserveAttachments
+                nullptr,                             // pPreserveAttachments
             },
         };
 
@@ -705,7 +705,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
         const VkRenderPassCreateInfo renderPassParams = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // sType
-            DE_NULL,                                   // pNext
+            nullptr,                                   // pNext
             (vk::VkRenderPassCreateFlags)0,
             (uint32_t)attachmentDescriptions.size(),        // attachmentCount
             &attachmentDescriptions[0],                     // pAttachments
@@ -727,7 +727,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
         const vk::VkFramebufferCreateInfo framebufferParams = {
             vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-            DE_NULL,                                       // pNext
+            nullptr,                                       // pNext
             (vk::VkFramebufferCreateFlags)(0),             // createFlags
             *renderPass,                                   // renderPass
             (uint32_t)attachments.size(),                  // attachmentCount
@@ -756,7 +756,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags flags;
         1u,                                                        // uint32_t vertexBindingDescriptionCount;
         &vertexBinding,                  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -766,7 +766,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                     // const void* pNext;
+        nullptr,                                                     // const void* pNext;
         (VkPipelineInputAssemblyStateCreateFlags)0,                  // VkPipelineInputAssemblyStateCreateFlags flags;
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,                         // VkPrimitiveTopology topology;
         VK_FALSE                                                     // VkBool32 primitiveRestartEnable;
@@ -775,7 +775,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
     // Create rasterization state
     const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         (VkPipelineRasterizationStateCreateFlags)0,                 // VkPipelineRasterizationStateCreateFlags flags;
         VK_FALSE,                                                   // VkBool32 depthClampEnable;
         VK_FALSE,                                                   // VkBool32 rasterizerDiscardEnable;
@@ -795,7 +795,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
     const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                               // const void*                                pNext
+        nullptr,                                               // const void*                                pNext
         (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags        flags
         1u,        // uint32_t                                    viewportCount
         &viewport, // const VkViewport*                        pViewports
@@ -805,10 +805,10 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
     const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType   sType;
-        DE_NULL,                                              // const void*   pNext;
+        nullptr,                                              // const void*   pNext;
         (VkPipelineDynamicStateCreateFlags)0,                 // VkPipelineDynamicStateCreateFlags flags;
         0u,                                                   // uint32_t  dynamicStateCount;
-        DE_NULL,                                              // const VkDynamicState* pDynamicStates;
+        nullptr,                                              // const VkDynamicState* pDynamicStates;
     };
 
     const VkPipelineColorBlendAttachmentState colorBlendAttachmentState[] = {{
@@ -824,7 +824,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
     const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
         VK_FALSE,                                                 // VkBool32 logicOpEnable;
         VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -835,7 +835,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
     VkPipelineDepthStencilStateCreateInfo depthStencilStateParams = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
         VK_FALSE,                                                   // VkBool32 depthTestEnable;
         VK_FALSE,                                                   // VkBool32 depthWriteEnable;
@@ -878,10 +878,10 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
         const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-            DE_NULL,                                       // pNext
+            nullptr,                                       // pNext
             (VkPipelineLayoutCreateFlags)0,
             0u,                 // setLayoutCount
-            DE_NULL,            // pSetLayouts
+            nullptr,            // pSetLayouts
             1u,                 // pushConstantRangeCount
             &pushConstantRange, // pPushConstantRanges
         };
@@ -890,12 +890,12 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
         const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                            sType
-            DE_NULL,                                                  // const void*                    pNext
+            nullptr,                                                  // const void*                    pNext
             0u,                                                       // VkPipelineMultisampleStateCreateFlags    flags
             (VkSampleCountFlagBits)m_data.samples, // VkSampleCountFlagBits                    rasterizationSamples
             VK_FALSE,                              // VkBool32                                    sampleShadingEnable
             1.0f,                                  // float                                    minSampleShading
-            DE_NULL,                               // const VkSampleMask*                        pSampleMask
+            nullptr,                               // const VkSampleMask*                        pSampleMask
             VK_FALSE,                              // VkBool32                                    alphaToCoverageEnable
             VK_FALSE                               // VkBool32                                    alphaToOneEnable
         };
@@ -907,29 +907,29 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
         const VkPipelineShaderStageCreateInfo shaderCreateInfo[] = {
             {
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, (VkPipelineShaderStageCreateFlags)0,
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, (VkPipelineShaderStageCreateFlags)0,
                 VK_SHADER_STAGE_VERTEX_BIT, // stage
                 *vertShader,                // shader
                 "main",
-                DE_NULL, // pSpecializationInfo
+                nullptr, // pSpecializationInfo
             },
             {
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, (VkPipelineShaderStageCreateFlags)0,
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, (VkPipelineShaderStageCreateFlags)0,
                 VK_SHADER_STAGE_FRAGMENT_BIT, // stage
                 *fragShader,                  // shader
                 "main",
-                DE_NULL, // pSpecializationInfo
+                nullptr, // pSpecializationInfo
             }};
 
         const VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
             VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,        // VkStructureType sType;
-            DE_NULL,                                                // const void* pNext;
+            nullptr,                                                // const void* pNext;
             (VkPipelineCreateFlags)0,                               // VkPipelineCreateFlags flags;
             sizeof(shaderCreateInfo) / sizeof(shaderCreateInfo[0]), // uint32_t stageCount;
             &shaderCreateInfo[0],                                   // const VkPipelineShaderStageCreateInfo* pStages;
             &vertexInputStateCreateInfo,   // const VkPipelineVertexInputStateCreateInfo* pVertexInputState;
             &inputAssemblyStateCreateInfo, // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
-            DE_NULL,                       // const VkPipelineTessellationStateCreateInfo* pTessellationState;
+            nullptr,                       // const VkPipelineTessellationStateCreateInfo* pTessellationState;
             &viewportStateCreateInfo,      // const VkPipelineViewportStateCreateInfo* pViewportState;
             &rasterizationStateCreateInfo, // const VkPipelineRasterizationStateCreateInfo* pRasterizationState;
             &multisampleStateCreateInfo,   // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
@@ -939,11 +939,11 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             pipelineLayoutPass0.get(),     // VkPipelineLayout layout;
             renderPass.get(),              // VkRenderPass renderPass;
             0u,                            // uint32_t subpass;
-            DE_NULL,                       // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                // VkPipeline basePipelineHandle;
             0                              // int basePipelineIndex;
         };
 
-        pipelinePass0 = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+        pipelinePass0 = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
     // Create pipeline for pass 1
@@ -958,13 +958,13 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, // descriptorType
             1u,                                  // descriptorCount
             VK_SHADER_STAGE_FRAGMENT_BIT,        // stageFlags
-            DE_NULL,                             // pImmutableSamplers
+            nullptr,                             // pImmutableSamplers
         }};
 
         // Create a layout and allocate a descriptor set for it.
         const VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo = {
             vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // sType
-            DE_NULL,                                                 // pNext
+            nullptr,                                                 // pNext
             (VkDescriptorSetLayoutCreateFlags)(0),                   // flags
             sizeof(bindings) / sizeof(bindings[0]),                  // bindingCount
             &bindings[0]                                             // pBindings
@@ -982,50 +982,51 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
         descriptorPool = poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
         descriptorSet  = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 
-        VkDescriptorImageInfo imageInfo = makeDescriptorImageInfo(DE_NULL, *cbImagePass0View, VK_IMAGE_LAYOUT_GENERAL);
+        VkDescriptorImageInfo imageInfo =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *cbImagePass0View, VK_IMAGE_LAYOUT_GENERAL);
 
         VkWriteDescriptorSet writeDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // sType
-            DE_NULL,                                // pNext
+            nullptr,                                // pNext
             *descriptorSet,                         // dstSet
             0u,                                     // dstBinding
             0u,                                     // dstArrayElement
             1u,                                     // descriptorCount
             bindings[0].descriptorType,             // descriptorType
             &imageInfo,                             // pImageInfo
-            DE_NULL,                                // pBufferInfo
-            DE_NULL,                                // pTexelBufferView
+            nullptr,                                // pBufferInfo
+            nullptr,                                // pTexelBufferView
         };
 
         vk.updateDescriptorSets(device, 1, &writeDescriptorSet, 0, NULL);
 
         const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-            DE_NULL,                                       // pNext
+            nullptr,                                       // pNext
             (VkPipelineLayoutCreateFlags)0,
             1u,                         // setLayoutCount
             &descriptorSetLayout.get(), // pSetLayouts
             0u,                         // pushConstantRangeCount
-            DE_NULL,                    // pPushConstantRanges
+            nullptr,                    // pPushConstantRanges
         };
 
         pipelineLayoutPass1 = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
 
         const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                            sType
-            DE_NULL,               // const void*                                pNext
+            nullptr,               // const void*                                pNext
             0u,                    // VkPipelineMultisampleStateCreateFlags    flags
             VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                    rasterizationSamples
             VK_FALSE,              // VkBool32                                    sampleShadingEnable
             1.0f,                  // float                                    minSampleShading
-            DE_NULL,               // const VkSampleMask*                        pSampleMask
+            nullptr,               // const VkSampleMask*                        pSampleMask
             VK_FALSE,              // VkBool32                                    alphaToCoverageEnable
             VK_FALSE               // VkBool32                                    alphaToOneEnable
         };
 
         VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR, // VkStructureType sType;
-            DE_NULL,                                                                // const void* pNext;
+            nullptr,                                                                // const void* pNext;
             m_data.shadingRate,                                                     // VkExtent2D fragmentSize;
             {VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
              VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR}, // VkFragmentShadingRateCombinerOpKHR combinerOps[2];
@@ -1038,18 +1039,18 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
         const VkPipelineShaderStageCreateInfo shaderCreateInfo[] = {
             {
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, (VkPipelineShaderStageCreateFlags)0,
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, (VkPipelineShaderStageCreateFlags)0,
                 VK_SHADER_STAGE_VERTEX_BIT, // stage
                 *vertShader,                // shader
                 "main",
-                DE_NULL, // pSpecializationInfo
+                nullptr, // pSpecializationInfo
             },
             {
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, (VkPipelineShaderStageCreateFlags)0,
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, (VkPipelineShaderStageCreateFlags)0,
                 VK_SHADER_STAGE_FRAGMENT_BIT, // stage
                 *fragShader,                  // shader
                 "main",
-                DE_NULL, // pSpecializationInfo
+                nullptr, // pSpecializationInfo
             }};
 
         const VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
@@ -1060,7 +1061,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             &shaderCreateInfo[0],                                   // const VkPipelineShaderStageCreateInfo* pStages;
             &vertexInputStateCreateInfo,   // const VkPipelineVertexInputStateCreateInfo* pVertexInputState;
             &inputAssemblyStateCreateInfo, // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
-            DE_NULL,                       // const VkPipelineTessellationStateCreateInfo* pTessellationState;
+            nullptr,                       // const VkPipelineTessellationStateCreateInfo* pTessellationState;
             &viewportStateCreateInfo,      // const VkPipelineViewportStateCreateInfo* pViewportState;
             &rasterizationStateCreateInfo, // const VkPipelineRasterizationStateCreateInfo* pRasterizationState;
             &multisampleStateCreateInfo,   // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
@@ -1070,11 +1071,11 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             pipelineLayoutPass1.get(),     // VkPipelineLayout layout;
             renderPass.get(),              // VkRenderPass renderPass;
             1u,                            // uint32_t subpass;
-            DE_NULL,                       // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                // VkPipeline basePipelineHandle;
             0                              // int basePipelineIndex;
         };
 
-        pipelinePass1 = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+        pipelinePass1 = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
     // Create command buffer
@@ -1083,7 +1084,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
     Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     VkImageMemoryBarrier preImageBarriers[] = {{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
-                                                DE_NULL,                                // const void*            pNext
+                                                nullptr,                                // const void*            pNext
                                                 0u,                           // VkAccessFlags        srcAccessMask
                                                 VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags        dstAccessMask
                                                 VK_IMAGE_LAYOUT_UNDEFINED,    // VkImageLayout        oldLayout
@@ -1099,7 +1100,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
                                                     VK_REMAINING_ARRAY_LAYERS, // uint32_t                arraySize
                                                 }},
                                                {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
-                                                DE_NULL,                                // const void*            pNext
+                                                nullptr,                                // const void*            pNext
                                                 0u,                           // VkAccessFlags        srcAccessMask
                                                 VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags        dstAccessMask
                                                 VK_IMAGE_LAYOUT_UNDEFINED,    // VkImageLayout        oldLayout
@@ -1119,8 +1120,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
     beginCommandBuffer(vk, *cmdBuffer, 0u);
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                          (const VkBufferMemoryBarrier *)DE_NULL,
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
                           sizeof(preImageBarriers) / sizeof(preImageBarriers[0]), preImageBarriers);
 
     // Clear both images to UINT_MAX
@@ -1133,7 +1133,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
     // Barrier between the clear and the rendering
     VkImageMemoryBarrier clearColorBarriers[] = {
         {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
-         DE_NULL,                                // const void*            pNext
+         nullptr,                                // const void*            pNext
          VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags        srcAccessMask
          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,   // VkAccessFlags        dstAccessMask
          VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout        oldLayout
@@ -1149,7 +1149,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
              VK_REMAINING_ARRAY_LAYERS, // uint32_t                arraySize
          }},
         {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
-         DE_NULL,                                // const void*            pNext
+         nullptr,                                // const void*            pNext
          VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags        srcAccessMask
          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,   // VkAccessFlags        dstAccessMask
          VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout        oldLayout
@@ -1166,13 +1166,12 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
          }}};
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                          (const VkBufferMemoryBarrier *)DE_NULL,
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
                           sizeof(clearColorBarriers) / sizeof(clearColorBarriers[0]), clearColorBarriers);
 
     beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer,
-                    makeRect2D(m_data.framebufferExtent.width, m_data.framebufferExtent.height), 0, DE_NULL,
-                    VK_SUBPASS_CONTENTS_INLINE, DE_NULL);
+                    makeRect2D(m_data.framebufferExtent.width, m_data.framebufferExtent.height), 0, nullptr,
+                    VK_SUBPASS_CONTENTS_INLINE, nullptr);
 
     // Put primitive shading rate in a push constant
     if (m_shadingRateClamped.size() == 1)
@@ -1205,7 +1204,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
     // Bind descriptors
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayoutPass1, 0, 1,
-                             &descriptorSet.get(), 0, DE_NULL);
+                             &descriptorSet.get(), 0, nullptr);
 
     // Bind vertex buffer
     vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vb, &vertexBufferOffset);
@@ -1219,7 +1218,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
     endRenderPass(vk, *cmdBuffer);
 
     VkImageMemoryBarrier postImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
-                                             DE_NULL,                                // const void*            pNext
+                                             nullptr,                                // const void*            pNext
                                              VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // VkAccessFlags        srcAccessMask
                                              VK_ACCESS_TRANSFER_READ_BIT,          // VkAccessFlags        dstAccessMask
                                              VK_IMAGE_LAYOUT_GENERAL,              // VkImageLayout        oldLayout
@@ -1236,8 +1235,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
                                              }};
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                          (const VkBufferMemoryBarrier *)DE_NULL, 1, &postImageBarrier);
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
 
     const VkBufferImageCopy copyRegion = {
         0u, // VkDeviceSize bufferOffset;
@@ -1258,7 +1256,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
 
     const VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
         VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -1269,8 +1267,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
     };
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
-                          0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          0, nullptr, 1, &bufferBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 

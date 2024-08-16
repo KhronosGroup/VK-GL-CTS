@@ -57,7 +57,7 @@ VkResult DeviceDriverSC::allocateMemory (VkDevice device, const VkMemoryAllocate
 	{
 		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(deviceMemoryRequestCount,1);
-		*pMemory = Handle<HANDLE_TYPE_DEVICE_MEMORY>(m_resourceInterface->incResourceCounter());
+		*pMemory = m_resourceInterface->incResourceCounter<VkDeviceMemory>();
 	}
 	return VK_SUCCESS;
 }
@@ -154,7 +154,7 @@ VkResult DeviceDriverSC::createFence (VkDevice device, const VkFenceCreateInfo* 
 	{
 		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(fenceRequestCount,1);
-		*pFence = Handle<HANDLE_TYPE_FENCE>(m_resourceInterface->incResourceCounter());
+		*pFence = m_resourceInterface->incResourceCounter<VkFence>();
 	}
 	return VK_SUCCESS;
 }
@@ -201,7 +201,7 @@ VkResult DeviceDriverSC::createSemaphore (VkDevice device, const VkSemaphoreCrea
 	{
 		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(semaphoreRequestCount,1);
-		*pSemaphore = Handle<HANDLE_TYPE_SEMAPHORE>(m_resourceInterface->incResourceCounter());
+		*pSemaphore = m_resourceInterface->incResourceCounter<VkSemaphore>();
 	}
 	return VK_SUCCESS;
 }
@@ -227,7 +227,7 @@ VkResult DeviceDriverSC::createEvent (VkDevice device, const VkEventCreateInfo* 
 	{
 		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(eventRequestCount,1);
-		*pEvent = Handle<HANDLE_TYPE_EVENT>(m_resourceInterface->incResourceCounter());
+		*pEvent = m_resourceInterface->incResourceCounter<VkEvent>();
 	}
 	return VK_SUCCESS;
 }
@@ -301,7 +301,7 @@ VkResult DeviceDriverSC::createBuffer (VkDevice device, const VkBufferCreateInfo
 	{
 		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(bufferRequestCount,1);
-		*pBuffer = Handle<HANDLE_TYPE_BUFFER>(m_resourceInterface->incResourceCounter());
+		*pBuffer = m_resourceInterface->incResourceCounter<VkBuffer>();
 	}
 	return VK_SUCCESS;
 }
@@ -327,7 +327,7 @@ VkResult DeviceDriverSC::createBufferView (VkDevice device, const VkBufferViewCr
 	{
 		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(bufferViewRequestCount,1);
-		*pView = Handle<HANDLE_TYPE_BUFFER_VIEW>(m_resourceInterface->incResourceCounter());
+		*pView = m_resourceInterface->incResourceCounter<VkBufferView>();
 	}
 	return VK_SUCCESS;
 }
@@ -353,7 +353,7 @@ VkResult DeviceDriverSC::createImage (VkDevice device, const VkImageCreateInfo* 
 	{
 		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(imageRequestCount,1);
-		*pImage = Handle<HANDLE_TYPE_IMAGE>(m_resourceInterface->incResourceCounter());
+		*pImage = m_resourceInterface->incResourceCounter<VkImage>();
 	}
 	return VK_SUCCESS;
 }
@@ -414,7 +414,7 @@ VkResult DeviceDriverSC::createPipelineCache (VkDevice device, const VkPipelineC
 	{
 		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(pipelineCacheRequestCount,1);
-		*pPipelineCache = Handle<HANDLE_TYPE_PIPELINE_CACHE>(m_resourceInterface->incResourceCounter());
+		*pPipelineCache = m_resourceInterface->incResourceCounter<VkPipelineCache>();
 	}
 	return VK_SUCCESS;
 }
@@ -538,7 +538,7 @@ VkResult DeviceDriverSC::createDescriptorPool (VkDevice device, const VkDescript
 	{
 		DDSTAT_LOCK();
 		DDSTAT_HANDLE_CREATE(descriptorPoolRequestCount,1);
-		*pDescriptorPool = Handle<HANDLE_TYPE_DESCRIPTOR_POOL>(m_resourceInterface->incResourceCounter());
+		*pDescriptorPool = m_resourceInterface->incResourceCounter<VkDescriptorPool>();
 	}
 	return VK_SUCCESS;
 }

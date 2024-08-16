@@ -77,7 +77,7 @@ void checkAllSupported(const Extensions &supportedExtensions, const std::vector<
 }
 
 CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
-                                     const VkAllocationCallbacks *pAllocator = DE_NULL)
+                                     const VkAllocationCallbacks *pAllocator = nullptr)
 {
     std::vector<std::string> extensions;
 
@@ -107,7 +107,7 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkInsta
                                    const VkAllocationCallbacks *pAllocator, bool validationEnabled)
 {
     const float queuePriorities[]              = {1.0f};
-    const VkDeviceQueueCreateInfo queueInfos[] = {{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, DE_NULL,
+    const VkDeviceQueueCreateInfo queueInfos[] = {{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
                                                    (VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                    DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
     const VkPhysicalDeviceFeatures features    = getDeviceFeaturesForWsi();
@@ -123,14 +123,14 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkInsta
     }
 
     VkDeviceCreateInfo deviceParams = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                       DE_NULL,
+                                       nullptr,
                                        (VkDeviceCreateFlags)0,
                                        DE_LENGTH_OF_ARRAY(queueInfos),
                                        &queueInfos[0],
                                        0u,      // enabledLayerCount
-                                       DE_NULL, // ppEnabledLayerNames
+                                       nullptr, // ppEnabledLayerNames
                                        (uint32_t)extensions.size(),
-                                       extensions.empty() ? DE_NULL : &extensions[0],
+                                       extensions.empty() ? nullptr : &extensions[0],
                                        &features};
 
     return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
@@ -142,8 +142,8 @@ struct InstanceHelper
     const CustomInstance instance;
     const InstanceDriver &vki;
 
-    InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = DE_NULL)
-        : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL))
+    InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = nullptr)
+        : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
         , instance(createInstanceWithWsi(context, supportedExtensions, wsiType, pAllocator))
         , vki(instance.getDriver())
     {
@@ -159,11 +159,11 @@ struct DeviceHelper
     const VkQueue queue;
 
     DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
-                 const VkAllocationCallbacks *pAllocator = DE_NULL)
+                 const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
-                                     enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL), queueFamilyIndex,
+                                     enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
                                      pAllocator, context.getTestContext().getCommandLine().isValidationEnabled()))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
@@ -234,7 +234,7 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(Type wsiType, const Instanc
             capabilities.currentTransform;
     const VkSwapchainCreateInfoKHR parameters = {
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         (VkSwapchainCreateFlagsKHR)0,
         surface,
         de::clamp(desiredImageCount, capabilities.minImageCount,
@@ -249,12 +249,12 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(Type wsiType, const Instanc
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        (const uint32_t *)DE_NULL,
+        nullptr,
         transform,
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,         // clipped
-        (VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     return parameters;
@@ -310,7 +310,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
                                                      context.getTestContext().getCommandLine()));
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
     const std::vector<VkExtensionProperties> deviceExtensions(
-        enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, DE_NULL));
+        enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, nullptr));
     if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_full_screen_exclusive")))
         TCU_THROW(NotSupportedError, "Extension VK_EXT_full_screen_exclusive not supported");
 
@@ -324,7 +324,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
     // add information about full screen exclusive to VkSwapchainCreateInfoKHR
     VkSurfaceFullScreenExclusiveInfoEXT fseInfo = {
         VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT, // VkStructureType             sType;
-        DE_NULL,                                                  // void*                       pNext;
+        nullptr,                                                  // void*                       pNext;
         testParams.fseType                                        // VkFullScreenExclusiveEXT    fullScreenExclusive;
     };
 
@@ -332,8 +332,8 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
 #if (DE_OS == DE_OS_WIN32)
     VkSurfaceFullScreenExclusiveWin32InfoEXT fseWin32Info = {
         VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT, // VkStructureType    sType;
-        DE_NULL,                                                        // const void*        pNext;
-        pt::Win32MonitorHandle(0)                                       // HMONITOR           hmonitor;
+        nullptr,                                                        // const void*        pNext;
+        pt::Win32MonitorHandle(nullptr)                                 // HMONITOR           hmonitor;
     };
     if (testParams.wsiType == TYPE_WIN32)
     {
@@ -346,7 +346,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
     // check surface capabilities
     VkSurfaceCapabilitiesFullScreenExclusiveEXT surfaceCapabilitiesFSE = {
         VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_FULL_SCREEN_EXCLUSIVE_EXT, // VkStructureType    sType;
-        DE_NULL,                                                          // void*              pNext;
+        nullptr,                                                          // void*              pNext;
         false // VkBool32           fullScreenExclusiveSupported;
     };
     VkSurfaceCapabilities2KHR surfaceCapabilities2 = {
@@ -356,7 +356,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
     };
     VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, // VkStructureType    sType;
-        DE_NULL,                                              // const void*        pNext;
+        nullptr,                                              // const void*        pNext;
         *surface                                              // VkSurfaceKHR       surface;
     };
 
@@ -399,8 +399,8 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
 
     Move<VkSwapchainKHR> swapchain;
     {
-        VkSwapchainKHR object = 0;
-        VkResult result       = vkd.createSwapchainKHR(device, &swapchainInfo, DE_NULL, &object);
+        VkSwapchainKHR object = VK_NULL_HANDLE;
+        VkResult result       = vkd.createSwapchainKHR(device, &swapchainInfo, nullptr, &object);
         if (result == VK_ERROR_INITIALIZATION_FAILED &&
             testParams.fseType == VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT)
         {
@@ -416,7 +416,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
             VK_CHECK(result);
         }
 
-        swapchain = Move<VkSwapchainKHR>(check<VkSwapchainKHR>(object), Deleter<VkSwapchainKHR>(vkd, device, DE_NULL));
+        swapchain = Move<VkSwapchainKHR>(check<VkSwapchainKHR>(object), Deleter<VkSwapchainKHR>(vkd, device, nullptr));
     }
     const std::vector<VkImage> swapchainImages = getSwapchainImages(vkd, device, *swapchain);
 
@@ -499,7 +499,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
 
             {
                 acquireResult = vkd.acquireNextImageKHR(device, *swapchain, std::numeric_limits<uint64_t>::max(),
-                                                        imageReadySemaphore, (vk::VkFence)0, &imageNdx);
+                                                        imageReadySemaphore, VK_NULL_HANDLE, &imageNdx);
                 if (acquireResult == VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT)
                 {
                     context.getTestContext().getLog()
@@ -521,7 +521,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
                 const VkCommandBuffer commandBuffer     = **commandBuffers[frameNdx % commandBuffers.size()];
                 const VkPipelineStageFlags waitDstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                 const VkSubmitInfo submitInfo           = {VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            1u,
                                                            &imageReadySemaphore,
                                                            &waitDstStage,
@@ -530,13 +530,13 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
                                                            1u,
                                                            &renderingCompleteSemaphore};
                 const VkPresentInfoKHR presentInfo      = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            1u,
                                                            &renderingCompleteSemaphore,
                                                            1u,
                                                            &*swapchain,
                                                            &imageNdx,
-                                                           (VkResult *)DE_NULL};
+                                                           nullptr};
 
                 renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
                 VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, imageReadyFence));
@@ -555,7 +555,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
             else
             {
                 // image was not acquired, just roll the synchronization
-                VK_CHECK(vkd.queueSubmit(devHelper.queue, 0u, DE_NULL, imageReadyFence));
+                VK_CHECK(vkd.queueSubmit(devHelper.queue, 0u, nullptr, imageReadyFence));
             }
         }
 

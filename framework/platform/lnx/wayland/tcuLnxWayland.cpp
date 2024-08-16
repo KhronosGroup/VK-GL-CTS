@@ -93,10 +93,10 @@ bool Display::hasDisplay(const char *name)
 
 Display::Display(EventState &eventState, const char *name)
     : m_eventState(eventState)
-    , m_display(DE_NULL)
-    , m_registry(DE_NULL)
-    , m_compositor(DE_NULL)
-    , m_shell(DE_NULL)
+    , m_display(nullptr)
+    , m_registry(nullptr)
+    , m_compositor(nullptr)
+    , m_shell(nullptr)
 {
     try
     {

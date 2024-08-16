@@ -166,7 +166,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
         VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         imageType,                           // VkImageType imageType;
         format,                              // VkFormat format;
@@ -178,7 +178,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -1815,22 +1815,22 @@ de::MovePtr<BufferWithMemory> RayTracingBuiltinLaunchTestInstance::runTest(void)
         raygenShaderBindingTable.get() != NULL ?
             makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0),
                                               shaderGroupHandleSize, shaderGroupHandleSize) :
-            makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+            makeStridedDeviceAddressRegionKHR(0, 0, 0);
     const VkStridedDeviceAddressRegionKHR missShaderBindingTableRegion =
         missShaderBindingTable.get() != NULL ?
             makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0),
                                               shaderGroupHandleSize, shaderGroupHandleSize) :
-            makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+            makeStridedDeviceAddressRegionKHR(0, 0, 0);
     const VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion =
         hitShaderBindingTable.get() != NULL ?
             makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0),
                                               shaderGroupHandleSize, shaderGroupHandleSize) :
-            makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+            makeStridedDeviceAddressRegionKHR(0, 0, 0);
     const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
         callableShaderBindingTable.get() != NULL ?
             makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, callableShaderBindingTable->get(), 0),
                                               shaderGroupHandleSize, shaderGroupHandleSize) :
-            makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+            makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     const VkImageCreateInfo imageCreateInfo = makeImageCreateInfo(m_data.width, m_data.height, m_data.depth, format);
     const VkImageSubresourceRange imageSubresourceRange =
@@ -1850,7 +1850,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuiltinLaunchTestInstance::runTest(void)
         new BufferWithMemory(vkd, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible));
 
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     const VkImageMemoryBarrier preImageBarrier =
         makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -1884,7 +1884,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuiltinLaunchTestInstance::runTest(void)
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -1897,7 +1897,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuiltinLaunchTestInstance::runTest(void)
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 
@@ -3446,7 +3446,7 @@ Move<VkPipeline> RayTracingIndirectTestInstance::createPipelineAndShaderBindingT
     m_hitShaderBindingTableRegion =
         makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, m_hitShaderBindingTable->get(), 0),
                                           shaderGroupHandleSize, shaderGroupHandleSize);
-    m_callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    m_callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     return pipeline;
 }
@@ -3482,7 +3482,7 @@ void RayTracingIndirectTestInstance::createPipelineLayoutAndSet(uint32_t setCoun
 
     const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *descriptorPool,                                // VkDescriptorPool descriptorPool;
         1u,                                             // uint32_t setLayoutCount;
         &descriptorSetLayout.get()                      // const VkDescriptorSetLayout* pSetLayouts;
@@ -3493,7 +3493,7 @@ void RayTracingIndirectTestInstance::createPipelineLayoutAndSet(uint32_t setCoun
 
     const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         (VkPipelineLayoutCreateFlags)0,                // VkPipelineLayoutCreateFlags flags;
         1u,                                            // uint32_t setLayoutCount;
         &descriptorSetLayout.get(),                    // const VkDescriptorSetLayout* pSetLayouts;
@@ -4094,7 +4094,7 @@ tcu::TestStatus RayTracingIndirectTestInstance::iterate(void)
 
     VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-        DE_NULL,                                                           //  const void* pNext;
+        nullptr,                                                           //  const void* pNext;
         1u,                                                                //  uint32_t accelerationStructureCount;
         tlas->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
     };
@@ -4123,7 +4123,7 @@ tcu::TestStatus RayTracingIndirectTestInstance::iterate(void)
     }
 
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                             &descriptorSet[0].get(), 0, DE_NULL);
+                             &descriptorSet[0].get(), 0, nullptr);
 
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 

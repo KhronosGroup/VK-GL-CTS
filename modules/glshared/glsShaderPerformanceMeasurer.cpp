@@ -219,7 +219,7 @@ void ShaderPerformanceMeasurer::init(uint32_t program, const vector<AttribSpec> 
         {
             gl.enableVertexAttribArray(location);
             gl.bindBuffer(GL_ARRAY_BUFFER, m_attribBuffers[attribNdx]);
-            gl.vertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+            gl.vertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
         }
 
         GLU_EXPECT_NO_ERROR(gl.getError(), "Setup vertex attribute state");
@@ -271,7 +271,7 @@ void ShaderPerformanceMeasurer::render(int numDrawCalls)
     gl.viewport(0, 0, m_viewportWidth, m_viewportHeight);
 
     for (int callNdx = 0; callNdx < numDrawCalls; callNdx++)
-        gl.drawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_SHORT, DE_NULL);
+        gl.drawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_SHORT, nullptr);
 }
 
 void ShaderPerformanceMeasurer::iterate(void)

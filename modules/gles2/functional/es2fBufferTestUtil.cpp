@@ -154,7 +154,7 @@ const char *getBufferTargetName(uint32_t target)
         return "element_array";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -170,7 +170,7 @@ const char *getUsageHintName(uint32_t hint)
         return "dynamic_draw";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -263,7 +263,7 @@ BufferVerifierBase::BufferVerifierBase(Context &context)
 
 // BufferVerifier
 
-BufferVerifier::BufferVerifier(Context &context, VerifyType verifyType) : m_verifier(DE_NULL)
+BufferVerifier::BufferVerifier(Context &context, VerifyType verifyType) : m_verifier(nullptr)
 {
     switch (verifyType)
     {
@@ -295,7 +295,7 @@ bool BufferVerifier::verify(uint32_t buffer, const uint8_t *reference, int offse
 
 VertexArrayVerifier::VertexArrayVerifier(Context &context)
     : BufferVerifierBase(context)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_posLoc(0)
     , m_byteVecLoc(0)
 {
@@ -508,7 +508,7 @@ bool VertexArrayVerifier::verify(uint32_t buffer, const uint8_t *refPtr, int off
 
 IndexArrayVerifier::IndexArrayVerifier(Context &context)
     : BufferVerifierBase(context)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_posLoc(0)
     , m_colorLoc(0)
 {

@@ -73,7 +73,7 @@ DE_STATIC_ASSERT(DE_PTR_SIZE == sizeof(void *));
 DE_BEGIN_EXTERN_C
 
 #if defined(DE_ASSERT_FAILURE_CALLBACK)
-static deAssertFailureCallbackFunc g_assertFailureCallback = DE_NULL;
+static deAssertFailureCallbackFunc g_assertFailureCallback = NULL;
 #endif
 
 void deSetAssertFailureCallback(deAssertFailureCallbackFunc callback)
@@ -88,11 +88,11 @@ void deSetAssertFailureCallback(deAssertFailureCallbackFunc callback)
 void deAssertFail(const char *reason, const char *file, int line)
 {
 #if defined(DE_ASSERT_FAILURE_CALLBACK)
-    if (g_assertFailureCallback != DE_NULL)
+    if (g_assertFailureCallback != NULL)
     {
         /* Remove callback in case of the callback causes further asserts. */
         deAssertFailureCallbackFunc callback = g_assertFailureCallback;
-        deSetAssertFailureCallback(DE_NULL);
+        deSetAssertFailureCallback(NULL);
         callback(reason, file, line);
     }
 #endif

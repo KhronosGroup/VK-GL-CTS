@@ -587,18 +587,18 @@ struct ImageViewMinLodParams
 Vec4 sampleLevelArray1D(const ConstPixelBufferAccess *levels, int numLevels, const Sampler &sampler, float s, int level,
                         float lod);
 Vec4 sampleLevelArray2D(const ConstPixelBufferAccess *levels, int numLevels, const Sampler &sampler, float s, float t,
-                        int depth, float lod, bool es2 = false, ImageViewMinLodParams *minLodParams = DE_NULL);
+                        int depth, float lod, bool es2 = false, ImageViewMinLodParams *minLodParams = nullptr);
 Vec4 sampleLevelArray3D(const ConstPixelBufferAccess *levels, int numLevels, const Sampler &sampler, float s, float t,
-                        float r, float lod, ImageViewMinLodParams *minLodParams = DE_NULL);
+                        float r, float lod, ImageViewMinLodParams *minLodParams = nullptr);
 
 Vec4 sampleLevelArray1DOffset(const ConstPixelBufferAccess *levels, int numLevels, const Sampler &sampler, float s,
                               float lod, const IVec2 &offset);
 Vec4 sampleLevelArray2DOffset(const ConstPixelBufferAccess *levels, int numLevels, const Sampler &sampler, float s,
                               float t, float lod, const IVec3 &offset, bool es2 = false,
-                              ImageViewMinLodParams *minLodParams = DE_NULL);
+                              ImageViewMinLodParams *minLodParams = nullptr);
 Vec4 sampleLevelArray3DOffset(const ConstPixelBufferAccess *levels, int numLevels, const Sampler &sampler, float s,
                               float t, float r, float lod, const IVec3 &offset,
-                              ImageViewMinLodParams *minLodParams = DE_NULL);
+                              ImageViewMinLodParams *minLodParams = nullptr);
 
 float sampleLevelArray1DCompare(const ConstPixelBufferAccess *levels, int numLevels, const Sampler &sampler, float ref,
                                 float s, float lod, const IVec2 &offset);
@@ -655,7 +655,7 @@ class Texture2DView
 {
 public:
     Texture2DView(int numLevels, const ConstPixelBufferAccess *levels, bool es2 = false,
-                  ImageViewMinLodParams *minLodParams = DE_NULL);
+                  ImageViewMinLodParams *minLodParams = nullptr);
 
     int getNumLevels(void) const
     {
@@ -904,7 +904,7 @@ class TextureCubeView
 public:
     TextureCubeView(void);
     TextureCubeView(int numLevels, const ConstPixelBufferAccess *const (&levels)[CUBEFACE_LAST], bool es2 = false,
-                    ImageViewMinLodParams *minLodParams = DE_NULL);
+                    ImageViewMinLodParams *minLodParams = nullptr);
 
     int getNumLevels(void) const
     {
@@ -1072,7 +1072,7 @@ public:
 
     ImageViewMinLodParams *getImageViewMinLodParams(void) const
     {
-        return DE_NULL;
+        return nullptr;
     }
 
 protected:
@@ -1082,7 +1082,7 @@ protected:
 
 inline Texture1DView::Texture1DView(int numLevels, const ConstPixelBufferAccess *levels,
                                     bool es2 DE_UNUSED_ATTR                            = false,
-                                    ImageViewMinLodParams *minLodParams DE_UNUSED_ATTR = DE_NULL)
+                                    ImageViewMinLodParams *minLodParams DE_UNUSED_ATTR = nullptr)
     : m_numLevels(numLevels)
     , m_levels(levels)
 {
@@ -1182,7 +1182,7 @@ class Texture1DArrayView
 {
 public:
     Texture1DArrayView(int numLevels, const ConstPixelBufferAccess *levels, bool es2 = false,
-                       ImageViewMinLodParams *minLodParams = DE_NULL);
+                       ImageViewMinLodParams *minLodParams = nullptr);
 
     int getWidth(void) const
     {
@@ -1217,7 +1217,7 @@ public:
 
     ImageViewMinLodParams *getImageViewMinLodParams(void) const
     {
-        return DE_NULL;
+        return nullptr;
     }
 
 protected:
@@ -1300,7 +1300,7 @@ class Texture2DArrayView
 {
 public:
     Texture2DArrayView(int numLevels, const ConstPixelBufferAccess *levels, bool es2 = false,
-                       ImageViewMinLodParams *minLodParams = DE_NULL);
+                       ImageViewMinLodParams *minLodParams = nullptr);
 
     int getWidth(void) const
     {
@@ -1345,7 +1345,7 @@ public:
 
     ImageViewMinLodParams *getImageViewMinLodParams(void) const
     {
-        return DE_NULL;
+        return nullptr;
     }
 
 protected:
@@ -1453,7 +1453,7 @@ class Texture3DView
 {
 public:
     Texture3DView(int numLevels, const ConstPixelBufferAccess *levels, bool es2 = false,
-                  ImageViewMinLodParams *minLodParams = DE_NULL);
+                  ImageViewMinLodParams *minLodParams = nullptr);
 
     int getWidth(void) const
     {
@@ -1578,7 +1578,7 @@ class TextureCubeArrayView
 {
 public:
     TextureCubeArrayView(int numLevels, const ConstPixelBufferAccess *levels, bool es2 = false,
-                         ImageViewMinLodParams *minLodParams = DE_NULL);
+                         ImageViewMinLodParams *minLodParams = nullptr);
 
     int getSize(void) const
     {
@@ -1618,7 +1618,7 @@ public:
 
     ImageViewMinLodParams *getImageViewMinLodParams(void) const
     {
-        return DE_NULL;
+        return nullptr;
     }
 
 protected:

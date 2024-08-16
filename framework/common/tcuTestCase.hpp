@@ -162,6 +162,7 @@ protected:
 private:
     const TestNodeType m_nodeType;
     std::vector<TestNode *> m_children;
+    bool m_duplicateCheck;
 };
 
 /*--------------------------------------------------------------------*//*!

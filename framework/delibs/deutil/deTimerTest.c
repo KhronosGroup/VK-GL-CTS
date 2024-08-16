@@ -43,7 +43,7 @@ void deTimer_selfTest(void)
     const int intervalSleepMultiplier = 5;
     int iter;
     deRandom rnd;
-    deTimer *timer        = DE_NULL;
+    deTimer *timer        = NULL;
     volatile int numCalls = 0;
 
     deRandom_init(&rnd, 6789);

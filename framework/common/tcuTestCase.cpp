@@ -22,7 +22,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuTestCase.hpp"
-#include "tcuPlatform.hpp"
 #include "tcuCommandLine.hpp"
 
 #include "deString.h"
@@ -48,6 +47,8 @@ TestNode::TestNode(TestContext &testCtx, TestNodeType nodeType, const char *name
     : m_testCtx(testCtx)
     , m_name(name)
     , m_nodeType(nodeType)
+    , m_children()
+    , m_duplicateCheck(testCtx.getCommandLine().checkDuplicateCaseNames())
 {
     DE_ASSERT(isValidCaseName(name));
 }
@@ -56,6 +57,8 @@ TestNode::TestNode(TestContext &testCtx, TestNodeType nodeType, const char *name
     : m_testCtx(testCtx)
     , m_name(name)
     , m_nodeType(nodeType)
+    , m_children()
+    , m_duplicateCheck(testCtx.getCommandLine().checkDuplicateCaseNames())
 {
     DE_ASSERT(isValidCaseName(name));
     for (int i = 0; i < (int)children.size(); i++)
@@ -88,14 +91,15 @@ void TestNode::addChild(TestNode *node)
 {
     // Child names must be unique!
     // \todo [petri] O(n^2) algorithm, but shouldn't really matter..
-#if defined(DE_DEBUG)
-    for (int i = 0; i < (int)m_children.size(); i++)
+    if (m_duplicateCheck)
     {
-        if (deStringEqual(node->getName(), m_children[i]->getName()))
-            throw tcu::InternalError(std::string("Test case with non-unique name '") + node->getName() +
-                                     "' added to group '" + getName() + "'.");
+        for (int i = 0; i < (int)m_children.size(); i++)
+        {
+            if (deStringEqual(node->getName(), m_children[i]->getName()))
+                throw tcu::InternalError(std::string("Test case with non-unique name '") + node->getName() +
+                                         "' added to group '" + getName() + "'.");
+        }
     }
-#endif
 
     // children only in group nodes
     DE_ASSERT(getTestNodeTypeClass(m_nodeType) == NODECLASS_GROUP);

@@ -1248,9 +1248,11 @@ public:
              FP::AllowContract | FP::NSZ}, // -0.0 * 1 + -0.0 == -0.0
 
             {OID_MIN, V_MINUS_ZERO, V_ZERO, V_MINUS_ZERO, FP::NSZ},
+            {OID_MIN, V_ZERO, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ},
             {OID_MIN, V_MINUS_INF, V_ONE, V_MINUS_INF, FP::NotInf},
 
             {OID_MAX, V_MINUS_ZERO, V_ZERO, V_ZERO, FP::NSZ},
+            {OID_MAX, V_ZERO, V_MINUS_ZERO, V_ZERO, FP::NSZ},
             {OID_MAX, V_MINUS_INF, V_ONE, V_ONE, FP::NotInf},
 
             {OID_CLAMP, V_MINUS_ONE, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ},
@@ -1267,9 +1269,11 @@ public:
             {OID_CROSS, V_NAN, V_ONE, V_NAN, FP::NotNaN},
 
             {OID_NMIN, V_MINUS_ZERO, V_ZERO, V_MINUS_ZERO, FP::NSZ},
+            {OID_NMIN, V_ZERO, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ},
             {OID_NMIN, V_MINUS_INF, V_ONE, V_MINUS_INF, FP::NotInf},
 
             {OID_NMAX, V_MINUS_ZERO, V_ZERO, V_ZERO, FP::NSZ},
+            {OID_NMAX, V_ZERO, V_MINUS_ZERO, V_ZERO, FP::NSZ},
             {OID_NMAX, V_MINUS_INF, V_ONE, V_ONE, FP::NotInf},
 
             {OID_NCLAMP, V_MINUS_ONE, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ},
@@ -2853,9 +2857,9 @@ void getGraphicsShaderCode(vk::SourceCollections &dst, InstanceContext context)
         "OpReturn\n"
         "OpFunctionEnd\n";
 
-    dst.spirvAsmSources.add("vert", DE_NULL) << StringTemplate(vertexTemplate).specialize(context.testCodeFragments)
+    dst.spirvAsmSources.add("vert", nullptr) << StringTemplate(vertexTemplate).specialize(context.testCodeFragments)
                                              << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-    dst.spirvAsmSources.add("frag", DE_NULL) << StringTemplate(fragmentTemplate).specialize(context.testCodeFragments)
+    dst.spirvAsmSources.add("frag", nullptr) << StringTemplate(fragmentTemplate).specialize(context.testCodeFragments)
                                              << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 

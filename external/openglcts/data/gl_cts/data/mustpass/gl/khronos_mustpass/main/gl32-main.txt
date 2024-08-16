@@ -28,6 +28,7 @@ KHR-GL32.transform_feedback.draw_xfb_stream_test
 KHR-GL32.transform_feedback.capture_special_interleaved_test
 KHR-GL32.transform_feedback.draw_xfb_instanced_test
 KHR-GL32.transform_feedback.draw_xfb_stream_instanced_test
+KHR-GL32.transform_feedback.geometry
 KHR-GL32.transform_feedback3.multiple_streams
 KHR-GL32.transform_feedback3.skip_components
 KHR-GL32.transform_feedback3.skip_multiple_buffers
@@ -868,6 +869,7 @@ KHR-GL32.buffer_objects.elements
 KHR-GL32.buffer_objects.multi_texture
 KHR-GL32.buffer_objects.sub_data
 KHR-GL32.transform_feedback2.transform_feedback2_states
+KHR-GL32.api.coverage
 KHR-GL32.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL32.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL32.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp
@@ -877,6 +879,7 @@ KHR-GL32.CommonBugs.CommonBug_PerVertexValidation
 KHR-GL32.CommonBugs.CommonBug_ReservedNames
 KHR-GL32.CommonBugs.CommonBug_SparseBuffersWithCopyOps
 KHR-GL32.texture_size_promotion.functional
+KHR-GL32.primitive_restart.restart_mode
 KHR-GL32.gpu_shader5_gl.implicit_conversions
 KHR-GL32.gpu_shader5_gl.function_overloading
 KHR-GL32.gpu_shader5_gl.float_encoding

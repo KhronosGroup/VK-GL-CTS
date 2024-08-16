@@ -73,10 +73,10 @@ MultisampleRenderCase::MultisampleRenderCase(Context &context, const char *name,
     , m_numTargetSamples(-1)
     , m_buffer(0)
     , m_resolveBuffer(0)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_fbo(0)
     , m_fboTexture(0)
-    , m_textureSamplerProgram(DE_NULL)
+    , m_textureSamplerProgram(nullptr)
     , m_fboRbo(0)
     , m_resolveFbo(0)
     , m_resolveFboTexture(0)
@@ -323,7 +323,7 @@ void MultisampleRenderCase::deinit(void)
     }
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     if (m_fbo)
     {
@@ -338,7 +338,7 @@ void MultisampleRenderCase::deinit(void)
     }
 
     delete m_textureSamplerProgram;
-    m_textureSamplerProgram = DE_NULL;
+    m_textureSamplerProgram = nullptr;
 
     if (m_fboRbo)
     {
@@ -470,7 +470,7 @@ void MultisampleRenderCase::drawOneIteration(void)
     if (m_perIterationShader)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
 
         m_program =
             new glu::ShaderProgram(m_context.getRenderContext(),
@@ -604,7 +604,7 @@ void MultisampleRenderCase::drawOneIteration(void)
 
             gl.bindVertexArray(m_resolveVao);
             gl.bindBuffer(GL_ARRAY_BUFFER, m_resolveBuffer);
-            gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+            gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
             gl.enableVertexAttribArray(posLocation);
             GLU_EXPECT_NO_ERROR(gl.getError(), "set attrib");
 
@@ -663,7 +663,7 @@ void MultisampleRenderCase::drawOneIteration(void)
 
             gl.bindVertexArray(m_resolveVao);
             gl.bindBuffer(GL_ARRAY_BUFFER, m_resolveBuffer);
-            gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+            gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
             gl.enableVertexAttribArray(posLocation);
             GLU_EXPECT_NO_ERROR(gl.getError(), "set attrib");
 

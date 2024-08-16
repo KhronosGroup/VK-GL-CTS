@@ -256,14 +256,14 @@ const StructType *ShaderInterface::findStruct(const char *name) const
 {
     std::vector<StructType *>::const_iterator pos =
         std::find_if(m_structs.begin(), m_structs.end(), StructNameEquals(name));
-    return pos != m_structs.end() ? *pos : DE_NULL;
+    return pos != m_structs.end() ? *pos : nullptr;
 }
 
 void ShaderInterface::getNamedStructs(std::vector<const StructType *> &structs) const
 {
     for (std::vector<StructType *>::const_iterator i = m_structs.begin(); i != m_structs.end(); i++)
     {
-        if ((*i)->getTypeName() != DE_NULL)
+        if ((*i)->getTypeName() != nullptr)
             structs.push_back(*i);
     }
 }
@@ -290,7 +290,7 @@ struct BlockDataPtr
     {
     }
 
-    BlockDataPtr(void) : ptr(DE_NULL), size(0), lastUnsizedArraySize(0)
+    BlockDataPtr(void) : ptr(nullptr), size(0), lastUnsizedArraySize(0)
     {
     }
 };
@@ -676,7 +676,7 @@ void computeReferenceLayout(BufferLayout &layout, const ShaderInterface &interfa
     for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
     {
         const BufferBlock &block = interface.getBlock(blockNdx);
-        bool hasInstanceName     = block.getInstanceName() != DE_NULL;
+        bool hasInstanceName     = block.getInstanceName() != nullptr;
         std::string blockPrefix  = hasInstanceName ? (std::string(block.getBlockName()) + ".") : std::string("");
         int curOffset            = 0;
         int activeBlockNdx       = (int)layout.blocks.size();
@@ -868,7 +868,7 @@ const char *getCompareFuncForType(glu::DataType type)
         return "bool compare_bvec4    (bvec4 a, bvec4 b)              { return a == b; }\n";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -1000,7 +1000,7 @@ void generateDeclaration(std::ostream &src, const BufferBlock &block, int bindin
 
     src << "}";
 
-    if (block.getInstanceName() != DE_NULL)
+    if (block.getInstanceName() != nullptr)
     {
         src << " " << block.getInstanceName();
         if (block.isArray())
@@ -2057,7 +2057,7 @@ void initRefDataStorage(const ShaderInterface &interface, const BufferLayout &la
 
     // Pointers for each block.
     {
-        uint8_t *basePtr = storage.data.empty() ? DE_NULL : &storage.data[0];
+        uint8_t *basePtr = storage.data.empty() ? nullptr : &storage.data[0];
         int curOffset    = 0;
 
         DE_ASSERT(bufferSizes.size() == layout.blocks.size());
@@ -2098,7 +2098,7 @@ vector<BlockDataPtr> blockLocationsToPtrs(const BufferLayout &layout, const vect
 
 vector<void *> mapBuffers(const glw::Functions &gl, const vector<Buffer> &buffers, uint32_t access)
 {
-    vector<void *> mapPtrs(buffers.size(), DE_NULL);
+    vector<void *> mapPtrs(buffers.size(), nullptr);
 
     try
     {
@@ -2112,7 +2112,7 @@ vector<void *> mapBuffers(const glw::Functions &gl, const vector<Buffer> &buffer
                 TCU_CHECK(mapPtrs[ndx]);
             }
             else
-                mapPtrs[ndx] = DE_NULL;
+                mapPtrs[ndx] = nullptr;
         }
 
         return mapPtrs;
@@ -2332,7 +2332,7 @@ SSBOLayoutCase::IterateResult SSBOLayoutCase::iterate(void)
             const uint32_t buffer = bufferManager.allocBuffer();
 
             gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
-            gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, DE_NULL, GL_STATIC_DRAW);
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_STATIC_DRAW);
             GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to allocate buffer");
 
             buffers[bufNdx].buffer = buffer;

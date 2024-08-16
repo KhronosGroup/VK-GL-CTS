@@ -56,7 +56,7 @@ void CallQueue::cancel(void)
 
 void CallQueue::callNext(void)
 {
-    Call *call = DE_NULL;
+    Call *call = nullptr;
 
     // Wait for a call.
     m_callSem.decrement();
@@ -107,7 +107,7 @@ void CallQueue::callNext(void)
 Call *CallQueue::getEmptyCall(void)
 {
     de::ScopedLock lock(m_lock);
-    Call *call = DE_NULL;
+    Call *call = nullptr;
 
     // Try to get from free calls list.
     if (!m_freeCalls.empty())
@@ -149,7 +149,7 @@ void CallQueue::freeCall(Call *call)
 
 // Call
 
-Call::Call(void) : m_func(DE_NULL)
+Call::Call(void) : m_func(nullptr)
 {
 }
 
@@ -159,7 +159,7 @@ Call::~Call(void)
 
 void Call::clear(void)
 {
-    m_func = DE_NULL;
+    m_func = nullptr;
     m_data.clear();
 }
 

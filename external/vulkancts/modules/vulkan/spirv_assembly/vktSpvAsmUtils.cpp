@@ -241,7 +241,7 @@ bool isFloatControlsFeaturesSupported(const Context &context,
     vk::VkPhysicalDeviceFloatControlsProperties refControls;
     {
         refControls.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES;
-        refControls.pNext = DE_NULL;
+        refControls.pNext = nullptr;
 
         VkPhysicalDeviceProperties2 deviceProperties;
         deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;

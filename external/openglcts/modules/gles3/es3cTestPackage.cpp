@@ -24,8 +24,10 @@
 
 #include "es3cTestPackage.hpp"
 #include "es3cCopyTexImageConversionsTests.hpp"
+#include "es3cDriverErrorTests.hpp"
 #include "es3cNumberParsingTests.hpp"
 #include "glcAggressiveShaderOptimizationsTests.hpp"
+#include "glcApiCoverageTests.hpp"
 #include "glcClipDistance.hpp"
 #include "glcCullDistance.hpp"
 #include "glcExposedExtensionsTests.hpp"
@@ -204,9 +206,11 @@ void ES30TestPackage::init(void)
         addChild(new glcts::CullDistance::Tests(getContext()));
         addChild(new es3cts::CopyTexImageConversionsTests(getContext()));
         addChild(new es3cts::NumberParsingTests(getContext()));
+        addChild(new es3cts::DriverErrorTests(getContext()));
         addChild(new glcts::FramebufferBlitTests(getContext()));
         addChild(new glcts::TextureLodBiasTests(getContext()));
         addChild(new glcts::TransformFeedbackTests(getContext()));
+        addChild(new glcts::ApiCoverageTests(getContext()));
     }
     catch (...)
     {

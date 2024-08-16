@@ -30,6 +30,7 @@
 #include "deDefs.hpp"
 #include "deUniquePtr.hpp"
 #include "deFilePath.hpp"
+#include "vkPrograms.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "tcuTestLog.hpp"
 #include "vktAmberTestCase.hpp"
@@ -47,7 +48,7 @@ namespace cts_amber
 AmberTestCase::AmberTestCase(tcu::TestContext &testCtx, const char *name, const char *description,
                              const std::string &readFilename)
     : TestCase(testCtx, name)
-    , m_recipe(DE_NULL)
+    , m_recipe(nullptr)
     , m_readFilename(readFilename)
 {
     (void)description;
@@ -131,6 +132,12 @@ static bool isFeatureSupported(const vkt::Context &ctx, const std::string &featu
         return ctx.get8BitStorageFeatures().storageBuffer8BitAccess;
     if (feature == "IndexTypeUint8Features.indexTypeUint8")
         return ctx.getIndexTypeUint8Features().indexTypeUint8;
+    if (feature == "RayTracingPipelineFeaturesKHR.rayTracingPipeline")
+        return ctx.getRayTracingPipelineFeatures().rayTracingPipeline;
+    if (feature == "AccelerationStructureFeaturesKHR.accelerationStructure")
+        return ctx.getAccelerationStructureFeatures().accelerationStructure;
+    if (feature == "BufferDeviceAddressFeatures.bufferDeviceAddress")
+        return ctx.getBufferDeviceAddressFeatures().bufferDeviceAddress;
 
     std::string message = std::string("Unexpected feature name: ") + feature;
     TCU_THROW(InternalError, message.c_str());
@@ -385,7 +392,7 @@ bool AmberTestCase::parse(const std::string &readFilename)
                                   << r.Error() << "\n"
                                   << tcu::TestLog::EndMessage;
         // TODO(dneto): Enhance Amber to not require this.
-        m_recipe->SetImpl(DE_NULL);
+        m_recipe->SetImpl(nullptr);
         return false;
     }
     return true;
@@ -457,8 +464,41 @@ void AmberTestCase::initPrograms(vk::SourceCollections &programCollection) const
                     << glu::TessellationEvaluationSource(shader.shader_source)
                     << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
                 break;
+            case amber::kShaderTypeRayGeneration:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::RaygenSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeAnyHit:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::AnyHitSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeClosestHit:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::ClosestHitSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeMiss:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::MissSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeIntersection:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::IntersectionSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeCall:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::CallableSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
             case amber::kShaderTypeMulti:
                 DE_ASSERT(false && "Multi shaders not supported");
+                break;
+            default:
+                DE_ASSERT(false && "Unknown shader");
                 break;
             }
         }
@@ -471,7 +511,7 @@ void AmberTestCase::initPrograms(vk::SourceCollections &programCollection) const
 
 tcu::TestStatus AmberTestInstance::iterate(void)
 {
-    amber::Amber am(DE_NULL);
+    amber::Amber am(nullptr);
     amber::Options amber_options;
     amber::ShaderMap shaderMap;
     amber::Result r;
@@ -515,13 +555,17 @@ tcu::TestStatus AmberTestInstance::iterate(void)
         if (!m_context.getBinaryCollection().contains(shader.shader_name))
             continue;
 
-        size_t len = m_context.getBinaryCollection().get(shader.shader_name).getSize();
+        const vk::ProgramBinary &prog = m_context.getBinaryCollection().get(shader.shader_name);
+
+        prog.setUsed();
+
+        size_t len = prog.getSize();
         /* This is a compiled spir-v binary which must be made of 4-byte words. We
          * are moving into a word sized vector so divide by 4
          */
         std::vector<uint32_t> data;
         data.resize(len >> 2);
-        deMemcpy(data.data(), m_context.getBinaryCollection().get(shader.shader_name).getBinary(), len);
+        deMemcpy(data.data(), prog.getBinary(), len);
 
         shaderMap[shader.shader_name] = data;
     }

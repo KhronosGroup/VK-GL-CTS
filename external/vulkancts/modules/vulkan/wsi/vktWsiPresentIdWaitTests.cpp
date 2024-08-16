@@ -184,15 +184,15 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
 
     deMemset(&features, 0, sizeof(features));
 
-    vk::VkPhysicalDeviceFeatures2 physicalDeviceFeatures2{vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, DE_NULL,
+    vk::VkPhysicalDeviceFeatures2 physicalDeviceFeatures2{vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr,
                                                           features};
 
     vk::VkPhysicalDevicePresentIdFeaturesKHR presentIdFeatures = {
-        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR, DE_NULL, true};
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR, nullptr, true};
     vk::VkPhysicalDevicePresentWaitFeaturesKHR presentWaitFeatures = {
-        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR, DE_NULL, true};
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR, nullptr, true};
 
-    void *pNext = DE_NULL;
+    void *pNext = nullptr;
     for (size_t i = 0; i < extraExtensions.size(); ++i)
     {
         if (strcmp(extraExtensions[i], "VK_KHR_present_id") == 0)
@@ -209,7 +209,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
     physicalDeviceFeatures2.pNext = pNext;
 
     const vk::VkDeviceCreateInfo deviceParams = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                                 pNext ? &physicalDeviceFeatures2 : DE_NULL,
+                                                 pNext ? &physicalDeviceFeatures2 : nullptr,
                                                  (vk::VkDeviceCreateFlags)0,
                                                  DE_LENGTH_OF_ARRAY(queueInfos),
                                                  &queueInfos[0],
@@ -217,7 +217,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
                                                  nullptr,                                  // ppEnabledLayerNames
                                                  static_cast<uint32_t>(extensions.size()), // enabledExtensionCount
                                                  extensions.data(),                        // ppEnabledExtensionNames
-                                                 pNext ? DE_NULL : &features};
+                                                 pNext ? nullptr : &features};
 
     return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
@@ -279,8 +279,8 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, 
         transform,
         vk::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         vk::VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,             // clipped
-        (vk::VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     return parameters;
@@ -473,7 +473,7 @@ uint32_t recordAndSubmitFrame(FrameStreamObjects::FrameObjects &frameObjects,
     uint32_t imageNdx = std::numeric_limits<uint32_t>::max();
     const vk::VkResult acquireResult =
         vkd.acquireNextImageKHR(device, swapchain, std::numeric_limits<uint64_t>::max(),
-                                frameObjects.imageAvailableSemaphore, (vk::VkFence)0, &imageNdx);
+                                frameObjects.imageAvailableSemaphore, VK_NULL_HANDLE, &imageNdx);
 
     if (acquireResult == vk::VK_SUBOPTIMAL_KHR)
         testLog << tcu::TestLog::Message << "Got " << acquireResult << " at frame " << frameNumber

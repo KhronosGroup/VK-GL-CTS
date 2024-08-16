@@ -47,9 +47,8 @@ class SparseTextureClampLookupResidencyTestCase : public SparseTexture2LookupTes
 {
 public:
     /* Public methods */
-    SparseTextureClampLookupResidencyTestCase(deqp::Context &context);
-
-    SparseTextureClampLookupResidencyTestCase(deqp::Context &context, const char *name, const char *description);
+    SparseTextureClampLookupResidencyTestCase(deqp::Context &context, const char *name, const char *description,
+                                              GLint target, GLint format);
 
     virtual void init();
     virtual tcu::TestNode::IterateResult iterate();
@@ -70,7 +69,8 @@ class SparseTextureClampLookupColorTestCase : public SparseTextureClampLookupRes
 {
 public:
     /* Public methods */
-    SparseTextureClampLookupColorTestCase(deqp::Context &context);
+    SparseTextureClampLookupColorTestCase(deqp::Context &context, const char *name, const char *description,
+                                          GLint target, GLint format);
 
     virtual void init();
     virtual tcu::TestNode::IterateResult iterate();
@@ -105,6 +105,9 @@ public:
 private:
     SparseTextureClampTests(const SparseTextureClampTests &other);
     SparseTextureClampTests &operator=(const SparseTextureClampTests &other);
+
+    void addSparseTextureClampLookupResidencyTestCase();
+    void addSparseTextureClampLookupColorTestCase();
 };
 
 } // namespace gl4cts

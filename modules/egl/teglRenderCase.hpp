@@ -57,7 +57,7 @@ protected:
     };
 
     virtual void executeForConfig(eglw::EGLDisplay display, eglw::EGLConfig config);
-    virtual void executeForSurface(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config &config) = DE_NULL;
+    virtual void executeForSurface(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config &config) = 0;
 
     eglw::EGLint m_surfaceTypeMask;
 };
@@ -72,7 +72,7 @@ public:
 protected:
     virtual void executeForSurface(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config &config);
     virtual void executeForContext(eglw::EGLDisplay display, eglw::EGLContext context, eglw::EGLSurface surface,
-                                   const Config &config) = DE_NULL;
+                                   const Config &config) = 0;
 
     eglw::EGLint m_apiMask;
 };
@@ -87,7 +87,7 @@ public:
 protected:
     virtual void executeForSurface(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config &config);
     virtual void executeForContexts(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config &config,
-                                    const std::vector<std::pair<eglw::EGLint, eglw::EGLContext>> &contexts) = DE_NULL;
+                                    const std::vector<std::pair<eglw::EGLint, eglw::EGLContext>> &contexts) = 0;
 
     int m_numContextsPerApi;
     eglw::EGLint m_apiMask;

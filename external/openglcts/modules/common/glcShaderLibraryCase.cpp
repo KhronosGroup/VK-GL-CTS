@@ -294,7 +294,7 @@ bool ShaderCase::execute(void)
     bool vertexOk          = program.getShaderInfo(SHADERTYPE_VERTEX).compileOk;
     bool fragmentOk        = program.getShaderInfo(SHADERTYPE_FRAGMENT).compileOk;
     bool linkOk            = program.getProgramInfo().linkOk;
-    const char *failReason = DE_NULL;
+    const char *failReason = nullptr;
 
     log << program;
 
@@ -326,7 +326,7 @@ bool ShaderCase::execute(void)
         return false;
     }
 
-    if (failReason != DE_NULL)
+    if (failReason != nullptr)
     {
         // \todo [2010-06-07 petri] These should be handled in the test case?
         log << TestLog::Message << "ERROR: " << failReason << TestLog::EndMessage;
@@ -341,7 +341,7 @@ bool ShaderCase::execute(void)
 
     // Return if compile/link expected to fail.
     if (m_expectResult != EXPECT_PASS)
-        return (failReason == DE_NULL);
+        return (failReason == nullptr);
 
     // Start using program.
     uint32_t programID = program.getProgram();
@@ -770,7 +770,7 @@ string ShaderCase::genFragmentShader(const ValueBlock &valueBlock)
     shader << "{\n";
 
     shader << " ";
-    genCompareOp(shader, customColorOut ? "dEQP_FragColor" : "gl_FragColor", valueBlock, "v_", DE_NULL);
+    genCompareOp(shader, customColorOut ? "dEQP_FragColor" : "gl_FragColor", valueBlock, "v_", nullptr);
 
     shader << "}\n";
     return shader.str();
@@ -849,7 +849,7 @@ string ShaderCase::specializeFragmentShader(const char *src, const ValueBlock &v
     const char *fragColor     = customColorOut ? "dEQP_FragColor" : "gl_FragColor";
 
     genCompareFunctions(decl, valueBlock, false);
-    genCompareOp(output, fragColor, valueBlock, "", DE_NULL);
+    genCompareOp(output, fragColor, valueBlock, "", nullptr);
 
     if (customColorOut)
         decl << "layout(location = 0) out mediump vec4 dEQP_FragColor;\n";
@@ -952,7 +952,7 @@ void ShaderCase::specializeShaders(const char *vertexSource, const char *fragmen
         const char *fragColor = customColorOut ? "dEQP_FragColor" : "gl_FragColor";
 
         genCompareFunctions(decl, valueBlock, false);
-        genCompareOp(output, fragColor, valueBlock, "", DE_NULL);
+        genCompareOp(output, fragColor, valueBlock, "", nullptr);
 
         if (customColorOut)
             decl << "layout(location = 0) out mediump vec4 dEQP_FragColor;\n";

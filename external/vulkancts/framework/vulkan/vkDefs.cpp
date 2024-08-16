@@ -105,11 +105,11 @@ static void checkResult(VkResult result, const char *msg, const char *file, int 
         msgStr << getResultStr(result);
 
         if (isOutOfMemoryError(result))
-            throw OutOfMemoryError(result, msgStr.str().c_str(), DE_NULL, file, line);
+            throw OutOfMemoryError(result, msgStr.str().c_str(), nullptr, file, line);
         else if (result == VK_ERROR_DEVICE_LOST)
-            throw Error(result, msgStr.str().c_str(), DE_NULL, file, line, QP_TEST_RESULT_DEVICE_LOST);
+            throw Error(result, msgStr.str().c_str(), nullptr, file, line, QP_TEST_RESULT_DEVICE_LOST);
         else
-            throw ERROR(result, msgStr.str().c_str(), DE_NULL, file, line);
+            throw ERROR(result, msgStr.str().c_str(), nullptr, file, line);
     }
 }
 

@@ -50,7 +50,7 @@ static void checkJniException(JNIEnv *env, const char *file, int line)
     {
         env->ExceptionDescribe();
         env->ExceptionClear();
-        throw InternalError("JNI Exception", DE_NULL, file, line);
+        throw InternalError("JNI Exception", nullptr, file, line);
     }
 }
 
@@ -246,7 +246,7 @@ bool TestProcess::isRunning(void)
 
 JNIEnv *TestProcess::getCurrentThreadEnv(void)
 {
-    JNIEnv *env = DE_NULL;
+    JNIEnv *env = nullptr;
     jint ret    = m_vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
 
     if (ret == JNI_OK)
@@ -315,8 +315,8 @@ ConnectionHandler::ConnectionHandler(JavaVM *vm, xs::ExecutionServer *server, de
 
 void ConnectionHandler::run(void)
 {
-    JNIEnv *env = DE_NULL;
-    if (m_vm->AttachCurrentThread(&env, DE_NULL) != 0)
+    JNIEnv *env = nullptr;
+    if (m_vm->AttachCurrentThread(&env, nullptr) != 0)
     {
         print("AttachCurrentThread() failed");
         return;

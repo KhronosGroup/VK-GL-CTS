@@ -131,7 +131,7 @@ static const char *getDerivateFuncName(DerivateFunc func)
         return "fwidthCoarse";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -163,7 +163,7 @@ static const char *getDerivateFuncCaseName(DerivateFunc func)
         return "fwidthcoarse";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -717,7 +717,7 @@ static VkSampleCountFlagBits getVkSampleCount(int numSamples)
 TriangleDerivateCaseInstance::TriangleDerivateCaseInstance(Context &context, const UniformSetup &uniformSetup,
                                                            const DerivateCaseDefinition &definitions,
                                                            const DerivateCaseValues &values)
-    : ShaderRenderCaseInstance(context, true, DE_NULL, uniformSetup, DE_NULL)
+    : ShaderRenderCaseInstance(context, true, nullptr, uniformSetup, nullptr)
     , m_definitions(definitions)
     , m_values(values)
 {
@@ -858,7 +858,7 @@ protected:
 
 TriangleDerivateCase::TriangleDerivateCase(tcu::TestContext &testCtx, const std::string &name,
                                            const UniformSetup *uniformSetup)
-    : ShaderRenderCase(testCtx, name, false, (ShaderEvaluator *)DE_NULL, uniformSetup, DE_NULL)
+    : ShaderRenderCase(testCtx, name, false, (ShaderEvaluator *)nullptr, uniformSetup, nullptr)
     , m_definitions()
 {
 }
@@ -982,7 +982,7 @@ ConstantDerivateCase::~ConstantDerivateCase(void)
 
 TestInstance *ConstantDerivateCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_uniformSetup);
     return new ConstantDerivateCaseInstance(context, *m_uniformSetup, m_definitions, m_values);
 }
 
@@ -1269,7 +1269,7 @@ LinearDerivateCase::~LinearDerivateCase(void)
 
 TestInstance *LinearDerivateCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_uniformSetup);
     if (m_fragmentTmpl.find("gl_SubgroupInvocationID") != std::string::npos)
     {
         if (!subgroups::areQuadOperationsSupportedForStages(context, VK_SHADER_STAGE_FRAGMENT_BIT))
@@ -1577,7 +1577,7 @@ TextureDerivateCase::~TextureDerivateCase(void)
 
 TestInstance *TextureDerivateCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_uniformSetup);
     return new TextureDerivateCaseInstance(context, *m_uniformSetup, m_definitions, m_values, m_textureValues);
 }
 

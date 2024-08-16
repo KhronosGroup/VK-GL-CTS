@@ -311,7 +311,7 @@ FramebufferFetchTestCase::FramebufferFetchTestCase(Context &context, const char 
     : TestCase(context, name, desc)
     , m_gl(m_context.getRenderContext().getFunctions())
     , m_format(format)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_framebuffer(0)
     , m_texColorBuffer(0)
     , m_texFmt(glu::mapGLInternalFormat(m_format))
@@ -343,7 +343,7 @@ void FramebufferFetchTestCase::init(void)
     if (!m_program->isOk())
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
         TCU_FAIL("Failed to compile shader program");
     }
 
@@ -353,7 +353,7 @@ void FramebufferFetchTestCase::init(void)
 void FramebufferFetchTestCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     if (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)) && m_gl.disable)
     {
@@ -579,12 +579,12 @@ void FramebufferFetchTestCase::render(void)
     m_gl.bindBuffer(GL_ARRAY_BUFFER, *coordinatesBuffer);
     m_gl.bufferData(GL_ARRAY_BUFFER, (GLsizeiptr)sizeof(coords), coords, GL_STATIC_DRAW);
     m_gl.enableVertexAttribArray(coordLocation);
-    m_gl.vertexAttribPointer(coordLocation, 2, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    m_gl.vertexAttribPointer(coordLocation, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     m_gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, *elementsBuffer);
     m_gl.bufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
-    m_gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, DE_NULL);
+    m_gl.drawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, nullptr);
     GLU_EXPECT_NO_ERROR(m_gl.getError(), "render()");
 
     m_gl.deleteVertexArrays(1, &vaoID);
@@ -1257,7 +1257,7 @@ void TextureLevelTestCase::create2DTextureArrayMipMaps(const vector<tcu::Vec4> &
     m_gl.bindTexture(GL_TEXTURE_2D_ARRAY, m_texColorBuffer);
 
     m_gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, m_format, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 1, 0, m_transferFmt.format,
-                    m_transferFmt.dataType, DE_NULL);
+                    m_transferFmt.dataType, nullptr);
     m_gl.generateMipmap(GL_TEXTURE_2D_ARRAY);
 
     for (int level = 0; level < numLevels; level++)

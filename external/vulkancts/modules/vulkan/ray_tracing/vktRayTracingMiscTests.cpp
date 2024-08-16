@@ -37,6 +37,7 @@
 
 #include "vkRayTracingUtil.hpp"
 
+#include "tcuImageCompare.hpp"
 #include "deRandom.hpp"
 #include <algorithm>
 #include <memory>
@@ -8118,7 +8119,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
         {
             VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-                DE_NULL,                                                           //  const void* pNext;
+                nullptr,                                                           //  const void* pNext;
                 static_cast<uint32_t>(tlasVkVec.size()), //  uint32_t accelerationStructureCount;
                 tlasVkVec.data(),                        //  const VkAccelerationStructureKHR* pAccelerationStructures;
             };
@@ -8139,7 +8140,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
                                               0,                          /* firstSet           */
                                               1,                          /* descriptorSetCount */
                                               &descriptorSetPtr.get(), 0, /* dynamicOffsetCount */
-                                              DE_NULL);                   /* pDynamicOffsets    */
+                                              nullptr);                   /* pDynamicOffsets    */
 
         deviceInterface.cmdBindPipeline(*cmdBufferPtr, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineVkPtr);
 
@@ -8175,14 +8176,14 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
                                           getBufferDeviceAddress(deviceInterface, deviceVk,
                                                                  missShaderBindingTablePtr->get(), 0 /* offset */),
                                           missStride, missStride * nMissGroups) :
-                                      makeStridedDeviceAddressRegionKHR(DE_NULL, 0, /* stride */
+                                      makeStridedDeviceAddressRegionKHR(0, 0, /* stride */
                                                                         0 /* size   */));
             const auto hitShaderBindingTableRegion =
                 ((nHitGroups > 0u) ? makeStridedDeviceAddressRegionKHR(
                                          getBufferDeviceAddress(deviceInterface, deviceVk,
                                                                 hitShaderBindingTablePtr->get(), 0 /* offset */),
                                          hitStride, hitStride * nHitGroups) :
-                                     makeStridedDeviceAddressRegionKHR(DE_NULL, 0, /* stride */
+                                     makeStridedDeviceAddressRegionKHR(0, 0, /* stride */
                                                                        0 /* size   */));
 
             const auto callableShaderBindingTableRegion =
@@ -8192,7 +8193,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
                                                0 /* offset */),
                         callStride, /* stride */
                         callStride * static_cast<uint32_t>(callableShaderCollectionNames.size())) :
-                    makeStridedDeviceAddressRegionKHR(DE_NULL, 0, /* stride */
+                    makeStridedDeviceAddressRegionKHR(0, 0, /* stride */
                                                       0 /* size   */);
 
             if (m_testPtr->usesDynamicStackSize())
@@ -8264,6 +8265,11 @@ void checkReuseCreationBufferSupport(Context &context, bool)
     checkRTPipelineSupport(context);
 }
 
+void checkReuseScratchBufferSupport(Context &context)
+{
+    checkRTPipelineSupport(context);
+}
+
 void initBasicHitBufferPrograms(vk::SourceCollections &programCollection)
 {
     const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
@@ -8307,6 +8313,57 @@ void initBasicHitBufferPrograms(vk::SourceCollections &programCollection)
 void initReuseCreationBufferPrograms(vk::SourceCollections &programCollection, bool)
 {
     initBasicHitBufferPrograms(programCollection);
+}
+
+void initReuseScratchBufferPrograms(vk::SourceCollections &programCollection)
+{
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+    std::ostringstream rgen;
+    rgen << "#version 460 core\n"
+         << "#extension GL_EXT_ray_tracing : require\n"
+         << "layout (location=0) rayPayloadEXT vec4 payload;\n"
+         << "layout (set=0, binding=0) uniform accelerationStructureEXT topLevelAS;\n"
+         << "layout (set=0, binding=1, rgba8) uniform image2D outColor;\n"
+         << "void main()\n"
+         << "{\n"
+         << "    const uint  rayFlags  = gl_RayFlagsNoneEXT;\n"
+         << "    const vec3  origin    = vec3(float(gl_LaunchIDEXT.x) + 0.5, float(gl_LaunchIDEXT.y) + 0.5, 0.0);\n"
+         << "    const vec3  direction = vec3(0.0, 0.0, 1.0);\n"
+         << "    const float tMin      = 1.0;\n"
+         << "    const float tMax      = 10.0;\n"
+         << "    const uint  missIndex = 0u;\n"
+         << "    const uint  cullMask  = 0xFFu;\n"
+         << "    const uint  sbtOffset = 0u;\n"
+         << "    const uint  sbtStride = 0u;\n"
+         << "\n"
+         << "    traceRayEXT(topLevelAS, rayFlags, cullMask, sbtOffset, sbtStride, missIndex, origin, tMin, direction, "
+            "tMax, 0);\n"
+         << "    imageStore(outColor, ivec2(origin.xy), payload);\n"
+         << "}\n";
+    programCollection.glslSources.add("rgen") << glu::RaygenSource(rgen.str()) << buildOptions;
+
+    std::ostringstream chit;
+    chit << "#version 460 core\n"
+         //<< "#extension GL_EXT_debug_printf : enable\n"
+         << "#extension GL_EXT_ray_tracing : require\n"
+         << "layout (location=0) rayPayloadInEXT vec4 payload;\n"
+         << "void main(void) {\n"
+         //<< "    debugPrintfEXT(\"Hit for %u %u\\n\", gl_LaunchIDEXT.x, gl_LaunchIDEXT.y);\n"
+         << "    payload = vec4(0.0, 0.0, 1.0, 1.0);\n"
+         << "}\n";
+    programCollection.glslSources.add("chit") << glu::ClosestHitSource(chit.str()) << buildOptions;
+
+    std::ostringstream miss;
+    miss << "#version 460 core\n"
+         << "#extension GL_EXT_ray_tracing : require\n"
+         //<< "#extension GL_EXT_debug_printf : enable\n"
+         << "layout (location=0) rayPayloadInEXT vec4 payload;\n"
+         << "void main(void) {\n"
+         //<< "    debugPrintfEXT(\"Miss for %u %u\\n\", gl_LaunchIDEXT.x, gl_LaunchIDEXT.y);\n"
+         << "    payload = vec4(0.0, 0.0, 0.0, 1.0);\n"
+         << "}\n";
+    programCollection.glslSources.add("miss") << glu::MissSource(miss.str()) << buildOptions;
 }
 
 // Creates an empty shader binding table with a zeroed-out shader group handle.
@@ -8429,10 +8486,10 @@ tcu::TestStatus nullMissInstance(Context &context)
     de::MovePtr<BufferWithMemory> hitSBT;
     de::MovePtr<BufferWithMemory> callableSBT;
 
-    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     {
         const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
@@ -8515,13 +8572,13 @@ tcu::TestStatus emptyPipelineLayoutInstance(Context &context)
 
     const VkRayTracingShaderGroupCreateInfoKHR defaultShaderGroupCreateInfo{
         VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,               // VkRayTracingShaderGroupTypeKHR type;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t generalShader;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t closestHitShader;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t anyHitShader;
         VK_SHADER_UNUSED_KHR,                                       // uint32_t intersectionShader;
-        DE_NULL,                                                    // const void* pShaderGroupCaptureReplayHandle;
+        nullptr,                                                    // const void* pShaderGroupCaptureReplayHandle;
     };
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroupCreateInfoVect(2, defaultShaderGroupCreateInfo);
     shaderGroupCreateInfoVect[0].generalShader = 0u;
@@ -8536,7 +8593,7 @@ tcu::TestStatus emptyPipelineLayoutInstance(Context &context)
     pipelineCreateInfo.layout                            = *pipelineLayout;
 
     // make sure there is no crash when pipeline layout is empty
-    auto pipeline = createRayTracingPipelineKHR(vk, device, 0, 0, &pipelineCreateInfo);
+    auto pipeline = createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
     pipeline      = Move<VkPipeline>();
 
     return tcu::TestStatus::pass("Pass");
@@ -8722,10 +8779,10 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
     de::MovePtr<BufferWithMemory> hitSBT;
     de::MovePtr<BufferWithMemory> callableSBT;
 
-    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    VkStridedDeviceAddressRegionKHR raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     {
         const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
@@ -8771,6 +8828,212 @@ tcu::TestStatus reuseCreationBufferInstance(Context &context, const bool disturb
     if (bufferValue != 1.0f)
         TCU_FAIL("Unexpected value found in buffer: " + de::toString(bufferValue));
 
+    return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus reuseScratchBufferInstance(Context &context)
+{
+    const auto ctx = context.getContextCommonData();
+    const tcu::IVec3 extent(256, 256, 1);
+    const auto extentU                 = extent.asUint();
+    const auto pixelCount              = extentU.x() * extentU.y() * extentU.z();
+    const auto apiExtent               = makeExtent3D(extent);
+    const uint32_t blasCount           = 2u;                      // Number of bottom-level acceleration structures.
+    const uint32_t rowsPerAS           = extentU.y() / blasCount; // The last one could be larger but not in practice.
+    const float coordMargin            = 0.25f;
+    const uint32_t perTriangleVertices = 3u;
+    const uint32_t randomSeed          = 1722347394u;
+    const float geometryZ              = 5.0f; // Must be between tMin and tMax in the shaders.
+
+    const CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    // Create a pseudorandom mask for coverage.
+    de::Random rnd(randomSeed);
+    std::vector<bool> coverageMask;
+    coverageMask.reserve(pixelCount);
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+            coverageMask.push_back(rnd.getBool());
+
+    // Each bottom level AS will contain a number of rows.
+    DE_ASSERT(blasCount > 0u);
+    BottomLevelAccelerationStructurePool blasPool;
+    for (uint32_t a = 0u; a < blasCount; ++a)
+    {
+        const auto prevRows = rowsPerAS * a;
+        const auto rowCount = ((a < blasCount - 1u) ? rowsPerAS : (extentU.y() - prevRows));
+        std::vector<tcu::Vec3> triangles;
+        triangles.reserve(rowCount * extentU.x() * perTriangleVertices);
+
+        for (uint32_t y = 0u; y < rowCount; ++y)
+            for (uint32_t x = 0u; x < extentU.x(); ++x)
+            {
+                const auto row       = y + prevRows;
+                const auto col       = x;
+                const auto maskIndex = row * extentU.x() + col;
+
+                if (!coverageMask.at(maskIndex))
+                    continue;
+
+                const float xCenter = static_cast<float>(col) + 0.5f;
+                const float yCenter = static_cast<float>(row) + 0.5f;
+
+                triangles.push_back(tcu::Vec3(xCenter - coordMargin, yCenter + coordMargin, geometryZ));
+                triangles.push_back(tcu::Vec3(xCenter + coordMargin, yCenter + coordMargin, geometryZ));
+                triangles.push_back(tcu::Vec3(xCenter, yCenter - coordMargin, geometryZ));
+            }
+
+        const auto blas = blasPool.add();
+        blas->addGeometry(triangles, true /* triangles */);
+    }
+
+    blasPool.batchCreateAdjust(ctx.vkd, ctx.device, ctx.allocator, ~0ull, false /* scratch buffer is host visible */);
+    blasPool.batchBuild(ctx.vkd, ctx.device, cmdBuffer);
+
+    const auto tlas = makeTopLevelAccelerationStructure();
+    tlas->setInstanceCount(blasCount);
+    for (const auto &blas : blasPool.structures())
+        tlas->addInstance(blas, identityMatrix3x4, 0, 0xFFu, 0u,
+                          VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR);
+    tlas->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator);
+
+    // Create storage image.
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM; // Must match the shader declaration.
+    const auto colorUsage =
+        (VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto colorSSR = makeDefaultImageSubresourceRange();
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, apiExtent, colorFormat, colorUsage,
+                                VK_IMAGE_TYPE_2D, colorSSR);
+
+    // Descriptor pool and set.
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, blasCount);
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    const auto descritorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    const auto setLayout      = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descritorPool, *setLayout);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    using Location = DescriptorSetUpdateBuilder::Location;
+    {
+        const VkWriteDescriptorSetAccelerationStructureKHR accelerationStructure = {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+            nullptr,
+            1u,
+            tlas->getPtr(),
+        };
+        setUpdateBuilder.writeSingle(*descriptorSet, Location::binding(0u),
+                                     VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelerationStructure);
+
+        const auto imageInfo =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, colorBuffer.getImageView(), VK_IMAGE_LAYOUT_GENERAL);
+        setUpdateBuilder.writeSingle(*descriptorSet, Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                                     &imageInfo);
+    }
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    const auto &binaries = context.getBinaryCollection();
+    auto rgenModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("rgen"), 0);
+    auto missModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("miss"), 0);
+    auto chitModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("chit"), 0);
+
+    uint32_t shaderGroupHandleSize    = 0u;
+    uint32_t shaderGroupBaseAlignment = 1u;
+    {
+        const auto rayTracingPropertiesKHR = makeRayTracingProperties(ctx.vki, ctx.physicalDevice);
+        shaderGroupHandleSize              = rayTracingPropertiesKHR->getShaderGroupHandleSize();
+        shaderGroupBaseAlignment           = rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
+    }
+
+    // Create raytracing pipeline and shader binding tables.
+    Move<VkPipeline> pipeline;
+    de::MovePtr<BufferWithMemory> raygenSBT;
+    de::MovePtr<BufferWithMemory> missSBT;
+    de::MovePtr<BufferWithMemory> hitSBT;
+    de::MovePtr<BufferWithMemory> callableSBT;
+
+    auto raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+
+    {
+        const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+        rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, rgenModule, 0);
+        rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, missModule, 1);
+        rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, chitModule, 2);
+
+        pipeline = rayTracingPipeline->createPipeline(ctx.vkd, ctx.device, pipelineLayout.get());
+
+        raygenSBT = rayTracingPipeline->createShaderBindingTable(ctx.vkd, ctx.device, pipeline.get(), ctx.allocator,
+                                                                 shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+        raygenSBTRegion =
+            makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(ctx.vkd, ctx.device, raygenSBT->get(), 0),
+                                              shaderGroupHandleSize, shaderGroupHandleSize);
+
+        missSBT = rayTracingPipeline->createShaderBindingTable(ctx.vkd, ctx.device, pipeline.get(), ctx.allocator,
+                                                               shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+        missSBTRegion =
+            makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(ctx.vkd, ctx.device, missSBT->get(), 0),
+                                              shaderGroupHandleSize, shaderGroupHandleSize);
+
+        hitSBT       = rayTracingPipeline->createShaderBindingTable(ctx.vkd, ctx.device, pipeline.get(), ctx.allocator,
+                                                                    shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1);
+        hitSBTRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(ctx.vkd, ctx.device, hitSBT->get(), 0),
+                                                         shaderGroupHandleSize, shaderGroupHandleSize);
+    }
+
+    // Transition storage image.
+    const auto preRTBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                     VK_IMAGE_LAYOUT_GENERAL, colorBuffer.getImage(), colorSSR);
+    cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                  VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, &preRTBarrier);
+
+    // Trace rays.
+    const auto bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipeline.get());
+    ctx.vkd.cmdTraceRaysKHR(cmdBuffer, &raygenSBTRegion, &missSBTRegion, &hitSBTRegion, &callableSBTRegion,
+                            apiExtent.width, apiExtent.height, 1u);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1),
+                      VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, 1u, VK_IMAGE_ASPECT_COLOR_BIT,
+                      VK_IMAGE_ASPECT_COLOR_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+
+    // These must match the shaders.
+    const tcu::Vec4 missColor(0.0f, 0.0f, 0.0f, 1.0f);
+    const tcu::Vec4 hitColor(0.0f, 0.0f, 1.0f, 1.0f);
+
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    tcu::TextureLevel referenceLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess referenceAccess = referenceLevel.getAccess();
+
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+        {
+            const auto maskIdx = static_cast<uint32_t>(y * extent.x() + x);
+            const auto &color  = (coverageMask.at(maskIdx) ? hitColor : missColor);
+            referenceAccess.setPixel(color, x, y);
+        }
+
+    tcu::ConstPixelBufferAccess resultAccess(tcuFormat, extent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f); // Only 1.0 and 0.0 so we expect exact results.
+    auto &log = context.getTestContext().getLog();
+    if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold,
+                                    tcu::COMPARE_LOG_ON_ERROR))
+        return tcu::TestStatus::fail("Failed; check log for details");
     return tcu::TestStatus::pass("Pass");
 }
 
@@ -9581,14 +9844,17 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
     }
 
     {
-        addFunctionCaseWithPrograms(miscGroupPtr.get(), "null_miss", checkRTPipelineSupport, initBasicHitBufferPrograms,
+        const auto groupPtr = miscGroupPtr.get();
+        addFunctionCaseWithPrograms(groupPtr, "null_miss", checkRTPipelineSupport, initBasicHitBufferPrograms,
                                     nullMissInstance);
-        addFunctionCaseWithPrograms(miscGroupPtr.get(), "empty_pipeline_layout", checkRTPipelineSupport,
-                                    initEmptyPrograms, emptyPipelineLayoutInstance);
-        addFunctionCaseWithPrograms(miscGroupPtr.get(), "reuse_creation_buffer_top", checkReuseCreationBufferSupport,
+        addFunctionCaseWithPrograms(groupPtr, "empty_pipeline_layout", checkRTPipelineSupport, initEmptyPrograms,
+                                    emptyPipelineLayoutInstance);
+        addFunctionCaseWithPrograms(groupPtr, "reuse_creation_buffer_top", checkReuseCreationBufferSupport,
                                     initReuseCreationBufferPrograms, reuseCreationBufferInstance, true /*top*/);
-        addFunctionCaseWithPrograms(miscGroupPtr.get(), "reuse_creation_buffer_bottom", checkReuseCreationBufferSupport,
+        addFunctionCaseWithPrograms(groupPtr, "reuse_creation_buffer_bottom", checkReuseCreationBufferSupport,
                                     initReuseCreationBufferPrograms, reuseCreationBufferInstance, false /*top*/);
+        addFunctionCaseWithPrograms(groupPtr, "reuse_scratch_buffer", checkReuseScratchBufferSupport,
+                                    initReuseScratchBufferPrograms, reuseScratchBufferInstance);
     }
 
     return miscGroupPtr.release();

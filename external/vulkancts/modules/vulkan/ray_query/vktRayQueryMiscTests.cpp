@@ -24,6 +24,7 @@
 
 #include "vktRayQueryMiscTests.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestCaseUtil.hpp"
 
 #include "vkRayTracingUtil.hpp"
 #include "vkBufferWithMemory.hpp"
@@ -37,7 +38,7 @@
 
 #include "tcuVector.hpp"
 #include "tcuStringTemplate.hpp"
-#include "tcuTextureUtil.hpp"
+#include "tcuImageCompare.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
@@ -281,11 +282,11 @@ tcu::TestStatus DynamicIndexingInstance::iterate(void)
         0u,                                             // VkPipelineCreateFlags flags;
         shaderStageInfo,                                // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout.get(),                           // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
 
-    const auto pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineInfo);
+    const auto pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineInfo);
 
     // Create and update descriptor set.
     DescriptorPoolBuilder poolBuilder;
@@ -815,9 +816,9 @@ Move<VkPipeline> HelperInvocationsInstance::makePipeline(const DeviceInterface &
         vertexInputAttributeDescription // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
     };
 
-    return makeGraphicsPipeline(vk, device, pipelineLayout, vertexShader, DE_NULL, DE_NULL, DE_NULL, fragmentShader,
-                                renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
-                                &vertexInputStateCreateInfo);
+    return makeGraphicsPipeline(vk, device, pipelineLayout, vertexShader, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                VK_NULL_HANDLE, fragmentShader, renderPass, viewports, scissors,
+                                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputStateCreateInfo);
 }
 
 de::MovePtr<TopLevelAccelerationStructure> HelperInvocationsInstance::createAccStructs(
@@ -1028,6 +1029,232 @@ TestStatus HelperInvocationsInstance::iterate(void)
     return verifyResult(vk, device, *resultBuffer) ? TestStatus::pass("") : TestStatus::fail("");
 }
 
+void checkReuseScratchBufferSupport(Context &context)
+{
+    context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+    context.requireDeviceFunctionality("VK_KHR_ray_query");
+}
+
+void initReuseScratchBufferPrograms(vk::SourceCollections &programCollection)
+{
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "void main(void) {\n"
+         << "    gl_Position = inPos;\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str()) << buildOptions;
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "#extension GL_EXT_ray_query : enable\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "layout (set=0, binding=0) uniform accelerationStructureEXT topLevelAS;\n"
+         << "void main(void) {\n"
+         << "    const float tMin = 1.0;\n"
+         << "    const float tMax = 10.0;\n"
+         << "    const uint  cullMask = 0xFFu;\n"
+         << "    const vec3  origin = vec3(gl_FragCoord.xy, 0.0);\n"
+         << "    const vec3  direction = vec3(0.0, 0.0, 1.0);\n"
+         << "    const uint  rayFlags = gl_RayFlagsNoneEXT;\n"
+         << "    vec4 colorValue = vec4(0.0, 0.0, 0.0, 1.0);\n"
+         << "    bool intersectionFound = false;\n"
+         << "    rayQueryEXT query;\n"
+         << "    rayQueryInitializeEXT(query, topLevelAS, rayFlags, cullMask, origin, tMin, direction, tMax);\n"
+         << "    while (rayQueryProceedEXT(query)) {\n"
+         << "        const uint candidateType = rayQueryGetIntersectionTypeEXT(query, false);\n"
+         << "        if (candidateType == gl_RayQueryCandidateIntersectionTriangleEXT ||\n"
+         << "            candidateType == gl_RayQueryCandidateIntersectionAABBEXT) {\n"
+         << "            intersectionFound = true;\n"
+         << "        }\n"
+         << "    }\n"
+         << "    if (intersectionFound) {\n"
+         << "        colorValue = vec4(0.0, 0.0, 1.0, 1.0);\n"
+         << "    }\n"
+         << "    outColor = colorValue;\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str()) << buildOptions;
+}
+
+tcu::TestStatus reuseScratchBufferInstance(Context &context)
+{
+    const auto ctx = context.getContextCommonData();
+    const tcu::IVec3 extent(256, 256, 1);
+    const auto extentU                 = extent.asUint();
+    const auto pixelCount              = extentU.x() * extentU.y() * extentU.z();
+    const auto apiExtent               = makeExtent3D(extent);
+    const uint32_t blasCount           = 2u;                      // Number of bottom-level acceleration structures.
+    const uint32_t rowsPerAS           = extentU.y() / blasCount; // The last one could be larger but not in practice.
+    const float coordMargin            = 0.25f;
+    const uint32_t perTriangleVertices = 3u;
+    const uint32_t randomSeed          = 1722347394u;
+    const float geometryZ              = 5.0f; // Must be between tMin and tMax in the shaders.
+
+    const CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    // Create a pseudorandom mask for coverage.
+    de::Random rnd(randomSeed);
+    std::vector<bool> coverageMask;
+    coverageMask.reserve(pixelCount);
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+            coverageMask.push_back(rnd.getBool());
+
+    // Each bottom level AS will contain a number of rows.
+    DE_ASSERT(blasCount > 0u);
+    BottomLevelAccelerationStructurePool blasPool;
+    for (uint32_t a = 0u; a < blasCount; ++a)
+    {
+        const auto prevRows = rowsPerAS * a;
+        const auto rowCount = ((a < blasCount - 1u) ? rowsPerAS : (extentU.y() - prevRows));
+        std::vector<tcu::Vec3> triangles;
+        triangles.reserve(rowCount * extentU.x() * perTriangleVertices);
+
+        for (uint32_t y = 0u; y < rowCount; ++y)
+            for (uint32_t x = 0u; x < extentU.x(); ++x)
+            {
+                const auto row       = y + prevRows;
+                const auto col       = x;
+                const auto maskIndex = row * extentU.x() + col;
+
+                if (!coverageMask.at(maskIndex))
+                    continue;
+
+                const float xCenter = static_cast<float>(col) + 0.5f;
+                const float yCenter = static_cast<float>(row) + 0.5f;
+
+                triangles.push_back(tcu::Vec3(xCenter - coordMargin, yCenter + coordMargin, geometryZ));
+                triangles.push_back(tcu::Vec3(xCenter + coordMargin, yCenter + coordMargin, geometryZ));
+                triangles.push_back(tcu::Vec3(xCenter, yCenter - coordMargin, geometryZ));
+            }
+
+        const auto blas = blasPool.add();
+        blas->addGeometry(triangles, true /* triangles */);
+    }
+
+    blasPool.batchCreateAdjust(ctx.vkd, ctx.device, ctx.allocator, ~0ull, false /* scratch buffer is host visible */);
+    blasPool.batchBuild(ctx.vkd, ctx.device, cmdBuffer);
+
+    const auto tlas = makeTopLevelAccelerationStructure();
+    tlas->setInstanceCount(blasCount);
+    for (const auto &blas : blasPool.structures())
+        tlas->addInstance(blas, identityMatrix3x4, 0, 0xFFu, 0u,
+                          VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR);
+    tlas->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator);
+
+    // Create color buffer.
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM; // Must match the shader declaration.
+    const auto colorUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto colorSSR = makeDefaultImageSubresourceRange();
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, apiExtent, colorFormat, colorUsage,
+                                VK_IMAGE_TYPE_2D, colorSSR);
+
+    // Descriptor pool and set.
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, blasCount);
+    const auto descritorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto setLayout      = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descritorPool, *setLayout);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    using Location = DescriptorSetUpdateBuilder::Location;
+    {
+        const VkWriteDescriptorSetAccelerationStructureKHR accelerationStructure = {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+            nullptr,
+            1u,
+            tlas->getPtr(),
+        };
+        setUpdateBuilder.writeSingle(*descriptorSet, Location::binding(0u),
+                                     VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelerationStructure);
+    }
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    const auto &binaries = context.getBinaryCollection();
+    auto vertModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"), 0);
+    auto fragModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"), 0);
+
+    const auto renderPass  = makeRenderPass(ctx.vkd, ctx.device, colorFormat);
+    const auto framebuffer = makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(),
+                                             apiExtent.width, apiExtent.height);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    // Pipeline.
+    const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *vertModule, VK_NULL_HANDLE,
+                                               VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule, *renderPass, viewports,
+                                               scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+
+    // Draw a full screen quad so the frag shader is invoked for every fragment.
+    std::vector<tcu::Vec4> vertices;
+    vertices.reserve(4u);
+    vertices.emplace_back(-1.0f, -1.0f, 0.0f, 1.0f);
+    vertices.emplace_back(-1.0f, 1.0f, 0.0f, 1.0f);
+    vertices.emplace_back(1.0f, -1.0f, 0.0f, 1.0f);
+    vertices.emplace_back(1.0f, 1.0f, 0.0f, 1.0f);
+
+    const auto vertexBufferInfo = makeBufferCreateInfo(de::dataSize(vertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    const VkDeviceSize vertexBufferOffset = 0ull;
+    BufferWithMemory vertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &allocation = vertexBuffer.getAllocation();
+        void *dataPtr    = allocation.getHostPtr();
+        deMemcpy(dataPtr, de::dataOrNull(vertices), de::dataSize(vertices));
+    }
+
+    // Draw and trace rays.
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 0.0f); // Notice this is none of the colors used in the frag shader.
+    const tcu::Vec4 missColor(0.0f, 0.0f, 0.0f, 1.0f);  // These match the frag shader colors.
+    const tcu::Vec4 hitColor(0.0f, 0.0f, 1.0f, 1.0f);
+
+    const auto bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+    beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), clearColor);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipeline.get());
+    ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+    endRenderPass(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+
+    // These must match the frag shader.
+
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    tcu::TextureLevel referenceLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess referenceAccess = referenceLevel.getAccess();
+
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+        {
+            const auto maskIdx = static_cast<uint32_t>(y * extent.x() + x);
+            const auto &color  = (coverageMask.at(maskIdx) ? hitColor : missColor);
+            referenceAccess.setPixel(color, x, y);
+        }
+
+    tcu::ConstPixelBufferAccess resultAccess(tcuFormat, extent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f); // Only 1.0 and 0.0 so we expect exact results.
+    auto &log = context.getTestContext().getLog();
+    if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold,
+                                    tcu::COMPARE_LOG_ON_ERROR))
+        return tcu::TestStatus::fail("Failed; check log for details");
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 TestCaseGroup *addHelperInvocationsTests(TestContext &testCtx)
@@ -1102,6 +1329,9 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
 
     // Dynamic indexing of ray queries
     group->addChild(new DynamicIndexingCase(testCtx, "dynamic_indexing"));
+
+    addFunctionCaseWithPrograms(group.get(), "reuse_scratch_buffer", checkReuseScratchBufferSupport,
+                                initReuseScratchBufferPrograms, reuseScratchBufferInstance);
 
     return group.release();
 }

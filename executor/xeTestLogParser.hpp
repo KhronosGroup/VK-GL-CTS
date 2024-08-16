@@ -43,11 +43,11 @@ public:
     {
     }
 
-    virtual void setSessionInfo(const SessionInfo &sessionInfo) = DE_NULL;
+    virtual void setSessionInfo(const SessionInfo &sessionInfo) = 0;
 
-    virtual TestCaseResultPtr startTestCaseResult(const char *casePath)      = DE_NULL;
-    virtual void testCaseResultUpdated(const TestCaseResultPtr &resultData)  = DE_NULL;
-    virtual void testCaseResultComplete(const TestCaseResultPtr &resultData) = DE_NULL;
+    virtual TestCaseResultPtr startTestCaseResult(const char *casePath)      = 0;
+    virtual void testCaseResultUpdated(const TestCaseResultPtr &resultData)  = 0;
+    virtual void testCaseResultComplete(const TestCaseResultPtr &resultData) = 0;
 };
 
 class TestLogParser

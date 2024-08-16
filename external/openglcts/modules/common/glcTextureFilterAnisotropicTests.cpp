@@ -364,8 +364,8 @@ bool TextureFilterAnisotropicQueriesTestCase::verifyGet(const glw::Functions &gl
  */
 TextureFilterAnisotropicDrawingTestCase::TextureFilterAnisotropicDrawingTestCase(deqp::Context &context)
     : TestCase(context, "drawing", "Verifies if drawing texture with anisotropic filtering is performed as expected")
-    , m_vertex(DE_NULL)
-    , m_fragment(DE_NULL)
+    , m_vertex(nullptr)
+    , m_fragment(nullptr)
     , m_texture(0)
 {
     /* Left blank intentionally */
@@ -719,7 +719,7 @@ bool TextureFilterAnisotropicDrawingTestCase::drawTexture(const glw::Functions &
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetAttribLocation");
 
     GLuint strideSize = (3 + texCoordDim) * sizeof(GLfloat);
-    gl.vertexAttribPointer(attrLocationVertex, 3, GL_FLOAT, GL_FALSE, strideSize, DE_NULL);
+    gl.vertexAttribPointer(attrLocationVertex, 3, GL_FLOAT, GL_FALSE, strideSize, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer");
     gl.vertexAttribPointer(attrLocationInTexCoord, texCoordDim, GL_FLOAT, GL_FALSE, strideSize,
                            (GLvoid *)(3 * sizeof(GLfloat)));

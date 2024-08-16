@@ -937,7 +937,7 @@ BlockArrayIndexingCase::IterateResult BlockArrayIndexingCase::iterate(void)
 
         GLU_EXPECT_NO_ERROR(gl.getError(), "Setup failed");
 
-        shaderExecutor->execute(numInvocations, inputs.empty() ? DE_NULL : &inputs[0], &outputs[0]);
+        shaderExecutor->execute(numInvocations, inputs.empty() ? nullptr : &inputs[0], &outputs[0]);
     }
 
     m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -1182,7 +1182,7 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate(void
 
         GLU_EXPECT_NO_ERROR(gl.getError(), "Setup failed");
 
-        shaderExecutor->execute(numInvocations, inputs.empty() ? DE_NULL : &inputs[0], &outputs[0]);
+        shaderExecutor->execute(numInvocations, inputs.empty() ? nullptr : &inputs[0], &outputs[0]);
     }
 
     m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -1197,7 +1197,7 @@ AtomicCounterIndexingCase::IterateResult AtomicCounterIndexingCase::iterate(void
 
         // Read counter values
         {
-            const void *mapPtr = DE_NULL;
+            const void *mapPtr = nullptr;
 
             try
             {

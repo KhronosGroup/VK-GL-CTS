@@ -135,7 +135,7 @@ bool operator==(const VkImageFormatProperties &l, const VkImageFormatProperties 
 }
 
 template <class StructType>
-StructType makeInvalidVulkanStructure(void *pNext = DE_NULL)
+StructType makeInvalidVulkanStructure(void *pNext = nullptr)
 {
     StructType s;
     deMemset(&s, 0xFF, (size_t)(sizeof(s)));

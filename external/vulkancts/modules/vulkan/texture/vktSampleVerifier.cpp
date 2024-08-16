@@ -88,7 +88,7 @@ bool SampleVerifier::coordOutOfRange(const IVec3 &coord, int compNdx, int level)
 
 void SampleVerifier::fetchTexelWrapped(const IVec3 &coord, int layer, int level, Vec4 &resultMin, Vec4 &resultMax) const
 {
-    const void *pixelPtr = DE_NULL;
+    const void *pixelPtr = nullptr;
 
     if (m_imParams.dim == IMG_DIM_1D)
     {

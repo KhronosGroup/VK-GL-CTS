@@ -180,13 +180,6 @@
 
 #include "deDefs_kc_cts.h"
 
-/* Null pointer. */
-#if defined(__cplusplus)
-#define DE_NULL 0
-#else
-#define DE_NULL ((void *)0) /*!< Null pointer.                */
-#endif
-
 /* Function pointer type. */
 typedef void (*deFunctionPtr)(void);
 

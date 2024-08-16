@@ -2488,10 +2488,10 @@ const glw::GLchar *Shader::GetStageName(STAGES stage)
         result = "vertex";
         break;
     case TESS_CTRL:
-        result = "tessellation control";
+        result = "tessellation_control";
         break;
     case TESS_EVAL:
-        result = "tessellation evaluation";
+        result = "tessellation_evaluation";
         break;
     case GEOMETRY:
         result = "geometry";
@@ -5075,6 +5075,8 @@ void GLW_APIENTRY debug_proc(GLenum source, GLenum type, GLuint id, GLenum sever
                                    << ": " << message << tcu::TestLog::EndMessage;
 }
 
+const glw::GLuint TYPES_NUMBER = 34;
+
 /** Constructor
  *
  * @param context          Test context
@@ -5551,7 +5553,8 @@ std::string TestBase::getTypeName(GLuint index) const
  **/
 glw::GLuint TestBase::getTypesNumber() const
 {
-    return 34;
+    // return 34;
+    return TYPES_NUMBER;
 }
 
 /** Execute test
@@ -8182,10 +8185,18 @@ void APIErrorsTest::checkError(GLenum expected_error, const GLchar *message, boo
  *
  * @param context Test framework context
  **/
-GLSLContantImmutablityTest::GLSLContantImmutablityTest(deqp::Context &context)
+GLSLContantImmutablityTest::GLSLContantImmutablityTest(deqp::Context &context, GLuint constant, GLuint stage)
     : NegativeTestBase(context, "glsl_contant_immutablity", "Test verifies that glsl constants cannot be modified")
+    , m_constant(constant)
+    , m_stage(stage)
 {
-    /* Nothing to be done here */
+    std::string name = ("glsl_contant_immutablity_");
+    name.append(EnhancedLayouts::GLSLContantImmutablityTest::getConstantName(
+        (EnhancedLayouts::GLSLContantImmutablityTest::CONSTANTS)constant));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -8390,15 +8401,9 @@ bool GLSLContantImmutablityTest::isComputeRelevant(GLuint test_case_index)
  **/
 void GLSLContantImmutablityTest::testInit()
 {
-    for (GLuint constant = 0; constant < CONSTANTS_MAX; ++constant)
-    {
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            testCase test_case = {(CONSTANTS)constant, (Utils::Shader::STAGES)stage};
+    testCase test_case = {(CONSTANTS)m_constant, (Utils::Shader::STAGES)m_stage};
 
-            m_test_cases.push_back(test_case);
-        }
-    }
+    m_test_cases.push_back(test_case);
 }
 
 /** Get name of glsl constant
@@ -8841,12 +8846,22 @@ std::string UniformBlockMemberOffsetAndAlignTest::getVerificationSnippet(
  *
  * @param context Test framework context
  **/
-UniformBlockLayoutQualifierConflictTest::UniformBlockLayoutQualifierConflictTest(deqp::Context &context)
+UniformBlockLayoutQualifierConflictTest::UniformBlockLayoutQualifierConflictTest(deqp::Context &context,
+                                                                                 glw::GLuint qualifier,
+                                                                                 glw::GLuint stage)
     : NegativeTestBase(
           context, "uniform_block_layout_qualifier_conflict",
           "Test verifies that std140 is required when offset and/or align qualifiers are used with uniform block")
+    , m_qualifier(qualifier)
+    , m_stage(stage)
 {
-    /* Nothing to be done here */
+    std::string name = ("uniform_block_layout_qualifier_conflict_");
+    name.append(EnhancedLayouts::UniformBlockLayoutQualifierConflictTest::getQualifierName(
+        (EnhancedLayouts::UniformBlockLayoutQualifierConflictTest::QUALIFIERS)qualifier));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -9085,15 +9100,8 @@ bool UniformBlockLayoutQualifierConflictTest::isFailureExpected(GLuint test_case
  **/
 void UniformBlockLayoutQualifierConflictTest::testInit()
 {
-    for (GLuint qualifier = 0; qualifier < QUALIFIERS_MAX; ++qualifier)
-    {
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            testCase test_case = {(QUALIFIERS)qualifier, (Utils::Shader::STAGES)stage};
-
-            m_test_cases.push_back(test_case);
-        }
-    }
+    testCase test_case = {(QUALIFIERS)m_qualifier, (Utils::Shader::STAGES)m_stage};
+    m_test_cases.push_back(test_case);
 }
 
 /** Get name of glsl constant
@@ -9109,7 +9117,7 @@ const GLchar *UniformBlockLayoutQualifierConflictTest::getQualifierName(QUALIFIE
     switch (qualifier)
     {
     case DEFAULT:
-        name = "";
+        name = "default";
         break;
     case STD140:
         name = "std140";
@@ -9131,11 +9139,19 @@ const GLchar *UniformBlockLayoutQualifierConflictTest::getQualifierName(QUALIFIE
  *
  * @param context Test framework context
  **/
-UniformBlockMemberInvalidOffsetAlignmentTest::UniformBlockMemberInvalidOffsetAlignmentTest(deqp::Context &context)
+UniformBlockMemberInvalidOffsetAlignmentTest::UniformBlockMemberInvalidOffsetAlignmentTest(deqp::Context &context,
+                                                                                           GLuint type, GLuint stage)
     : NegativeTestBase(context, "uniform_block_member_invalid_offset_alignment",
                        "Test verifies that invalid alignment of offset qualifiers cause compilation failure")
+    , m_type(type)
+    , m_stage(stage)
 {
-    /* Nothing to be done here */
+    std::string name = ("uniform_block_member_invalid_offset_alignment_");
+    name.append(getTypeName(type));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Constructor
@@ -9145,8 +9161,10 @@ UniformBlockMemberInvalidOffsetAlignmentTest::UniformBlockMemberInvalidOffsetAli
  * @param description Test description
  **/
 UniformBlockMemberInvalidOffsetAlignmentTest::UniformBlockMemberInvalidOffsetAlignmentTest(
-    deqp::Context &context, const glw::GLchar *name, const glw::GLchar *description)
+    deqp::Context &context, const glw::GLchar *name, const glw::GLchar *description, GLuint type, GLuint stage)
     : NegativeTestBase(context, name, description)
+    , m_type(type)
+    , m_stage(stage)
 {
     /* Nothing to be done here */
 }
@@ -9538,50 +9556,31 @@ bool UniformBlockMemberInvalidOffsetAlignmentTest::isStageSupported(Utils::Shade
  **/
 void UniformBlockMemberInvalidOffsetAlignmentTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
-    bool stage_support[Utils::Shader::STAGE_MAX];
+    const Utils::Type &type = getType(m_type);
+    const GLuint alignment  = type.GetBaseAlignment(false);
+    const GLuint type_size  = type.GetSize(true);
+    const GLuint sec_to_end = getMaxBlockSize() - 2 * type_size;
 
-    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+    for (GLuint offset = 0; offset <= type_size; ++offset)
     {
-        stage_support[stage] = isStageSupported((Utils::Shader::STAGES)stage);
+        const GLuint modulo    = offset % alignment;
+        const bool is_aligned  = (0 == modulo) ? true : false;
+        const bool should_fail = !is_aligned;
+
+        testCase test_case = {offset, should_fail, (Utils::Shader::STAGES)m_stage, type};
+
+        m_test_cases.push_back(test_case);
     }
 
-    for (GLuint i = 0; i < n_types; ++i)
+    for (GLuint offset = sec_to_end; offset <= sec_to_end + type_size; ++offset)
     {
-        const Utils::Type &type = getType(i);
-        const GLuint alignment  = type.GetBaseAlignment(false);
-        const GLuint type_size  = type.GetSize(true);
-        const GLuint sec_to_end = getMaxBlockSize() - 2 * type_size;
+        const GLuint modulo    = offset % alignment;
+        const bool is_aligned  = (0 == modulo) ? true : false;
+        const bool should_fail = !is_aligned;
 
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            if (false == stage_support[stage])
-            {
-                continue;
-            }
+        testCase test_case = {offset, should_fail, (Utils::Shader::STAGES)m_stage, type};
 
-            for (GLuint offset = 0; offset <= type_size; ++offset)
-            {
-                const GLuint modulo    = offset % alignment;
-                const bool is_aligned  = (0 == modulo) ? true : false;
-                const bool should_fail = !is_aligned;
-
-                testCase test_case = {offset, should_fail, (Utils::Shader::STAGES)stage, type};
-
-                m_test_cases.push_back(test_case);
-            }
-
-            for (GLuint offset = sec_to_end; offset <= sec_to_end + type_size; ++offset)
-            {
-                const GLuint modulo    = offset % alignment;
-                const bool is_aligned  = (0 == modulo) ? true : false;
-                const bool should_fail = !is_aligned;
-
-                testCase test_case = {offset, should_fail, (Utils::Shader::STAGES)stage, type};
-
-                m_test_cases.push_back(test_case);
-            }
-        }
+        m_test_cases.push_back(test_case);
     }
 }
 
@@ -9589,11 +9588,19 @@ void UniformBlockMemberInvalidOffsetAlignmentTest::testInit()
  *
  * @param context Test framework context
  **/
-UniformBlockMemberOverlappingOffsetsTest::UniformBlockMemberOverlappingOffsetsTest(deqp::Context &context)
+UniformBlockMemberOverlappingOffsetsTest::UniformBlockMemberOverlappingOffsetsTest(deqp::Context &context,
+                                                                                   GLuint type_i, GLuint type_j)
     : NegativeTestBase(context, "uniform_block_member_overlapping_offsets",
                        "Test verifies that overlapping offsets qualifiers cause compilation failure")
+    , m_type_i(type_i)
+    , m_type_j(type_j)
 {
-    /* Nothing to be done here */
+    std::string name = ("uniform_block_member_overlapping_offsets_");
+    name.append(getTypeName(type_i));
+    name.append("_");
+    name.append(getTypeName(type_j));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Constructor
@@ -9604,8 +9611,11 @@ UniformBlockMemberOverlappingOffsetsTest::UniformBlockMemberOverlappingOffsetsTe
  **/
 UniformBlockMemberOverlappingOffsetsTest::UniformBlockMemberOverlappingOffsetsTest(deqp::Context &context,
                                                                                    const glw::GLchar *name,
-                                                                                   const glw::GLchar *description)
+                                                                                   const glw::GLchar *description,
+                                                                                   GLuint type_i, GLuint type_j)
     : NegativeTestBase(context, name, description)
+    , m_type_i(type_i)
+    , m_type_j(type_j)
 {
     /* Nothing to be done here */
 }
@@ -9990,7 +10000,6 @@ bool UniformBlockMemberOverlappingOffsetsTest::isStageSupported(Utils::Shader::S
  **/
 void UniformBlockMemberOverlappingOffsetsTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
     bool stage_support[Utils::Shader::STAGE_MAX];
 
     for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
@@ -9998,50 +10007,44 @@ void UniformBlockMemberOverlappingOffsetsTest::testInit()
         stage_support[stage] = isStageSupported((Utils::Shader::STAGES)stage);
     }
 
-    for (GLuint i = 0; i < n_types; ++i)
+    const Utils::Type &b_type = getType(m_type_i);
+    const GLuint b_size       = b_type.GetActualAlignment(1 /* align */, false /* is_array*/);
+
+    const Utils::Type &a_type = getType(m_type_j);
+    const GLuint a_align      = a_type.GetBaseAlignment(false);
+    const GLuint a_size       = a_type.GetActualAlignment(1 /* align */, false /* is_array*/);
+
+    const GLuint b_offset       = lcm(b_size, a_size);
+    const GLuint a_after_start  = b_offset + 1;
+    const GLuint a_after_off    = a_type.GetActualOffset(a_after_start, a_size);
+    const GLuint a_before_start = b_offset - a_align;
+    const GLuint a_before_off   = a_type.GetActualOffset(a_before_start, a_size);
+
+    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
     {
-        const Utils::Type &b_type = getType(i);
-        const GLuint b_size       = b_type.GetActualAlignment(1 /* align */, false /* is_array*/);
-
-        for (GLuint j = 0; j < n_types; ++j)
+        if (false == stage_support[stage])
         {
-            const Utils::Type &a_type = getType(j);
-            const GLuint a_align      = a_type.GetBaseAlignment(false);
-            const GLuint a_size       = a_type.GetActualAlignment(1 /* align */, false /* is_array*/);
-
-            const GLuint b_offset       = lcm(b_size, a_size);
-            const GLuint a_after_start  = b_offset + 1;
-            const GLuint a_after_off    = a_type.GetActualOffset(a_after_start, a_size);
-            const GLuint a_before_start = b_offset - a_align;
-            const GLuint a_before_off   = a_type.GetActualOffset(a_before_start, a_size);
-
-            for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-            {
-                if (false == stage_support[stage])
-                {
-                    continue;
-                }
-
-                if ((b_offset > a_before_off) && (b_offset < a_before_off + a_size))
-                {
-                    testCase test_case = {b_offset, b_type, a_before_off, a_type, (Utils::Shader::STAGES)stage};
-
-                    m_test_cases.push_back(test_case);
-                }
-
-                if ((b_offset < a_after_off) && (b_offset + b_size > a_after_off))
-                {
-                    testCase test_case = {b_offset, b_type, a_after_off, a_type, (Utils::Shader::STAGES)stage};
-
-                    m_test_cases.push_back(test_case);
-                }
-
-                /* b offset, should be fine for both types */
-                testCase test_case = {b_offset, b_type, b_offset, a_type, (Utils::Shader::STAGES)stage};
-
-                m_test_cases.push_back(test_case);
-            }
+            continue;
         }
+
+        if ((b_offset > a_before_off) && (b_offset < a_before_off + a_size))
+        {
+            testCase test_case = {b_offset, b_type, a_before_off, a_type, (Utils::Shader::STAGES)stage};
+
+            m_test_cases.push_back(test_case);
+        }
+
+        if ((b_offset < a_after_off) && (b_offset + b_size > a_after_off))
+        {
+            testCase test_case = {b_offset, b_type, a_after_off, a_type, (Utils::Shader::STAGES)stage};
+
+            m_test_cases.push_back(test_case);
+        }
+
+        /* b offset, should be fine for both types */
+        testCase test_case = {b_offset, b_type, b_offset, a_type, (Utils::Shader::STAGES)stage};
+
+        m_test_cases.push_back(test_case);
     }
 }
 
@@ -10083,11 +10086,15 @@ GLuint UniformBlockMemberOverlappingOffsetsTest::lcm(GLuint a, GLuint b)
  *
  * @param context Test framework context
  **/
-UniformBlockMemberAlignNonPowerOf2Test::UniformBlockMemberAlignNonPowerOf2Test(deqp::Context &context)
+UniformBlockMemberAlignNonPowerOf2Test::UniformBlockMemberAlignNonPowerOf2Test(deqp::Context &context, glw::GLuint type)
     : NegativeTestBase(context, "uniform_block_member_align_non_power_of_2",
                        "Test verifies that align qualifier requires value that is a power of 2")
+    , m_type(type)
 {
-    /* Nothing to be done here */
+    std::string name = ("uniform_block_member_align_non_power_of_2_");
+    name.append(getTypeName(type));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Constructor
@@ -10098,8 +10105,10 @@ UniformBlockMemberAlignNonPowerOf2Test::UniformBlockMemberAlignNonPowerOf2Test(d
  **/
 UniformBlockMemberAlignNonPowerOf2Test::UniformBlockMemberAlignNonPowerOf2Test(deqp::Context &context,
                                                                                const glw::GLchar *name,
-                                                                               const glw::GLchar *description)
+                                                                               const glw::GLchar *description,
+                                                                               glw::GLuint type)
     : NegativeTestBase(context, name, description)
+    , m_type(type)
 {
     /* Nothing to be done here */
 }
@@ -10481,7 +10490,6 @@ bool UniformBlockMemberAlignNonPowerOf2Test::isFailureExpected(GLuint test_case_
 void UniformBlockMemberAlignNonPowerOf2Test::testInit()
 {
     static const GLuint dmat4_size = 128;
-    const GLuint n_types           = getTypesNumber();
     bool stage_support[Utils::Shader::STAGE_MAX];
 
     for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
@@ -10489,34 +10497,31 @@ void UniformBlockMemberAlignNonPowerOf2Test::testInit()
         stage_support[stage] = isStageSupported((Utils::Shader::STAGES)stage);
     }
 
-    for (GLuint j = 0; j < n_types; ++j)
-    {
-        const Utils::Type &type = getType(j);
+    const Utils::Type &type = getType(m_type);
 
-        for (GLuint align = 0; align <= dmat4_size; ++align)
-        {
+    for (GLuint align = 0; align <= dmat4_size; ++align)
+    {
 
 #if WRKARD_UNIFORMBLOCKMEMBERALIGNNONPOWEROF2TEST
 
-            const bool should_fail = (0 == align) ? false : !isPowerOf2(align);
+        const bool should_fail = (0 == align) ? false : !isPowerOf2(align);
 
 #else /* WRKARD_UNIFORMBLOCKMEMBERALIGNNONPOWEROF2TEST */
 
-            const bool should_fail = !isPowerOf2(align);
+        const bool should_fail = !isPowerOf2(align);
 
 #endif /* WRKARD_UNIFORMBLOCKMEMBERALIGNNONPOWEROF2TEST */
 
-            for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+        {
+            if (false == stage_support[stage])
             {
-                if (false == stage_support[stage])
-                {
-                    continue;
-                }
-
-                testCase test_case = {align, type, should_fail, (Utils::Shader::STAGES)stage};
-
-                m_test_cases.push_back(test_case);
+                continue;
             }
+
+            testCase test_case = {align, type, should_fail, (Utils::Shader::STAGES)stage};
+
+            m_test_cases.push_back(test_case);
         }
     }
 }
@@ -10836,13 +10841,21 @@ bool SSBMemberOffsetAndAlignTest::isDrawRelevant(GLuint /* test_case_index */)
  *
  * @param context Test framework context
  **/
-SSBLayoutQualifierConflictTest::SSBLayoutQualifierConflictTest(deqp::Context &context)
+SSBLayoutQualifierConflictTest::SSBLayoutQualifierConflictTest(deqp::Context &context, GLuint qualifier, GLuint stage)
     : NegativeTestBase(context, "ssb_layout_qualifier_conflict",
                        "Test verifies that std140 or std430 is required when "
                        "offset and/or align qualifiers are used with storage "
                        "block")
+    , m_qualifier(qualifier)
+    , m_stage(stage)
 {
-    /* Nothing to be done here */
+    std::string name = ("ssb_layout_qualifier_conflict_");
+    name.append(EnhancedLayouts::SSBLayoutQualifierConflictTest::getQualifierName(
+        (EnhancedLayouts::SSBLayoutQualifierConflictTest::QUALIFIERS)qualifier));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -11124,27 +11137,9 @@ bool SSBLayoutQualifierConflictTest::isStageSupported(Utils::Shader::STAGES stag
  **/
 void SSBLayoutQualifierConflictTest::testInit()
 {
-    bool stage_support[Utils::Shader::STAGE_MAX];
+    testCase test_case = {(QUALIFIERS)m_qualifier, (Utils::Shader::STAGES)m_stage};
 
-    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-    {
-        stage_support[stage] = isStageSupported((Utils::Shader::STAGES)stage);
-    }
-
-    for (GLuint qualifier = 0; qualifier < QUALIFIERS_MAX; ++qualifier)
-    {
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            if (false == stage_support[stage])
-            {
-                continue;
-            }
-
-            testCase test_case = {(QUALIFIERS)qualifier, (Utils::Shader::STAGES)stage};
-
-            m_test_cases.push_back(test_case);
-        }
-    }
+    m_test_cases.push_back(test_case);
 }
 
 /** Get name of glsl constant
@@ -11185,12 +11180,18 @@ const GLchar *SSBLayoutQualifierConflictTest::getQualifierName(QUALIFIERS qualif
  *
  * @param context Test framework context
  **/
-SSBMemberInvalidOffsetAlignmentTest::SSBMemberInvalidOffsetAlignmentTest(deqp::Context &context)
+SSBMemberInvalidOffsetAlignmentTest::SSBMemberInvalidOffsetAlignmentTest(deqp::Context &context, GLuint type,
+                                                                         GLuint stage)
     : UniformBlockMemberInvalidOffsetAlignmentTest(
           context, "ssb_member_invalid_offset_alignment",
-          "Test verifies that invalid alignment of offset qualifiers cause compilation failure")
+          "Test verifies that invalid alignment of offset qualifiers cause compilation failure", type, stage)
 {
-    /* Nothing to be done here */
+    std::string name = ("ssb_member_invalid_offset_alignment_");
+    name.append(getTypeName(type));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Get the maximum size for a shader storage block
@@ -11562,12 +11563,17 @@ bool SSBMemberInvalidOffsetAlignmentTest::isStageSupported(Utils::Shader::STAGES
  *
  * @param context Test framework context
  **/
-SSBMemberOverlappingOffsetsTest::SSBMemberOverlappingOffsetsTest(deqp::Context &context)
+SSBMemberOverlappingOffsetsTest::SSBMemberOverlappingOffsetsTest(deqp::Context &context, GLuint type_i, GLuint type_j)
     : UniformBlockMemberOverlappingOffsetsTest(
           context, "ssb_member_overlapping_offsets",
-          "Test verifies that overlapping offsets qualifiers cause compilation failure")
+          "Test verifies that overlapping offsets qualifiers cause compilation failure", type_i, type_j)
 {
-    /* Nothing to be done here */
+    std::string name = ("ssb_member_overlapping_offsets_");
+    name.append(getTypeName(type_i));
+    name.append("_");
+    name.append(getTypeName(type_j));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -11942,11 +11948,15 @@ bool SSBMemberOverlappingOffsetsTest::isStageSupported(Utils::Shader::STAGES sta
  *
  * @param context Test framework context
  **/
-SSBMemberAlignNonPowerOf2Test::SSBMemberAlignNonPowerOf2Test(deqp::Context &context)
+SSBMemberAlignNonPowerOf2Test::SSBMemberAlignNonPowerOf2Test(deqp::Context &context, GLuint type)
     : UniformBlockMemberAlignNonPowerOf2Test(context, "ssb_member_align_non_power_of_2",
-                                             "Test verifies that align qualifier requires value that is a power of 2")
+                                             "Test verifies that align qualifier requires value that is a power of 2",
+                                             type)
 {
-    /* Nothing to be done here */
+    std::string name = ("ssb_member_align_non_power_of_2_");
+    name.append(getTypeName(type));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -12651,29 +12661,29 @@ void VertexAttribLocationsTest::executeDrawCall(GLuint test_case_index)
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawArraysInstanced");
         break;
     case DRAWELEMENTS:
-        gl.drawElements(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, DE_NULL);
+        gl.drawElements(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, nullptr);
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElements");
         break;
     case DRAWELEMENTSBASEVERTEX:
-        gl.drawElementsBaseVertex(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, DE_NULL, m_base_vertex);
+        gl.drawElementsBaseVertex(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, nullptr, m_base_vertex);
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElementsBaseVertex");
         break;
     case DRAWELEMENTSINSTANCED:
-        gl.drawElementsInstanced(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, DE_NULL, m_n_instances);
+        gl.drawElementsInstanced(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, nullptr, m_n_instances);
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElementsInstanced");
         break;
     case DRAWELEMENTSINSTANCEDBASEINSTANCE:
-        gl.drawElementsInstancedBaseInstance(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, DE_NULL, m_n_instances,
+        gl.drawElementsInstancedBaseInstance(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, nullptr, m_n_instances,
                                              m_base_instance);
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElementsInstancedBaseInstance");
         break;
     case DRAWELEMENTSINSTANCEDBASEVERTEX:
-        gl.drawElementsInstancedBaseVertex(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, DE_NULL, m_n_instances,
+        gl.drawElementsInstancedBaseVertex(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, nullptr, m_n_instances,
                                            m_base_vertex);
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElementsInstancedBaseVertex");
         break;
     case DRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCE:
-        gl.drawElementsInstancedBaseVertexBaseInstance(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, DE_NULL,
+        gl.drawElementsInstancedBaseVertexBaseInstance(GL_PATCHES, 1 /* count */, GL_UNSIGNED_BYTE, nullptr,
                                                        m_n_instances, m_base_vertex, m_base_instance);
         GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElementsInstancedBaseVertexBaseInstance");
         break;
@@ -13108,10 +13118,15 @@ bool VaryingStructureLocationsTest::useMonolithicProgram(GLuint /* test_case_ind
  * @param test_name        Name of test
  * @param test_description Description of test
  **/
-VaryingStructureMemberLocationTest::VaryingStructureMemberLocationTest(deqp::Context &context)
+VaryingStructureMemberLocationTest::VaryingStructureMemberLocationTest(deqp::Context &context, GLuint stage)
     : NegativeTestBase(context, "varying_structure_member_location",
                        "Test verifies that compiler does not allow location qualifier on member of structure")
+    , m_stage(stage)
 {
+    std::string name = ("varying_structure_member_location_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -13469,26 +13484,18 @@ bool VaryingStructureMemberLocationTest::isComputeRelevant(GLuint /* test_case_i
  **/
 void VaryingStructureMemberLocationTest::testInit()
 {
-    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+    testCase test_case_in  = {true, (Utils::Shader::STAGES)m_stage};
+    testCase test_case_out = {false, (Utils::Shader::STAGES)m_stage};
+
+    /* It is a compile-time error to declare a struct as a VS input */
+    if (Utils::Shader::VERTEX != m_stage)
     {
-        if (Utils::Shader::COMPUTE == stage)
-        {
-            continue;
-        }
+        m_test_cases.push_back(test_case_in);
+    }
 
-        testCase test_case_in  = {true, (Utils::Shader::STAGES)stage};
-        testCase test_case_out = {false, (Utils::Shader::STAGES)stage};
-
-        /* It is a compile-time error to declare a struct as a VS input */
-        if (Utils::Shader::VERTEX != stage)
-        {
-            m_test_cases.push_back(test_case_in);
-        }
-
-        if (Utils::Shader::FRAGMENT != stage)
-        {
-            m_test_cases.push_back(test_case_out);
-        }
+    if (Utils::Shader::FRAGMENT != m_stage)
+    {
+        m_test_cases.push_back(test_case_out);
     }
 }
 
@@ -13615,11 +13622,16 @@ bool VaryingBlockLocationsTest::useMonolithicProgram(GLuint /* test_case_index *
  *
  * @param context Test framework context
  **/
-VaryingBlockMemberLocationsTest::VaryingBlockMemberLocationsTest(deqp::Context &context)
+VaryingBlockMemberLocationsTest::VaryingBlockMemberLocationsTest(deqp::Context &context, GLuint stage)
     : NegativeTestBase(
           context, "varying_block_member_locations",
           "Test verifies that compilation error is reported when not all members of block are qualified with location")
+    , m_stage(stage)
 {
+    std::string name = ("varying_block_member_locations_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -13993,29 +14005,21 @@ bool VaryingBlockMemberLocationsTest::isFailureExpected(GLuint test_case_index)
  **/
 void VaryingBlockMemberLocationsTest::testInit()
 {
-    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+    testCase test_case_in_all  = {true, true, (Utils::Shader::STAGES)m_stage};
+    testCase test_case_in_one  = {true, false, (Utils::Shader::STAGES)m_stage};
+    testCase test_case_out_all = {false, true, (Utils::Shader::STAGES)m_stage};
+    testCase test_case_out_one = {false, false, (Utils::Shader::STAGES)m_stage};
+
+    if (Utils::Shader::VERTEX != m_stage)
     {
-        if (Utils::Shader::COMPUTE == stage)
-        {
-            continue;
-        }
+        m_test_cases.push_back(test_case_in_all);
+        m_test_cases.push_back(test_case_in_one);
+    }
 
-        testCase test_case_in_all  = {true, true, (Utils::Shader::STAGES)stage};
-        testCase test_case_in_one  = {true, false, (Utils::Shader::STAGES)stage};
-        testCase test_case_out_all = {false, true, (Utils::Shader::STAGES)stage};
-        testCase test_case_out_one = {false, false, (Utils::Shader::STAGES)stage};
-
-        if (Utils::Shader::VERTEX != stage)
-        {
-            m_test_cases.push_back(test_case_in_all);
-            m_test_cases.push_back(test_case_in_one);
-        }
-
-        if (Utils::Shader::FRAGMENT != stage)
-        {
-            m_test_cases.push_back(test_case_out_all);
-            m_test_cases.push_back(test_case_out_one);
-        }
+    if (Utils::Shader::FRAGMENT != m_stage)
+    {
+        m_test_cases.push_back(test_case_out_all);
+        m_test_cases.push_back(test_case_out_one);
     }
 }
 
@@ -14023,11 +14027,16 @@ void VaryingBlockMemberLocationsTest::testInit()
  *
  * @param context Test framework context
  **/
-VaryingBlockAutomaticMemberLocationsTest::VaryingBlockAutomaticMemberLocationsTest(deqp::Context &context)
+VaryingBlockAutomaticMemberLocationsTest::VaryingBlockAutomaticMemberLocationsTest(deqp::Context &context, GLuint stage)
     : NegativeTestBase(
           context, "varying_block_automatic_member_locations",
           "Test verifies that compiler assigns subsequent locations to block members, even if this causes errors")
+    , m_stage(stage)
 {
+    std::string name = ("varying_block_automatic_member_locations_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -14384,25 +14393,17 @@ bool VaryingBlockAutomaticMemberLocationsTest::isComputeRelevant(GLuint /* test_
  **/
 void VaryingBlockAutomaticMemberLocationsTest::testInit()
 {
-    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+    testCase test_case_in  = {true, (Utils::Shader::STAGES)m_stage};
+    testCase test_case_out = {false, (Utils::Shader::STAGES)m_stage};
+
+    if (Utils::Shader::VERTEX != m_stage)
     {
-        if (Utils::Shader::COMPUTE == stage)
-        {
-            continue;
-        }
+        m_test_cases.push_back(test_case_in);
+    }
 
-        testCase test_case_in  = {true, (Utils::Shader::STAGES)stage};
-        testCase test_case_out = {false, (Utils::Shader::STAGES)stage};
-
-        if (Utils::Shader::VERTEX != stage)
-        {
-            m_test_cases.push_back(test_case_in);
-        }
-
-        if (Utils::Shader::FRAGMENT != stage)
-        {
-            m_test_cases.push_back(test_case_out);
-        }
+    if (Utils::Shader::FRAGMENT != m_stage)
+    {
+        m_test_cases.push_back(test_case_out);
     }
 }
 
@@ -14410,10 +14411,18 @@ void VaryingBlockAutomaticMemberLocationsTest::testInit()
  *
  * @param context Test framework context
  **/
-VaryingLocationLimitTest::VaryingLocationLimitTest(deqp::Context &context)
+VaryingLocationLimitTest::VaryingLocationLimitTest(deqp::Context &context, GLuint type, GLuint stage)
     : NegativeTestBase(context, "varying_location_limit",
                        "Test verifies that compiler reports error when location qualifier exceeds limits")
+    , m_type(type)
+    , m_stage(stage)
 {
+    std::string name = ("varying_location_limit_");
+    name.append(getTypeName(m_type));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -14800,29 +14809,16 @@ bool VaryingLocationLimitTest::isSeparable(const GLuint test_case_index)
  **/
 void VaryingLocationLimitTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type = getType(m_type);
 
-    for (GLuint i = 0; i < n_types; ++i)
+    testCase test_case_in  = {true, type, (Utils::Shader::STAGES)m_stage};
+    testCase test_case_out = {false, type, (Utils::Shader::STAGES)m_stage};
+
+    m_test_cases.push_back(test_case_in);
+
+    if (Utils::Shader::FRAGMENT != m_stage)
     {
-        const Utils::Type &type = getType(i);
-
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            if (Utils::Shader::COMPUTE == stage)
-            {
-                continue;
-            }
-
-            testCase test_case_in  = {true, type, (Utils::Shader::STAGES)stage};
-            testCase test_case_out = {false, type, (Utils::Shader::STAGES)stage};
-
-            m_test_cases.push_back(test_case_in);
-
-            if (Utils::Shader::FRAGMENT != stage)
-            {
-                m_test_cases.push_back(test_case_out);
-            }
-        }
+        m_test_cases.push_back(test_case_out);
     }
 }
 
@@ -14830,10 +14826,18 @@ void VaryingLocationLimitTest::testInit()
  *
  * @param context Test framework context
  **/
-VaryingComponentsTest::VaryingComponentsTest(deqp::Context &context)
+VaryingComponentsTest::VaryingComponentsTest(deqp::Context &context, COMPONENTS_LAYOUT layout, Utils::Type::TYPES type)
     : VaryingLocationsTest(context, "varying_components",
                            "Test verifies that input and output components are respected")
+    , m_layout(layout)
+    , m_type(type)
 {
+    std::string name = ("varying_components_");
+    name.append(getComponentsLayoutName(m_layout));
+    name.append("_");
+    name.append(getTypesName(type));
+
+    VaryingLocationsTest::m_name = name.c_str();
 }
 
 /** Constructor
@@ -14843,9 +14847,18 @@ VaryingComponentsTest::VaryingComponentsTest(deqp::Context &context)
  * @param test_description Description of test
  **/
 VaryingComponentsTest::VaryingComponentsTest(deqp::Context &context, const glw::GLchar *test_name,
-                                             const glw::GLchar *test_description)
+                                             const glw::GLchar *test_description, COMPONENTS_LAYOUT layout,
+                                             Utils::Type::TYPES type)
     : VaryingLocationsTest(context, test_name, test_description)
+    , m_layout(layout)
+    , m_type(type)
 {
+    std::string name = ("varying_components_");
+    name.append(getComponentsLayoutName(m_layout));
+    name.append("_");
+    name.append(getTypesName(type));
+
+    VaryingLocationsTest::m_name = name.c_str();
 }
 
 /** Get interface of program
@@ -14972,35 +14985,53 @@ glw::GLuint VaryingComponentsTest::getTestCaseNumber()
 /* Prepare test cases */
 void VaryingComponentsTest::testInit()
 {
-    m_test_cases.push_back(testCase(G64VEC2, Utils::Type::Double));
-    m_test_cases.push_back(testCase(G64SCALAR_G64SCALAR, Utils::Type::Double));
+    m_test_cases.push_back(testCase(m_layout, m_type));
+}
 
-    m_test_cases.push_back(testCase(GVEC4, Utils::Type::Float));
-    m_test_cases.push_back(testCase(SCALAR_GVEC3, Utils::Type::Float));
-    m_test_cases.push_back(testCase(GVEC3_SCALAR, Utils::Type::Float));
-    m_test_cases.push_back(testCase(GVEC2_GVEC2, Utils::Type::Float));
-    m_test_cases.push_back(testCase(GVEC2_SCALAR_SCALAR, Utils::Type::Float));
-    m_test_cases.push_back(testCase(SCALAR_GVEC2_SCALAR, Utils::Type::Float));
-    m_test_cases.push_back(testCase(SCALAR_SCALAR_GVEC2, Utils::Type::Float));
-    m_test_cases.push_back(testCase(SCALAR_SCALAR_SCALAR_SCALAR, Utils::Type::Float));
+std::string VaryingComponentsTest::getComponentsLayoutName(COMPONENTS_LAYOUT layout)
+{
+    switch (layout)
+    {
+    case G64VEC2:
+        return "g64vec2";
+    case G64SCALAR_G64SCALAR:
+        return "g64scalar_g64scalar";
+    case GVEC4:
+        return "gvec4";
+    case SCALAR_GVEC3:
+        return "scalar_gvec3";
+    case GVEC3_SCALAR:
+        return "gvec3_scalar";
+    case GVEC2_GVEC2:
+        return "gvec2_gvec2";
+    case GVEC2_SCALAR_SCALAR:
+        return "gvec2_scalar_scalar";
+    case SCALAR_GVEC2_SCALAR:
+        return "scalar_gvec2_scalar";
+    case SCALAR_SCALAR_GVEC2:
+        return "scalar_scalar_gvec2";
+    case SCALAR_SCALAR_SCALAR_SCALAR:
+        return "scalar_scalar_scalar_scalar";
+    default:
+        return "default";
+    }
+}
 
-    m_test_cases.push_back(testCase(GVEC4, Utils::Type::Int));
-    m_test_cases.push_back(testCase(SCALAR_GVEC3, Utils::Type::Int));
-    m_test_cases.push_back(testCase(GVEC3_SCALAR, Utils::Type::Int));
-    m_test_cases.push_back(testCase(GVEC2_GVEC2, Utils::Type::Int));
-    m_test_cases.push_back(testCase(GVEC2_SCALAR_SCALAR, Utils::Type::Int));
-    m_test_cases.push_back(testCase(SCALAR_GVEC2_SCALAR, Utils::Type::Int));
-    m_test_cases.push_back(testCase(SCALAR_SCALAR_GVEC2, Utils::Type::Int));
-    m_test_cases.push_back(testCase(SCALAR_SCALAR_SCALAR_SCALAR, Utils::Type::Int));
-
-    m_test_cases.push_back(testCase(GVEC4, Utils::Type::Uint));
-    m_test_cases.push_back(testCase(SCALAR_GVEC3, Utils::Type::Uint));
-    m_test_cases.push_back(testCase(GVEC3_SCALAR, Utils::Type::Uint));
-    m_test_cases.push_back(testCase(GVEC2_GVEC2, Utils::Type::Uint));
-    m_test_cases.push_back(testCase(GVEC2_SCALAR_SCALAR, Utils::Type::Uint));
-    m_test_cases.push_back(testCase(SCALAR_GVEC2_SCALAR, Utils::Type::Uint));
-    m_test_cases.push_back(testCase(SCALAR_SCALAR_GVEC2, Utils::Type::Uint));
-    m_test_cases.push_back(testCase(SCALAR_SCALAR_SCALAR_SCALAR, Utils::Type::Uint));
+std::string VaryingComponentsTest::getTypesName(Utils::Type::TYPES type)
+{
+    switch (type)
+    {
+    case Utils::Type::Double:
+        return "double";
+    case Utils::Type::Float:
+        return "float";
+    case Utils::Type::Int:
+        return "int";
+    case Utils::Type::Uint:
+        return "uint";
+    default:
+        return "default";
+    }
 }
 
 /** Inform that test use components
@@ -15315,10 +15346,17 @@ VaryingComponentsTest::testCase::testCase(COMPONENTS_LAYOUT layout, Utils::Type:
  *
  * @param context Test framework context
  **/
-VaryingArrayComponentsTest::VaryingArrayComponentsTest(deqp::Context &context)
+VaryingArrayComponentsTest::VaryingArrayComponentsTest(deqp::Context &context, COMPONENTS_LAYOUT layout,
+                                                       Utils::Type::TYPES type)
     : VaryingComponentsTest(context, "varying_array_components",
-                            "Test verifies that input and output components are respected for arrays")
+                            "Test verifies that input and output components are respected for arrays", layout, type)
 {
+    std::string name = ("varying_array_components_");
+    name.append(getComponentsLayoutName(m_layout));
+    name.append("_");
+    name.append(getTypesName(type));
+
+    VaryingLocationsTest::m_name = name.c_str();
 }
 
 /** Get length of arrays that should be used during test
@@ -15334,12 +15372,17 @@ GLuint VaryingArrayComponentsTest::getArrayLength()
  *
  * @param context Test framework context
  **/
-VaryingInvalidValueComponentTest::VaryingInvalidValueComponentTest(deqp::Context &context)
+VaryingInvalidValueComponentTest::VaryingInvalidValueComponentTest(deqp::Context &context, GLuint type)
     : NegativeTestBase(context, "varying_invalid_value_component",
                        "Test verifies that compiler reports error when "
                        "using an invalid value in the component "
                        "qualification for a specific type")
+    , m_type(type)
 {
+    std::string name = ("varying_invalid_value_component_");
+    name.append(getTypeName(type));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -15750,50 +15793,40 @@ bool VaryingInvalidValueComponentTest::isComputeRelevant(GLuint /* test_case_ind
  **/
 void VaryingInvalidValueComponentTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type                     = getType(m_type);
+    const std::vector<GLuint> &valid_components = type.GetValidComponents();
 
-    for (GLuint i = 0; i < n_types; ++i)
+    std::vector<GLuint> every_component(4, 0);
+    every_component[1] = 1;
+    every_component[2] = 2;
+    every_component[3] = 3;
+    std::vector<GLuint> invalid_components;
+
+    std::set_symmetric_difference(every_component.begin(), every_component.end(), valid_components.begin(),
+                                  valid_components.end(), back_inserter(invalid_components));
+
+    for (std::vector<GLuint>::const_iterator it_invalid_components = invalid_components.begin();
+         it_invalid_components != invalid_components.end(); ++it_invalid_components)
     {
-        const Utils::Type &type                     = getType(i);
-        const std::vector<GLuint> &valid_components = type.GetValidComponents();
-
-        if (valid_components.empty())
+        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
         {
-            continue;
-        }
-
-        std::vector<GLuint> every_component(4, 0);
-        every_component[1] = 1;
-        every_component[2] = 2;
-        every_component[3] = 3;
-        std::vector<GLuint> invalid_components;
-
-        std::set_symmetric_difference(every_component.begin(), every_component.end(), valid_components.begin(),
-                                      valid_components.end(), back_inserter(invalid_components));
-
-        for (std::vector<GLuint>::const_iterator it_invalid_components = invalid_components.begin();
-             it_invalid_components != invalid_components.end(); ++it_invalid_components)
-        {
-            for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+            if (Utils::Shader::COMPUTE == stage)
             {
-                if (Utils::Shader::COMPUTE == stage)
-                {
-                    continue;
-                }
+                continue;
+            }
 
-                testCase test_case_in_arr  = {*it_invalid_components, true, true, (Utils::Shader::STAGES)stage, type};
-                testCase test_case_in_one  = {*it_invalid_components, true, false, (Utils::Shader::STAGES)stage, type};
-                testCase test_case_out_arr = {*it_invalid_components, false, true, (Utils::Shader::STAGES)stage, type};
-                testCase test_case_out_one = {*it_invalid_components, false, false, (Utils::Shader::STAGES)stage, type};
+            testCase test_case_in_arr  = {*it_invalid_components, true, true, (Utils::Shader::STAGES)stage, type};
+            testCase test_case_in_one  = {*it_invalid_components, true, false, (Utils::Shader::STAGES)stage, type};
+            testCase test_case_out_arr = {*it_invalid_components, false, true, (Utils::Shader::STAGES)stage, type};
+            testCase test_case_out_one = {*it_invalid_components, false, false, (Utils::Shader::STAGES)stage, type};
 
-                m_test_cases.push_back(test_case_in_arr);
-                m_test_cases.push_back(test_case_in_one);
+            m_test_cases.push_back(test_case_in_arr);
+            m_test_cases.push_back(test_case_in_one);
 
-                if (Utils::Shader::FRAGMENT != stage)
-                {
-                    m_test_cases.push_back(test_case_out_arr);
-                    m_test_cases.push_back(test_case_out_one);
-                }
+            if (Utils::Shader::FRAGMENT != stage)
+            {
+                m_test_cases.push_back(test_case_out_arr);
+                m_test_cases.push_back(test_case_out_one);
             }
         }
     }
@@ -15803,10 +15836,15 @@ void VaryingInvalidValueComponentTest::testInit()
  *
  * @param context Test framework context
  **/
-VaryingExceedingComponentsTest::VaryingExceedingComponentsTest(deqp::Context &context)
+VaryingExceedingComponentsTest::VaryingExceedingComponentsTest(deqp::Context &context, GLuint type)
     : NegativeTestBase(context, "varying_exceeding_components",
                        "Test verifies that compiler reports error when component qualifier exceeds limits")
+    , m_type(type)
 {
+    std::string name = ("varying_exceeding_components_");
+    name.append(getTypeName(type));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -16210,38 +16248,27 @@ bool VaryingExceedingComponentsTest::isComputeRelevant(GLuint /* test_case_index
  **/
 void VaryingExceedingComponentsTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type = getType(m_type);
 
-    for (GLuint i = 0; i < n_types; ++i)
+    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
     {
-        const Utils::Type &type                     = getType(i);
-        const std::vector<GLuint> &valid_components = type.GetValidComponents();
-
-        if (valid_components.empty())
+        if (Utils::Shader::COMPUTE == stage)
         {
             continue;
         }
 
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+        testCase test_case_in_arr  = {true, true, (Utils::Shader::STAGES)stage, type};
+        testCase test_case_in_one  = {true, false, (Utils::Shader::STAGES)stage, type};
+        testCase test_case_out_arr = {false, true, (Utils::Shader::STAGES)stage, type};
+        testCase test_case_out_one = {false, false, (Utils::Shader::STAGES)stage, type};
+
+        m_test_cases.push_back(test_case_in_arr);
+        m_test_cases.push_back(test_case_in_one);
+
+        if (Utils::Shader::FRAGMENT != stage)
         {
-            if (Utils::Shader::COMPUTE == stage)
-            {
-                continue;
-            }
-
-            testCase test_case_in_arr  = {true, true, (Utils::Shader::STAGES)stage, type};
-            testCase test_case_in_one  = {true, false, (Utils::Shader::STAGES)stage, type};
-            testCase test_case_out_arr = {false, true, (Utils::Shader::STAGES)stage, type};
-            testCase test_case_out_one = {false, false, (Utils::Shader::STAGES)stage, type};
-
-            m_test_cases.push_back(test_case_in_arr);
-            m_test_cases.push_back(test_case_in_one);
-
-            if (Utils::Shader::FRAGMENT != stage)
-            {
-                m_test_cases.push_back(test_case_out_arr);
-                m_test_cases.push_back(test_case_out_one);
-            }
+            m_test_cases.push_back(test_case_out_arr);
+            m_test_cases.push_back(test_case_out_one);
         }
     }
 }
@@ -16250,10 +16277,15 @@ void VaryingExceedingComponentsTest::testInit()
  *
  * @param context Test framework context
  **/
-VaryingComponentWithoutLocationTest::VaryingComponentWithoutLocationTest(deqp::Context &context)
+VaryingComponentWithoutLocationTest::VaryingComponentWithoutLocationTest(deqp::Context &context, GLuint type)
     : NegativeTestBase(context, "varying_component_without_location",
                        "Test verifies that compiler reports error when component qualifier is used without location")
+    , m_type(type)
 {
+    std::string name = ("varying_component_without_location_");
+    name.append(getTypeName(type));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -16618,34 +16650,24 @@ bool VaryingComponentWithoutLocationTest::isComputeRelevant(GLuint /* test_case_
  **/
 void VaryingComponentWithoutLocationTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type                     = getType(m_type);
+    const std::vector<GLuint> &valid_components = type.GetValidComponents();
 
-    for (GLuint i = 0; i < n_types; ++i)
+    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
     {
-        const Utils::Type &type                     = getType(i);
-        const std::vector<GLuint> &valid_components = type.GetValidComponents();
-
-        if (valid_components.empty())
+        if (Utils::Shader::COMPUTE == stage)
         {
             continue;
         }
 
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+        testCase test_case_in  = {valid_components.back(), true, (Utils::Shader::STAGES)stage, type};
+        testCase test_case_out = {valid_components.back(), false, (Utils::Shader::STAGES)stage, type};
+
+        m_test_cases.push_back(test_case_in);
+
+        if (Utils::Shader::FRAGMENT != stage)
         {
-            if (Utils::Shader::COMPUTE == stage)
-            {
-                continue;
-            }
-
-            testCase test_case_in  = {valid_components.back(), true, (Utils::Shader::STAGES)stage, type};
-            testCase test_case_out = {valid_components.back(), false, (Utils::Shader::STAGES)stage, type};
-
-            m_test_cases.push_back(test_case_in);
-
-            if (Utils::Shader::FRAGMENT != stage)
-            {
-                m_test_cases.push_back(test_case_out);
-            }
+            m_test_cases.push_back(test_case_out);
         }
     }
 }
@@ -16654,10 +16676,18 @@ void VaryingComponentWithoutLocationTest::testInit()
  *
  * @param context Test framework context
  **/
-VaryingComponentOfInvalidTypeTest::VaryingComponentOfInvalidTypeTest(deqp::Context &context)
+VaryingComponentOfInvalidTypeTest::VaryingComponentOfInvalidTypeTest(deqp::Context &context, GLuint type, GLuint stage)
     : NegativeTestBase(context, "varying_component_of_invalid_type",
                        "Test verifies that compiler reports error when component qualifier is used for invalid type")
+    , m_type(type)
+    , m_stage(stage)
 {
+    std::string name = ("varying_component_of_invalid_type_");
+    name.append(getTypeName(type));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -17163,83 +17193,70 @@ bool VaryingComponentOfInvalidTypeTest::isComputeRelevant(GLuint /* test_case_in
  **/
 void VaryingComponentOfInvalidTypeTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type                     = getType(m_type);
+    const std::vector<GLuint> &valid_components = type.GetValidComponents();
 
-    for (GLuint i = 0; i < n_types; ++i)
+    /* matrices */
+    if (1 != type.m_n_columns)
     {
-        const Utils::Type &type                     = getType(i);
-        const std::vector<GLuint> &valid_components = type.GetValidComponents();
+        testCase test_case_in_arr  = {MATRIX, 0, true, true, (Utils::Shader::STAGES)m_stage, type};
+        testCase test_case_in_one  = {MATRIX, 0, false, true, (Utils::Shader::STAGES)m_stage, type};
+        testCase test_case_out_arr = {MATRIX, 0, true, false, (Utils::Shader::STAGES)m_stage, type};
+        testCase test_case_out_one = {MATRIX, 0, false, false, (Utils::Shader::STAGES)m_stage, type};
 
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+        m_test_cases.push_back(test_case_in_arr);
+        m_test_cases.push_back(test_case_in_one);
+
+        if (Utils::Shader::FRAGMENT != m_stage)
         {
-            if (Utils::Shader::COMPUTE == stage)
-            {
-                continue;
-            }
+            m_test_cases.push_back(test_case_out_arr);
+            m_test_cases.push_back(test_case_out_one);
+        }
+    }
+    else if (Utils::Type::Double == type.m_basic_type && 2 < type.m_n_rows) /* dvec3 and dvec4 */
+    {
+        testCase test_case_in_arr  = {DVEC3_DVEC4, 0, true, true, (Utils::Shader::STAGES)m_stage, type};
+        testCase test_case_in_one  = {DVEC3_DVEC4, 0, false, true, (Utils::Shader::STAGES)m_stage, type};
+        testCase test_case_out_arr = {DVEC3_DVEC4, 0, true, false, (Utils::Shader::STAGES)m_stage, type};
+        testCase test_case_out_one = {DVEC3_DVEC4, 0, false, false, (Utils::Shader::STAGES)m_stage, type};
 
-            /* matrices */
-            if (1 != type.m_n_columns)
-            {
-                testCase test_case_in_arr  = {MATRIX, 0, true, true, (Utils::Shader::STAGES)stage, type};
-                testCase test_case_in_one  = {MATRIX, 0, false, true, (Utils::Shader::STAGES)stage, type};
-                testCase test_case_out_arr = {MATRIX, 0, true, false, (Utils::Shader::STAGES)stage, type};
-                testCase test_case_out_one = {MATRIX, 0, false, false, (Utils::Shader::STAGES)stage, type};
+        m_test_cases.push_back(test_case_in_arr);
+        m_test_cases.push_back(test_case_in_one);
 
+        if (Utils::Shader::FRAGMENT != m_stage)
+        {
+            m_test_cases.push_back(test_case_out_arr);
+            m_test_cases.push_back(test_case_out_one);
+        }
+    }
+    else
+    {
+        if (valid_components.empty())
+        {
+            TCU_FAIL("Unhandled type");
+        }
+
+        for (GLuint c = BLOCK; c < MAX_CASES; ++c)
+        {
+            testCase test_case_in_arr  = {(CASES)c, valid_components.back(),        true,
+                                          true,     (Utils::Shader::STAGES)m_stage, type};
+            testCase test_case_in_one  = {(CASES)c, valid_components.back(),        false,
+                                          true,     (Utils::Shader::STAGES)m_stage, type};
+            testCase test_case_out_arr = {(CASES)c, valid_components.back(),        true,
+                                          false,    (Utils::Shader::STAGES)m_stage, type};
+            testCase test_case_out_one = {(CASES)c, valid_components.back(),        false,
+                                          false,    (Utils::Shader::STAGES)m_stage, type};
+
+            if (Utils::Shader::VERTEX != m_stage)
+            {
                 m_test_cases.push_back(test_case_in_arr);
                 m_test_cases.push_back(test_case_in_one);
-
-                if (Utils::Shader::FRAGMENT != stage)
-                {
-                    m_test_cases.push_back(test_case_out_arr);
-                    m_test_cases.push_back(test_case_out_one);
-                }
             }
-            else if (Utils::Type::Double == type.m_basic_type && 2 < type.m_n_rows) /* dvec3 and dvec4 */
+
+            if (Utils::Shader::FRAGMENT != m_stage)
             {
-                testCase test_case_in_arr  = {DVEC3_DVEC4, 0, true, true, (Utils::Shader::STAGES)stage, type};
-                testCase test_case_in_one  = {DVEC3_DVEC4, 0, false, true, (Utils::Shader::STAGES)stage, type};
-                testCase test_case_out_arr = {DVEC3_DVEC4, 0, true, false, (Utils::Shader::STAGES)stage, type};
-                testCase test_case_out_one = {DVEC3_DVEC4, 0, false, false, (Utils::Shader::STAGES)stage, type};
-
-                m_test_cases.push_back(test_case_in_arr);
-                m_test_cases.push_back(test_case_in_one);
-
-                if (Utils::Shader::FRAGMENT != stage)
-                {
-                    m_test_cases.push_back(test_case_out_arr);
-                    m_test_cases.push_back(test_case_out_one);
-                }
-            }
-            else
-            {
-                if (valid_components.empty())
-                {
-                    TCU_FAIL("Unhandled type");
-                }
-
-                for (GLuint c = BLOCK; c < MAX_CASES; ++c)
-                {
-                    testCase test_case_in_arr  = {(CASES)c, valid_components.back(),      true,
-                                                  true,     (Utils::Shader::STAGES)stage, type};
-                    testCase test_case_in_one  = {(CASES)c, valid_components.back(),      false,
-                                                  true,     (Utils::Shader::STAGES)stage, type};
-                    testCase test_case_out_arr = {(CASES)c, valid_components.back(),      true,
-                                                  false,    (Utils::Shader::STAGES)stage, type};
-                    testCase test_case_out_one = {(CASES)c, valid_components.back(),      false,
-                                                  false,    (Utils::Shader::STAGES)stage, type};
-
-                    if (Utils::Shader::VERTEX != stage)
-                    {
-                        m_test_cases.push_back(test_case_in_arr);
-                        m_test_cases.push_back(test_case_in_one);
-                    }
-
-                    if (Utils::Shader::FRAGMENT != stage)
-                    {
-                        m_test_cases.push_back(test_case_out_arr);
-                        m_test_cases.push_back(test_case_out_one);
-                    }
-                }
+                m_test_cases.push_back(test_case_out_arr);
+                m_test_cases.push_back(test_case_out_one);
             }
         }
     }
@@ -17249,10 +17266,15 @@ void VaryingComponentOfInvalidTypeTest::testInit()
  *
  * @param context Test framework context
  **/
-InputComponentAliasingTest::InputComponentAliasingTest(deqp::Context &context)
+InputComponentAliasingTest::InputComponentAliasingTest(deqp::Context &context, GLuint type)
     : NegativeTestBase(context, "input_component_aliasing",
                        "Test verifies that compiler reports component aliasing as error")
+    , m_type(type)
 {
+    std::string name = ("input_component_aliasing");
+    name.append(getTypeName(type));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -17638,37 +17660,27 @@ bool InputComponentAliasingTest::isFailureExpected(GLuint test_case_index)
  **/
 void InputComponentAliasingTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type                     = getType(m_type);
+    const std::vector<GLuint> &valid_components = type.GetValidComponents();
 
-    for (GLuint i = 0; i < n_types; ++i)
+    for (std::vector<GLuint>::const_iterator it_gohan = valid_components.begin(); it_gohan != valid_components.end();
+         ++it_gohan)
     {
-        const Utils::Type &type                     = getType(i);
-        const std::vector<GLuint> &valid_components = type.GetValidComponents();
-
-        if (valid_components.empty())
+        const GLuint max_component = *it_gohan + type.GetNumComponents();
+        for (std::vector<GLuint>::const_iterator it_goten = it_gohan;
+             it_goten != valid_components.end() && max_component > *it_goten; ++it_goten)
         {
-            continue;
-        }
-
-        for (std::vector<GLuint>::const_iterator it_gohan = valid_components.begin();
-             it_gohan != valid_components.end(); ++it_gohan)
-        {
-            const GLuint max_component = *it_gohan + type.GetNumComponents();
-            for (std::vector<GLuint>::const_iterator it_goten = it_gohan;
-                 it_goten != valid_components.end() && max_component > *it_goten; ++it_goten)
+            for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
             {
-                for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+                /* Skip compute shader */
+                if (Utils::Shader::COMPUTE == stage)
                 {
-                    /* Skip compute shader */
-                    if (Utils::Shader::COMPUTE == stage)
-                    {
-                        continue;
-                    }
-
-                    testCase test_case = {*it_gohan, *it_goten, (Utils::Shader::STAGES)stage, type};
-
-                    m_test_cases.push_back(test_case);
+                    continue;
                 }
+
+                testCase test_case = {*it_gohan, *it_goten, (Utils::Shader::STAGES)stage, type};
+
+                m_test_cases.push_back(test_case);
             }
         }
     }
@@ -17678,10 +17690,15 @@ void InputComponentAliasingTest::testInit()
  *
  * @param context Test framework context
  **/
-OutputComponentAliasingTest::OutputComponentAliasingTest(deqp::Context &context)
+OutputComponentAliasingTest::OutputComponentAliasingTest(deqp::Context &context, GLuint type)
     : NegativeTestBase(context, "output_component_aliasing",
                        "Test verifies that compiler reports component aliasing as error")
+    , m_type(type)
 {
+    std::string name = ("output_component_aliasing_");
+    name.append(getTypeName(type));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -18021,42 +18038,32 @@ bool OutputComponentAliasingTest::isComputeRelevant(GLuint /* test_case_index */
  **/
 void OutputComponentAliasingTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type                     = getType(m_type);
+    const std::vector<GLuint> &valid_components = type.GetValidComponents();
 
-    for (GLuint i = 0; i < n_types; ++i)
+    for (std::vector<GLuint>::const_iterator it_gohan = valid_components.begin(); it_gohan != valid_components.end();
+         ++it_gohan)
     {
-        const Utils::Type &type                     = getType(i);
-        const std::vector<GLuint> &valid_components = type.GetValidComponents();
-
-        if (valid_components.empty())
+        const GLuint max_component = *it_gohan + type.GetNumComponents();
+        for (std::vector<GLuint>::const_iterator it_goten = it_gohan;
+             it_goten != valid_components.end() && max_component > *it_goten; ++it_goten)
         {
-            continue;
-        }
-
-        for (std::vector<GLuint>::const_iterator it_gohan = valid_components.begin();
-             it_gohan != valid_components.end(); ++it_gohan)
-        {
-            const GLuint max_component = *it_gohan + type.GetNumComponents();
-            for (std::vector<GLuint>::const_iterator it_goten = it_gohan;
-                 it_goten != valid_components.end() && max_component > *it_goten; ++it_goten)
+            for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
             {
-                for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+                /* Skip compute shader */
+                if (Utils::Shader::COMPUTE == stage)
                 {
-                    /* Skip compute shader */
-                    if (Utils::Shader::COMPUTE == stage)
-                    {
-                        continue;
-                    }
-
-                    if ((Utils::Shader::FRAGMENT == stage) && (Utils::Type::Double == type.m_basic_type))
-                    {
-                        continue;
-                    }
-
-                    testCase test_case = {*it_gohan, *it_goten, (Utils::Shader::STAGES)stage, type};
-
-                    m_test_cases.push_back(test_case);
+                    continue;
                 }
+
+                if ((Utils::Shader::FRAGMENT == stage) && (Utils::Type::Double == type.m_basic_type))
+                {
+                    continue;
+                }
+
+                testCase test_case = {*it_gohan, *it_goten, (Utils::Shader::STAGES)stage, type};
+
+                m_test_cases.push_back(test_case);
             }
         }
     }
@@ -18066,10 +18073,20 @@ void OutputComponentAliasingTest::testInit()
  *
  * @param context Test framework context
  **/
-VaryingLocationAliasingWithMixedTypesTest::VaryingLocationAliasingWithMixedTypesTest(deqp::Context &context)
+VaryingLocationAliasingWithMixedTypesTest::VaryingLocationAliasingWithMixedTypesTest(deqp::Context &context,
+                                                                                     GLuint type_gohan,
+                                                                                     GLuint type_goten)
     : NegativeTestBase(context, "varying_location_aliasing_with_mixed_types",
                        "Test verifies that compiler reports error when float/int types are mixed at one location")
+    , m_type_gohan(type_gohan)
+    , m_type_goten(type_goten)
 {
+    std::string name = ("varying_location_aliasing_with_mixed_types_");
+    name.append(getTypeName(type_gohan));
+    name.append("_");
+    name.append(getTypeName(type_goten));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -18474,73 +18491,49 @@ bool VaryingLocationAliasingWithMixedTypesTest::isComputeRelevant(GLuint /* test
  **/
 void VaryingLocationAliasingWithMixedTypesTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type_gohan                     = getType(m_type_gohan);
+    const std::vector<GLuint> &valid_components_gohan = type_gohan.GetValidComponents();
 
-    for (GLuint i = 0; i < n_types; ++i)
+    const Utils::Type &type_goten                     = getType(m_type_goten);
+    const std::vector<GLuint> &valid_components_goten = type_goten.GetValidComponents();
+
+    for (std::vector<GLuint>::const_iterator it_gohan = valid_components_gohan.begin();
+         it_gohan != valid_components_gohan.end(); ++it_gohan)
     {
-        const Utils::Type &type_gohan                     = getType(i);
-        const std::vector<GLuint> &valid_components_gohan = type_gohan.GetValidComponents();
-
-        if (valid_components_gohan.empty())
+        const GLuint min_component = *it_gohan + type_gohan.GetNumComponents();
+        for (std::vector<GLuint>::const_iterator it_goten = valid_components_goten.begin();
+             it_goten != valid_components_goten.end(); ++it_goten)
         {
-            continue;
-        }
 
-        for (GLuint j = 0; j < n_types; ++j)
-        {
-            const Utils::Type &type_goten                     = getType(j);
-            const std::vector<GLuint> &valid_components_goten = type_goten.GetValidComponents();
-
-            if (valid_components_goten.empty())
+            if (min_component > *it_goten)
             {
                 continue;
             }
 
-            /* Skip valid combinations */
-            if (Utils::Type::CanTypesShareLocation(type_gohan.m_basic_type, type_goten.m_basic_type))
+            for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
             {
-                continue;
-            }
-
-            for (std::vector<GLuint>::const_iterator it_gohan = valid_components_gohan.begin();
-                 it_gohan != valid_components_gohan.end(); ++it_gohan)
-            {
-                const GLuint min_component = *it_gohan + type_gohan.GetNumComponents();
-                for (std::vector<GLuint>::const_iterator it_goten = valid_components_goten.begin();
-                     it_goten != valid_components_goten.end(); ++it_goten)
+                /* Skip compute shader */
+                if (Utils::Shader::COMPUTE == stage)
                 {
+                    continue;
+                }
 
-                    if (min_component > *it_goten)
-                    {
-                        continue;
-                    }
+                if (Utils::Shader::VERTEX != stage)
+                {
+                    testCase test_case_in = {*it_gohan,  *it_goten, true, (Utils::Shader::STAGES)stage,
+                                             type_gohan, type_goten};
 
-                    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-                    {
-                        /* Skip compute shader */
-                        if (Utils::Shader::COMPUTE == stage)
-                        {
-                            continue;
-                        }
+                    m_test_cases.push_back(test_case_in);
+                }
 
-                        if (Utils::Shader::VERTEX != stage)
-                        {
-                            testCase test_case_in = {*it_gohan,  *it_goten, true, (Utils::Shader::STAGES)stage,
-                                                     type_gohan, type_goten};
+                /* Skip double outputs in fragment shader */
+                if ((Utils::Shader::FRAGMENT != stage) || ((Utils::Type::Double != type_gohan.m_basic_type) &&
+                                                           (Utils::Type::Double != type_goten.m_basic_type)))
+                {
+                    testCase test_case_out = {*it_gohan,  *it_goten, false, (Utils::Shader::STAGES)stage,
+                                              type_gohan, type_goten};
 
-                            m_test_cases.push_back(test_case_in);
-                        }
-
-                        /* Skip double outputs in fragment shader */
-                        if ((Utils::Shader::FRAGMENT != stage) || ((Utils::Type::Double != type_gohan.m_basic_type) &&
-                                                                   (Utils::Type::Double != type_goten.m_basic_type)))
-                        {
-                            testCase test_case_out = {*it_gohan,  *it_goten, false, (Utils::Shader::STAGES)stage,
-                                                      type_gohan, type_goten};
-
-                            m_test_cases.push_back(test_case_out);
-                        }
-                    }
+                    m_test_cases.push_back(test_case_out);
                 }
             }
         }
@@ -18552,11 +18545,19 @@ void VaryingLocationAliasingWithMixedTypesTest::testInit()
  * @param context Test framework context
  **/
 VaryingLocationAliasingWithMixedInterpolationTest::VaryingLocationAliasingWithMixedInterpolationTest(
-    deqp::Context &context)
+    deqp::Context &context, GLuint type_gohan, GLuint type_goten)
     : NegativeTestBase(
           context, "varying_location_aliasing_with_mixed_interpolation",
           "Test verifies that compiler reports error when interpolation qualifiers are mixed at one location")
+    , m_type_gohan(type_gohan)
+    , m_type_goten(type_goten)
 {
+    std::string name = ("varying_location_aliasing_with_mixed_interpolation_");
+    name.append(getTypeName(m_type_gohan));
+    name.append("_");
+    name.append(getTypeName(m_type_goten));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -18953,115 +18954,78 @@ bool VaryingLocationAliasingWithMixedInterpolationTest::isComputeRelevant(GLuint
  **/
 void VaryingLocationAliasingWithMixedInterpolationTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type_gohan                     = getType(m_type_gohan);
+    const std::vector<GLuint> &valid_components_gohan = type_gohan.GetValidComponents();
 
-    for (GLuint i = 0; i < n_types; ++i)
+    const GLuint gohan = valid_components_gohan.front();
+
+    const Utils::Type &type_goten                     = getType(m_type_goten);
+    const std::vector<GLuint> &valid_components_goten = type_goten.GetValidComponents();
+
+    const GLuint goten = valid_components_goten.back();
+
+    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
     {
-        const Utils::Type &type_gohan                     = getType(i);
-        const std::vector<GLuint> &valid_components_gohan = type_gohan.GetValidComponents();
-
-        if (valid_components_gohan.empty())
+        /* Skip compute shader */
+        if (Utils::Shader::COMPUTE == stage)
         {
             continue;
         }
 
-        const GLuint gohan = valid_components_gohan.front();
-
-        for (GLuint j = 0; j < n_types; ++j)
+        for (GLuint int_gohan = 0; int_gohan < INTERPOLATION_MAX; ++int_gohan)
         {
-            const Utils::Type &type_goten                     = getType(j);
-            const std::vector<GLuint> &valid_components_goten = type_goten.GetValidComponents();
-
-            if (valid_components_goten.empty())
+            for (GLuint int_goten = 0; int_goten < INTERPOLATION_MAX; ++int_goten)
             {
-                continue;
-            }
-
-            /* Just get the highest valid component for goten and
-             * check if we can use it.
-             */
-            const GLuint min_component = gohan + type_gohan.GetNumComponents();
-            const GLuint goten         = valid_components_goten.back();
-
-            if (min_component > goten)
-            {
-                continue;
-            }
-
-            /* Skip invalid combinations */
-            if (!Utils::Type::CanTypesShareLocation(type_gohan.m_basic_type, type_goten.m_basic_type))
-            {
-                continue;
-            }
-
-            for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-            {
-                /* Skip compute shader */
-                if (Utils::Shader::COMPUTE == stage)
+                /* Skip when both are the same */
+                if (int_gohan == int_goten)
                 {
                     continue;
                 }
 
-                for (GLuint int_gohan = 0; int_gohan < INTERPOLATION_MAX; ++int_gohan)
+                /* Skip inputs in: vertex shader and whenever
+                 * flat is mandatory and is not the chosen
+                 * one.
+                 */
+                bool skip_inputs = Utils::Shader::VERTEX == stage;
+                skip_inputs |= (FLAT != int_gohan && isFlatRequired(static_cast<Utils::Shader::STAGES>(stage),
+                                                                    type_gohan, Utils::Variable::VARYING_INPUT));
+                skip_inputs |= (FLAT != int_goten && isFlatRequired(static_cast<Utils::Shader::STAGES>(stage),
+                                                                    type_goten, Utils::Variable::VARYING_INPUT));
+
+                if (!skip_inputs)
                 {
-                    for (GLuint int_goten = 0; int_goten < INTERPOLATION_MAX; ++int_goten)
-                    {
-                        /* Skip when both are the same */
-                        if (int_gohan == int_goten)
-                        {
-                            continue;
-                        }
+                    testCase test_case_in = {gohan,
+                                             goten,
+                                             static_cast<INTERPOLATIONS>(int_gohan),
+                                             static_cast<INTERPOLATIONS>(int_goten),
+                                             true,
+                                             static_cast<Utils::Shader::STAGES>(stage),
+                                             type_gohan,
+                                             type_goten};
+                    m_test_cases.push_back(test_case_in);
+                }
 
-                        /* Skip inputs in: vertex shader and whenever
-                         * flat is mandatory and is not the chosen
-                         * one.
-                         */
-                        bool skip_inputs = Utils::Shader::VERTEX == stage;
-                        skip_inputs |=
-                            (FLAT != int_gohan && isFlatRequired(static_cast<Utils::Shader::STAGES>(stage), type_gohan,
-                                                                 Utils::Variable::VARYING_INPUT));
-                        skip_inputs |=
-                            (FLAT != int_goten && isFlatRequired(static_cast<Utils::Shader::STAGES>(stage), type_goten,
-                                                                 Utils::Variable::VARYING_INPUT));
+                /* Skip outputs in fragment shader and
+                 * whenever flat is mandatory and is not the
+                 * chosen one.
+                 */
+                bool skip_outputs = Utils::Shader::FRAGMENT == stage;
+                skip_outputs |= (FLAT != int_gohan && isFlatRequired(static_cast<Utils::Shader::STAGES>(stage),
+                                                                     type_gohan, Utils::Variable::VARYING_OUTPUT));
+                skip_outputs |= (FLAT != int_goten && isFlatRequired(static_cast<Utils::Shader::STAGES>(stage),
+                                                                     type_goten, Utils::Variable::VARYING_OUTPUT));
 
-                        if (!skip_inputs)
-                        {
-                            testCase test_case_in = {gohan,
-                                                     goten,
-                                                     static_cast<INTERPOLATIONS>(int_gohan),
-                                                     static_cast<INTERPOLATIONS>(int_goten),
-                                                     true,
-                                                     static_cast<Utils::Shader::STAGES>(stage),
-                                                     type_gohan,
-                                                     type_goten};
-                            m_test_cases.push_back(test_case_in);
-                        }
-
-                        /* Skip outputs in fragment shader and
-                         * whenever flat is mandatory and is not the
-                         * chosen one.
-                         */
-                        bool skip_outputs = Utils::Shader::FRAGMENT == stage;
-                        skip_outputs |=
-                            (FLAT != int_gohan && isFlatRequired(static_cast<Utils::Shader::STAGES>(stage), type_gohan,
-                                                                 Utils::Variable::VARYING_OUTPUT));
-                        skip_outputs |=
-                            (FLAT != int_goten && isFlatRequired(static_cast<Utils::Shader::STAGES>(stage), type_goten,
-                                                                 Utils::Variable::VARYING_OUTPUT));
-
-                        if (!skip_outputs)
-                        {
-                            testCase test_case_out = {gohan,
-                                                      goten,
-                                                      static_cast<INTERPOLATIONS>(int_gohan),
-                                                      static_cast<INTERPOLATIONS>(int_goten),
-                                                      false,
-                                                      static_cast<Utils::Shader::STAGES>(stage),
-                                                      type_gohan,
-                                                      type_goten};
-                            m_test_cases.push_back(test_case_out);
-                        }
-                    }
+                if (!skip_outputs)
+                {
+                    testCase test_case_out = {gohan,
+                                              goten,
+                                              static_cast<INTERPOLATIONS>(int_gohan),
+                                              static_cast<INTERPOLATIONS>(int_goten),
+                                              false,
+                                              static_cast<Utils::Shader::STAGES>(stage),
+                                              type_gohan,
+                                              type_goten};
+                    m_test_cases.push_back(test_case_out);
                 }
             }
         }
@@ -19101,11 +19065,19 @@ const GLchar *VaryingLocationAliasingWithMixedInterpolationTest::getInterpolatio
  * @param context Test framework context
  **/
 VaryingLocationAliasingWithMixedAuxiliaryStorageTest::VaryingLocationAliasingWithMixedAuxiliaryStorageTest(
-    deqp::Context &context)
+    deqp::Context &context, GLuint type_gohan, GLuint type_goten)
     : NegativeTestBase(
           context, "varying_location_aliasing_with_mixed_auxiliary_storage",
           "Test verifies that compiler reports error when auxiliary storage qualifiers are mixed at one location")
+    , m_type_gohan(type_gohan)
+    , m_type_goten(type_goten)
 {
+    std::string name = ("varying_location_aliasing_with_mixed_auxiliary_storage_");
+    name.append(getTypeName(m_type_gohan));
+    name.append("_");
+    name.append(getTypeName(m_type_goten));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -19536,101 +19508,68 @@ bool VaryingLocationAliasingWithMixedAuxiliaryStorageTest::isComputeRelevant(GLu
  **/
 void VaryingLocationAliasingWithMixedAuxiliaryStorageTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type_gohan                     = getType(m_type_gohan);
+    const std::vector<GLuint> &valid_components_gohan = type_gohan.GetValidComponents();
 
-    for (GLuint i = 0; i < n_types; ++i)
+    const GLuint gohan = valid_components_gohan.front();
+
+    const Utils::Type &type_goten                     = getType(m_type_goten);
+    const std::vector<GLuint> &valid_components_goten = type_goten.GetValidComponents();
+
+    const GLuint goten = valid_components_goten.back();
+
+    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
     {
-        const Utils::Type &type_gohan                     = getType(i);
-        const std::vector<GLuint> &valid_components_gohan = type_gohan.GetValidComponents();
-
-        if (valid_components_gohan.empty())
+        /* Skip compute shader */
+        if (Utils::Shader::COMPUTE == stage)
         {
             continue;
         }
 
-        const GLuint gohan = valid_components_gohan.front();
-
-        for (GLuint j = 0; j < n_types; ++j)
+        for (GLuint aux = 0; aux < AUXILIARY_MAX; ++aux)
         {
-            const Utils::Type &type_goten                     = getType(j);
-            const std::vector<GLuint> &valid_components_goten = type_goten.GetValidComponents();
+            Utils::Shader::STAGES const shader_stage = static_cast<Utils::Shader::STAGES>(stage);
+            AUXILIARIES const auxiliary              = static_cast<AUXILIARIES>(aux);
 
-            if (valid_components_goten.empty())
+            if (PATCH == auxiliary)
             {
+                if (Utils::Shader::TESS_CTRL == shader_stage || Utils::Shader::TESS_EVAL == shader_stage)
+                {
+                    bool direction                 = Utils::Shader::TESS_EVAL == shader_stage;
+                    testCase test_case_patch_gohan = {gohan,     goten,        auxiliary,  NONE,
+                                                      direction, shader_stage, type_gohan, type_goten};
+                    testCase test_case_patch_goten = {gohan,     goten,        NONE,       auxiliary,
+                                                      direction, shader_stage, type_gohan, type_goten};
+
+                    m_test_cases.push_back(test_case_patch_gohan);
+                    m_test_cases.push_back(test_case_patch_goten);
+                }
                 continue;
             }
 
-            /* Just get the highest valid component for goten and
-             * check if we can use it.
-             */
-            const GLuint min_component = gohan + type_gohan.GetNumComponents();
-            const GLuint goten         = valid_components_goten.back();
-
-            if (min_component > goten)
+            for (GLuint second_aux = 0; second_aux < AUXILIARY_MAX; ++second_aux)
             {
-                continue;
-            }
+                AUXILIARIES const second_auxiliary = static_cast<AUXILIARIES>(second_aux);
 
-            /* Skip invalid combinations */
-            if (!Utils::Type::CanTypesShareLocation(type_gohan.m_basic_type, type_goten.m_basic_type))
-            {
-                continue;
-            }
-
-            for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-            {
-                /* Skip compute shader */
-                if (Utils::Shader::COMPUTE == stage)
+                if (PATCH == second_auxiliary || auxiliary == second_auxiliary)
                 {
                     continue;
                 }
 
-                for (GLuint aux = 0; aux < AUXILIARY_MAX; ++aux)
+                if (Utils::Shader::FRAGMENT != shader_stage)
                 {
-                    Utils::Shader::STAGES const shader_stage = static_cast<Utils::Shader::STAGES>(stage);
-                    AUXILIARIES const auxiliary              = static_cast<AUXILIARIES>(aux);
+                    testCase test_case_out = {gohan, goten,        auxiliary,  second_auxiliary,
+                                              false, shader_stage, type_gohan, type_goten};
 
-                    if (PATCH == auxiliary)
-                    {
-                        if (Utils::Shader::TESS_CTRL == shader_stage || Utils::Shader::TESS_EVAL == shader_stage)
-                        {
-                            bool direction                 = Utils::Shader::TESS_EVAL == shader_stage;
-                            testCase test_case_patch_gohan = {gohan,     goten,        auxiliary,  NONE,
-                                                              direction, shader_stage, type_gohan, type_goten};
-                            testCase test_case_patch_goten = {gohan,     goten,        NONE,       auxiliary,
-                                                              direction, shader_stage, type_gohan, type_goten};
+                    m_test_cases.push_back(test_case_out);
+                }
 
-                            m_test_cases.push_back(test_case_patch_gohan);
-                            m_test_cases.push_back(test_case_patch_goten);
-                        }
-                        continue;
-                    }
+                if (Utils::Shader::VERTEX != shader_stage)
+                {
+                    testCase test_case_in = {gohan, goten,        auxiliary,  second_auxiliary,
+                                             true,  shader_stage, type_gohan, type_goten};
 
-                    for (GLuint second_aux = 0; second_aux < AUXILIARY_MAX; ++second_aux)
-                    {
-                        AUXILIARIES const second_auxiliary = static_cast<AUXILIARIES>(second_aux);
-
-                        if (PATCH == second_auxiliary || auxiliary == second_auxiliary)
-                        {
-                            continue;
-                        }
-
-                        if (Utils::Shader::FRAGMENT != shader_stage)
-                        {
-                            testCase test_case_out = {gohan, goten,        auxiliary,  second_auxiliary,
-                                                      false, shader_stage, type_gohan, type_goten};
-
-                            m_test_cases.push_back(test_case_out);
-                        }
-
-                        if (Utils::Shader::VERTEX != shader_stage)
-                        {
-                            testCase test_case_in = {gohan, goten,        auxiliary,  second_auxiliary,
-                                                     true,  shader_stage, type_gohan, type_goten};
-
-                            m_test_cases.push_back(test_case_in);
-                        }
-                    }
+                    m_test_cases.push_back(test_case_in);
                 }
             }
         }
@@ -20038,10 +19977,18 @@ void FragmentDataLocationAPITest::prepareFramebuffer(Utils::Framebuffer &framebu
  *
  * @param context Test framework context
  **/
-XFBInputTest::XFBInputTest(deqp::Context &context)
+XFBInputTest::XFBInputTest(deqp::Context &context, GLuint qualifier, GLuint stage)
     : NegativeTestBase(context, "xfb_input",
                        "Test verifies that compiler reports error when xfb qualifiers are used with input")
+    , m_qualifier(qualifier)
+    , m_stage(stage)
 {
+    std::string name = ("xfb_input_");
+    name.append(EnhancedLayouts::XFBInputTest::getQualifierName((EnhancedLayouts::XFBInputTest::QUALIFIERS)qualifier));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -20379,20 +20326,36 @@ bool XFBInputTest::isComputeRelevant(GLuint /* test_case_index */)
  **/
 void XFBInputTest::testInit()
 {
-    for (GLuint qualifier = 0; qualifier < QUALIFIERS_MAX; ++qualifier)
+    testCase test_case = {(QUALIFIERS)m_qualifier, (Utils::Shader::STAGES)m_stage};
+    m_test_cases.push_back(test_case);
+}
+
+/** Get name of glsl constant
+ *
+ * @param Constant id
+ *
+ * @return Name of constant used in GLSL
+ **/
+const GLchar *XFBInputTest::getQualifierName(QUALIFIERS qualifier)
+{
+    const GLchar *name = "";
+
+    switch (qualifier)
     {
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            if (Utils::Shader::COMPUTE == stage)
-            {
-                continue;
-            }
-
-            testCase test_case = {(QUALIFIERS)qualifier, (Utils::Shader::STAGES)stage};
-
-            m_test_cases.push_back(test_case);
-        }
+    case BUFFER:
+        name = "xtb_buffer";
+        break;
+    case STRIDE:
+        name = "xtb_stride";
+        break;
+    case OFFSET:
+        name = "xtb_offset";
+        break;
+    default:
+        TCU_FAIL("Invalid enum");
     }
+
+    return name;
 }
 
 /* Constants used by XFBAllStagesTest */
@@ -21188,10 +21151,18 @@ GLuint XFBStrideOfEmptyListAndAPITest::getTestCaseNumber()
  *
  * @param context Test framework context
  **/
-XFBTooSmallStrideTest::XFBTooSmallStrideTest(deqp::Context &context)
+XFBTooSmallStrideTest::XFBTooSmallStrideTest(deqp::Context &context, GLuint constant, GLuint stage)
     : NegativeTestBase(context, "xfb_too_small_stride",
                        "Test verifies that compiler reports error when xfb_stride sets not enough space")
+    , m_constant(constant)
+    , m_stage(stage)
 {
+    std::string name = ("xfb_too_small_stride_");
+    name.append(getCaseEnumName(m_constant));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -21493,6 +21464,30 @@ std::string XFBTooSmallStrideTest::getTestCaseName(GLuint test_case_index)
     return stream.str();
 }
 
+std::string XFBTooSmallStrideTest::getCaseEnumName(glw::GLuint case_index)
+{
+    std::string case_name("case_max");
+    switch (case_index)
+    {
+    case 0:
+        case_name = "offset";
+        break;
+    case 1:
+        case_name = "stride";
+        break;
+    case 2:
+        case_name = "block";
+        break;
+    case 3:
+        case_name = "array";
+        break;
+    default:
+        case_name = "case_max";
+        break;
+    }
+    return case_name;
+}
+
 /** Get number of test cases
  *
  * @return Number of test cases
@@ -21518,39 +21513,30 @@ bool XFBTooSmallStrideTest::isComputeRelevant(GLuint /* test_case_index */)
  **/
 void XFBTooSmallStrideTest::testInit()
 {
-    for (GLuint c = 0; c < CASE_MAX; ++c)
-    {
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            /*
-             It is invalid to define transform feedback output in TCS, according to spec:
-             The data captured in transform feedback mode depends on the active programs on each of the shader stages.
-             If a program is active for the geometry shader stage, transform feedback captures the vertices of each
-             primitive emitted by the geometry shader. Otherwise, if a program is active for the tessellation evaluation
-             shader stage, transform feedback captures each primitive produced by the tessellation primitive generator,
-             whose vertices are processed by the tessellation evaluation shader. Otherwise, transform feedback captures
-             each primitive processed by the vertex shader.
-             */
-            if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
-                (Utils::Shader::FRAGMENT == stage))
-            {
-                continue;
-            }
+    testCase test_case = {(CASES)m_constant, (Utils::Shader::STAGES)m_stage};
 
-            testCase test_case = {(CASES)c, (Utils::Shader::STAGES)stage};
-
-            m_test_cases.push_back(test_case);
-        }
-    }
+    m_test_cases.push_back(test_case);
 }
 
 /** Constructor
  *
  * @param context Test framework context
  **/
-XFBVariableStrideTest::XFBVariableStrideTest(deqp::Context &context)
+XFBVariableStrideTest::XFBVariableStrideTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage,
+                                             glw::GLuint constant)
     : NegativeTestBase(context, "xfb_variable_stride", "Test verifies that stride qualifier is respected")
+    , m_type(type)
+    , m_stage(stage)
+    , m_constant(constant)
 {
+    std::string name = ("xfb_variable_stride_");
+    name.append(getTypeName(m_type));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)m_stage));
+    name.append("_");
+    name.append(getCaseEnumName(m_constant));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -21829,6 +21815,24 @@ std::string XFBVariableStrideTest::getTestCaseName(GLuint test_case_index)
     return stream.str();
 }
 
+std::string XFBVariableStrideTest::getCaseEnumName(glw::GLuint case_index)
+{
+    std::string case_name("case_max");
+    switch (case_index)
+    {
+    case 0:
+        case_name = "valid";
+        break;
+    case 1:
+        case_name = "invalid";
+        break;
+    default:
+        case_name = "case_max";
+        break;
+    }
+    return case_name;
+}
+
 /** Get number of test cases
  *
  * @return Number of test cases
@@ -21867,36 +21871,25 @@ bool XFBVariableStrideTest::isFailureExpected(GLuint test_case_index)
  **/
 void XFBVariableStrideTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type = getType(m_type);
 
-    for (GLuint i = 0; i < n_types; ++i)
-    {
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
-                (Utils::Shader::FRAGMENT == stage))
-            {
-                continue;
-            }
+    testCase test_case = {static_cast<CASES>(m_constant), static_cast<Utils::Shader::STAGES>(m_stage), type};
 
-            const Utils::Type &type = getType(i);
-            for (GLuint c = 0; c < CASE_MAX; ++c)
-            {
-                testCase test_case = {static_cast<CASES>(c), static_cast<Utils::Shader::STAGES>(stage), type};
-
-                m_test_cases.push_back(test_case);
-            }
-        }
-    }
+    m_test_cases.push_back(test_case);
 }
 
 /** Constructor
  *
  * @param context Test framework context
  **/
-XFBBlockStrideTest::XFBBlockStrideTest(deqp::Context &context)
+XFBBlockStrideTest::XFBBlockStrideTest(deqp::Context &context, GLuint stage)
     : TestBase(context, "xfb_block_stride", "Test verifies that stride qualifier is respected for blocks")
+    , m_stage(stage)
 {
+    std::string name = ("xfb_block_stride_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)m_stage));
+
+    TestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -22220,16 +22213,7 @@ bool XFBBlockStrideTest::testCase(GLuint test_case_index)
  **/
 void XFBBlockStrideTest::testInit()
 {
-    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-    {
-        if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
-            (Utils::Shader::FRAGMENT == stage))
-        {
-            continue;
-        }
-
-        m_test_cases.push_back((Utils::Shader::STAGES)stage);
-    }
+    m_test_cases.push_back((Utils::Shader::STAGES)m_stage);
 }
 
 /** Constructor
@@ -22407,10 +22391,18 @@ bool XFBBlockMemberStrideTest::inspectProgram(GLuint /* test_case_index*/, Utils
  *
  * @param context Test framework context
  **/
-XFBDuplicatedStrideTest::XFBDuplicatedStrideTest(deqp::Context &context)
+XFBDuplicatedStrideTest::XFBDuplicatedStrideTest(deqp::Context &context, GLuint constant, GLuint stage)
     : NegativeTestBase(context, "xfb_duplicated_stride",
                        "Test verifies that compiler reports error when conflicting stride qualifiers are used")
+    , m_constant(constant)
+    , m_stage(stage)
 {
+    std::string name = ("xfb_duplicated_stride_");
+    name.append(getCaseEnumName(m_constant));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -22656,6 +22648,26 @@ std::string XFBDuplicatedStrideTest::getTestCaseName(GLuint test_case_index)
     return stream.str();
 }
 
+std::string XFBDuplicatedStrideTest::getCaseEnumName(GLuint test_case_index)
+{
+    std::string name = "case_max";
+
+    switch (test_case_index)
+    {
+    case 0:
+        name = "valid";
+        break;
+    case 1:
+        name = "invalid";
+        break;
+    default:
+        name = "case_max";
+        break;
+    }
+
+    return name;
+}
+
 /** Get number of test cases
  *
  * @return Number of test cases
@@ -22694,31 +22706,24 @@ bool XFBDuplicatedStrideTest::isFailureExpected(GLuint test_case_index)
  **/
 void XFBDuplicatedStrideTest::testInit()
 {
-    for (GLuint c = 0; c < CASE_MAX; ++c)
-    {
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
-                (Utils::Shader::FRAGMENT == stage))
-            {
-                continue;
-            }
+    testCase test_case = {(CASES)m_constant, (Utils::Shader::STAGES)m_stage};
 
-            testCase test_case = {(CASES)c, (Utils::Shader::STAGES)stage};
-
-            m_test_cases.push_back(test_case);
-        }
-    }
+    m_test_cases.push_back(test_case);
 }
 
 /** Constructor
  *
  * @param context Test framework context
  **/
-XFBGetProgramResourceAPITest::XFBGetProgramResourceAPITest(deqp::Context &context)
+XFBGetProgramResourceAPITest::XFBGetProgramResourceAPITest(deqp::Context &context, GLuint type)
     : TestBase(context, "xfb_get_program_resource_api",
                "Test verifies that get program resource reports correct results for XFB")
+    , m_type(type)
 {
+    std::string name = ("xfb_get_program_resource_api_");
+    name.append(getTypeName(type));
+
+    TestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -23150,8 +23155,7 @@ bool XFBGetProgramResourceAPITest::testCase(GLuint test_case_index)
  **/
 void XFBGetProgramResourceAPITest::testInit()
 {
-    const Functions &gl  = m_context.getRenderContext().getFunctions();
-    const GLuint n_types = getTypesNumber();
+    const Functions &gl = m_context.getRenderContext().getFunctions();
     GLint max_xfb_int;
     GLint max_xfb_sep;
 
@@ -23164,53 +23168,48 @@ void XFBGetProgramResourceAPITest::testInit()
     GLint max_varyings;
     gl.getIntegerv(GL_MAX_VARYING_COMPONENTS, &max_varyings);
 
-    for (GLuint i = 0; i < n_types; ++i)
+    const Utils::Type &type = getType(m_type);
+    bool requirment         = 4 * type.GetNumComponents() + 4 > (GLuint)max_varyings;
+
+    // the MAX_VARYING_COMPONENTS is 32 in our driver, but when the variable type is dmat4 or dmat4x3, the number of output component is 33, to make the
+    // shader valid, we can either skip the dmat4, dmat4x3 or query the implementation-dependent value MAX_VARYING_COMPONENTS before generating the shader
+    // to guarantee the number of varying not exceeded.
+    /*
+     layout (xfb_buffer = 1, xfb_stride = 4 * type_size) out;
+     layout (xfb_buffer = 0, xfb_offset = 1 * type_size) out type b0_v1;
+     layout (xfb_buffer = 1, xfb_offset = 1 * type_size) out type b1_v1;
+     layout (xfb_buffer = 0, xfb_offset = 3 * type_size) out type b0_v3;
+     layout (xfb_buffer = 0, xfb_offset = 0 * type_size) out type b0_v0;
+     in  vec4 in_vs;
+     out vec4 vs_tcs;
+     */
+    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
     {
-        // When i == 7, the type is dmat4, i == 9 the type is dmat4x3, the number of output components exceeds the maximum value that AMD's driver supported,
-        // the MAX_VARYING_COMPONENTS is 32 in our driver, but when the variable type is dmat4 or dmat4x3, the number of output component is 33, to make the
-        // shader valid, we can either skip the dmat4, dmat4x3 or query the implementation-dependent value MAX_VARYING_COMPONENTS before generating the shader
-        // to guarantee the number of varying not exceeded.
-        /*
-         layout (xfb_buffer = 1, xfb_stride = 4 * type_size) out;
-         layout (xfb_buffer = 0, xfb_offset = 1 * type_size) out type b0_v1;
-         layout (xfb_buffer = 1, xfb_offset = 1 * type_size) out type b1_v1;
-         layout (xfb_buffer = 0, xfb_offset = 3 * type_size) out type b0_v3;
-         layout (xfb_buffer = 0, xfb_offset = 0 * type_size) out type b0_v0;
-         in  vec4 in_vs;
-         out vec4 vs_tcs;
-         */
-        if (i == 7 || i == 9)
-            continue;
-        const Utils::Type &type = getType(i);
-        if (4 * type.GetNumComponents() + 4 > (GLuint)max_varyings)
+        if (requirment)
         {
             continue;
         }
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+        /*
+         It is invalid to define transform feedback output in HS
+         */
+        if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
+            (Utils::Shader::FRAGMENT == stage))
         {
-            /*
-             It is invalid to define transform feedback output in HS
-             */
-            if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
-                (Utils::Shader::FRAGMENT == stage))
-            {
-                continue;
-            }
+            continue;
+        }
+        test_Case test_case_int = {INTERLEAVED, (Utils::Shader::STAGES)stage, type};
+        test_Case test_case_sep = {SEPARATED, (Utils::Shader::STAGES)stage, type};
+        test_Case test_case_xfb = {XFB, (Utils::Shader::STAGES)stage, type};
 
-            test_Case test_case_int = {INTERLEAVED, (Utils::Shader::STAGES)stage, type};
-            test_Case test_case_sep = {SEPARATED, (Utils::Shader::STAGES)stage, type};
-            test_Case test_case_xfb = {XFB, (Utils::Shader::STAGES)stage, type};
+        if ((int)type.GetSize() <= max_xfb_int)
+        {
+            m_test_cases.push_back(test_case_xfb);
+            m_test_cases.push_back(test_case_int);
+        }
 
-            if ((int)type.GetSize() <= max_xfb_int)
-            {
-                m_test_cases.push_back(test_case_xfb);
-                m_test_cases.push_back(test_case_int);
-            }
-
-            if ((int)type.GetSize() <= max_xfb_sep)
-            {
-                m_test_cases.push_back(test_case_sep);
-            }
+        if ((int)type.GetSize() <= max_xfb_sep)
+        {
+            m_test_cases.push_back(test_case_sep);
         }
     }
 }
@@ -23784,10 +23783,18 @@ bool XFBMultipleVertexStreamsTest::isComputeRelevant(GLuint /* test_case_index *
  *
  * @param context Test framework context
  **/
-XFBExceedBufferLimitTest::XFBExceedBufferLimitTest(deqp::Context &context)
+XFBExceedBufferLimitTest::XFBExceedBufferLimitTest(deqp::Context &context, GLuint constant, GLuint stage)
     : NegativeTestBase(context, "xfb_exceed_buffer_limit",
                        "Test verifies that compiler reports error when xfb_buffer qualifier exceeds limit")
+    , m_constant(constant)
+    , m_stage(stage)
 {
+    std::string name = ("xfb_exceed_buffer_limit_");
+    name.append(getCaseEnumName(m_constant));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -24073,6 +24080,29 @@ std::string XFBExceedBufferLimitTest::getTestCaseName(GLuint test_case_index)
     return stream.str();
 }
 
+std::string XFBExceedBufferLimitTest::getCaseEnumName(glw::GLuint test_case_index)
+{
+    std::string name = "case_max";
+
+    switch (test_case_index)
+    {
+    case 0:
+        name = "block";
+        break;
+    case 1:
+        name = "global";
+        break;
+    case 2:
+        name = "vector";
+        break;
+    default:
+        name = "case_max";
+        break;
+    }
+
+    return name;
+}
+
 /** Get number of test cases
  *
  * @return Number of test cases
@@ -24098,31 +24128,27 @@ bool XFBExceedBufferLimitTest::isComputeRelevant(GLuint /* test_case_index */)
  **/
 void XFBExceedBufferLimitTest::testInit()
 {
-    for (GLuint c = 0; c < CASE_MAX; ++c)
-    {
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
-                (Utils::Shader::FRAGMENT == stage))
-            {
-                continue;
-            }
+    testCase test_case = {(CASES)m_constant, (Utils::Shader::STAGES)m_stage};
 
-            testCase test_case = {(CASES)c, (Utils::Shader::STAGES)stage};
-
-            m_test_cases.push_back(test_case);
-        }
-    }
+    m_test_cases.push_back(test_case);
 }
 
 /** Constructor
  *
  * @param context Test framework context
  **/
-XFBExceedOffsetLimitTest::XFBExceedOffsetLimitTest(deqp::Context &context)
+XFBExceedOffsetLimitTest::XFBExceedOffsetLimitTest(deqp::Context &context, GLuint constant, GLuint stage)
     : NegativeTestBase(context, "xfb_exceed_offset_limit",
                        "Test verifies that compiler reports error when xfb_offset qualifier exceeds limit")
+    , m_constant(constant)
+    , m_stage(stage)
 {
+    std::string name = ("xfb_exceed_offset_limit_");
+    name.append(getCaseEnumName(m_constant));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -24413,6 +24439,29 @@ std::string XFBExceedOffsetLimitTest::getTestCaseName(GLuint test_case_index)
     return stream.str();
 }
 
+std::string XFBExceedOffsetLimitTest::getCaseEnumName(glw::GLuint test_case_index)
+{
+    std::string name = "case_max";
+
+    switch (test_case_index)
+    {
+    case 0:
+        name = "block";
+        break;
+    case 1:
+        name = "global";
+        break;
+    case 2:
+        name = "vector";
+        break;
+    default:
+        name = "case_max";
+        break;
+    }
+
+    return name;
+}
+
 /** Get number of test cases
  *
  * @return Number of test cases
@@ -24438,31 +24487,23 @@ bool XFBExceedOffsetLimitTest::isComputeRelevant(GLuint /* test_case_index */)
  **/
 void XFBExceedOffsetLimitTest::testInit()
 {
-    for (GLuint c = 0; c < CASE_MAX; ++c)
-    {
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
-                (Utils::Shader::FRAGMENT == stage))
-            {
-                continue;
-            }
+    testCase test_case = {(CASES)m_constant, (Utils::Shader::STAGES)m_stage};
 
-            testCase test_case = {(CASES)c, (Utils::Shader::STAGES)stage};
-
-            m_test_cases.push_back(test_case);
-        }
-    }
+    m_test_cases.push_back(test_case);
 }
 
 /** Constructor
  *
  * @param context Test context
  **/
-XFBGlobalBufferTest::XFBGlobalBufferTest(deqp::Context &context)
+XFBGlobalBufferTest::XFBGlobalBufferTest(deqp::Context &context, GLuint type)
     : BufferTestBase(context, "xfb_global_buffer", "Test verifies that global xfb_buffer qualifier is respected")
+    , m_type(type)
 {
-    /* Nothing to be done here */
+    std::string name = ("xfb_global_buffer_");
+    name.append(getTypeName(m_type));
+
+    BufferTestBase::m_name = name.c_str();
 }
 
 /** Get descriptors of buffers necessary for test
@@ -24805,37 +24846,30 @@ GLuint XFBGlobalBufferTest::getTestCaseNumber()
  **/
 void XFBGlobalBufferTest::testInit()
 {
-    GLuint n_types = getTypesNumber();
+    const Utils::Type &type      = getType(m_type);
+    const _testCase test_cases[] = {
+        {Utils::Shader::VERTEX, type}, {Utils::Shader::GEOMETRY, type}, {Utils::Shader::TESS_EVAL, type}};
 
-    for (GLuint i = 0; i < n_types; ++i)
-    {
-        const Utils::Type &type = getType(i);
-        /*
-         When the tfx varying is the following type, the number of output exceeds the gl_MaxVaryingComponents, which will
-         cause a link time error.
-         */
-        if (strcmp(type.GetGLSLTypeName(), "dmat3") == 0 || strcmp(type.GetGLSLTypeName(), "dmat4") == 0 ||
-            strcmp(type.GetGLSLTypeName(), "dmat3x4") == 0 || strcmp(type.GetGLSLTypeName(), "dmat4x3") == 0)
-        {
-            continue;
-        }
-        const _testCase test_cases[] = {
-            {Utils::Shader::VERTEX, type}, {Utils::Shader::GEOMETRY, type}, {Utils::Shader::TESS_EVAL, type}};
-
-        m_test_cases.push_back(test_cases[0]);
-        m_test_cases.push_back(test_cases[1]);
-        m_test_cases.push_back(test_cases[2]);
-    }
+    m_test_cases.push_back(test_cases[0]);
+    m_test_cases.push_back(test_cases[1]);
+    m_test_cases.push_back(test_cases[2]);
 }
 
 /** Constructor
  *
  * @param context Test context
  **/
-XFBStrideTest::XFBStrideTest(deqp::Context &context)
+XFBStrideTest::XFBStrideTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage)
     : BufferTestBase(context, "xfb_stride", "Test verifies that correct stride is used for all types")
+    , m_type(type)
+    , m_stage(stage)
 {
-    /* Nothing to be done here */
+    std::string name = ("xfb_stride_");
+    name.append(getTypeName(type));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    BufferTestBase::m_name = name.c_str();
 }
 
 /** Execute drawArrays for single vertex
@@ -25150,36 +25184,27 @@ glw::GLuint XFBStrideTest::getTestCaseNumber()
  **/
 void XFBStrideTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type = getType(m_type);
 
-    for (GLuint i = 0; i < n_types; ++i)
-    {
-        const Utils::Type &type = getType(i);
+    testCase test_case = {(Utils::Shader::STAGES)m_stage, type};
 
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::FRAGMENT == stage) ||
-                (Utils::Shader::TESS_CTRL == stage))
-            {
-                continue;
-            }
-
-            testCase test_case = {(Utils::Shader::STAGES)stage, type};
-
-            m_test_cases.push_back(test_case);
-        }
-    }
+    m_test_cases.push_back(test_case);
 }
 
 /** Constructor
  *
  * @param context Test framework context
  **/
-XFBBlockMemberBufferTest::XFBBlockMemberBufferTest(deqp::Context &context)
+XFBBlockMemberBufferTest::XFBBlockMemberBufferTest(deqp::Context &context, GLuint stage)
     : NegativeTestBase(
           context, "xfb_block_member_buffer",
           "Test verifies that compiler reports error when block member has different xfb_buffer qualifier than buffer")
+    , m_stage(stage)
 {
+    std::string name = ("xfb_block_member_buffer_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -25430,28 +25455,27 @@ bool XFBBlockMemberBufferTest::isComputeRelevant(GLuint /* test_case_index */)
  **/
 void XFBBlockMemberBufferTest::testInit()
 {
-    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-    {
-        if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
-            (Utils::Shader::FRAGMENT == stage))
-        {
-            continue;
-        }
+    testCase test_case = {(Utils::Shader::STAGES)m_stage};
 
-        testCase test_case = {(Utils::Shader::STAGES)stage};
-
-        m_test_cases.push_back(test_case);
-    }
+    m_test_cases.push_back(test_case);
 }
 
 /** Constructor
  *
  * @param context Test framework context
  **/
-XFBOutputOverlappingTest::XFBOutputOverlappingTest(deqp::Context &context)
+XFBOutputOverlappingTest::XFBOutputOverlappingTest(deqp::Context &context, GLuint type, GLuint stage)
     : NegativeTestBase(context, "xfb_output_overlapping",
                        "Test verifies that compiler reports error when two xfb qualified outputs overlap")
+    , m_type(type)
+    , m_stage(stage)
 {
+    std::string name = ("xfb_output_overlapping_");
+    name.append(getTypeName(type));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -25713,46 +25737,36 @@ bool XFBOutputOverlappingTest::isComputeRelevant(GLuint /* test_case_index */)
  **/
 void XFBOutputOverlappingTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type      = getType(m_type);
+    const GLuint basic_type_size = Utils::Type::GetTypeSize(type.m_basic_type);
 
-    for (GLuint i = 0; i < n_types; ++i)
-    {
-        const Utils::Type &type      = getType(i);
-        const GLuint basic_type_size = Utils::Type::GetTypeSize(type.m_basic_type);
+    /* Skip scalars, not applicable as:
+     *
+     *     The offset must be a multiple of the size of the first component of the first
+     *     qualified variable or block member, or a compile-time error results.
+     */
 
-        /* Skip scalars, not applicable as:
-         *
-         *     The offset must be a multiple of the size of the first component of the first
-         *     qualified variable or block member, or a compile-time error results.
-         */
-        if ((1 == type.m_n_columns) && (1 == type.m_n_rows))
-        {
-            continue;
-        }
+    testCase test_case = {basic_type_size /* offset */, (Utils::Shader::STAGES)m_stage, type};
 
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
-                (Utils::Shader::FRAGMENT == stage))
-            {
-                continue;
-            }
-
-            testCase test_case = {basic_type_size /* offset */, (Utils::Shader::STAGES)stage, type};
-
-            m_test_cases.push_back(test_case);
-        }
-    }
+    m_test_cases.push_back(test_case);
 }
 
 /** Constructor
  *
  * @param context Test framework context
  **/
-XFBInvalidOffsetAlignmentTest::XFBInvalidOffsetAlignmentTest(deqp::Context &context)
+XFBInvalidOffsetAlignmentTest::XFBInvalidOffsetAlignmentTest(deqp::Context &context, GLuint type, GLuint stage)
     : NegativeTestBase(context, "xfb_invalid_offset_alignment",
                        "Test verifies that compiler reports error when xfb_offset has invalid alignment")
+    , m_type(type)
+    , m_stage(stage)
 {
+    std::string name = ("xfb_invalid_offset_alignment_");
+    name.append(getTypeName(type));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -26011,28 +26025,14 @@ bool XFBInvalidOffsetAlignmentTest::isComputeRelevant(GLuint /* test_case_index 
  **/
 void XFBInvalidOffsetAlignmentTest::testInit()
 {
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type      = getType(m_type);
+    const GLuint basic_type_size = Utils::Type::GetTypeSize(type.m_basic_type);
 
-    for (GLuint i = 0; i < n_types; ++i)
+    for (GLuint offset = basic_type_size + 1; offset < 2 * basic_type_size; ++offset)
     {
-        const Utils::Type &type      = getType(i);
-        const GLuint basic_type_size = Utils::Type::GetTypeSize(type.m_basic_type);
+        testCase test_case = {offset, (Utils::Shader::STAGES)m_stage, type};
 
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-        {
-            if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
-                (Utils::Shader::FRAGMENT == stage))
-            {
-                continue;
-            }
-
-            for (GLuint offset = basic_type_size + 1; offset < 2 * basic_type_size; ++offset)
-            {
-                testCase test_case = {offset, (Utils::Shader::STAGES)stage, type};
-
-                m_test_cases.push_back(test_case);
-            }
-        }
+        m_test_cases.push_back(test_case);
     }
 }
 
@@ -27540,10 +27540,15 @@ bool XFBCaptureStructTest::verifyBuffers(bufferCollection &buffers)
  *
  * @param context Test framework context
  **/
-XFBCaptureUnsizedArrayTest::XFBCaptureUnsizedArrayTest(deqp::Context &context)
+XFBCaptureUnsizedArrayTest::XFBCaptureUnsizedArrayTest(deqp::Context &context, GLuint stage)
     : NegativeTestBase(context, "xfb_capture_unsized_array",
                        "Test verifies that compiler reports error when unsized array is qualified with xfb_offset")
+    , m_stage(stage)
 {
+    std::string name = ("xfb_capture_unsized_array_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    NegativeTestBase::m_name = name.c_str();
 }
 
 /** Source for given test case and stage
@@ -27673,31 +27678,27 @@ bool XFBCaptureUnsizedArrayTest::isComputeRelevant(GLuint /* test_case_index */)
  **/
 void XFBCaptureUnsizedArrayTest::testInit()
 {
-    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-    {
-        /* Not aplicable for */
-        if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
-            (Utils::Shader::FRAGMENT == stage) || (Utils::Shader::GEOMETRY == stage) ||
-            (Utils::Shader::TESS_EVAL == stage))
-        {
-            continue;
-        }
+    testCase test_case = {(Utils::Shader::STAGES)m_stage};
 
-        testCase test_case = {(Utils::Shader::STAGES)stage};
-
-        m_test_cases.push_back(test_case);
-    }
+    m_test_cases.push_back(test_case);
 }
 
 /** Constructor
  *
  * @param context Test context
  **/
-XFBExplicitLocationTest::XFBExplicitLocationTest(deqp::Context &context)
+XFBExplicitLocationTest::XFBExplicitLocationTest(deqp::Context &context, GLuint type, GLuint stage)
     : BufferTestBase(context, "xfb_explicit_location",
                      "Test verifies that explicit location on matrices and arrays does not impact xfb output")
+    , m_type(type)
+    , m_stage(stage)
 {
-    /* Nothing to be done here */
+    std::string name = ("xfb_explicit_location_");
+    name.append(getTypeName(m_type));
+    name.append("_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)stage));
+
+    BufferTestBase::m_name = name.c_str();
 }
 
 /** Execute drawArrays for single vertex
@@ -28038,38 +28039,24 @@ void XFBExplicitLocationTest::testInit()
     gl.getIntegerv(GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS, &max_xfb_int);
     GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
 
-    const GLuint n_types = getTypesNumber();
+    const Utils::Type &type = getType(m_type);
 
-    for (GLuint i = 0; i < n_types; ++i)
+    if (type.m_n_columns > 1)
     {
-        const Utils::Type &type = getType(i);
+        testCase test_case = {(Utils::Shader::STAGES)m_stage, type, 0};
 
-        for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+        m_test_cases.push_back(test_case);
+    }
+
+    for (GLuint array_size = 3; array_size > 1; array_size--)
+    {
+        if (type.GetNumComponents() * array_size <= GLuint(max_xfb_int))
         {
-            if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::FRAGMENT == stage) ||
-                (Utils::Shader::TESS_CTRL == stage))
-            {
-                continue;
-            }
+            testCase test_case = {(Utils::Shader::STAGES)m_stage, type, array_size};
 
-            if (type.m_n_columns > 1)
-            {
-                testCase test_case = {(Utils::Shader::STAGES)stage, type, 0};
+            m_test_cases.push_back(test_case);
 
-                m_test_cases.push_back(test_case);
-            }
-
-            for (GLuint array_size = 3; array_size > 1; array_size--)
-            {
-                if (type.GetNumComponents() * array_size <= GLuint(max_xfb_int))
-                {
-                    testCase test_case = {(Utils::Shader::STAGES)stage, type, array_size};
-
-                    m_test_cases.push_back(test_case);
-
-                    break;
-                }
-            }
+            break;
         }
     }
 }
@@ -28078,11 +28065,15 @@ void XFBExplicitLocationTest::testInit()
  *
  * @param context Test context
  **/
-XFBExplicitLocationStructTest::XFBExplicitLocationStructTest(deqp::Context &context)
+XFBExplicitLocationStructTest::XFBExplicitLocationStructTest(deqp::Context &context, GLuint stage)
     : BufferTestBase(context, "xfb_struct_explicit_location",
                      "Test verifies that explicit location on structs does not impact xfb output")
+    , m_stage(stage)
 {
-    /* Nothing to be done here */
+    std::string name = ("xfb_struct_explicit_location_");
+    name.append(EnhancedLayouts::Utils::Shader::GetStageName((EnhancedLayouts::Utils::Shader::STAGES)m_stage));
+
+    BufferTestBase::m_name = name.c_str();
 }
 
 /** Execute drawArrays for single vertex
@@ -28492,79 +28483,60 @@ glw::GLuint XFBExplicitLocationStructTest::getTestCaseNumber()
  **/
 void XFBExplicitLocationStructTest::testInit()
 {
-    for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+    const GLuint n_types = getTypesNumber();
+
+    for (GLuint i = 0; i < n_types; ++i)
     {
-        if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::FRAGMENT == stage) ||
-            (Utils::Shader::TESS_CTRL == stage))
-        {
-            continue;
-        }
+        const Utils::Type &type = getType(i);
 
-        const GLuint n_types = getTypesNumber();
-
-        for (GLuint i = 0; i < n_types; ++i)
-        {
-            const Utils::Type &type = getType(i);
-
-            m_test_cases.push_back(
-                testCase{(Utils::Shader::STAGES)stage, {{Utils::Type::_float, 0}, {type, 0}}, false});
-        }
-
-        for (bool is_nested_struct : {false, true})
-        {
-            m_test_cases.push_back(
-                testCase{(Utils::Shader::STAGES)stage,
-                         {{Utils::Type::_double, 0}, {Utils::Type::dvec2, 0}, {Utils::Type::dmat3, 0}},
-                         is_nested_struct});
-            m_test_cases.push_back(testCase{
-                (Utils::Shader::STAGES)stage, {{Utils::Type::_double, 0}, {Utils::Type::vec3, 0}}, is_nested_struct});
-            m_test_cases.push_back(testCase{
-                (Utils::Shader::STAGES)stage, {{Utils::Type::dvec3, 0}, {Utils::Type::mat4x3, 0}}, is_nested_struct});
-            m_test_cases.push_back(testCase{(Utils::Shader::STAGES)stage,
-                                            {{Utils::Type::_float, 0},
-                                             {Utils::Type::dvec3, 0},
-                                             {Utils::Type::_float, 0},
-                                             {Utils::Type::_double, 0}},
-                                            is_nested_struct});
-            m_test_cases.push_back(testCase{
-                (Utils::Shader::STAGES)stage,
-                {{Utils::Type::vec2, 0}, {Utils::Type::dvec3, 0}, {Utils::Type::_float, 0}, {Utils::Type::_double, 0}},
-                is_nested_struct});
-            m_test_cases.push_back(testCase{
-                (Utils::Shader::STAGES)stage,
-                {{Utils::Type::_double, 0}, {Utils::Type::_float, 0}, {Utils::Type::dvec2, 0}, {Utils::Type::vec3, 0}},
-                is_nested_struct});
-            m_test_cases.push_back(testCase{(Utils::Shader::STAGES)stage,
-                                            {{Utils::Type::dmat3x4, 0},
-                                             {Utils::Type::_double, 0},
-                                             {Utils::Type::_float, 0},
-                                             {Utils::Type::dvec2, 0}},
-                                            is_nested_struct});
-
-            m_test_cases.push_back(
-                testCase{(Utils::Shader::STAGES)stage,
-                         {{Utils::Type::_float, 3}, {Utils::Type::dvec3, 0}, {Utils::Type::_double, 2}},
-                         is_nested_struct});
-            m_test_cases.push_back(testCase{(Utils::Shader::STAGES)stage,
-                                            {{Utils::Type::_int, 1},
-                                             {Utils::Type::_double, 1},
-                                             {Utils::Type::_float, 1},
-                                             {Utils::Type::dmat2x4, 1}},
-                                            is_nested_struct});
-            m_test_cases.push_back(testCase{
-                (Utils::Shader::STAGES)stage,
-                {{Utils::Type::_int, 5}, {Utils::Type::dvec3, 2}, {Utils::Type::uvec3, 0}, {Utils::Type::_double, 1}},
-                is_nested_struct});
-            m_test_cases.push_back(
-                testCase{(Utils::Shader::STAGES)stage,
-                         {{Utils::Type::mat2x3, 3}, {Utils::Type::uvec4, 1}, {Utils::Type::dvec4, 0}},
-                         is_nested_struct});
-        }
-
-        m_test_cases.push_back(testCase{(Utils::Shader::STAGES)stage,
-                                        {{Utils::Type::dmat2x3, 2}, {Utils::Type::mat2x3, 2}, {Utils::Type::dvec2, 0}},
-                                        false});
+        m_test_cases.push_back(testCase{(Utils::Shader::STAGES)m_stage, {{Utils::Type::_float, 0}, {type, 0}}, false});
     }
+
+    for (bool is_nested_struct : {false, true})
+    {
+        m_test_cases.push_back(testCase{(Utils::Shader::STAGES)m_stage,
+                                        {{Utils::Type::_double, 0}, {Utils::Type::dvec2, 0}, {Utils::Type::dmat3, 0}},
+                                        is_nested_struct});
+        m_test_cases.push_back(testCase{
+            (Utils::Shader::STAGES)m_stage, {{Utils::Type::_double, 0}, {Utils::Type::vec3, 0}}, is_nested_struct});
+        m_test_cases.push_back(testCase{
+            (Utils::Shader::STAGES)m_stage, {{Utils::Type::dvec3, 0}, {Utils::Type::mat4x3, 0}}, is_nested_struct});
+        m_test_cases.push_back(testCase{
+            (Utils::Shader::STAGES)m_stage,
+            {{Utils::Type::_float, 0}, {Utils::Type::dvec3, 0}, {Utils::Type::_float, 0}, {Utils::Type::_double, 0}},
+            is_nested_struct});
+        m_test_cases.push_back(testCase{
+            (Utils::Shader::STAGES)m_stage,
+            {{Utils::Type::vec2, 0}, {Utils::Type::dvec3, 0}, {Utils::Type::_float, 0}, {Utils::Type::_double, 0}},
+            is_nested_struct});
+        m_test_cases.push_back(testCase{
+            (Utils::Shader::STAGES)m_stage,
+            {{Utils::Type::_double, 0}, {Utils::Type::_float, 0}, {Utils::Type::dvec2, 0}, {Utils::Type::vec3, 0}},
+            is_nested_struct});
+        m_test_cases.push_back(testCase{
+            (Utils::Shader::STAGES)m_stage,
+            {{Utils::Type::dmat3x4, 0}, {Utils::Type::_double, 0}, {Utils::Type::_float, 0}, {Utils::Type::dvec2, 0}},
+            is_nested_struct});
+
+        m_test_cases.push_back(testCase{(Utils::Shader::STAGES)m_stage,
+                                        {{Utils::Type::_float, 3}, {Utils::Type::dvec3, 0}, {Utils::Type::_double, 2}},
+                                        is_nested_struct});
+        m_test_cases.push_back(testCase{
+            (Utils::Shader::STAGES)m_stage,
+            {{Utils::Type::_int, 1}, {Utils::Type::_double, 1}, {Utils::Type::_float, 1}, {Utils::Type::dmat2x4, 1}},
+            is_nested_struct});
+        m_test_cases.push_back(testCase{
+            (Utils::Shader::STAGES)m_stage,
+            {{Utils::Type::_int, 5}, {Utils::Type::dvec3, 2}, {Utils::Type::uvec3, 0}, {Utils::Type::_double, 1}},
+            is_nested_struct});
+        m_test_cases.push_back(testCase{(Utils::Shader::STAGES)m_stage,
+                                        {{Utils::Type::mat2x3, 3}, {Utils::Type::uvec4, 1}, {Utils::Type::dvec4, 0}},
+                                        is_nested_struct});
+    }
+
+    m_test_cases.push_back(testCase{(Utils::Shader::STAGES)m_stage,
+                                    {{Utils::Type::dmat2x3, 2}, {Utils::Type::mat2x3, 2}, {Utils::Type::dvec2, 0}},
+                                    false});
 }
 } // namespace EnhancedLayouts
 
@@ -28586,51 +28558,50 @@ void EnhancedLayoutsTests::init(void)
     addChild(new EnhancedLayouts::APIConstantValuesTest(m_context));
     addChild(new EnhancedLayouts::APIErrorsTest(m_context));
     addChild(new EnhancedLayouts::GLSLContantValuesTest(m_context));
-    addChild(new EnhancedLayouts::GLSLContantImmutablityTest(m_context));
+    addGLSLContantImmutablityTest();
     addChild(new EnhancedLayouts::GLSLConstantIntegralExpressionTest(m_context));
-    addChild(new EnhancedLayouts::UniformBlockLayoutQualifierConflictTest(m_context));
-    addChild(new EnhancedLayouts::SSBMemberInvalidOffsetAlignmentTest(m_context));
-    addChild(new EnhancedLayouts::SSBMemberOverlappingOffsetsTest(m_context));
-    addChild(new EnhancedLayouts::VaryingInvalidValueComponentTest(m_context));
-    addChild(new EnhancedLayouts::VaryingExceedingComponentsTest(m_context));
-    addChild(new EnhancedLayouts::VaryingComponentOfInvalidTypeTest(m_context));
-    addChild(new EnhancedLayouts::OutputComponentAliasingTest(m_context));
+    addUniformBlockLayoutQualifierConflictTest();
+    addSSBMemberInvalidOffsetAlignmentTest();
+    addSSBMemberOverlappingOffsetsTest();
+    addVaryingInvalidValueComponentTest();
+    addVaryingExceedingComponentsTest();
+    addVaryingComponentOfInvalidTypeTest();
+    addOutputComponentAliasingTest();
     addChild(new EnhancedLayouts::VertexAttribLocationAPITest(m_context));
-    addChild(new EnhancedLayouts::XFBInputTest(m_context));
+    addXFBInputTest();
     addChild(new EnhancedLayouts::XFBAllStagesTest(m_context));
     addChild(new EnhancedLayouts::XFBCaptureInactiveOutputVariableTest(m_context));
     addChild(new EnhancedLayouts::XFBCaptureInactiveOutputComponentTest(m_context));
     addChild(new EnhancedLayouts::XFBCaptureInactiveOutputBlockMemberTest(m_context));
-    addChild(new EnhancedLayouts::XFBStrideTest(m_context));
-
+    addXFBStrideTest();
     addChild(new EnhancedLayouts::UniformBlockMemberOffsetAndAlignTest(m_context));
-    addChild(new EnhancedLayouts::UniformBlockMemberInvalidOffsetAlignmentTest(m_context));
-    addChild(new EnhancedLayouts::UniformBlockMemberOverlappingOffsetsTest(m_context));
-    addChild(new EnhancedLayouts::UniformBlockMemberAlignNonPowerOf2Test(m_context));
-    addChild(new EnhancedLayouts::SSBLayoutQualifierConflictTest(m_context));
-    addChild(new EnhancedLayouts::SSBMemberAlignNonPowerOf2Test(m_context));
+    addUniformBlockMemberInvalidOffsetAlignmentTest();
+    addUniformBlockMemberOverlappingOffsetsTest();
+    addUniformBlockMemberAlignNonPowerOf2Test();
+    addSSBLayoutQualifierConflictTest();
+    addSSBMemberAlignNonPowerOf2Test();
     addChild(new EnhancedLayouts::SSBAlignmentTest(m_context));
-    addChild(new EnhancedLayouts::VaryingStructureMemberLocationTest(m_context));
-    addChild(new EnhancedLayouts::VaryingBlockAutomaticMemberLocationsTest(m_context));
-    addChild(new EnhancedLayouts::VaryingComponentWithoutLocationTest(m_context));
-    addChild(new EnhancedLayouts::InputComponentAliasingTest(m_context));
-    addChild(new EnhancedLayouts::VaryingLocationAliasingWithMixedTypesTest(m_context));
-    addChild(new EnhancedLayouts::VaryingLocationAliasingWithMixedInterpolationTest(m_context));
-    addChild(new EnhancedLayouts::VaryingLocationAliasingWithMixedAuxiliaryStorageTest(m_context));
+    addVaryingStructureMemberLocationTest();
+    addVaryingBlockAutomaticMemberLocationsTest();
+    addVaryingComponentWithoutLocationTest();
+    addInputComponentAliasingTest();
+    addVaryingLocationAliasingWithMixedTypesTest();
+    addVaryingLocationAliasingWithMixedInterpolationTest();
+    addVaryingLocationAliasingWithMixedAuxiliaryStorageTest();
     addChild(new EnhancedLayouts::XFBStrideOfEmptyListTest(m_context));
     addChild(new EnhancedLayouts::XFBStrideOfEmptyListAndAPITest(m_context));
-    addChild(new EnhancedLayouts::XFBTooSmallStrideTest(m_context));
+    addXFBTooSmallStrideTest();
     addChild(new EnhancedLayouts::XFBBlockMemberStrideTest(m_context));
-    addChild(new EnhancedLayouts::XFBDuplicatedStrideTest(m_context));
-    addChild(new EnhancedLayouts::XFBGetProgramResourceAPITest(m_context));
+    addXFBDuplicatedStrideTest();
+    addXFBGetProgramResourceAPITest();
     addChild(new EnhancedLayouts::XFBMultipleVertexStreamsTest(m_context));
-    addChild(new EnhancedLayouts::XFBExceedBufferLimitTest(m_context));
-    addChild(new EnhancedLayouts::XFBExceedOffsetLimitTest(m_context));
-    addChild(new EnhancedLayouts::XFBBlockMemberBufferTest(m_context));
-    addChild(new EnhancedLayouts::XFBOutputOverlappingTest(m_context));
-    addChild(new EnhancedLayouts::XFBInvalidOffsetAlignmentTest(m_context));
+    addXFBExceedBufferLimitTest();
+    addXFBExceedOffsetLimitTest();
+    addXFBBlockMemberBufferTest();
+    addXFBOutputOverlappingTest();
+    addXFBInvalidOffsetAlignmentTest();
     addChild(new EnhancedLayouts::XFBCaptureStructTest(m_context));
-    addChild(new EnhancedLayouts::XFBCaptureUnsizedArrayTest(m_context));
+    addXFBCaptureUnsizedArrayTest();
     addChild(new EnhancedLayouts::UniformBlockAlignmentTest(m_context));
     addChild(new EnhancedLayouts::SSBMemberOffsetAndAlignTest(m_context));
     addChild(new EnhancedLayouts::VertexAttribLocationsTest(m_context));
@@ -28638,18 +28609,770 @@ void EnhancedLayoutsTests::init(void)
     addChild(new EnhancedLayouts::VaryingArrayLocationsTest(m_context));
     addChild(new EnhancedLayouts::VaryingStructureLocationsTest(m_context));
     addChild(new EnhancedLayouts::VaryingBlockLocationsTest(m_context));
-    addChild(new EnhancedLayouts::VaryingBlockMemberLocationsTest(m_context));
-    addChild(new EnhancedLayouts::XFBVariableStrideTest(m_context));
-    addChild(new EnhancedLayouts::XFBBlockStrideTest(m_context));
+    addVaryingBlockMemberLocationsTest();
+    addXFBVariableStrideTest();
+    addXFBBlockStrideTest();
     addChild(new EnhancedLayouts::XFBOverrideQualifiersWithAPITest(m_context));
     addChild(new EnhancedLayouts::XFBVertexStreamsTest(m_context));
-    addChild(new EnhancedLayouts::XFBGlobalBufferTest(m_context));
-    addChild(new EnhancedLayouts::XFBExplicitLocationTest(m_context));
-    addChild(new EnhancedLayouts::XFBExplicitLocationStructTest(m_context));
+    addXFBGlobalBufferTest();
+    addXFBExplicitLocationTest();
+    addXFBExplicitLocationStructTest();
     addChild(new EnhancedLayouts::FragmentDataLocationAPITest(m_context));
-    addChild(new EnhancedLayouts::VaryingLocationLimitTest(m_context));
-    addChild(new EnhancedLayouts::VaryingComponentsTest(m_context));
-    addChild(new EnhancedLayouts::VaryingArrayComponentsTest(m_context));
+    addVaryingLocationLimitTest();
+    addVaryingComponentsTest();
+    addVaryingArrayComponentsTest();
+}
+
+void EnhancedLayoutsTests::addGLSLContantImmutablityTest()
+{
+    for (GLuint constant = 0; constant < EnhancedLayouts::GLSLContantImmutablityTest::CONSTANTS_MAX; ++constant)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            addChild(new EnhancedLayouts::GLSLContantImmutablityTest(m_context, constant, stage));
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addUniformBlockLayoutQualifierConflictTest()
+{
+    for (GLuint qualifier = 0; qualifier < EnhancedLayouts::UniformBlockLayoutQualifierConflictTest::QUALIFIERS_MAX;
+         ++qualifier)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            addChild(new EnhancedLayouts::UniformBlockLayoutQualifierConflictTest(m_context, qualifier, stage));
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addSSBMemberInvalidOffsetAlignmentTest()
+{
+    for (GLuint type = 0; type < EnhancedLayouts::TYPES_NUMBER; ++type)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            EnhancedLayouts::SSBMemberInvalidOffsetAlignmentTest *test =
+                new EnhancedLayouts::SSBMemberInvalidOffsetAlignmentTest(m_context, type, stage);
+            if (test->stageAllowed(stage))
+            {
+                addChild(test);
+            }
+            else
+            {
+                delete test;
+            }
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addSSBMemberOverlappingOffsetsTest()
+{
+    for (GLuint type_i = 0; type_i < EnhancedLayouts::TYPES_NUMBER; ++type_i)
+    {
+        for (GLuint type_j = 0; type_j < EnhancedLayouts::TYPES_NUMBER; ++type_j)
+        {
+            addChild(new EnhancedLayouts::SSBMemberOverlappingOffsetsTest(m_context, type_i, type_j));
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addVaryingInvalidValueComponentTest()
+{
+    for (GLuint type_num = 0; type_num < EnhancedLayouts::TYPES_NUMBER; ++type_num)
+    {
+        EnhancedLayouts::VaryingInvalidValueComponentTest *test =
+            new EnhancedLayouts::VaryingInvalidValueComponentTest(m_context, type_num);
+
+        const EnhancedLayouts::Utils::Type &type    = test->getTypeHelper(type_num);
+        const std::vector<GLuint> &valid_components = type.GetValidComponents();
+
+        if (valid_components.empty())
+        {
+            delete test;
+        }
+        else
+        {
+            addChild(test);
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addVaryingExceedingComponentsTest()
+{
+    for (GLuint type_num = 0; type_num < EnhancedLayouts::TYPES_NUMBER; ++type_num)
+    {
+        EnhancedLayouts::VaryingExceedingComponentsTest *test =
+            new EnhancedLayouts::VaryingExceedingComponentsTest(m_context, type_num);
+
+        const EnhancedLayouts::Utils::Type &type    = test->getTypeHelper(type_num);
+        const std::vector<GLuint> &valid_components = type.GetValidComponents();
+
+        if (valid_components.empty())
+        {
+            delete test;
+        }
+        else
+        {
+            addChild(test);
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addVaryingComponentOfInvalidTypeTest()
+{
+    for (GLuint type = 0; type < EnhancedLayouts::TYPES_NUMBER; ++type)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            if (EnhancedLayouts::Utils::Shader::COMPUTE == stage)
+            {
+                continue;
+            }
+            addChild(new EnhancedLayouts::VaryingComponentOfInvalidTypeTest(m_context, type, stage));
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addOutputComponentAliasingTest()
+{
+    for (GLuint type_num = 0; type_num < EnhancedLayouts::TYPES_NUMBER; ++type_num)
+    {
+        EnhancedLayouts::OutputComponentAliasingTest *test =
+            new EnhancedLayouts::OutputComponentAliasingTest(m_context, type_num);
+
+        const EnhancedLayouts::Utils::Type &type    = test->getTypeHelper(type_num);
+        const std::vector<GLuint> &valid_components = type.GetValidComponents();
+
+        if (valid_components.empty())
+        {
+            delete test;
+        }
+        else
+        {
+            addChild(test);
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addXFBInputTest()
+{
+    for (GLuint qualifier = 0; qualifier < EnhancedLayouts::XFBInputTest::QUALIFIERS_MAX; ++qualifier)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            if (EnhancedLayouts::Utils::Shader::COMPUTE == stage)
+            {
+                continue;
+            }
+            addChild(new EnhancedLayouts::XFBInputTest(m_context, qualifier, stage));
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addXFBStrideTest()
+{
+    for (GLuint type = 0; type < EnhancedLayouts::TYPES_NUMBER; ++type)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            if ((EnhancedLayouts::Utils::Shader::COMPUTE == stage) ||
+                (EnhancedLayouts::Utils::Shader::FRAGMENT == stage) ||
+                (EnhancedLayouts::Utils::Shader::TESS_CTRL == stage))
+            {
+                continue;
+            }
+            addChild(new EnhancedLayouts::XFBStrideTest(m_context, type, stage));
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addUniformBlockMemberInvalidOffsetAlignmentTest()
+{
+    for (GLuint type = 0; type < EnhancedLayouts::TYPES_NUMBER; ++type)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            EnhancedLayouts::UniformBlockMemberInvalidOffsetAlignmentTest *test =
+                new EnhancedLayouts::UniformBlockMemberInvalidOffsetAlignmentTest(m_context, type, stage);
+            if (test->stageAllowed(stage))
+            {
+                addChild(test);
+            }
+            else
+            {
+                delete test;
+            }
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addUniformBlockMemberOverlappingOffsetsTest()
+{
+    for (GLuint type_i = 0; type_i < EnhancedLayouts::TYPES_NUMBER; ++type_i)
+    {
+        for (GLuint type_j = 0; type_j < EnhancedLayouts::TYPES_NUMBER; ++type_j)
+        {
+            addChild(new EnhancedLayouts::UniformBlockMemberOverlappingOffsetsTest(m_context, type_i, type_j));
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addUniformBlockMemberAlignNonPowerOf2Test()
+{
+    for (GLuint type = 0; type < EnhancedLayouts::TYPES_NUMBER; ++type)
+    {
+        addChild(new EnhancedLayouts::UniformBlockMemberAlignNonPowerOf2Test(m_context, type));
+    }
+}
+
+void EnhancedLayoutsTests::addSSBMemberAlignNonPowerOf2Test()
+{
+    for (GLuint type = 0; type < EnhancedLayouts::TYPES_NUMBER; ++type)
+    {
+        addChild(new EnhancedLayouts::SSBMemberAlignNonPowerOf2Test(m_context, type));
+    }
+}
+
+void EnhancedLayoutsTests::addSSBLayoutQualifierConflictTest()
+{
+    for (GLuint qualifier = 0; qualifier < EnhancedLayouts::SSBLayoutQualifierConflictTest::QUALIFIERS_MAX; ++qualifier)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            EnhancedLayouts::SSBLayoutQualifierConflictTest *test =
+                new EnhancedLayouts::SSBLayoutQualifierConflictTest(m_context, qualifier, stage);
+            if (test->stageAllowed(stage))
+            {
+                addChild(test);
+            }
+            else
+            {
+                delete test;
+            }
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addVaryingStructureMemberLocationTest()
+{
+
+    for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+    {
+        if (EnhancedLayouts::Utils::Shader::COMPUTE == stage)
+        {
+            continue;
+        }
+        addChild(new EnhancedLayouts::VaryingStructureMemberLocationTest(m_context, stage));
+    }
+}
+
+void EnhancedLayoutsTests::addVaryingBlockAutomaticMemberLocationsTest()
+{
+
+    for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+    {
+        if (EnhancedLayouts::Utils::Shader::COMPUTE == stage)
+        {
+            continue;
+        }
+        addChild(new EnhancedLayouts::VaryingBlockAutomaticMemberLocationsTest(m_context, stage));
+    }
+}
+
+void EnhancedLayoutsTests::addVaryingComponentWithoutLocationTest()
+{
+    for (GLuint type_num = 0; type_num < EnhancedLayouts::TYPES_NUMBER; ++type_num)
+    {
+        EnhancedLayouts::VaryingComponentWithoutLocationTest *test =
+            new EnhancedLayouts::VaryingComponentWithoutLocationTest(m_context, type_num);
+
+        const EnhancedLayouts::Utils::Type &type    = test->getTypeHelper(type_num);
+        const std::vector<GLuint> &valid_components = type.GetValidComponents();
+
+        if (valid_components.empty())
+        {
+            delete test;
+        }
+        else
+        {
+            addChild(test);
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addInputComponentAliasingTest()
+{
+    for (GLuint type_num = 0; type_num < EnhancedLayouts::TYPES_NUMBER; ++type_num)
+    {
+        EnhancedLayouts::InputComponentAliasingTest *test =
+            new EnhancedLayouts::InputComponentAliasingTest(m_context, type_num);
+
+        const EnhancedLayouts::Utils::Type &type    = test->getTypeHelper(type_num);
+        const std::vector<GLuint> &valid_components = type.GetValidComponents();
+
+        if (valid_components.empty())
+        {
+            delete test;
+        }
+        else
+        {
+            addChild(test);
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addVaryingLocationAliasingWithMixedTypesTest()
+{
+    for (GLuint type_gohan = 0; type_gohan < EnhancedLayouts::TYPES_NUMBER; ++type_gohan)
+    {
+        for (GLuint type_goten = 0; type_goten < EnhancedLayouts::TYPES_NUMBER; ++type_goten)
+        {
+            EnhancedLayouts::VaryingLocationAliasingWithMixedTypesTest *test =
+                new EnhancedLayouts::VaryingLocationAliasingWithMixedTypesTest(m_context, type_gohan, type_goten);
+
+            const EnhancedLayouts::Utils::Type &tp_gohan      = test->getTypeHelper(type_gohan);
+            const std::vector<GLuint> &valid_components_gohan = tp_gohan.GetValidComponents();
+            const EnhancedLayouts::Utils::Type &tp_goten      = test->getTypeHelper(type_goten);
+            const std::vector<GLuint> &valid_components_goten = tp_goten.GetValidComponents();
+
+            if (valid_components_gohan.empty() || valid_components_goten.empty() ||
+                EnhancedLayouts::Utils::Type::CanTypesShareLocation(tp_gohan.m_basic_type, tp_goten.m_basic_type))
+            {
+                delete test;
+            }
+            else
+            {
+                addChild(test);
+            }
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addVaryingLocationAliasingWithMixedInterpolationTest()
+{
+    for (GLuint type_gohan = 0; type_gohan < EnhancedLayouts::TYPES_NUMBER; ++type_gohan)
+    {
+        for (GLuint type_goten = 0; type_goten < EnhancedLayouts::TYPES_NUMBER; ++type_goten)
+        {
+            EnhancedLayouts::VaryingLocationAliasingWithMixedInterpolationTest *test =
+                new EnhancedLayouts::VaryingLocationAliasingWithMixedInterpolationTest(m_context, type_gohan,
+                                                                                       type_goten);
+
+            const EnhancedLayouts::Utils::Type &tp_gohan      = test->getTypeHelper(type_gohan);
+            const std::vector<GLuint> &valid_components_gohan = tp_gohan.GetValidComponents();
+            const EnhancedLayouts::Utils::Type &tp_goten      = test->getTypeHelper(type_goten);
+            const std::vector<GLuint> &valid_components_goten = tp_goten.GetValidComponents();
+
+            if (valid_components_gohan.empty() || valid_components_goten.empty())
+            {
+                delete test;
+            }
+            else
+            {
+                const GLuint gohan         = valid_components_gohan.front();
+                const GLuint min_component = gohan + tp_gohan.GetNumComponents();
+                const GLuint goten         = valid_components_goten.back();
+                if ((min_component > goten) || (!EnhancedLayouts::Utils::Type::CanTypesShareLocation(
+                                                   tp_gohan.m_basic_type, tp_goten.m_basic_type)))
+                {
+                    delete test;
+                }
+                else
+                {
+                    addChild(test);
+                }
+            }
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addVaryingLocationAliasingWithMixedAuxiliaryStorageTest()
+{
+    for (GLuint type_gohan = 0; type_gohan < EnhancedLayouts::TYPES_NUMBER; ++type_gohan)
+    {
+        for (GLuint type_goten = 0; type_goten < EnhancedLayouts::TYPES_NUMBER; ++type_goten)
+        {
+            EnhancedLayouts::VaryingLocationAliasingWithMixedAuxiliaryStorageTest *test =
+                new EnhancedLayouts::VaryingLocationAliasingWithMixedAuxiliaryStorageTest(m_context, type_gohan,
+                                                                                          type_goten);
+
+            const EnhancedLayouts::Utils::Type &tp_gohan      = test->getTypeHelper(type_gohan);
+            const std::vector<GLuint> &valid_components_gohan = tp_gohan.GetValidComponents();
+            const EnhancedLayouts::Utils::Type &tp_goten      = test->getTypeHelper(type_goten);
+            const std::vector<GLuint> &valid_components_goten = tp_goten.GetValidComponents();
+
+            if (valid_components_gohan.empty() || valid_components_goten.empty())
+            {
+                delete test;
+            }
+            else
+            {
+                const GLuint gohan         = valid_components_gohan.front();
+                const GLuint min_component = gohan + tp_gohan.GetNumComponents();
+                const GLuint goten         = valid_components_goten.back();
+                if ((min_component > goten) || (!EnhancedLayouts::Utils::Type::CanTypesShareLocation(
+                                                   tp_gohan.m_basic_type, tp_goten.m_basic_type)))
+                {
+                    delete test;
+                }
+                else
+                {
+                    addChild(test);
+                }
+            }
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addXFBTooSmallStrideTest()
+{
+    for (GLuint constant = 0; constant < EnhancedLayouts::XFBTooSmallStrideTest::CASES::CASE_MAX; ++constant)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            /*
+             It is invalid to define transform feedback output in TCS, according to spec:
+             The data captured in transform feedback mode depends on the active programs on each of the shader stages.
+             If a program is active for the geometry shader stage, transform feedback captures the vertices of each
+             primitive emitted by the geometry shader. Otherwise, if a program is active for the tessellation evaluation
+             shader stage, transform feedback captures each primitive produced by the tessellation primitive generator,
+             whose vertices are processed by the tessellation evaluation shader. Otherwise, transform feedback captures
+             each primitive processed by the vertex shader.
+             */
+            if ((EnhancedLayouts::Utils::Shader::COMPUTE == stage) ||
+                (EnhancedLayouts::Utils::Shader::TESS_CTRL == stage) ||
+                (EnhancedLayouts::Utils::Shader::FRAGMENT == stage))
+            {
+                continue;
+            }
+            addChild(new EnhancedLayouts::XFBTooSmallStrideTest(m_context, constant, stage));
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addXFBDuplicatedStrideTest()
+{
+    for (GLuint constant = 0; constant < EnhancedLayouts::XFBDuplicatedStrideTest::CASES::CASE_MAX; ++constant)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            if ((EnhancedLayouts::Utils::Shader::COMPUTE == stage) ||
+                (EnhancedLayouts::Utils::Shader::TESS_CTRL == stage) ||
+                (EnhancedLayouts::Utils::Shader::FRAGMENT == stage))
+            {
+                continue;
+            }
+            addChild(new EnhancedLayouts::XFBDuplicatedStrideTest(m_context, constant, stage));
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addXFBGetProgramResourceAPITest()
+{
+    for (GLuint type = 0; type < EnhancedLayouts::TYPES_NUMBER; ++type)
+    {
+        // When i == 7, the type is dmat4, i == 9 the type is dmat4x3, the number of output components exceeds the maximum value that AMD's driver supported
+        if ((type == 7 || type == 9))
+        {
+            continue;
+        }
+        addChild(new EnhancedLayouts::XFBGetProgramResourceAPITest(m_context, type));
+    }
+}
+
+void EnhancedLayoutsTests::addXFBExceedBufferLimitTest()
+{
+    for (GLuint constant = 0; constant < EnhancedLayouts::XFBExceedBufferLimitTest::CASES::CASE_MAX; ++constant)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            if ((EnhancedLayouts::Utils::Shader::COMPUTE == stage) ||
+                (EnhancedLayouts::Utils::Shader::TESS_CTRL == stage) ||
+                (EnhancedLayouts::Utils::Shader::FRAGMENT == stage))
+            {
+                continue;
+            }
+            addChild(new EnhancedLayouts::XFBExceedBufferLimitTest(m_context, constant, stage));
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addXFBExceedOffsetLimitTest()
+{
+    for (GLuint constant = 0; constant < EnhancedLayouts::XFBExceedOffsetLimitTest::CASES::CASE_MAX; ++constant)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            if ((EnhancedLayouts::Utils::Shader::COMPUTE == stage) ||
+                (EnhancedLayouts::Utils::Shader::TESS_CTRL == stage) ||
+                (EnhancedLayouts::Utils::Shader::FRAGMENT == stage))
+            {
+                continue;
+            }
+            addChild(new EnhancedLayouts::XFBExceedOffsetLimitTest(m_context, constant, stage));
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addXFBBlockMemberBufferTest()
+{
+    for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+    {
+        if ((EnhancedLayouts::Utils::Shader::COMPUTE == stage) ||
+            (EnhancedLayouts::Utils::Shader::TESS_CTRL == stage) || (EnhancedLayouts::Utils::Shader::FRAGMENT == stage))
+        {
+            continue;
+        }
+        addChild(new EnhancedLayouts::XFBBlockMemberBufferTest(m_context, stage));
+    }
+}
+
+void EnhancedLayoutsTests::addXFBOutputOverlappingTest()
+{
+    for (GLuint type = 0; type < EnhancedLayouts::TYPES_NUMBER; ++type)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            EnhancedLayouts::XFBOutputOverlappingTest *test =
+                new EnhancedLayouts::XFBOutputOverlappingTest(m_context, type, stage);
+
+            const EnhancedLayouts::Utils::Type &utils_type = test->getTypeHelper(type);
+
+            if (((1 == utils_type.m_n_columns) && (1 == utils_type.m_n_rows)) ||
+                ((EnhancedLayouts::Utils::Shader::COMPUTE == stage) ||
+                 (EnhancedLayouts::Utils::Shader::TESS_CTRL == stage) ||
+                 (EnhancedLayouts::Utils::Shader::FRAGMENT == stage)))
+            {
+                delete test;
+            }
+            else
+            {
+                addChild(test);
+            }
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addXFBInvalidOffsetAlignmentTest()
+{
+    for (GLuint type = 0; type < EnhancedLayouts::TYPES_NUMBER; ++type)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            if (((EnhancedLayouts::Utils::Shader::COMPUTE == stage) ||
+                 (EnhancedLayouts::Utils::Shader::TESS_CTRL == stage) ||
+                 (EnhancedLayouts::Utils::Shader::FRAGMENT == stage)))
+            {
+                continue;
+            }
+            else
+            {
+                addChild(new EnhancedLayouts::XFBInvalidOffsetAlignmentTest(m_context, type, stage));
+            }
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addXFBCaptureUnsizedArrayTest()
+{
+    for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+    {
+        if ((EnhancedLayouts::Utils::Shader::COMPUTE == stage) ||
+            (EnhancedLayouts::Utils::Shader::TESS_CTRL == stage) ||
+            (EnhancedLayouts::Utils::Shader::FRAGMENT == stage) ||
+            (EnhancedLayouts::Utils::Shader::GEOMETRY == stage) || (EnhancedLayouts::Utils::Shader::TESS_EVAL == stage))
+        {
+            continue;
+        }
+        addChild(new EnhancedLayouts::XFBCaptureUnsizedArrayTest(m_context, stage));
+    }
+}
+
+void EnhancedLayoutsTests::addVaryingBlockMemberLocationsTest()
+{
+    for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+    {
+        if (EnhancedLayouts::Utils::Shader::COMPUTE == stage)
+        {
+            continue;
+        }
+        addChild(new EnhancedLayouts::VaryingBlockMemberLocationsTest(m_context, stage));
+    }
+}
+
+void EnhancedLayoutsTests::addXFBVariableStrideTest()
+{
+    for (GLuint type = 0; type < EnhancedLayouts::TYPES_NUMBER; ++type)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            if ((EnhancedLayouts::Utils::Shader::COMPUTE == stage) ||
+                (EnhancedLayouts::Utils::Shader::TESS_CTRL == stage) ||
+                (EnhancedLayouts::Utils::Shader::FRAGMENT == stage))
+            {
+                continue;
+            }
+            for (GLuint constant = 0; constant < EnhancedLayouts::XFBVariableStrideTest::CASES::CASE_MAX; ++constant)
+            {
+                addChild(new EnhancedLayouts::XFBVariableStrideTest(m_context, type, stage, constant));
+            }
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addXFBBlockStrideTest()
+{
+    for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+    {
+        if ((EnhancedLayouts::Utils::Shader::COMPUTE == stage) ||
+            (EnhancedLayouts::Utils::Shader::TESS_CTRL == stage) || (EnhancedLayouts::Utils::Shader::FRAGMENT == stage))
+        {
+            continue;
+        }
+        addChild(new EnhancedLayouts::XFBBlockStrideTest(m_context, stage));
+    }
+}
+
+void EnhancedLayoutsTests::addXFBGlobalBufferTest()
+{
+    for (GLuint type = 0; type < EnhancedLayouts::TYPES_NUMBER; ++type)
+    {
+        EnhancedLayouts::XFBGlobalBufferTest *test     = new EnhancedLayouts::XFBGlobalBufferTest(m_context, type);
+        const EnhancedLayouts::Utils::Type &utils_type = test->getTypeHelper(type);
+        /*
+         When the tfx varying is the following type, the number of output exceeds the gl_MaxVaryingComponents, which will
+         cause a link time error.
+         */
+        if (strcmp(utils_type.GetGLSLTypeName(), "dmat3") == 0 || strcmp(utils_type.GetGLSLTypeName(), "dmat4") == 0 ||
+            strcmp(utils_type.GetGLSLTypeName(), "dmat3x4") == 0 ||
+            strcmp(utils_type.GetGLSLTypeName(), "dmat4x3") == 0)
+        {
+            delete test;
+        }
+        else
+        {
+            addChild(test);
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addXFBExplicitLocationTest()
+{
+    for (GLuint type = 0; type < EnhancedLayouts::TYPES_NUMBER; ++type)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            if ((EnhancedLayouts::Utils::Shader::COMPUTE == stage) ||
+                (EnhancedLayouts::Utils::Shader::FRAGMENT == stage) ||
+                (EnhancedLayouts::Utils::Shader::TESS_CTRL == stage))
+            {
+                continue;
+            }
+            else
+            {
+                addChild(new EnhancedLayouts::XFBExplicitLocationTest(m_context, type, stage));
+            }
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addXFBExplicitLocationStructTest()
+{
+    for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+    {
+        if ((EnhancedLayouts::Utils::Shader::COMPUTE == stage) || (EnhancedLayouts::Utils::Shader::FRAGMENT == stage) ||
+            (EnhancedLayouts::Utils::Shader::TESS_CTRL == stage))
+        {
+            continue;
+        }
+        else
+        {
+            addChild(new EnhancedLayouts::XFBExplicitLocationStructTest(m_context, stage));
+        }
+    }
+}
+
+void EnhancedLayoutsTests::addVaryingLocationLimitTest()
+{
+    for (GLuint type = 0; type < EnhancedLayouts::TYPES_NUMBER; ++type)
+    {
+        for (GLuint stage = 0; stage < EnhancedLayouts::Utils::Shader::STAGE_MAX; ++stage)
+        {
+            if (EnhancedLayouts::Utils::Shader::COMPUTE == stage)
+            {
+                continue;
+            }
+            else
+            {
+                addChild(new EnhancedLayouts::VaryingLocationLimitTest(m_context, type, stage));
+            }
+        }
+    }
+}
+
+template <class varyingClass>
+void EnhancedLayoutsTests::addVaryingTest()
+{
+    addChild(
+        new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::G64VEC2, EnhancedLayouts::Utils::Type::Double));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::G64SCALAR_G64SCALAR,
+                              EnhancedLayouts::Utils::Type::Double));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::GVEC4, EnhancedLayouts::Utils::Type::Float));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::SCALAR_GVEC3,
+                              EnhancedLayouts::Utils::Type::Float));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::GVEC3_SCALAR,
+                              EnhancedLayouts::Utils::Type::Float));
+    addChild(
+        new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::GVEC2_GVEC2, EnhancedLayouts::Utils::Type::Float));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::GVEC2_SCALAR_SCALAR,
+                              EnhancedLayouts::Utils::Type::Float));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::SCALAR_GVEC2_SCALAR,
+                              EnhancedLayouts::Utils::Type::Float));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::SCALAR_SCALAR_GVEC2,
+                              EnhancedLayouts::Utils::Type::Float));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::SCALAR_SCALAR_SCALAR_SCALAR,
+                              EnhancedLayouts::Utils::Type::Float));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::GVEC4, EnhancedLayouts::Utils::Type::Int));
+    addChild(
+        new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::SCALAR_GVEC3, EnhancedLayouts::Utils::Type::Int));
+    addChild(
+        new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::GVEC3_SCALAR, EnhancedLayouts::Utils::Type::Int));
+    addChild(
+        new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::GVEC2_GVEC2, EnhancedLayouts::Utils::Type::Int));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::GVEC2_SCALAR_SCALAR,
+                              EnhancedLayouts::Utils::Type::Int));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::SCALAR_GVEC2_SCALAR,
+                              EnhancedLayouts::Utils::Type::Int));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::SCALAR_SCALAR_GVEC2,
+                              EnhancedLayouts::Utils::Type::Int));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::SCALAR_SCALAR_SCALAR_SCALAR,
+                              EnhancedLayouts::Utils::Type::Int));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::GVEC4, EnhancedLayouts::Utils::Type::Uint));
+    addChild(
+        new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::SCALAR_GVEC3, EnhancedLayouts::Utils::Type::Uint));
+    addChild(
+        new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::GVEC3_SCALAR, EnhancedLayouts::Utils::Type::Uint));
+    addChild(
+        new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::GVEC2_GVEC2, EnhancedLayouts::Utils::Type::Uint));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::GVEC2_SCALAR_SCALAR,
+                              EnhancedLayouts::Utils::Type::Uint));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::SCALAR_GVEC2_SCALAR,
+                              EnhancedLayouts::Utils::Type::Uint));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::SCALAR_SCALAR_GVEC2,
+                              EnhancedLayouts::Utils::Type::Uint));
+    addChild(new varyingClass(m_context, varyingClass::COMPONENTS_LAYOUT::SCALAR_SCALAR_SCALAR_SCALAR,
+                              EnhancedLayouts::Utils::Type::Uint));
+}
+
+void EnhancedLayoutsTests::addVaryingComponentsTest()
+{
+    addVaryingTest<EnhancedLayouts::VaryingComponentsTest>();
+}
+
+void EnhancedLayoutsTests::addVaryingArrayComponentsTest()
+{
+    addVaryingTest<EnhancedLayouts::VaryingArrayComponentsTest>();
 }
 
 } // namespace gl4cts

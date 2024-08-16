@@ -2834,7 +2834,7 @@ void addGraphics8BitStorageUniformInt32To8Group(tcu::TestCaseGroup *testGroup)
             resources.verifyIO = checkUniformsArray<int32_t, int8_t, 1>;
         else
         {
-            resources.verifyIO = DE_NULL;
+            resources.verifyIO = nullptr;
             for (uint32_t numNdx = 0; numNdx < numDataPoints; ++numNdx)
                 outputs[numNdx] = static_cast<int8_t>(0xffff & inputs[numNdx]);
         }

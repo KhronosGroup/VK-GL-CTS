@@ -136,8 +136,9 @@ public:
               const VkPrimitiveTopology primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
               const bool depthBoundsTestEnable = false, const float depthBoundsMin = 0.0f,
               const float depthBoundsMax = 1.0f, const bool depthTestEnable = true,
-              const bool stencilTestEnable = false, const bool colorAttachmentEnable = true,
-              const bool hostVisible = false, const tcu::UVec2 renderSize = tcu::UVec2(32, 32),
+              const bool stencilTestEnable = false, const bool depthAttachmentBound = true,
+              const bool colorAttachmentEnable = true, const bool hostVisible = false,
+              const tcu::UVec2 renderSize                 = tcu::UVec2(32, 32),
               const DepthClipControlCase depthClipControl = DepthClipControlCase::DISABLED);
     virtual ~DepthTest(void);
     virtual void initPrograms(SourceCollections &programCollection) const;
@@ -154,6 +155,7 @@ private:
     const float m_depthBoundsMax;
     const bool m_depthTestEnable;
     const bool m_stencilTestEnable;
+    const bool m_depthAttachmentBound;
     const bool m_colorAttachmentEnable;
     const bool m_hostVisible;
     const tcu::UVec2 m_renderSize;
@@ -168,8 +170,9 @@ public:
                       const VkFormat depthFormat, const VkCompareOp depthCompareOps[DepthTest::QUAD_COUNT],
                       const bool separateDepthStencilLayouts, const VkPrimitiveTopology primitiveTopology,
                       const bool depthBoundsTestEnable, const float depthBoundsMin, const float depthBoundsMax,
-                      const bool depthTestEnable, const bool stencilTestEnable, const bool colorAttachmentEnable,
-                      const bool hostVisible, const tcu::UVec2 renderSize, const DepthClipControlCase depthClipControl);
+                      const bool depthTestEnable, const bool stencilTestEnable, const bool depthAttachmentBound,
+                      const bool colorAttachmentEnable, const bool hostVisible, const tcu::UVec2 renderSize,
+                      const DepthClipControlCase depthClipControl);
 
     virtual ~DepthTestInstance(void);
     virtual tcu::TestStatus iterate(void);
@@ -189,6 +192,7 @@ private:
     const float m_depthBoundsMax;
     const bool m_depthTestEnable;
     const bool m_stencilTestEnable;
+    const bool m_depthAttachmentBound;
     const bool m_colorAttachmentEnable;
     const bool m_hostVisible;
     const DepthClipControlCase m_depthClipControl;
@@ -234,8 +238,8 @@ DepthTest::DepthTest(tcu::TestContext &testContext, const std::string &name,
                      const VkCompareOp depthCompareOps[QUAD_COUNT], const bool separateDepthStencilLayouts,
                      const VkPrimitiveTopology primitiveTopology, const bool depthBoundsTestEnable,
                      const float depthBoundsMin, const float depthBoundsMax, const bool depthTestEnable,
-                     const bool stencilTestEnable, const bool colorAttachmentEnable, const bool hostVisible,
-                     const tcu::UVec2 renderSize, const DepthClipControlCase depthClipControl)
+                     const bool stencilTestEnable, const bool depthAttachmentBound, const bool colorAttachmentEnable,
+                     const bool hostVisible, const tcu::UVec2 renderSize, const DepthClipControlCase depthClipControl)
     : vkt::TestCase(testContext, name)
     , m_pipelineConstructionType(pipelineConstructionType)
     , m_depthFormat(depthFormat)
@@ -246,6 +250,7 @@ DepthTest::DepthTest(tcu::TestContext &testContext, const std::string &name,
     , m_depthBoundsMax(depthBoundsMax)
     , m_depthTestEnable(depthTestEnable)
     , m_stencilTestEnable(stencilTestEnable)
+    , m_depthAttachmentBound(depthAttachmentBound)
     , m_colorAttachmentEnable(colorAttachmentEnable)
     , m_hostVisible(hostVisible)
     , m_renderSize(renderSize)
@@ -263,7 +268,8 @@ void DepthTest::checkSupport(Context &context) const
     if (m_depthBoundsTestEnable)
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DEPTH_BOUNDS);
 
-    if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_depthFormat))
+    if (m_depthAttachmentBound &&
+        !isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_depthFormat))
         throw tcu::NotSupportedError(std::string("Unsupported depth/stencil format: ") + getFormatName(m_depthFormat));
 
     if (m_separateDepthStencilLayouts &&
@@ -285,7 +291,8 @@ TestInstance *DepthTest::createInstance(Context &context) const
     return new DepthTestInstance(context, m_pipelineConstructionType, m_depthFormat, m_depthCompareOps,
                                  m_separateDepthStencilLayouts, m_primitiveTopology, m_depthBoundsTestEnable,
                                  m_depthBoundsMin, m_depthBoundsMax, m_depthTestEnable, m_stencilTestEnable,
-                                 m_colorAttachmentEnable, m_hostVisible, m_renderSize, m_depthClipControl);
+                                 m_depthAttachmentBound, m_colorAttachmentEnable, m_hostVisible, m_renderSize,
+                                 m_depthClipControl);
 }
 
 void DepthTest::initPrograms(SourceCollections &programCollection) const
@@ -332,9 +339,9 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
                                      const bool separateDepthStencilLayouts,
                                      const VkPrimitiveTopology primitiveTopology, const bool depthBoundsTestEnable,
                                      const float depthBoundsMin, const float depthBoundsMax, const bool depthTestEnable,
-                                     const bool stencilTestEnable, const bool colorAttachmentEnable,
-                                     const bool hostVisible, const tcu::UVec2 renderSize,
-                                     const DepthClipControlCase depthClipControl)
+                                     const bool stencilTestEnable, const bool depthAttachmentBound,
+                                     const bool colorAttachmentEnable, const bool hostVisible,
+                                     const tcu::UVec2 renderSize, const DepthClipControlCase depthClipControl)
     : vkt::TestInstance(context)
     , m_renderSize(renderSize)
     , m_colorFormat(colorAttachmentEnable ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_UNDEFINED)
@@ -346,6 +353,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     , m_depthBoundsMax(depthBoundsMax)
     , m_depthTestEnable(depthTestEnable)
     , m_stencilTestEnable(stencilTestEnable)
+    , m_depthAttachmentBound(depthAttachmentBound)
     , m_colorAttachmentEnable(colorAttachmentEnable)
     , m_hostVisible(hostVisible)
     , m_depthClipControl(depthClipControl)
@@ -386,7 +394,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_colorFormat,                                                         // VkFormat format;
@@ -411,11 +419,15 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
                                     m_colorImageAlloc->getOffset()));
     }
 
+    // bind depth attachment or depth format should be undefined.
+    DE_ASSERT(m_depthAttachmentBound || m_depthFormat == VK_FORMAT_UNDEFINED);
+
     // Create depth image
+    if (m_depthAttachmentBound)
     {
         const VkImageCreateInfo depthImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,      // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                         // VkImageType imageType;
             m_depthFormat,                            // VkFormat format;
@@ -466,7 +478,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0u,                                         // VkImageViewCreateFlags flags;
             *m_colorImage,                              // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
@@ -479,10 +491,11 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     }
 
     // Create depth attachment view
+    if (m_depthAttachmentBound)
     {
         const VkImageViewCreateInfo depthAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             *m_depthImage,                            // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -508,12 +521,15 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
             attachmentBindInfos.push_back(*m_colorAttachmentView);
         }
 
-        images.push_back(*m_depthImage);
-        attachmentBindInfos.push_back(*m_depthAttachmentView);
+        if (m_depthAttachmentBound)
+        {
+            images.push_back(*m_depthImage);
+            attachmentBindInfos.push_back(*m_depthAttachmentView);
+        }
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             (uint32_t)attachmentBindInfos.size(),      // uint32_t attachmentCount;
@@ -530,12 +546,12 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
@@ -577,7 +593,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t vertexBindingDescriptionCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -587,7 +603,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL,             // const void*                                    pNext
+            nullptr,             // const void*                                    pNext
             0u,                  // VkPipelineInputAssemblyStateCreateFlags        flags
             m_primitiveTopology, // VkPrimitiveTopology                            topology
             VK_FALSE             // VkBool32                                        primitiveRestartEnable
@@ -595,7 +611,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         VkPipelineDepthStencilStateCreateInfo depthStencilStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
             m_depthTestEnable,                                          // VkBool32 depthTestEnable;
             true,                                                       // VkBool32 depthWriteEnable;
@@ -649,7 +665,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 #ifndef CTS_USES_VULKANSC
         VkPipelineViewportDepthClipControlCreateInfoEXT depthClipControlCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                                // const void* pNext;
+            nullptr,                                                                // const void* pNext;
             VK_TRUE,                                                                // VkBool32 negativeOneToOne;
         };
         if (hasDepthClipControl)
@@ -658,7 +674,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
         // Using the range 0,1 in the structure.
         VkPipelineViewportDepthClipControlCreateInfoEXT depthClipControlCreateInfo01{
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                                // const void* pNext;
+            nullptr,                                                                // const void* pNext;
             VK_FALSE,                                                               // VkBool32 negativeOneToOne;
         };
         depthClipControl01Wrapper.ptr = &depthClipControlCreateInfo01;
@@ -697,7 +713,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL,                 // const void*                                    pNext
+            nullptr,                 // const void*                                    pNext
             0u,                      // VkPipelineColorBlendStateCreateFlags            flags
             VK_FALSE,                // VkBool32                                        logicOpEnable
             VK_LOGIC_OP_CLEAR,       // VkLogicOp                                    logicOp
@@ -769,7 +785,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
     {
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             1024u,                                // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -854,11 +870,14 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
         if (m_colorAttachmentEnable)
             attachmentClearValues.push_back(defaultClearValue(m_colorFormat));
 
-        attachmentClearValues.push_back(defaultClearValue(m_depthFormat));
+        if (m_depthAttachmentBound)
+        {
+            attachmentClearValues.push_back(defaultClearValue(m_depthFormat));
+        }
 
         const VkImageMemoryBarrier colorBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType            sType;
-            DE_NULL,                                    // const void*                pNext;
+            nullptr,                                    // const void*                pNext;
             (VkAccessFlags)0,                           // VkAccessFlags              srcAccessMask;
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,       // VkAccessFlags              dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout              oldLayout;
@@ -879,7 +898,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
 
         const VkImageMemoryBarrier depthBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,       // VkStructureType            sType;
-            DE_NULL,                                      // const void*                pNext;
+            nullptr,                                      // const void*                pNext;
             (VkAccessFlags)0,                             // VkAccessFlags              srcAccessMask;
             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // VkAccessFlags              dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                    // VkImageLayout              oldLayout;
@@ -895,7 +914,10 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
         if (m_colorAttachmentEnable)
             imageLayoutBarriers.push_back(colorBarrier);
 
-        imageLayoutBarriers.push_back(depthBarrier);
+        if (m_depthAttachmentBound)
+        {
+            imageLayoutBarriers.push_back(depthBarrier);
+        }
 
         m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -905,7 +927,7 @@ DepthTestInstance::DepthTestInstance(Context &context, const PipelineConstructio
                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                                   VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                   VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                              (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, (uint32_t)imageLayoutBarriers.size(),
+                              (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, (uint32_t)imageLayoutBarriers.size(),
                               imageLayoutBarriers.data());
 
         m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
@@ -990,7 +1012,9 @@ tcu::TestStatus DepthTestInstance::iterate(void)
 tcu::TestStatus DepthTestInstance::verifyImage(void)
 {
     const tcu::TextureFormat tcuColorFormat = mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM);
-    const tcu::TextureFormat tcuDepthFormat = mapVkFormat(m_depthFormat);
+    const tcu::TextureFormat tcuDepthFormat =
+        m_depthAttachmentBound ? mapVkFormat(m_depthFormat) : tcu::TextureFormat();
+
     const ColorVertexShader vertexShader;
     const ColorFragmentShader fragmentShader(tcuColorFormat, tcuDepthFormat,
                                              (m_depthClipControl != DepthClipControlCase::DISABLED));
@@ -1044,6 +1068,7 @@ tcu::TestStatus DepthTestInstance::verifyImage(void)
     }
 
     // Compare depth result with reference image
+    if (m_depthAttachmentBound)
     {
         const DeviceInterface &vk       = m_context.getDeviceInterface();
         const VkDevice vkDevice         = m_context.getDevice();
@@ -1100,6 +1125,10 @@ tcu::TestStatus DepthTestInstance::verifyImage(void)
                 convertedReferenceLevel ? convertedReferenceLevel->getAccess() : refRenderer.getDepthStencilAccess(),
                 result->getAccess(), tcu::Vec4(depthThreshold, 0.0f, 0.0f, 0.0f), tcu::COMPARE_LOG_RESULT);
         }
+    }
+    else
+    {
+        depthCompareOk = true;
     }
 
     if (colorCompareOk && depthCompareOk)
@@ -1317,7 +1346,7 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
                                 testCtx, topologyName + getCompareOpsName(depthOps[opsNdx]) + "_depth_bounds_test",
                                 pipelineConstructionType, depthFormats[formatNdx], depthOps[opsNdx],
                                 useSeparateDepthStencilLayouts, primitiveTopologies[topologyNdx], true, 0.1f, 0.25f,
-                                true, false, colorEnabled));
+                                true, false, true, colorEnabled));
                         }
                     }
                     // Special VkPipelineDepthStencilStateCreateInfo known to have issues
@@ -1328,7 +1357,7 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
                         compareOpsTests->addChild(new DepthTest(
                             testCtx, "never_zerodepthbounds_depthdisabled_stencilenabled", pipelineConstructionType,
                             depthFormats[formatNdx], depthOpsSpecial, useSeparateDepthStencilLayouts,
-                            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, true, 0.0f, 0.0f, false, true, colorEnabled));
+                            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, true, 0.0f, 0.0f, false, true, true, colorEnabled));
                     }
                     formatTest->addChild(compareOpsTests.release());
 
@@ -1346,6 +1375,7 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
                             1.0f,                                       /* depthBoundMax*/
                             false,                                      /* depthTestEnable */
                             false,                                      /* stencilTestEnable */
+                            true,                                       /* depthAttachmentBound */
                             colorEnabled /* colorAttachmentEnable */));
                     }
                     formatTest->addChild(depthTestDisabled.release());
@@ -1365,6 +1395,7 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
                                           1.0f,                                       /* depthBoundMax*/
                                           true,                                       /* depthTestEnable */
                                           false,                                      /* stencilTestEnable */
+                                          true,                                       /* depthAttachmentBound */
                                           colorEnabled,                               /* colorAttachmentEnable */
                                           true,                                       /* hostVisible */
                                           tcu::UVec2(256, 256) /*renderSize*/));
@@ -1374,6 +1405,7 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
                     formatTests->addChild(formatTest.release());
                 }
             }
+
             if (colorEnabled)
                 depthTests->addChild(formatTests.release());
             else
@@ -1382,6 +1414,27 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
     }
     if (genFormatTests)
         depthTests->addChild(noColorAttachmentTests.release());
+
+    // no depth attachment bound test.
+    if (!vk::isConstructionTypeShaderObject(pipelineConstructionType))
+    {
+        de::MovePtr<tcu::TestCaseGroup> depthBoundTestNoDepthAttachment(
+            new tcu::TestCaseGroup(testCtx, "no_depth_attachment"));
+        {
+            const VkCompareOp depthOpsDepthTestDisabled[DepthTest::QUAD_COUNT] = {
+                VK_COMPARE_OP_NEVER, VK_COMPARE_OP_LESS, VK_COMPARE_OP_GREATER, VK_COMPARE_OP_ALWAYS};
+            depthBoundTestNoDepthAttachment->addChild(new DepthTest(
+                testCtx, "depth_bound_test", pipelineConstructionType, VK_FORMAT_UNDEFINED, depthOpsDepthTestDisabled,
+                false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, true, /* depthBoundsTestEnable */
+                0.1f,                                             /* depthBoundMin*/
+                0.2f,                                             /* depthBoundMax*/
+                false,                                            /* depthTestEnable */
+                false,                                            /* stencilTestEnable */
+                false,                                            /* depthAttachmentBound */
+                true /* colorAttachmentEnable */));
+        }
+        depthTests->addChild(depthBoundTestNoDepthAttachment.release());
+    }
 
 #ifndef CTS_USES_VULKANSC
     de::MovePtr<tcu::TestCaseGroup> depthClipControlTests(new tcu::TestCaseGroup(testCtx, "depth_clip_control"));
@@ -1412,7 +1465,7 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
                     const VkCompareOp ops[DepthTest::QUAD_COUNT] = {compareOp, compareOp, compareOp, compareOp};
                     depthClipControlTests->addChild(new DepthTest(testCtx, testName, pipelineConstructionType, format,
                                                                   ops, false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-                                                                  false, 0.0f, 1.0f, true, false, true, false,
+                                                                  false, 0.0f, 1.0f, true, false, true, true, false,
                                                                   tcu::UVec2(32, 32), viewportCase.viewportCase));
                 }
     }

@@ -853,7 +853,7 @@ private:
     void createStageTests(const char *testName, GraphicsResources &resources, ComputeShaderSpec &computeResources,
                           uint32_t numElements, vector<string> &decorations, vector<string> &pre_mains,
                           vector<string> &testfuns, string &operation, InputWidth inputWidth, const char *funVariables,
-                          const char *spirvExtension = DE_NULL);
+                          const char *spirvExtension = nullptr);
     void finalizeFullOperation(string &fullOperation, const string &resultName, const bool returnHighPart,
                                const bool isBooleanResult);
 
@@ -1648,7 +1648,7 @@ bool SpvAsmTypeTests<T>::verifyResult(const vector<Resource> &inputs, const vect
     DE_ASSERT(outputAllocations.size() == 1);
     DE_ASSERT(inputs.size() > 0 && inputs.size() < 5);
 
-    const T *input[4] = {DE_NULL};
+    const T *input[4] = {nullptr};
     vector<uint8_t> inputBytes[4];
     vector<uint8_t> expectedBytes;
 
@@ -1950,7 +1950,7 @@ void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperati
         testfuns.push_back(createInputTestfun(elemNdx, spirvOperation));
     }
 
-    if (spirvOperation != DE_NULL)
+    if (spirvOperation != 0)
     {
         if (inputWidth == WIDTH_DEFAULT)
             full_operation = spirvExtension ?
@@ -1966,13 +1966,13 @@ void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperati
     {
         if (deStringBeginsWith(testName, "mul_sdiv"))
         {
-            DE_ASSERT(spirvExtension == DE_NULL);
+            DE_ASSERT(spirvExtension == nullptr);
             full_operation = "%op_result2 = OpIMul %" + m_spirvTestType + " %input0_val %input1_val\n";
             full_operation += resultName + " = OpSDiv %" + m_spirvTestType + " %op_result2 %input1_val\n";
         }
         if (deStringBeginsWith(testName, "mul_udiv"))
         {
-            DE_ASSERT(spirvExtension == DE_NULL);
+            DE_ASSERT(spirvExtension == nullptr);
             full_operation = "%op_result2 = OpIMul %" + m_spirvTestType + " %input0_val %input1_val\n";
             full_operation += resultName + " = OpUDiv %" + m_spirvTestType + " %op_result2 %input1_val\n";
         }
@@ -2494,7 +2494,7 @@ public:
 };
 
 SpvAsmTypeInt8Tests::SpvAsmTypeInt8Tests(tcu::TestContext &testCtx, uint32_t vectorSize)
-    : SpvAsmTypeTests(testCtx, "i8", DE_NULL, "Int8", "OpTypeInt 8 1", TYPE_I8, 8, vectorSize)
+    : SpvAsmTypeTests(testCtx, "i8", nullptr, "Int8", "OpTypeInt 8 1", TYPE_I8, 8, vectorSize)
 {
     m_cases[0] = -42;
     m_cases[1] = 73;
@@ -2584,7 +2584,7 @@ public:
 };
 
 SpvAsmTypeInt32Tests::SpvAsmTypeInt32Tests(tcu::TestContext &testCtx, uint32_t vectorSize)
-    : SpvAsmTypeTests(testCtx, "i32", DE_NULL, DE_NULL, "OpTypeInt 32 1", TYPE_I32, 32, vectorSize)
+    : SpvAsmTypeTests(testCtx, "i32", nullptr, nullptr, "OpTypeInt 32 1", TYPE_I32, 32, vectorSize)
 {
     m_cases[0] = -3221;
     m_cases[1] = 3210;
@@ -2674,7 +2674,7 @@ public:
 };
 
 SpvAsmTypeUint8Tests::SpvAsmTypeUint8Tests(tcu::TestContext &testCtx, uint32_t vectorSize)
-    : SpvAsmTypeTests(testCtx, "u8", DE_NULL, "Int8", "OpTypeInt 8 0", TYPE_U8, 8, vectorSize)
+    : SpvAsmTypeTests(testCtx, "u8", nullptr, "Int8", "OpTypeInt 8 0", TYPE_U8, 8, vectorSize)
 {
     m_cases[0] = 0;
     m_cases[1] = 73;
@@ -2762,7 +2762,7 @@ public:
 };
 
 SpvAsmTypeUint32Tests::SpvAsmTypeUint32Tests(tcu::TestContext &testCtx, uint32_t vectorSize)
-    : SpvAsmTypeTests(testCtx, "u32", DE_NULL, DE_NULL, "OpTypeInt 32 0", TYPE_U32, 32, vectorSize)
+    : SpvAsmTypeTests(testCtx, "u32", nullptr, nullptr, "OpTypeInt 32 0", TYPE_U32, 32, vectorSize)
 {
     m_cases[0] = 0;
     m_cases[1] = 3210;
@@ -3856,15 +3856,15 @@ tcu::TestCaseGroup *createTypeTests(tcu::TestContext &testCtx)
         uint64Tests[ndx] = de::MovePtr<SpvAsmTypeUint64Tests>(new SpvAsmTypeUint64Tests(testCtx, ndx + 1));
     }
 
-    MAKE_TEST_SV_I_8136("negate", SpvOpSNegate, negate, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136("add", SpvOpIAdd, add, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136("sub", SpvOpISub, sub, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136("mul", SpvOpIMul, mul, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136("div", SpvOpSDiv, div, FILTER_ZERO, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_8136("div", SpvOpUDiv, div, FILTER_ZERO, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136("rem", SpvOpSRem, rem, FILTER_NEGATIVES_AND_ZERO, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136("mod", SpvOpSMod, mod, FILTER_NEGATIVES_AND_ZERO, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_8136("mod", SpvOpUMod, mod, FILTER_ZERO, RANGE_FULL, DE_NULL)
+    MAKE_TEST_SV_I_8136("negate", SpvOpSNegate, negate, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136("add", SpvOpIAdd, add, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136("sub", SpvOpISub, sub, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136("mul", SpvOpIMul, mul, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136("div", SpvOpSDiv, div, FILTER_ZERO, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_8136("div", SpvOpUDiv, div, FILTER_ZERO, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136("rem", SpvOpSRem, rem, FILTER_NEGATIVES_AND_ZERO, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136("mod", SpvOpSMod, mod, FILTER_NEGATIVES_AND_ZERO, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_8136("mod", SpvOpUMod, mod, FILTER_ZERO, RANGE_FULL, nullptr)
     MAKE_TEST_SV_I_8136("abs", GLSLstd450SAbs, abs, FILTER_NONE, RANGE_FULL, "GLSL.std.450")
     MAKE_TEST_SV_I_8136("sign", GLSLstd450SSign, sign, FILTER_NONE, RANGE_FULL, "GLSL.std.450")
     MAKE_TEST_SV_I_8136("min", GLSLstd450SMin, min, FILTER_NONE, RANGE_FULL, "GLSL.std.450")
@@ -3876,83 +3876,83 @@ tcu::TestCaseGroup *createTypeTests(tcu::TestContext &testCtx)
     MAKE_TEST_SV_I_3("find_lsb", GLSLstd450FindILsb, lsb, FILTER_NONE, RANGE_FULL, "GLSL.std.450")
     MAKE_TEST_SV_I_3("find_msb", GLSLstd450FindSMsb, msb, FILTER_NONE, RANGE_FULL, "GLSL.std.450")
     MAKE_TEST_SV_U_3("find_msb", GLSLstd450FindUMsb, msb, FILTER_NONE, RANGE_FULL, "GLSL.std.450")
-    MAKE_TEST_SV_I_1("mul_sdiv", DE_NULL, mul_div, FILTER_ZERO, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_1("mul_udiv", DE_NULL, mul_div, FILTER_ZERO, RANGE_FULL, DE_NULL)
+    MAKE_TEST_SV_I_1("mul_sdiv", 0, mul_div, FILTER_ZERO, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_1("mul_udiv", 0, mul_div, FILTER_ZERO, RANGE_FULL, nullptr)
 
-    MAKE_TEST_SV_U_8136_W("shift_right_logical", SpvOpShiftRightLogical, lsr, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL)
-    MAKE_TEST_SV_I_8136_W("shift_right_logical", SpvOpShiftRightLogical, lsr, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL)
+    MAKE_TEST_SV_U_8136_W("shift_right_logical", SpvOpShiftRightLogical, lsr, FILTER_NONE, RANGE_BIT_WIDTH, nullptr)
+    MAKE_TEST_SV_I_8136_W("shift_right_logical", SpvOpShiftRightLogical, lsr, FILTER_NONE, RANGE_BIT_WIDTH, nullptr)
     MAKE_TEST_SV_U_8136_W("shift_right_arithmetic", SpvOpShiftRightArithmetic, asr, FILTER_NONE, RANGE_BIT_WIDTH,
-                          DE_NULL)
+                          nullptr)
     MAKE_TEST_SV_I_8136_W("shift_right_arithmetic", SpvOpShiftRightArithmetic, asr, FILTER_NONE, RANGE_BIT_WIDTH,
-                          DE_NULL)
-    MAKE_TEST_SV_U_8136_W("shift_left_logical", SpvOpShiftLeftLogical, lsl, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL)
-    MAKE_TEST_SV_I_8136_W("shift_left_logical", SpvOpShiftLeftLogical, lsl, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL)
+                          nullptr)
+    MAKE_TEST_SV_U_8136_W("shift_left_logical", SpvOpShiftLeftLogical, lsl, FILTER_NONE, RANGE_BIT_WIDTH, nullptr)
+    MAKE_TEST_SV_I_8136_W("shift_left_logical", SpvOpShiftLeftLogical, lsl, FILTER_NONE, RANGE_BIT_WIDTH, nullptr)
 
-    MAKE_TEST_SV_U_8136("bitwise_or", SpvOpBitwiseOr, bitwise_or, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136("bitwise_or", SpvOpBitwiseOr, bitwise_or, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_8136("bitwise_xor", SpvOpBitwiseXor, bitwise_xor, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136("bitwise_xor", SpvOpBitwiseXor, bitwise_xor, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_8136("bitwise_and", SpvOpBitwiseAnd, bitwise_and, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136("bitwise_and", SpvOpBitwiseAnd, bitwise_and, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_8136("not", SpvOpNot, not, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136("not", SpvOpNot, not, FILTER_NONE, RANGE_FULL, DE_NULL)
+    MAKE_TEST_SV_U_8136("bitwise_or", SpvOpBitwiseOr, bitwise_or, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136("bitwise_or", SpvOpBitwiseOr, bitwise_or, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_8136("bitwise_xor", SpvOpBitwiseXor, bitwise_xor, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136("bitwise_xor", SpvOpBitwiseXor, bitwise_xor, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_8136("bitwise_and", SpvOpBitwiseAnd, bitwise_and, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136("bitwise_and", SpvOpBitwiseAnd, bitwise_and, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_8136("not", SpvOpNot, not, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136("not", SpvOpNot, not, FILTER_NONE, RANGE_FULL, nullptr)
 
-    MAKE_TEST_SV_U_8136_N("iequal", SpvOpIEqual, iequal, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136_N("iequal", SpvOpIEqual, iequal, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_8136_N("inotequal", SpvOpINotEqual, inotequal, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136_N("inotequal", SpvOpINotEqual, inotequal, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_8136_N("ugreaterthan", SpvOpUGreaterThan, ugreaterthan, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136_N("ugreaterthan", SpvOpUGreaterThan, ugreaterthan, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_8136_N("sgreaterthan", SpvOpSGreaterThan, sgreaterthan, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136_N("sgreaterthan", SpvOpSGreaterThan, sgreaterthan, FILTER_NONE, RANGE_FULL, DE_NULL)
+    MAKE_TEST_SV_U_8136_N("iequal", SpvOpIEqual, iequal, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136_N("iequal", SpvOpIEqual, iequal, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_8136_N("inotequal", SpvOpINotEqual, inotequal, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136_N("inotequal", SpvOpINotEqual, inotequal, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_8136_N("ugreaterthan", SpvOpUGreaterThan, ugreaterthan, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136_N("ugreaterthan", SpvOpUGreaterThan, ugreaterthan, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_8136_N("sgreaterthan", SpvOpSGreaterThan, sgreaterthan, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136_N("sgreaterthan", SpvOpSGreaterThan, sgreaterthan, FILTER_NONE, RANGE_FULL, nullptr)
     MAKE_TEST_SV_U_8136_N("ugreaterthanequal", SpvOpUGreaterThanEqual, ugreaterthanequal, FILTER_NONE, RANGE_FULL,
-                          DE_NULL)
+                          nullptr)
     MAKE_TEST_SV_I_8136_N("ugreaterthanequal", SpvOpUGreaterThanEqual, ugreaterthanequal, FILTER_NONE, RANGE_FULL,
-                          DE_NULL)
+                          nullptr)
     MAKE_TEST_SV_U_8136_N("sgreaterthanequal", SpvOpSGreaterThanEqual, sgreaterthanequal, FILTER_NONE, RANGE_FULL,
-                          DE_NULL)
+                          nullptr)
     MAKE_TEST_SV_I_8136_N("sgreaterthanequal", SpvOpSGreaterThanEqual, sgreaterthanequal, FILTER_NONE, RANGE_FULL,
-                          DE_NULL)
-    MAKE_TEST_SV_U_8136_N("ulessthan", SpvOpULessThan, ulessthan, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136_N("ulessthan", SpvOpULessThan, ulessthan, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_8136_N("slessthan", SpvOpSLessThan, slessthan, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136_N("slessthan", SpvOpSLessThan, slessthan, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_8136_N("ulessthanequal", SpvOpULessThanEqual, ulessthanequal, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136_N("ulessthanequal", SpvOpULessThanEqual, ulessthanequal, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_8136_N("slessthanequal", SpvOpSLessThanEqual, slessthanequal, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136_N("slessthanequal", SpvOpSLessThanEqual, slessthanequal, FILTER_NONE, RANGE_FULL, DE_NULL)
+                          nullptr)
+    MAKE_TEST_SV_U_8136_N("ulessthan", SpvOpULessThan, ulessthan, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136_N("ulessthan", SpvOpULessThan, ulessthan, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_8136_N("slessthan", SpvOpSLessThan, slessthan, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136_N("slessthan", SpvOpSLessThan, slessthan, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_8136_N("ulessthanequal", SpvOpULessThanEqual, ulessthanequal, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136_N("ulessthanequal", SpvOpULessThanEqual, ulessthanequal, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_8136_N("slessthanequal", SpvOpSLessThanEqual, slessthanequal, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136_N("slessthanequal", SpvOpSLessThanEqual, slessthanequal, FILTER_NONE, RANGE_FULL, nullptr)
 
     MAKE_TEST_SV_U_3_W("bit_field_insert", SpvOpBitFieldInsert, bitFieldInsert, FILTER_NONE, RANGE_BIT_WIDTH_SUM,
-                       DE_NULL)
+                       nullptr)
     MAKE_TEST_SV_I_3_W("bit_field_insert", SpvOpBitFieldInsert, bitFieldInsert, FILTER_NONE, RANGE_BIT_WIDTH_SUM,
-                       DE_NULL)
+                       nullptr)
     MAKE_TEST_SV_U_3_W("bit_field_s_extract", SpvOpBitFieldSExtract, bitFieldSExtract, FILTER_NONE, RANGE_BIT_WIDTH_SUM,
-                       DE_NULL)
+                       nullptr)
     MAKE_TEST_SV_I_3_W("bit_field_s_extract", SpvOpBitFieldSExtract, bitFieldSExtract, FILTER_NONE, RANGE_BIT_WIDTH_SUM,
-                       DE_NULL)
+                       nullptr)
     MAKE_TEST_SV_U_3_W("bit_field_u_extract", SpvOpBitFieldUExtract, bitFieldUExtract, FILTER_NONE, RANGE_BIT_WIDTH_SUM,
-                       DE_NULL)
+                       nullptr)
     MAKE_TEST_SV_I_3_W("bit_field_u_extract", SpvOpBitFieldUExtract, bitFieldUExtract, FILTER_NONE, RANGE_BIT_WIDTH_SUM,
-                       DE_NULL)
-    MAKE_TEST_SV_U_3("bit_reverse", SpvOpBitReverse, bitReverse, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_3("bit_reverse", SpvOpBitReverse, bitReverse, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_3("bit_count", SpvOpBitCount, bitCount, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_3("bit_count", SpvOpBitCount, bitCount, FILTER_NONE, RANGE_FULL, DE_NULL)
+                       nullptr)
+    MAKE_TEST_SV_U_3("bit_reverse", SpvOpBitReverse, bitReverse, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_3("bit_reverse", SpvOpBitReverse, bitReverse, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_3("bit_count", SpvOpBitCount, bitCount, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_3("bit_count", SpvOpBitCount, bitCount, FILTER_NONE, RANGE_FULL, nullptr)
 
-    MAKE_TEST_S_U_8136("constant", SpvOpConstant, constant, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_S_I_8136("constant", SpvOpConstant, constant, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_V_U_8136("constant_composite", SpvOpConstantComposite, constant, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_V_I_8136("constant_composite", SpvOpConstantComposite, constant, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_V_U_8136("constant_null", SpvOpConstantNull, constant, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_V_I_8136("constant_null", SpvOpConstantNull, constant, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_8136("variable_initializer", SpvOpVariable, constant, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_I_8136("variable_initializer", SpvOpVariable, constant, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_S_U_8136("spec_constant_initializer", SpvOpSpecConstant, constant, FILTER_NONE, RANGE_FULL, DE_NULL)
-    MAKE_TEST_S_I_8136("spec_constant_initializer", SpvOpSpecConstant, constant, FILTER_NONE, RANGE_FULL, DE_NULL)
+    MAKE_TEST_S_U_8136("constant", SpvOpConstant, constant, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_S_I_8136("constant", SpvOpConstant, constant, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_V_U_8136("constant_composite", SpvOpConstantComposite, constant, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_V_I_8136("constant_composite", SpvOpConstantComposite, constant, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_V_U_8136("constant_null", SpvOpConstantNull, constant, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_V_I_8136("constant_null", SpvOpConstantNull, constant, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_8136("variable_initializer", SpvOpVariable, constant, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136("variable_initializer", SpvOpVariable, constant, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_S_U_8136("spec_constant_initializer", SpvOpSpecConstant, constant, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_S_I_8136("spec_constant_initializer", SpvOpSpecConstant, constant, FILTER_NONE, RANGE_FULL, nullptr)
     MAKE_TEST_V_U_8136("spec_constant_composite_initializer", SpvOpSpecConstantComposite, constant, FILTER_NONE,
-                       RANGE_FULL, DE_NULL)
+                       RANGE_FULL, nullptr)
     MAKE_TEST_V_I_8136("spec_constant_composite_initializer", SpvOpSpecConstantComposite, constant, FILTER_NONE,
-                       RANGE_FULL, DE_NULL)
+                       RANGE_FULL, nullptr)
 
     int8Tests[0]->createSwitchTests();
     int16Tests[0]->createSwitchTests();

@@ -193,9 +193,9 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate(void)
             }
 
             renderPassCreateInfo.addSubpass(SubpassDescription(
-                VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, (uint32_t)colorAttachmentRefs.size(),
+                VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, (uint32_t)colorAttachmentRefs.size(),
                 useMultisampling ? &multisampleAttachmentRefs[0] : &colorAttachmentRefs[0],
-                useMultisampling ? &colorAttachmentRefs[0] : DE_NULL, AttachmentReference(), 0, DE_NULL));
+                useMultisampling ? &colorAttachmentRefs[0] : nullptr, AttachmentReference(), 0, nullptr));
 
             renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
@@ -209,7 +209,7 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate(void)
 
             const VkFramebufferCreateInfo framebufferCreateInfo = {
                 VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                   // const void* pNext;
+                nullptr,                                   // const void* pNext;
                 0u,                                        // VkFramebufferCreateFlags flags;
                 *renderPass,                               // VkRenderPass renderPass;
                 static_cast<uint32_t>(attachments.size()), // uint32_t attachmentCount;
@@ -300,7 +300,7 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate(void)
 
 #ifndef CTS_USES_VULKANSC
             VkPipelineRenderingCreateInfo renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                              DE_NULL,
+                                                              nullptr,
                                                               0u,
                                                               1u,
                                                               &imageColorFormat,
@@ -311,7 +311,7 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate(void)
                 pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-            pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+            pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
         }
 
         // Draw quad and read results.
@@ -362,11 +362,11 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate(void)
                     imagesCount,
                     {
                         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
-                        DE_NULL,                                         // const void* pNext;
-                        DE_NULL,                                         // VkImageView imageView;
+                        nullptr,                                         // const void* pNext;
+                        VK_NULL_HANDLE,                                  // VkImageView imageView;
                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
                         VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-                        DE_NULL,                                         // VkImageView resolveImageView;
+                        VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
                         VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout resolveImageLayout;
                         VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
                         VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -389,22 +389,22 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate(void)
 
                 VkRenderingInfo renderingInfo{
                     VK_STRUCTURE_TYPE_RENDERING_INFO, // VkStructureType sType;
-                    DE_NULL,                          // const void* pNext;
+                    nullptr,                          // const void* pNext;
                     0,                                // VkRenderingFlagsKHR flags;
                     renderArea,                       // VkRect2D renderArea;
                     1u,                               // uint32_t layerCount;
                     0u,                               // uint32_t viewMask;
                     imagesCount,                      // uint32_t colorAttachmentCount;
                     colorAttachments.data(),          // const VkRenderingAttachmentInfoKHR* pColorAttachments;
-                    DE_NULL,                          // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-                    DE_NULL,                          // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+                    nullptr,                          // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+                    nullptr,                          // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
                 };
 
                 if (m_groupParams->useSecondaryCmdBuffer)
                 {
                     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
                         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-                        DE_NULL,                                                         // const void* pNext;
+                        nullptr,                                                         // const void* pNext;
                         0u,                                                              // VkRenderingFlagsKHR flags;
                         0u,                                                              // uint32_t viewMask;
                         1u,                   // uint32_t colorAttachmentCount;
@@ -418,7 +418,7 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate(void)
                         initVulkanStructure(&inheritanceRenderingInfo);
                     VkCommandBufferBeginInfo commandBufBeginParams{
                         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-                        DE_NULL,                                     // const void* pNext;
+                        nullptr,                                     // const void* pNext;
                         VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, // VkCommandBufferUsageFlags flags;
                         &bufferInheritanceInfo};
 

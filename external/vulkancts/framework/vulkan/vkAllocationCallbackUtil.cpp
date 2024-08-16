@@ -39,7 +39,7 @@ static VKAPI_ATTR void *VKAPI_CALL systemAllocate(void *, size_t size, size_t al
     if (size > 0)
         return deAlignedMalloc(size, (uint32_t)alignment);
     else
-        return DE_NULL;
+        return nullptr;
 }
 
 static VKAPI_ATTR void VKAPI_CALL systemFree(void *, void *pMem)
@@ -64,7 +64,7 @@ static VKAPI_ATTR void VKAPI_CALL systemInternalFreeNotification(void *, size_t,
 }
 
 static const VkAllocationCallbacks s_systemAllocator = {
-    DE_NULL, // pUserData
+    nullptr, // pUserData
     systemAllocate, systemReallocate, systemFree, systemInternalAllocationNotification, systemInternalFreeNotification,
 };
 
@@ -309,7 +309,7 @@ void *DeterministicFailAllocator::allocate(size_t size, size_t alignment, VkSyst
     if ((m_mode == MODE_DO_NOT_COUNT) || (deAtomicIncrementUint32(&m_allocationNdx) <= m_numPassingAllocs))
         return ChainedAllocator::allocate(size, alignment, allocationScope);
     else
-        return DE_NULL;
+        return nullptr;
 }
 
 void *DeterministicFailAllocator::reallocate(void *original, size_t size, size_t alignment,
@@ -318,7 +318,7 @@ void *DeterministicFailAllocator::reallocate(void *original, size_t size, size_t
     if ((m_mode == MODE_DO_NOT_COUNT) || (deAtomicIncrementUint32(&m_allocationNdx) <= m_numPassingAllocs))
         return ChainedAllocator::reallocate(original, size, alignment, allocationScope);
     else
-        return DE_NULL;
+        return nullptr;
 }
 
 // Utils
@@ -388,7 +388,7 @@ void validateAllocationCallbacks(const AllocationCallbackRecorder &recorder,
                 record.type == AllocationCallbackRecord::TYPE_INTERNAL_ALLOCATION ?
                                                                              &record.data.internalAllocation.scope :
                 record.type == AllocationCallbackRecord::TYPE_INTERNAL_FREE ? &record.data.internalAllocation.scope :
-                                                                              DE_NULL;
+                                                                              nullptr;
 
             if (scopePtr && !de::inBounds(*scopePtr, (VkSystemAllocationScope)0, VK_SYSTEM_ALLOCATION_SCOPE_LAST))
                 results->violations.push_back(
@@ -442,7 +442,7 @@ void validateAllocationCallbacks(const AllocationCallbackRecorder &recorder,
                 const size_t origSlotNdx = ptrToSlotIndex[record.data.reallocation.original];
                 AllocationSlot &origSlot = allocations[origSlotNdx];
 
-                DE_ASSERT(record.data.reallocation.original != DE_NULL);
+                DE_ASSERT(record.data.reallocation.original != nullptr);
 
                 if (record.data.reallocation.size > 0)
                 {
@@ -525,7 +525,7 @@ void validateAllocationCallbacks(const AllocationCallbackRecorder &recorder,
 
         case AllocationCallbackRecord::TYPE_FREE:
         {
-            if (record.data.free.mem != DE_NULL) // Freeing null pointer is valid and ignored
+            if (record.data.free.mem != nullptr) // Freeing null pointer is valid and ignored
             {
                 if (de::contains(ptrToSlotIndex, record.data.free.mem))
                 {
@@ -582,7 +582,7 @@ void validateAllocationCallbacks(const AllocationCallbackRecorder &recorder,
         }
     }
 
-    DE_ASSERT(!de::contains(ptrToSlotIndex, DE_NULL));
+    DE_ASSERT(!de::contains(ptrToSlotIndex, nullptr));
 
     // Collect live allocations
     for (std::vector<AllocationSlot>::const_iterator slotIter = allocations.begin(); slotIter != allocations.end();

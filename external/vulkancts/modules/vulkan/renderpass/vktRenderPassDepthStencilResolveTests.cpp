@@ -299,7 +299,7 @@ bool DepthStencilResolveTest::isFeaturesSupported()
     VkPhysicalDeviceDepthStencilResolveProperties dsResolveProperties;
     deMemset(&dsResolveProperties, 0, sizeof(VkPhysicalDeviceDepthStencilResolveProperties));
     dsResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
-    dsResolveProperties.pNext = DE_NULL;
+    dsResolveProperties.pNext = nullptr;
 
     VkPhysicalDeviceProperties2 deviceProperties;
     deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -409,7 +409,7 @@ VkImageSp DepthStencilResolveTest::createImage(VkFormat vkformat, uint32_t sampl
     }
 
     const VkImageCreateInfo pCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                           DE_NULL,
+                                           nullptr,
                                            0u,
                                            VK_IMAGE_TYPE_2D,
                                            vkformat,
@@ -421,7 +421,7 @@ VkImageSp DepthStencilResolveTest::createImage(VkFormat vkformat, uint32_t sampl
                                            usage,
                                            VK_SHARING_MODE_EXCLUSIVE,
                                            0u,
-                                           DE_NULL,
+                                           nullptr,
                                            VK_IMAGE_LAYOUT_UNDEFINED};
 
     return safeSharedPtr(new Unique<VkImage>(vk::createImage(m_vkd, m_device, &pCreateInfo)));
@@ -443,7 +443,7 @@ VkImageViewSp DepthStencilResolveTest::createImageView(VkImageSp image, VkFormat
 
     const VkImageViewCreateInfo pCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,
         **image,
         (m_config.viewLayers > 1) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D,
@@ -485,14 +485,14 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 
     const VkAttachmentDescriptionStencilLayout multisampleAttachmentStencilLayout = {
         VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT,         // VkStructureType sType;
-        DE_NULL,                                                         // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         (renderPassNo == 0) ? VK_IMAGE_LAYOUT_UNDEFINED : stencilLayout, // VkImageLayout initialLayout;
         stencilFinalLayout,
     };
     const AttachmentDescription2 multisampleAttachment // VkAttachmentDescription2
         (
             // VkStructureType sType;
-            m_config.separateDepthStencilLayouts ? &multisampleAttachmentStencilLayout : DE_NULL, // const void* pNext;
+            m_config.separateDepthStencilLayouts ? &multisampleAttachmentStencilLayout : nullptr, // const void* pNext;
             0u,              // VkAttachmentDescriptionFlags flags;
             m_config.format, // VkFormat format;
             samples,         // VkSampleCountFlagBits samples;
@@ -507,14 +507,14 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
         );
     const VkAttachmentReferenceStencilLayout multisampleAttachmentRefStencilLayout = {
         VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT, // VkStructureType sType;
-        DE_NULL,                                               // const void* pNext;
+        nullptr,                                               // const void* pNext;
         stencilLayout                                          // VkImageLayout stencilLayout;
     };
     const AttachmentReference2 multisampleAttachmentRef // VkAttachmentReference2
         (
             // VkStructureType sType;
             m_config.separateDepthStencilLayouts ? &multisampleAttachmentRefStencilLayout :
-                                                   DE_NULL, // const void* pNext;
+                                                   nullptr, // const void* pNext;
             0u,                                             // uint32_t attachment;
             layout,                                         // VkImageLayout layout;
             m_config.aspectFlag                             // VkImageAspectFlags aspectMask;
@@ -532,14 +532,14 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 
     const VkAttachmentDescriptionStencilLayout singlesampleAttachmentStencilLayout = {
         VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT, // VkStructureType sType;
-        DE_NULL,                                                 // const void* pNext;
+        nullptr,                                                 // const void* pNext;
         singleSampleStencilInitialLayout,                        // VkImageLayout initialLayout;
         stencilFinalLayout,
     };
     const AttachmentDescription2 singlesampleAttachment // VkAttachmentDescription2
         (
             // VkStructureType sType;
-            m_config.separateDepthStencilLayouts ? &singlesampleAttachmentStencilLayout : DE_NULL, // const void* pNext;
+            m_config.separateDepthStencilLayouts ? &singlesampleAttachmentStencilLayout : nullptr, // const void* pNext;
             0u,                           // VkAttachmentDescriptionFlags flags;
             vkformat,                     // VkFormat format;
             VK_SAMPLE_COUNT_1_BIT,        // VkSampleCountFlagBits samples;
@@ -553,14 +553,14 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 
     const VkAttachmentReferenceStencilLayout singlesampleAttachmentRefStencilLayout = {
         VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT, // VkStructureType sType;
-        DE_NULL,                                               // const void* pNext;
+        nullptr,                                               // const void* pNext;
         stencilLayout                                          // VkImageLayout stencilLayout;
     };
     const AttachmentReference2 singlesampleAttachmentRef // VkAttachmentReference2
         (
             // VkStructureType sType;
             m_config.separateDepthStencilLayouts ? &singlesampleAttachmentRefStencilLayout :
-                                                   DE_NULL, // const void* pNext;
+                                                   nullptr, // const void* pNext;
             ((m_config.unusedResolve || renderPassNo != m_numRenderPasses - 1) ? VK_ATTACHMENT_UNUSED :
                                                                                  1u), // uint32_t attachment;
             layout,                                                                   // VkImageLayout layout;
@@ -573,7 +573,7 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
 
     VkSubpassDescriptionDepthStencilResolve dsResolveDescription = {
         VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE,
-        DE_NULL,                     // const void* pNext;
+        nullptr,                     // const void* pNext;
         m_config.depthResolveMode,   // VkResolveModeFlagBits depthResolveMode;
         m_config.stencilResolveMode, // VkResolveModeFlagBits stencilResolveMode;
         &singlesampleAttachmentRef   // VkAttachmentReference2 pDepthStencilResolveAttachment;
@@ -582,33 +582,33 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass(VkFormat vkformat, 
     const SubpassDescription2 subpass // VkSubpassDescription2
         (
             // VkStructureType sType;
-            renderPassNo == m_numRenderPasses - 1 ? &dsResolveDescription : DE_NULL, // const void* pNext;
+            renderPassNo == m_numRenderPasses - 1 ? &dsResolveDescription : nullptr, // const void* pNext;
             (VkSubpassDescriptionFlags)0,                                            // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
             0u,                              // uint32_t viewMask;
             0u,                              // uint32_t inputAttachmentCount;
-            DE_NULL,                         // const VkAttachmentReference2* pInputAttachments;
+            nullptr,                         // const VkAttachmentReference2* pInputAttachments;
             0u,                              // uint32_t colorAttachmentCount;
-            DE_NULL,                         // const VkAttachmentReference2* pColorAttachments;
-            DE_NULL,                         // const VkAttachmentReference2* pResolveAttachments;
+            nullptr,                         // const VkAttachmentReference2* pColorAttachments;
+            nullptr,                         // const VkAttachmentReference2* pResolveAttachments;
             &multisampleAttachmentRef,       // const VkAttachmentReference2* pDepthStencilAttachment;
             0u,                              // uint32_t preserveAttachmentCount;
-            DE_NULL                          // const uint32_t* pPreserveAttachments;
+            nullptr                          // const uint32_t* pPreserveAttachments;
         );
 
     const RenderPassCreateInfo2 renderPassCreator // VkRenderPassCreateInfo2
         (
             // VkStructureType sType;
-            DE_NULL,                      // const void* pNext;
+            nullptr,                      // const void* pNext;
             (VkRenderPassCreateFlags)0u,  // VkRenderPassCreateFlags flags;
             (uint32_t)attachments.size(), // uint32_t attachmentCount;
             &attachments[0],              // const VkAttachmentDescription2* pAttachments;
             1u,                           // uint32_t subpassCount;
             &subpass,                     // const VkSubpassDescription2* pSubpasses;
             0u,                           // uint32_t dependencyCount;
-            DE_NULL,                      // const VkSubpassDependency2* pDependencies;
+            nullptr,                      // const VkSubpassDependency2* pDependencies;
             0u,                           // uint32_t correlatedViewMaskCount;
-            DE_NULL                       // const uint32_t* pCorrelatedViewMasks;
+            nullptr                       // const uint32_t* pCorrelatedViewMasks;
         );
 
     return renderPassCreator.createRenderPass(m_vkd, m_device);
@@ -649,7 +649,7 @@ Move<VkFramebuffer> DepthStencilResolveTest::createFramebuffer(VkRenderPass rend
     attachments.push_back(**singlesampleImageView);
 
     const VkFramebufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                                                DE_NULL,
+                                                nullptr,
                                                 0u,
 
                                                 renderPass,
@@ -668,7 +668,7 @@ Move<VkPipelineLayout> DepthStencilResolveTest::createRenderPipelineLayout(void)
     VkPushConstantRange pushConstant = {VK_SHADER_STAGE_FRAGMENT_BIT, 0u, 4u};
 
     uint32_t pushConstantRangeCount          = 0u;
-    VkPushConstantRange *pPushConstantRanges = DE_NULL;
+    VkPushConstantRange *pPushConstantRanges = nullptr;
     if (m_config.verifyBuffer == VB_STENCIL)
     {
         pushConstantRangeCount = 1u;
@@ -676,11 +676,11 @@ Move<VkPipelineLayout> DepthStencilResolveTest::createRenderPipelineLayout(void)
     }
 
     const VkPipelineLayoutCreateInfo createInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-                                                   DE_NULL,
+                                                   nullptr,
                                                    (vk::VkPipelineLayoutCreateFlags)0,
 
                                                    0u,
-                                                   DE_NULL,
+                                                   nullptr,
 
                                                    pushConstantRangeCount,
                                                    pPushConstantRanges};
@@ -704,14 +704,14 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkRenderPass rend
 
     const VkPipelineVertexInputStateCreateInfo vertexInputState = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineVertexInputStateCreateFlags)0u,
 
         0u,
-        DE_NULL,
+        nullptr,
 
         0u,
-        DE_NULL};
+        nullptr};
     const tcu::UVec2 view(m_config.width, m_config.height);
     const std::vector<VkViewport> viewports(1, makeViewport(view));
     const std::vector<VkRect2D> scissors(1, m_config.renderArea);
@@ -719,14 +719,14 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkRenderPass rend
                                         renderPassNo < 32 ? 0 : (1u << (renderPassNo - 32))};
 
     const VkPipelineMultisampleStateCreateInfo multisampleState = {
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, DE_NULL,  (VkPipelineMultisampleStateCreateFlags)0u,
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, nullptr,  (VkPipelineMultisampleStateCreateFlags)0u,
 
         sampleCountBitFromSampleCount(m_config.sampleCount),      VK_FALSE, 0.0f,
-        (m_config.sampleMask) ? &samplemask[0] : DE_NULL,         VK_FALSE, VK_FALSE,
+        (m_config.sampleMask) ? &samplemask[0] : nullptr,         VK_FALSE, VK_FALSE,
     };
     const VkPipelineDepthStencilStateCreateInfo depthStencilState = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineDepthStencilStateCreateFlags)0u,
 
         VK_TRUE, // depthTestEnable
@@ -751,7 +751,7 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkRenderPass rend
     dynamicState.push_back(VK_DYNAMIC_STATE_STENCIL_REFERENCE);
     const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType                      sType;
-        DE_NULL,                                              // const void*                          pNext;
+        nullptr,                                              // const void*                          pNext;
         (VkPipelineDynamicStateCreateFlags)0u,                // VkPipelineDynamicStateCreateFlags    flags;
         static_cast<uint32_t>(dynamicState.size()),           // uint32_t                             dynamicStateCount;
         &dynamicState[0]                                      // const VkDynamicState*                pDynamicStates;
@@ -762,10 +762,10 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkRenderPass rend
         m_device,             // const VkDevice                                device
         renderPipelineLayout, // const VkPipelineLayout                        pipelineLayout
         *vertexShaderModule,  // const VkShaderModule                          vertexShaderModule
-        DE_NULL,              // const VkShaderModule                          tessellationControlShaderModule
-        DE_NULL,              // const VkShaderModule                          tessellationEvalShaderModule
+        VK_NULL_HANDLE,       // const VkShaderModule                          tessellationControlShaderModule
+        VK_NULL_HANDLE,       // const VkShaderModule                          tessellationEvalShaderModule
         m_config.imageLayers == 1 ?
-            DE_NULL :
+            VK_NULL_HANDLE :
             *geometryShaderModule,           // const VkShaderModule                          geometryShaderModule
         *fragmentShaderModule,               // const VkShaderModule                          fragmentShaderModule
         renderPass,                          // const VkRenderPass                            renderPass
@@ -775,12 +775,12 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkRenderPass rend
         0u,                                  // const uint32_t                                subpass
         0u,                                  // const uint32_t                                patchControlPoints
         &vertexInputState,                   // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-        DE_NULL,            // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+        nullptr,            // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
         &multisampleState,  // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
         &depthStencilState, // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-        DE_NULL,            // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+        nullptr,            // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
         testingStencil ? &dynamicStateCreateInfo :
-                         DE_NULL); // const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
+                         nullptr); // const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
 }
 
 AllocationSp DepthStencilResolveTest::createBufferMemory(void)
@@ -798,7 +798,7 @@ VkBufferSp DepthStencilResolveTest::createBuffer(void)
     const tcu::TextureFormat textureFormat(mapVkFormat(m_config.format));
     const VkDeviceSize pixelSize(textureFormat.getPixelSize());
     const VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                                           DE_NULL,
+                                           nullptr,
                                            0u,
 
                                            m_config.width * m_config.height * m_config.imageLayers * pixelSize,
@@ -806,7 +806,7 @@ VkBufferSp DepthStencilResolveTest::createBuffer(void)
 
                                            VK_SHARING_MODE_EXCLUSIVE,
                                            0u,
-                                           DE_NULL};
+                                           nullptr};
     return safeSharedPtr(new Unique<VkBuffer>(vk::createBuffer(m_vkd, m_device, &createInfo)));
 }
 
@@ -863,12 +863,12 @@ void DepthStencilResolveTest::submit(void)
 
         vk::beginCommandBuffer(m_vkd, commandBuffer.get());
         m_vkd.cmdPipelineBarrier(commandBuffer.get(), vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                 vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &preBarrier);
+                                 vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &preBarrier);
         m_vkd.cmdClearDepthStencilImage(commandBuffer.get(), **m_singlesampleImage,
                                         vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_config.clearValue, 1u,
                                         &imageRange);
         m_vkd.cmdPipelineBarrier(commandBuffer.get(), vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                 vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                 vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                                  &postBarrier);
         vk::endCommandBuffer(m_vkd, commandBuffer.get());
 
@@ -877,8 +877,8 @@ void DepthStencilResolveTest::submit(void)
 
     const Unique<VkCommandBuffer> commandBuffer(
         allocateCommandBuffer(vkd, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-    const RenderpassSubpass2::SubpassBeginInfo subpassBeginInfo(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
-    const RenderpassSubpass2::SubpassEndInfo subpassEndInfo(DE_NULL);
+    const RenderpassSubpass2::SubpassBeginInfo subpassBeginInfo(nullptr, VK_SUBPASS_CONTENTS_INLINE);
+    const RenderpassSubpass2::SubpassEndInfo subpassEndInfo(nullptr);
 
     beginCommandBuffer(vkd, *commandBuffer);
     bool testingDepth = (m_config.verifyBuffer == VB_DEPTH);
@@ -891,7 +891,7 @@ void DepthStencilResolveTest::submit(void)
 
             const VkRenderPassBeginInfo beginInfo = {
                 VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-                DE_NULL,
+                nullptr,
 
                 (m_config.compatibleFormat ? *m_renderPassCompatible : *m_renderPass[0]),
                 *m_framebuffer,
@@ -921,7 +921,7 @@ void DepthStencilResolveTest::submit(void)
 
                 const VkRenderPassBeginInfo beginInfo = {
                     VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-                    DE_NULL,
+                    nullptr,
 
                     (m_config.compatibleFormat ? *m_renderPassCompatible : *m_renderPass[i]),
                     *m_framebuffer,
@@ -955,7 +955,7 @@ void DepthStencilResolveTest::submit(void)
     {
         const VkImageMemoryBarrier barrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-            DE_NULL,
+            nullptr,
 
             // Note: as per the spec, depth/stencil *resolve* operations are synchronized using the color attachment write access.
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -974,7 +974,7 @@ void DepthStencilResolveTest::submit(void)
              0u, 1u, 0u, m_config.viewLayers}};
 
         vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
-                               0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+                               0u, nullptr, 0u, nullptr, 1u, &barrier);
     }
 
     // Copy image memory to buffers
@@ -997,7 +997,7 @@ void DepthStencilResolveTest::submit(void)
     // Memory barriers between copies and host access
     {
         const VkBufferMemoryBarrier barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                               DE_NULL,
+                                               nullptr,
 
                                                VK_ACCESS_TRANSFER_WRITE_BIT,
                                                VK_ACCESS_HOST_READ_BIT,
@@ -1010,7 +1010,7 @@ void DepthStencilResolveTest::submit(void)
                                                VK_WHOLE_SIZE};
 
         vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                               DE_NULL, 1u, &barrier, 0u, DE_NULL);
+                               nullptr, 1u, &barrier, 0u, nullptr);
     }
 
     endCommandBuffer(vkd, *commandBuffer);
@@ -1365,7 +1365,7 @@ Move<VkRenderPass> ResolveNonPresentAspectTestInstance::createDepthPass(bool ena
     singlesampleAttachmentRef.attachment             = 1;
 
     VkSubpassDescriptionDepthStencilResolve dsResolveDescription{
-        VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE, DE_NULL,
+        VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE, nullptr,
         depthResolveMode,          // VkResolveModeFlagBits            depthResolveMode
         stencilResolveMode,        // VkResolveModeFlagBits            stencilResolveMode
         &singlesampleAttachmentRef // VkAttachmentReference2            pDepthStencilResolveAttachment
@@ -1378,7 +1378,7 @@ Move<VkRenderPass> ResolveNonPresentAspectTestInstance::createDepthPass(bool ena
 
     VkAttachmentDescription2 attachments[]{
         {
-            VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2, DE_NULL,
+            VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2, nullptr,
             0u,                                              // VkAttachmentDescriptionFlags        flags
             format,                                          // VkFormat                            format
             VK_SAMPLE_COUNT_4_BIT,                           // VkSampleCountFlagBits            samples
@@ -1390,7 +1390,7 @@ Move<VkRenderPass> ResolveNonPresentAspectTestInstance::createDepthPass(bool ena
             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL // VkImageLayout                    finalLayout
         },
         {
-            VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2, DE_NULL,
+            VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2, nullptr,
             0u,                                  // VkAttachmentDescriptionFlags        flags
             format,                              // VkFormat                            format
             VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits            samples
@@ -1478,7 +1478,7 @@ tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     VkImageCreateInfo imageCreateInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, //    VkStructureType            sType
-        DE_NULL,                             //    const void*                pNext
+        nullptr,                             //    const void*                pNext
         0u,                                  //    VkImageCreateFlags        flags
         VK_IMAGE_TYPE_2D,                    //    VkImageType                imageType
         testFormat,                          //    VkFormat                format
@@ -1490,7 +1490,7 @@ tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
         imageUsage,                          //    VkImageUsageFlags        usage
         VK_SHARING_MODE_EXCLUSIVE,           //    VkSharingMode            sharingMode
         0u,                                  //    uint32_t                queueFamilyIndexCount
-        DE_NULL,                             //    const uint32_t*            pQueueFamilyIndices
+        nullptr,                             //    const uint32_t*            pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED,           //    VkImageLayout            initialLayout
     };
     ImageWithMemory multisampledImage(vk, device, memAlloc, imageCreateInfo, MemoryRequirement::Any);
@@ -1516,7 +1516,7 @@ tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
     };
     VkPipelineDepthStencilStateCreateInfo depthStencilState{
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                    // const void*                                pNext
+        nullptr,                                                    // const void*                                pNext
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags    flags
         tryResolvingStencil,   // VkBool32                                    depthTestEnable
         tryResolvingStencil,   // VkBool32                                    depthWriteEnable
@@ -1556,18 +1556,20 @@ tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
     VkImageView imageViewsRaw[] = {*multisampledImageView, singlesampledImageA.getImageView()};
     const auto renderPassA      = createDepthPass(true, testFormat, imageAspect, depthResolveMode, stencilResolveMode);
     const auto framebufferA     = makeFramebuffer(vk, device, *renderPassA, 2, imageViewsRaw, renderSize, renderSize);
-    const auto pipelineA        = makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, 0, 0, 0, *fragModule,
-                                                       *renderPassA, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-                                                       0, 0, &vertexInputState, 0, &multisampleState, &depthStencilState);
+    const auto pipelineA =
+        makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             *fragModule, *renderPassA, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
+                             &vertexInputState, 0, &multisampleState, &depthStencilState);
 
     // create second renderpass, framebufer and pipeline that will resolve existing aspect (for verification)
     depthStencilState.depthWriteEnable = false;
     imageViewsRaw[1]                   = singlesampledImageB.getImageView();
     const auto renderPassB  = createDepthPass(false, testFormat, imageAspect, stencilResolveMode, depthResolveMode);
     const auto framebufferB = makeFramebuffer(vk, device, *renderPassB, 2, imageViewsRaw, renderSize, renderSize);
-    const auto pipelineB    = makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, 0, 0, 0, *fragModule,
-                                                   *renderPassB, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-                                                   0, 0, &vertexInputState, 0, &multisampleState, &depthStencilState);
+    const auto pipelineB =
+        makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             *fragModule, *renderPassB, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
+                             &vertexInputState, 0, &multisampleState, &depthStencilState);
 
     const auto cmdPool =
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);

@@ -36,8 +36,8 @@ namespace deqp
 
 Context::Context(tcu::TestContext &testCtx, glu::ContextType contextType)
     : m_testCtx(testCtx)
-    , m_renderCtx(DE_NULL)
-    , m_contextInfo(DE_NULL)
+    , m_renderCtx(nullptr)
+    , m_contextInfo(nullptr)
 {
     createRenderContext(contextType);
 }
@@ -78,8 +78,8 @@ void Context::destroyRenderContext(void)
     delete m_contextInfo;
     delete m_renderCtx;
 
-    m_contextInfo = DE_NULL;
-    m_renderCtx   = DE_NULL;
+    m_contextInfo = nullptr;
+    m_renderCtx   = nullptr;
 }
 
 const tcu::RenderTarget &Context::getRenderTarget(void) const

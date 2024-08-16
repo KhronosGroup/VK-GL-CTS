@@ -750,7 +750,7 @@ void MultiDrawInstance::beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCom
 {
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                         // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         renderingFlags,                                                  // VkRenderingFlagsKHR flags;
         viewMask,                                                        // uint32_t viewMask;
         1u,                                                              // uint32_t colorAttachmentCount;
@@ -768,7 +768,7 @@ void MultiDrawInstance::beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCom
 
     const VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
@@ -1008,7 +1008,7 @@ tcu::TestStatus MultiDrawInstance::iterate(void)
     };
 
     vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo{
-        vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR, DE_NULL, 0u, 1u, &colorFormat, dsFormat, dsFormat};
+        vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR, nullptr, 0u, 1u, &colorFormat, dsFormat, dsFormat};
 
     vk::VkPipelineRenderingCreateInfoKHR *nextPtr = nullptr;
     if (m_params.groupParams->useDynamicRendering)
@@ -1094,7 +1094,7 @@ tcu::TestStatus MultiDrawInstance::iterate(void)
     // Index buffer if needed.
     de::MovePtr<BufferWithMemory> indexBuffer;
     VkDeviceSize indexBufferOffset = 0ull;
-    VkBuffer indexBufferHandle     = DE_NULL;
+    VkBuffer indexBufferHandle     = VK_NULL_HANDLE;
 
     if (isIndexed)
     {

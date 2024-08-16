@@ -1675,19 +1675,19 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
         "destroyDescriptorSetLayout"    : "\t\tdestroyDescriptorSetLayoutHandler(device, descriptorSetLayout, pAllocator);",
         "createImageView"                : "\t\tcreateImageViewHandler(device, pCreateInfo, pAllocator, pView);",
         "destroyImageView"                : "\t\tdestroyImageViewHandler(device, imageView, pAllocator);",
-        "createSemaphore"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(semaphoreRequestCount,1);\n\t\t*pSemaphore = Handle<HANDLE_TYPE_SEMAPHORE>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createSemaphore"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(semaphoreRequestCount,1);\n\t\t*pSemaphore = m_resourceInterface->incResourceCounter<VkSemaphore>();\n\t}",
         "destroySemaphore"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(semaphore,semaphoreRequestCount,1);\n\t}",
-        "createFence"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(fenceRequestCount,1);\n\t\t*pFence = Handle<HANDLE_TYPE_FENCE>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createFence"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(fenceRequestCount,1);\n\t\t*pFence = m_resourceInterface->incResourceCounter<VkFence>();\n\t}",
         "destroyFence"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(fence,fenceRequestCount,1);\n\t}",
-        "allocateMemory"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(deviceMemoryRequestCount,1);\n\t\t*pMemory = Handle<HANDLE_TYPE_DEVICE_MEMORY>(m_resourceInterface->incResourceCounter());\n\t}",
-        "createBuffer"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(bufferRequestCount,1);\n\t\t*pBuffer = Handle<HANDLE_TYPE_BUFFER>(m_resourceInterface->incResourceCounter());\n\t}",
+        "allocateMemory"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(deviceMemoryRequestCount,1);\n\t\t*pMemory = m_resourceInterface->incResourceCounter<VkDeviceMemory>();\n\t}",
+        "createBuffer"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(bufferRequestCount,1);\n\t\t*pBuffer = m_resourceInterface->incResourceCounter<VkBuffer>();\n\t}",
         "destroyBuffer"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(buffer,bufferRequestCount,1);\n\t}",
-        "createImage"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(imageRequestCount,1);\n\t\t*pImage = Handle<HANDLE_TYPE_IMAGE>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createImage"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(imageRequestCount,1);\n\t\t*pImage = m_resourceInterface->incResourceCounter<VkImage>();\n\t}",
         "destroyImage"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(image,imageRequestCount,1);\n\t}",
-        "createEvent"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(eventRequestCount,1);\n\t\t*pEvent = Handle<HANDLE_TYPE_EVENT>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createEvent"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(eventRequestCount,1);\n\t\t*pEvent = m_resourceInterface->incResourceCounter<VkEvent>();\n\t}",
         "destroyEvent"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(event,eventRequestCount,1);\n\t}",
         "createQueryPool"                : "\t\tcreateQueryPoolHandler(device, pCreateInfo, pAllocator, pQueryPool);",
-        "createBufferView"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(bufferViewRequestCount,1);\n\t\t*pView = Handle<HANDLE_TYPE_BUFFER_VIEW>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createBufferView"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(bufferViewRequestCount,1);\n\t\t*pView = m_resourceInterface->incResourceCounter<VkBufferView>();\n\t}",
         "destroyBufferView"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(bufferView,bufferViewRequestCount,1);\n\t}",
         "createPipelineLayout"            : "\t\tcreatePipelineLayoutHandlerStat(device, pCreateInfo, pAllocator, pPipelineLayout);",
         "destroyPipelineLayout"            : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(pipelineLayout,pipelineLayoutRequestCount,1);\n\t}",
@@ -1699,7 +1699,7 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
         "destroyPipeline"                : "\t\tdestroyPipelineHandler(device, pipeline, pAllocator);",
         "createSampler"                    : "\t\tcreateSamplerHandlerStat(device, pCreateInfo, pAllocator, pSampler);",
         "destroySampler"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(sampler,samplerRequestCount,1);\n\t}",
-        "createDescriptorPool"            : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(descriptorPoolRequestCount,1);\n\t\t*pDescriptorPool = Handle<HANDLE_TYPE_DESCRIPTOR_POOL>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createDescriptorPool"            : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(descriptorPoolRequestCount,1);\n\t\t*pDescriptorPool = m_resourceInterface->incResourceCounter<VkDescriptorPool>();\n\t}",
         "resetDescriptorPool"            : "\t\tresetDescriptorPoolHandlerStat(device, descriptorPool, flags);",
         "allocateDescriptorSets"        : "\t\tallocateDescriptorSetsHandlerStat(device, pAllocateInfo, pDescriptorSets);",
         "freeDescriptorSets"            : "\t\tfreeDescriptorSetsHandlerStat(device, descriptorPool, descriptorSetCount, pDescriptorSets);",
@@ -1721,7 +1721,7 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
         "getBufferMemoryRequirements2"    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tpMemoryRequirements->memoryRequirements.size = 1048576U;\n\t\tpMemoryRequirements->memoryRequirements.alignment = 1U;\n\t\tpMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;\n\t}",
         "getImageMemoryRequirements2"    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tpMemoryRequirements->memoryRequirements.size = 1048576U;\n\t\tpMemoryRequirements->memoryRequirements.alignment = 1U;\n\t\tpMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;\n\t}",
         "getImageSubresourceLayout"        : "\t{\n\t\tDDSTAT_LOCK();\n\t\tpLayout->offset = 0U;\n\t\tpLayout->size = 1048576U;\n\t\tpLayout->rowPitch = 0U;\n\t\tpLayout->arrayPitch = 0U;\n\t\tpLayout->depthPitch = 0U;\n\t}",
-        "createPipelineCache"            : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(pipelineCacheRequestCount,1);\n\t\t*pPipelineCache = Handle<HANDLE_TYPE_PIPELINE_CACHE>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createPipelineCache"            : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(pipelineCacheRequestCount,1);\n\t\t*pPipelineCache = m_resourceInterface->incResourceCounter<VkPipelineCache>();\n\t}",
         "destroyPipelineCache"            : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(pipelineCache,pipelineCacheRequestCount,1);\n\t}",
         "cmdUpdateBuffer"                : "\t\tincreaseCommandBufferSize(commandBuffer, dataSize);",
         "getDeviceQueue"                : "\t\tm_vk.getDeviceQueue(device, queueFamilyIndex, queueIndex, pQueue);",
@@ -2010,7 +2010,7 @@ def writeRefUtilImpl (api, filename):
 
             yield "Move<%s> %s (%s)" % (function.objectType, function.name, argListToStr(function.ifaceArgs + function.arguments))
             yield "{"
-            yield "\t%s object = 0;" % function.objectType
+            yield "\t%s object = VK_NULL_HANDLE;" % function.objectType
             yield "\tVK_CHECK(vk.%s(%s));" % (function.name, ", ".join([a.name for a in function.arguments] + ["&object"]))
             yield "\treturn Move<%s>(check<%s>(object), Deleter<%s>(%s));" % (function.objectType, function.objectType, function.objectType, deleterArgsString)
             yield "}"

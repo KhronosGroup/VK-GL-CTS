@@ -578,19 +578,19 @@ tcu::TestStatus PassthroughTestInstance::iterate(void)
             .setBlend(true)
             .setVertexInputSingleAttribute(vertexFormat, tcu::getPixelSize(mapVkFormat(vertexFormat)))
             .setPatchControlPoints(m_params.inputPatchVertices)
-            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert"), DE_NULL)
-            .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("frag"), DE_NULL);
+            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert"), nullptr)
+            .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("frag"), nullptr);
 
         if (pipelineDescription.useTessellation)
             pipelineBuilder
                 .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-                           m_context.getBinaryCollection().get("tesc"), DE_NULL)
+                           m_context.getBinaryCollection().get("tesc"), nullptr)
                 .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-                           m_context.getBinaryCollection().get(pipelineDescription.tessEvalShaderName), DE_NULL);
+                           m_context.getBinaryCollection().get(pipelineDescription.tessEvalShaderName), nullptr);
 
         if (pipelineDescription.useGeometry)
             pipelineBuilder.setShader(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,
-                                      m_context.getBinaryCollection().get(pipelineDescription.geomShaderName), DE_NULL);
+                                      m_context.getBinaryCollection().get(pipelineDescription.geomShaderName), nullptr);
 
         const Unique<VkPipeline> pipeline(pipelineBuilder.build(vk, device, *pipelineLayout, *renderPass));
 
@@ -611,7 +611,7 @@ tcu::TestStatus PassthroughTestInstance::iterate(void)
                 *colorAttachmentImage, colorImageSubresourceRange);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                                   &colorAttachmentLayoutBarrier);
         }
 
@@ -631,7 +631,7 @@ tcu::TestStatus PassthroughTestInstance::iterate(void)
 
         if (m_params.useTessLevels)
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                     &descriptorSet.get(), 0u, DE_NULL);
+                                     &descriptorSet.get(), 0u, nullptr);
 
         vk.cmdDraw(*cmdBuffer, static_cast<uint32_t>(m_params.vertices.size()), 1u, 0u, 0u);
         endRenderPass(vk, *cmdBuffer);

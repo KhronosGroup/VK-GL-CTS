@@ -37,7 +37,7 @@ namespace deqp
 namespace gles2
 {
 
-Context::Context(tcu::TestContext &testCtx) : m_testCtx(testCtx), m_renderCtx(DE_NULL), m_contextInfo(DE_NULL)
+Context::Context(tcu::TestContext &testCtx) : m_testCtx(testCtx), m_renderCtx(nullptr), m_contextInfo(nullptr)
 {
     try
     {
@@ -50,7 +50,7 @@ Context::Context(tcu::TestContext &testCtx) : m_testCtx(testCtx), m_renderCtx(DE
     }
     catch (...)
     {
-        glw::setCurrentThreadFunctions(DE_NULL);
+        glw::setCurrentThreadFunctions(nullptr);
 
         delete m_contextInfo;
         delete m_renderCtx;
@@ -62,7 +62,7 @@ Context::Context(tcu::TestContext &testCtx) : m_testCtx(testCtx), m_renderCtx(DE
 Context::~Context(void)
 {
     // Remove functions from wrapper.
-    glw::setCurrentThreadFunctions(DE_NULL);
+    glw::setCurrentThreadFunctions(nullptr);
 
     delete m_contextInfo;
     delete m_renderCtx;

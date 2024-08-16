@@ -73,7 +73,7 @@ static const char *getTestTypeName(CmdType cmdType)
         return "Copy buffer";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -184,10 +184,10 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
         // Begin secondary command buffer
         const vk::VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
             vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-            DE_NULL,
-            (vk::VkRenderPass)0u,                  // renderPass
+            nullptr,
+            VK_NULL_HANDLE,                        // renderPass
             0u,                                    // subpass
-            (vk::VkFramebuffer)0u,                 // framebuffer
+            VK_NULL_HANDLE,                        // framebuffer
             VK_FALSE,                              // occlusionQueryEnable
             (vk::VkQueryControlFlags)0u,           // queryFlags
             (vk::VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -220,7 +220,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 
         const vk::VkBufferMemoryBarrier copyBufferBarrier = {
             vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType        sType
-            DE_NULL,                                     // const void*            pNext
+            nullptr,                                     // const void*            pNext
             vk::VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags        srcAccessMask
             vk::VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags        dstAccessMask
             queueFamilyIndex,                            // uint32_t                srcQueueFamilyIndex
@@ -231,8 +231,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
         };
 
         vk.cmdPipelineBarrier(targetCmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 1, &copyBufferBarrier,
-                              0, (const vk::VkImageMemoryBarrier *)DE_NULL);
+                              (vk::VkDependencyFlags)0, 0, nullptr, 1, &copyBufferBarrier, 0, nullptr);
 
         // Copy buffer
         const vk::VkBufferCopy copyBufferRegion = {
@@ -253,7 +252,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
         // Buffer validator reads buffer in compute shader
         const vk::VkBufferMemoryBarrier endBufferBarrier = {
             vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType        sType
-            DE_NULL,                                     // const void*            pNext
+            nullptr,                                     // const void*            pNext
             vk::VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags        srcAccessMask
             vk::VK_ACCESS_SHADER_READ_BIT,               // VkAccessFlags        dstAccessMask
             queueFamilyIndex,                            // uint32_t                srcQueueFamilyIndex
@@ -263,9 +262,8 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
             VK_WHOLE_SIZE,                               // VkDeviceSize            size
         };
         vk.cmdPipelineBarrier(targetCmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0, 0,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 1, &endBufferBarrier, 0,
-                              (const vk::VkImageMemoryBarrier *)DE_NULL);
+                              vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 1,
+                              &endBufferBarrier, 0, nullptr);
     }
 
     if (m_cmdBufferType == CMD_BUFFER_SECONDARY)

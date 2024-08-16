@@ -2433,7 +2433,7 @@ static void encodeISE(BitAssignAccessStream &dst, const ISEParams &params, const
             const int numValuesInBlock = blockNdx == numBlocks - 1 ? numValues - 5 * (numBlocks - 1) : 5;
             encodeISETritBlock(dst, params.numBits, input.isGivenInBlockForm,
                                input.isGivenInBlockForm ? input.value.block[blockNdx] : ISEInput::Block(),
-                               input.isGivenInBlockForm ? DE_NULL : &input.value.plain[5 * blockNdx], numValuesInBlock);
+                               input.isGivenInBlockForm ? nullptr : &input.value.plain[5 * blockNdx], numValuesInBlock);
         }
     }
     else if (params.mode == ISEMODE_QUINT)
@@ -2444,7 +2444,7 @@ static void encodeISE(BitAssignAccessStream &dst, const ISEParams &params, const
             const int numValuesInBlock = blockNdx == numBlocks - 1 ? numValues - 3 * (numBlocks - 1) : 3;
             encodeISEQuintBlock(dst, params.numBits, input.isGivenInBlockForm,
                                 input.isGivenInBlockForm ? input.value.block[blockNdx] : ISEInput::Block(),
-                                input.isGivenInBlockForm ? DE_NULL : &input.value.plain[3 * blockNdx],
+                                input.isGivenInBlockForm ? nullptr : &input.value.plain[3 * blockNdx],
                                 numValuesInBlock);
         }
     }
@@ -3313,7 +3313,7 @@ const char *getBlockTestTypeName(BlockTestType testType)
         return "random";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -3348,7 +3348,7 @@ const char *getBlockTestTypeDescription(BlockTestType testType)
         return "Random block test";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

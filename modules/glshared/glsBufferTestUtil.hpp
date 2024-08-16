@@ -130,9 +130,9 @@ public:
     {
     }
 
-    virtual int getMinSize(void) const                                                  = DE_NULL;
-    virtual int getAlignment(void) const                                                = DE_NULL;
-    virtual void write(uint32_t buffer, int offset, int numBytes, const uint8_t *bytes) = DE_NULL;
+    virtual int getMinSize(void) const                                                  = 0;
+    virtual int getAlignment(void) const                                                = 0;
+    virtual void write(uint32_t buffer, int offset, int numBytes, const uint8_t *bytes) = 0;
     virtual void write(uint32_t buffer, int offset, int numBytes, const uint8_t *bytes, uint32_t targetHint);
 
 protected:
@@ -234,9 +234,9 @@ public:
     {
     }
 
-    virtual int getMinSize(void) const                                                       = DE_NULL;
-    virtual int getAlignment(void) const                                                     = DE_NULL;
-    virtual bool verify(uint32_t buffer, const uint8_t *reference, int offset, int numBytes) = DE_NULL;
+    virtual int getMinSize(void) const                                                       = 0;
+    virtual int getAlignment(void) const                                                     = 0;
+    virtual bool verify(uint32_t buffer, const uint8_t *reference, int offset, int numBytes) = 0;
     virtual bool verify(uint32_t buffer, const uint8_t *reference, int offset, int numBytes, uint32_t targetHint);
 
 protected:

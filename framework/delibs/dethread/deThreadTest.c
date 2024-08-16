@@ -65,7 +65,7 @@ static void threadTestThr3(void *arg)
 static void threadTestThr4(void *arg)
 {
     deThreadLocal tls = *(deThreadLocal *)arg;
-    deThreadLocal_set(tls, DE_NULL);
+    deThreadLocal_set(tls, NULL);
 }
 
 #if defined(DE_THREAD_LOCAL)
@@ -93,7 +93,7 @@ void deThread_selfTest(void)
     {
         int32_t val = 123;
         bool ret;
-        deThread thread = deThread_create(threadTestThr1, &val, DE_NULL);
+        deThread thread = deThread_create(threadTestThr1, &val, NULL);
         DE_TEST_ASSERT(thread);
 
         ret = deThread_join(thread);
@@ -104,7 +104,7 @@ void deThread_selfTest(void)
 
     /* Thread test 2. */
     {
-        deThread thread = deThread_create(threadTestThr2, DE_NULL, DE_NULL);
+        deThread thread = deThread_create(threadTestThr2, NULL, NULL);
         int32_t ret;
         DE_TEST_ASSERT(thread);
 
@@ -123,7 +123,7 @@ void deThread_selfTest(void)
 
         deMemset(&data, 0, sizeof(ThreadData3));
 
-        thread = deThread_create(threadTestThr3, &data, DE_NULL);
+        thread = deThread_create(threadTestThr3, &data, NULL);
         DE_TEST_ASSERT(thread);
 
         ret = deThread_join(thread);
@@ -145,7 +145,7 @@ void deThread_selfTest(void)
 
         deThreadLocal_set(tls, (void *)(uintptr_t)0xff);
 
-        thread = deThread_create(threadTestThr4, &tls, DE_NULL);
+        thread = deThread_create(threadTestThr4, &tls, NULL);
         deThread_join(thread);
         deThread_destroy(thread);
 
@@ -161,7 +161,7 @@ void deThread_selfTest(void)
         tls_testVar = 1;
         DE_TEST_ASSERT(tls_testVar == 1);
 
-        thread = deThread_create(tlsTestThr, DE_NULL, DE_NULL);
+        thread = deThread_create(tlsTestThr, NULL, NULL);
         deThread_join(thread);
         deThread_destroy(thread);
 
@@ -233,7 +233,7 @@ void deMutex_selfTest(void)
 {
     /* Default mutex from single thread. */
     {
-        deMutex mutex = deMutex_create(DE_NULL);
+        deMutex mutex = deMutex_create(NULL);
         bool ret;
         DE_TEST_ASSERT(mutex);
 
@@ -276,12 +276,12 @@ void deMutex_selfTest(void)
         deMutex mutex;
         deThread thread;
 
-        mutex = deMutex_create(DE_NULL);
+        mutex = deMutex_create(NULL);
         DE_TEST_ASSERT(mutex);
 
         deMutex_lock(mutex);
 
-        thread = deThread_create(mutexTestThr1, &mutex, DE_NULL);
+        thread = deThread_create(mutexTestThr1, &mutex, NULL);
         DE_TEST_ASSERT(thread);
 
         deSleep(100);
@@ -302,7 +302,7 @@ void deMutex_selfTest(void)
         deThread threads[2];
         int ndx;
 
-        data.mutex = deMutex_create(DE_NULL);
+        data.mutex = deMutex_create(NULL);
         DE_TEST_ASSERT(data.mutex);
 
         data.counter  = 0;
@@ -313,7 +313,7 @@ void deMutex_selfTest(void)
 
         for (ndx = 0; ndx < (int)DE_LENGTH_OF_ARRAY(threads); ndx++)
         {
-            threads[ndx] = deThread_create(mutexTestThr2, &data, DE_NULL);
+            threads[ndx] = deThread_create(mutexTestThr2, &data, NULL);
             DE_TEST_ASSERT(threads[ndx]);
         }
 
@@ -335,13 +335,13 @@ void deMutex_selfTest(void)
     /* tryLock() deadlock test. */
     {
         deThread thread;
-        deMutex mutex = deMutex_create(DE_NULL);
+        deMutex mutex = deMutex_create(NULL);
         bool ret;
         DE_TEST_ASSERT(mutex);
 
         deMutex_lock(mutex);
 
-        thread = deThread_create(mutexTestThr3, &mutex, DE_NULL);
+        thread = deThread_create(mutexTestThr3, &mutex, NULL);
         DE_TEST_ASSERT(mutex);
 
         ret = deThread_join(thread);
@@ -425,7 +425,7 @@ void deSemaphore_selfTest(void)
 {
     /* Basic test. */
     {
-        deSemaphore semaphore = deSemaphore_create(1, DE_NULL);
+        deSemaphore semaphore = deSemaphore_create(1, NULL);
         DE_TEST_ASSERT(semaphore);
 
         deSemaphore_increment(semaphore);
@@ -444,13 +444,13 @@ void deSemaphore_selfTest(void)
 
         deMemset(&testBuffer, 0, sizeof(testBuffer));
 
-        testBuffer.empty = deSemaphore_create(DE_LENGTH_OF_ARRAY(testBuffer.buffer), DE_NULL);
-        testBuffer.fill  = deSemaphore_create(0, DE_NULL);
+        testBuffer.empty = deSemaphore_create(DE_LENGTH_OF_ARRAY(testBuffer.buffer), NULL);
+        testBuffer.fill  = deSemaphore_create(0, NULL);
 
         DE_TEST_ASSERT(testBuffer.empty && testBuffer.fill);
 
-        consumer = deThread_create(consumerThread, &testBuffer, DE_NULL);
-        producer = deThread_create(producerThread, &testBuffer, DE_NULL);
+        consumer = deThread_create(consumerThread, &testBuffer, NULL);
+        producer = deThread_create(producerThread, &testBuffer, NULL);
 
         DE_TEST_ASSERT(consumer && producer);
 
@@ -625,15 +625,15 @@ static void resetTestState(void)
 
 static void runSingletonThreadedTest(int numThreads, int initTimeMs)
 {
-    deMemPool *tmpPool     = deMemPool_createRoot(DE_NULL, 0);
-    deThreadArray *threads = tmpPool ? deThreadArray_create(tmpPool) : DE_NULL;
+    deMemPool *tmpPool     = deMemPool_createRoot(NULL, 0);
+    deThreadArray *threads = tmpPool ? deThreadArray_create(tmpPool) : NULL;
     int threadNdx;
 
     resetTestState();
 
     for (threadNdx = 0; threadNdx < numThreads; threadNdx++)
     {
-        deThread thread = deThread_create(singletonTestThread, &initTimeMs, DE_NULL);
+        deThread thread = deThread_create(singletonTestThread, &initTimeMs, NULL);
         DE_TEST_ASSERT(thread);
         DE_TEST_ASSERT(deThreadArray_pushBack(threads, thread));
     }

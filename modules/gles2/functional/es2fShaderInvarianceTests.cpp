@@ -136,7 +136,7 @@ public:
     IterateResult iterate(void);
 
 private:
-    virtual ShaderPair genShaders(void) const = DE_NULL;
+    virtual ShaderPair genShaders(void) const = 0;
     bool checkImage(const tcu::Surface &) const;
 
     glu::ShaderProgram *m_shader0;
@@ -149,8 +149,8 @@ private:
 
 InvarianceTest::InvarianceTest(Context &ctx, const char *name, const char *desc)
     : TestCase(ctx, name, desc)
-    , m_shader0(DE_NULL)
-    , m_shader1(DE_NULL)
+    , m_shader0(nullptr)
+    , m_shader1(nullptr)
     , m_arrayBuf(0)
     , m_verticesInPattern(0)
     , m_renderSize(256)
@@ -244,8 +244,8 @@ void InvarianceTest::deinit(void)
     delete m_shader0;
     delete m_shader1;
 
-    m_shader0 = DE_NULL;
-    m_shader1 = DE_NULL;
+    m_shader0 = nullptr;
+    m_shader1 = nullptr;
 
     if (m_arrayBuf)
     {
@@ -287,7 +287,7 @@ InvarianceTest::IterateResult InvarianceTest::iterate(void)
         gl.useProgram(shader.getProgram());
         gl.uniform4fv(colorLoc, 1, color.getPtr());
         gl.enableVertexAttribArray(positionLoc);
-        gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, sizeof(tcu::Vec4), DE_NULL);
+        gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, sizeof(tcu::Vec4), nullptr);
         gl.drawArrays(GL_TRIANGLES, 0, m_verticesInPattern);
         gl.disableVertexAttribArray(positionLoc);
         GLU_EXPECT_NO_ERROR(gl.getError(), "draw pass");
@@ -339,7 +339,7 @@ InvarianceTest::IterateResult InvarianceTest::iterate(void)
             gl.uniform4fv(colorLoc, 1, color.getPtr());
             gl.depthFunc(depthFunc);
             gl.enableVertexAttribArray(positionLoc);
-            gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, sizeof(tcu::Vec4), DE_NULL);
+            gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, sizeof(tcu::Vec4), nullptr);
             gl.drawArrays(GL_TRIANGLES, m_verticesInPattern,
                           m_verticesInPattern); // !< buffer contains 2 m_verticesInPattern-sized patterns
             gl.disableVertexAttribArray(positionLoc);

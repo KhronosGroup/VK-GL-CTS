@@ -299,7 +299,7 @@ void initializePrograms(vk::SourceCollections &programCollection, glu::Precision
         if (texCoordSwizzle)
             params["TEXCOORD_SWZ"] = std::string(".") + texCoordSwizzle;
 
-        const char *sampler = DE_NULL;
+        const char *sampler = nullptr;
         std::string lookup;
 
         std::string texture = unnormal ? "textureLod" : "texture";
@@ -586,7 +586,7 @@ void TextureBinding::updateTextureData(const TestTextureSp &textureData, const T
 #ifndef CTS_USES_VULKANSC
         m_context.getInstanceInterface().getPhysicalDeviceSparseImageFormatProperties(
             m_context.getPhysicalDevice(), format, imageType, VK_SAMPLE_COUNT_1_BIT, imageUsageFlags, imageTiling,
-            &numSparseImageProperties, DE_NULL);
+            &numSparseImageProperties, nullptr);
 #endif // CTS_USES_VULKANSC
         if (numSparseImageProperties == 0)
             TCU_THROW(NotSupportedError,
@@ -609,7 +609,7 @@ void TextureBinding::updateTextureData(const TestTextureSp &textureData, const T
     // Create image
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         imageCreateFlags,                    // VkImageCreateFlags flags;
         imageType,                           // VkImageType imageType;
         format,                              // VkFormat format;
@@ -662,7 +662,7 @@ void TextureBinding::updateTextureViewMipLevels(uint32_t baseLevel, uint32_t max
 #ifndef CTS_USES_VULKANSC
     vk::VkImageViewMinLodCreateInfoEXT imageViewMinLodCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT, // VkStructureType    sType
-        DE_NULL,                                              // const void*        pNext
+        nullptr,                                              // const void*        pNext
         imageViewMinLod,                                      // float            minLod
     };
 #else
@@ -672,9 +672,9 @@ void TextureBinding::updateTextureViewMipLevels(uint32_t baseLevel, uint32_t max
     const vk::VkImageViewCreateInfo viewParams = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
 #ifndef CTS_USES_VULKANSC
-        imageViewMinLod >= 0.0f ? &imageViewMinLodCreateInfo : DE_NULL, // const void* pNext;
+        imageViewMinLod >= 0.0f ? &imageViewMinLodCreateInfo : nullptr, // const void* pNext;
 #else
-        DE_NULL, // const void* pNext;
+        nullptr, // const void* pNext;
 #endif                      // CTS_USES_VULKANSC
         0u,                 // VkImageViewCreateFlags flags;
         *m_textureImage,    // VkImage image;
@@ -700,7 +700,7 @@ Move<VkDevice> createRobustBufferAccessDevice(Context &context, const VkPhysical
     // Create a universal queue that supports graphics and compute
     const VkDeviceQueueCreateInfo queueParams = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         0u,                                         // VkDeviceQueueCreateFlags flags;
         context.getUniversalQueueFamilyIndex(),     // uint32_t queueFamilyIndex;
         1u,                                         // uint32_t queueCount;
@@ -830,7 +830,7 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
 
         const VkImageCreateInfo imageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,            // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             0u,                                             // VkImageCreateFlags flags;
             imageType,                                      // VkImageType imageType;
             m_imageFormat,                                  // VkFormat format;
@@ -846,7 +846,7 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
             VK_IMAGE_LAYOUT_UNDEFINED                       // VkImageLayout initialLayout;
         };
 
-        m_image = vk::createImage(vkd, vkDevice, &imageCreateInfo, DE_NULL);
+        m_image = vk::createImage(vkd, vkDevice, &imageCreateInfo, nullptr);
 
         m_imageMemory =
             m_allocator->allocate(getImageMemoryRequirements(vkd, vkDevice, *m_image), MemoryRequirement::Any);
@@ -857,7 +857,7 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
     {
         const VkImageViewCreateInfo imageViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             *m_image,                                 // VkImage image;
             imageViewType,                            // VkImageViewType viewType;
@@ -872,7 +872,7 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
             },                             // VkImageSubresourceRange subresourceRange;
         };
 
-        m_imageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, DE_NULL);
+        m_imageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, nullptr);
     }
 
     if (m_multisampling)
@@ -892,7 +892,7 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
 
             const VkImageCreateInfo imageCreateInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,            // VkStructureType sType;
-                DE_NULL,                                        // const void* pNext;
+                nullptr,                                        // const void* pNext;
                 0u,                                             // VkImageCreateFlags flags;
                 imageType,                                      // VkImageType imageType;
                 m_imageFormat,                                  // VkFormat format;
@@ -908,7 +908,7 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
                 VK_IMAGE_LAYOUT_UNDEFINED                       // VkImageLayout initialLayout;
             };
 
-            m_resolvedImage       = vk::createImage(vkd, vkDevice, &imageCreateInfo, DE_NULL);
+            m_resolvedImage       = vk::createImage(vkd, vkDevice, &imageCreateInfo, nullptr);
             m_resolvedImageMemory = m_allocator->allocate(getImageMemoryRequirements(vkd, vkDevice, *m_resolvedImage),
                                                           MemoryRequirement::Any);
             VK_CHECK(vkd.bindImageMemory(vkDevice, *m_resolvedImage, m_resolvedImageMemory->getMemory(),
@@ -919,7 +919,7 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
         {
             const VkImageViewCreateInfo imageViewCreateInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                  // const void* pNext;
+                nullptr,                                  // const void* pNext;
                 0u,                                       // VkImageViewCreateFlags flags;
                 *m_resolvedImage,                         // VkImage image;
                 imageViewType,                            // VkImageViewType viewType;
@@ -934,7 +934,7 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
                 },                             // VkImageSubresourceRange subresourceRange;
             };
 
-            m_resolvedImageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, DE_NULL);
+            m_resolvedImageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, nullptr);
         }
     }
 
@@ -979,35 +979,35 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
             0u,                                                // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS,                   // VkPipelineBindPoint pipelineBindPoint;
             0u,                                                // uint32_t inputAttachmentCount;
-            DE_NULL,                                           // const VkAttachmentReference* pInputAttachments;
+            nullptr,                                           // const VkAttachmentReference* pInputAttachments;
             1u,                                                // uint32_t colorAttachmentCount;
             &attachmentRef,                                    // const VkAttachmentReference* pColorAttachments;
-            m_multisampling ? &resolveAttachmentRef : DE_NULL, // const VkAttachmentReference* pResolveAttachments;
-            DE_NULL,                                           // const VkAttachmentReference* pDepthStencilAttachment;
+            m_multisampling ? &resolveAttachmentRef : nullptr, // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                                           // const VkAttachmentReference* pDepthStencilAttachment;
             0u,                                                // uint32_t preserveAttachmentCount;
-            DE_NULL,                                           // const VkAttachmentReference* pPreserveAttachments;
+            nullptr,                                           // const VkAttachmentReference* pPreserveAttachments;
         };
 
         const VkRenderPassCreateInfo renderPassCreateInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkRenderPassCreateFlags flags;
             m_multisampling ? 2u : 1u,                 // uint32_t attachmentCount;
             attachmentDesc,                            // const VkAttachmentDescription* pAttachments;
             1u,                                        // uint32_t subpassCount;
             &subpassDesc,                              // const VkSubpassDescription* pSubpasses;
             0u,                                        // uint32_t dependencyCount;
-            DE_NULL,                                   // const VkSubpassDependency* pDependencies;
+            nullptr,                                   // const VkSubpassDependency* pDependencies;
         };
 
-        m_renderPass = createRenderPass(vkd, vkDevice, &renderPassCreateInfo, DE_NULL);
+        m_renderPass = createRenderPass(vkd, vkDevice, &renderPassCreateInfo, nullptr);
     }
 
     // Vertex index buffer
     {
         const VkBufferCreateInfo indexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             s_vertexIndexBufferSize,              // VkDeviceSize size;
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,     // VkBufferUsageFlags usage;
@@ -1038,7 +1038,7 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
 
         const VkFramebufferCreateInfo framebufferCreateInfo = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             m_multisampling ? 2u : 1u,                 // uint32_t attachmentCount;
@@ -1048,14 +1048,14 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
             1u,                                        // uint32_t layers;
         };
 
-        m_frameBuffer = createFramebuffer(vkd, vkDevice, &framebufferCreateInfo, DE_NULL);
+        m_frameBuffer = createFramebuffer(vkd, vkDevice, &framebufferCreateInfo, nullptr);
     }
 
     // Uniform Buffer
     {
         const VkBufferCreateInfo bufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_uniformBufferSize,                  // VkDeviceSize size;
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,   // VkBufferUsageFlags usage;
@@ -1104,12 +1104,12 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
 
         const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             2u,                                            // uint32_t descriptorSetCount;
             descriptorSetLayouts,                          // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = createPipelineLayout(vkd, vkDevice, &pipelineLayoutCreateInfo);
@@ -1119,7 +1119,7 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
     {
         const VkBufferCreateInfo bufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_resultBufferSize,                   // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
@@ -1333,7 +1333,7 @@ Move<VkDescriptorSet> TextureRenderer::makeDescriptorSet(const VkDescriptorPool 
 
     const VkDescriptorSetAllocateInfo allocateParams = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                    sType
-        DE_NULL,                                        // const void*                        pNext
+        nullptr,                                        // const void*                        pNext
         descriptorPool,                                 // VkDescriptorPool                    descriptorPool
         1u,                                             // uint32_t                            descriptorSetCount
         &setLayout,                                     // const VkDescriptorSetLayout*        pSetLayouts
@@ -1358,7 +1358,7 @@ void TextureRenderer::addImageTransitionBarrier(VkCommandBuffer commandBuffer, V
 
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         srcAccessMask,                          // VkAccessFlags srcAccessMask;
         dstAccessMask,                          // VkAccessFlags dstAccessMask;
         oldLayout,                              // VkImageLayout oldLayout;
@@ -1369,7 +1369,7 @@ void TextureRenderer::addImageTransitionBarrier(VkCommandBuffer commandBuffer, V
         subResourcerange                        // VkImageSubresourceRange subresourceRange;
     };
 
-    vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageBarrier);
+    vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
 }
 
 void TextureRenderer::renderQuad(tcu::Surface &result, int texUnit, const float *texCoord, TextureType texType)
@@ -1686,7 +1686,7 @@ void TextureRenderer::renderQuad(const tcu::PixelBufferAccess &result, const flo
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0,                                                         // VkPipelineVertexInputStateCreateFlags flags;
             2u,                                                        // uint32_t bindingCount;
             vertexInputBindingDescription,   // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -1707,12 +1707,12 @@ void TextureRenderer::renderQuad(const tcu::PixelBufferAccess &result, const flo
 
         const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
             m_sampleCount,                                            // VkSampleCountFlagBits rasterizationSamples;
             VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
             0.0f,                                                     // float minSampleShading;
-            DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+            nullptr,                                                  // const VkSampleMask* pSampleMask;
             VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
             VK_FALSE                                                  // VkBool32 alphaToOneEnable;
         };
@@ -1777,9 +1777,9 @@ void TextureRenderer::renderQuad(const tcu::PixelBufferAccess &result, const flo
             vkDevice,              // const VkDevice                                device
             *m_pipelineLayout,     // const VkPipelineLayout                        pipelineLayout
             *vertexShaderModule,   // const VkShaderModule                          vertexShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationControlShaderModule
-            DE_NULL,               // const VkShaderModule                          tessellationEvalShaderModule
-            DE_NULL,               // const VkShaderModule                          geometryShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalShaderModule
+            VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
             *fragmentShaderModule, // const VkShaderModule                          fragmentShaderModule
             *m_renderPass,         // const VkRenderPass                            renderPass
             viewports,             // const std::vector<VkViewport>&                viewports
@@ -1788,7 +1788,7 @@ void TextureRenderer::renderQuad(const tcu::PixelBufferAccess &result, const flo
             0u,                                  // const uint32_t                                subpass
             0u,                                  // const uint32_t                                patchControlPoints
             &vertexInputStateParams,  // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-            DE_NULL,                  // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+            nullptr,                  // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
             &multisampleStateParams); // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
     }
 
@@ -1801,7 +1801,7 @@ void TextureRenderer::renderQuad(const tcu::PixelBufferAccess &result, const flo
 
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             bufferSize,                           // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -1837,9 +1837,9 @@ void TextureRenderer::renderQuad(const tcu::PixelBufferAccess &result, const flo
 
     vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
     vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1,
-                              &m_descriptorSet[0].get(), 0u, DE_NULL);
+                              &m_descriptorSet[0].get(), 0u, nullptr);
     vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 1u, 1,
-                              &m_descriptorSet[1].get(), 0u, DE_NULL);
+                              &m_descriptorSet[1].get(), 0u, nullptr);
     vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
     vkd.cmdBindVertexBuffers(*commandBuffer, 1, 1, &vertexBuffer.get(), &vertexBufferOffset);
     vkd.cmdBindIndexBuffer(*commandBuffer, *m_vertexIndexBuffer, 0, VK_INDEX_TYPE_UINT16);

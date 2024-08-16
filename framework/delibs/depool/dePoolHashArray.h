@@ -85,7 +85,7 @@ DE_END_EXTERN_C
     {                                                                                                \
         int *ndxPtr = TYPENAME##Hash_find(hashArray->hash, key);                                     \
         if (!ndxPtr)                                                                                 \
-            return DE_NULL;                                                                          \
+            return NULL;                                                                             \
         else                                                                                         \
         {                                                                                            \
             int ndx = *ndxPtr;                                                                       \
@@ -133,11 +133,11 @@ DE_END_EXTERN_C
     {                                                                                                                 \
         DE_PTR_TYPE(TYPENAME) hashArray = DE_POOL_NEW(pool, TYPENAME);                                                \
         if (!hashArray)                                                                                               \
-            return DE_NULL;                                                                                           \
-        if ((hashArray->hash = TYPENAME##Hash_create(pool)) == DE_NULL)                                               \
-            return DE_NULL;                                                                                           \
-        if ((hashArray->array = TYPENAME##Array_create(pool)) == DE_NULL)                                             \
-            return DE_NULL;                                                                                           \
+            return NULL;                                                                                              \
+        if ((hashArray->hash = TYPENAME##Hash_create(pool)) == NULL)                                                  \
+            return NULL;                                                                                              \
+        if ((hashArray->array = TYPENAME##Array_create(pool)) == NULL)                                                \
+            return NULL;                                                                                              \
         return hashArray;                                                                                             \
     }                                                                                                                 \
                                                                                                                       \

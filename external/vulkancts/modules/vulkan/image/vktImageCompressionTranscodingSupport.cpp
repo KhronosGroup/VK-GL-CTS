@@ -756,7 +756,7 @@ TestStatus BasicComputeTestInstance::iterate(void)
             {
                 const VkImageViewUsageCreateInfo imageViewUsageKHR = {
                     VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO, //VkStructureType sType;
-                    DE_NULL,                                        //const void* pNext;
+                    nullptr,                                        //const void* pNext;
                     m_parameters.compressedImageUsage,              //VkImageUsageFlags usage;
                 };
                 if (m_parameters.useMultiLayerViews())
@@ -951,8 +951,7 @@ void BasicComputeTestInstance::copyDataToImage(const VkCommandPool &cmdPool, con
             VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, imageBuffer.get(), 0ull, m_data.size());
 
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (VkDependencyFlags)0, 0u, (const VkMemoryBarrier *)DE_NULL, 1u, &FlushHostCopyBarrier, 1u,
-                              &preCopyImageBarrier);
+                              (VkDependencyFlags)0, 0u, nullptr, 1u, &FlushHostCopyBarrier, 1u, &preCopyImageBarrier);
 
         for (uint32_t mipNdx = 0u; mipNdx < imageData.getImageInfo(imageNdx).mipLevels; ++mipNdx)
         {
@@ -1000,7 +999,7 @@ void BasicComputeTestInstance::executeShader(const VkCommandPool &cmdPool, const
     {
         const VkSamplerCreateInfo createInfo = {
             VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   //VkStructureType sType;
-            DE_NULL,                                 //const void* pNext;
+            nullptr,                                 //const void* pNext;
             0u,                                      //VkSamplerCreateFlags flags;
             VK_FILTER_NEAREST,                       //VkFilter magFilter;
             VK_FILTER_NEAREST,                       //VkFilter minFilter;
@@ -1073,15 +1072,14 @@ void BasicComputeTestInstance::executeShader(const VkCommandPool &cmdPool, const
             VK_IMAGE_LAYOUT_GENERAL, imageData[0].getImage(0), compressedRange);
 
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                              (VkDependencyFlags)0, 0u, (const VkMemoryBarrier *)DE_NULL, 0u,
-                              (const VkBufferMemoryBarrier *)DE_NULL,
+                              (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr,
                               static_cast<uint32_t>(preShaderImageBarriers.size()), &preShaderImageBarriers[0]);
 
         for (uint32_t ndx = 0u; ndx < descriptorSets.size(); ++ndx)
         {
             descriptorSetUpdate(**descriptorSets[ndx], &descriptorImageInfos[ndx * m_parameters.imagesCount]);
             vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                     &(**descriptorSets[ndx]), 0u, DE_NULL);
+                                     &(**descriptorSets[ndx]), 0u, nullptr);
 
             // For multilayer views, we'll use the Z dimension to handle layers. The extent depth is only 1 in that case.
             const auto &extent = imageData[1].getImageInfo(ndx).extent;
@@ -1138,13 +1136,11 @@ bool BasicComputeTestInstance::copyResultAndCompare(const VkCommandPool &cmdPool
             VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, imageBufferResult.get(), 0ull, imageResultSize);
 
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                              (const VkBufferMemoryBarrier *)DE_NULL, 1u, &prepareForTransferBarrier);
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1u, &prepareForTransferBarrier);
         vk.cmdCopyImageToBuffer(cmdBuffer, uncompressed, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageBufferResult.get(),
                                 1u, &copyRegion);
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0u, (const VkMemoryBarrier *)DE_NULL, 1, &copyBarrier, 0u,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0u, nullptr, 1, &copyBarrier, 0u, nullptr);
     }
     endCommandBuffer(vk, cmdBuffer);
     submitCommandsAndWait(vk, device, queue, cmdBuffer);
@@ -1208,7 +1204,7 @@ void BasicComputeTestInstance::createImageInfos(ImageData &imageData, const vect
         const VkExtent3D extentCompressed      = makeExtent3D(getLayerSize(m_parameters.imageType, m_parameters.size));
         const VkImageCreateInfo compressedInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT |
                 VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,    // VkImageCreateFlags flags;
             imageType,                                 // VkImageType imageType;
@@ -1222,7 +1218,7 @@ void BasicComputeTestInstance::createImageInfos(ImageData &imageData, const vect
                 VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
             0u,                                  // uint32_t queueFamilyIndexCount;
-            DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+            nullptr,                             // const uint32_t* pQueueFamilyIndices;
             VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
         };
 
@@ -1259,7 +1255,7 @@ void BasicComputeTestInstance::createImageInfos(ImageData &imageData, const vect
                                                                originalResolutionInBlocks;
                 const VkImageCreateInfo uncompressedInfo = {
                     VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                              // VkStructureType sType;
-                    DE_NULL,                                                          // const void* pNext;
+                    nullptr,                                                          // const void* pNext;
                     0u,                                                               // VkImageCreateFlags flags;
                     imageType,                                                        // VkImageType imageType;
                     m_parameters.formatUncompressed,                                  // VkFormat format;
@@ -1271,7 +1267,7 @@ void BasicComputeTestInstance::createImageInfos(ImageData &imageData, const vect
                     m_parameters.uncompressedImageUsage | VK_IMAGE_USAGE_SAMPLED_BIT, // VkImageUsageFlags usage;
                     VK_SHARING_MODE_EXCLUSIVE,                                        // VkSharingMode sharingMode;
                     0u,                                                               // uint32_t queueFamilyIndexCount;
-                    DE_NULL,                   // const uint32_t* pQueueFamilyIndices;
+                    nullptr,                   // const uint32_t* pQueueFamilyIndices;
                     VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout initialLayout;
                 };
                 imageData.addImageInfo(uncompressedInfo);
@@ -1327,7 +1323,7 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
 
             const VkImageCreateInfo decompressedImageInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                             // const void* pNext;
+                nullptr,                             // const void* pNext;
                 0u,                                  // VkImageCreateFlags flags;
                 imageType,                           // VkImageType imageType;
                 m_parameters.formatForVerify,        // VkFormat format;
@@ -1340,13 +1336,13 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
                     VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
                 VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
                 0u,                                  // uint32_t queueFamilyIndexCount;
-                DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+                nullptr,                             // const uint32_t* pQueueFamilyIndices;
                 VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
             };
 
             const VkImageCreateInfo compressedImageInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                          // VkStructureType sType;
-                DE_NULL,                                                      // const void* pNext;
+                nullptr,                                                      // const void* pNext;
                 0u,                                                           // VkImageCreateFlags flags;
                 imageType,                                                    // VkImageType imageType;
                 m_parameters.formatCompressed,                                // VkFormat format;
@@ -1358,14 +1354,14 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
                 VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
                 VK_SHARING_MODE_EXCLUSIVE,                                    // VkSharingMode sharingMode;
                 0u,                                                           // uint32_t queueFamilyIndexCount;
-                DE_NULL,                                                      // const uint32_t* pQueueFamilyIndices;
+                nullptr,                                                      // const uint32_t* pQueueFamilyIndices;
                 VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout initialLayout;
             };
             const VkImageUsageFlags compressedViewUsageFlags =
                 VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             const VkImageViewUsageCreateInfo compressedViewUsageCI = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO, //VkStructureType sType;
-                DE_NULL,                                        //const void* pNext;
+                nullptr,                                        //const void* pNext;
                 compressedViewUsageFlags,                       //VkImageUsageFlags usage;
             };
             const VkImageViewType imageViewType(m_parameters.useMultiLayerViews() ?
@@ -1443,7 +1439,7 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
             {
                 const VkSamplerCreateInfo createInfo = {
                     VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   //VkStructureType sType;
-                    DE_NULL,                                 //const void* pNext;
+                    nullptr,                                 //const void* pNext;
                     0u,                                      //VkSamplerCreateFlags flags;
                     VK_FILTER_NEAREST,                       //VkFilter magFilter;
                     VK_FILTER_NEAREST,                       //VkFilter minFilter;
@@ -1471,8 +1467,8 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
                 makeDescriptorImageInfo(*sampler, *compressedView,
                                         layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL :
                                                                VK_IMAGE_LAYOUT_GENERAL),
-                makeDescriptorImageInfo(DE_NULL, *resultView, VK_IMAGE_LAYOUT_GENERAL),
-                makeDescriptorImageInfo(DE_NULL, *referenceView, VK_IMAGE_LAYOUT_GENERAL)};
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *resultView, VK_IMAGE_LAYOUT_GENERAL),
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *referenceView, VK_IMAGE_LAYOUT_GENERAL)};
             DescriptorSetUpdateBuilder()
                 .writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descriptorImageInfos[0])
@@ -1529,8 +1525,7 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
                         0u, VK_ACCESS_TRANSFER_WRITE_BIT, transferBuffer.get(), 0ull, bufferSizeComp);
 
                     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u,
-                                          &preCopyBufferBarriers, 0u, (const VkImageMemoryBarrier *)DE_NULL);
+                                          (VkDependencyFlags)0, 0, nullptr, 1u, &preCopyBufferBarriers, 0u, nullptr);
                 }
 
                 vk.cmdCopyImageToBuffer(cmdBuffer, uncompressed, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -1546,8 +1541,8 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, uncompressedImage.get(), subresourceRange);
 
                     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                          (VkDependencyFlags)0, 0u, (const VkMemoryBarrier *)DE_NULL, 1u,
-                                          &postCopyBufferBarriers, 1u, &preCopyImageBarriers);
+                                          (VkDependencyFlags)0, 0u, nullptr, 1u, &postCopyBufferBarriers, 1u,
+                                          &preCopyImageBarriers);
                 }
 
                 vk.cmdCopyBufferToImage(cmdBuffer, transferBuffer.get(), uncompressedImage.get(),
@@ -1555,7 +1550,7 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
 
                 vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
                 vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                         &descriptorSet.get(), 0u, DE_NULL);
+                                         &descriptorSet.get(), 0u, nullptr);
 
                 {
                     const VkImageMemoryBarrier preShaderImageBarriers[] = {
@@ -1581,9 +1576,8 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
                                                VK_IMAGE_LAYOUT_GENERAL, referenceImage.get(), subresourceRange)};
 
                     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0,
-                                          (const VkMemoryBarrier *)DE_NULL, 0u, (const VkBufferMemoryBarrier *)DE_NULL,
-                                          DE_LENGTH_OF_ARRAY(preShaderImageBarriers), preShaderImageBarriers);
+                                          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, nullptr, 0u,
+                                          nullptr, DE_LENGTH_OF_ARRAY(preShaderImageBarriers), preShaderImageBarriers);
                 }
 
                 vk.cmdPushConstants(cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0u, sizeof pushData,
@@ -1604,9 +1598,9 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
                                                referenceImage.get(), subresourceRange)};
 
                     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                          VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u,
-                                          (const VkMemoryBarrier *)DE_NULL, 0u, (const VkBufferMemoryBarrier *)DE_NULL,
-                                          DE_LENGTH_OF_ARRAY(postShaderImageBarriers), postShaderImageBarriers);
+                                          VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u,
+                                          nullptr, DE_LENGTH_OF_ARRAY(postShaderImageBarriers),
+                                          postShaderImageBarriers);
                 }
 
                 vk.cmdCopyImageToBuffer(cmdBuffer, resultImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -1624,9 +1618,8 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
                     };
 
                     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                          (VkDependencyFlags)0, 0u, (const VkMemoryBarrier *)DE_NULL,
-                                          DE_LENGTH_OF_ARRAY(postCopyBufferBarrier), postCopyBufferBarrier, 0u,
-                                          (const VkImageMemoryBarrier *)DE_NULL);
+                                          (VkDependencyFlags)0, 0u, nullptr, DE_LENGTH_OF_ARRAY(postCopyBufferBarrier),
+                                          postCopyBufferBarrier, 0u, nullptr);
                 }
             }
             endCommandBuffer(vk, cmdBuffer);
@@ -1720,7 +1713,7 @@ void ImageStoreComputeTestInstance::executeShader(const VkCommandPool &cmdPool, 
     {
         const VkSamplerCreateInfo createInfo = {
             VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   //VkStructureType sType;
-            DE_NULL,                                 //const void* pNext;
+            nullptr,                                 //const void* pNext;
             0u,                                      //VkSamplerCreateFlags flags;
             VK_FILTER_NEAREST,                       //VkFilter magFilter;
             VK_FILTER_NEAREST,                       //VkFilter minFilter;
@@ -1793,15 +1786,14 @@ void ImageStoreComputeTestInstance::executeShader(const VkCommandPool &cmdPool, 
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, imageData[0].getImage(0u), compressedRange);
 
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                              (VkDependencyFlags)0, 0u, (const VkMemoryBarrier *)DE_NULL, 0u,
-                              (const VkBufferMemoryBarrier *)DE_NULL,
+                              (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr,
                               static_cast<uint32_t>(preShaderImageBarriers.size()), &preShaderImageBarriers[0]);
 
         for (uint32_t ndx = 0u; ndx < descriptorSets.size(); ++ndx)
         {
             descriptorSetUpdate(**descriptorSets[ndx], &descriptorImageInfos[ndx * m_parameters.imagesCount]);
             vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                     &(**descriptorSets[ndx]), 0u, DE_NULL);
+                                     &(**descriptorSets[ndx]), 0u, nullptr);
 
             // For multilayer views, we'll use the Z dimension to iterate over the layers, while the extent depth is only 1.
             const auto &extent = imageData[1].getImageInfo(ndx).extent;
@@ -1943,7 +1935,7 @@ TestStatus GraphicsAttachmentsTestInstance::iterate(void)
 
 void GraphicsAttachmentsTestInstance::prepareData()
 {
-    VkImageViewUsageCreateInfo *imageViewUsageKHRNull = (VkImageViewUsageCreateInfo *)DE_NULL;
+    VkImageViewUsageCreateInfo *imageViewUsageKHRNull = nullptr;
 
     m_imageViewUsageKHR = makeImageViewUsageCreateInfo(m_parameters.compressedImageViewUsage);
 
@@ -2028,7 +2020,7 @@ void GraphicsAttachmentsTestInstance::transcodeRead(const VkCommandPool &cmdPool
     const VkQueue queue       = m_context.getUniversalQueue();
     Allocator &allocator      = m_context.getDefaultAllocator();
 
-    const VkImageCreateFlags *imgCreateFlagsOverride = DE_NULL;
+    const VkImageCreateFlags *imgCreateFlagsOverride = nullptr;
 
     const VkImageCreateInfo srcImageCreateInfo =
         makeCreateImageInfo(m_srcFormat, m_parameters.imageType, m_srcImageResolutions[0], m_srcImageUsageFlags,
@@ -2138,30 +2130,28 @@ void GraphicsAttachmentsTestInstance::transcodeRead(const VkCommandPool &cmdPool
 
             // Copy buffer to image
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u,
-                                  &srcCopyBufferBarrierPre, 1u, &srcCopyImageBarrierPre);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &srcCopyBufferBarrierPre, 1u,
+                                  &srcCopyImageBarrierPre);
             vk.cmdCopyBufferToImage(*cmdBuffer, srcImageBuffer->get(), srcImage->get(),
                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &srcCopyRegion);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0u, DE_NULL, 1u,
-                                  &srcCopyImageBarrierPost);
+                                  (VkDependencyFlags)0, 0, nullptr, 0u, nullptr, 1u, &srcCopyImageBarrierPost);
 
             // Define destination image layout
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0u, DE_NULL, 1u,
-                                  &dstInitImageBarrier);
+                                  (VkDependencyFlags)0, 0, nullptr, 0u, nullptr, 1u, &dstInitImageBarrier);
 
             beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderSize);
 
             const VkDescriptorImageInfo descriptorSrcImageInfo(
-                makeDescriptorImageInfo(DE_NULL, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
             DescriptorSetUpdateBuilder()
                 .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
                              VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &descriptorSrcImageInfo)
                 .update(vk, device);
 
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                     &descriptorSet.get(), 0u, DE_NULL);
+                                     &descriptorSet.get(), 0u, nullptr);
             vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &m_vertexBuffer->get(), &m_vertexBufferOffset);
 
             vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &viewport);
@@ -2180,14 +2170,12 @@ void GraphicsAttachmentsTestInstance::transcodeRead(const VkCommandPool &cmdPool
                                         0ull, dstImageSizeInBytes);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0,
-                                  (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
+                                  VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
                                   &prepareForTransferBarrier);
             vk.cmdCopyImageToBuffer(*cmdBuffer, dstImage->get(), VK_IMAGE_LAYOUT_GENERAL, dstImageBuffer->get(), 1u,
                                     &dstCopyRegion);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &copyBarrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &copyBarrier, 0, nullptr);
 
             endCommandBuffer(vk, *cmdBuffer);
 
@@ -2210,7 +2198,7 @@ void GraphicsAttachmentsTestInstance::transcodeWrite(const VkCommandPool &cmdPoo
     const VkQueue queue       = m_context.getUniversalQueue();
     Allocator &allocator      = m_context.getDefaultAllocator();
 
-    const VkImageCreateFlags *imgCreateFlagsOverride = DE_NULL;
+    const VkImageCreateFlags *imgCreateFlagsOverride = nullptr;
 
     const VkImageCreateInfo dstImageCreateInfo =
         makeCreateImageInfo(m_dstFormat, m_parameters.imageType, m_dstImageResolutions[0], m_dstImageUsageFlags,
@@ -2321,30 +2309,29 @@ void GraphicsAttachmentsTestInstance::transcodeWrite(const VkCommandPool &cmdPoo
 
             // Copy buffer to image
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u,
-                                  &srcCopyBufferBarrierPre, 1u, &srcCopyImageBarrierPre);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &srcCopyBufferBarrierPre, 1u,
+                                  &srcCopyImageBarrierPre);
             vk.cmdCopyBufferToImage(*cmdBuffer, srcImageBuffer->get(), srcImage->get(),
                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &srcCopyRegion);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0u, DE_NULL, 1u,
-                                  &srcCopyImageBarrierPost);
+                                  (VkDependencyFlags)0, 0, nullptr, 0u, nullptr, 1u, &srcCopyImageBarrierPost);
 
             // Define destination image layout
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0,
-                                  (const VkMemoryBarrier *)DE_NULL, 0u, DE_NULL, 1u, &dstInitImageBarrier);
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, nullptr, 0u,
+                                  nullptr, 1u, &dstInitImageBarrier);
 
             beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderSize);
 
             const VkDescriptorImageInfo descriptorSrcImageInfo(
-                makeDescriptorImageInfo(DE_NULL, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
             DescriptorSetUpdateBuilder()
                 .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
                              VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &descriptorSrcImageInfo)
                 .update(vk, device);
 
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                     &descriptorSet.get(), 0u, DE_NULL);
+                                     &descriptorSet.get(), 0u, nullptr);
             vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &m_vertexBuffer->get(), &m_vertexBufferOffset);
 
             vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &viewport);
@@ -2363,14 +2350,12 @@ void GraphicsAttachmentsTestInstance::transcodeWrite(const VkCommandPool &cmdPoo
                                         0ull, dstImageSizeInBytes);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0,
-                                  (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
+                                  VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
                                   &prepareForTransferBarrier);
             vk.cmdCopyImageToBuffer(*cmdBuffer, dstImage->get(), VK_IMAGE_LAYOUT_GENERAL, dstImageBuffer->get(), 1u,
                                     &dstCopyRegion);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &copyBarrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &copyBarrier, 0, nullptr);
 
             endCommandBuffer(vk, *cmdBuffer);
 
@@ -2404,7 +2389,7 @@ VkImageCreateInfo GraphicsAttachmentsTestInstance::makeCreateImageInfo(const VkF
             VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT :
             0;
     const VkImageCreateFlags imageCreateFlags =
-        (createFlags != DE_NULL) ? *createFlags : (imageCreateFlagsBase | imageCreateFlagsAddOn);
+        (createFlags != nullptr) ? *createFlags : (imageCreateFlagsBase | imageCreateFlagsAddOn);
 
     VkFormatProperties properties;
     m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), format,
@@ -2423,7 +2408,7 @@ VkImageCreateInfo GraphicsAttachmentsTestInstance::makeCreateImageInfo(const VkF
 
     const VkImageCreateInfo createImageInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,    // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         imageCreateFlags,                       // VkImageCreateFlags flags;
         imageType,                              // VkImageType imageType;
         format,                                 // VkFormat format;
@@ -2435,7 +2420,7 @@ VkImageCreateInfo GraphicsAttachmentsTestInstance::makeCreateImageInfo(const VkF
         usageFlags,                             // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,              // VkSharingMode sharingMode;
         0u,                                     // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout initialLayout;
     };
 
@@ -2579,9 +2564,9 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression(const VkCommandPool &c
         *resSrcSampler, *resSrcImageView,
         layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL));
     const VkDescriptorImageInfo descriptorRefDstImage(
-        makeDescriptorImageInfo(DE_NULL, *refDstImageView, VK_IMAGE_LAYOUT_GENERAL));
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *refDstImageView, VK_IMAGE_LAYOUT_GENERAL));
     const VkDescriptorImageInfo descriptorResDstImage(
-        makeDescriptorImageInfo(DE_NULL, *resDstImageView, VK_IMAGE_LAYOUT_GENERAL));
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *resDstImageView, VK_IMAGE_LAYOUT_GENERAL));
 
     const VkExtent2D renderSize(makeExtent2D(mipmapDims.x(), mipmapDims.y()));
     const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
@@ -2610,7 +2595,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression(const VkCommandPool &c
         resCompressedImage->get(), resSubresourceRange);
 
     const Move<VkFramebuffer> framebuffer(
-        makeFramebuffer(vk, device, *renderPass, 0, DE_NULL, renderSize.width, renderSize.height, getLayerCount()));
+        makeFramebuffer(vk, device, *renderPass, 0, nullptr, renderSize.width, renderSize.height, getLayerCount()));
 
     // Upload source image data
     {
@@ -2624,25 +2609,20 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression(const VkCommandPool &c
 
     // Copy buffer to image
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-                          0, (const VkMemoryBarrier *)DE_NULL, 1u, &refSrcCopyBufferBarrierPre, 1u,
-                          &refSrcCopyImageBarrierPre);
+                          0, nullptr, 1u, &refSrcCopyBufferBarrierPre, 1u, &refSrcCopyImageBarrierPre);
     vk.cmdCopyBufferToImage(*cmdBuffer, refSrcImageBuffer->get(), refSrcImage->get(), VK_IMAGE_LAYOUT_GENERAL, 1u,
                             &copyBufferToImageRegion);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0, DE_NULL, 1u,
-                          &refSrcCopyImageBarrierPost);
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1u, &refSrcCopyImageBarrierPost);
 
     // Make reference and result images readable
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0u, DE_NULL, 1u,
-                          &refDstInitImageBarrier);
+                          (VkDependencyFlags)0, 0, nullptr, 0u, nullptr, 1u, &refDstInitImageBarrier);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0u, DE_NULL, 1u,
-                          &resDstInitImageBarrier);
+                          (VkDependencyFlags)0, 0, nullptr, 0u, nullptr, 1u, &resDstInitImageBarrier);
     {
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0u, DE_NULL, 1u,
-                              &resCompressedImageBarrier);
+                              (VkDependencyFlags)0, 0, nullptr, 0u, nullptr, 1u, &resCompressedImageBarrier);
     }
 
     beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderSize);
@@ -2659,7 +2639,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression(const VkCommandPool &c
             .update(vk, device);
 
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
         vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &m_vertexBuffer->get(), &m_vertexBufferOffset);
         vk.cmdDraw(*cmdBuffer, m_vertexCount, 1, 0, 0);
     }
@@ -2675,13 +2655,11 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression(const VkCommandPool &c
             VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, refDstBuffer->get(), 0ull, dstBufferSize);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                              (const VkBufferMemoryBarrier *)DE_NULL, 1, &refDstImageBarrier);
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &refDstImageBarrier);
         vk.cmdCopyImageToBuffer(*cmdBuffer, refDstImage->get(), VK_IMAGE_LAYOUT_GENERAL, refDstBuffer->get(), 1u,
                                 &copyRegion);
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &refDstBufferBarrier, 0,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &refDstBufferBarrier, 0, nullptr);
     }
 
     // Decompress result image
@@ -2694,13 +2672,11 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression(const VkCommandPool &c
             VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, resDstBuffer->get(), 0ull, dstBufferSize);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                              (const VkBufferMemoryBarrier *)DE_NULL, 1, &resDstImageBarrier);
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &resDstImageBarrier);
         vk.cmdCopyImageToBuffer(*cmdBuffer, resDstImage->get(), VK_IMAGE_LAYOUT_GENERAL, resDstBuffer->get(), 1u,
                                 &copyRegion);
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &resDstBufferBarrier, 0,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &resDstBufferBarrier, 0, nullptr);
     }
 
     endCommandBuffer(vk, *cmdBuffer);
@@ -2782,7 +2758,7 @@ void GraphicsTextureTestInstance::transcodeRead(const VkCommandPool &cmdPool)
     const VkQueue queue       = m_context.getUniversalQueue();
     Allocator &allocator      = m_context.getDefaultAllocator();
 
-    const VkImageCreateFlags *imgCreateFlagsOverride = DE_NULL;
+    const VkImageCreateFlags *imgCreateFlagsOverride = nullptr;
 
     const VkImageCreateInfo srcImageCreateInfo =
         makeCreateImageInfo(m_srcFormat, m_parameters.imageType, m_srcImageResolutions[0], m_srcImageUsageFlags,
@@ -2865,7 +2841,7 @@ void GraphicsTextureTestInstance::transcodeRead(const VkCommandPool &cmdPool)
             const VkDescriptorImageInfo descriptorSrcImage(
                 makeDescriptorImageInfo(*srcSampler, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
             const VkDescriptorImageInfo descriptorDstImage(
-                makeDescriptorImageInfo(DE_NULL, *dstImageView, VK_IMAGE_LAYOUT_GENERAL));
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *dstImageView, VK_IMAGE_LAYOUT_GENERAL));
 
             const VkBufferImageCopy srcCopyRegion =
                 makeBufferImageCopy(srcImageResolution.x(), srcImageResolution.y(), levelNdx, layerNdx,
@@ -2886,7 +2862,7 @@ void GraphicsTextureTestInstance::transcodeRead(const VkCommandPool &cmdPool)
 
             const VkExtent2D framebufferSize(makeExtent2D(dstImageResolution[0], dstImageResolution[1]));
             const Move<VkFramebuffer> framebuffer(makeFramebuffer(
-                vk, device, *renderPass, 0, DE_NULL, framebufferSize.width, framebufferSize.height, SINGLE_LAYER));
+                vk, device, *renderPass, 0, nullptr, framebufferSize.width, framebufferSize.height, SINGLE_LAYER));
 
             // Upload source image data
             const Allocation &alloc = srcImageBuffer->getAllocation();
@@ -2898,18 +2874,16 @@ void GraphicsTextureTestInstance::transcodeRead(const VkCommandPool &cmdPool)
 
             // Copy buffer to image
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u,
-                                  &srcCopyBufferBarrierPre, 1u, &srcCopyImageBarrierPre);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &srcCopyBufferBarrierPre, 1u,
+                                  &srcCopyImageBarrierPre);
             vk.cmdCopyBufferToImage(*cmdBuffer, srcImageBuffer->get(), srcImage->get(),
                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &srcCopyRegion);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0u, DE_NULL, 1u,
-                                  &srcCopyImageBarrierPost);
+                                  (VkDependencyFlags)0, 0, nullptr, 0u, nullptr, 1u, &srcCopyImageBarrierPost);
 
             // Define destination image layout
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0u, DE_NULL, 1u,
-                                  &dstInitImageBarrier);
+                                  (VkDependencyFlags)0, 0, nullptr, 0u, nullptr, 1u, &dstInitImageBarrier);
 
             beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderSize);
 
@@ -2921,7 +2895,7 @@ void GraphicsTextureTestInstance::transcodeRead(const VkCommandPool &cmdPool)
                 .update(vk, device);
 
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                     &descriptorSet.get(), 0u, DE_NULL);
+                                     &descriptorSet.get(), 0u, nullptr);
             vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &m_vertexBuffer->get(), &m_vertexBufferOffset);
 
             vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &viewport);
@@ -2940,13 +2914,11 @@ void GraphicsTextureTestInstance::transcodeRead(const VkCommandPool &cmdPool)
                                         0ull, dstImageSizeInBytes);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                                  (const VkBufferMemoryBarrier *)DE_NULL, 1, &prepareForTransferBarrier);
+                                  (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &prepareForTransferBarrier);
             vk.cmdCopyImageToBuffer(*cmdBuffer, dstImage->get(), VK_IMAGE_LAYOUT_GENERAL, dstImageBuffer->get(), 1u,
                                     &dstCopyRegion);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &copyBarrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &copyBarrier, 0, nullptr);
 
             endCommandBuffer(vk, *cmdBuffer);
 
@@ -2969,7 +2941,7 @@ void GraphicsTextureTestInstance::transcodeWrite(const VkCommandPool &cmdPool)
     const VkQueue queue       = m_context.getUniversalQueue();
     Allocator &allocator      = m_context.getDefaultAllocator();
 
-    const VkImageCreateFlags *imgCreateFlagsOverride = DE_NULL;
+    const VkImageCreateFlags *imgCreateFlagsOverride = nullptr;
 
     const VkImageCreateInfo dstImageCreateInfo =
         makeCreateImageInfo(m_dstFormat, m_parameters.imageType, m_dstImageResolutions[0], m_dstImageUsageFlags,
@@ -3052,7 +3024,7 @@ void GraphicsTextureTestInstance::transcodeWrite(const VkCommandPool &cmdPool)
             const VkDescriptorImageInfo descriptorSrcImage(
                 makeDescriptorImageInfo(*srcSampler, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
             const VkDescriptorImageInfo descriptorDstImage(
-                makeDescriptorImageInfo(DE_NULL, *dstImageView, VK_IMAGE_LAYOUT_GENERAL));
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *dstImageView, VK_IMAGE_LAYOUT_GENERAL));
 
             const VkBufferImageCopy srcCopyRegion =
                 makeBufferImageCopy(srcImageResolution.x(), srcImageResolution.y(), 0u, 0u);
@@ -3074,7 +3046,7 @@ void GraphicsTextureTestInstance::transcodeWrite(const VkCommandPool &cmdPool)
 
             const VkExtent2D framebufferSize(makeExtent2D(dstImageResolution[0], dstImageResolution[1]));
             const Move<VkFramebuffer> framebuffer(makeFramebuffer(
-                vk, device, *renderPass, 0, DE_NULL, framebufferSize.width, framebufferSize.height, SINGLE_LAYER));
+                vk, device, *renderPass, 0, nullptr, framebufferSize.width, framebufferSize.height, SINGLE_LAYER));
 
             // Upload source image data
             const Allocation &alloc = srcImageBuffer->getAllocation();
@@ -3086,18 +3058,16 @@ void GraphicsTextureTestInstance::transcodeWrite(const VkCommandPool &cmdPool)
 
             // Copy buffer to image
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u,
-                                  &srcCopyBufferBarrierPre, 1u, &srcCopyImageBarrierPre);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &srcCopyBufferBarrierPre, 1u,
+                                  &srcCopyImageBarrierPre);
             vk.cmdCopyBufferToImage(*cmdBuffer, srcImageBuffer->get(), srcImage->get(),
                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &srcCopyRegion);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0u, DE_NULL, 1u,
-                                  &srcCopyImageBarrierPost);
+                                  (VkDependencyFlags)0, 0, nullptr, 0u, nullptr, 1u, &srcCopyImageBarrierPost);
 
             // Define destination image layout
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0u, DE_NULL, 1u,
-                                  &dstInitImageBarrier);
+                                  (VkDependencyFlags)0, 0, nullptr, 0u, nullptr, 1u, &dstInitImageBarrier);
 
             beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderSize);
 
@@ -3109,7 +3079,7 @@ void GraphicsTextureTestInstance::transcodeWrite(const VkCommandPool &cmdPool)
                 .update(vk, device);
 
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                     &descriptorSet.get(), 0u, DE_NULL);
+                                     &descriptorSet.get(), 0u, nullptr);
             vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &m_vertexBuffer->get(), &m_vertexBufferOffset);
 
             vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &viewport);
@@ -3128,13 +3098,11 @@ void GraphicsTextureTestInstance::transcodeWrite(const VkCommandPool &cmdPool)
                                         0ull, dstImageSizeInBytes);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                                  (const VkBufferMemoryBarrier *)DE_NULL, 1, &prepareForTransferBarrier);
+                                  (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &prepareForTransferBarrier);
             vk.cmdCopyImageToBuffer(*cmdBuffer, dstImage->get(), VK_IMAGE_LAYOUT_GENERAL, dstImageBuffer->get(), 1u,
                                     &dstCopyRegion);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &copyBarrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &copyBarrier, 0, nullptr);
 
             endCommandBuffer(vk, *cmdBuffer);
 

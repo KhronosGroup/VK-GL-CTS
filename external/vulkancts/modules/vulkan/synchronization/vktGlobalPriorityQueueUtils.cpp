@@ -169,7 +169,7 @@ SpecialDevice::SpecialDevice(Context &ctx, VkQueueFlagBits transitionFrom, VkQue
     }
 
     VkPhysicalDeviceProtectedMemoryFeatures memFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,
-                                                        DE_NULL, VK_TRUE};
+                                                        nullptr, VK_TRUE};
     VkPhysicalDeviceFeatures2 devFeatures = ctx.getDeviceFeatures2();
     if (enableProtected)
         devFeatures.pNext = &memFeatures;
@@ -251,7 +251,7 @@ BufferWithMemory::BufferWithMemory(const vk::InstanceInterface &vki, const Devic
 {
     if (m_amISparse)
     {
-        DE_ASSERT(sparseQueue != VkQueue(0));
+        DE_ASSERT(sparseQueue != VK_NULL_HANDLE);
         const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(vki, phys);
         const uint32_t memoryTypeIndex =
             selectMatchingMemoryType(memoryProperties, m_requirements.memoryTypeBits, memoryRequirement);

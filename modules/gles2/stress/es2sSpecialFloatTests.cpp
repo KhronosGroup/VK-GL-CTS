@@ -122,7 +122,7 @@ protected:
 
 RenderCase::RenderCase(Context &context, const char *name, const char *desc, RenderTargetType renderTargetType)
     : TestCase(context, name, desc)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_renderTargetType(renderTargetType)
 {
 }
@@ -174,7 +174,7 @@ void RenderCase::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 }
 
@@ -377,7 +377,7 @@ public:
     virtual void deinit(void);
     IterateResult iterate(void);
 
-    virtual void testFBO(void) = DE_NULL;
+    virtual void testFBO(void) = 0;
 
 protected:
     const FrameBufferType m_fboType;
@@ -474,7 +474,7 @@ void FramebufferRenderCase::init(void)
         // gen texture
         gl.genTextures(1, &m_texID);
         gl.bindTexture(GL_TEXTURE_2D, m_texID);
-        gl.texImage2D(GL_TEXTURE_2D, 0, internalFormat, TEST_CANVAS_SIZE, TEST_CANVAS_SIZE, 0, format, type, DE_NULL);
+        gl.texImage2D(GL_TEXTURE_2D, 0, internalFormat, TEST_CANVAS_SIZE, TEST_CANVAS_SIZE, 0, format, type, nullptr);
         GLU_EXPECT_NO_ERROR(gl.getError(), "texture init");
 
         // gen fbo
@@ -701,14 +701,14 @@ VertexAttributeCase::IterateResult VertexAttributeCase::iterate(void)
         if (m_storage == STORAGE_BUFFER)
         {
             gl.bindBuffer(GL_ARRAY_BUFFER, m_positionVboID);
-            gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+            gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
 
             gl.bindBuffer(GL_ARRAY_BUFFER, m_attribVboID);
-            gl.vertexAttribPointer(attribLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+            gl.vertexAttribPointer(attribLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
 
             gl.enableVertexAttribArray(positionLoc);
             gl.enableVertexAttribArray(attribLoc);
-            gl.drawElements(GL_TRIANGLES, (glw::GLsizei)(indices.size()), GL_UNSIGNED_SHORT, DE_NULL);
+            gl.drawElements(GL_TRIANGLES, (glw::GLsizei)(indices.size()), GL_UNSIGNED_SHORT, nullptr);
             gl.disableVertexAttribArray(positionLoc);
             gl.disableVertexAttribArray(attribLoc);
 

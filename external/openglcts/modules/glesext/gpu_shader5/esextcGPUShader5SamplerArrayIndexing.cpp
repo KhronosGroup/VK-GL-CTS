@@ -58,7 +58,7 @@ GPUShader5SamplerArrayIndexing::GPUShader5SamplerArrayIndexing(Context &context,
     , m_fbo_id(0)
     , m_fs_id(0)
     , m_po_id(0)
-    , m_small_to_ids(DE_NULL)
+    , m_small_to_ids(nullptr)
     , m_vao_id(0)
     , m_vbo_id(0)
     , m_vs_id(0)
@@ -122,11 +122,11 @@ void GPUShader5SamplerArrayIndexing::deinit(void)
         m_big_to_id = 0;
     }
 
-    if (m_small_to_ids != DE_NULL)
+    if (m_small_to_ids != nullptr)
     {
         gl.deleteTextures(m_n_small_textures, m_small_to_ids);
         delete[] m_small_to_ids;
-        m_small_to_ids = DE_NULL;
+        m_small_to_ids = nullptr;
     }
 
     /* Release base class */
@@ -259,7 +259,7 @@ tcu::TestNode::IterateResult GPUShader5SamplerArrayIndexing::iterate(void)
     glw::GLint position_attribute_location = gl.getAttribLocation(m_po_id, "position");
 
     gl.vertexAttribPointer(position_attribute_location, 4 /* size */, GL_FLOAT, GL_FALSE, 0 /* stride */,
-                           DE_NULL /* pointer */);
+                           nullptr /* pointer */);
     gl.enableVertexAttribArray(position_attribute_location);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Error configuring position vertex attribute array!");
 

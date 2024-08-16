@@ -393,7 +393,7 @@ bool PipelineStatisticsQueryUtilities::executeQuery(glw::GLenum query_type, glw:
 
     /* Perform the draw calls, if any supplied call-back function pointer was supplied
      * by the caller. */
-    if (pfn_draw != DE_NULL)
+    if (pfn_draw != nullptr)
     {
         pfn_draw(draw_user_arg);
     }
@@ -426,10 +426,10 @@ bool PipelineStatisticsQueryUtilities::executeQuery(glw::GLenum query_type, glw:
     for (unsigned int n_iteration = 0; n_iteration < 2; /* as per description */
          ++n_iteration)
     {
-        glw::GLint *offset_int       = DE_NULL;
-        glw::GLint64 *offset_int64   = DE_NULL;
-        glw::GLuint *offset_uint     = DE_NULL;
-        glw::GLuint64 *offset_uint64 = DE_NULL;
+        glw::GLint *offset_int       = nullptr;
+        glw::GLint64 *offset_int64   = nullptr;
+        glw::GLuint *offset_uint     = nullptr;
+        glw::GLuint64 *offset_uint64 = nullptr;
         glw::GLint result_int        = INT_MAX;
         glw::GLint64 result_int64    = LLONG_MAX;
         bool result_int64_written    = false;
@@ -1067,40 +1067,40 @@ bool PipelineStatisticsQueryUtilities::isDrawCallSupported(_draw_call_type draw_
     switch (draw_call)
     {
     case DRAW_CALL_TYPE_GLDRAWARRAYS:
-        result = (gl.drawArrays != DE_NULL);
+        result = (gl.drawArrays != nullptr);
         break;
     case DRAW_CALL_TYPE_GLDRAWARRAYSINDIRECT:
-        result = (gl.drawArraysIndirect != DE_NULL);
+        result = (gl.drawArraysIndirect != nullptr);
         break;
     case DRAW_CALL_TYPE_GLDRAWARRAYSINSTANCED:
-        result = (gl.drawArraysInstanced != DE_NULL);
+        result = (gl.drawArraysInstanced != nullptr);
         break;
     case DRAW_CALL_TYPE_GLDRAWARRAYSINSTANCEDBASEINSTANCE:
-        result = (gl.drawArraysInstancedBaseInstance != DE_NULL);
+        result = (gl.drawArraysInstancedBaseInstance != nullptr);
         break;
     case DRAW_CALL_TYPE_GLDRAWELEMENTS:
-        result = (gl.drawElements != DE_NULL);
+        result = (gl.drawElements != nullptr);
         break;
     case DRAW_CALL_TYPE_GLDRAWELEMENTSBASEVERTEX:
-        result = (gl.drawElementsBaseVertex != DE_NULL);
+        result = (gl.drawElementsBaseVertex != nullptr);
         break;
     case DRAW_CALL_TYPE_GLDRAWELEMENTSINDIRECT:
-        result = (gl.drawElementsIndirect != DE_NULL);
+        result = (gl.drawElementsIndirect != nullptr);
         break;
     case DRAW_CALL_TYPE_GLDRAWELEMENTSINSTANCED:
-        result = (gl.drawElementsInstanced != DE_NULL);
+        result = (gl.drawElementsInstanced != nullptr);
         break;
     case DRAW_CALL_TYPE_GLDRAWELEMENTSINSTANCEDBASEINSTANCE:
-        result = (gl.drawElementsInstancedBaseInstance != DE_NULL);
+        result = (gl.drawElementsInstancedBaseInstance != nullptr);
         break;
     case DRAW_CALL_TYPE_GLDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCE:
-        result = (gl.drawElementsInstancedBaseVertexBaseInstance != DE_NULL);
+        result = (gl.drawElementsInstancedBaseVertexBaseInstance != nullptr);
         break;
     case DRAW_CALL_TYPE_GLDRAWRANGEELEMENTS:
-        result = (gl.drawRangeElements != DE_NULL);
+        result = (gl.drawRangeElements != nullptr);
         break;
     case DRAW_CALL_TYPE_GLDRAWRANGEELEMENTSBASEVERTEX:
-        result = (gl.drawRangeElementsBaseVertex != DE_NULL);
+        result = (gl.drawRangeElementsBaseVertex != nullptr);
         break;
 
     default:
@@ -1236,7 +1236,7 @@ bool PipelineStatisticsQueryUtilities::verifyResultValues(
     bool is_result_qo_uint_valid   = false;
     bool is_result_qo_uint64_valid = false;
 
-    if (draw_call_type_ptr != DE_NULL)
+    if (draw_call_type_ptr != nullptr)
     {
         draw_call_name = getStringForDrawCallType(*draw_call_type_ptr);
     }
@@ -1245,7 +1245,7 @@ bool PipelineStatisticsQueryUtilities::verifyResultValues(
         draw_call_name = "(does not apply)";
     }
 
-    if (primitive_type_ptr != DE_NULL)
+    if (primitive_type_ptr != nullptr)
     {
         primitive_name = getStringForPrimitiveType(*primitive_type_ptr);
     }
@@ -1731,10 +1731,10 @@ void PipelineStatisticsQueryTestFunctionalBase::buildProgram(const char *cs_body
     glw::GLuint vs_id        = 0;
 
     /* Quick checks */
-    DE_ASSERT((cs_body != DE_NULL && (fs_body == DE_NULL && gs_body == DE_NULL && tc_body == DE_NULL &&
-                                      te_body == DE_NULL && vs_body == DE_NULL)) ||
-              (cs_body == DE_NULL && (fs_body != DE_NULL || gs_body != DE_NULL || tc_body != DE_NULL ||
-                                      te_body != DE_NULL || vs_body != DE_NULL)));
+    DE_ASSERT((cs_body != nullptr && (fs_body == nullptr && gs_body == nullptr && tc_body == nullptr &&
+                                      te_body == nullptr && vs_body == nullptr)) ||
+              (cs_body == nullptr && (fs_body != nullptr || gs_body != nullptr || tc_body != nullptr ||
+                                      te_body != nullptr || vs_body != nullptr)));
 
     /* Any existing program object already initialzied? Purge it before we continue */
     if (m_po_id != 0)
@@ -1746,32 +1746,32 @@ void PipelineStatisticsQueryTestFunctionalBase::buildProgram(const char *cs_body
     }
 
     /* Generate all shader objects we'll need to use for the program */
-    if (cs_body != DE_NULL)
+    if (cs_body != nullptr)
     {
         cs_id = gl.createShader(GL_COMPUTE_SHADER);
     }
 
-    if (fs_body != DE_NULL)
+    if (fs_body != nullptr)
     {
         fs_id = gl.createShader(GL_FRAGMENT_SHADER);
     }
 
-    if (gs_body != DE_NULL)
+    if (gs_body != nullptr)
     {
         gs_id = gl.createShader(GL_GEOMETRY_SHADER);
     }
 
-    if (tc_body != DE_NULL)
+    if (tc_body != nullptr)
     {
         tc_id = gl.createShader(GL_TESS_CONTROL_SHADER);
     }
 
-    if (te_body != DE_NULL)
+    if (te_body != nullptr)
     {
         te_id = gl.createShader(GL_TESS_EVALUATION_SHADER);
     }
 
-    if (vs_body != DE_NULL)
+    if (vs_body != nullptr)
     {
         vs_id = gl.createShader(GL_VERTEX_SHADER);
     }
@@ -1787,37 +1787,37 @@ void PipelineStatisticsQueryTestFunctionalBase::buildProgram(const char *cs_body
     if (cs_id != 0)
     {
         gl.shaderSource(cs_id, 1,           /* count */
-                        &cs_body, DE_NULL); /* length */
+                        &cs_body, nullptr); /* length */
     }
 
     if (fs_id != 0)
     {
         gl.shaderSource(fs_id, 1,           /* count */
-                        &fs_body, DE_NULL); /* length */
+                        &fs_body, nullptr); /* length */
     }
 
     if (gs_id != 0)
     {
         gl.shaderSource(gs_id, 1,           /* count */
-                        &gs_body, DE_NULL); /* length */
+                        &gs_body, nullptr); /* length */
     }
 
     if (tc_id != 0)
     {
         gl.shaderSource(tc_id, 1,           /* count */
-                        &tc_body, DE_NULL); /* length */
+                        &tc_body, nullptr); /* length */
     }
 
     if (te_id != 0)
     {
         gl.shaderSource(te_id, 1,           /* count */
-                        &te_body, DE_NULL); /* length */
+                        &te_body, nullptr); /* length */
     }
 
     if (vs_id != 0)
     {
         gl.shaderSource(vs_id, 1,           /* count */
-                        &vs_body, DE_NULL); /* length */
+                        &vs_body, nullptr); /* length */
     }
 
     GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() call(s) failed.");
@@ -2161,7 +2161,7 @@ void PipelineStatisticsQueryTestFunctionalBase::initVBO(
     gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vbo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call(s) failed.");
 
-    gl.bufferData(GL_ARRAY_BUFFER, bo_data_size, DE_NULL, /* data */
+    gl.bufferData(GL_ARRAY_BUFFER, bo_data_size, nullptr, /* data */
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
@@ -2463,8 +2463,8 @@ bool PipelineStatisticsQueryTestFunctional1::executeTest(glw::GLenum current_que
     PipelineStatisticsQueryUtilities::_test_execution_result run_result;
 
     if (!PipelineStatisticsQueryUtilities::executeQuery(
-            current_query_target, m_qo_id, m_bo_qo_id, DE_NULL, /* pfn_draw */
-            DE_NULL,                                            /* draw_user_arg */
+            current_query_target, m_qo_id, m_bo_qo_id, nullptr, /* pfn_draw */
+            nullptr,                                            /* draw_user_arg */
             m_context.getRenderContext(), m_testCtx, m_context.getContextInfo(), &run_result, skipped))
     {
         m_testCtx.getLog() << tcu::TestLog::Message
@@ -2481,7 +2481,7 @@ bool PipelineStatisticsQueryTestFunctional1::executeTest(glw::GLenum current_que
 
         result &= PipelineStatisticsQueryUtilities::verifyResultValues(
             run_result, 1, &expected_value, m_bo_qo_id != 0, /* should_check_qo_bo_values */
-            current_query_target, DE_NULL, DE_NULL, false,   /* is_primitive_restart_enabled */
+            current_query_target, nullptr, nullptr, false,   /* is_primitive_restart_enabled */
             m_testCtx, PipelineStatisticsQueryUtilities::VERIFICATION_TYPE_EXACT_MATCH);
     } /* if (run results were obtained successfully) */
 
@@ -2894,8 +2894,8 @@ bool PipelineStatisticsQueryTestFunctional2::executeTest(glw::GLenum current_que
         if (draw_handler_pfn(this))
         {
             if (!PipelineStatisticsQueryUtilities::executeQuery(
-                    current_query_target, m_qo_id, m_bo_qo_id, DE_NULL, /* pfn_draw */
-                    DE_NULL,                                            /* draw_user_arg */
+                    current_query_target, m_qo_id, m_bo_qo_id, nullptr, /* pfn_draw */
+                    nullptr,                                            /* draw_user_arg */
                     m_context.getRenderContext(), m_testCtx, m_context.getContextInfo(), &run_result, skipped))
             {
                 m_testCtx.getLog() << tcu::TestLog::Message
@@ -2913,7 +2913,7 @@ bool PipelineStatisticsQueryTestFunctional2::executeTest(glw::GLenum current_que
 
                 has_passed = PipelineStatisticsQueryUtilities::verifyResultValues(
                     run_result, 1, &expected_value, m_bo_qo_id != 0, /* should_check_qo_bo_values */
-                    current_query_target, DE_NULL, DE_NULL, false,   /* is_primitive_restart_enabled */
+                    current_query_target, nullptr, nullptr, false,   /* is_primitive_restart_enabled */
                     m_testCtx, PipelineStatisticsQueryUtilities::VERIFICATION_TYPE_EXACT_MATCH);
 
                 if (!has_passed)
@@ -2942,7 +2942,7 @@ void PipelineStatisticsQueryTestFunctional2::initObjects()
     gl.bindBuffer(GL_ARRAY_BUFFER, m_bo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call(s) failed.");
 
-    gl.bufferData(GL_ARRAY_BUFFER, bo_size, DE_NULL, /* data */
+    gl.bufferData(GL_ARRAY_BUFFER, bo_size, nullptr, /* data */
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
@@ -3530,10 +3530,10 @@ void PipelineStatisticsQueryTestFunctional3::initObjects()
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    buildProgram(DE_NULL,                                                    /* cs_body */
-                 PipelineStatisticsQueryUtilities::minimal_fs_code, DE_NULL, /* gs_body */
-                 DE_NULL,                                                    /* tc_body */
-                 DE_NULL,                                                    /* te_body */
+    buildProgram(nullptr,                                                    /* cs_body */
+                 PipelineStatisticsQueryUtilities::minimal_fs_code, nullptr, /* gs_body */
+                 nullptr,                                                    /* tc_body */
+                 nullptr,                                                    /* te_body */
                  PipelineStatisticsQueryUtilities::minimal_vs_code);
 
     gl.useProgram(m_po_id);
@@ -3706,11 +3706,11 @@ void PipelineStatisticsQueryTestFunctional4::initObjects()
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    buildProgram(DE_NULL, /* cs_body */
-                 DE_NULL, /* fs_body */
-                 DE_NULL, /* gs_body */
-                 DE_NULL, /* tc_body */
-                 DE_NULL, /* te_body */
+    buildProgram(nullptr, /* cs_body */
+                 nullptr, /* fs_body */
+                 nullptr, /* gs_body */
+                 nullptr, /* tc_body */
+                 nullptr, /* te_body */
                  PipelineStatisticsQueryUtilities::minimal_vs_code);
 
     gl.useProgram(m_po_id);
@@ -3850,8 +3850,8 @@ void PipelineStatisticsQueryTestFunctional5::initObjects()
         throw tcu::NotSupportedError("OpenGL 4.0+ is required to run this test.");
     }
 
-    buildProgram(DE_NULL,                                                    /* cs_body */
-                 PipelineStatisticsQueryUtilities::minimal_fs_code, DE_NULL, /* gs_body */
+    buildProgram(nullptr,                                                    /* cs_body */
+                 PipelineStatisticsQueryUtilities::minimal_fs_code, nullptr, /* gs_body */
                  PipelineStatisticsQueryUtilities::minimal_tc_code, PipelineStatisticsQueryUtilities::minimal_te_code,
                  PipelineStatisticsQueryUtilities::minimal_vs_code);
 
@@ -4003,9 +4003,9 @@ bool PipelineStatisticsQueryTestFunctional6::executeTest(glw::GLenum current_que
                         gs_input, gs_output, m_n_primitives_emitted_by_gs, 1); /* n_streams */
                 }
 
-                buildProgram(DE_NULL,                                                                     /* cs_body */
-                             PipelineStatisticsQueryUtilities::minimal_fs_code, gs_body.c_str(), DE_NULL, /* tc_body */
-                             DE_NULL,                                                                     /* te_body */
+                buildProgram(nullptr,                                                                     /* cs_body */
+                             PipelineStatisticsQueryUtilities::minimal_fs_code, gs_body.c_str(), nullptr, /* tc_body */
+                             nullptr,                                                                     /* te_body */
                              PipelineStatisticsQueryUtilities::minimal_vs_code);
 
                 gl.useProgram(m_po_id);
@@ -4261,10 +4261,10 @@ void PipelineStatisticsQueryTestFunctional7::initObjects()
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    buildProgram(DE_NULL,                                                    /* cs_body */
-                 PipelineStatisticsQueryUtilities::minimal_fs_code, DE_NULL, /* gs_body */
-                 DE_NULL,                                                    /* tc_body */
-                 DE_NULL,                                                    /* te_body */
+    buildProgram(nullptr,                                                    /* cs_body */
+                 PipelineStatisticsQueryUtilities::minimal_fs_code, nullptr, /* gs_body */
+                 nullptr,                                                    /* tc_body */
+                 nullptr,                                                    /* te_body */
                  PipelineStatisticsQueryUtilities::minimal_vs_code);
 
     gl.useProgram(m_po_id);
@@ -4357,7 +4357,7 @@ bool PipelineStatisticsQueryTestFunctional8::executeTest(glw::GLenum current_que
             /* Compare it against query result values */
             result &= PipelineStatisticsQueryUtilities::verifyResultValues(
                 run_result, 1, &expected_value, m_bo_qo_id != 0, /* should_check_qo_bo_values */
-                current_query_target, DE_NULL, DE_NULL, false,   /* is_primitive_restart_enabled */
+                current_query_target, nullptr, nullptr, false,   /* is_primitive_restart_enabled */
                 m_testCtx, PipelineStatisticsQueryUtilities::VERIFICATION_TYPE_EQUAL_OR_GREATER);
         } /* if (run results were obtained successfully) */
     }     /* for (both iterations) */
@@ -4386,11 +4386,11 @@ void PipelineStatisticsQueryTestFunctional8::initObjects()
         throw tcu::NotSupportedError("OpenGL 4.3+ / compute shaders and atomic counters required to run this test.");
     }
 
-    buildProgram(cs_code, DE_NULL, /* fs_body */
-                 DE_NULL,          /* gs_body */
-                 DE_NULL,          /* tc_body */
-                 DE_NULL,          /* te_body */
-                 DE_NULL);         /* vs_body */
+    buildProgram(cs_code, nullptr, /* fs_body */
+                 nullptr,          /* gs_body */
+                 nullptr,          /* tc_body */
+                 nullptr,          /* te_body */
+                 nullptr);         /* vs_body */
 
     gl.useProgram(m_po_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() call failed.");
@@ -4417,7 +4417,7 @@ void PipelineStatisticsQueryTestFunctional8::initObjects()
                       m_bo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBufferBase() call failed.");
 
-    gl.bufferData(GL_ARRAY_BUFFER, bo_size, DE_NULL, GL_STATIC_DRAW);
+    gl.bufferData(GL_ARRAY_BUFFER, bo_size, nullptr, GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
     gl.bufferSubData(GL_ARRAY_BUFFER, 0, /* offset */

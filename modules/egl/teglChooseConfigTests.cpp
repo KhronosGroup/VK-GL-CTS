@@ -187,7 +187,7 @@ protected:
         // Query from EGL implementation
         {
             EGLint numConfigs = 0;
-            EGLU_CHECK_CALL(egl, chooseConfig(m_display, &attribList[0], DE_NULL, 0, &numConfigs));
+            EGLU_CHECK_CALL(egl, chooseConfig(m_display, &attribList[0], nullptr, 0, &numConfigs));
             resultConfigs.resize(numConfigs);
 
             if (numConfigs > 0)

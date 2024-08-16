@@ -668,7 +668,7 @@ tcu::TestLog &operator<<(tcu::TestLog &log, const ShaderProgramInfo &shaderProgr
     for (size_t ndx = 0; ndx < shaderPtrs.size(); ndx++)
         shaderPtrs[ndx] = &shaderProgramInfo.shaders[ndx];
 
-    logShaderProgram(log, shaderProgramInfo.program, shaderPtrs.size(), shaderPtrs.empty() ? DE_NULL : &shaderPtrs[0]);
+    logShaderProgram(log, shaderProgramInfo.program, shaderPtrs.size(), shaderPtrs.empty() ? nullptr : &shaderPtrs[0]);
 
     return log;
 }
@@ -684,7 +684,7 @@ tcu::TestLog &operator<<(tcu::TestLog &log, const ShaderProgram &shaderProgram)
     }
 
     logShaderProgram(log, shaderProgram.getProgramInfo(), shaderPtrs.size(),
-                     shaderPtrs.empty() ? DE_NULL : &shaderPtrs[0]);
+                     shaderPtrs.empty() ? nullptr : &shaderPtrs[0]);
 
     return log;
 }

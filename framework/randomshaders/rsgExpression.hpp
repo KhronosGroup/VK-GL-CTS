@@ -53,12 +53,12 @@ public:
     virtual ~Expression(void);
 
     // Shader generation API
-    virtual Expression *createNextChild(GeneratorState &state)           = DE_NULL;
-    virtual void tokenize(GeneratorState &state, TokenStream &str) const = DE_NULL;
+    virtual Expression *createNextChild(GeneratorState &state)           = 0;
+    virtual void tokenize(GeneratorState &state, TokenStream &str) const = 0;
 
     // Execution API
-    virtual void evaluate(ExecutionContext &ctx)      = DE_NULL;
-    virtual ExecConstValueAccess getValue(void) const = DE_NULL;
+    virtual void evaluate(ExecutionContext &ctx)      = 0;
+    virtual ExecConstValueAccess getValue(void) const = 0;
     virtual ExecValueAccess getLValue(void) const
     {
         DE_ASSERT(false);
@@ -79,7 +79,7 @@ public:
     Expression *createNextChild(GeneratorState &state)
     {
         DE_UNREF(state);
-        return DE_NULL;
+        return nullptr;
     }
     void tokenize(GeneratorState &state, TokenStream &str) const
     {
@@ -98,7 +98,7 @@ public:
     }
 
 protected:
-    VariableAccess(void) : m_variable(DE_NULL)
+    VariableAccess(void) : m_variable(nullptr)
     {
     }
 
@@ -141,7 +141,7 @@ public:
     Expression *createNextChild(GeneratorState &state)
     {
         DE_UNREF(state);
-        return DE_NULL;
+        return nullptr;
     }
     void tokenize(GeneratorState &state, TokenStream &str) const;
 
@@ -171,7 +171,7 @@ public:
     Expression *createNextChild(GeneratorState &state)
     {
         DE_UNREF(state);
-        return DE_NULL;
+        return nullptr;
     }
     void tokenize(GeneratorState &state, TokenStream &str) const;
 
@@ -202,7 +202,7 @@ public:
     Expression *createNextChild(GeneratorState &state)
     {
         DE_UNREF(state);
-        return DE_NULL;
+        return nullptr;
     }
     void tokenize(GeneratorState &state, TokenStream &str) const;
 

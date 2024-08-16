@@ -26,7 +26,7 @@
 
 namespace eglw
 {
-static const eglw::Library *s_library = DE_NULL;
+static const eglw::Library *s_library = nullptr;
 
 void setCurrentThreadLibrary(const eglw::Library *egl)
 {

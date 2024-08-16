@@ -1045,8 +1045,7 @@ void CommonDescriptorInstance::updateDescriptors(IterateCommonVariables &variabl
         const VkDescriptorImageInfo *pImageInfo   = nullptr;
         const VkBufferView *pTexelBufferView      = nullptr;
 
-        VkDescriptorImageInfo imageInfo = {static_cast<VkSampler>(0), static_cast<VkImageView>(0),
-                                           VK_IMAGE_LAYOUT_GENERAL};
+        VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL};
 
         switch (m_testParams.descriptorType)
         {
@@ -1117,12 +1116,11 @@ void CommonDescriptorInstance::updateUnusedDescriptors(IterateCommonVariables &v
             continue;
         }
 
-        const VkDescriptorBufferInfo *pBufferInfo = DE_NULL;
-        const VkDescriptorImageInfo *pImageInfo   = DE_NULL;
-        const VkBufferView *pTexelBufferView      = DE_NULL;
+        const VkDescriptorBufferInfo *pBufferInfo = nullptr;
+        const VkDescriptorImageInfo *pImageInfo   = nullptr;
+        const VkBufferView *pTexelBufferView      = nullptr;
 
-        VkDescriptorImageInfo imageInfo = {static_cast<VkSampler>(0), static_cast<VkImageView>(0),
-                                           VK_IMAGE_LAYOUT_GENERAL};
+        VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL};
 
         switch (m_testParams.descriptorType)
         {
@@ -1170,7 +1168,7 @@ void CommonDescriptorInstance::updateUnusedDescriptors(IterateCommonVariables &v
 
         const VkWriteDescriptorSet writeInfo = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // sType
-            DE_NULL,                                // pNext
+            nullptr,                                // pNext
             *variables.descriptorSet,               // descriptorSet
             BINDING_TestObject,                     // descriptorBinding;
             i,                                      // elementIndex
@@ -1181,7 +1179,7 @@ void CommonDescriptorInstance::updateUnusedDescriptors(IterateCommonVariables &v
             pTexelBufferView                        // pTexelBufferView
         };
 
-        m_vki.updateDescriptorSets(m_vkd, 1u, &writeInfo, 0u, DE_NULL);
+        m_vki.updateDescriptorSets(m_vkd, 1u, &writeInfo, 0u, nullptr);
     }
 }
 
@@ -1286,8 +1284,7 @@ void CommonDescriptorInstance::iterateCommandBegin(IterateCommonVariables &varia
                 }};
 
             m_vki.cmdPipelineBarrier(*variables.commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                                     VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0,
-                                     (const VkMemoryBarrier *)nullptr, 0, (const VkBufferMemoryBarrier *)nullptr, 1,
+                                     VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
                                      &preImageBarrier);
 
             const VkClearColorValue clearColorValue = makeClearValueColor(m_clearColor).color;
@@ -1316,9 +1313,8 @@ void CommonDescriptorInstance::iterateCommandBegin(IterateCommonVariables &varia
                 }};
 
             m_vki.cmdPipelineBarrier(*variables.commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0,
-                                     (const VkMemoryBarrier *)nullptr, 0, (const VkBufferMemoryBarrier *)nullptr, 1,
-                                     &postImageBarrier);
+                                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
+                                     nullptr, 1, &postImageBarrier);
         }
     }
 
@@ -3602,7 +3598,7 @@ void SamplerInstance::updateDescriptors(IterateCommonVariables &variables)
 
     // update an image
     {
-        const VkDescriptorImageInfo imageInfo = {static_cast<VkSampler>(0), **variables.descriptorImageViews[0],
+        const VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, **variables.descriptorImageViews[0],
                                                  VK_IMAGE_LAYOUT_GENERAL};
 
         const VkWriteDescriptorSet writeInfo = {
@@ -3751,7 +3747,7 @@ void SampledImageInstance::updateDescriptors(IterateCommonVariables &variables)
 
     // update a sampler
     {
-        const VkDescriptorImageInfo samplerInfo = {**variables.descriptorSamplers[0], static_cast<VkImageView>(0),
+        const VkDescriptorImageInfo samplerInfo = {**variables.descriptorSamplers[0], VK_NULL_HANDLE,
                                                    static_cast<VkImageLayout>(0)};
 
         const VkWriteDescriptorSet writeInfo = {
@@ -4044,9 +4040,8 @@ void StorageImageInstance::updateDescriptors(IterateCommonVariables &variables)
 {
     // update image at last index
     {
-        VkDescriptorImageInfo imageInfo = {static_cast<VkSampler>(0),
-                                           **variables.descriptorImageViews[variables.validDescriptorCount],
-                                           VK_IMAGE_LAYOUT_GENERAL};
+        VkDescriptorImageInfo imageInfo = {
+            VK_NULL_HANDLE, **variables.descriptorImageViews[variables.validDescriptorCount], VK_IMAGE_LAYOUT_GENERAL};
 
         const VkWriteDescriptorSet writeInfo = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // sType

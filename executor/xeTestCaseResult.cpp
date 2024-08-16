@@ -65,7 +65,7 @@ const char *getTestStatusCodeName(TestStatusCode code)
         return "Waived";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

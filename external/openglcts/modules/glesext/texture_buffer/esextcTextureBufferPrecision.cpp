@@ -220,7 +220,7 @@ glw::GLboolean TextureBufferPrecision::verifyShaderCompilationStatus(glw::GLenum
 
     std::string shader_code     = specializeShader(parts_count, sh_code_parts);
     const char *shader_code_ptr = shader_code.c_str();
-    gl.shaderSource(m_sh_id, 1, &shader_code_ptr, DE_NULL);
+    gl.shaderSource(m_sh_id, 1, &shader_code_ptr, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Could not set shader source");
 
     gl.compileShader(m_sh_id);
@@ -243,7 +243,7 @@ glw::GLboolean TextureBufferPrecision::verifyShaderCompilationStatus(glw::GLenum
         {
             glw::GLchar *info_log = new glw::GLchar[info_log_length];
             memset(info_log, 0, info_log_length * sizeof(glw::GLchar));
-            gl.getShaderInfoLog(m_sh_id, info_log_length, DE_NULL, info_log);
+            gl.getShaderInfoLog(m_sh_id, info_log_length, nullptr, info_log);
 
             m_testCtx.getLog() << tcu::TestLog::Message << "The following shader:\n\n"
                                << shader_code << "\n\n did compile with result different than expected:\n"

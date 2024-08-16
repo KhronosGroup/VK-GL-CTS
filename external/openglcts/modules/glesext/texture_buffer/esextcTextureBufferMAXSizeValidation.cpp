@@ -82,7 +82,7 @@ void TextureBufferMAXSizeValidation::initTest(void)
     GLU_EXPECT_NO_ERROR(gl.getError(), "Error generating buffer object!");
     gl.bindBuffer(m_glExtTokens.TEXTURE_BUFFER, m_tbo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Error binding buffer object!");
-    gl.bufferData(m_glExtTokens.TEXTURE_BUFFER, m_max_tex_buffer_size * sizeof(glw::GLubyte), DE_NULL, GL_DYNAMIC_DRAW);
+    gl.bufferData(m_glExtTokens.TEXTURE_BUFFER, m_max_tex_buffer_size * sizeof(glw::GLubyte), nullptr, GL_DYNAMIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Error allocating buffer object's data store!");
 
     glw::GLubyte *buf = 0;

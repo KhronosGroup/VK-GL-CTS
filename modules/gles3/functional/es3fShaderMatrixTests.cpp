@@ -1581,7 +1581,7 @@ MatrixShaderEvalFunc getEvalFunc(const ShaderInput &in0, const ShaderInput &in1,
 
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 
 #undef PACK_EVAL_CASE

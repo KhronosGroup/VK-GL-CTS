@@ -23,6 +23,7 @@
 
 #include "teglSyncTests.hpp"
 
+#include "deSTLUtil.hpp"
 #include "deStringUtil.hpp"
 
 #include "egluNativeWindow.hpp"
@@ -155,7 +156,7 @@ SyncTest::SyncTest(EglTestContext &eglTestCtx, EGLenum syncType, Extension exten
     , m_eglDisplay(EGL_NO_DISPLAY)
     , m_eglConfig(((eglw::EGLConfig)0)) // EGL_NO_CONFIG
     , m_eglSurface(EGL_NO_SURFACE)
-    , m_nativeWindow(DE_NULL)
+    , m_nativeWindow(nullptr)
     , m_eglContext(EGL_NO_CONTEXT)
     , m_sync(EGL_NO_SYNC_KHR)
 {
@@ -281,10 +282,10 @@ void SyncTest::init(void)
 
         // Create surface
         m_nativeWindow = windowFactory.createWindow(
-            &m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, DE_NULL,
+            &m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, nullptr,
             eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
         m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_nativeWindow, m_eglDisplay,
-                                                 m_eglConfig, DE_NULL);
+                                                 m_eglConfig, nullptr);
 
         EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
@@ -328,41 +329,51 @@ void SyncTest::deinit(void)
         }
 
         delete m_nativeWindow;
-        m_nativeWindow = DE_NULL;
+        m_nativeWindow = nullptr;
 
         egl.terminate(m_eglDisplay);
         m_eglDisplay = EGL_NO_DISPLAY;
     }
 }
 
-static const char *const glsl_cs_long = R"(
-    layout(local_size_x = 1, local_size_y = 1) in;
-    layout(std430) buffer;
-    layout(binding = 0) buffer Output {
-        int elements[2];
-    } output_data;
-
-    void main() {
-        int temp = 0;
-        int value = output_data.elements[1]/100;
-        for (int i = 0; i < value; i++) {
-            for (int j = 0; j < output_data.elements[1]/value; j++) {
-                temp += 1;
-            }
-        }
-        atomicAdd(output_data.elements[0], temp);
-    }
-)";
-
-static const char *const kGLSLVer = "#version 310 es\n";
-
 class CreateLongRunningSyncTest : public SyncTest
 {
+    const char *const glsl_cs_long = R"(
+        layout(local_size_x = 1, local_size_y = 1) in;
+        layout(std430) buffer;
+        layout(binding = 0) buffer Output {
+            int elements[2];
+        } output_data;
+
+        void main() {
+            int temp = 0;
+            int value = output_data.elements[1]/100;
+            for (int i = 0; i < value; i++) {
+                for (int j = 0; j < output_data.elements[1]/value; j++) {
+                    temp += 1;
+                }
+            }
+            atomicAdd(output_data.elements[0], temp);
+        }
+    )";
+
+    const char *const kGLSLVer = "#version 310 es\n";
+
     GLuint m_buffer                  = 0;
     volatile int *m_dataloadstoreptr = NULL;
     eglw::EGLContext m_sharedcontext = NULL;
     const int m_total_count          = 5000000;
     const int m_shorter_count        = 50000;
+
+    void requiredGLES31(const glw::Functions &gl)
+    {
+        int minor = 0;
+        gl.getIntegerv(GL_MINOR_VERSION, &minor);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "Get minor version failed");
+
+        if (minor < 1)
+            TCU_THROW(NotSupportedError, "Test case requires GLES 3.1");
+    }
 
     void init(void) override
     {
@@ -377,7 +388,16 @@ class CreateLongRunningSyncTest : public SyncTest
         m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(3, 1));
 
         m_eglDisplay = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
-        m_eglConfig  = eglu::chooseSingleConfig(egl, m_eglDisplay, displayAttribList);
+
+        if (eglu::getVersion(egl, m_eglDisplay) < eglu::Version(1, 5))
+        {
+            const vector<string> extensions = eglu::getDisplayExtensions(egl, m_eglDisplay);
+
+            if (!de::contains(extensions.begin(), extensions.end(), "EGL_KHR_create_context"))
+                TCU_THROW(NotSupportedError, "EGL_OPENGL_ES3_BIT_KHR not supported");
+        }
+
+        m_eglConfig = eglu::chooseSingleConfig(egl, m_eglDisplay, displayAttribList);
 
         m_extensions = (Extension)(m_extensions | getSyncTypeExtension(m_syncType));
 
@@ -388,15 +408,19 @@ class CreateLongRunningSyncTest : public SyncTest
             TCU_THROW(NotSupportedError, "GLES3 not supported");
 
         m_nativeWindow = windowFactory.createWindow(
-            &m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, DE_NULL,
+            &m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, nullptr,
             eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
 
         m_eglSurface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_nativeWindow, m_eglDisplay,
-                                                 m_eglConfig, DE_NULL);
+                                                 m_eglConfig, nullptr);
 
         EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
+        // Check sync extension support
         requiredGLESExtensions(m_gl);
+
+        // Check support for ES3.1, required by the compute shader used in the test
+        requiredGLES31(m_gl);
 
         m_sharedcontext = egl.createContext(m_eglDisplay, m_eglConfig, m_eglContext, contextAttribList);
 

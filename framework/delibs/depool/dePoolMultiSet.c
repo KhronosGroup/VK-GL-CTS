@@ -28,7 +28,7 @@ DE_IMPLEMENT_POOL_MULTISET(deTestMultiSet, int16_t, deInt16Hash, deInt16Equal);
 
 void dePoolMultiSet_selfTest(void)
 {
-    deMemPool *pool     = deMemPool_createRoot(DE_NULL, 0);
+    deMemPool *pool     = deMemPool_createRoot(NULL, 0);
     deTestMultiSet *set = deTestMultiSet_create(pool);
     int i;
 

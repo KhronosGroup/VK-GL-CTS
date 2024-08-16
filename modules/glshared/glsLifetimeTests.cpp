@@ -100,7 +100,7 @@ public:
     CheckedShader(const RenderContext &renderCtx, glu::ShaderType type, const string &src) : Shader(renderCtx, type)
     {
         const char *const srcStr = src.c_str();
-        setSources(1, &srcStr, DE_NULL);
+        setSources(1, &srcStr, nullptr);
         compile();
         TCU_CHECK(getCompileStatus());
     }
@@ -348,7 +348,7 @@ static bool isTextureFormatColorRenderable(const glu::RenderContext &renderCtx, 
         GLU_CHECK_GLW_CALL(gl, genTextures(1, &testTex));
         GLU_CHECK_GLW_CALL(gl, bindTexture(GL_TEXTURE_2D, testTex));
         GLU_CHECK_GLW_CALL(gl, texImage2D(GL_TEXTURE_2D, 0, format.format, FRAMEBUFFER_SIZE, FRAMEBUFFER_SIZE, 0,
-                                          format.format, format.dataType, DE_NULL));
+                                          format.format, format.dataType, nullptr));
 
         GLU_CHECK_GLW_CALL(gl, genFramebuffers(1, &testFbo));
         GLU_CHECK_GLW_CALL(gl, bindFramebuffer(GL_FRAMEBUFFER, testFbo));
@@ -415,7 +415,7 @@ void TextureFboAttacher::initStorage(void)
         TCU_THROW(NotSupportedError, "No renderable texture format found");
 
     GLU_CHECK_CALL_ERROR(glTexImage2D(GL_TEXTURE_2D, 0, format.format, FRAMEBUFFER_SIZE, FRAMEBUFFER_SIZE, 0,
-                                      format.format, format.dataType, DE_NULL),
+                                      format.format, format.dataType, nullptr),
                          gl().getError());
 }
 
@@ -546,7 +546,7 @@ void ShaderProgramAttacher::initAttachment(GLuint seed, GLuint shader)
         const string source         = sourceTmpl.specialize(params);
         const char *const sourceStr = source.c_str();
 
-        GLU_CHECK_CALL_ERROR(glShaderSource(shader, 1, &sourceStr, DE_NULL), gl().getError());
+        GLU_CHECK_CALL_ERROR(glShaderSource(shader, 1, &sourceStr, nullptr), gl().getError());
         GLU_CHECK_CALL_ERROR(glCompileShader(shader), gl().getError());
 
         {
@@ -1069,7 +1069,7 @@ private:
 GLuint replaceName(Type &type, GLuint oldName, TestLog &log)
 {
     const Binder *const binder = type.binder();
-    const bool genRequired     = binder == DE_NULL || binder->genRequired();
+    const bool genRequired     = binder == nullptr || binder->genRequired();
 
     if (genRequired)
         return type.gen();
@@ -1231,7 +1231,7 @@ MovePtr<TestCaseGroup> createLifeTestGroup(TestContext &testCtx, const LifeTestS
     {
         Type &type       = **it;
         const char *name = type.getName();
-        if (!spec.needBind || type.binder() != DE_NULL)
+        if (!spec.needBind || type.binder() != nullptr)
             group->addChild(new LifeTest(name, name, type, spec.func));
     }
 

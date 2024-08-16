@@ -265,7 +265,7 @@ void FunctionalTest::prepareSourceTexture(TextureInternalFormatDescriptor descri
     }
 
     /* Select proper data set. */
-    glw::GLvoid *source_data  = DE_NULL;
+    glw::GLvoid *source_data  = nullptr;
     glw::GLenum source_type   = GL_NONE;
     glw::GLenum source_format = GL_RGBA;
 
@@ -1450,7 +1450,7 @@ glw::GLuint buildProgram(glw::Functions const &gl, tcu::TestLog &log, glw::GLcha
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 

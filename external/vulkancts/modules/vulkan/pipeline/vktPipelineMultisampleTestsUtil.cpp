@@ -336,7 +336,7 @@ std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
 
     default:
         DE_ASSERT(false);
-        orderPart = DE_NULL;
+        orderPart = nullptr;
     }
 
     switch (format.type)
@@ -384,7 +384,7 @@ std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
 
     default:
         DE_ASSERT(false);
-        typePart = DE_NULL;
+        typePart = nullptr;
     }
 
     return std::string() + orderPart + typePart;

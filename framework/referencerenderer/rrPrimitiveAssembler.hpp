@@ -38,7 +38,7 @@ struct Triangle
         NUM_VERTICES = 3
     };
 
-    Triangle(void) : v0(DE_NULL), v1(DE_NULL), v2(DE_NULL), provokingIndex(-1)
+    Triangle(void) : v0(nullptr), v1(nullptr), v2(nullptr), provokingIndex(-1)
     {
     }
 
@@ -62,7 +62,7 @@ struct Triangle
             return v2;
         default:
             DE_ASSERT(false);
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -171,7 +171,7 @@ struct Line
         NUM_VERTICES = 2
     };
 
-    Line(void) : v0(DE_NULL), v1(DE_NULL), provokingIndex(-1)
+    Line(void) : v0(nullptr), v1(nullptr), provokingIndex(-1)
     {
     }
 
@@ -189,7 +189,7 @@ struct Line
             return v1;
         default:
             DE_ASSERT(false);
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -283,7 +283,7 @@ struct Point
         NUM_VERTICES = 1
     };
 
-    Point(void) : v0(DE_NULL)
+    Point(void) : v0(nullptr)
     {
     }
 
@@ -319,7 +319,7 @@ struct LineAdjacency
         NUM_VERTICES = 4
     };
 
-    LineAdjacency(void) : v0(DE_NULL), v1(DE_NULL), v2(DE_NULL), v3(DE_NULL), provokingIndex(-1)
+    LineAdjacency(void) : v0(nullptr), v1(nullptr), v2(nullptr), v3(nullptr), provokingIndex(-1)
     {
     }
 
@@ -342,7 +342,7 @@ struct LineAdjacency
             return v2;
         default:
             DE_ASSERT(false);
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -400,12 +400,12 @@ struct TriangleAdjacency
     };
 
     TriangleAdjacency(void)
-        : v0(DE_NULL)
-        , v1(DE_NULL)
-        , v2(DE_NULL)
-        , v3(DE_NULL)
-        , v4(DE_NULL)
-        , v5(DE_NULL)
+        : v0(nullptr)
+        , v1(nullptr)
+        , v2(nullptr)
+        , v3(nullptr)
+        , v4(nullptr)
+        , v5(nullptr)
         , provokingIndex(-1)
     {
     }
@@ -434,7 +434,7 @@ struct TriangleAdjacency
             return v4;
         default:
             DE_ASSERT(false);
-            return DE_NULL;
+            return nullptr;
         }
     }
 

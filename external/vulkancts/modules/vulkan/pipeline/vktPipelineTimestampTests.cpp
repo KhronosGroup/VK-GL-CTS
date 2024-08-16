@@ -594,7 +594,7 @@ TimestampTestInstance::TimestampTestInstance(Context &context, const StageFlagVe
     {
         const VkQueryPoolCreateInfo queryPoolParams = {
             VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType               sType;
-            DE_NULL,                                  // const void*                   pNext;
+            nullptr,                                  // const void*                   pNext;
             0u,                                       // VkQueryPoolCreateFlags        flags;
             VK_QUERY_TYPE_TIMESTAMP,                  // VkQueryType                   queryType;
             TimestampTest::ENTRY_COUNT,               // uint32_t                      entryCount;
@@ -617,7 +617,7 @@ TimestampTestInstance::TimestampTestInstance(Context &context, const StageFlagVe
     if (m_hostQueryReset)
         m_timestampValuesHostQueryReset = new uint64_t[m_stages.size() * 2];
     else
-        m_timestampValuesHostQueryReset = DE_NULL;
+        m_timestampValuesHostQueryReset = nullptr;
 }
 
 TimestampTestInstance::~TimestampTestInstance(void)
@@ -748,7 +748,7 @@ Move<VkBuffer> TimestampTestInstance::createBufferAndBindMemory(VkDeviceSize siz
     const DeviceInterface &vk                   = m_context.getDeviceInterface();
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType      sType;
-        DE_NULL,                              // const void*          pNext;
+        nullptr,                              // const void*          pNext;
         0u,                                   // VkBufferCreateFlags  flags;
         size,                                 // VkDeviceSize         size;
         usage,                                // VkBufferUsageFlags   usage;
@@ -798,7 +798,7 @@ Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory(VkFormat format,
 
     const VkImageCreateInfo colorImageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType      sType;
-        DE_NULL,                             // const void*          pNext;
+        nullptr,                             // const void*          pNext;
         0u,                                  // VkImageCreateFlags   flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType          imageType;
         format,                              // VkFormat             format;
@@ -891,7 +891,7 @@ void TimestampTestInstance::createCustomDeviceWithTransferOnlyQueue(void)
         {
             pcCI = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                     VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                 m_context.getResourceInterface()->getCacheDataSize(),     // uintptr_t initialDataSize;
@@ -916,10 +916,10 @@ void TimestampTestInstance::createCustomDeviceWithTransferOnlyQueue(void)
         1u,                                           // uint32_t queueCreateInfoCount;
         &deviceQueueCreateInfos,                      // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                           // uint32_t enabledLayerCount;
-        DE_NULL,                                      // const char* const* ppEnabledLayerNames;
+        nullptr,                                      // const char* const* ppEnabledLayerNames;
         static_cast<uint32_t>(extensionNames.size()), // uint32_t enabledExtensionCount;
         extensionNames.data(),                        // const char* const* ppEnabledExtensionNames;
-        DE_NULL,                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        nullptr,                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
     m_customDevice =
@@ -1101,7 +1101,7 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance(Context &contex
     m_timestampPeriod = getPhysicalDeviceProperties(vki, physDevice).limits.timestampPeriod;
 
     uint32_t domainCount;
-    VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsKHR(physDevice, &domainCount, DE_NULL));
+    VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsKHR(physDevice, &domainCount, nullptr));
     if (domainCount == 0)
     {
         throw tcu::NotSupportedError("No calibrateable time domains found");
@@ -1132,7 +1132,7 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance(Context &contex
 
     const VkQueryPoolCreateInfo queryPoolParams = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType               sType;
-        DE_NULL,                                  // const void*                   pNext;
+        nullptr,                                  // const void*                   pNext;
         0u,                                       // VkQueryPoolCreateFlags        flags;
         VK_QUERY_TYPE_TIMESTAMP,                  // VkQueryType                   queryType;
         1u,                                       // uint32_t                      entryCount;
@@ -1313,7 +1313,7 @@ std::vector<CalibratedTimestampTestInstance::CalibratedTimestamp> CalibratedTime
     {
         VkCalibratedTimestampInfoKHR info;
         info.sType      = getStructureType<VkCalibratedTimestampInfoKHR>();
-        info.pNext      = DE_NULL;
+        info.pNext      = nullptr;
         info.timeDomain = domain;
         infos.push_back(info);
     }
@@ -1630,7 +1630,7 @@ void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat
     {
         const VkImageMemoryBarrier colorImageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,      // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkAccessFlags srcAccessMask;
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,        // VkAccessFlags dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout oldLayout;
@@ -1642,7 +1642,7 @@ void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat
         };
         const VkImageMemoryBarrier depthImageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType sType;
-            DE_NULL,                                          // const void* pNext;
+            nullptr,                                          // const void* pNext;
             0u,                                               // VkAccessFlags srcAccessMask;
             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout oldLayout;
@@ -1661,7 +1661,7 @@ void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat
     {
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType          sType;
-            DE_NULL,                                     // const void*              pNext;
+            nullptr,                                     // const void*              pNext;
             0u,                                          // VkImageViewCreateFlags   flags;
             *m_colorImage,                               // VkImage                  image;
             VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType          viewType;
@@ -1677,7 +1677,7 @@ void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat
     {
         const VkImageViewCreateInfo depthAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType          sType;
-            DE_NULL,                                     // const void*              pNext;
+            nullptr,                                     // const void*              pNext;
             0u,                                          // VkImageViewCreateFlags   flags;
             *m_depthImage,                               // VkImage                  image;
             VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType          viewType;
@@ -1702,7 +1702,7 @@ void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType              sType;
-            DE_NULL,                                   // const void*                  pNext;
+            nullptr,                                   // const void*                  pNext;
             0u,                                        // VkFramebufferCreateFlags     flags;
             *m_renderPass,                             // VkRenderPass                 renderPass;
             2u,                                        // uint32_t                     attachmentCount;
@@ -1767,7 +1767,7 @@ static const VkVertexInputAttributeDescription defaultVertexInputAttributeDescri
 
 static const VkPipelineVertexInputStateCreateInfo defaultVertexInputStateParams{
     VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-    DE_NULL,                                                   // const void* pNext;
+    nullptr,                                                   // const void* pNext;
     0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
     1u,                                                        // uint32_t vertexBindingDescriptionCount;
     &defaultVertexInputBindingDescription,   // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -1777,7 +1777,7 @@ static const VkPipelineVertexInputStateCreateInfo defaultVertexInputStateParams{
 
 static const VkPipelineDepthStencilStateCreateInfo defaultDepthStencilStateParams{
     VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-    DE_NULL,                                                    // const void* pNext;
+    nullptr,                                                    // const void* pNext;
     0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
     VK_TRUE,                                                    // VkBool32 depthTestEnable;
     VK_TRUE,                                                    // VkBool32 depthWriteEnable;
@@ -1844,7 +1844,7 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 
     vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                          (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers),
+                          (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers),
                           m_imageLayoutBarriers);
 
     if (!m_hostQueryReset)
@@ -2096,7 +2096,7 @@ void AdvGraphicsTestInstance::buildPipeline(void)
         .setDefaultMultisampleState()
         .setupVertexInputState(&defaultVertexInputStateParams)
         .setupPreRasterizationShaderState(viewports, scissors, m_pipelineLayout, *m_renderPass, 0u, vertShaderModule,
-                                          DE_NULL, tescShaderModule, teseShaderModule, geomShaderModule)
+                                          nullptr, tescShaderModule, teseShaderModule, geomShaderModule)
         .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragShaderModule,
                                   &defaultDepthStencilStateParams)
         .setupFragmentOutputState(*m_renderPass)
@@ -2117,7 +2117,7 @@ void AdvGraphicsTestInstance::configCommandBuffer(void)
 
     vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                          (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers),
+                          (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers),
                           m_imageLayoutBarriers);
 
     if (!m_hostQueryReset)
@@ -2274,7 +2274,7 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context &context, const Stage
     // Create descriptor set
     const VkDescriptorSetAllocateInfo descriptorSetAllocInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                 sType;
-        DE_NULL,                                        // const void*                     pNext;
+        nullptr,                                        // const void*                     pNext;
         *m_descriptorPool,                              // VkDescriptorPool                descriptorPool;
         1u,                                             // uint32_t                        setLayoutCount;
         &m_descriptorSetLayout.get(),                   // const VkDescriptorSetLayout*    pSetLayouts;
@@ -2292,12 +2292,12 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context &context, const Stage
     // Create compute pipeline layout
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                 sType;
-        DE_NULL,                                       // const void*                     pNext;
+        nullptr,                                       // const void*                     pNext;
         0u,                                            // VkPipelineLayoutCreateFlags     flags;
         1u,                                            // uint32_t                        setLayoutCount;
         &m_descriptorSetLayout.get(),                  // const VkDescriptorSetLayout*    pSetLayouts;
         0u,                                            // uint32_t                        pushConstantRangeCount;
-        DE_NULL,                                       // const VkPushConstantRange*      pPushConstantRanges;
+        nullptr,                                       // const VkPushConstantRange*      pPushConstantRanges;
     };
 
     m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutCreateInfo);
@@ -2305,7 +2305,7 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context &context, const Stage
     // Create compute shader
     VkShaderModuleCreateInfo shaderModuleCreateInfo = {
         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,                    // VkStructureType             sType;
-        DE_NULL,                                                        // const void*                 pNext;
+        nullptr,                                                        // const void*                 pNext;
         0u,                                                             // VkShaderModuleCreateFlags   flags;
         m_context.getBinaryCollection().get("basic_compute").getSize(), // uintptr_t                   codeSize;
         (uint32_t *)m_context.getBinaryCollection()
@@ -2319,25 +2319,25 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context &context, const Stage
     // Create compute pipeline
     const VkPipelineShaderStageCreateInfo stageCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType;
-        DE_NULL,                                             // const void*                         pNext;
+        nullptr,                                             // const void*                         pNext;
         0u,                                                  // VkPipelineShaderStageCreateFlags    flags;
         VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits               stage;
         *m_computeShaderModule,                              // VkShaderModule                      module;
         "main",                                              // const char*                         pName;
-        DE_NULL,                                             // const VkSpecializationInfo*         pSpecializationInfo;
+        nullptr,                                             // const VkSpecializationInfo*         pSpecializationInfo;
     };
 
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType                 sType;
-        DE_NULL,                                        // const void*                     pNext;
+        nullptr,                                        // const void*                     pNext;
         0u,                                             // VkPipelineCreateFlags           flags;
         stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
         *m_pipelineLayout,                              // VkPipelineLayout                layout;
-        (VkPipeline)0,                                  // VkPipeline                      basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline                      basePipelineHandle;
         0u,                                             // int32_t                         basePipelineIndex;
     };
 
-    m_computePipelines = createComputePipeline(vk, vkDevice, (VkPipelineCache)0u, &pipelineCreateInfo);
+    m_computePipelines = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 BasicComputeTestInstance::~BasicComputeTestInstance(void)
@@ -2355,7 +2355,7 @@ void BasicComputeTestInstance::configCommandBuffer(void)
 
     vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipelines);
     vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u,
-                             &m_descriptorSet.get(), 0u, DE_NULL);
+                             &m_descriptorSet.get(), 0u, nullptr);
     vk.cmdDispatch(*m_cmdBuffer, 128u, 1u, 1u);
 
     uint32_t timestampEntry = 0u;
@@ -2519,12 +2519,12 @@ void TransferTestInstance::configCommandBuffer(void)
     // synchronize the Clear commands before starting any copy
     const vk::VkMemoryBarrier barrier = {
         vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER,                           // VkStructureType sType;
-        DE_NULL,                                                        // const void* pNext;
+        nullptr,                                                        // const void* pNext;
         vk::VK_ACCESS_TRANSFER_WRITE_BIT,                               // VkAccessFlags srcAccessMask;
         vk::VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags dstAccessMask;
     };
     vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 1u,
-                          &barrier, 0u, DE_NULL, 0u, DE_NULL);
+                          &barrier, 0u, nullptr, 0u, nullptr);
 
     if (!m_hostQueryReset)
         vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
@@ -2654,7 +2654,7 @@ void TransferTestInstance::configCommandBuffer(void)
 
         const vk::VkBufferMemoryBarrier bufferBarrier = {
             vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             vk::VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
             vk::VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
             VK_QUEUE_FAMILY_IGNORED,                     // uint32_t srcQueueFamilyIndex;
@@ -2665,7 +2665,7 @@ void TransferTestInstance::configCommandBuffer(void)
         };
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                              DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+                              nullptr, 1u, &bufferBarrier, 0u, nullptr);
 
         vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
         break;
@@ -2683,7 +2683,7 @@ void TransferTestInstance::configCommandBuffer(void)
         initialImageTransition(*m_cmdBuffer, *m_msImage, subRangeColor, VK_IMAGE_LAYOUT_GENERAL);
         vk.cmdClearColorImage(*m_cmdBuffer, *m_msImage, VK_IMAGE_LAYOUT_GENERAL, &srcClearValue, 1u, &subRangeColor);
         vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
-                              1u, &barrier, 0u, DE_NULL, 0u, DE_NULL);
+                              1u, &barrier, 0u, nullptr, 0u, nullptr);
         vk.cmdResolveImage(*m_cmdBuffer, *m_msImage, VK_IMAGE_LAYOUT_GENERAL, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, 1u,
                            &imageResolve);
         break;
@@ -2710,7 +2710,7 @@ void TransferTestInstance::initialImageTransition(VkCommandBuffer cmdBuffer, VkI
 
     const VkImageMemoryBarrier imageMemBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType          sType;
-        DE_NULL,                                // const void*              pNext;
+        nullptr,                                // const void*              pNext;
         0u,                                     // VkAccessFlags            srcAccessMask;
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags            dstAccessMask;
         VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout            oldLayout;
@@ -2721,8 +2721,8 @@ void TransferTestInstance::initialImageTransition(VkCommandBuffer cmdBuffer, VkI
         subRange                                // VkImageSubresourceRange  subresourceRange;
     };
 
-    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, DE_NULL, 0,
-                          DE_NULL, 1, &imageMemBarrier);
+    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
+                          nullptr, 1, &imageMemBarrier);
 }
 
 class FillBufferBeforeCopyTest : public vkt::TestCase
@@ -2784,7 +2784,7 @@ FillBufferBeforeCopyTestInstance::FillBufferBeforeCopyTestInstance(Context &cont
 
     const VkQueryPoolCreateInfo queryPoolParams = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType               sType;
-        DE_NULL,                                  // const void*                   pNext;
+        nullptr,                                  // const void*                   pNext;
         0u,                                       // VkQueryPoolCreateFlags        flags;
         VK_QUERY_TYPE_TIMESTAMP,                  // VkQueryType                   queryType;
         1u,                                       // uint32_t                      entryCount;
@@ -2798,7 +2798,7 @@ FillBufferBeforeCopyTestInstance::FillBufferBeforeCopyTestInstance(Context &cont
     // Create results buffer.
     const VkBufferCreateInfo bufferCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         sizeof(TimestampWithAvailability),    // VkDeviceSize size;
         VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
@@ -2815,7 +2815,7 @@ FillBufferBeforeCopyTestInstance::FillBufferBeforeCopyTestInstance(Context &cont
 
     const vk::VkBufferMemoryBarrier fillBufferBarrier = {
         vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         vk::VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
         vk::VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                     // uint32_t srcQueueFamilyIndex;
@@ -2827,7 +2827,7 @@ FillBufferBeforeCopyTestInstance::FillBufferBeforeCopyTestInstance(Context &cont
 
     const vk::VkBufferMemoryBarrier bufferBarrier = {
         vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         vk::VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
         vk::VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                     // uint32_t srcQueueFamilyIndex;
@@ -2842,13 +2842,13 @@ FillBufferBeforeCopyTestInstance::FillBufferBeforeCopyTestInstance(Context &cont
     vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
     vk.cmdFillBuffer(*m_cmdBuffer, *m_resultBuffer, 0u, bufferCreateInfo.size, 0u);
     vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                          DE_NULL, 1u, &fillBufferBarrier, 0u, DE_NULL);
+                          nullptr, 1u, &fillBufferBarrier, 0u, nullptr);
     vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, 0u);
     vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_resultBuffer, 0u,
                                sizeof(TimestampWithAvailability),
                                (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
     vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                          DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+                          nullptr, 1u, &bufferBarrier, 0u, nullptr);
     endCommandBuffer(vk, *m_cmdBuffer);
 }
 
@@ -2933,7 +2933,7 @@ ResetTimestampQueryBeforeCopyTestInstance::ResetTimestampQueryBeforeCopyTestInst
 
     const VkQueryPoolCreateInfo queryPoolParams = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType               sType;
-        DE_NULL,                                  // const void*                   pNext;
+        nullptr,                                  // const void*                   pNext;
         0u,                                       // VkQueryPoolCreateFlags        flags;
         VK_QUERY_TYPE_TIMESTAMP,                  // VkQueryType                   queryType;
         1u,                                       // uint32_t                      entryCount;
@@ -2947,7 +2947,7 @@ ResetTimestampQueryBeforeCopyTestInstance::ResetTimestampQueryBeforeCopyTestInst
     // Create results buffer.
     const VkBufferCreateInfo bufferCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         sizeof(TimestampWithAvailability),    // VkDeviceSize size;
         VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
@@ -2964,7 +2964,7 @@ ResetTimestampQueryBeforeCopyTestInstance::ResetTimestampQueryBeforeCopyTestInst
 
     const vk::VkBufferMemoryBarrier bufferBarrier = {
         vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         vk::VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
         vk::VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                     // uint32_t srcQueueFamilyIndex;
@@ -2983,7 +2983,7 @@ ResetTimestampQueryBeforeCopyTestInstance::ResetTimestampQueryBeforeCopyTestInst
                                sizeof(TimestampWithAvailability),
                                (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
     vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                          DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+                          nullptr, 1u, &bufferBarrier, 0u, nullptr);
     endCommandBuffer(vk, *m_cmdBuffer);
 }
 
@@ -3077,15 +3077,15 @@ void TwoCmdBuffersTestInstance::configCommandBuffer(void)
     const DeviceInterface &vk = m_context.getDeviceInterface();
 
     const VkCommandBufferBeginInfo cmdBufferBeginInfo = {
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType                          sType;
-        DE_NULL,                                        // const void*                              pNext;
-        0u,                                             // VkCommandBufferUsageFlags                flags;
-        (const VkCommandBufferInheritanceInfo *)DE_NULL // const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType                          sType;
+        nullptr,                                     // const void*                              pNext;
+        0u,                                          // VkCommandBufferUsageFlags                flags;
+        nullptr                                      // const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
     };
 
     const vk::VkBufferMemoryBarrier bufferBarrier = {
         vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         vk::VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
         vk::VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                     // uint32_t srcQueueFamilyIndex;
@@ -3105,17 +3105,17 @@ void TwoCmdBuffersTestInstance::configCommandBuffer(void)
         VK_CHECK(vk.beginCommandBuffer(*m_secondCmdBuffer, &cmdBufferBeginInfo));
         vk.cmdCopyQueryPoolResults(*m_secondCmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 0u, m_queryResultFlags);
         vk.cmdPipelineBarrier(*m_secondCmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                              0u, 0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+                              0u, 0u, nullptr, 1u, &bufferBarrier, 0u, nullptr);
         VK_CHECK(vk.endCommandBuffer(*m_secondCmdBuffer));
     }
     else
     {
         const VkCommandBufferInheritanceInfo inheritanceInfo = {
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType                  sType;
-            DE_NULL,                                           // const void*                      pNext;
-            DE_NULL,                                           // VkRenderPass                     renderPass;
+            nullptr,                                           // const void*                      pNext;
+            VK_NULL_HANDLE,                                    // VkRenderPass                     renderPass;
             0u,                                                // uint32_t                         subpass;
-            DE_NULL,                                           // VkFramebuffer                    framebuffer;
+            VK_NULL_HANDLE,                                    // VkFramebuffer                    framebuffer;
             VK_FALSE,                                          // VkBool32                         occlusionQueryEnable;
             0u,                                                // VkQueryControlFlags              queryFlags;
             0u                                                 // VkQueryPipelineStatisticFlags    pipelineStatistics;
@@ -3123,7 +3123,7 @@ void TwoCmdBuffersTestInstance::configCommandBuffer(void)
 
         const VkCommandBufferBeginInfo cmdBufferBeginInfoSecondary = {
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType                          sType;
-            DE_NULL,                                     // const void*                              pNext;
+            nullptr,                                     // const void*                              pNext;
             0u,                                          // VkCommandBufferUsageFlags                flags;
             &inheritanceInfo                             // const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
         };
@@ -3140,7 +3140,7 @@ void TwoCmdBuffersTestInstance::configCommandBuffer(void)
         if (!m_transferOnlyQueue)
             vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 0u, m_queryResultFlags);
         vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                              DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+                              nullptr, 1u, &bufferBarrier, 0u, nullptr);
         VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
     }
 }
@@ -3155,16 +3155,16 @@ tcu::TestStatus TwoCmdBuffersTestInstance::iterate(void)
     const VkCommandBuffer cmdBuffers[] = {m_cmdBuffer.get(), m_secondCmdBuffer.get()};
 
     const VkSubmitInfo submitInfo = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // VkStructureType                sType;
-        DE_NULL,                               // const void*                    pNext;
-        0u,                                    // uint32_t                       waitSemaphoreCount;
-        DE_NULL,                               // const VkSemaphore*             pWaitSemaphores;
-        (const VkPipelineStageFlags *)DE_NULL, // const VkPipelineStageFlags*    pWaitDstStageMask;
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType                sType;
+        nullptr,                       // const void*                    pNext;
+        0u,                            // uint32_t                       waitSemaphoreCount;
+        nullptr,                       // const VkSemaphore*             pWaitSemaphores;
+        nullptr,                       // const VkPipelineStageFlags*    pWaitDstStageMask;
         m_cmdBufferLevel == VK_COMMAND_BUFFER_LEVEL_PRIMARY ? 2u :
                                                               1u, // uint32_t                       commandBufferCount;
         cmdBuffers,                                               // const VkCommandBuffer*         pCommandBuffers;
         0u,      // uint32_t                       signalSemaphoreCount;
-        DE_NULL, // const VkSemaphore*             pSignalSemaphores;
+        nullptr, // const VkSemaphore*             pSignalSemaphores;
     };
 
     if (m_hostQueryReset)
@@ -3173,7 +3173,7 @@ tcu::TestStatus TwoCmdBuffersTestInstance::iterate(void)
         vk.resetQueryPool(m_device, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
     }
 
-    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE));
     VK_CHECK(vk.queueWaitIdle(queue));
 
     // Always pass in case no crash occurred.
@@ -3238,7 +3238,7 @@ ConsistentQueryResultsTestInstance::ConsistentQueryResultsTestInstance(Context &
 
     const VkQueryPoolCreateInfo queryPoolParams = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType               sType;
-        DE_NULL,                                  // const void*                   pNext;
+        nullptr,                                  // const void*                   pNext;
         0u,                                       // VkQueryPoolCreateFlags        flags;
         VK_QUERY_TYPE_TIMESTAMP,                  // VkQueryType                   queryType;
         1u,                                       // uint32_t                      entryCount;
@@ -3252,7 +3252,7 @@ ConsistentQueryResultsTestInstance::ConsistentQueryResultsTestInstance(Context &
     // Create results buffer.
     VkBufferCreateInfo bufferCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         0u,                                   // VkDeviceSize size;
         VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
@@ -3279,12 +3279,12 @@ ConsistentQueryResultsTestInstance::ConsistentQueryResultsTestInstance(Context &
 
     vk::VkBufferMemoryBarrier bufferBarrier = {
         vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         vk::VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
         vk::VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                     // uint32_t srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                     // uint32_t dstQueueFamilyIndex;
-        DE_NULL,                                     // VkBuffer buffer;
+        VK_NULL_HANDLE,                              // VkBuffer buffer;
         0ull,                                        // VkDeviceSize offset;
         VK_WHOLE_SIZE                                // VkDeviceSize size;
     };
@@ -3299,14 +3299,14 @@ ConsistentQueryResultsTestInstance::ConsistentQueryResultsTestInstance(Context &
     vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_resultBuffer32Bits, 0u, sizeof(uint32_t),
                                VK_QUERY_RESULT_WAIT_BIT);
     vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                          DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+                          nullptr, 1u, &bufferBarrier, 0u, nullptr);
 
     // 64 bits.
     bufferBarrier.buffer = *m_resultBuffer64Bits;
     vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_resultBuffer64Bits, 0u, sizeof(uint64_t),
                                (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
     vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                          DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+                          nullptr, 1u, &bufferBarrier, 0u, nullptr);
 
     endCommandBuffer(vk, *m_cmdBuffer);
 }

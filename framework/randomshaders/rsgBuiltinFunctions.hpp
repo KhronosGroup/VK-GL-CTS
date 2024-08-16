@@ -62,7 +62,7 @@ UnaryBuiltinVecFunc<GetValueRangeWeight, ComputeValueRange, Evaluate>::UnaryBuil
     GeneratorState &state, const char *function, ConstValueRangeAccess valueRange)
     : m_function(function)
     , m_inValueRange(valueRange.getType())
-    , m_child(DE_NULL)
+    , m_child(nullptr)
 {
     DE_UNREF(state);
     DE_ASSERT(valueRange.getType().isFloatOrVec());
@@ -91,7 +91,7 @@ Expression *UnaryBuiltinVecFunc<GetValueRangeWeight, ComputeValueRange, Evaluate
     GeneratorState &state)
 {
     if (m_child)
-        return DE_NULL;
+        return nullptr;
 
     m_child = Expression::createRandom(state, m_inValueRange.asAccess());
     return m_child;

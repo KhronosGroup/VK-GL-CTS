@@ -32,7 +32,7 @@ namespace Draw
 {
 
 Buffer::Buffer(const vk::DeviceInterface &vk, vk::VkDevice device, vk::Move<vk::VkBuffer> object_)
-    : m_allocation(DE_NULL)
+    : m_allocation(nullptr)
     , m_allocOffset(0ull)
     , m_object(object_)
     , m_vk(vk)
@@ -86,7 +86,7 @@ void bufferBarrier(const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer,
 {
     vk::VkBufferMemoryBarrier barrier;
     barrier.sType               = vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-    barrier.pNext               = DE_NULL;
+    barrier.pNext               = nullptr;
     barrier.srcAccessMask       = srcAccessMask;
     barrier.dstAccessMask       = dstAccessMask;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -95,9 +95,8 @@ void bufferBarrier(const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer,
     barrier.offset              = 0;
     barrier.size                = VK_WHOLE_SIZE;
 
-    vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (vk::VkDependencyFlags)0, 0,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 1, &barrier, 0,
-                          (const vk::VkImageMemoryBarrier *)DE_NULL);
+    vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (vk::VkDependencyFlags)0, 0, nullptr, 1, &barrier, 0,
+                          nullptr);
 }
 
 } // namespace Draw

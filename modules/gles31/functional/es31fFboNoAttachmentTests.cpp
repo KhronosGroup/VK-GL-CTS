@@ -126,7 +126,7 @@ bool checkFramebufferSize(TestLog &log, const glu::RenderContext &renderCtx, GLu
         gl.bufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
 
         gl.enableVertexAttribArray(0);
-        gl.vertexAttribPointer(0, 2, GL_FLOAT, false, 0, DE_NULL);
+        gl.vertexAttribPointer(0, 2, GL_FLOAT, false, 0, nullptr);
 
         gl.uniform2i(0, size.x() - 1, size.y() - 1);
         gl.beginQuery(GL_ANY_SAMPLES_PASSED, query);
@@ -226,7 +226,7 @@ bool checkFramebufferRenderable(TestLog &log, const glu::RenderContext &renderCt
         gl.bufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
 
         gl.enableVertexAttribArray(0);
-        gl.vertexAttribPointer(0, 2, GL_FLOAT, false, 0, DE_NULL);
+        gl.vertexAttribPointer(0, 2, GL_FLOAT, false, 0, nullptr);
 
         gl.beginQuery(GL_ANY_SAMPLES_PASSED, query);
         gl.drawArrays(GL_TRIANGLES, 0, 6);

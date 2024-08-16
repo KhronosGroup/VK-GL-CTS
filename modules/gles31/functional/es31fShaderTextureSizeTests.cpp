@@ -118,7 +118,7 @@ TextureSizeCase::TextureSizeCase(Context &context, const char *name, const char 
     , m_texture(0)
     , m_vbo(0)
     , m_vao(0)
-    , m_shader(DE_NULL)
+    , m_shader(nullptr)
     , m_iteration(0)
     , m_allIterationsPassed(true)
     , m_allCasesSkipped(true)
@@ -245,7 +245,7 @@ void TextureSizeCase::deinit(void)
     if (m_shader)
     {
         delete m_shader;
-        m_shader = DE_NULL;
+        m_shader = nullptr;
     }
 }
 
@@ -474,7 +474,7 @@ void TextureSizeCase::runShader(tcu::Surface &dst, const tcu::IVec3 &size)
         gl.bindVertexArray(m_vao);
 
     gl.bindBuffer(GL_ARRAY_BUFFER, m_vbo);
-    gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(positionLoc);
     GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttrib");
 

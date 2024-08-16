@@ -96,7 +96,7 @@ tcu::TestStatus ShaderObjectApiInstance::iterate(void)
         nullptr,                                  // const char* const* ppEnabledLayerNames;
         (uint32_t)extensions.size(),              // uint32_t enabledExtensionCount;
         extensions.data(),                        // const char* const* ppEnabledExtensionNames;
-        DE_NULL,                                  // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        nullptr,                                  // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
     const auto device = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), vkp,
@@ -165,7 +165,7 @@ tcu::TestStatus ShaderObjectApiInstance::iterate(void)
     for (const auto &func : functions)
     {
         const auto &f = vk.getDeviceProcAddr(*device, func.c_str());
-        if (f == DE_NULL)
+        if (f == nullptr)
             return tcu::TestStatus::fail("Failed: " + func);
     }
 

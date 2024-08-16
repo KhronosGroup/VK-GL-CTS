@@ -171,7 +171,7 @@ Move<VkDescriptorPool> createDescriptorPool(const DeviceInterface &vkdi, const V
 Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkdi, const VkDevice &device, VkDescriptorPool pool,
                                           VkDescriptorSetLayout layout)
 {
-    const VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL, pool, 1u,
+    const VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, pool, 1u,
                                                    &layout};
 
     return allocateDescriptorSet(vkdi, device, &allocInfo);
@@ -195,7 +195,7 @@ Move<VkPipelineLayout> createPipelineLayout(const DeviceInterface &vkdi, const V
 
     const VkPipelineLayoutCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,                // flags
         usesPhysicalBuffers ? 0u : 2u,                 // descriptorSetCount
         descriptorSetLayouts,                          // pSetLayouts
@@ -213,13 +213,13 @@ Move<VkBuffer> createBufferAndBindMemory(const DeviceInterface &vkdi, const VkDe
 
     const VkBufferCreateInfo bufferCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-        DE_NULL,                              // pNext
+        nullptr,                              // pNext
         0u,                                   // flags
         numBytes,                             // size
         usageFlags,                           // usage
         VK_SHARING_MODE_EXCLUSIVE,            // sharingMode
         0u,                                   // queueFamilyCount
-        DE_NULL,                              // pQueueFamilyIndices
+        nullptr,                              // pQueueFamilyIndices
     };
 
     Move<VkBuffer> buffer(createBuffer(vkdi, device, &bufferCreateInfo));
@@ -240,24 +240,24 @@ Move<VkPipeline> createComputePipeline(const DeviceInterface &vkdi, const VkDevi
 {
     const VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // sType
-        DE_NULL,                                             // pNext
+        nullptr,                                             // pNext
         (VkPipelineShaderStageCreateFlags)0,                 // flags
         VK_SHADER_STAGE_COMPUTE_BIT,                         // stage
         shader,                                              // module
         "main",                                              // pName
-        DE_NULL,                                             // pSpecializationInfo
+        nullptr,                                             // pSpecializationInfo
     };
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // sType
-        DE_NULL,                                        // pNext
+        nullptr,                                        // pNext
         (VkPipelineCreateFlags)0,                       // flags
         pipelineShaderStageCreateInfo,                  // cs
         pipelineLayout,                                 // layout
-        (VkPipeline)0,                                  // basePipelineHandle
+        VK_NULL_HANDLE,                                 // basePipelineHandle
         0u,                                             // basePipelineIndex
     };
 
-    return createComputePipeline(vkdi, device, (VkPipelineCache)0u, &pipelineCreateInfo);
+    return createComputePipeline(vkdi, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 tcu::TestStatus SpvAsmRawAccessChainInstance::iterate(void)
@@ -360,9 +360,9 @@ tcu::TestStatus SpvAsmRawAccessChainInstance::iterate(void)
     else
     {
         vkdi.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1,
-                                   &descriptorSet1.get(), 0, DE_NULL);
+                                   &descriptorSet1.get(), 0, nullptr);
         vkdi.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 1, 1,
-                                   &descriptorSet2.get(), 0, DE_NULL);
+                                   &descriptorSet2.get(), 0, nullptr);
         vkdi.cmdPushConstants(*cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(descriptorIndex),
                               &descriptorIndex);
     }
@@ -371,13 +371,13 @@ tcu::TestStatus SpvAsmRawAccessChainInstance::iterate(void)
     // Insert a barrier so data written by the shader is available to the host
     const VkMemoryBarrier memory_barrier = {
         VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
-        DE_NULL,                          // pNext
+        nullptr,                          // pNext
         VK_ACCESS_SHADER_WRITE_BIT,       // srcAccessMask
         VK_ACCESS_HOST_READ_BIT,          // dstAccessMask
     };
 
     vkdi.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1,
-                            &memory_barrier, 0, DE_NULL, 0, DE_NULL);
+                            &memory_barrier, 0, nullptr, 0, nullptr);
 
     endCommandBuffer(vkdi, *cmdBuffer);
 

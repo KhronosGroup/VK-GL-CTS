@@ -128,16 +128,16 @@ tcu::TestStatus RayQueryProceduralGeometryTestBase::iterate(void)
     const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vkd, device, descriptorSetLayout.get());
     const VkComputePipelineCreateInfo pipelineCreateInfo{
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType                        sType
-        DE_NULL,                                        // const void*                            pNext
+        nullptr,                                        // const void*                            pNext
         0u,                                             // VkPipelineCreateFlags                flags
         {                                               // VkPipelineShaderStageCreateInfo        stage
-         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, (VkPipelineShaderStageCreateFlags)0,
-         VK_SHADER_STAGE_COMPUTE_BIT, *shaderModule, "main", DE_NULL},
+         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, (VkPipelineShaderStageCreateFlags)0,
+         VK_SHADER_STAGE_COMPUTE_BIT, *shaderModule, "main", nullptr},
         *pipelineLayout, // VkPipelineLayout                        layout
-        DE_NULL,         // VkPipeline                            basePipelineHandle
+        VK_NULL_HANDLE,  // VkPipeline                            basePipelineHandle
         0,               // int32_t                                basePipelineIndex
     };
-    Move<VkPipeline> pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+    Move<VkPipeline> pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
     m_cmdPool   = createCommandPool(vkd, device, 0, queueFamilyIndex);
     m_cmdBuffer = allocateCommandBuffer(vkd, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -190,12 +190,12 @@ tcu::TestStatus RayQueryProceduralGeometryTestBase::iterate(void)
 
         // generate reference
         vkd.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1,
-                                  &referenceDescriptorSet.get(), 0, DE_NULL);
+                                  &referenceDescriptorSet.get(), 0, nullptr);
         vkd.cmdDispatch(*m_cmdBuffer, imageSize, imageSize, 1);
 
         // generate result
         vkd.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1,
-                                  &resultDescriptorSet.get(), 0, DE_NULL);
+                                  &resultDescriptorSet.get(), 0, nullptr);
         vkd.cmdDispatch(*m_cmdBuffer, imageSize, imageSize, 1);
 
         const VkMemoryBarrier postTraceMemoryBarrier =
@@ -231,7 +231,7 @@ VkWriteDescriptorSetAccelerationStructureKHR RayQueryProceduralGeometryTestBase:
 {
     return {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, // VkStructureType                        sType
-        DE_NULL,               // const void*                            pNext
+        nullptr,               // const void*                            pNext
         1u,                    // uint32_t                                accelerationStructureCount
         pAccelerationStructure // const VkAccelerationStructureKHR*    pAccelerationStructures
     };

@@ -680,7 +680,7 @@ void TriangleRasterizer::rasterizeMultiSample(FragmentPacket *const fragmentPack
 
     // Big enough to hold maximum multisample count
     int64_t samplePos[DE_LENGTH_OF_ARRAY(s_samplePts16)];
-    const float *samplePts   = DE_NULL;
+    const float *samplePts   = nullptr;
     const uint64_t halfPixel = 1ll << (m_subpixelBits - 1);
     int packetNdx            = 0;
 
@@ -1116,7 +1116,7 @@ void MultiSampleLineRasterizer::rasterize(FragmentPacket *const fragmentPackets,
 
     {
         FragmentPacket *const nextFragmentPackets = fragmentPackets + numPacketsRasterized;
-        float *nextDepthValues    = (depthValues) ? (depthValues + 4 * numPacketsRasterized * m_numSamples) : (DE_NULL);
+        float *nextDepthValues    = (depthValues) ? (depthValues + 4 * numPacketsRasterized * m_numSamples) : (nullptr);
         int numPacketsRasterized2 = 0;
 
         m_triangleRasterizer1.rasterize(nextFragmentPackets, nextDepthValues, maxFragmentPackets - numPacketsRasterized,

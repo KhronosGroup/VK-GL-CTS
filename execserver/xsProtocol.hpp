@@ -76,7 +76,7 @@ public:
     {
     }
 
-    virtual void write(std::vector<uint8_t> &buf) const = DE_NULL;
+    virtual void write(std::vector<uint8_t> &buf) const = 0;
 
     static void parseHeader(const uint8_t *data, size_t dataSize, MessageType &type, size_t &messageSize);
     static void writeHeader(MessageType type, size_t messageSize, uint8_t *dst, size_t bufSize);

@@ -132,7 +132,7 @@ Texture2DMipmapCase::Texture2DMipmapCase(tcu::TestContext &testCtx, glu::RenderC
     , m_dataType(dataType)
     , m_width(width)
     , m_height(height)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
@@ -168,7 +168,7 @@ void Texture2DMipmapCase::init(void)
 void Texture2DMipmapCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -463,7 +463,7 @@ TextureCubeMipmapCase::TextureCubeMipmapCase(tcu::TestContext &testCtx, glu::Ren
     , m_format(format)
     , m_dataType(dataType)
     , m_size(size)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
@@ -526,7 +526,7 @@ void TextureCubeMipmapCase::init(void)
 void TextureCubeMipmapCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -767,7 +767,7 @@ Texture2DGenMipmapCase::Texture2DGenMipmapCase(tcu::TestContext &testCtx, glu::R
     , m_hint(hint)
     , m_width(width)
     , m_height(height)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
@@ -786,7 +786,7 @@ void Texture2DGenMipmapCase::init(void)
 void Texture2DGenMipmapCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -907,7 +907,7 @@ TextureCubeGenMipmapCase::TextureCubeGenMipmapCase(tcu::TestContext &testCtx, gl
     , m_dataType(dataType)
     , m_hint(hint)
     , m_size(size)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_300_ES, glu::PRECISION_HIGHP)
 {
 }
@@ -930,7 +930,7 @@ void TextureCubeGenMipmapCase::init(void)
 void TextureCubeGenMipmapCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -1094,7 +1094,7 @@ Texture3DMipmapCase::Texture3DMipmapCase(Context &context, const char *name, con
     , m_width(width)
     , m_height(height)
     , m_depth(depth)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES,
                  glu::PRECISION_HIGHP)
 {
@@ -1137,7 +1137,7 @@ void Texture3DMipmapCase::init(void)
 void Texture3DMipmapCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -1408,8 +1408,8 @@ public:
     IterateResult iterate(void);
 
 protected:
-    virtual void setTextureParams(int cellNdx)                            = DE_NULL;
-    virtual void getReferenceParams(ReferenceParams &params, int cellNdx) = DE_NULL;
+    virtual void setTextureParams(int cellNdx)                            = 0;
+    virtual void getReferenceParams(ReferenceParams &params, int cellNdx) = 0;
 
     const int m_texWidth;
     const int m_texHeight;
@@ -1430,7 +1430,7 @@ Texture2DLodControlCase::Texture2DLodControlCase(Context &context, const char *n
     , m_texWidth(64)
     , m_texHeight(64)
     , m_minFilter(minFilter)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES,
                  glu::PRECISION_HIGHP)
 {
@@ -1465,7 +1465,7 @@ void Texture2DLodControlCase::init(void)
 void Texture2DLodControlCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -1713,8 +1713,8 @@ public:
     IterateResult iterate(void);
 
 protected:
-    virtual void setTextureParams(int cellNdx)                            = DE_NULL;
-    virtual void getReferenceParams(ReferenceParams &params, int cellNdx) = DE_NULL;
+    virtual void setTextureParams(int cellNdx)                            = 0;
+    virtual void getReferenceParams(ReferenceParams &params, int cellNdx) = 0;
 
     const int m_texSize;
 
@@ -1733,7 +1733,7 @@ TextureCubeLodControlCase::TextureCubeLodControlCase(Context &context, const cha
     : TestCase(context, name, desc)
     , m_texSize(64)
     , m_minFilter(minFilter)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES,
                  glu::PRECISION_HIGHP)
 {
@@ -1795,7 +1795,7 @@ void TextureCubeLodControlCase::init(void)
 void TextureCubeLodControlCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -2046,8 +2046,8 @@ public:
     IterateResult iterate(void);
 
 protected:
-    virtual void setTextureParams(int cellNdx)                            = DE_NULL;
-    virtual void getReferenceParams(ReferenceParams &params, int cellNdx) = DE_NULL;
+    virtual void setTextureParams(int cellNdx)                            = 0;
+    virtual void getReferenceParams(ReferenceParams &params, int cellNdx) = 0;
 
     const int m_texWidth;
     const int m_texHeight;
@@ -2070,7 +2070,7 @@ Texture3DLodControlCase::Texture3DLodControlCase(Context &context, const char *n
     , m_texHeight(32)
     , m_texDepth(32)
     , m_minFilter(minFilter)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES,
                  glu::PRECISION_HIGHP)
 {
@@ -2111,7 +2111,7 @@ void Texture3DLodControlCase::init(void)
 void Texture3DLodControlCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -2419,7 +2419,7 @@ void TextureMipmapTests::init(void)
         const char *name;
         int width;
         int height;
-    } tex2DSizes[] = {{DE_NULL, 64, 64}, // Default.
+    } tex2DSizes[] = {{nullptr, 64, 64}, // Default.
                       {"npot", 63, 57},
                       {"non_square", 32, 64}};
 
@@ -2429,7 +2429,7 @@ void TextureMipmapTests::init(void)
         int width;
         int height;
         int depth;
-    } tex3DSizes[] = {{DE_NULL, 32, 32, 32}, // Default.
+    } tex3DSizes[] = {{nullptr, 32, 32, 32}, // Default.
                       {"npot", 33, 29, 27}};
 
     const int cubeMapSize = 64;

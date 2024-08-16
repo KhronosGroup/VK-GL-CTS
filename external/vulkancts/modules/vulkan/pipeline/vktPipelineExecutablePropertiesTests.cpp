@@ -264,10 +264,10 @@ ExecutablePropertiesTestInstance::ExecutablePropertiesTestInstance(Context &cont
 
     const VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         0u,                                           // VkPipelineCacheCreateFlags flags;
         0u,                                           // uintptr_t initialDataSize;
-        DE_NULL,                                      // const void* pInitialData;
+        nullptr,                                      // const void* pInitialData;
     };
 
     m_cache = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
@@ -314,13 +314,13 @@ tcu::TestStatus ExecutablePropertiesTestInstance::verifyStatistics(uint32_t exec
     {
         const VkPipelineExecutableInfoKHR pipelineExecutableInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             getPipeline(ndx),                               // VkPipeline pipeline;
             executableNdx,                                  // uint32_t executableIndex;
         };
 
         uint32_t statisticCount = 0;
-        VK_CHECK(vk.getPipelineExecutableStatisticsKHR(vkDevice, &pipelineExecutableInfo, &statisticCount, DE_NULL));
+        VK_CHECK(vk.getPipelineExecutableStatisticsKHR(vkDevice, &pipelineExecutableInfo, &statisticCount, nullptr));
 
         if (statisticCount == 0)
         {
@@ -332,7 +332,7 @@ tcu::TestStatus ExecutablePropertiesTestInstance::verifyStatistics(uint32_t exec
         {
             deMemset(&statistics[ndx][statNdx], 0, sizeof(statistics[ndx][statNdx]));
             statistics[ndx][statNdx].sType = VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR;
-            statistics[ndx][statNdx].pNext = DE_NULL;
+            statistics[ndx][statNdx].pNext = nullptr;
         }
         VK_CHECK(vk.getPipelineExecutableStatisticsKHR(vkDevice, &pipelineExecutableInfo, &statisticCount,
                                                        &statistics[ndx][0]));
@@ -460,7 +460,7 @@ tcu::TestStatus ExecutablePropertiesTestInstance::verifyInternalRepresentations(
     // even if the pipeline is hot in the cache.
     const VkPipelineExecutableInfoKHR pipelineExecutableInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         getPipeline(1),                                 // VkPipeline pipeline;
         executableNdx,                                  // uint32_t executableIndex;
     };
@@ -469,7 +469,7 @@ tcu::TestStatus ExecutablePropertiesTestInstance::verifyInternalRepresentations(
     std::vector<std::vector<uint8_t>> irDatas;
 
     uint32_t irCount = 0;
-    VK_CHECK(vk.getPipelineExecutableInternalRepresentationsKHR(vkDevice, &pipelineExecutableInfo, &irCount, DE_NULL));
+    VK_CHECK(vk.getPipelineExecutableInternalRepresentationsKHR(vkDevice, &pipelineExecutableInfo, &irCount, nullptr));
 
     if (irCount == 0)
     {
@@ -482,7 +482,7 @@ tcu::TestStatus ExecutablePropertiesTestInstance::verifyInternalRepresentations(
     {
         deMemset(&irs[irNdx], 0, sizeof(irs[irNdx]));
         irs[irNdx].sType = VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR;
-        irs[irNdx].pNext = DE_NULL;
+        irs[irNdx].pNext = nullptr;
     }
     VK_CHECK(vk.getPipelineExecutableInternalRepresentationsKHR(vkDevice, &pipelineExecutableInfo, &irCount, &irs[0]));
 
@@ -587,12 +587,12 @@ tcu::TestStatus ExecutablePropertiesTestInstance::verifyTestResult(void)
     {
         const VkPipelineInfoKHR pipelineInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             getPipeline(ndx),                    // VkPipeline pipeline;
 
         };
         uint32_t executableCount = 0;
-        VK_CHECK(vk.getPipelineExecutablePropertiesKHR(vkDevice, &pipelineInfo, &executableCount, DE_NULL));
+        VK_CHECK(vk.getPipelineExecutablePropertiesKHR(vkDevice, &pipelineInfo, &executableCount, nullptr));
 
         if (executableCount == 0)
         {
@@ -604,7 +604,7 @@ tcu::TestStatus ExecutablePropertiesTestInstance::verifyTestResult(void)
         {
             deMemset(&props[ndx][execNdx], 0, sizeof(props[ndx][execNdx]));
             props[ndx][execNdx].sType = VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_PROPERTIES_KHR;
-            props[ndx][execNdx].pNext = DE_NULL;
+            props[ndx][execNdx].pNext = nullptr;
         }
         VK_CHECK(vk.getPipelineExecutablePropertiesKHR(vkDevice, &pipelineInfo, &executableCount, &props[ndx][0]));
 
@@ -908,12 +908,12 @@ GraphicsExecutablePropertiesTestInstance::GraphicsExecutablePropertiesTestInstan
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout =
@@ -974,7 +974,7 @@ void GraphicsExecutablePropertiesTestInstance::preparePipelineWrapper(
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateParams{
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
         1u,                                                        // uint32_t vertexBindingDescriptionCount;
         &vertexInputBindingDescription,   // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -999,7 +999,7 @@ void GraphicsExecutablePropertiesTestInstance::preparePipelineWrapper(
 
     const VkPipelineColorBlendStateCreateInfo colorBlendStateParams{
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
         VK_FALSE,                                                 // VkBool32 logicOpEnable;
         VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -1010,7 +1010,7 @@ void GraphicsExecutablePropertiesTestInstance::preparePipelineWrapper(
 
     VkPipelineDepthStencilStateCreateInfo depthStencilStateParams{
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
         VK_TRUE,                                                    // VkBool32 depthTestEnable;
         VK_TRUE,                                                    // VkBool32 depthWriteEnable;
@@ -1047,7 +1047,7 @@ void GraphicsExecutablePropertiesTestInstance::preparePipelineWrapper(
         .setDefaultMultisampleState()
         .setupVertexInputState(&vertexInputStateParams)
         .setupPreRasterizationShaderState(viewport, scissor, m_pipelineLayout, *m_renderPass, 0u, vertShaderModule,
-                                          DE_NULL, tescShaderModule, teseShaderModule, geomShaderModule)
+                                          nullptr, tescShaderModule, teseShaderModule, geomShaderModule)
         .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragShaderModule, &depthStencilStateParams)
         .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
         .setMonolithicPipelineLayout(m_pipelineLayout)
@@ -1141,7 +1141,7 @@ void ComputeExecutablePropertiesTestInstance::buildShader(uint32_t ndx)
     // Create compute shader
     VkShaderModuleCreateInfo shaderModuleCreateInfo = {
         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,                    // VkStructureType sType;
-        DE_NULL,                                                        // const void* pNext;
+        nullptr,                                                        // const void* pNext;
         0u,                                                             // VkShaderModuleCreateFlags flags;
         m_context.getBinaryCollection().get("basic_compute").getSize(), // uintptr_t codeSize;
         (uint32_t *)m_context.getBinaryCollection().get("basic_compute").getBinary(), // const uint32_t* pCode;
@@ -1157,24 +1157,24 @@ void ComputeExecutablePropertiesTestInstance::buildPipeline(uint32_t ndx)
     // Create compute pipeline layout
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         0u,                                            // VkPipelineLayoutCreateFlags flags;
         1u,                                            // uint32_t setLayoutCount;
         &m_descriptorSetLayout[ndx].get(),             // const VkDescriptorSetLayout* pSetLayouts;
         0u,                                            // uint32_t pushConstantRangeCount;
-        DE_NULL,                                       // const VkPushConstantRange* pPushConstantRanges;
+        nullptr,                                       // const VkPushConstantRange* pPushConstantRanges;
     };
 
     m_pipelineLayout[ndx] = createPipelineLayout(vk, vkDevice, &pipelineLayoutCreateInfo);
 
     const VkPipelineShaderStageCreateInfo stageCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                             // const void* pNext;
+        nullptr,                                             // const void* pNext;
         0u,                                                  // VkPipelineShaderStageCreateFlags flags;
         VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
         *m_computeShaderModule[ndx],                         // VkShaderModule module;
         "main",                                              // const char* pName;
-        DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+        nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
     };
 
     VkPipelineCreateFlags flags = 0;
@@ -1193,15 +1193,15 @@ void ComputeExecutablePropertiesTestInstance::buildPipeline(uint32_t ndx)
 
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         flags,                                          // VkPipelineCreateFlags flags;
         stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
         *m_pipelineLayout[ndx],                         // VkPipelineLayout layout;
-        (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0u,                                             // int32_t basePipelineIndex;
     };
 
-    m_pipeline[ndx] = createComputePipeline(vk, vkDevice, *m_cache, &pipelineCreateInfo, DE_NULL);
+    m_pipeline[ndx] = createComputePipeline(vk, vkDevice, *m_cache, &pipelineCreateInfo, nullptr);
 }
 
 ComputeExecutablePropertiesTestInstance::ComputeExecutablePropertiesTestInstance(

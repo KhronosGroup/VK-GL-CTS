@@ -104,7 +104,7 @@ WGLContext::WGLContext(HINSTANCE instance, const wgl::Core &wglCore, const WGLCo
     : m_contextType(config.type)
     , m_window(instance, config.width != glu::RenderConfig::DONT_CARE ? config.width : DEFAULT_WINDOW_WIDTH,
                config.height != glu::RenderConfig::DONT_CARE ? config.height : DEFAULT_WINDOW_HEIGHT)
-    , m_context(DE_NULL)
+    , m_context(nullptr)
 {
     if (config.surfaceType != glu::RenderConfig::SURFACETYPE_WINDOW &&
         config.surfaceType != glu::RenderConfig::SURFACETYPE_DONT_CARE)
@@ -121,8 +121,8 @@ WGLContext::WGLContext(HINSTANCE instance, const wgl::Core &wglCore, const WGLCo
     if (pixelFormat < 0)
         throw NotSupportedError("Compatible WGL pixel format not found");
 
-    const wgl::Context *sharedCtx = DE_NULL;
-    if (DE_NULL != sharedContext)
+    const wgl::Context *sharedCtx = nullptr;
+    if (nullptr != sharedContext)
         sharedCtx = sharedContext->m_context;
 
     m_context =

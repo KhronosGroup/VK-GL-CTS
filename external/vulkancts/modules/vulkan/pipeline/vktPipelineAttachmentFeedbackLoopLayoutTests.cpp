@@ -434,7 +434,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
                                                         tcu::UVec2({(unsigned)m_imageSize.x(), (unsigned)m_imageSize.y()}) :
                                                         m_renderSize;
 
-    DE_ASSERT(m_samplerParams.pNext == DE_NULL);
+    DE_ASSERT(m_samplerParams.pNext == nullptr);
 
     // Create texture images, views and samplers
     {
@@ -461,7 +461,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
 
         const VkImageCreateInfo imageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,     // VkStructureType sType;
-            DE_NULL,                                 // const void* pNext;
+            nullptr,                                 // const void* pNext;
             imageFlags,                              // VkImageCreateFlags flags;
             getCompatibleImageType(m_imageViewType), // VkImageType imageType;
             m_imageFormat,                           // VkFormat format;
@@ -504,7 +504,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
             // Create image view and sampler
             const VkImageViewCreateInfo imageViewParams = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                  // const void* pNext;
+                nullptr,                                  // const void* pNext;
                 0u,                                       // VkImageViewCreateFlags flags;
                 **m_images[imgNdx],                       // VkImage image;
                 m_imageViewType,                          // VkImageViewType viewType;
@@ -538,7 +538,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
 
         const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             *m_descriptorPool,                              // VkDescriptorPool descriptorPool;
             1u,                                             // uint32_t setLayoutCount;
             &m_descriptorSetLayout.get()                    // const VkDescriptorSetLayout* pSetLayouts;
@@ -546,7 +546,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
 
         m_descriptorSet = allocateDescriptorSet(vk, vkDevice, &descriptorSetAllocateInfo);
 
-        const VkSampler sampler = m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? DE_NULL : *m_sampler;
+        const VkSampler sampler = m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? VK_NULL_HANDLE : *m_sampler;
         std::vector<VkDescriptorImageInfo> descriptorImageInfo(m_imageCount);
         for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
         {
@@ -559,9 +559,9 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
         if (m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
         {
             const VkDescriptorImageInfo descriptorSamplerInfo = {
-                *m_sampler,    // VkSampler sampler;
-                DE_NULL,       // VkImageView imageView;
-                m_imageLayout, // VkImageLayout imageLayout;
+                *m_sampler,     // VkSampler sampler;
+                VK_NULL_HANDLE, // VkImageView imageView;
+                m_imageLayout,  // VkImageLayout imageLayout;
             };
             setUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0),
                                          VK_DESCRIPTOR_TYPE_SAMPLER, &descriptorSamplerInfo);
@@ -577,7 +577,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_colorFormat,                                                         // VkFormat format;
@@ -622,7 +622,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
 
                 const VkImageViewCreateInfo colorAttachmentViewParams = {
                     VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
-                    DE_NULL,                                    // const void* pNext;
+                    nullptr,                                    // const void* pNext;
                     0u,                                         // VkImageViewCreateFlags flags;
                     **m_colorImages[imgNdx],                    // VkImage image;
                     VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
@@ -669,13 +669,13 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
             0u,                              // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
             0u,                              // uint32_t inputAttachmentCount;
-            DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+            nullptr,                         // const VkAttachmentReference* pInputAttachments;
             (uint32_t)m_imageCount,          // uint32_t colorAttachmentCount;
             &attachmentReferences[0],        // const VkAttachmentReference* pColorAttachments;
-            DE_NULL,                         // const VkAttachmentReference* pResolveAttachments;
-            DE_NULL,                         // const VkAttachmentReference* pDepthStencilAttachment;
+            nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
             0u,                              // uint32_t preserveAttachmentCount;
-            DE_NULL                          // const VkAttachmentReference* pPreserveAttachments;
+            nullptr                          // const VkAttachmentReference* pPreserveAttachments;
         };
 
         std::vector<VkSubpassDependency> subpassDependencies;
@@ -697,7 +697,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
 
         const VkRenderPassCreateInfo renderPassParams = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,         // VkStructureType sType;
-            DE_NULL,                                           // const void* pNext;
+            nullptr,                                           // const void* pNext;
             0u,                                                // VkRenderPassCreateFlags flags;
             (uint32_t)attachmentDescriptions.size(),           // uint32_t attachmentCount;
             &attachmentDescriptions[0],                        // const VkAttachmentDescription* pAttachments;
@@ -722,7 +722,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             (uint32_t)m_imageCount,                    // uint32_t attachmentCount;
@@ -739,12 +739,12 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,      // VkStructureType sType;
-            DE_NULL,                                            // const void* pNext;
+            nullptr,                                            // const void* pNext;
             VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT, // VkPipelineLayoutCreateFlags flags;
             0u,                                                 // uint32_t setLayoutCount;
-            DE_NULL,                                            // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                            // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                                 // uint32_t pushConstantRangeCount;
-            DE_NULL                                             // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                             // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_preRasterizationStatePipelineLayout =
@@ -753,12 +753,12 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,      // VkStructureType sType;
-            DE_NULL,                                            // const void* pNext;
+            nullptr,                                            // const void* pNext;
             VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT, // VkPipelineLayoutCreateFlags flags;
             1u,                                                 // uint32_t setLayoutCount;
             &m_descriptorSetLayout.get(),                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                                 // uint32_t pushConstantRangeCount;
-            DE_NULL                                             // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                             // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_fragmentStatePipelineLayout =
@@ -792,7 +792,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t vertexBindingDescriptionCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -830,7 +830,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             false,                                                    // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -872,7 +872,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
         const VkDeviceSize vertexBufferSize         = (VkDeviceSize)(m_vertices.size() * sizeof(Vertex4Tex4));
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             vertexBufferSize,                     // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -911,7 +911,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
         for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
         {
             preAttachmentBarriers[imgNdx].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; // VkStructureType sType;
-            preAttachmentBarriers[imgNdx].pNext = DE_NULL;                                // const void* pNext;
+            preAttachmentBarriers[imgNdx].pNext = nullptr;                                // const void* pNext;
             preAttachmentBarriers[imgNdx].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; // VkAccessFlags srcAccessMask;
             preAttachmentBarriers[imgNdx].dstAccessMask = dstAccessMask;                // VkAccessFlags dstAccessMask;
             preAttachmentBarriers[imgNdx].oldLayout     = m_imageLayout;                // VkImageLayout oldLayout;
@@ -928,7 +928,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
         beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, pipelineStageFlags, (VkDependencyFlags)0,
-                              0u, DE_NULL, 0u, DE_NULL, (uint32_t)m_imageCount, &preAttachmentBarriers[0]);
+                              0u, nullptr, 0u, nullptr, (uint32_t)m_imageCount, &preAttachmentBarriers[0]);
 
         if (!m_useImageAsColorOrDSAttachment)
         {
@@ -936,7 +936,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
             for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
             {
                 preAttachmentBarriers[imgNdx].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; // VkStructureType sType;
-                preAttachmentBarriers[imgNdx].pNext = DE_NULL;                                // const void* pNext;
+                preAttachmentBarriers[imgNdx].pNext = nullptr;                                // const void* pNext;
                 preAttachmentBarriers[imgNdx].srcAccessMask = (VkAccessFlagBits)0u; // VkAccessFlags srcAccessMask;
                 preAttachmentBarriers[imgNdx].dstAccessMask =
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;                            // VkAccessFlags dstAccessMask;
@@ -957,8 +957,8 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
             }
 
             vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u,
-                                  DE_NULL, (uint32_t)m_imageCount, &preAttachmentBarriers[0]);
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u,
+                                  nullptr, (uint32_t)m_imageCount, &preAttachmentBarriers[0]);
 
             m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()),
                                (uint32_t)attachmentClearValues.size(), &attachmentClearValues[0]);
@@ -966,13 +966,13 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
         else
         {
             // Do not clear the color attachments as we are using the sampled texture as color attachment as well.
-            m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), 0u, DE_NULL);
+            m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), 0u, nullptr);
         }
 
         m_graphicsPipeline.bind(*m_cmdBuffer);
 
         vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout, 0, 1,
-                                 &m_descriptorSet.get(), 0, DE_NULL);
+                                 &m_descriptorSet.get(), 0, nullptr);
 
         const VkDeviceSize vertexBufferOffset = 0;
         vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
@@ -1018,7 +1018,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
     tcu::UVec2 renderSize = tcu::UVec2({(unsigned)m_imageSize.x(), (unsigned)m_imageSize.y()});
 
     DE_ASSERT(m_useImageAsColorOrDSAttachment && isDepthStencilFormat(m_imageFormat));
-    DE_ASSERT(m_samplerParams.pNext == DE_NULL);
+    DE_ASSERT(m_samplerParams.pNext == nullptr);
 
     // Create texture images, views
     {
@@ -1041,7 +1041,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
 
         const VkImageCreateInfo imageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,     // VkStructureType sType;
-            DE_NULL,                                 // const void* pNext;
+            nullptr,                                 // const void* pNext;
             imageFlags,                              // VkImageCreateFlags flags;
             getCompatibleImageType(m_imageViewType), // VkImageType imageType;
             m_imageFormat,                           // VkFormat format;
@@ -1094,7 +1094,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
             // Create image view and sampler
             VkImageViewCreateInfo imageViewParams = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                  // const void* pNext;
+                nullptr,                                  // const void* pNext;
                 0u,                                       // VkImageViewCreateFlags flags;
                 image,                                    // VkImage image;
                 m_imageViewType,                          // VkImageViewType viewType;
@@ -1133,7 +1133,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
 
         const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             *m_descriptorPool,                              // VkDescriptorPool descriptorPool;
             1u,                                             // uint32_t setLayoutCount;
             &m_descriptorSetLayout.get()                    // const VkDescriptorSetLayout* pSetLayouts;
@@ -1141,7 +1141,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
 
         m_descriptorSet = allocateDescriptorSet(vk, vkDevice, &descriptorSetAllocateInfo);
 
-        const VkSampler sampler = m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? DE_NULL : *m_sampler;
+        const VkSampler sampler = m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? VK_NULL_HANDLE : *m_sampler;
         std::vector<VkDescriptorImageInfo> descriptorImageInfo(m_imageCount);
         for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
         {
@@ -1154,9 +1154,9 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
         if (m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
         {
             const VkDescriptorImageInfo descriptorSamplerInfo = {
-                *m_sampler,    // VkSampler sampler;
-                DE_NULL,       // VkImageView imageView;
-                m_imageLayout, // VkImageLayout imageLayout;
+                *m_sampler,     // VkSampler sampler;
+                VK_NULL_HANDLE, // VkImageView imageView;
+                m_imageLayout,  // VkImageLayout imageLayout;
             };
             setUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0),
                                          VK_DESCRIPTOR_TYPE_SAMPLER, &descriptorSamplerInfo);
@@ -1211,13 +1211,13 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
             0u,                              // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
             0u,                              // uint32_t inputAttachmentCount;
-            DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+            nullptr,                         // const VkAttachmentReference* pInputAttachments;
             0u,                              // uint32_t colorAttachmentCount;
-            DE_NULL,                         // const VkAttachmentReference* pColorAttachments;
-            DE_NULL,                         // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                         // const VkAttachmentReference* pColorAttachments;
+            nullptr,                         // const VkAttachmentReference* pResolveAttachments;
             &attachmentReferences[0],        // const VkAttachmentReference* pDepthStencilAttachment;
             0u,                              // uint32_t preserveAttachmentCount;
-            DE_NULL                          // const VkAttachmentReference* pPreserveAttachments;
+            nullptr                          // const VkAttachmentReference* pPreserveAttachments;
         };
 
         std::vector<VkSubpassDependency> subpassDependencies;
@@ -1246,7 +1246,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
 
         const VkRenderPassCreateInfo renderPassParams = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,         // VkStructureType sType;
-            DE_NULL,                                           // const void* pNext;
+            nullptr,                                           // const void* pNext;
             0u,                                                // VkRenderPassCreateFlags flags;
             (uint32_t)attachmentDescriptions.size(),           // uint32_t attachmentCount;
             &attachmentDescriptions[0],                        // const VkAttachmentDescription* pAttachments;
@@ -1271,7 +1271,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             (uint32_t)m_imageCount,                    // uint32_t attachmentCount;
@@ -1288,12 +1288,12 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_preRasterizationStatePipelineLayout =
@@ -1302,12 +1302,12 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,      // VkStructureType sType;
-            DE_NULL,                                            // const void* pNext;
+            nullptr,                                            // const void* pNext;
             VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT, // VkPipelineLayoutCreateFlags flags;
             0u,                                                 // uint32_t setLayoutCount;
-            DE_NULL,                                            // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                            // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                                 // uint32_t pushConstantRangeCount;
-            DE_NULL                                             // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                             // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_preRasterizationStatePipelineLayout =
@@ -1316,12 +1316,12 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,      // VkStructureType sType;
-            DE_NULL,                                            // const void* pNext;
+            nullptr,                                            // const void* pNext;
             VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT, // VkPipelineLayoutCreateFlags flags;
             1u,                                                 // uint32_t setLayoutCount;
             &m_descriptorSetLayout.get(),                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                                 // uint32_t pushConstantRangeCount;
-            DE_NULL                                             // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                             // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_fragmentStatePipelineLayout =
@@ -1355,7 +1355,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t vertexBindingDescriptionCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -1386,12 +1386,12 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             false,                                                    // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
             0u,                                                       // uint32_t attachmentCount;
-            DE_NULL,                 // const VkPipelineColorBlendAttachmentState* pAttachments;
+            nullptr,                 // const VkPipelineColorBlendAttachmentState* pAttachments;
             {0.0f, 0.0f, 0.0f, 0.0f} // float blendConstants[4];
         };
 
@@ -1412,7 +1412,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
 
         const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                            sType
-            DE_NULL,              // const void*                                pNext
+            nullptr,              // const void*                                pNext
             0u,                   // VkPipelineDepthStencilStateCreateFlags    flags
             depthTestEnable,      // VkBool32                                    depthTestEnable
             depthTestEnable,      // VkBool32                                    depthWriteEnable
@@ -1459,7 +1459,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
         const VkDeviceSize vertexBufferSize         = (VkDeviceSize)(m_vertices.size() * sizeof(Vertex4Tex4));
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             vertexBufferSize,                     // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -1488,7 +1488,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
         for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
         {
             preAttachmentBarriers[imgNdx].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; // VkStructureType sType;
-            preAttachmentBarriers[imgNdx].pNext = DE_NULL;                                // const void* pNext;
+            preAttachmentBarriers[imgNdx].pNext = nullptr;                                // const void* pNext;
             preAttachmentBarriers[imgNdx].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; // VkAccessFlags srcAccessMask;
             preAttachmentBarriers[imgNdx].dstAccessMask =
                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
@@ -1511,16 +1511,16 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
         beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                              (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, (uint32_t)m_imageCount,
+                              (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, (uint32_t)m_imageCount,
                               &preAttachmentBarriers[0]);
 
         // Do not clear the color attachments as we are using the texture as color attachment.
-        m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), 0u, DE_NULL);
+        m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), 0u, nullptr);
 
         m_graphicsPipeline.bind(*m_cmdBuffer);
 
         vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout, 0, 1,
-                                 &m_descriptorSet.get(), 0, DE_NULL);
+                                 &m_descriptorSet.get(), 0, nullptr);
 
         const VkDeviceSize vertexBufferOffset = 0;
         vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
@@ -2021,7 +2021,7 @@ void AttachmentFeedbackLoopLayoutSamplerTest::initPrograms(SourceCollections &so
 {
     std::ostringstream vertexSrc;
     std::ostringstream fragmentSrc;
-    const char *texCoordSwizzle = DE_NULL;
+    const char *texCoordSwizzle = nullptr;
     const VkFormat vkFormat = m_imageAspectTestMode == IMAGE_ASPECT_TEST_STENCIL ? VK_FORMAT_S8_UINT : m_imageFormat;
     const tcu::TextureFormat format = (isCompressedFormat(m_imageFormat)) ?
                                           tcu::getUncompressedFormat(mapVkCompressedFormat(vkFormat)) :
@@ -2335,7 +2335,7 @@ VkSamplerCreateInfo AttachmentFeedbackLoopLayoutSamplerTest::getSamplerCreateInf
 {
     const VkSamplerCreateInfo defaultSamplerParams = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,           // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         0u,                                              // VkSamplerCreateFlags flags;
         VK_FILTER_NEAREST,                               // VkFilter magFilter;
         VK_FILTER_NEAREST,                               // VkFilter minFilter;

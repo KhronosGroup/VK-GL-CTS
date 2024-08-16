@@ -230,7 +230,7 @@ static std::string getShaderImageFormatQualifier(const tcu::TextureFormat &forma
 
     default:
         DE_FATAL("Impossible");
-        orderPart = DE_NULL;
+        orderPart = nullptr;
     }
 
     switch (format.type)
@@ -278,7 +278,7 @@ static std::string getShaderImageFormatQualifier(const tcu::TextureFormat &forma
 
     default:
         DE_FATAL("Impossible");
-        typePart = DE_NULL;
+        typePart = nullptr;
     }
 
     return std::string() + orderPart + typePart;
@@ -667,7 +667,7 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
         case ACCESS_TYPE_TEXEL_FETCH:
             layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT);
             layoutBuilder.addSingleSamplerBinding(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                                  vk::VK_SHADER_STAGE_COMPUTE_BIT, DE_NULL);
+                                                  vk::VK_SHADER_STAGE_COMPUTE_BIT, nullptr);
             poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1u);
             poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1u);
             break;
@@ -720,7 +720,7 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
         case ACCESS_TYPE_TEXEL_FETCH:
         {
             vk::VkDescriptorImageInfo descStorageImgDst =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
             vk::VkDescriptorImageInfo descSampledImgSrc =
                 makeDescriptorImageInfo(*sampler, *imageViewSrc, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
@@ -734,9 +734,9 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
         case ACCESS_TYPE_IMAGE_STORE:
         {
             vk::VkDescriptorImageInfo descStorageImgDst =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
             vk::VkDescriptorImageInfo descStorageImgSrc =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
 
             updateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                                       vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descStorageImgDst);
@@ -747,7 +747,7 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
         case ACCESS_TYPE_IMAGE_ATOMICS:
         {
             vk::VkDescriptorImageInfo descStorageImg =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
 
             updateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                                       vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descStorageImg);
@@ -770,7 +770,7 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
             vk::VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             *computeShader,                                          // VkShaderModule module;
             "main",                                                  // const char* pName;
-            DE_NULL,                                                 // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                                 // const VkSpecializationInfo* pSpecializationInfo;
         };
 
         vk::VkComputePipelineCreateInfo pipelineCreateInfo{
@@ -779,7 +779,7 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
             m_params.flags,                                     // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                          // VkPipelineShaderStageCreateInfo stage;
             *pipelineLayout,                                    // VkPipelineLayout layout;
-            DE_NULL,                                            // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                     // VkPipeline basePipelineHandle;
             0,                                                  // int32_t basePipelineIndex;
         };
 
@@ -793,7 +793,7 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
         }
 #endif // CTS_USES_VULKANSC
 
-        vk::Unique<vk::VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+        vk::Unique<vk::VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
         const vk::Unique<vk::VkFence> fence(vk::createFence(vk, device));
         vk::Unique<vk::VkCommandBuffer> cmdBuffer(
@@ -803,7 +803,7 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
 
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                 &*descriptorSet, 0u, DE_NULL);
+                                 &*descriptorSet, 0u, nullptr);
         vk.cmdDispatch(*cmdBuffer, (uint32_t)IMAGE_WIDTH, (uint32_t)IMAGE_HEIGHT, 1u);
         endCommandBuffer(vk, *cmdBuffer);
 
@@ -943,7 +943,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest(void)
         case ACCESS_TYPE_SAMPLING:
         case ACCESS_TYPE_TEXEL_FETCH:
             layoutBuilder.addSingleSamplerBinding(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                                  vk::VK_SHADER_STAGE_FRAGMENT_BIT, DE_NULL);
+                                                  vk::VK_SHADER_STAGE_FRAGMENT_BIT, nullptr);
             poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1u);
             break;
         case ACCESS_TYPE_IMAGE_LOAD:
@@ -1007,7 +1007,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest(void)
         case ACCESS_TYPE_IMAGE_LOAD:
         {
             vk::VkDescriptorImageInfo descStorageImg =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
 
             updateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                                       vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descStorageImg);
@@ -1016,9 +1016,9 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest(void)
         case ACCESS_TYPE_IMAGE_STORE:
         {
             vk::VkDescriptorImageInfo descStorageImgSrc =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
             vk::VkDescriptorImageInfo descStorageImgDst =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewDst, vk::VK_IMAGE_LAYOUT_GENERAL);
 
             updateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                                       vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descStorageImgSrc);
@@ -1029,7 +1029,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest(void)
         case ACCESS_TYPE_IMAGE_ATOMICS:
         {
             vk::VkDescriptorImageInfo descStorageImg =
-                makeDescriptorImageInfo((vk::VkSampler)0, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewSrc, vk::VK_IMAGE_LAYOUT_GENERAL);
 
             updateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                                       vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descStorageImg);
@@ -1121,7 +1121,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest(void)
     // Start image barrier
     {
         const vk::VkImageMemoryBarrier startImgBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // sType
-                                                          DE_NULL,                                      // pNext
+                                                          nullptr,                                      // pNext
                                                           0,                                            // srcAccessMask
                                                           vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // dstAccessMask
                                                           vk::VK_IMAGE_LAYOUT_UNDEFINED,                // oldLayout
@@ -1140,8 +1140,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest(void)
         vk.cmdPipelineBarrier(*cmdBuffer,
                               vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,             // srcStageMask
                               vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // dstStageMask
-                              (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &startImgBarrier);
+                              (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &startImgBarrier);
     }
 
     beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, vk::makeRect2D(0, 0, RENDER_WIDTH, RENDER_HEIGHT),
@@ -1149,7 +1148,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest(void)
 
     vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet,
-                             0u, DE_NULL);
+                             0u, nullptr);
 
     {
         const vk::VkDeviceSize vertexBufferOffset = 0;
@@ -1164,7 +1163,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest(void)
 
     {
         const vk::VkImageMemoryBarrier endImgBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // sType
-                                                        DE_NULL,                                      // pNext
+                                                        nullptr,                                      // pNext
                                                         vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // srcAccessMask
                                                         vk::VK_ACCESS_SHADER_READ_BIT,                // dstAccessMask
                                                         vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // oldLayout
@@ -1182,8 +1181,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest(void)
         vk.cmdPipelineBarrier(*cmdBuffer,
                               vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
                               vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,            // dstStageMask
-                              (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &endImgBarrier);
+                              (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &endImgBarrier);
     }
 
     endCommandBuffer(vk, *cmdBuffer);

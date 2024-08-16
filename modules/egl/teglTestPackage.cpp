@@ -182,7 +182,7 @@ static const eglu::NativeDisplayFactory &getDefaultDisplayFactory(tcu::TestConte
 
 TestPackage::TestPackage(tcu::TestContext &testCtx)
     : tcu::TestPackage(testCtx, "dEQP-EGL", "dEQP EGL Tests")
-    , m_eglTestCtx(DE_NULL)
+    , m_eglTestCtx(nullptr)
 {
 }
 
@@ -208,7 +208,7 @@ void TestPackage::init(void)
     catch (...)
     {
         delete m_eglTestCtx;
-        m_eglTestCtx = DE_NULL;
+        m_eglTestCtx = nullptr;
 
         throw;
     }
@@ -218,7 +218,7 @@ void TestPackage::deinit(void)
 {
     tcu::TestNode::deinit();
     delete m_eglTestCtx;
-    m_eglTestCtx = DE_NULL;
+    m_eglTestCtx = nullptr;
 }
 
 tcu::TestCaseExecutor *TestPackage::createExecutor(void) const

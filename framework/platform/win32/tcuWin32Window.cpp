@@ -37,7 +37,7 @@ static LRESULT CALLBACK windowProcCallback(HWND hWnd, UINT uMsg, WPARAM wParam, 
         return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
-Window::Window(HINSTANCE instance, int width, int height) : m_window(DE_NULL)
+Window::Window(HINSTANCE instance, int width, int height) : m_window(nullptr)
 {
     try
     {

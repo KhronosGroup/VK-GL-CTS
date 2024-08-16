@@ -119,7 +119,7 @@ TaskExecutor::TaskExecutor(uint32_t numThreads) : m_threads(numThreads), m_tasks
 TaskExecutor::~TaskExecutor(void)
 {
     for (size_t ndx = 0; ndx < m_threads.size(); ++ndx)
-        m_tasks.pushFront(DE_NULL);
+        m_tasks.pushFront(nullptr);
 
     for (size_t ndx = 0; ndx < m_threads.size(); ++ndx)
         m_threads[ndx]->join();
@@ -141,7 +141,7 @@ public:
     {
     }
 
-    SyncTask(void) : m_enterBarrier(DE_NULL), m_inBarrier(DE_NULL), m_leaveBarrier(DE_NULL)
+    SyncTask(void) : m_enterBarrier(nullptr), m_inBarrier(nullptr), m_leaveBarrier(nullptr)
     {
     }
 
@@ -253,7 +253,7 @@ public:
     {
     }
 
-    BuildHighLevelShaderTask(void) : m_program(DE_NULL)
+    BuildHighLevelShaderTask(void) : m_program(nullptr)
     {
     }
 
@@ -269,7 +269,7 @@ public:
         try
         {
             DE_ASSERT(m_source.buildOptions.targetVersion < vk::SPIRV_VERSION_LAST);
-            DE_ASSERT(m_commandLine != DE_NULL);
+            DE_ASSERT(m_commandLine != nullptr);
             m_program->binary           = ProgramBinarySp(vk::buildProgram(m_source, &buildInfo, *m_commandLine));
             m_program->buildStatus      = Program::STATUS_PASSED;
             m_program->validatorOptions = m_source.buildOptions.getSpirvValidatorOptions();
@@ -311,7 +311,7 @@ public:
     {
     }
 
-    BuildSpirVAsmTask(void) : m_program(DE_NULL), m_commandLine(0)
+    BuildSpirVAsmTask(void) : m_program(nullptr), m_commandLine(0)
     {
     }
 
@@ -327,7 +327,7 @@ public:
         try
         {
             DE_ASSERT(m_source.buildOptions.targetVersion < vk::SPIRV_VERSION_LAST);
-            DE_ASSERT(m_commandLine != DE_NULL);
+            DE_ASSERT(m_commandLine != nullptr);
             m_program->binary      = ProgramBinarySp(vk::assembleProgram(m_source, &buildInfo, *m_commandLine));
             m_program->buildStatus = Program::STATUS_PASSED;
         }
@@ -686,7 +686,7 @@ int main(int argc, const char *argv[])
         tcu::DirArchive archive(".");
         tcu::TestLog log(deqpCmdLine.getLogFileName(), deqpCmdLine.getLogFlags());
         tcu::Platform platform;
-        tcu::TestContext testCtx(platform, archive, log, deqpCmdLine, DE_NULL);
+        tcu::TestContext testCtx(platform, archive, log, deqpCmdLine, nullptr);
         vk::SpirvVersion baselineSpirvVersion = vk::getBaselineSpirvVersion(cmdLine.getOption<opt::VulkanVersion>());
         vk::SpirvVersion maxSpirvVersion      = vk::getMaxSpirvVersionForGlsl(cmdLine.getOption<opt::VulkanVersion>());
 

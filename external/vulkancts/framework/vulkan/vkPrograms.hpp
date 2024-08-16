@@ -59,7 +59,7 @@ public:
     }
     const uint8_t *getBinary(void) const
     {
-        return m_binary.empty() ? DE_NULL : &m_binary[0];
+        return m_binary.empty() ? nullptr : &m_binary[0];
     }
 
     inline void setUsed(void) const
@@ -207,7 +207,7 @@ Program &ProgramCollection<Program, BuildOptions>::add(const std::string &name, 
 {
     Program &program = add(name);
 
-    if (buildOptions != DE_NULL)
+    if (buildOptions != nullptr)
         program << *buildOptions;
 
     return program;

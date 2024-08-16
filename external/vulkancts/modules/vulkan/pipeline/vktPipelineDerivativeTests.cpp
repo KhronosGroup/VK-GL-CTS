@@ -86,12 +86,12 @@ tcu::TestStatus testComputeDerivativeByHandle(Context &context, bool useMaintena
     Move<VkPipelineLayout> layout = makePipelineLayout(vk, vkDevice);
 
     VkComputePipelineCreateInfo cpci = {VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-                                        DE_NULL,
+                                        nullptr,
                                         VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
-                                        {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, 0,
-                                         VK_SHADER_STAGE_COMPUTE_BIT, shaderModule.get(), "main", DE_NULL},
+                                        {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0,
+                                         VK_SHADER_STAGE_COMPUTE_BIT, shaderModule.get(), "main", nullptr},
                                         layout.get(),
-                                        0,
+                                        VK_NULL_HANDLE,
                                         -1};
 
 #ifndef CTS_USES_VULKANSC
@@ -106,7 +106,7 @@ tcu::TestStatus testComputeDerivativeByHandle(Context &context, bool useMaintena
     DE_UNREF(useMaintenance5);
 #endif // CTS_USES_VULKANSC
 
-    Move<VkPipeline> basePipeline = createComputePipeline(vk, vkDevice, DE_NULL, &cpci);
+    Move<VkPipeline> basePipeline = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &cpci);
 
     // Create second (identical) pipeline based on first
     cpci.flags              = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
@@ -120,7 +120,7 @@ tcu::TestStatus testComputeDerivativeByHandle(Context &context, bool useMaintena
     }
 #endif // CTS_USES_VULKANSC
 
-    Move<VkPipeline> derivedPipeline = createComputePipeline(vk, vkDevice, DE_NULL, &cpci);
+    Move<VkPipeline> derivedPipeline = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &cpci);
 
     // If we got here without crashing, success.
     return tcu::TestStatus::pass("OK");
@@ -135,30 +135,30 @@ tcu::TestStatus testComputeDerivativeByIndex(Context &context, bool)
     Move<VkPipelineLayout> layout = makePipelineLayout(vk, vkDevice);
 
     VkComputePipelineCreateInfo cpci[2] = {{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-                                            DE_NULL,
+                                            nullptr,
                                             VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,
-                                            {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, 0,
-                                             VK_SHADER_STAGE_COMPUTE_BIT, shaderModule.get(), "main", DE_NULL},
+                                            {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0,
+                                             VK_SHADER_STAGE_COMPUTE_BIT, shaderModule.get(), "main", nullptr},
                                             layout.get(),
-                                            0,
+                                            VK_NULL_HANDLE,
                                             -1},
                                            {
                                                VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-                                               DE_NULL,
+                                               nullptr,
                                                VK_PIPELINE_CREATE_DERIVATIVE_BIT,
-                                               {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, DE_NULL, 0,
-                                                VK_SHADER_STAGE_COMPUTE_BIT, shaderModule.get(), "main", DE_NULL},
+                                               {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0,
+                                                VK_SHADER_STAGE_COMPUTE_BIT, shaderModule.get(), "main", nullptr},
                                                layout.get(),
-                                               0,
+                                               VK_NULL_HANDLE,
                                                0,
                                            }};
 
     std::vector<VkPipeline> rawPipelines(2);
-    vk.createComputePipelines(vkDevice, 0, 2, cpci, DE_NULL, rawPipelines.data());
+    vk.createComputePipelines(vkDevice, VK_NULL_HANDLE, 2, cpci, nullptr, rawPipelines.data());
 
     for (uint32_t i = 0; i < rawPipelines.size(); i++)
     {
-        vk.destroyPipeline(vkDevice, rawPipelines[i], DE_NULL);
+        vk.destroyPipeline(vkDevice, rawPipelines[i], nullptr);
     }
 
     // If we got here without crashing, success.

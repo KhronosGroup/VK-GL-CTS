@@ -265,7 +265,7 @@ public:
     PolygonOffsetTestCase(Context &context, const char *name, const char *description, GLenum internalFormat,
                           const char *internalFormatName, int canvasSize);
 
-    virtual void testPolygonOffset(void) = DE_NULL;
+    virtual void testPolygonOffset(void) = 0;
     IterateResult iterate(void);
 
 protected:

@@ -129,7 +129,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
         VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_3D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -141,7 +141,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -153,18 +153,18 @@ Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDev
                                           const uint32_t pushConstantsSize)
 {
     const VkDescriptorSetLayout *descriptorSetLayoutPtr =
-        (descriptorSetLayout == DE_NULL) ? DE_NULL : &descriptorSetLayout;
-    const uint32_t setLayoutCount               = (descriptorSetLayout == DE_NULL) ? 0u : 1u;
+        (descriptorSetLayout == VK_NULL_HANDLE) ? nullptr : &descriptorSetLayout;
+    const uint32_t setLayoutCount               = (descriptorSetLayout == VK_NULL_HANDLE) ? 0u : 1u;
     const VkPushConstantRange pushConstantRange = {
         ALL_RAY_TRACING_STAGES, //  VkShaderStageFlags stageFlags;
         0u,                     //  uint32_t offset;
         pushConstantsSize,      //  uint32_t size;
     };
-    const VkPushConstantRange *pPushConstantRanges        = (pushConstantsSize == 0) ? DE_NULL : &pushConstantRange;
+    const VkPushConstantRange *pPushConstantRanges        = (pushConstantsSize == 0) ? nullptr : &pushConstantRange;
     const uint32_t pushConstantRangeCount                 = (pushConstantsSize == 0) ? 0 : 1u;
     const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         0u,                                            // VkPipelineLayoutCreateFlags flags;
         setLayoutCount,                                // uint32_t setLayoutCount;
         descriptorSetLayoutPtr,                        // const VkDescriptorSetLayout* pSetLayouts;
@@ -177,7 +177,7 @@ Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDev
 
 VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 {
-    VkBuffer result = (buffer.get() == DE_NULL) ? DE_NULL : buffer->get();
+    VkBuffer result = (buffer.get() == nullptr) ? VK_NULL_HANDLE : buffer->get();
 
     return result;
 }
@@ -185,7 +185,7 @@ VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 VkStridedDeviceAddressRegionKHR makeStridedDeviceAddressRegion(const DeviceInterface &vkd, const VkDevice device,
                                                                VkBuffer buffer, uint32_t stride, uint32_t count)
 {
-    if (buffer == DE_NULL)
+    if (buffer == VK_NULL_HANDLE)
     {
         return makeStridedDeviceAddressRegionKHR(0, 0, 0);
     }
@@ -618,7 +618,7 @@ de::MovePtr<BufferWithMemory> RayTracingComplexControlFlowInstance::runTest(void
         new BufferWithMemory(vkd, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible));
 
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     const VkImageMemoryBarrier preImageBarrier =
         makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -660,7 +660,7 @@ de::MovePtr<BufferWithMemory> RayTracingComplexControlFlowInstance::runTest(void
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -673,7 +673,7 @@ de::MovePtr<BufferWithMemory> RayTracingComplexControlFlowInstance::runTest(void
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 

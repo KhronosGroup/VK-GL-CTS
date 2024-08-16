@@ -279,16 +279,16 @@ public:
     }
 
     //! Get context type. Must match to type given to ContextFactory::createContext().
-    virtual ContextType getType(void) const = DE_NULL;
+    virtual ContextType getType(void) const = 0;
 
     //! Get GL function table. Should be filled with all core entry points for context type.
-    virtual const glw::Functions &getFunctions(void) const = DE_NULL;
+    virtual const glw::Functions &getFunctions(void) const = 0;
 
     //! Get render target information.
-    virtual const tcu::RenderTarget &getRenderTarget(void) const = DE_NULL;
+    virtual const tcu::RenderTarget &getRenderTarget(void) const = 0;
 
     //! Do post-render actions (swap buffers for example).
-    virtual void postIterate(void) = DE_NULL;
+    virtual void postIterate(void) = 0;
 
     //! Get default framebuffer.
     virtual uint32_t getDefaultFramebuffer(void) const
@@ -310,7 +310,7 @@ private:
 // Utilities
 
 RenderContext *createRenderContext(tcu::Platform &platform, const tcu::CommandLine &cmdLine, const RenderConfig &config,
-                                   const RenderContext *sharedContext = DE_NULL);
+                                   const RenderContext *sharedContext = nullptr);
 RenderContext *createDefaultRenderContext(tcu::Platform &platform, const tcu::CommandLine &cmdLine, ApiType apiType);
 
 void initCoreFunctions(glw::Functions *dst, const glw::FunctionLoader *loader, ApiType apiType);

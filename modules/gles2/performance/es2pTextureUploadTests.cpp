@@ -105,7 +105,7 @@ TextureUploadCase::TextureUploadCase(Context &context, const char *name, const c
     , m_texSize(texSize)
     , m_alignment(4)
     , m_calibrator()
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_texture(0)
     , m_rnd(deStringHash(name))
     , m_log(context.getTestContext().getLog())
@@ -124,7 +124,7 @@ void TextureUploadCase::deinit(void)
     if (m_program)
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
     }
 
     gl.deleteTextures(1, &m_texture);

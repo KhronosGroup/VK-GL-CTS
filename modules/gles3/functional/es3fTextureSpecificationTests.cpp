@@ -160,8 +160,8 @@ public:
     IterateResult iterate(void);
 
 protected:
-    virtual void createTexture(void)                                                              = DE_NULL;
-    virtual void verifyTexture(sglr::GLContext &gles3Context, sglr::ReferenceContext &refContext) = DE_NULL;
+    virtual void createTexture(void)                                                              = 0;
+    virtual void verifyTexture(sglr::GLContext &gles3Context, sglr::ReferenceContext &refContext) = 0;
 
     // Utilities.
     void renderTex(tcu::Surface &dst, uint32_t program, int width, int height);
@@ -1601,7 +1601,7 @@ protected:
             int levelW = de::max(1, m_width >> ndx);
             int levelH = de::max(1, m_height >> ndx);
 
-            glTexImage2D(GL_TEXTURE_2D, ndx, m_internalFormat, levelW, levelH, 0, m_format, m_dataType, DE_NULL);
+            glTexImage2D(GL_TEXTURE_2D, ndx, m_internalFormat, levelW, levelH, 0, m_format, m_dataType, nullptr);
         }
 
         // Specify pixel data to all levels using glTexSubImage2D()
@@ -1669,7 +1669,7 @@ protected:
 
             for (int face = 0; face < DE_LENGTH_OF_ARRAY(s_cubeMapFaces); face++)
                 glTexImage2D(s_cubeMapFaces[face], ndx, m_internalFormat, levelSize, levelSize, 0, m_format, m_dataType,
-                             DE_NULL);
+                             nullptr);
         }
 
         // Specify data using glTexSubImage2D()
@@ -3462,7 +3462,7 @@ public:
         glGenTextures(1, &tex);
         glBindTexture(GL_TEXTURE_2D, tex);
         glTexImage2D(GL_TEXTURE_2D, 0, m_internalFormat, m_width, m_height, 0, transferFmt.format, transferFmt.dataType,
-                     DE_NULL);
+                     nullptr);
         glDeleteBuffers(1, &buf);
     }
 
@@ -3524,7 +3524,7 @@ public:
         glGenTextures(1, &tex);
         glBindTexture(GL_TEXTURE_2D_ARRAY, tex);
         glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, m_internalFormat, m_width, m_height, m_numLayers, 0, transferFmt.format,
-                     transferFmt.dataType, DE_NULL);
+                     transferFmt.dataType, nullptr);
         glDeleteBuffers(1, &buf);
     }
 

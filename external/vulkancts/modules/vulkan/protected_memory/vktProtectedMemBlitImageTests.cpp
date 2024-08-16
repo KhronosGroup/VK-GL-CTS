@@ -137,7 +137,7 @@ tcu::TestStatus BlitImageTestInstance::iterate()
         ctx, PROTECTION_ENABLED, queueFamilyIndex, RENDER_WIDTH, RENDER_HEIGHT, m_imageFormat,
         vk::VK_IMAGE_USAGE_SAMPLED_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-    vk::Unique<vk::VkPipelineLayout> pipelineLayout(createPipelineLayout(ctx, 0u, DE_NULL));
+    vk::Unique<vk::VkPipelineLayout> pipelineLayout(createPipelineLayout(ctx, 0u, nullptr));
 
     vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(vk, device, PROTECTION_ENABLED, queueFamilyIndex));
     vk::Unique<vk::VkCommandBuffer> cmdBuffer(
@@ -154,10 +154,10 @@ tcu::TestStatus BlitImageTestInstance::iterate()
         // Begin secondary command buffer
         const vk::VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
             vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-            DE_NULL,
-            (vk::VkRenderPass)0u,                  // renderPass
+            nullptr,
+            VK_NULL_HANDLE,                        // renderPass
             0u,                                    // subpass
-            (vk::VkFramebuffer)0u,                 // framebuffer
+            VK_NULL_HANDLE,                        // framebuffer
             VK_FALSE,                              // occlusionQueryEnable
             (vk::VkQueryControlFlags)0u,           // queryFlags
             (vk::VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -168,7 +168,7 @@ tcu::TestStatus BlitImageTestInstance::iterate()
     // Start image barrier for source image.
     {
         const vk::VkImageMemoryBarrier startImgBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
-                                                          DE_NULL,                                    // pNext
+                                                          nullptr,                                    // pNext
                                                           0,                                          // srcAccessMask
                                                           vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // dstAccessMask
                                                           vk::VK_IMAGE_LAYOUT_UNDEFINED,              // oldLayout
@@ -184,14 +184,13 @@ tcu::TestStatus BlitImageTestInstance::iterate()
                                                               1u,                            // subresourceRange
                                                           }};
 
-        vk.cmdPipelineBarrier(
-            targetCmdBuffer,                               // commandBuffer
-            vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,         // srcStageMask
-            vk::VK_PIPELINE_STAGE_TRANSFER_BIT,            // dstStageMask
-            (vk::VkDependencyFlags)0,                      // dependencyFlags
-            0, (const vk::VkMemoryBarrier *)DE_NULL,       // memoryBarrierCount, pMemoryBarriers
-            0, (const vk::VkBufferMemoryBarrier *)DE_NULL, // bufferMemoryBarrierCount, pBufferMemoryBarriers
-            1, &startImgBarrier);                          // imageMemoryBarrierCount, pImageMemoryBarriers
+        vk.cmdPipelineBarrier(targetCmdBuffer,                       // commandBuffer
+                              vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // srcStageMask
+                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT,    // dstStageMask
+                              (vk::VkDependencyFlags)0,              // dependencyFlags
+                              0, nullptr,                            // memoryBarrierCount, pMemoryBarriers
+                              0, nullptr,                            // bufferMemoryBarrierCount, pBufferMemoryBarriers
+                              1, &startImgBarrier);                  // imageMemoryBarrierCount, pImageMemoryBarriers
     }
 
     // Image clear
@@ -208,7 +207,7 @@ tcu::TestStatus BlitImageTestInstance::iterate()
     // Image barrier to change accessMask to transfer read bit for source image.
     {
         const vk::VkImageMemoryBarrier initializeBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
-                                                            DE_NULL,                                    // pNext
+                                                            nullptr,                                    // pNext
                                                             vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // srcAccessMask
                                                             vk::VK_ACCESS_TRANSFER_READ_BIT,            // dstAccessMask
                                                             vk::VK_IMAGE_LAYOUT_GENERAL,                // oldLayout
@@ -227,14 +226,13 @@ tcu::TestStatus BlitImageTestInstance::iterate()
         vk.cmdPipelineBarrier(targetCmdBuffer,
                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, // srcStageMask
                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT, // dstStageMask
-                              (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &initializeBarrier);
+                              (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &initializeBarrier);
     }
 
     // Image barrier for destination image.
     {
         const vk::VkImageMemoryBarrier initializeBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
-                                                            DE_NULL,                                    // pNext
+                                                            nullptr,                                    // pNext
                                                             0,                                          // srcAccessMask
                                                             vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // dstAccessMask
                                                             vk::VK_IMAGE_LAYOUT_UNDEFINED,              // oldLayout
@@ -253,8 +251,7 @@ tcu::TestStatus BlitImageTestInstance::iterate()
         vk.cmdPipelineBarrier(targetCmdBuffer,
                               vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // srcStageMask
                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT,    // dstStageMask
-                              (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &initializeBarrier);
+                              (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &initializeBarrier);
     }
 
     // Blit image
@@ -284,7 +281,7 @@ tcu::TestStatus BlitImageTestInstance::iterate()
     // Image barrier to change accessMask to shader read bit for destination image.
     {
         const vk::VkImageMemoryBarrier endImgBarrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // sType
-                                                        DE_NULL,                                      // pNext
+                                                        nullptr,                                      // pNext
                                                         vk::VK_ACCESS_TRANSFER_WRITE_BIT,             // srcAccessMask
                                                         vk::VK_ACCESS_SHADER_READ_BIT,                // dstAccessMask
                                                         vk::VK_IMAGE_LAYOUT_GENERAL,                  // oldLayout
@@ -302,8 +299,7 @@ tcu::TestStatus BlitImageTestInstance::iterate()
         vk.cmdPipelineBarrier(targetCmdBuffer,
                               vk::VK_PIPELINE_STAGE_TRANSFER_BIT,     // srcStageMask
                               vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, // dstStageMask
-                              (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &endImgBarrier);
+                              (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &endImgBarrier);
     }
 
     if (m_cmdBufferType == CMD_BUFFER_SECONDARY)

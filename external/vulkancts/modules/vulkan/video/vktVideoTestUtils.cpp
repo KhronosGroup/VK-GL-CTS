@@ -71,12 +71,12 @@ void cmdPipelineImageMemoryBarrier2(const DeviceInterface &vk, const VkCommandBu
     const uint32_t imageMemoryBarrierCount32 = static_cast<uint32_t>(imageMemoryBarrierCount);
     const VkDependencyInfo dependencyInfoKHR = {
         vk::VK_STRUCTURE_TYPE_DEPENDENCY_INFO, //  VkStructureType sType;
-        DE_NULL,                               //  const void* pNext;
+        nullptr,                               //  const void* pNext;
         dependencyFlags,                       //  VkDependencyFlags dependencyFlags;
         0u,                                    //  uint32_t memoryBarrierCount;
-        DE_NULL,                               //  const VkMemoryBarrier2KHR* pMemoryBarriers;
+        nullptr,                               //  const VkMemoryBarrier2KHR* pMemoryBarriers;
         0u,                                    //  uint32_t bufferMemoryBarrierCount;
-        DE_NULL,                               //  const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers;
+        nullptr,                               //  const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers;
         imageMemoryBarrierCount32,             //  uint32_t imageMemoryBarrierCount;
         pImageMemoryBarriers,                  //  const VkImageMemoryBarrier2KHR* pImageMemoryBarriers;
     };
@@ -161,10 +161,10 @@ void transferImageOwnership(const DeviceInterface &vkd, VkDevice device, VkImage
     const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
     const VkSubmitInfo transferSubmitInfo{
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-        DE_NULL,                       // const void* pNext;
+        nullptr,                       // const void* pNext;
         0u,                            // uint32_t waitSemaphoreCount;
-        DE_NULL,                       // const VkSemaphore* pWaitSemaphores;
-        DE_NULL,                       // const VkPipelineStageFlags* pWaitDstStageMask;
+        nullptr,                       // const VkSemaphore* pWaitSemaphores;
+        nullptr,                       // const VkPipelineStageFlags* pWaitDstStageMask;
         1u,                            // uint32_t commandBufferCount;
         &*cmdTransferBuffer,           // const VkCommandBuffer* pCommandBuffers;
         1u,                            // uint32_t signalSemaphoreCount;
@@ -172,14 +172,14 @@ void transferImageOwnership(const DeviceInterface &vkd, VkDevice device, VkImage
     };
     const VkSubmitInfo encodeSubmitInfo{
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-        DE_NULL,                       // const void* pNext;
+        nullptr,                       // const void* pNext;
         1u,                            // uint32_t waitSemaphoreCount;
         &*semaphore,                   // const VkSemaphore* pWaitSemaphores;
         &waitDstStageMask,             // const VkPipelineStageFlags* pWaitDstStageMask;
         1u,                            // uint32_t commandBufferCount;
         &*cmdEncodeBuffer,             // const VkCommandBuffer* pCommandBuffers;
         0u,                            // uint32_t signalSemaphoreCount;
-        DE_NULL,                       // const VkSemaphore* pSignalSemaphores;
+        nullptr,                       // const VkSemaphore* pSignalSemaphores;
     };
     const VkQueue encodeQueue   = getDeviceQueue(vkd, device, encodeQueueFamilyIndex, 0u);
     const VkQueue transferQueue = getDeviceQueue(vkd, device, transferQueueFamilyIndex, 0u);
@@ -241,10 +241,10 @@ de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImage(const DeviceInterfa
     const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
     const VkSubmitInfo decodeSubmitInfo{
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-        DE_NULL,                       // const void* pNext;
+        nullptr,                       // const void* pNext;
         0u,                            // uint32_t waitSemaphoreCount;
-        DE_NULL,                       // const VkSemaphore* pWaitSemaphores;
-        DE_NULL,                       // const VkPipelineStageFlags* pWaitDstStageMask;
+        nullptr,                       // const VkSemaphore* pWaitSemaphores;
+        nullptr,                       // const VkPipelineStageFlags* pWaitDstStageMask;
         1u,                            // uint32_t commandBufferCount;
         &*cmdDecodeBuffer,             // const VkCommandBuffer* pCommandBuffers;
         1u,                            // uint32_t signalSemaphoreCount;
@@ -252,14 +252,14 @@ de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImage(const DeviceInterfa
     };
     const VkSubmitInfo transferSubmitInfo{
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-        DE_NULL,                       // const void* pNext;
+        nullptr,                       // const void* pNext;
         1u,                            // uint32_t waitSemaphoreCount;
         &*semaphore,                   // const VkSemaphore* pWaitSemaphores;
         &waitDstStageMask,             // const VkPipelineStageFlags* pWaitDstStageMask;
         1u,                            // uint32_t commandBufferCount;
         &*cmdTransferBuffer,           // const VkCommandBuffer* pCommandBuffers;
         0u,                            // uint32_t signalSemaphoreCount;
-        DE_NULL,                       // const VkSemaphore* pSignalSemaphores;
+        nullptr,                       // const VkSemaphore* pSignalSemaphores;
     };
 
     beginCommandBuffer(vkd, *cmdDecodeBuffer, 0u);
@@ -349,7 +349,7 @@ de::MovePtr<VkVideoDecodeH264CapabilitiesKHR> getVideoCapabilitiesExtensionH264D
 {
     const VkVideoDecodeH264CapabilitiesKHR videoCapabilitiesExtension = {
         vk::VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_KHR, //  VkStructureType sType;
-        DE_NULL,                                                  //  void* pNext;
+        nullptr,                                                  //  void* pNext;
         STD_VIDEO_H264_LEVEL_IDC_1_0,                             //  StdVideoH264Level maxLevel;
         {0, 0},                                                   //  VkOffset2D fieldOffsetGranularity;
     };
@@ -362,7 +362,7 @@ de::MovePtr<VkVideoEncodeH264CapabilitiesKHR> getVideoCapabilitiesExtensionH264E
 {
     const VkVideoEncodeH264CapabilitiesKHR videoCapabilitiesExtension = {
         vk::VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_KHR, //  VkStructureType sType;
-        DE_NULL,                                                  //  const void* pNext;
+        nullptr,                                                  //  const void* pNext;
         0u,                                                       //  VkVideoEncodeH264CapabilityFlagsKHR flags;
         static_cast<StdVideoH264LevelIdc>(0u),                    //  StdVideoH264LevelIdc maxLevelIdc;
         0u,                                                       //  uint32_t maxSliceCount;
@@ -403,7 +403,7 @@ de::MovePtr<VkVideoDecodeH265CapabilitiesKHR> getVideoCapabilitiesExtensionH265D
 {
     const VkVideoDecodeH265CapabilitiesKHR videoCapabilitiesExtension = {
         VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_KHR, //  VkStructureType sType;
-        DE_NULL,                                              //  void* pNext;
+        nullptr,                                              //  void* pNext;
         STD_VIDEO_H265_LEVEL_IDC_1_0,                         //  StdVideoH265Level maxLevel;
     };
 
@@ -415,7 +415,7 @@ de::MovePtr<VkVideoEncodeH265CapabilitiesKHR> getVideoCapabilitiesExtensionH265E
 {
     const VkVideoEncodeH265CapabilitiesKHR videoCapabilitiesExtension = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_KHR, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         0u,                                                   //  VkVideoEncodeH265CapabilityFlagsKHR flags;
         static_cast<StdVideoH265LevelIdc>(0),                 //  StdVideoH265LevelIdc maxLevelIdc;
         0u,                                                   //  uint32_t maxSliceSegmentCount;
@@ -542,7 +542,7 @@ de::MovePtr<VkVideoProfileListInfoKHR> getVideoProfileList(const VkVideoProfileI
 {
     VkVideoProfileListInfoKHR *videoProfileList = new VkVideoProfileListInfoKHR{
         VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                       //  const void* pNext;
+        nullptr,                                       //  const void* pNext;
         profileCount,                                  //  uint32_t profileCount;
         videoProfile,                                  //  const VkVideoProfileInfoKHR* pProfiles;
     };
@@ -580,7 +580,7 @@ de::MovePtr<VkVideoSessionCreateInfoKHR> getVideoSessionCreateInfo(
 
     VkVideoSessionCreateInfoKHR *videoSessionCreateInfo = new VkVideoSessionCreateInfoKHR{
         VK_STRUCTURE_TYPE_VIDEO_SESSION_CREATE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                         //  const void* pNext;
+        nullptr,                                         //  const void* pNext;
         queueFamilyIndex,                                //  uint32_t queueFamilyIndex;
         flags,                                           //  VkVideoSessionCreateFlagsKHR flags;
         videoProfile,                                    //  const VkVideoProfileInfoKHR* pVideoProfile;
@@ -602,14 +602,14 @@ vector<AllocationPtr> getAndBindVideoSessionMemory(const DeviceInterface &vkd, c
 {
     uint32_t videoSessionMemoryRequirementsCount = 0;
 
-    DE_ASSERT(videoSession != DE_NULL);
+    DE_ASSERT(videoSession != VK_NULL_HANDLE);
 
     VK_CHECK(
-        vkd.getVideoSessionMemoryRequirementsKHR(device, videoSession, &videoSessionMemoryRequirementsCount, DE_NULL));
+        vkd.getVideoSessionMemoryRequirementsKHR(device, videoSession, &videoSessionMemoryRequirementsCount, nullptr));
 
     const VkVideoSessionMemoryRequirementsKHR videoGetMemoryPropertiesKHR = {
         VK_STRUCTURE_TYPE_VIDEO_SESSION_MEMORY_REQUIREMENTS_KHR, //  VkStructureType sType;
-        DE_NULL,                                                 //  const void* pNext;
+        nullptr,                                                 //  const void* pNext;
         0u,                                                      //  uint32_t memoryBindIndex;
         {0ull, 0ull, 0u},                                        //  VkMemoryRequirements    memoryRequirements;
     };
@@ -634,7 +634,7 @@ vector<AllocationPtr> getAndBindVideoSessionMemory(const DeviceInterface &vkd, c
 
         const VkBindVideoSessionMemoryInfoKHR videoBindMemoryKHR = {
             VK_STRUCTURE_TYPE_BIND_VIDEO_SESSION_MEMORY_INFO_KHR, //  VkStructureType sType;
-            DE_NULL,                                              //  const void* pNext;
+            nullptr,                                              //  const void* pNext;
             memoryBindIndex,                                      //  uint32_t memoryBindIndex;
             alloc->getMemory(),                                   //  VkDeviceMemory memory;
             alloc->getOffset(),                                   //  VkDeviceSize memoryOffset;
@@ -667,16 +667,16 @@ de::MovePtr<vector<VkFormat>> getSupportedFormats(const InstanceInterface &vk, c
 
     VkVideoFormatPropertiesKHR videoFormatPropertiesKHR = {};
     videoFormatPropertiesKHR.sType                      = VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR;
-    videoFormatPropertiesKHR.pNext                      = DE_NULL;
+    videoFormatPropertiesKHR.pNext                      = nullptr;
 
     vector<VkVideoFormatPropertiesKHR> videoFormatProperties;
     de::MovePtr<vector<VkFormat>> result;
 
     const VkResult res = vk.getPhysicalDeviceVideoFormatPropertiesKHR(physicalDevice, &videoFormatInfo,
-                                                                      &videoFormatPropertiesCount, DE_NULL);
+                                                                      &videoFormatPropertiesCount, nullptr);
 
     if (res != VK_SUCCESS)
-        return de::MovePtr<vector<VkFormat>>(DE_NULL);
+        return de::MovePtr<vector<VkFormat>>(nullptr);
 
     videoFormatProperties.resize(videoFormatPropertiesCount, videoFormatPropertiesKHR);
 
@@ -714,12 +714,12 @@ VkVideoFormatPropertiesKHR getSupportedFormatProperties(const InstanceInterface 
 
     VkVideoFormatPropertiesKHR videoFormatPropertiesKHR = {};
     videoFormatPropertiesKHR.sType                      = VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR;
-    videoFormatPropertiesKHR.pNext                      = DE_NULL;
+    videoFormatPropertiesKHR.pNext                      = nullptr;
 
     vector<VkVideoFormatPropertiesKHR> videoFormatProperties;
 
     const VkResult res = vk.getPhysicalDeviceVideoFormatPropertiesKHR(physicalDevice, &videoFormatInfo,
-                                                                      &videoFormatPropertiesCount, DE_NULL);
+                                                                      &videoFormatPropertiesCount, nullptr);
 
     if (res != VK_SUCCESS)
         return VkVideoFormatPropertiesKHR();
@@ -759,7 +759,7 @@ bool validateFormatSupport(const InstanceInterface &vk, VkPhysicalDevice physica
     de::MovePtr<vector<VkFormat>> supportedVideoFormats =
         getSupportedFormats(vk, physicalDevice, imageUsageFlags, videoProfileList);
 
-    if (supportedVideoFormats != DE_NULL)
+    if (supportedVideoFormats)
     {
         if (supportedVideoFormats->size() == 0)
             if (throwException)
@@ -810,7 +810,7 @@ const VkImageFormatProperties getImageFormatProperties(const InstanceInterface &
 
     VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = {};
     samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
-    samplerYcbcrConversionImage.pNext = DE_NULL;
+    samplerYcbcrConversionImage.pNext = nullptr;
 
     VkImageFormatProperties2 imageFormatProperties2 = {};
     imageFormatProperties2.sType                    = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
@@ -826,7 +826,7 @@ VkVideoDecodeH264ProfileInfoKHR getProfileOperationH264Decode(StdVideoH264Profil
 {
     const VkVideoDecodeH264ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         stdProfileIdc,                                        //  StdVideoH264ProfileIdc stdProfileIdc;
         pictureLayout, //  VkVideoDecodeH264PictureLayoutFlagBitsKHR pictureLayout;
     };
@@ -838,7 +838,7 @@ VkVideoEncodeH264ProfileInfoKHR getProfileOperationH264Encode(StdVideoH264Profil
 {
     const VkVideoEncodeH264ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         stdProfileIdc,                                        //  StdVideoH264ProfileIdc stdProfileIdc;
     };
 
@@ -849,7 +849,7 @@ VkVideoDecodeH265ProfileInfoKHR getProfileOperationH265Decode(StdVideoH265Profil
 {
     const VkVideoDecodeH265ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         stdProfileIdc,                                        //  StdVideoH265ProfileIdc stdProfileIdc;
     };
 
@@ -860,7 +860,7 @@ VkVideoEncodeH265ProfileInfoKHR getProfileOperationH265Encode(StdVideoH265Profil
 {
     const VkVideoEncodeH265ProfileInfoKHR videoProfileOperation = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         stdProfileIdc,                                        //  StdVideoH265ProfileIdc stdProfileIdc;
     };
 
@@ -952,8 +952,8 @@ de::MovePtr<StdVideoH264SequenceParameterSet> getStdVideoH264DecodeSequenceParam
         0u,                                   //  uint32_t frame_crop_top_offset;
         0u,                                   //  uint32_t frame_crop_bottom_offset;
         0u,                                   //  uint32_t reserved2;
-        DE_NULL,                              //  const int32_t* pOffsetForRefFrame;
-        DE_NULL,                              //  const StdVideoH264ScalingLists* pScalingLists;
+        nullptr,                              //  const int32_t* pOffsetForRefFrame;
+        nullptr,                              //  const StdVideoH264ScalingLists* pScalingLists;
         stdVideoH264SequenceParameterSetVui,  //  const StdVideoH264SequenceParameterSetVui* pSequenceParameterSetVui;
     };
 
@@ -987,7 +987,7 @@ de::MovePtr<StdVideoH264SequenceParameterSet> getStdVideoH264EncodeSequenceParam
     const StdVideoH264SequenceParameterSet stdVideoH264SequenceParameterSet = {
         stdVideoH264SpsFlags,            //  StdVideoH264SpsFlags flags;
         STD_VIDEO_H264_PROFILE_IDC_MAIN, //  StdVideoH264ProfileIdc profile_idc;
-        // ResourceError (videoDeviceDriver.getEncodedVideoSessionParametersKHR(videoDevice, &videoEncodeSessionParametersGetInfo, &videoEncodeSessionParametersFeedbackInfo, &bitstreamBufferOffset, DE_NULL): VK_ERROR_OUT_OF_HOST_MEMORY at vktVideoEncodeTests.cpp:1386)
+        // ResourceError (videoDeviceDriver.getEncodedVideoSessionParametersKHR(videoDevice, &videoEncodeSessionParametersGetInfo, &videoEncodeSessionParametersFeedbackInfo, &bitstreamBufferOffset, nullptr): VK_ERROR_OUT_OF_HOST_MEMORY at vktVideoEncodeTests.cpp:1386)
         //STD_VIDEO_H264_PROFILE_IDC_MAIN, //  StdVideoH264ProfileIdc profile_idc;
         STD_VIDEO_H264_LEVEL_IDC_4_1, //  StdVideoH264Level level_idc;
         //STD_VIDEO_H264_LEVEL_IDC_1_1, //  StdVideoH264Level level_idc;
@@ -1010,8 +1010,8 @@ de::MovePtr<StdVideoH264SequenceParameterSet> getStdVideoH264EncodeSequenceParam
         0u,                                                  //  uint32_t frame_crop_top_offset;
         0u,                                                  //  uint32_t frame_crop_bottom_offset;
         0u,                                                  //  uint32_t reserved2;
-        DE_NULL,                                             //  const int32_t* pOffsetForRefFrame;
-        DE_NULL,                                             //  const StdVideoH264ScalingLists* pScalingLists;
+        nullptr,                                             //  const int32_t* pOffsetForRefFrame;
+        nullptr,                                             //  const StdVideoH264ScalingLists* pScalingLists;
         stdVideoH264SequenceParameterSetVui, //  const StdVideoH264SequenceParameterSetVui* pSequenceParameterSetVui;
     };
 
@@ -1043,7 +1043,7 @@ de::MovePtr<StdVideoH264PictureParameterSet> getStdVideoH264EncodePictureParamet
         0,                                           //  int8_t pic_init_qs_minus26;
         0,                                           //  int8_t chroma_qp_index_offset;
         0,                                           //  int8_t second_chroma_qp_index_offset;
-        DE_NULL,                                     //  const StdVideoH264ScalingLists* pScalingLists;
+        nullptr,                                     //  const StdVideoH264ScalingLists* pScalingLists;
     };
 
     return de::MovePtr<StdVideoH264PictureParameterSet>(
@@ -1056,7 +1056,7 @@ de::MovePtr<VkVideoEncodeH264SessionParametersAddInfoKHR> createVideoEncodeH264S
 {
     VkVideoEncodeH264SessionParametersAddInfoKHR videoEncodeH264SessionParametersAddInfoKHR = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_ADD_INFO_KHR, //  VkStructureType                            sType
-        DE_NULL,     //  const void*                                pNext
+        nullptr,     //  const void*                                pNext
         stdSPSCount, //  uint32_t                                stdSPSCount
         pStdSPSs,    //  const StdVideoH264SequenceParameterSet*    pStdSPSs
         stdPPSCount, //  uint32_t                                stdPPSCount
@@ -1136,7 +1136,7 @@ de::MovePtr<StdVideoH265VideoParameterSet> getStdVideoH265VideoParameterSet(
         0u,                   //  uint32_t vps_num_ticks_poc_diff_one_minus1;
         0u,                   //  uint32_t reserved3;
         pDecPicBufMgr,        //  const StdVideoH265DecPicBufMgr* pDecPicBufMgr;
-        DE_NULL,              //  const StdVideoH265HrdParameters* pHrdParameters;
+        nullptr,              //  const StdVideoH265HrdParameters* pHrdParameters;
         pProfileTierLevel,    //  const StdVideoH265ProfileTierLevel* pProfileTierLevel;
     };
 
@@ -1383,11 +1383,11 @@ de::MovePtr<StdVideoH265SequenceParameterSet> getStdVideoH265SequenceParameterSe
         conf_win_bottom_offset,                      //  uint32_t conf_win_bottom_offset;
         pProfileTierLevel,                           //  const StdVideoH265ProfileTierLevel* pProfileTierLevel;
         pDecPicBufMgr,                               //  const StdVideoH265DecPicBufMgr* pDecPicBufMgr;
-        DE_NULL,                                     //  const StdVideoH265ScalingLists* pScalingLists;
-        DE_NULL,                                     //  const StdVideoH265ShortTermRefPicSet* pShortTermRefPicSet;
-        DE_NULL,                                     //  const StdVideoH265LongTermRefPicsSps* pLongTermRefPicsSps;
+        nullptr,                                     //  const StdVideoH265ScalingLists* pScalingLists;
+        nullptr,                                     //  const StdVideoH265ShortTermRefPicSet* pShortTermRefPicSet;
+        nullptr,                                     //  const StdVideoH265LongTermRefPicsSps* pLongTermRefPicsSps;
         pSequenceParameterSetVui, //  const StdVideoH265SequenceParameterSetVui* pSequenceParameterSetVui;
-        DE_NULL,                  //  const StdVideoH265PredictorPaletteEntries* pPredictorPaletteEntries;
+        nullptr,                  //  const StdVideoH265PredictorPaletteEntries* pPredictorPaletteEntries;
     };
 
     return de::MovePtr<StdVideoH265SequenceParameterSet>(
@@ -1478,8 +1478,8 @@ de::MovePtr<StdVideoH265PictureParameterSet> getStdVideoH265PictureParameterSet(
         {},                   //  uint16_t column_width_minus1[STD_VIDEO_H265_CHROMA_QP_OFFSET_TILE_COLS_LIST_SIZE];
         {},                   //  uint16_t row_height_minus1[STD_VIDEO_H265_CHROMA_QP_OFFSET_TILE_ROWS_LIST_SIZE];
         0u,                   //  uint32_t reserved3;
-        DE_NULL,              //  const StdVideoH265ScalingLists* pScalingLists;
-        DE_NULL,              //  const StdVideoH265PredictorPaletteEntries* pPredictorPaletteEntries;
+        nullptr,              //  const StdVideoH265ScalingLists* pScalingLists;
+        nullptr,              //  const StdVideoH265PredictorPaletteEntries* pPredictorPaletteEntries;
     };
 
     return de::MovePtr<StdVideoH265PictureParameterSet>(
@@ -1493,7 +1493,7 @@ de::MovePtr<VkVideoEncodeH265SessionParametersAddInfoKHR> getVideoEncodeH265Sess
 {
     VkVideoEncodeH265SessionParametersAddInfoKHR encodeH265SessionParametersAddInfoKHR = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_ADD_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                                             //  const void* pNext;
+        nullptr,                                                             //  const void* pNext;
         stdVPSCount,                                                         //  uint32_t stdVPSCount;
         pStdVPSs,    //  const StdVideoH265VideoParameterSet* pStdVPSs;
         stdSPSCount, //  uint32_t stdSPSCount;
@@ -1530,8 +1530,8 @@ de::MovePtr<VkVideoSessionParametersCreateInfoKHR> getVideoSessionParametersCrea
         VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR, //  VkStructureType sType;
         pNext,                                                      //  const void* pNext;
         static_cast<VkVideoSessionParametersCreateFlagsKHR>(0u),    //  VkVideoSessionParametersCreateFlagsKHR flags;
-        DE_NULL,      //  VkVideoSessionParametersKHR videoEncodeSessionParametersTemplate;
-        videoSession, //  VkVideoSessionKHR videoEncodeSession;
+        VK_NULL_HANDLE, //  VkVideoSessionParametersKHR videoEncodeSessionParametersTemplate;
+        videoSession,   //  VkVideoSessionKHR videoEncodeSession;
     };
 
     return de::MovePtr<VkVideoSessionParametersCreateInfoKHR>(
@@ -1564,7 +1564,7 @@ de::MovePtr<VkVideoEncodeH264DpbSlotInfoKHR> getVideoEncodeH264DpbSlotInfo(
 {
     const VkVideoEncodeH264DpbSlotInfoKHR h264DpbSlotInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                               //  const void* pNext;
+        nullptr,                                               //  const void* pNext;
         pStdReferenceInfo, //  const StdVideoEncodeH264ReferenceInfo* pStdReferenceInfo;
     };
 
@@ -1595,7 +1595,7 @@ de::MovePtr<VkVideoEncodeH265DpbSlotInfoKHR> getVideoEncodeH265DpbSlotInfo(
 {
     const VkVideoEncodeH265DpbSlotInfoKHR h265DpbSlotInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_DPB_SLOT_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                               //  const void* pNext;
+        nullptr,                                               //  const void* pNext;
         pStdReferenceInfo, //  const StdVideoEncodeH265ReferenceInfo* pStdReferenceInfo;
     };
 
@@ -1621,7 +1621,7 @@ de::MovePtr<StdVideoEncodeH264SliceHeader> getStdVideoEncodeH264SliceHeader(StdV
         0u,                                                    //  uint16_t reserved1;
         STD_VIDEO_H264_CABAC_INIT_IDC_0,                       //  StdVideoH264CabacInitIdc cabac_init_idc;
         STD_VIDEO_H264_DISABLE_DEBLOCKING_FILTER_IDC_DISABLED, //  StdVideoH264DisableDeblockingFilterIdc disable_deblocking_filter_idc;
-        DE_NULL,                                               //  const StdVideoEncodeH264WeightTable* pWeightTable;
+        nullptr,                                               //  const StdVideoEncodeH264WeightTable* pWeightTable;
     };
 
     return de::MovePtr<StdVideoEncodeH264SliceHeader>(new StdVideoEncodeH264SliceHeader(stdVideoEncodeH264SliceHeader));
@@ -1661,7 +1661,7 @@ de::MovePtr<StdVideoEncodeH265SliceSegmentHeader> getStdVideoEncodeH265SliceSegm
         0,                                         //  int8_t slice_act_cr_qp_offset;
         0,                                         //  int8_t slice_qp_delta;
         0,                                         //  uint16_t reserved1;
-        DE_NULL                                    //  const StdVideoEncodeH265WeightTable* pWeightTable;
+        nullptr                                    //  const StdVideoEncodeH265WeightTable* pWeightTable;
     };
 
     return de::MovePtr<StdVideoEncodeH265SliceSegmentHeader>(
@@ -1673,7 +1673,7 @@ de::MovePtr<VkVideoEncodeH264NaluSliceInfoKHR> getVideoEncodeH264NaluSlice(
 {
     const VkVideoEncodeH264NaluSliceInfoKHR videoEncodeH264NaluSlice = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                                 //  const void* pNext;
+        nullptr,                                                 //  const void* pNext;
         qpValue,                                                 //  uint32_t constantQp;
         stdVideoEncodeH264SliceHeader, //  const StdVideoEncodeH264SliceHeader*        pStdSliceHeader
     };
@@ -1687,7 +1687,7 @@ de::MovePtr<VkVideoEncodeH265NaluSliceSegmentInfoKHR> getVideoEncodeH265NaluSlic
 {
     const VkVideoEncodeH265NaluSliceSegmentInfoKHR videoEncodeH265NaluSliceSegmentInfoKHR = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_NALU_SLICE_SEGMENT_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                                         //  const void* pNext;
+        nullptr,                                                         //  const void* pNext;
         qpValue,                                                         //  int32_t constantQp;
         stdVideoEncodeH265SliceSegmentHeader //  const StdVideoEncodeH265SliceSegmentHeader* pStdSliceSegmentHeader;
     };
@@ -1716,9 +1716,9 @@ de::MovePtr<StdVideoEncodeH264ReferenceListsInfo> getVideoEncodeH264ReferenceLis
         0,                                           //  uint8_t refList1ModOpCount;
         0,                                           //  uint8_t refPicMarkingOpCount;
         {0, 0, 0, 0, 0, 0, 0},                       //  uint8_t reserved1[7];
-        DE_NULL, //  const StdVideoEncodeH264RefListModEntry* pRefList0ModOperations;
-        DE_NULL, //  const StdVideoEncodeH264RefListModEntry* pRefList1ModOperations;
-        DE_NULL, //  const StdVideoEncodeH264RefPicMarkingEntry* pRefPicMarkingOperations;
+        nullptr, //  const StdVideoEncodeH264RefListModEntry* pRefList0ModOperations;
+        nullptr, //  const StdVideoEncodeH264RefListModEntry* pRefList1ModOperations;
+        nullptr, //  const StdVideoEncodeH264RefPicMarkingEntry* pRefPicMarkingOperations;
     };
 
     for (int i = 0; i < STD_VIDEO_H264_MAX_NUM_LIST_REF; ++i)
@@ -1862,7 +1862,7 @@ de::MovePtr<StdVideoEncodeH265PictureInfo> getStdVideoEncodeH265PictureInfo(
         {0, 0, 0, 0, 0, 0, 0}, //  uint8_t reserved1[7];
         pRefLists,             //  const StdVideoEncodeH265ReferenceListsInfo* pRefLists;
         pShortTermRefPicSet,   //  const StdVideoH265ShortTermRefPicSet* pShortTermRefPicSet;
-        DE_NULL,               //  const StdVideoEncodeH265SliceSegmentLongTermRefPics* pLongTermRefPics;
+        nullptr,               //  const StdVideoEncodeH265SliceSegmentLongTermRefPics* pLongTermRefPics;
     };
 
     return de::MovePtr<StdVideoEncodeH265PictureInfo>(new StdVideoEncodeH265PictureInfo(pictureInfo));
@@ -1873,7 +1873,7 @@ de::MovePtr<VkVideoEncodeH264PictureInfoKHR> getVideoEncodeH264PictureInfo(
 {
     const VkVideoEncodeH264PictureInfoKHR videoEncodeH264PictureInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PICTURE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         1u,                                                   //  uint32_t naluSliceEntryCount;
         pNaluSliceEntries, //  const VkVideoEncodeH264NaluSliceInfoKHR* pNaluSliceEntries;
         pictureInfo,       //  const StdVideoEncodeH264PictureInfo* pStdPictureInfo;
@@ -1891,7 +1891,7 @@ de::MovePtr<VkVideoEncodeH265PictureInfoKHR> getVideoEncodeH265PictureInfo(
 {
     const VkVideoEncodeH265PictureInfoKHR videoEncodeH265PictureInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PICTURE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         1u,                                                   //  uint32_t naluSliceSegmentEntryCount;
         pNaluSliceSegmentInfo, //  const VkVideoEncodeH265NaluSliceSegmentInfoKHR* pNaluSliceSegmentEntries;
         pictureInfo,           //  const StdVideoEncodeH265PictureInfo* pStdPictureInfo;
@@ -1958,7 +1958,7 @@ de::MovePtr<StdVideoH264PictureParameterSet> getStdVideoH264DecodePictureParamet
         0,                                          //  int8_t pic_init_qs_minus26;
         -2,                                         //  int8_t chroma_qp_index_offset;
         -2,                                         //  int8_t second_chroma_qp_index_offset;
-        DE_NULL,                                    //  const StdVideoH264ScalingLists* pScalingLists;
+        nullptr,                                    //  const StdVideoH264ScalingLists* pScalingLists;
     };
 
     return de::MovePtr<StdVideoH264PictureParameterSet>(
@@ -2529,7 +2529,7 @@ de::SharedPtr<VkVideoDecodeH264PictureInfoKHR> getVideoDecodeH264PictureInfo(
 {
     const VkVideoDecodeH264PictureInfoKHR pictureInfoHeap = {
         VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                              //  const void* pNext;
+        nullptr,                                              //  const void* pNext;
         stdPictureInfo,                                       //  const StdVideoDecodeH264PictureInfo* pStdPictureInfo;
         1u,                                                   //  uint32_t sliceCount;
         sliceOffset,                                          //  const uint32_t* pSliceOffsets;
@@ -2562,7 +2562,7 @@ de::MovePtr<VkVideoEncodeH264RateControlLayerInfoKHR> getVideoEncodeH264RateCont
 
     const VkVideoEncodeH264RateControlLayerInfoKHR videoEncodeH264RateControlLayerInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                                         //  const void* pNext;
+        nullptr,                                                         //  const void* pNext;
         useMinQp,                                                        //  VkBool32 useMinQp;
         videoEncodeH264MinQp,                                            //  VkVideoEncodeH264QpKHR minQp;
         useMaxQp,                                                        //  VkBool32 useMaxQp;
@@ -2593,7 +2593,7 @@ de::MovePtr<VkVideoEncodeH265RateControlLayerInfoKHR> getVideoEncodeH265RateCont
 
     const VkVideoEncodeH265RateControlLayerInfoKHR videoEncodeH265RateControlLayerInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_LAYER_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                                         //  const void* pNext;
+        nullptr,                                                         //  const void* pNext;
         useQp,                                                           //  VkBool32 useMinQp;
         videoEncodeH265Qp,                                               //  VkVideoEncodeH265QpKHR minQp;
         useQp,                                                           //  VkBool32 useMaxQp;
@@ -2632,10 +2632,10 @@ de::MovePtr<VkVideoEncodeRateControlInfoKHR> getVideoEncodeRateControlInfo(
         pNext,                                                //  const void* pNext;
         static_cast<VkVideoEncodeRateControlFlagsKHR>(0u),    //  VkVideoEncodeRateControlFlagsKHR flags;
         rateControlMode, //  VkVideoEncodeRateControlModeFlagBitsKHR rateControlMode;
-        videoEncodeRateControlLayerInfo == DE_NULL ? 0 : 1U,    //  uint8_t layerCount;
+        videoEncodeRateControlLayerInfo == nullptr ? 0 : 1U,    //  uint8_t layerCount;
         videoEncodeRateControlLayerInfo,                        //  const VkVideoEncodeRateControlLayerInfoKHR* pLayers;
-        videoEncodeRateControlLayerInfo == DE_NULL ? 0 : 1000U, //  uint32_t virtualBufferSizeInMs;
-        videoEncodeRateControlLayerInfo == DE_NULL ? 0 : 500U,  //  uint32_t initialVirtualBufferSizeInMs;
+        videoEncodeRateControlLayerInfo == nullptr ? 0 : 1000U, //  uint32_t virtualBufferSizeInMs;
+        videoEncodeRateControlLayerInfo == nullptr ? 0 : 500U,  //  uint32_t initialVirtualBufferSizeInMs;
     };
 
     return de::MovePtr<VkVideoEncodeRateControlInfoKHR>(
@@ -2654,7 +2654,7 @@ de::MovePtr<VkVideoEncodeH264QualityLevelPropertiesKHR> getvideoEncodeH264Qualit
 
     const VkVideoEncodeH264QualityLevelPropertiesKHR videoEncodeH264QualityLevelProperties = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_QUALITY_LEVEL_PROPERTIES_KHR, //  VkStructureType sType;
-        DE_NULL,                                                          //  void* pNext;
+        nullptr,                                                          //  void* pNext;
         VK_VIDEO_ENCODE_H264_RATE_CONTROL_REGULAR_GOP_BIT_KHR, //  VkVideoEncodeH264RateControlFlagsKHR preferredRateControlFlags;
         0,                                                     //  uint32_t preferredGopFrameCount;
         0,                                                     //  uint32_t preferredIdrPeriod;
@@ -2682,7 +2682,7 @@ de::MovePtr<VkVideoEncodeH265QualityLevelPropertiesKHR> getvideoEncodeH265Qualit
 
     const VkVideoEncodeH265QualityLevelPropertiesKHR videoEncodeH265QualityLevelProperties = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_QUALITY_LEVEL_PROPERTIES_KHR, //  VkStructureType sType;
-        DE_NULL,                                                          //  void* pNext;
+        nullptr,                                                          //  void* pNext;
         VK_VIDEO_ENCODE_H264_RATE_CONTROL_REGULAR_GOP_BIT_KHR, //  VkVideoEncodeH265RateControlFlagsKHR preferredRateControlFlags;
         0,                                                     //  uint32_t preferredGopFrameCount;
         0,                                                     //  uint32_t preferredIdrPeriod;
@@ -2716,7 +2716,7 @@ de::MovePtr<VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR> getPhysicalDeviceVid
 {
     VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR physicalDeviceVideoEncodeQualityLevelInfo = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                                               //  const void* pNext;
+        nullptr,                                                               //  const void* pNext;
         pVideoProfile, //  const VkVideoProfileInfoKHR* pVideoProfile;
         qualityLevel,  //  uint32_t qualityLevel;
     };

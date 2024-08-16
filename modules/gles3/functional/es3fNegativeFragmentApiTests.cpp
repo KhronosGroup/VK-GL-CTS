@@ -188,7 +188,7 @@ void NegativeFragmentApiTests::init(void)
         glw::GLint maxDrawBuffers = -1;
         glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
         if (!checkDrawBuffersIndexedSupport(m_context))
-            throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
+            throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", nullptr, __FILE__, __LINE__);
         m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if mode is not GL_FUNC_ADD, GL_FUNC_SUBTRACT, "
                                       "GL_FUNC_REVERSE_SUBTRACT, GL_MAX or GL_MIN.");
         glBlendEquationi(0, -1);
@@ -206,7 +206,7 @@ void NegativeFragmentApiTests::init(void)
         glw::GLint maxDrawBuffers = -1;
         glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
         if (!checkDrawBuffersIndexedSupport(m_context))
-            throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
+            throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", nullptr, __FILE__, __LINE__);
         m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if modeRGB is not GL_FUNC_ADD, GL_FUNC_SUBTRACT, "
                                       "GL_FUNC_REVERSE_SUBTRACT, GL_MAX or GL_MIN.");
         glBlendEquationSeparatei(0, -1, GL_FUNC_ADD);
@@ -229,7 +229,7 @@ void NegativeFragmentApiTests::init(void)
         glw::GLint maxDrawBuffers = -1;
         glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
         if (!checkDrawBuffersIndexedSupport(m_context))
-            throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
+            throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", nullptr, __FILE__, __LINE__);
         m_log << TestLog::Section(
             "", "GL_INVALID_ENUM is generated if either sfactor or dfactor is not an accepted value.");
         glBlendFunci(0, -1, GL_ONE);
@@ -249,7 +249,7 @@ void NegativeFragmentApiTests::init(void)
         glw::GLint maxDrawBuffers = -1;
         glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
         if (!checkDrawBuffersIndexedSupport(m_context))
-            throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", DE_NULL, __FILE__, __LINE__);
+            throw tcu::NotSupportedError("GL_EXT_draw_buffers_indexed is not supported", nullptr, __FILE__, __LINE__);
         m_log << TestLog::Section(
             "", "GL_INVALID_ENUM is generated if srcRGB, dstRGB, srcAlpha, or dstAlpha is not an accepted value.");
         glBlendFuncSeparatei(0, -1, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);

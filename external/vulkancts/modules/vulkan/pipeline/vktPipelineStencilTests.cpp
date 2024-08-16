@@ -356,7 +356,7 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_colorFormat,                                                         // VkFormat format;
@@ -389,7 +389,7 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
 
         const VkImageCreateInfo stencilImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,      // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                         // VkImageType imageType;
             m_stencilFormat,                          // VkFormat format;
@@ -425,7 +425,7 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
     {
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0u,                                         // VkImageViewCreateFlags flags;
             *m_colorImage,                              // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
@@ -441,7 +441,7 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
     {
         const VkImageViewCreateInfo stencilAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             *m_stencilImage,                          // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -472,7 +472,7 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             (uint32_t)attachmentBindInfos.size(),      // uint32_t attachmentCount;
@@ -489,12 +489,12 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
@@ -528,7 +528,7 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
             1u,                                                        // uint32_t vertexBindingDescriptionCount;
             &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -543,7 +543,7 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
 
         VkPipelineDepthStencilStateCreateInfo depthStencilStateParams{
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                    // const void* pNext;
+            nullptr,                                                    // const void* pNext;
             0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
             isDepthEnabled,                                             // VkBool32 depthTestEnable;
             isDepthEnabled,                                             // VkBool32 depthWriteEnable;
@@ -586,7 +586,7 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
         };
         const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateParams{
             vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL,                           // const void*                                    pNext
+            nullptr,                           // const void*                                    pNext
             0u,                                // VkPipelineColorBlendStateCreateFlags            flags
             VK_FALSE,                          // VkBool32                                        logicOpEnable
             vk::VK_LOGIC_OP_CLEAR,             // VkLogicOp                                    logicOp
@@ -619,7 +619,7 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
                 .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule,
                                           &depthStencilStateParams)
                 .setupFragmentOutputState(*m_renderPass, 0,
-                                          (m_colorAttachmentEnable ? &colorBlendStateParams : DE_NULL))
+                                          (m_colorAttachmentEnable ? &colorBlendStateParams : nullptr))
                 .setMonolithicPipelineLayout(m_pipelineLayout)
                 .buildPipeline();
         }
@@ -629,7 +629,7 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
     {
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             1024u,                                // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -663,7 +663,7 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
     {
         const VkImageMemoryBarrier colorImageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType            sType;
-            DE_NULL,                                    // const void*                pNext;
+            nullptr,                                    // const void*                pNext;
             (VkAccessFlags)0,                           // VkAccessFlags              srcAccessMask;
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,       // VkAccessFlags              dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout              oldLayout;
@@ -684,7 +684,7 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
 
         const VkImageMemoryBarrier stencilImageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,       // VkStructureType            sType;
-            DE_NULL,                                      // const void*                pNext;
+            nullptr,                                      // const void*                pNext;
             (VkAccessFlags)0,                             // VkAccessFlags              srcAccessMask;
             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // VkAccessFlags              dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                    // VkImageLayout              oldLayout;
@@ -714,7 +714,7 @@ StencilTestInstance::StencilTestInstance(Context &context, PipelineConstructionT
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                                   VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                              (VkDependencyFlags)0, 0u, DE_NULL, 0u, DE_NULL, (uint32_t)imageLayoutBarriers.size(),
+                              (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, (uint32_t)imageLayoutBarriers.size(),
                               imageLayoutBarriers.data());
 
         m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
@@ -1432,7 +1432,7 @@ const char *getShortName(VkStencilOp stencilOp)
     default:
         DE_FATAL("Invalid VkStencilOpState value");
     }
-    return DE_NULL;
+    return nullptr;
 }
 
 std::string getFormatCaseName(VkFormat format)

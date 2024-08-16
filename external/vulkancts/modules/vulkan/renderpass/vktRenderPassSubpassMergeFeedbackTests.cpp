@@ -238,7 +238,7 @@ tcu::TestStatus SubpassMergeFeedbackTestInstance::createRenderPassAndVerify(cons
 
     const VkRenderPassCreationControlEXT renderpassControl = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATION_CONTROL_EXT, // VkStructureType sType;
-        DE_NULL,                                            // const void* pNext;
+        nullptr,                                            // const void* pNext;
         disallowMerging                                     // VkBool32 disallowMerging;
     };
 

@@ -40,7 +40,7 @@ class VulkanLibrary : public vk::Library
 {
 public:
     VulkanLibrary(const char *libraryPath)
-        : m_library(libraryPath != DE_NULL ? libraryPath : "libvulkan.so.1")
+        : m_library(libraryPath != nullptr ? libraryPath : "libvulkan.so.1")
         , m_driver(m_library)
     {
     }

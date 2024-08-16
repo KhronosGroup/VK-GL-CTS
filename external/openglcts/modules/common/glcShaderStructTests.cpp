@@ -79,7 +79,7 @@ ShaderStructCase::ShaderStructCase(Context &context, const char *name, const cha
                        description, isVertexCase, evalFunc)
     , m_setupUniforms(setupUniformsFunc)
     , m_usesTexture(usesTextures)
-    , m_gradientTexture(DE_NULL)
+    , m_gradientTexture(nullptr)
 {
     m_vertShaderSource = vertShaderSource;
     m_fragShaderSource = fragShaderSource;
@@ -209,9 +209,9 @@ void LocalStructTests::init(void)
             static void eval(ShaderEvalContext &c) EVAL_FUNC_BODY                                         \
         };                                                                                                \
         addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, m_glslVersion, true, false,    \
-                                  &Eval_##NAME::eval, DE_NULL, SHADER_SRC));                              \
+                                  &Eval_##NAME::eval, nullptr, SHADER_SRC));                              \
         addChild(createStructCase(m_context, #NAME "_fragment", DESCRIPTION, m_glslVersion, false, false, \
-                                  &Eval_##NAME::eval, DE_NULL, SHADER_SRC));                              \
+                                  &Eval_##NAME::eval, nullptr, SHADER_SRC));                              \
     } while (false)
 
     LOCAL_STRUCT_CASE(basic, "Basic struct usage",

@@ -217,13 +217,13 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance(Context &contex
         renderPassCreateInfo.addSubpass(SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
                                                            (VkSubpassDescriptionFlags)0,    // flags
                                                            0u,                              // inputAttachmentCount
-                                                           DE_NULL,                         // inputAttachments
+                                                           nullptr,                         // inputAttachments
                                                            1u,                              // colorAttachmentCount
                                                            &colorAttachmentReference,       // colorAttachments
-                                                           DE_NULL,                         // resolveAttachments
+                                                           nullptr,                         // resolveAttachments
                                                            depthAttachmentReference,        // depthStencilAttachment
                                                            0u,                              // preserveAttachmentCount
-                                                           DE_NULL));                       // preserveAttachments
+                                                           nullptr));                       // preserveAttachments
 
         m_renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
@@ -296,7 +296,7 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance(Context &contex
 
 #ifndef CTS_USES_VULKANSC
     VkPipelineRenderingCreateInfoKHR renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                         DE_NULL,
+                                                         nullptr,
                                                          0u,
                                                          1u,
                                                          &m_colorAttachmentFormat,
@@ -307,7 +307,7 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance(Context &contex
         pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-    m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 void InvertedDepthRangesTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, const VkClearValue &clearColor,
@@ -328,24 +328,24 @@ void InvertedDepthRangesTestInstance::preRenderCommands(VkCommandBuffer cmdBuffe
 
     const VkMemoryBarrier memBarrier{
         VK_STRUCTURE_TYPE_MEMORY_BARRIER,                                          // VkStructureType sType;
-        DE_NULL,                                                                   // const void* pNext;
+        nullptr,                                                                   // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,                                              // VkAccessFlags srcAccessMask;
         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT // VkAccessFlags dstAccessMask;
     };
 
     const VkMemoryBarrier depthBarrier{
         VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                          // const void* pNext;
+        nullptr,                          // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,     // VkAccessFlags srcAccessMask;
         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT // VkAccessFlags dstAccessMask;
     };
 
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0,
-                          1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+                          1, &memBarrier, 0, nullptr, 0, nullptr);
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                           (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT), 0,
-                          1, &depthBarrier, 0, DE_NULL, 0, DE_NULL);
+                          1, &depthBarrier, 0, nullptr, 0, nullptr);
 }
 
 void InvertedDepthRangesTestInstance::draw(VkCommandBuffer cmdBuffer, const VkViewport &viewport)
@@ -463,7 +463,7 @@ void InvertedDepthRangesTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cm
 {
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                         // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         renderingFlags,                                                  // VkRenderingFlagsKHR flags;
         0u,                                                              // uint32_t viewMask;
         1u,                                                              // uint32_t colorAttachmentCount;
@@ -480,7 +480,7 @@ void InvertedDepthRangesTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cm
 
     const VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 

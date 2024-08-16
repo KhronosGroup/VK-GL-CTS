@@ -212,22 +212,22 @@ tcu::TestStatus InvarianceTestInstance::iterate(void)
                              .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u);
 
         const VkDescriptorSetAllocateInfo descriptorSetAllocInfo = {
-            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL, *descriptorPool, 1u, &descriptorSetLayout.get()};
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, *descriptorPool, 1u, &descriptorSetLayout.get()};
 
         const VkBufferCreateInfo uniformBufferCreateInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
-            DE_NULL,                              // const void*            pNext
+            nullptr,                              // const void*            pNext
             (VkBufferCreateFlags)0,               // VkBufferCreateFlags    flags
             sizeof(ColorUniform),                 // VkDeviceSize            size
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,   // VkBufferUsageFlags    usage
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
             0u,                                   // uint32_t                queueFamilyIndexCount
-            DE_NULL                               // pQueueFamilyIndices
+            nullptr                               // pQueueFamilyIndices
         };
 
         for (uint32_t passNdx = 0; passNdx < 2; ++passNdx)
         {
-            uniformBuffer[passNdx]           = createBuffer(vk, device, &uniformBufferCreateInfo, DE_NULL);
+            uniformBuffer[passNdx]           = createBuffer(vk, device, &uniformBufferCreateInfo, nullptr);
             uniformBufferAllocation[passNdx] = allocator.allocate(
                 getBufferMemoryRequirements(vk, device, *uniformBuffer[passNdx]), MemoryRequirement::HostVisible);
             VK_CHECK(vk.bindBufferMemory(device, *uniformBuffer[passNdx], uniformBufferAllocation[passNdx]->getMemory(),

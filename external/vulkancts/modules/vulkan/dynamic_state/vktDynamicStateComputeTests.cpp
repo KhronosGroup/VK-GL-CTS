@@ -134,10 +134,10 @@ public:
         };
 
         // Graphics pipeline.
-        m_graphicsPipeline =
-            makeGraphicsPipeline(vkd, device, m_pipelineLayout.get(), m_vertexShader.get(), DE_NULL, DE_NULL, DE_NULL,
-                                 DE_NULL, m_renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-                                 0u, 0u, nullptr, nullptr, nullptr, nullptr, nullptr, &dynamicStateInfo);
+        m_graphicsPipeline = makeGraphicsPipeline(
+            vkd, device, m_pipelineLayout.get(), m_vertexShader.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+            VK_NULL_HANDLE, m_renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
+            nullptr, nullptr, nullptr, nullptr, nullptr, &dynamicStateInfo);
     }
 
     const BufferWithMemory *getVertexBuffer() const
@@ -647,7 +647,7 @@ public:
         // Create a universal queue that supports graphics and compute.
         const VkDeviceQueueCreateInfo queueParams = {
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0u,                                         // VkDeviceQueueCreateFlags flags;
             m_queueFamilyIndex,                         // uint32_t queueFamilyIndex;
             1u,                                         // uint32_t queueCount;
@@ -671,7 +671,7 @@ public:
 #ifndef CTS_USES_VULKANSC
             &features2, //pNext;
 #else
-            DE_NULL,
+            nullptr,
 #endif                                                          // CTS_USES_VULKANSC
             0u,                                                 //flags
             1u,                                                 //queueRecordCount;
@@ -1068,10 +1068,10 @@ tcu::TestStatus DynamicStateComputeInstance::iterateCompute(void)
         0u,                                             // VkPipelineCreateFlags flags;
         shaderStageInfo,                                // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout.get(),                           // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
-    const auto pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineInfo);
+    const auto pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineInfo);
 
     DE_ASSERT(!m_params.states.empty());
 

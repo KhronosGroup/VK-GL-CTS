@@ -111,22 +111,22 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
                                            const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
                                            const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
                                            bool requiresSharedPresentableImage, bool validationEnabled,
-                                           const vk::VkAllocationCallbacks *pAllocator = DE_NULL)
+                                           const vk::VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]                  = {1.0f};
-    const vk::VkDeviceQueueCreateInfo queueInfos[] = {{vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, DE_NULL,
+    const vk::VkDeviceQueueCreateInfo queueInfos[] = {{vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
                                                        (vk::VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                        DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
     const vk::VkPhysicalDeviceFeatures features    = getDeviceNullFeatures();
     const char *const extensions[]                 = {"VK_KHR_swapchain", "VK_KHR_shared_presentable_image"};
 
     const vk::VkDeviceCreateInfo deviceParams = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                                 DE_NULL,
+                                                 nullptr,
                                                  (vk::VkDeviceCreateFlags)0,
                                                  DE_LENGTH_OF_ARRAY(queueInfos),
                                                  &queueInfos[0],
                                                  0u,
-                                                 DE_NULL,
+                                                 nullptr,
                                                  requiresSharedPresentableImage ? 2u : 1u,
                                                  DE_ARRAY_BEGIN(extensions),
                                                  &features};
@@ -191,10 +191,10 @@ void deinitSemaphores(const vk::DeviceInterface &vkd, vk::VkDevice device, std::
 {
     for (size_t ndx = 0; ndx < semaphores.size(); ndx++)
     {
-        if (semaphores[ndx] != (vk::VkSemaphore)0)
-            vkd.destroySemaphore(device, semaphores[ndx], DE_NULL);
+        if (semaphores[ndx] != VK_NULL_HANDLE)
+            vkd.destroySemaphore(device, semaphores[ndx], nullptr);
 
-        semaphores[ndx] = (vk::VkSemaphore)0;
+        semaphores[ndx] = VK_NULL_HANDLE;
     }
 
     semaphores.clear();
@@ -210,10 +210,10 @@ void deinitFences(const vk::DeviceInterface &vkd, vk::VkDevice device, std::vect
 {
     for (size_t ndx = 0; ndx < fences.size(); ndx++)
     {
-        if (fences[ndx] != (vk::VkFence)0)
-            vkd.destroyFence(device, fences[ndx], DE_NULL);
+        if (fences[ndx] != VK_NULL_HANDLE)
+            vkd.destroyFence(device, fences[ndx], nullptr);
 
-        fences[ndx] = (vk::VkFence)0;
+        fences[ndx] = VK_NULL_HANDLE;
     }
 
     fences.clear();
@@ -235,7 +235,7 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer(const vk::DeviceInterface &vkd
                                                   vk::VkPipeline pipeline, size_t frameNdx, uint32_t quadCount,
                                                   uint32_t imageWidth, uint32_t imageHeight)
 {
-    const vk::VkCommandBufferAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, DE_NULL,
+    const vk::VkCommandBufferAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr,
 
                                                           commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1};
 
@@ -258,10 +258,10 @@ void deinitCommandBuffers(const vk::DeviceInterface &vkd, vk::VkDevice device, v
 {
     for (size_t ndx = 0; ndx < commandBuffers.size(); ndx++)
     {
-        if (commandBuffers[ndx] != (vk::VkCommandBuffer)0)
+        if (commandBuffers[ndx] != VK_NULL_HANDLE)
             vkd.freeCommandBuffers(device, commandPool, 1u, &commandBuffers[ndx]);
 
-        commandBuffers[ndx] = (vk::VkCommandBuffer)0;
+        commandBuffers[ndx] = VK_NULL_HANDLE;
     }
 
     commandBuffers.clear();
@@ -270,7 +270,7 @@ void deinitCommandBuffers(const vk::DeviceInterface &vkd, vk::VkDevice device, v
 vk::Move<vk::VkCommandPool> createCommandPool(const vk::DeviceInterface &vkd, vk::VkDevice device,
                                               uint32_t queueFamilyIndex)
 {
-    const vk::VkCommandPoolCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, DE_NULL, 0u,
+    const vk::VkCommandPoolCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr, 0u,
                                                     queueFamilyIndex};
 
     return vk::createCommandPool(vkd, device, &createInfo);
@@ -281,7 +281,7 @@ vk::Move<vk::VkFramebuffer> createFramebuffer(const vk::DeviceInterface &vkd, vk
                                               uint32_t height)
 {
     const vk::VkFramebufferCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                                                    DE_NULL,
+                                                    nullptr,
 
                                                     0u,
                                                     renderPass,
@@ -298,7 +298,7 @@ vk::Move<vk::VkImageView> createImageView(const vk::DeviceInterface &vkd, vk::Vk
                                           vk::VkFormat format)
 {
     const vk::VkImageViewCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   0u,
                                                   image,
@@ -307,7 +307,7 @@ vk::Move<vk::VkImageView> createImageView(const vk::DeviceInterface &vkd, vk::Vk
                                                   vk::makeComponentMappingRGBA(),
                                                   {vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
 
-    return vk::createImageView(vkd, device, &createInfo, DE_NULL);
+    return vk::createImageView(vkd, device, &createInfo, nullptr);
 }
 
 vk::Move<vk::VkRenderPass> createRenderPass(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkFormat format)
@@ -326,15 +326,15 @@ vk::Move<vk::VkRenderPass> createRenderPass(const vk::DeviceInterface &vkd, vk::
          // the image concurrently with our rendering.
          vk::VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR, vk::VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR}};
     const vk::VkAttachmentReference colorAttachmentRefs[] = {{0u, vk::VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR}};
-    const vk::VkSubpassDescription subpasses[]            = {{0u, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, DE_NULL,
+    const vk::VkSubpassDescription subpasses[]            = {{0u, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, nullptr,
 
                                                               DE_LENGTH_OF_ARRAY(colorAttachmentRefs), colorAttachmentRefs,
-                                                              DE_NULL,
+                                                              nullptr,
 
-                                                              DE_NULL, 0u, DE_NULL}};
+                                                              nullptr, 0u, nullptr}};
 
     const vk::VkRenderPassCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-                                                   DE_NULL,
+                                                   nullptr,
                                                    0u,
 
                                                    DE_LENGTH_OF_ARRAY(attachments),
@@ -344,7 +344,7 @@ vk::Move<vk::VkRenderPass> createRenderPass(const vk::DeviceInterface &vkd, vk::
                                                    subpasses,
 
                                                    0u,
-                                                   DE_NULL};
+                                                   nullptr};
 
     return vk::createRenderPass(vkd, device, &createInfo);
 }
@@ -355,7 +355,7 @@ vk::Move<vk::VkPipeline> createPipeline(const vk::DeviceInterface &vkd, vk::VkDe
                                         uint32_t width, uint32_t height)
 {
     const vk::VkPipelineVertexInputStateCreateInfo vertexInputState = {
-        vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, DE_NULL, 0u, 0u, DE_NULL, 0u, DE_NULL};
+        vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, nullptr, 0u, 0u, nullptr, 0u, nullptr};
     const std::vector<vk::VkViewport> viewports(1, vk::makeViewport(tcu::UVec2(width, height)));
     const std::vector<vk::VkRect2D> scissors(1, vk::makeRect2D(tcu::UVec2(width, height)));
 
@@ -364,9 +364,9 @@ vk::Move<vk::VkPipeline> createPipeline(const vk::DeviceInterface &vkd, vk::VkDe
         device,               // const VkDevice                                device
         layout,               // const VkPipelineLayout                        pipelineLayout
         vertexShaderModule,   // const VkShaderModule                          vertexShaderModule
-        DE_NULL,              // const VkShaderModule                          tessellationControlShaderModule
-        DE_NULL,              // const VkShaderModule                          tessellationEvalShaderModule
-        DE_NULL,              // const VkShaderModule                          geometryShaderModule
+        VK_NULL_HANDLE,       // const VkShaderModule                          tessellationControlShaderModule
+        VK_NULL_HANDLE,       // const VkShaderModule                          tessellationEvalShaderModule
+        VK_NULL_HANDLE,       // const VkShaderModule                          geometryShaderModule
         fragmentShaderModule, // const VkShaderModule                          fragmentShaderModule
         renderPass,           // const VkRenderPass                            renderPass
         viewports,            // const std::vector<VkViewport>&                viewports
@@ -382,11 +382,11 @@ vk::Move<vk::VkPipelineLayout> createPipelineLayout(const vk::DeviceInterface &v
     const vk::VkPushConstantRange pushConstants[]   = {{vk::VK_SHADER_STAGE_FRAGMENT_BIT, 0u, 4u}};
     const vk::VkPipelineLayoutCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,
 
         0u,
-        DE_NULL,
+        nullptr,
 
         DE_LENGTH_OF_ARRAY(pushConstants),
         pushConstants,
@@ -532,7 +532,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs(
         const vk::VkFormat imageFormat                       = formats[formatNdx].format;
         const vk::VkColorSpaceKHR imageColorSpace            = formats[formatNdx].colorSpace;
         const vk::VkSwapchainCreateInfoKHR createInfo        = {vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-                                                                DE_NULL,
+                                                                nullptr,
                                                                 0u,
                                                                 surface,
                                                                 1, // Always 1 image for a shared presentable image swapchain.
@@ -548,7 +548,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs(
                                                                 compositeAlpha,
                                                                 presentMode,
                                                                 clipped,
-                                                                (vk::VkSwapchainKHR)0};
+                                                                VK_NULL_HANDLE};
 
         {
             vk::VkImageFormatProperties imageFormatProperties;
@@ -574,14 +574,14 @@ vk::VkSurfaceCapabilitiesKHR getPhysicalDeviceSurfaceCapabilities(const vk::Inst
                                                                   vk::VkSurfaceKHR surface,
                                                                   vk::VkImageUsageFlags *usage)
 {
-    const vk::VkPhysicalDeviceSurfaceInfo2KHR info = {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, DE_NULL,
+    const vk::VkPhysicalDeviceSurfaceInfo2KHR info = {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, nullptr,
 
                                                       surface};
     vk::VkSharedPresentSurfaceCapabilitiesKHR sharedCapabilities;
     vk::VkSurfaceCapabilities2KHR capabilities;
 
     sharedCapabilities.sType = vk::VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR;
-    sharedCapabilities.pNext = DE_NULL;
+    sharedCapabilities.pNext = nullptr;
 
     capabilities.sType = vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
     capabilities.pNext = &sharedCapabilities;
@@ -599,7 +599,7 @@ SharedPresentableImageTestInstance::SharedPresentableImageTestInstance(Context &
     , m_testConfig(testConfig)
     , m_quadCount(16u)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(vk::enumerateInstanceExtensionProperties(m_vkp, DE_NULL))
+    , m_instanceExtensions(vk::enumerateInstanceExtensionProperties(m_vkp, nullptr))
     , m_instance(createInstanceWithWsi(context, m_instanceExtensions, testConfig.wsiType))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
@@ -610,7 +610,7 @@ SharedPresentableImageTestInstance::SharedPresentableImageTestInstance(Context &
                                        context.getTestContext().getCommandLine()))
 
     , m_queueFamilyIndex(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
-    , m_deviceExtensions(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
+    , m_deviceExtensions(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
     , m_device(createDeviceWithWsi(m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex,
                                    testConfig.useSharedPresentableImage,
                                    context.getTestContext().getCommandLine().isValidationEnabled()))
@@ -672,9 +672,9 @@ void SharedPresentableImageTestInstance::initSwapchainResources(void)
     m_swapchainImageView = createImageView(m_vkd, *m_device, m_swapchainImage, imageFormat);
     m_framebuffer = createFramebuffer(m_vkd, *m_device, *m_renderPass, *m_swapchainImageView, imageWidth, imageHeight);
 
-    m_renderSemaphores = std::vector<vk::VkSemaphore>(fenceCount, (vk::VkSemaphore)0);
-    m_fences           = std::vector<vk::VkFence>(fenceCount, (vk::VkFence)0);
-    m_commandBuffers   = std::vector<vk::VkCommandBuffer>(m_fences.size(), (vk::VkCommandBuffer)0);
+    m_renderSemaphores = std::vector<vk::VkSemaphore>(fenceCount, VK_NULL_HANDLE);
+    m_fences           = std::vector<vk::VkFence>(fenceCount, VK_NULL_HANDLE);
+    m_commandBuffers   = std::vector<vk::VkCommandBuffer>(m_fences.size(), VK_NULL_HANDLE);
 
     initSemaphores(m_vkd, *m_device, m_renderSemaphores);
 
@@ -690,11 +690,11 @@ void SharedPresentableImageTestInstance::initSwapchainResources(void)
     vk::Move<vk::VkSemaphore> semaphore(createSemaphore(m_vkd, *m_device));
     uint32_t imageIndex = 42; // initialize to junk value
 
-    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, *semaphore, 0u, &imageIndex));
+    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, *semaphore, VK_NULL_HANDLE, &imageIndex));
     TCU_CHECK(imageIndex == 0);
 
     // Transition to IMAGE_LAYOUT_SHARED_PRESENT_KHR
-    const vk::VkCommandBufferAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, DE_NULL,
+    const vk::VkCommandBufferAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr,
                                                           *m_commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1};
 
     const vk::Unique<vk::VkCommandBuffer> commandBuffer(vk::allocateCommandBuffer(m_vkd, *m_device, &allocateInfo));
@@ -702,7 +702,7 @@ void SharedPresentableImageTestInstance::initSwapchainResources(void)
 
     const vk::VkImageMemoryBarrier barrier = {
         vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        DE_NULL,
+        nullptr,
         0,
         0,
         vk::VK_IMAGE_LAYOUT_UNDEFINED,
@@ -714,16 +714,16 @@ void SharedPresentableImageTestInstance::initSwapchainResources(void)
     };
 
     m_vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                             vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0u, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+                             vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
 
     endCommandBuffer(m_vkd, *commandBuffer);
 
     const vk::VkPipelineStageFlags waitDstStages[] = {vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     const vk::VkSubmitInfo submitInfo              = {
-        vk::VK_STRUCTURE_TYPE_SUBMIT_INFO, DE_NULL, 1, &*semaphore, waitDstStages, 1, &*commandBuffer, 0, DE_NULL,
+        vk::VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 1, &*semaphore, waitDstStages, 1, &*commandBuffer, 0, nullptr,
     };
 
-    VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submitInfo, (vk::VkFence)0));
+    VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submitInfo, VK_NULL_HANDLE));
     VK_CHECK(m_vkd.queueWaitIdle(m_queue));
 }
 
@@ -737,7 +737,7 @@ void SharedPresentableImageTestInstance::deinitSwapchainResources(void)
 
     m_framebuffer        = vk::Move<vk::VkFramebuffer>();
     m_swapchainImageView = vk::Move<vk::VkImageView>();
-    m_swapchainImage     = (vk::VkImage)0;
+    m_swapchainImage     = VK_NULL_HANDLE;
 
     m_swapchain  = vk::Move<vk::VkSwapchainKHR>();
     m_renderPass = vk::Move<vk::VkRenderPass>();
@@ -759,7 +759,7 @@ void SharedPresentableImageTestInstance::render(void)
 
         m_vkd.freeCommandBuffers(*m_device, *m_commandPool, 1u,
                                  &m_commandBuffers[m_frameNdx % m_commandBuffers.size()]);
-        m_commandBuffers[m_frameNdx % m_commandBuffers.size()] = (vk::VkCommandBuffer)0;
+        m_commandBuffers[m_frameNdx % m_commandBuffers.size()] = VK_NULL_HANDLE;
     }
 
     uint32_t imageIndex                          = 0; // There is only one image.
@@ -779,10 +779,10 @@ void SharedPresentableImageTestInstance::render(void)
     {
         const vk::VkSubmitInfo submitInfo = {
             vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            DE_NULL,
+            nullptr,
             0u,
-            DE_NULL,
-            DE_NULL,
+            nullptr,
+            nullptr,
             1u,
             &m_commandBuffers[m_frameNdx % m_commandBuffers.size()],
             willPresent ? 1u : 0u, // Only signal the semaphore if we're going to call QueuePresent.
@@ -807,7 +807,7 @@ void SharedPresentableImageTestInstance::render(void)
         // Present frame
         vk::VkResult result;
         const vk::VkPresentInfoKHR presentInfo = {vk::VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                                                  DE_NULL,
+                                                  nullptr,
                                                   1u,
                                                   &currentRenderSemaphore,
                                                   1u,

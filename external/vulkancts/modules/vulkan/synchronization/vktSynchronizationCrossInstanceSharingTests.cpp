@@ -147,7 +147,7 @@ public:
         if (config.resource.type == RESOURCE_TYPE_IMAGE)
         {
             const vk::VkPhysicalDeviceExternalImageFormatInfo externalInfo = {
-                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, DE_NULL, config.memoryHandleType};
+                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, nullptr, config.memoryHandleType};
             const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
                 vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
                 &externalInfo,
@@ -157,7 +157,7 @@ public:
                 readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
                 0u};
             vk::VkExternalImageFormatProperties externalProperties = {
-                vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, DE_NULL, {0u, 0u, 0u}};
+                vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, nullptr, {0u, 0u, 0u}};
             vk::VkImageFormatProperties2 formatProperties = {vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
                                                              &externalProperties,
                                                              {
@@ -203,11 +203,11 @@ public:
         else
         {
             const vk::VkPhysicalDeviceExternalBufferInfo info = {
-                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, DE_NULL,
+                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, nullptr,
 
                 0u, readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(), config.memoryHandleType};
             vk::VkExternalBufferProperties properties = {
-                vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES, DE_NULL, {0u, 0u, 0u}};
+                vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES, nullptr, {0u, 0u, 0u}};
             vki.getPhysicalDeviceExternalBufferProperties(physicalDevice, &info, &properties);
 
             log << TestLog::Message << "External buffer properties: " << info << "\n"
@@ -230,7 +230,7 @@ public:
         {
             const vk::VkSemaphoreTypeCreateInfo semaphoreTypeInfo = {
                 vk::VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
-                DE_NULL,
+                nullptr,
                 config.semaphoreType,
                 0,
             };
@@ -239,7 +239,7 @@ public:
                 config.semaphoreHandleType};
 
             vk::VkExternalSemaphoreProperties properties = {vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES,
-                                                            DE_NULL, 0u, 0u, 0u};
+                                                            nullptr, 0u, 0u, 0u};
 
             vki.getPhysicalDeviceExternalSemaphoreProperties(physicalDevice, &info, &properties);
 
@@ -275,7 +275,7 @@ private:
 };
 
 SimpleAllocation::SimpleAllocation(const vk::DeviceInterface &vkd, vk::VkDevice device, const vk::VkDeviceMemory memory)
-    : Allocation(memory, 0, DE_NULL)
+    : Allocation(memory, 0, nullptr)
     , m_vkd(vkd)
     , m_device(device)
 {
@@ -283,7 +283,7 @@ SimpleAllocation::SimpleAllocation(const vk::DeviceInterface &vkd, vk::VkDevice 
 
 SimpleAllocation::~SimpleAllocation(void)
 {
-    m_vkd.freeMemory(m_device, getMemory(), DE_NULL);
+    m_vkd.freeMemory(m_device, getMemory(), nullptr);
 }
 
 CustomInstance createTestInstance(Context &context)
@@ -306,12 +306,12 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
         vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
     std::vector<uint32_t> queueFamilyIndices(queueFamilyProperties.size(), 0xFFFFFFFFu);
 
-    VkPhysicalDeviceFeatures2 createPhysicalFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, DE_NULL,
+    VkPhysicalDeviceFeatures2 createPhysicalFeature{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, nullptr,
                                                     context.getDeviceFeatures()};
     VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, DE_NULL, true};
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, nullptr, true};
     VkPhysicalDeviceSynchronization2FeaturesKHR synchronization2Features{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, DE_NULL, true};
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR, nullptr, true};
     void **nextPtr = &createPhysicalFeature.pNext;
     std::vector<const char *> extensions;
 
@@ -362,7 +362,7 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
         for (size_t ndx = 0; ndx < queueFamilyProperties.size(); ndx++)
         {
             const vk::VkDeviceQueueCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                                                            DE_NULL,
+                                                            nullptr,
                                                             0u,
 
                                                             (uint32_t)ndx,
@@ -380,10 +380,10 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
                                                    &queues[0],
 
                                                    0u,
-                                                   DE_NULL,
+                                                   nullptr,
 
                                                    (uint32_t)extensions.size(),
-                                                   extensions.empty() ? DE_NULL : &extensions[0],
+                                                   extensions.empty() ? nullptr : &extensions[0],
                                                    0u};
 
         return vkt::createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &createInfo);
@@ -494,7 +494,7 @@ vk::VkQueue getQueue(const vk::DeviceInterface &vkd, const vk::VkDevice device, 
 vk::Move<vk::VkCommandPool> createCommandPool(const vk::DeviceInterface &vkd, vk::VkDevice device,
                                               uint32_t queueFamilyIndex)
 {
-    const vk::VkCommandPoolCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, DE_NULL,
+    const vk::VkCommandPoolCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr,
 
                                                     0u, queueFamilyIndex};
 
@@ -505,7 +505,7 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer(const vk::DeviceInterface &vkd
                                                   vk::VkCommandPool commandPool)
 {
     const vk::VkCommandBufferLevel level               = vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    const vk::VkCommandBufferAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, DE_NULL,
+    const vk::VkCommandBufferAllocateInfo allocateInfo = {vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr,
 
                                                           commandPool, level, 1u};
 
@@ -524,9 +524,9 @@ vk::VkMemoryRequirements getMemoryRequirements(const vk::DeviceInterface &vkd, v
     if (getMemReq2Supported)
     {
         const vk::VkImageMemoryRequirementsInfo2 requirementInfo = {
-            vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2, DE_NULL, image};
+            vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2, nullptr, image};
         vk::VkMemoryDedicatedRequirements dedicatedRequirements = {vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
-                                                                   DE_NULL, VK_FALSE, VK_FALSE};
+                                                                   nullptr, VK_FALSE, VK_FALSE};
         vk::VkMemoryRequirements2 requirements                  = {vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
                                                                    &dedicatedRequirements,
                                                                    {
@@ -561,9 +561,9 @@ vk::VkMemoryRequirements getMemoryRequirements(const vk::DeviceInterface &vkd, v
     if (getMemReq2Supported)
     {
         const vk::VkBufferMemoryRequirementsInfo2 requirementInfo = {
-            vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2, DE_NULL, buffer};
+            vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2, nullptr, buffer};
         vk::VkMemoryDedicatedRequirements dedicatedRequirements = {vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
-                                                                   DE_NULL, VK_FALSE, VK_FALSE};
+                                                                   nullptr, VK_FALSE, VK_FALSE};
         vk::VkMemoryRequirements2 requirements                  = {vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
                                                                    &dedicatedRequirements,
                                                                    {
@@ -592,7 +592,7 @@ Move<VkImage> createImage(const vk::DeviceInterface &vkd, vk::VkDevice device, c
                           vk::VkExternalMemoryHandleTypeFlagBits externalType)
 {
     const vk::VkExternalMemoryImageCreateInfo externalInfo = {vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
-                                                              DE_NULL,
+                                                              nullptr,
                                                               (vk::VkExternalMemoryHandleTypeFlags)externalType};
     const vk::VkImageCreateInfo createInfo                 = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                                                               &externalInfo,
@@ -621,7 +621,7 @@ Move<VkBuffer> createBuffer(const vk::DeviceInterface &vkd, vk::VkDevice device,
                             const std::vector<uint32_t> &queueFamilyIndices)
 {
     const vk::VkExternalMemoryBufferCreateInfo externalInfo = {vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
-                                                               DE_NULL,
+                                                               nullptr,
                                                                (vk::VkExternalMemoryHandleTypeFlags)memoryHandleType};
     const vk::VkBufferCreateInfo createInfo                 = {vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
                                                                &externalInfo,
@@ -680,7 +680,7 @@ de::MovePtr<Resource> importResource(const vk::DeviceInterface &vkd, vk::VkDevic
         const vk::VkImageSubresourceRange subresourceRange     = {resourceDesc.imageAspect, 0u, 1u, 0u, 1u};
         const vk::VkImageSubresourceLayers subresourceLayers   = {resourceDesc.imageAspect, 0u, 0u, 1u};
         const vk::VkExternalMemoryImageCreateInfo externalInfo = {
-            vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO, nullptr,
             (vk::VkExternalMemoryHandleTypeFlags)externalType};
         const vk::VkImageTiling tiling         = vk::VK_IMAGE_TILING_OPTIMAL;
         const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -715,7 +715,7 @@ de::MovePtr<Resource> importResource(const vk::DeviceInterface &vkd, vk::VkDevic
         const vk::VkDeviceSize size        = static_cast<vk::VkDeviceSize>(resourceDesc.size.x());
         const vk::VkBufferUsageFlags usage = readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags();
         const vk::VkExternalMemoryBufferCreateInfo externalInfo = {
-            vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, nullptr,
             (vk::VkExternalMemoryHandleTypeFlags)externalType};
         const vk::VkBufferCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
                                                    &externalInfo,
@@ -758,7 +758,7 @@ void recordWriteBarrier(SynchronizationWrapperPtr synchronizationWrapper, vk::Vk
             writeQueueFamilyIndex,                // uint32_t                            srcQueueFamilyIndex
             VK_QUEUE_FAMILY_EXTERNAL              // uint32_t                            dstQueueFamilyIndex
         );
-        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
         synchronizationWrapper->cmdPipelineBarrier(commandBuffer, &dependencyInfo);
     }
     else
@@ -774,7 +774,7 @@ void recordWriteBarrier(SynchronizationWrapperPtr synchronizationWrapper, vk::Vk
                                      writeQueueFamilyIndex,   // uint32_t                            srcQueueFamilyIndex
                                      VK_QUEUE_FAMILY_EXTERNAL // uint32_t                            dstQueueFamilyIndex
             );
-        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
         synchronizationWrapper->cmdPipelineBarrier(commandBuffer, &dependencyInfo);
     }
 }
@@ -803,7 +803,7 @@ void recordReadBarrier(SynchronizationWrapperPtr synchronizationWrapper, vk::VkC
             VK_QUEUE_FAMILY_EXTERNAL,             // uint32_t                            srcQueueFamilyIndex
             readQueueFamilyIndex                  // uint32_t                            dstQueueFamilyIndex
         );
-        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
         synchronizationWrapper->cmdPipelineBarrier(commandBuffer, &dependencyInfo);
     }
     else
@@ -819,7 +819,7 @@ void recordReadBarrier(SynchronizationWrapperPtr synchronizationWrapper, vk::VkC
             VK_QUEUE_FAMILY_EXTERNAL,    // uint32_t                            srcQueueFamilyIndex
             readQueueFamilyIndex         // uint32_t                            dstQueueFamilyIndex
         );
-        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2);
         synchronizationWrapper->cmdPipelineBarrier(commandBuffer, &dependencyInfo);
     }
 }
@@ -954,7 +954,7 @@ tcu::TestStatus SharingTestInstance::iterate(void)
             exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
             vk::Move<vk::VkDeviceMemory> memory =
                 allocateExportableMemory(m_vkdA, *m_deviceA, requirements.size, exportedMemoryTypeIndex,
-                                         m_memoryHandleType, m_config.dedicated ? *image : (vk::VkImage)0);
+                                         m_memoryHandleType, m_config.dedicated ? *image : VK_NULL_HANDLE);
 
             VK_CHECK(m_vkdA.bindImageMemory(*m_deviceA, *image, *memory, 0u));
 
@@ -977,7 +977,7 @@ tcu::TestStatus SharingTestInstance::iterate(void)
             exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
             vk::Move<vk::VkDeviceMemory> memory =
                 allocateExportableMemory(m_vkdA, *m_deviceA, requirements.size, exportedMemoryTypeIndex,
-                                         m_memoryHandleType, m_config.dedicated ? *buffer : (vk::VkBuffer)0);
+                                         m_memoryHandleType, m_config.dedicated ? *buffer : VK_NULL_HANDLE);
 
             VK_CHECK(m_vkdA.bindBufferMemory(*m_deviceA, *buffer, *memory, 0u));
 
@@ -1056,10 +1056,10 @@ tcu::TestStatus SharingTestInstance::iterate(void)
             VkSemaphoreSubmitInfoKHR signalSemaphoreSubmitInfo = makeCommonSemaphoreSubmitInfo(
                 *semaphoreA, rng.getInt(1, deIntMaxValue32(32)), VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR);
 
-            synchronizationWrapperA->addSubmitInfo(0u, DE_NULL, 1u, &cmdBufferInfos, 1u, &signalSemaphoreSubmitInfo,
+            synchronizationWrapperA->addSubmitInfo(0u, nullptr, 1u, &cmdBufferInfos, 1u, &signalSemaphoreSubmitInfo,
                                                    false, isTimelineSemaphore);
 
-            VK_CHECK(synchronizationWrapperA->queueSubmit(queueA, DE_NULL));
+            VK_CHECK(synchronizationWrapperA->queueSubmit(queueA, VK_NULL_HANDLE));
 
             {
                 NativeHandle nativeSemaphoreHandle;
@@ -1077,10 +1077,10 @@ tcu::TestStatus SharingTestInstance::iterate(void)
             VkSemaphoreSubmitInfoKHR waitSemaphoreSubmitInfo =
                 makeCommonSemaphoreSubmitInfo(*semaphoreB, 1u, readSync.stageMask);
 
-            synchronizationWrapperB->addSubmitInfo(1u, &waitSemaphoreSubmitInfo, 1u, &cmdBufferInfos, 0u, DE_NULL,
+            synchronizationWrapperB->addSubmitInfo(1u, &waitSemaphoreSubmitInfo, 1u, &cmdBufferInfos, 0u, nullptr,
                                                    isTimelineSemaphore);
 
-            VK_CHECK(synchronizationWrapperB->queueSubmit(queueB, DE_NULL));
+            VK_CHECK(synchronizationWrapperB->queueSubmit(queueB, VK_NULL_HANDLE));
         }
 
         VK_CHECK(m_vkdA.queueWaitIdle(queueA));

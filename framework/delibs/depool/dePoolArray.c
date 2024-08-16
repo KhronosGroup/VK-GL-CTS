@@ -45,7 +45,7 @@ dePoolArray *dePoolArray_create(deMemPool *pool, int elementSize)
     /* Alloc struct. */
     dePoolArray *arr = DE_POOL_NEW(pool, dePoolArray);
     if (!arr)
-        return DE_NULL;
+        return NULL;
 
     /* Init array. */
     memset(arr, 0, sizeof(dePoolArray));
@@ -66,7 +66,7 @@ bool dePoolArray_reserve(dePoolArray *arr, int size)
 {
     if (size >= arr->capacity)
     {
-        void *oldPageTable   = DE_NULL;
+        void *oldPageTable   = NULL;
         int oldPageTableSize = 0;
 
         int newCapacity          = deAlign32(size, 1 << DE_ARRAY_ELEMENTS_PER_PAGE_LOG2);
@@ -85,7 +85,7 @@ bool dePoolArray_reserve(dePoolArray *arr, int size)
                 newPageTable[i] = arr->pageTable[i];
 
             for (; i < newPageTableCapacity; i++)
-                newPageTable[i] = DE_NULL;
+                newPageTable[i] = NULL;
 
             /* Grab information about old page table for recycling purposes. */
             oldPageTable     = arr->pageTable;
@@ -156,7 +156,7 @@ DE_DECLARE_POOL_ARRAY(dePoolInt16Array, int16_t);
  *//*--------------------------------------------------------------------*/
 void dePoolArray_selfTest(void)
 {
-    deMemPool *pool         = deMemPool_createRoot(DE_NULL, 0);
+    deMemPool *pool         = deMemPool_createRoot(NULL, 0);
     dePoolIntArray *arr     = dePoolIntArray_create(pool);
     dePoolInt16Array *arr16 = dePoolInt16Array_create(pool);
     int i;

@@ -183,7 +183,7 @@ private:
         tcu::Vec2 maxCoord;
         float ref;
 
-        FilterCase(void) : texture(DE_NULL), ref(0.0f)
+        FilterCase(void) : texture(nullptr), ref(0.0f)
         {
         }
 
@@ -447,7 +447,7 @@ private:
         tcu::Vec2 topRight;
         float ref;
 
-        FilterCase(void) : texture(DE_NULL), ref(0.0f)
+        FilterCase(void) : texture(nullptr), ref(0.0f)
         {
         }
 
@@ -481,8 +481,8 @@ TextureCubeShadowCase::TextureCubeShadowCase(Context &context, const char *name,
     , m_format(format)
     , m_size(size)
     , m_compareFunc(compareFunc)
-    , m_gradientTex(DE_NULL)
-    , m_gridTex(DE_NULL)
+    , m_gradientTex(nullptr)
+    , m_gridTex(nullptr)
     , m_renderer(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES,
                  glu::PRECISION_HIGHP)
     , m_caseNdx(0)
@@ -600,8 +600,8 @@ void TextureCubeShadowCase::deinit(void)
     delete m_gradientTex;
     delete m_gridTex;
 
-    m_gradientTex = DE_NULL;
-    m_gridTex     = DE_NULL;
+    m_gradientTex = nullptr;
+    m_gridTex     = nullptr;
 
     m_renderer.clear();
     m_cases.clear();
@@ -625,7 +625,7 @@ static const char *getFaceDesc(const tcu::CubeFace face)
         return "+Z";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -641,7 +641,7 @@ TextureCubeShadowCase::IterateResult TextureCubeShadowCase::iterate(void)
     ReferenceParams sampleParams(TEXTURETYPE_CUBE);
 
     if (viewport.width < viewportSize || viewport.height < viewportSize)
-        throw tcu::NotSupportedError("Too small render target", DE_NULL, __FILE__, __LINE__);
+        throw tcu::NotSupportedError("Too small render target", nullptr, __FILE__, __LINE__);
 
     // Setup texture
     gl.bindTexture(GL_TEXTURE_CUBE_MAP, curCase.texture->getGLTexture());
@@ -768,7 +768,7 @@ private:
         tcu::Vec3 maxCoord;
         float ref;
 
-        FilterCase(void) : texture(DE_NULL), ref(0.0f)
+        FilterCase(void) : texture(nullptr), ref(0.0f)
         {
         }
 
@@ -804,8 +804,8 @@ Texture2DArrayShadowCase::Texture2DArrayShadowCase(Context &context, const char 
     , m_height(height)
     , m_numLayers(numLayers)
     , m_compareFunc(compareFunc)
-    , m_gradientTex(DE_NULL)
-    , m_gridTex(DE_NULL)
+    , m_gradientTex(nullptr)
+    , m_gridTex(nullptr)
     , m_renderer(context.getRenderContext(), context.getTestContext().getLog(), glu::GLSL_VERSION_300_ES,
                  glu::PRECISION_HIGHP)
     , m_caseNdx(0)
@@ -919,8 +919,8 @@ void Texture2DArrayShadowCase::deinit(void)
     delete m_gradientTex;
     delete m_gridTex;
 
-    m_gradientTex = DE_NULL;
-    m_gridTex     = DE_NULL;
+    m_gradientTex = nullptr;
+    m_gridTex     = nullptr;
 
     m_renderer.clear();
     m_cases.clear();

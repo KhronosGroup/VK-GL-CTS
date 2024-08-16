@@ -82,7 +82,7 @@ TessellationShaderVertexSpacing::TessellationShaderVertexSpacing(Context &contex
     : TestCaseBase(context, extParams, "vertex_spacing", "Verifies vertex spacing qualifier behaves as specified")
     , m_gl_max_tess_gen_level_value(0)
     , m_vao_id(0)
-    , m_utils(DE_NULL)
+    , m_utils(nullptr)
 {
     /* Left blank on purpose */
 }
@@ -135,11 +135,11 @@ void TessellationShaderVertexSpacing::deinit()
     }
 
     /* Deinitialize utils instance */
-    if (m_utils != DE_NULL)
+    if (m_utils != nullptr)
     {
         delete m_utils;
 
-        m_utils = DE_NULL;
+        m_utils = nullptr;
     }
 }
 
@@ -573,20 +573,20 @@ TessellationShaderVertexSpacing::_tess_edges TessellationShaderVertexSpacing::ge
     float inner0_round_clamped_value = 0;
 
     TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
-        run.vertex_spacing, run.inner[0], m_gl_max_tess_gen_level_value, DE_NULL, /* out_clamped */
+        run.vertex_spacing, run.inner[0], m_gl_max_tess_gen_level_value, nullptr, /* out_clamped */
         &inner0_round_clamped_value);
 
     if (inner0_round_clamped_value == 1.0f && (run.outer[0] > 1.0f || run.outer[1] > 1.0f || run.outer[2] > 1.0f))
     {
         TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
             run.vertex_spacing, inner0_round_clamped_value + 1.0f /* epsilon */, m_gl_max_tess_gen_level_value,
-            DE_NULL, /* out_clamped */
+            nullptr, /* out_clamped */
             &base_tess_level);
     }
     else
     {
         TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
-            run.vertex_spacing, run.inner[0], m_gl_max_tess_gen_level_value, DE_NULL, /* out_clamped */
+            run.vertex_spacing, run.inner[0], m_gl_max_tess_gen_level_value, nullptr, /* out_clamped */
             &base_tess_level);
     }
 
@@ -1118,7 +1118,7 @@ void TessellationShaderVertexSpacing::verifyEdges(const _tess_edges &edges, cons
         _tess_coordinate_deltas segment_deltas;
 
         TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
-            run.vertex_spacing, edge.outermost_tess_level, m_gl_max_tess_gen_level_value, DE_NULL, /* out_clamped */
+            run.vertex_spacing, edge.outermost_tess_level, m_gl_max_tess_gen_level_value, nullptr, /* out_clamped */
             &outermost_edge_tess_level_clamped_rounded);
 
         /* Retrieve amount of segments the edge should consist of */

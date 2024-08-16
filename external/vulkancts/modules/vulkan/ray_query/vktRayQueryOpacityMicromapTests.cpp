@@ -382,13 +382,13 @@ static Move<VkRenderPass> makeEmptyRenderPass(const DeviceInterface &vk, const V
         (VkSubpassDescriptionFlags)0,    //  VkSubpassDescriptionFlags flags;
         VK_PIPELINE_BIND_POINT_GRAPHICS, //  VkPipelineBindPoint pipelineBindPoint;
         0u,                              //  uint32_t inputAttachmentCount;
-        DE_NULL,                         //  const VkAttachmentReference* pInputAttachments;
+        nullptr,                         //  const VkAttachmentReference* pInputAttachments;
         0u,                              //  uint32_t colorAttachmentCount;
-        DE_NULL,                         //  const VkAttachmentReference* pColorAttachments;
-        DE_NULL,                         //  const VkAttachmentReference* pResolveAttachments;
-        DE_NULL,                         //  const VkAttachmentReference* pDepthStencilAttachment;
+        nullptr,                         //  const VkAttachmentReference* pColorAttachments;
+        nullptr,                         //  const VkAttachmentReference* pResolveAttachments;
+        nullptr,                         //  const VkAttachmentReference* pDepthStencilAttachment;
         0,                               //  uint32_t preserveAttachmentCount;
-        DE_NULL                          //  const uint32_t* pPreserveAttachments;
+        nullptr                          //  const uint32_t* pPreserveAttachments;
     };
     subpassDescriptions.push_back(description);
 
@@ -405,14 +405,14 @@ static Move<VkRenderPass> makeEmptyRenderPass(const DeviceInterface &vk, const V
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,         //  VkStructureType sType;
-        DE_NULL,                                           //  const void* pNext;
+        nullptr,                                           //  const void* pNext;
         static_cast<VkRenderPassCreateFlags>(0u),          //  VkRenderPassCreateFlags flags;
         0u,                                                //  uint32_t attachmentCount;
-        DE_NULL,                                           //  const VkAttachmentDescription* pAttachments;
+        nullptr,                                           //  const VkAttachmentDescription* pAttachments;
         static_cast<uint32_t>(subpassDescriptions.size()), //  uint32_t subpassCount;
         &subpassDescriptions[0],                           //  const VkSubpassDescription* pSubpasses;
         static_cast<uint32_t>(subpassDependencies.size()), //  uint32_t dependencyCount;
-        subpassDependencies.size() > 0 ? &subpassDependencies[0] : DE_NULL //  const VkSubpassDependency* pDependencies;
+        subpassDependencies.size() > 0 ? &subpassDependencies[0] : nullptr //  const VkSubpassDependency* pDependencies;
     };
 
     return createRenderPass(vk, device, &renderPassInfo);
@@ -428,7 +428,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType
-        DE_NULL,                                               // const void*                                 pNext
+        nullptr,                                               // const void*                                 pNext
         (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags          flags
         1u,        // uint32_t                                    viewportCount
         &viewport, // const VkViewport*                           pViewports
@@ -438,7 +438,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                     // const void*                                pNext
+        nullptr,                                                     // const void*                                pNext
         0u,                                                          // VkPipelineInputAssemblyStateCreateFlags    flags
         VK_PRIMITIVE_TOPOLOGY_POINT_LIST, // VkPrimitiveTopology                        topology
         VK_FALSE                          // VkBool32                                   primitiveRestartEnable
@@ -446,17 +446,17 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, //  VkStructureType                                    sType
-        DE_NULL,                                  //  const void*                                        pNext
+        nullptr,                                  //  const void*                                        pNext
         (VkPipelineVertexInputStateCreateFlags)0, //  VkPipelineVertexInputStateCreateFlags            flags
         0u,      //  uint32_t                                        vertexBindingDescriptionCount
-        DE_NULL, //  const VkVertexInputBindingDescription*            pVertexBindingDescriptions
+        nullptr, //  const VkVertexInputBindingDescription*            pVertexBindingDescriptions
         0u,      //  uint32_t                                        vertexAttributeDescriptionCount
-        DE_NULL, //  const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
+        nullptr, //  const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
     };
 
     const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, //  VkStructureType                            sType
-        DE_NULL,                                                    //  const void*                                pNext
+        nullptr,                                                    //  const void*                                pNext
         0u,                                                         //  VkPipelineRasterizationStateCreateFlags    flags
         VK_FALSE,                        //  VkBool32                                depthClampEnable
         VK_TRUE,                         //  VkBool32                                rasterizerDiscardEnable
@@ -475,15 +475,15 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         device,                         // const VkDevice                                    device
         pipelineLayout,                 // const VkPipelineLayout                            pipelineLayout
         vertexModule,                   // const VkShaderModule                                vertexShaderModule
-        DE_NULL,                        // const VkShaderModule                                tessellationControlModule
-        DE_NULL,                        // const VkShaderModule                                tessellationEvalModule
-        DE_NULL,                        // const VkShaderModule                                geometryShaderModule
-        DE_NULL,                        // const VkShaderModule                                fragmentShaderModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                tessellationControlModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                tessellationEvalModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                geometryShaderModule
+        VK_NULL_HANDLE,                 // const VkShaderModule                                fragmentShaderModule
         renderPass,                     // const VkRenderPass                                renderPass
         subpass,                        // const uint32_t                                    subpass
         &vertexInputStateCreateInfo,    // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
         &inputAssemblyStateCreateInfo,  // const VkPipelineInputAssemblyStateCreateInfo*    inputAssemblyStateCreateInfo
-        DE_NULL,                        // const VkPipelineTessellationStateCreateInfo*        tessStateCreateInfo
+        nullptr,                        // const VkPipelineTessellationStateCreateInfo*        tessStateCreateInfo
         &viewportStateCreateInfo,       // const VkPipelineViewportStateCreateInfo*            viewportStateCreateInfo
         &rasterizationStateCreateInfo); // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
 }
@@ -580,23 +580,23 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
     // Query the size from the build info
     VkMicromapBuildInfoEXT mmBuildInfo = {
         VK_STRUCTURE_TYPE_MICROMAP_BUILD_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         VK_MICROMAP_TYPE_OPACITY_MICROMAP_EXT,     // VkMicromapTypeEXT type;
         0,                                         // VkBuildMicromapFlagsEXT flags;
         VK_BUILD_MICROMAP_MODE_BUILD_EXT,          // VkBuildMicromapModeEXT mode;
-        DE_NULL,                                   // VkMicromapEXT dstMicromap;
+        VK_NULL_HANDLE,                            // VkMicromapEXT dstMicromap;
         1,                                         // uint32_t usageCountsCount;
         &mmUsage,                                  // const VkMicromapUsageEXT* pUsageCounts;
-        DE_NULL,                                   // const VkMicromapUsageEXT* const* ppUsageCounts;
-        makeDeviceOrHostAddressConstKHR(DE_NULL),  // VkDeviceOrHostAddressConstKHR data;
-        makeDeviceOrHostAddressKHR(DE_NULL),       // VkDeviceOrHostAddressKHR scratchData;
-        makeDeviceOrHostAddressConstKHR(DE_NULL),  // VkDeviceOrHostAddressConstKHR triangleArray;
+        nullptr,                                   // const VkMicromapUsageEXT* const* ppUsageCounts;
+        makeDeviceOrHostAddressConstKHR(nullptr),  // VkDeviceOrHostAddressConstKHR data;
+        makeDeviceOrHostAddressKHR(nullptr),       // VkDeviceOrHostAddressKHR scratchData;
+        makeDeviceOrHostAddressConstKHR(nullptr),  // VkDeviceOrHostAddressConstKHR triangleArray;
         0,                                         // VkDeviceSize triangleArrayStride;
     };
 
     VkMicromapBuildSizesInfoEXT sizeInfo = {
         VK_STRUCTURE_TYPE_MICROMAP_BUILD_SIZES_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         0,                                               // VkDeviceSize micromapSize;
         0,                                               // VkDeviceSize buildScratchSize;
         false,                                           // VkBool32 discardable;
@@ -627,7 +627,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
     // Create the micromap itself
     VkMicromapCreateInfoEXT maCreateInfo = {
         VK_STRUCTURE_TYPE_MICROMAP_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         0,                                          // VkMicromapCreateFlagsEXT createFlags;
         micromapBackingBuffer.get(),                // VkBuffer buffer;
         0,                                          // VkDeviceSize offset;
@@ -657,14 +657,14 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
                                               VK_ACCESS_2_MICROMAP_READ_BIT_EXT};
         VkDependencyInfoKHR dependencyInfo = {
             VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR, // VkStructureType sType;
-            DE_NULL,                               // const void* pNext;
+            nullptr,                               // const void* pNext;
             0u,                                    // VkDependencyFlags dependencyFlags;
             1u,                                    // uint32_t memoryBarrierCount;
             &memoryBarrier,                        // const VkMemoryBarrier2KHR* pMemoryBarriers;
             0u,                                    // uint32_t bufferMemoryBarrierCount;
-            DE_NULL,                               // const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers;
+            nullptr,                               // const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers;
             0u,                                    // uint32_t imageMemoryBarrierCount;
-            DE_NULL,                               // const VkImageMemoryBarrier2KHR* pImageMemoryBarriers;
+            nullptr,                               // const VkImageMemoryBarrier2KHR* pImageMemoryBarriers;
         };
 
         vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
@@ -684,7 +684,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
 
         VkCopyMicromapInfoEXT copyMicromapInfo = {
             VK_STRUCTURE_TYPE_COPY_MICROMAP_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             origMicromap,                             // VkMicromapEXT src;
             micromap,                                 // VkMicromapEXT dst;
             VK_COPY_MICROMAP_MODE_CLONE_EXT           // VkCopyMicromapModeEXT mode;
@@ -701,14 +701,14 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
                                                   VK_ACCESS_2_MICROMAP_READ_BIT_EXT};
             VkDependencyInfoKHR dependencyInfo = {
                 VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR, // VkStructureType sType;
-                DE_NULL,                               // const void* pNext;
+                nullptr,                               // const void* pNext;
                 0u,                                    // VkDependencyFlags dependencyFlags;
                 1u,                                    // uint32_t memoryBarrierCount;
                 &memoryBarrier,                        // const VkMemoryBarrier2KHR* pMemoryBarriers;
                 0u,                                    // uint32_t bufferMemoryBarrierCount;
-                DE_NULL,                               // const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers;
+                nullptr,                               // const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers;
                 0u,                                    // uint32_t imageMemoryBarrierCount;
-                DE_NULL,                               // const VkImageMemoryBarrier2KHR* pImageMemoryBarriers;
+                nullptr,                               // const VkImageMemoryBarrier2KHR* pImageMemoryBarriers;
             };
 
             dependencyInfo.memoryBarrierCount = 1;
@@ -721,7 +721,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
     // Attach the micromap to the geometry
     VkAccelerationStructureTrianglesOpacityMicromapEXT opacityGeometryMicromap = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_EXT, //VkStructureType sType;
-        DE_NULL,                                                                 //void* pNext;
+        nullptr,                                                                 //void* pNext;
         VK_INDEX_TYPE_UINT32,                                                    //VkIndexType indexType;
         makeDeviceOrHostAddressConstKHR(vkd, device, micromapDataBuffer.get(),
                                         IndexOffset), //VkDeviceOrHostAddressConstKHR indexBuffer;
@@ -729,7 +729,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
         0u,                                           //uint32_t baseTriangle;
         1u,                                           //uint32_t usageCountsCount;
         &mmUsage,                                     //const VkMicromapUsageEXT* pUsageCounts;
-        DE_NULL,                                      //const VkMicromapUsageEXT* const* ppUsageCounts;
+        nullptr,                                      //const VkMicromapUsageEXT* const* ppUsageCounts;
         micromap                                      //VkMicromapEXT micromap;
     };
 
@@ -917,7 +917,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
         auto vertexModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0);
 
         renderPass  = makeEmptyRenderPass(vkd, device);
-        framebuffer = makeFramebuffer(vkd, device, *renderPass, 0u, DE_NULL, 32, 32);
+        framebuffer = makeFramebuffer(vkd, device, *renderPass, 0u, nullptr, 32, 32);
         pipeline    = makeGraphicsPipeline(vkd, device, *pipelineLayout, *renderPass, *vertexModule, 0);
 
         beginRenderPass(vkd, cmdBuffer, *renderPass, *framebuffer, makeRect2D(32u, 32u));
@@ -944,8 +944,8 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
             shaderGroupBaseAlignment           = rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
         }
 
-        auto raygenSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-        auto unusedSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+        auto raygenSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+        auto unusedSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
         {
             const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
@@ -991,10 +991,10 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
             0u,                                             // VkPipelineCreateFlags flags;
             shaderInfo,                                     // VkPipelineShaderStageCreateInfo stage;
             pipelineLayout.get(),                           // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
-        pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineInfo);
+        pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineInfo);
 
         // Dispatch work with ray queries.
         vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get());
@@ -1012,9 +1012,9 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
     submitCommandsAndWait(vkd, device, queue, cmdBuffer);
 
     if (micromap != VK_NULL_HANDLE)
-        vkd.destroyMicromapEXT(device, micromap, DE_NULL);
+        vkd.destroyMicromapEXT(device, micromap, nullptr);
     if (micromap != VK_NULL_HANDLE)
-        vkd.destroyMicromapEXT(device, origMicromap, DE_NULL);
+        vkd.destroyMicromapEXT(device, origMicromap, nullptr);
 
     // Verify results.
     std::vector<uint32_t> outputData(expectedOutputModes.size());

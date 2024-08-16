@@ -78,8 +78,8 @@ void DirectoryIterator::skipCurAndParent(void)
 
 DirectoryIterator::DirectoryIterator(const FilePath &path)
     : m_path(FilePath::normalize(path))
-    , m_handle(DE_NULL)
-    , m_curEntry(DE_NULL)
+    , m_handle(nullptr)
+    , m_curEntry(nullptr)
 {
     DE_CHECK_RUNTIME_ERR(m_path.exists());
     DE_CHECK_RUNTIME_ERR(m_path.getType() == FilePath::TYPE_DIRECTORY);
@@ -98,7 +98,7 @@ DirectoryIterator::~DirectoryIterator(void)
 
 bool DirectoryIterator::hasItem(void) const
 {
-    return (m_curEntry != DE_NULL);
+    return (m_curEntry != nullptr);
 }
 
 FilePath DirectoryIterator::getItem(void) const

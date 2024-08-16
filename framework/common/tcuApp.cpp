@@ -127,12 +127,12 @@ static void verifyAmberCapabilityCoherency(TestPackageRoot &root, TestContext &t
  *//*--------------------------------------------------------------------*/
 App::App(Platform &platform, Archive &archive, TestLog &log, const CommandLine &cmdLine)
     : m_platform(platform)
-    , m_watchDog(DE_NULL)
-    , m_crashHandler(DE_NULL)
+    , m_watchDog(nullptr)
+    , m_crashHandler(nullptr)
     , m_crashed(false)
-    , m_testCtx(DE_NULL)
-    , m_testRoot(DE_NULL)
-    , m_testExecutor(DE_NULL)
+    , m_testCtx(nullptr)
+    , m_testRoot(nullptr)
+    , m_testExecutor(nullptr)
 {
     if (!cmdLine.isSubProcess())
     {
@@ -340,7 +340,7 @@ void App::onCrash(void)
         m_testCtx->getLog().terminateCase(QP_TEST_RESULT_CRASH);
     }
     else
-        qpCrashHandler_writeCrashInfo(m_crashHandler, writeCrashToConsole, DE_NULL);
+        qpCrashHandler_writeCrashInfo(m_crashHandler, writeCrashToConsole, nullptr);
 
     die("Test program crashed");
 }

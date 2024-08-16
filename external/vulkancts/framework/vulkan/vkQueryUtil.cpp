@@ -80,7 +80,7 @@ vector<VkPhysicalDevice> enumeratePhysicalDevices(const InstanceInterface &vk, V
     uint32_t numDevices = 0;
     vector<VkPhysicalDevice> devices;
 
-    VK_CHECK(vk.enumeratePhysicalDevices(instance, &numDevices, DE_NULL));
+    VK_CHECK(vk.enumeratePhysicalDevices(instance, &numDevices, nullptr));
 
     if (numDevices > 0)
     {
@@ -99,7 +99,7 @@ vector<VkPhysicalDeviceGroupProperties> enumeratePhysicalDeviceGroups(const Inst
     uint32_t numDeviceGroups = 0;
     vector<VkPhysicalDeviceGroupProperties> properties;
 
-    VK_CHECK(vk.enumeratePhysicalDeviceGroups(instance, &numDeviceGroups, DE_NULL));
+    VK_CHECK(vk.enumeratePhysicalDeviceGroups(instance, &numDeviceGroups, nullptr));
 
     if (numDeviceGroups > 0)
     {
@@ -118,7 +118,7 @@ vector<VkQueueFamilyProperties> getPhysicalDeviceQueueFamilyProperties(const Ins
     uint32_t numQueues = 0;
     vector<VkQueueFamilyProperties> properties;
 
-    vk.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numQueues, DE_NULL);
+    vk.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numQueues, nullptr);
 
     if (numQueues > 0)
     {
@@ -314,7 +314,7 @@ std::vector<VkSparseImageFormatProperties> getPhysicalDeviceSparseImageFormatPro
     vector<VkSparseImageFormatProperties> properties;
 
     vk.getPhysicalDeviceSparseImageFormatProperties(physicalDevice, format, type, samples, usage, tiling, &numProp,
-                                                    DE_NULL);
+                                                    nullptr);
 
     if (numProp > 0)
     {
@@ -335,7 +335,7 @@ std::vector<VkSparseImageMemoryRequirements> getImageSparseMemoryRequirements(co
     uint32_t requirementsCount = 0;
     vector<VkSparseImageMemoryRequirements> requirements;
 
-    vk.getImageSparseMemoryRequirements(device, image, &requirementsCount, DE_NULL);
+    vk.getImageSparseMemoryRequirements(device, image, &requirementsCount, nullptr);
 
     if (requirementsCount > 0)
     {
@@ -358,7 +358,7 @@ std::vector<vk::VkSparseImageMemoryRequirements> getDeviceImageSparseMemoryRequi
     std::vector<vk::VkSparseImageMemoryRequirements2> requirements;
     uint32_t count = 0;
 
-    vk.getDeviceImageSparseMemoryRequirements(device, &info, &count, DE_NULL);
+    vk.getDeviceImageSparseMemoryRequirements(device, &info, &count, nullptr);
 
     if (count > 0)
     {
@@ -423,7 +423,7 @@ vector<VkLayerProperties> enumerateInstanceLayerProperties(const PlatformInterfa
     vector<VkLayerProperties> properties;
     uint32_t numLayers = 0;
 
-    VK_CHECK(vkp.enumerateInstanceLayerProperties(&numLayers, DE_NULL));
+    VK_CHECK(vkp.enumerateInstanceLayerProperties(&numLayers, nullptr));
 
     if (numLayers > 0)
     {
@@ -440,7 +440,7 @@ vector<VkExtensionProperties> enumerateInstanceExtensionProperties(const Platfor
     vector<VkExtensionProperties> properties;
     uint32_t numExtensions = 0;
 
-    VK_CHECK(vkp.enumerateInstanceExtensionProperties(layerName, &numExtensions, DE_NULL));
+    VK_CHECK(vkp.enumerateInstanceExtensionProperties(layerName, &numExtensions, nullptr));
 
     if (numExtensions > 0)
     {
@@ -457,7 +457,7 @@ vector<VkLayerProperties> enumerateDeviceLayerProperties(const InstanceInterface
     vector<VkLayerProperties> properties;
     uint32_t numLayers = 0;
 
-    VK_CHECK(vki.enumerateDeviceLayerProperties(physicalDevice, &numLayers, DE_NULL));
+    VK_CHECK(vki.enumerateDeviceLayerProperties(physicalDevice, &numLayers, nullptr));
 
     if (numLayers > 0)
     {
@@ -475,7 +475,7 @@ vector<VkExtensionProperties> enumerateDeviceExtensionProperties(const InstanceI
     vector<VkExtensionProperties> properties;
     uint32_t numExtensions = 0;
 
-    VK_CHECK(vki.enumerateDeviceExtensionProperties(physicalDevice, layerName, &numExtensions, DE_NULL));
+    VK_CHECK(vki.enumerateDeviceExtensionProperties(physicalDevice, layerName, &numExtensions, nullptr));
 
     if (numExtensions > 0)
     {
@@ -661,7 +661,7 @@ void appendStructurePtrToVulkanChain(const void **chainHead, const void *structu
         const void *pNext;
     };
 
-    while (*chainHead != DE_NULL)
+    while (*chainHead != nullptr)
     {
         StructureBase *ptr = (StructureBase *)(*chainHead);
 

@@ -121,12 +121,12 @@ protected:
         , m_fbo(0)
         , m_width(0)
         , m_height(0)
-        , m_actual(DE_NULL)
+        , m_actual(nullptr)
     {
         for (size_t i = 0; i < NUM_TEXTURES; ++i)
         {
             m_tex[i]       = 0;
-            m_reference[i] = DE_NULL;
+            m_reference[i] = nullptr;
         }
     }
 
@@ -212,17 +212,17 @@ protected:
         gl.deleteTextures(NUM_TEXTURES, m_tex);
         for (GLuint i = 0; i < NUM_TEXTURES; ++i)
         {
-            if (DE_NULL != m_reference[i])
+            if (nullptr != m_reference[i])
             {
                 delete[] m_reference[i];
-                m_reference[i] = DE_NULL;
+                m_reference[i] = nullptr;
             }
         }
 
-        if (DE_NULL != m_actual)
+        if (nullptr != m_actual)
         {
             delete[] m_actual;
-            m_actual = DE_NULL;
+            m_actual = nullptr;
         }
 
         // Cleanup framebuffer

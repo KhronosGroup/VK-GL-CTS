@@ -191,7 +191,7 @@ Buffer::Buffer(Context &ctx, VkBufferUsageFlags usage, VkDeviceSize size, bool a
 
     const VkBufferCreateInfo bufferCreateInfo{
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         size,                                 // VkDeviceSize size;
         bufferUsageFlags,                     // VkBufferUsageFlags usage;
@@ -223,7 +223,7 @@ uint64_t Buffer::getDeviceAddress(void) const
     const VkDevice dev         = m_context.getDevice();
     const VkBufferDeviceAddressInfo info{
         VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         **m_buffer                                    // VkBuffer buffer;
     };
 
@@ -354,7 +354,7 @@ Image::Image(Context &ctx, uint32_t width, uint32_t height, VkFormat format)
 
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         m_format,                            // VkFormat format;
@@ -411,25 +411,25 @@ Move<VkRenderPass> Image::createRenderPass(void) const
         (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags       flags
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint             pipelineBindPoint
         0u,                              // uint32_t                        inputAttachmentCount
-        DE_NULL,                         // const VkAttachmentReference*    pInputAttachments
+        nullptr,                         // const VkAttachmentReference*    pInputAttachments
         1u,                              // uint32_t                        colorAttachmentCount
         &attachmentReference,            // const VkAttachmentReference*    pColorAttachments
-        DE_NULL,                         // const VkAttachmentReference*    pResolveAttachments
-        DE_NULL,                         // const VkAttachmentReference*    pDepthStencilAttachment
+        nullptr,                         // const VkAttachmentReference*    pResolveAttachments
+        nullptr,                         // const VkAttachmentReference*    pDepthStencilAttachment
         0u,                              // uint32_t                        preserveAttachmentCount
-        DE_NULL                          // const uint32_t*                 pPreserveAttachments
+        nullptr                          // const uint32_t*                 pPreserveAttachments
     };
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                   sType
-        DE_NULL,                                   // const void*                       pNext
+        nullptr,                                   // const void*                       pNext
         (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags           flags
         1u,                                        // uint32_t                          attachmentCount
         &attachmentDescription,                    // const VkAttachmentDescription*    pAttachments
         1u,                                        // uint32_t                          subpassCount
         &subpassDescription,                       // const VkSubpassDescription*       pSubpasses
         0u,                                        // uint32_t                          dependencyCount
-        DE_NULL                                    // const VkSubpassDependency*        pDependencies
+        nullptr                                    // const VkSubpassDependency*        pDependencies
     };
 
     return vk::createRenderPass(vki, dev, &renderPassInfo);
@@ -548,7 +548,7 @@ void SpvAsmPhysicalStorageBufferTestCase::checkSupport(Context &context) const
         if (!context.getDeviceFeatures().shaderInt64)
             TCU_THROW(NotSupportedError, "Int64 not supported");
 
-        VkFormatProperties2 properties{VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2, DE_NULL, {}};
+        VkFormatProperties2 properties{VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2, nullptr, {}};
         context.getInstanceInterface().getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(),
                                                                           VK_FORMAT_R64_UINT, &properties);
         if ((properties.formatProperties.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT) !=
@@ -573,7 +573,7 @@ TestInstance *SpvAsmPhysicalStorageBufferTestCase::createInstance(Context &ctx) 
     }
 
     DE_ASSERT(false);
-    return DE_NULL;
+    return nullptr;
 }
 
 void SpvAsmPhysicalStorageBufferTestCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -839,7 +839,7 @@ Move<VkPipeline> SpvAsmPhysicalStorageBufferVertexInOutInTestInstance::createGra
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineVertexInputStateCreateFlags)0,  // flags
         DE_LENGTH_OF_ARRAY(bindingDescriptions),   // vertexBindingDescriptionCount
         bindingDescriptions,                       // pVertexBindingDescriptions
@@ -851,9 +851,9 @@ Move<VkPipeline> SpvAsmPhysicalStorageBufferVertexInOutInTestInstance::createGra
                                     device,                           // device
                                     pipelineLayout,                   // pipelineLayout
                                     vertexModule,                     // vertexShaderModule
-                                    DE_NULL,                          // tessellationControlModule
-                                    DE_NULL,                          // tessellationEvalModule
-                                    DE_NULL,                          // geometryShaderModule
+                                    VK_NULL_HANDLE,                   // tessellationControlModule
+                                    VK_NULL_HANDLE,                   // tessellationEvalModule
+                                    VK_NULL_HANDLE,                   // geometryShaderModule
                                     fragmentModule,                   // fragmentShaderModule
                                     renderPass,                       // renderPass
                                     viewports,                        // viewports
@@ -862,11 +862,11 @@ Move<VkPipeline> SpvAsmPhysicalStorageBufferVertexInOutInTestInstance::createGra
                                     0U,                               // subpass
                                     0U,                               // patchControlPoints
                                     &vertexInputStateCreateInfo,      // vertexInputStateCreateInfo
-                                    DE_NULL,                          // rasterizationStateCreateInfo
-                                    DE_NULL,                          // multisampleStateCreateInfo
-                                    DE_NULL,                          // depthStencilStateCreateInfo
-                                    DE_NULL,                          // colorBlendStateCreateInfo
-                                    DE_NULL);                         // dynamicStateCreateInfo
+                                    nullptr,                          // rasterizationStateCreateInfo
+                                    nullptr,                          // multisampleStateCreateInfo
+                                    nullptr,                          // depthStencilStateCreateInfo
+                                    nullptr,                          // colorBlendStateCreateInfo
+                                    nullptr);                         // dynamicStateCreateInfo
 }
 
 tcu::TestStatus SpvAsmPhysicalStorageBufferVertexInOutInTestInstance::iterate(void)
@@ -887,7 +887,7 @@ tcu::TestStatus SpvAsmPhysicalStorageBufferVertexInOutInTestInstance::iterate(vo
 
     Move<VkShaderModule> vertexModule   = createShaderModule(vki, dev, m_context.getBinaryCollection().get("vert"), 0);
     Move<VkShaderModule> fragmentModule = createShaderModule(vki, dev, m_context.getBinaryCollection().get("frag"), 0);
-    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vki, dev, 0u, DE_NULL);
+    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vki, dev, 0u, nullptr);
     Move<VkPipeline> pipeline = createGraphicsPipeline(*pipelineLayout, *renderPass, *vertexModule, *fragmentModule);
 
     ut::TypedBuffer<tcu::Vec4> colorBuffer = prepareColorBuffer();
@@ -1076,7 +1076,7 @@ tcu::TestStatus SpvAsmPhysicalStorageBufferPushConstantsTestInstance::iterate(vo
         sizeof(PushConstant)         // uint32_t size;
     };
 
-    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vki, dev, 0, DE_NULL, 1, &pushConstantRange);
+    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vki, dev, 0, nullptr, 1, &pushConstantRange);
     Move<VkPipeline> pipeline             = makeComputePipeline(vki, dev, *pipelineLayout, *shaderModule);
 
     ut::TypedBuffer<int32_t> src(m_context, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_params->elements, true);
@@ -1247,7 +1247,7 @@ tcu::TestStatus SpvAsmPhysicalStorageBufferAddrsInSSBOTestInstance::iterate(void
     beginCommandBuffer(vki, *cmdBuffer);
     vki.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     vki.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(),
-                              0u, DE_NULL);
+                              0u, nullptr);
     vki.cmdDispatch(*cmdBuffer, m_params->elements, 1, 1);
     endCommandBuffer(vki, *cmdBuffer);
 

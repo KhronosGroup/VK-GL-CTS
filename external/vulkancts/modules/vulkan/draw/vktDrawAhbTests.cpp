@@ -291,13 +291,13 @@ tcu::TestStatus AhbTestInstance::iterate(void)
         const VkDeviceSize pixelSize        = mapVkFormat(colorAttachmentFormat).getPixelSize();
         const VkBufferCreateInfo createInfo = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
-            DE_NULL,                              // const void*            pNext
+            nullptr,                              // const void*            pNext
             0u,                                   // VkBufferCreateFlags    flags
             WIDTH * HEIGHT * pixelSize,           // VkDeviceSize            size
             bufferUsage,                          // VkBufferUsageFlags    usage
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
             0u,                                   // uint32_t                queueFamilyIndexCount
-            DE_NULL                               // const uint32_t*        pQueueFamilyIndices
+            nullptr                               // const uint32_t*        pQueueFamilyIndices
         };
 
         resultBuffers.push_back(createBuffer(vk, device, &createInfo));
@@ -315,7 +315,7 @@ tcu::TestStatus AhbTestInstance::iterate(void)
 
     // Enable this to use non-AHB images for color output.
 #if 0
-    const Unique<VkImage>                        colorTargetImage        (createImage(vk, device, &targetImageCreateInfo, DE_NULL));
+    const Unique<VkImage>                        colorTargetImage        (createImage(vk, device, &targetImageCreateInfo, nullptr));
     de::MovePtr<Allocation>                        m_colorImageAllocation = m_context.getDefaultAllocator().allocate(getImageMemoryRequirements(vk, device, *colorTargetImage), MemoryRequirement::Any);
     VK_CHECK(vk.bindImageMemory(device, *colorTargetImage, m_colorImageAllocation->getMemory(), m_colorImageAllocation->getOffset()));
 #else
@@ -332,7 +332,7 @@ tcu::TestStatus AhbTestInstance::iterate(void)
         ahbApi->allocate(WIDTH, HEIGHT, targetImageCreateInfo.arrayLayers,
                          ahbApi->vkFormatToAhbFormat(colorAttachmentFormat), requiredAhbUsage);
 
-    if (ahb.internal == DE_NULL)
+    if (ahb.internal == nullptr)
         TCU_THROW(NotSupportedError, "Required number of layers for Android Hardware Buffer not supported");
 
     NativeHandle nativeHandle(ahb);
@@ -342,11 +342,11 @@ tcu::TestStatus AhbTestInstance::iterate(void)
         targetImageCreateInfo.mipLevels, targetImageCreateInfo.arrayLayers));
 
     uint32_t ahbFormat = 0;
-    ahbApi->describe(nativeHandle.getAndroidHardwareBuffer(), DE_NULL, DE_NULL, DE_NULL, &ahbFormat, DE_NULL, DE_NULL);
+    ahbApi->describe(nativeHandle.getAndroidHardwareBuffer(), nullptr, nullptr, nullptr, &ahbFormat, nullptr, nullptr);
 
     VkAndroidHardwareBufferPropertiesANDROID ahbProperties = {
         VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID, // VkStructureType    sType
-        DE_NULL,                                                      // void*              pNext
+        nullptr,                                                      // void*              pNext
         0u,                                                           // VkDeviceSize       allocationSize
         0u                                                            // uint32_t           memoryTypeBits
     };
@@ -355,7 +355,7 @@ tcu::TestStatus AhbTestInstance::iterate(void)
 
     const VkImportAndroidHardwareBufferInfoANDROID importInfo = {
         VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID, // VkStructureType            sType
-        DE_NULL,                                                       // const void*                pNext
+        nullptr,                                                       // const void*                pNext
         nativeHandle.getAndroidHardwareBuffer()                        // struct AHardwareBuffer*    buffer
     };
 
@@ -363,7 +363,7 @@ tcu::TestStatus AhbTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR, // VkStructureType    sType
         &importInfo,                                          // const void*        pNext
         *colorTargetImage,                                    // VkImage            image
-        DE_NULL,                                              // VkBuffer           buffer
+        VK_NULL_HANDLE,                                       // VkBuffer           buffer
     };
 
     const VkMemoryAllocateInfo allocateInfo = {
@@ -393,7 +393,7 @@ tcu::TestStatus AhbTestInstance::iterate(void)
 
         const VkImageViewCreateInfo imageViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                                  // const void*                pNext
+            nullptr,                                  // const void*                pNext
             0u,                                       // VkImageViewCreateFlags     flags
             *colorTargetImage,                        // VkImage                    image
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType            viewType
@@ -412,9 +412,9 @@ tcu::TestStatus AhbTestInstance::iterate(void)
 
         const VkAttachmentReference colorAttachmentReference = {i, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
-        renderPassCreateInfo.addSubpass(SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, 1u,
-                                                           &colorAttachmentReference, DE_NULL, AttachmentReference(), 0,
-                                                           DE_NULL));
+        renderPassCreateInfo.addSubpass(SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1u,
+                                                           &colorAttachmentReference, nullptr, AttachmentReference(), 0,
+                                                           nullptr));
     }
 
     Unique<VkRenderPass> renderPass(createRenderPass(vk, device, &renderPassCreateInfo));
@@ -480,14 +480,14 @@ tcu::TestStatus AhbTestInstance::iterate(void)
     for (uint32_t i = 0; i < m_data.m_numLayers; i++)
     {
         pipelineCreateInfo.subpass = i;
-        pipelines.push_back(createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+        pipelines.push_back(createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
     }
 
     beginCommandBuffer(vk, *cmdBuffer, 0u);
 
     const VkImageMemoryBarrier initialTransition = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType    sType
-        DE_NULL,                                  // const void*        pNext
+        nullptr,                                  // const void*        pNext
         0u,                                       // VkAccessFlags    srcAccessMask
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags    dstAccessMask
         VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout    oldLayout
@@ -500,8 +500,7 @@ tcu::TestStatus AhbTestInstance::iterate(void)
     };
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                          (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &initialTransition);
+                          (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &initialTransition);
 
     const VkRect2D renderArea = makeRect2D(WIDTH, HEIGHT);
 
@@ -509,7 +508,7 @@ tcu::TestStatus AhbTestInstance::iterate(void)
 
     const VkRenderPassBeginInfo renderPassBeginInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType         sType
-        DE_NULL,                                  // const void*             pNext
+        nullptr,                                  // const void*             pNext
         *renderPass,                              // VkRenderPass            renderPass
         *framebuffer,                             // VkFramebuffer           framebuffer
         renderArea,                               // VkRect2D                renderArea
@@ -536,7 +535,7 @@ tcu::TestStatus AhbTestInstance::iterate(void)
 
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType            sType
-        DE_NULL,                                  // const void*                pNext
+        nullptr,                                  // const void*                pNext
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags            srcAccessMask
         VK_ACCESS_TRANSFER_READ_BIT,              // VkAccessFlags            dstAccessMask
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout            oldLayout
@@ -549,7 +548,7 @@ tcu::TestStatus AhbTestInstance::iterate(void)
     };
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                          DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+                          nullptr, 0u, nullptr, 1u, &imageBarrier);
 
     for (uint32_t i = 0; i < m_data.m_numLayers; i++)
     {
@@ -574,7 +573,7 @@ tcu::TestStatus AhbTestInstance::iterate(void)
 
         const VkBufferMemoryBarrier bufferBarrier = {
             VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType
-            DE_NULL,                                 // const void*        pNext
+            nullptr,                                 // const void*        pNext
             VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags    srcAccessMask
             VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags    dstAccessMask
             VK_QUEUE_FAMILY_IGNORED,                 // uint32_t            srcQueueFamilyIndex
@@ -584,8 +583,8 @@ tcu::TestStatus AhbTestInstance::iterate(void)
             VK_WHOLE_SIZE                            // VkDeviceSize        size
         };
 
-        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL,
-                              1u, &bufferBarrier, 0u, DE_NULL);
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr,
+                              1u, &bufferBarrier, 0u, nullptr);
     }
 
     endCommandBuffer(vk, *cmdBuffer);

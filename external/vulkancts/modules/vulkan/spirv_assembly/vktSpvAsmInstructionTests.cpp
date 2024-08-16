@@ -82,6 +82,7 @@
 #include "vktSpvAsmVectorShuffleTests.hpp"
 #include "vktSpvAsmFloatControlsExtensionlessTests.hpp"
 #include "vktSpvAsmNonSemanticInfoTests.hpp"
+#include "vktSpvAsmRelaxedWithForwardReferenceTests.hpp"
 #include "vktSpvAsm64bitCompareTests.hpp"
 #include "vktSpvAsmTrinaryMinMaxTests.hpp"
 #include "vktSpvAsmTerminateInvocationTests.hpp"
@@ -3961,13 +3962,13 @@ tcu::TestCaseGroup *createSpecConstantGroup(tcu::TestContext &testCtx)
                                            -21, addScToInput, outputInts1));
     cases.push_back(SpecConstantTwoValCase("sdiv", " %i32 0", " %i32 0", "%i32", "SDiv                 %sc_0 %sc_1",
                                            -126, -3, addScToInput, outputInts1));
-    cases.push_back(SpecConstantTwoValCase("udiv", " %i32 0", " %i32 0", "%i32", "UDiv                 %sc_0 %sc_1",
+    cases.push_back(SpecConstantTwoValCase("udiv", " %u32 0", " %u32 0", "%u32", "UDiv                 %sc_0 %sc_1",
                                            126, 3, addScToInput, outputInts1));
     cases.push_back(SpecConstantTwoValCase("srem", " %i32 0", " %i32 0", "%i32", "SRem                 %sc_0 %sc_1", 7,
                                            3, addScToInput, outputInts4));
     cases.push_back(SpecConstantTwoValCase("smod", " %i32 0", " %i32 0", "%i32", "SMod                 %sc_0 %sc_1", 7,
                                            3, addScToInput, outputInts4));
-    cases.push_back(SpecConstantTwoValCase("umod", " %i32 0", " %i32 0", "%i32", "UMod                 %sc_0 %sc_1",
+    cases.push_back(SpecConstantTwoValCase("umod", " %u32 0", " %u32 0", "%u32", "UMod                 %sc_0 %sc_1",
                                            342, 50, addScToInput, outputInts1));
     cases.push_back(SpecConstantTwoValCase("bitwiseand", " %i32 0", " %i32 0", "%i32",
                                            "BitwiseAnd           %sc_0 %sc_1", 42, 63, addScToInput, outputInts1));
@@ -8492,14 +8493,14 @@ tcu::TestCaseGroup *createSpecConstantTests(tcu::TestContext &testCtx)
     cases.push_back(SpecConstantTwoValGraphicsCase("sdiv", " %i32 0", " %i32 0", "%i32",
                                                    "SDiv                 %sc_0 %sc_1", -126, 126, addZeroToSc,
                                                    outputColors0));
-    cases.push_back(SpecConstantTwoValGraphicsCase("udiv", " %i32 0", " %i32 0", "%i32",
+    cases.push_back(SpecConstantTwoValGraphicsCase("udiv", " %u32 0", " %u32 0", "%u32",
                                                    "UDiv                 %sc_0 %sc_1", 126, 126, addZeroToSc,
                                                    outputColors2));
     cases.push_back(SpecConstantTwoValGraphicsCase(
         "srem", " %i32 0", " %i32 0", "%i32", "SRem                 %sc_0 %sc_1", 3, 2, addZeroToSc, outputColors2));
     cases.push_back(SpecConstantTwoValGraphicsCase(
         "smod", " %i32 0", " %i32 0", "%i32", "SMod                 %sc_0 %sc_1", 3, 2, addZeroToSc, outputColors2));
-    cases.push_back(SpecConstantTwoValGraphicsCase("umod", " %i32 0", " %i32 0", "%i32",
+    cases.push_back(SpecConstantTwoValGraphicsCase("umod", " %u32 0", " %u32 0", "%u32",
                                                    "UMod                 %sc_0 %sc_1", 1001, 500, addZeroToSc,
                                                    outputColors2));
     cases.push_back(SpecConstantTwoValGraphicsCase("bitwiseand", " %i32 0", " %i32 0", "%i32",
@@ -10605,7 +10606,7 @@ const string getTypeName(ConversionDataType type)
 
 const string getTestName(ConversionDataType from, ConversionDataType to, const char *suffix)
 {
-    const string fullSuffix(suffix == DE_NULL ? "" : string("_") + string(suffix));
+    const string fullSuffix(suffix == nullptr ? "" : string("_") + string(suffix));
 
     return getTypeName(from) + "_to_" + getTypeName(to) + fullSuffix;
 }
@@ -10753,7 +10754,7 @@ void getVulkanFeaturesAndExtensions(ConversionDataType from, ConversionDataType 
 struct ConvertCase
 {
     ConvertCase(const string &instruction, ConversionDataType from, ConversionDataType to, int64_t number,
-                bool separateOutput = false, int64_t outputNumber = 0, const char *suffix = DE_NULL,
+                bool separateOutput = false, int64_t outputNumber = 0, const char *suffix = nullptr,
                 bool useStorageExt = true)
         : m_fromType(from)
         , m_toType(to)
@@ -12084,6 +12085,8 @@ tcu::TestCaseGroup *createFloat16LogicalSet(tcu::TestContext &testCtx, const boo
             }
 
             features.extFloat16Int8.shaderFloat16 = true;
+            if (specResource.graphicsFeaturesRequired)
+                features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
             finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                                   IVec3(1, 1, 1));
@@ -12205,6 +12208,8 @@ tcu::TestCaseGroup *createFloat16LogicalSet(tcu::TestContext &testCtx, const boo
             }
 
             features.extFloat16Int8.shaderFloat16 = true;
+            if (specResource.graphicsFeaturesRequired)
+                features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
             finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                                   IVec3(1, 1, 1), true);
@@ -12390,6 +12395,8 @@ tcu::TestCaseGroup *createFloat16FuncSet(tcu::TestContext &testCtx)
         extensions.push_back("VK_KHR_shader_float16_int8");
 
         features.extFloat16Int8.shaderFloat16 = true;
+        if (specResource.graphicsFeaturesRequired)
+            features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
         finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                               IVec3(1, 1, 1));
@@ -12620,6 +12627,8 @@ tcu::TestCaseGroup *createFloat16VectorExtractSet(tcu::TestContext &testCtx)
         extensions.push_back("VK_KHR_shader_float16_int8");
 
         features.extFloat16Int8.shaderFloat16 = true;
+        if (specResource.graphicsFeaturesRequired)
+            features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
         finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                               IVec3(1, 1, 1));
@@ -12851,6 +12860,8 @@ tcu::TestCaseGroup *createFloat16VectorInsertSet(tcu::TestContext &testCtx)
         extensions.push_back("VK_KHR_shader_float16_int8");
 
         features.extFloat16Int8.shaderFloat16 = true;
+        if (specResource.graphicsFeaturesRequired)
+            features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
         finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                               IVec3(1, 1, 1));
@@ -13251,6 +13262,8 @@ tcu::TestCaseGroup *createFloat16VectorShuffleSet(tcu::TestContext &testCtx)
                 extensions.push_back("VK_KHR_shader_float16_int8");
 
                 features.extFloat16Int8.shaderFloat16 = true;
+                if (specResource.graphicsFeaturesRequired)
+                    features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
                 finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features,
                                       extensions, IVec3(1, 1, 1));
@@ -13755,6 +13768,8 @@ tcu::TestCaseGroup *createFloat16CompositeConstructSet(tcu::TestContext &testCtx
         extensions.push_back("VK_KHR_shader_float16_int8");
 
         features.extFloat16Int8.shaderFloat16 = true;
+        if (specResource.graphicsFeaturesRequired)
+            features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
         finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                               IVec3(1, 1, 1));
@@ -14413,7 +14428,7 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
 
     const char *accessPathF16[] = {
         "0", // %f16
-        DE_NULL,
+        nullptr,
     };
     const char *accessPathV2F16[] = {
         "0 0", // %v2f16
@@ -14423,7 +14438,7 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
         "0 0", // %v3f16
         "0 1",
         "0 2",
-        DE_NULL,
+        nullptr,
     };
     const char *accessPathV4F16[] = {
         "0 0", // %v4f16"
@@ -14435,13 +14450,13 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
         "0 0", // %f16arr3
         "0 1",
         "0 2",
-        DE_NULL,
+        nullptr,
     };
     const char *accessPathStruct16Arr3[] = {
         "0 0 0", // %struct16arr3
-        DE_NULL, "0 0 1 0 0", "0 0 1 0 1", "0 0 1 1 0", "0 0 1 1 1", "0 0 1 2 0", "0 0 1 2 1", "0 1 0",
-        DE_NULL, "0 1 1 0 0", "0 1 1 0 1", "0 1 1 1 0", "0 1 1 1 1", "0 1 1 2 0", "0 1 1 2 1", "0 2 0",
-        DE_NULL, "0 2 1 0 0", "0 2 1 0 1", "0 2 1 1 0", "0 2 1 1 1", "0 2 1 2 0", "0 2 1 2 1",
+        nullptr, "0 0 1 0 0", "0 0 1 0 1", "0 0 1 1 0", "0 0 1 1 1", "0 0 1 2 0", "0 0 1 2 1", "0 1 0",
+        nullptr, "0 1 1 0 0", "0 1 1 0 1", "0 1 1 1 0", "0 1 1 1 1", "0 1 1 2 0", "0 1 1 2 1", "0 2 0",
+        nullptr, "0 2 1 0 0", "0 2 1 0 1", "0 2 1 1 0", "0 2 1 1 1", "0 2 1 2 0", "0 2 1 2 1",
     };
     const char *accessPathV2F16Arr5[] = {
         "0 0 0", // %v2f16arr5
@@ -14449,13 +14464,13 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
     };
     const char *accessPathV3F16Arr5[] = {
         "0 0 0", // %v3f16arr5
-        "0 0 1", "0 0 2", DE_NULL, "0 1 0", "0 1 1", "0 1 2", DE_NULL, "0 2 0", "0 2 1", "0 2 2",
-        DE_NULL, "0 3 0", "0 3 1", "0 3 2", DE_NULL, "0 4 0", "0 4 1", "0 4 2", DE_NULL,
+        "0 0 1", "0 0 2", nullptr, "0 1 0", "0 1 1", "0 1 2", nullptr, "0 2 0", "0 2 1", "0 2 2",
+        nullptr, "0 3 0", "0 3 1", "0 3 2", nullptr, "0 4 0", "0 4 1", "0 4 2", nullptr,
     };
     const char *accessPathV4F16Arr3[] = {
         "0 0 0", // %v4f16arr3
         "0 0 1", "0 0 2", "0 0 3", "0 1 0", "0 1 1", "0 1 2", "0 1 3", "0 2 0",
-        "0 2 1", "0 2 2", "0 2 3", DE_NULL, DE_NULL, DE_NULL, DE_NULL,
+        "0 2 1", "0 2 2", "0 2 3", nullptr, nullptr, nullptr, nullptr,
     };
 
     struct TypeTestParameters
@@ -14497,7 +14512,7 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
         // Generate values for input
         inputFP16.reserve(structItemsCount);
         for (uint32_t structItemNdx = 0; structItemNdx < structItemsCount; ++structItemNdx)
-            inputFP16.push_back((accessPath[structItemNdx] == DE_NULL) ? exceptionValue :
+            inputFP16.push_back((accessPath[structItemNdx] == nullptr) ? exceptionValue :
                                                                          tcu::Float16(float(structItemNdx)).bits());
 
         unusedFP16Output.resize(structItemsCount);
@@ -14508,7 +14523,7 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
             string caseList;
 
             for (uint32_t caseNdx = 0; caseNdx < structItemsCount; ++caseNdx)
-                if (accessPath[caseNdx] != DE_NULL)
+                if (accessPath[caseNdx] != nullptr)
                 {
                     map<string, string> specCase;
 
@@ -14572,6 +14587,8 @@ tcu::TestCaseGroup *createFloat16CompositeInsertExtractSet(tcu::TestContext &tes
         extensions.push_back("VK_KHR_shader_float16_int8");
 
         features.extFloat16Int8.shaderFloat16 = true;
+        if (specResource.graphicsFeaturesRequired)
+            features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
         finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions,
                               IVec3(1, 1, 1));
@@ -17893,9 +17910,9 @@ bool compareFP16ArithmeticFunc(const std::vector<Resource> &inputs, const vector
         inputs[inputNdx].getBytes(inputBytes[inputNdx]);
 
     const deFloat16 *const inputsAsFP16[3] = {
-        inputs.size() >= 1 ? (const deFloat16 *)&inputBytes[0][0] : DE_NULL,
-        inputs.size() >= 2 ? (const deFloat16 *)&inputBytes[1][0] : DE_NULL,
-        inputs.size() >= 3 ? (const deFloat16 *)&inputBytes[2][0] : DE_NULL,
+        inputs.size() >= 1 ? (const deFloat16 *)&inputBytes[0][0] : nullptr,
+        inputs.size() >= 2 ? (const deFloat16 *)&inputBytes[1][0] : nullptr,
+        inputs.size() >= 3 ? (const deFloat16 *)&inputBytes[2][0] : nullptr,
     };
 
     for (size_t idx = 0; idx < iterationsCount; ++idx)
@@ -18585,7 +18602,7 @@ void createFloat16ArithmeticFuncTest(tcu::TestContext &testCtx, tcu::TestCaseGro
                                  "       %fp_v4i32 = OpTypePointer Function %v4i32\n"
 
                                  "      %c_u32_ndp = OpConstant %u32 ${num_data_points}\n"
-                                 " %c_u32_half_ndp = OpSpecConstantOp %u32 UDiv %c_i32_ndp %c_u32_2\n"
+                                 " %c_u32_half_ndp = OpSpecConstantOp %u32 UDiv %c_u32_ndp %c_u32_2\n"
                                  "        %c_u32_5 = OpConstant %u32 5\n"
                                  "        %c_u32_6 = OpConstant %u32 6\n"
                                  "        %c_u32_7 = OpConstant %u32 7\n"
@@ -18914,7 +18931,7 @@ void createFloat16ArithmeticFuncTest(tcu::TestContext &testCtx, tcu::TestCaseGro
     const Math16TestType &testType         = testTypes[testTypeIdx];
     const string funcNameString            = string(testFunc.funcName) + string(testFunc.funcSuffix);
     const string testName                  = de::toLower(funcNameString);
-    const Math16ArgFragments *argFragments = DE_NULL;
+    const Math16ArgFragments *argFragments = nullptr;
     const size_t typeStructStride          = testType.typeStructStride;
     const bool extInst                     = !(testFunc.funcName[0] == 'O' && testFunc.funcName[1] == 'p');
     const size_t numFloatsPerArg0Type      = testTypes[testFunc.typeArg0].typeArrayStride / sizeof(deFloat16);
@@ -19088,6 +19105,8 @@ void createFloat16ArithmeticFuncTest(tcu::TestContext &testCtx, tcu::TestCaseGro
     extensions.push_back("VK_KHR_shader_float16_int8");
 
     features.extFloat16Int8.shaderFloat16 = true;
+    if (specResource.graphicsFeaturesRequired)
+        features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
     finalizeTestsCreation(specResource, fragments, testCtx, testGroup, testName, features, extensions, IVec3(1, 1, 1));
 }
@@ -19396,11 +19415,12 @@ tcu::TestCaseGroup *createFloat32ComparisonGraphicsSet(tcu::TestContext &testCtx
 #ifndef CTS_USES_VULKANSC
     const char *dataDir = "spirv_assembly/instruction/float32/comparison";
 
-    const ShaderStage stages[] = {{"vert", vector<string>(0)},
-                                  {"tesc", vector<string>(1, "Features.tessellationShader")},
-                                  {"tese", vector<string>(1, "Features.tessellationShader")},
-                                  {"geom", vector<string>(1, "Features.geometryShader")},
-                                  {"frag", vector<string>(0)}};
+    const ShaderStage stages[] = {
+        {"vert", vector<string>(1, "Features.vertexPipelineStoresAndAtomics")},
+        {"tesc", vector<string>({"Features.vertexPipelineStoresAndAtomics", "Features.tessellationShader"})},
+        {"tese", vector<string>({"Features.vertexPipelineStoresAndAtomics", "Features.tessellationShader"})},
+        {"geom", vector<string>({"Features.vertexPipelineStoresAndAtomics", "Features.geometryShader"})},
+        {"frag", vector<string>(0)}};
 
     const ComparisonCase amberTests[] = {{"modfstruct", "modf and modfStruct"},
                                          {"frexpstruct", "frexp and frexpStruct"}};
@@ -21149,6 +21169,7 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     computeTests->addChild(createLocalSizeGroup(testCtx, false));
     computeTests->addChild(createLocalSizeGroup(testCtx, true));
     computeTests->addChild(createNonSemanticInfoGroup(testCtx));
+    computeTests->addChild(createRelaxedWithForwardReferenceGraphicsGroup(testCtx));
     computeTests->addChild(createOpNopGroup(testCtx));
     computeTests->addChild(createOpFUnordGroup(testCtx, TEST_WITHOUT_NAN));
     computeTests->addChild(createOpFUnordGroup(testCtx, TEST_WITH_NAN));

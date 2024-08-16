@@ -283,7 +283,7 @@ string genFragmentShader(const ShaderCaseSpecification &spec)
     shader << setup.str();
 
     shader << "    ";
-    genCompareOp(shader, "dEQP_FragColor", spec.values, DE_NULL);
+    genCompareOp(shader, "dEQP_FragColor", spec.values, nullptr);
 
     shader << "}\n";
     return shader.str();
@@ -383,7 +383,7 @@ string specializeFragmentShader(const ShaderCaseSpecification &spec, const strin
     DE_ASSERT(spec.caseType == glu::sl::CASETYPE_FRAGMENT_ONLY);
 
     genCompareFunctions(decl, spec.values, false);
-    genCompareOp(output, "dEQP_FragColor", spec.values, DE_NULL);
+    genCompareOp(output, "dEQP_FragColor", spec.values, nullptr);
 
     decl << "layout(location = 0) out mediump vec4 dEQP_FragColor;\n";
 
@@ -484,7 +484,7 @@ map<string, string> generateFragmentSpecialization(const ProgramSpecializationPa
     map<string, string> params;
 
     genCompareFunctions(decl, specParams.caseSpec.values, false);
-    genCompareOp(output, "dEQP_FragColor", specParams.caseSpec.values, DE_NULL);
+    genCompareOp(output, "dEQP_FragColor", specParams.caseSpec.values, nullptr);
 
     decl << "layout(location = 0) out mediump vec4 dEQP_FragColor;\n";
 
@@ -780,7 +780,7 @@ Move<vk::VkBuffer> createBuffer(Context &context, vk::VkDeviceSize size, vk::VkB
     const uint32_t queueFamilyIndex     = context.getUniversalQueueFamilyIndex();
     const vk::VkBufferCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-        DE_NULL,                                  // pNext
+        nullptr,                                  // pNext
         0u,                                       // flags
         size,                                     // size
         usageFlags,                               // usage
@@ -798,7 +798,7 @@ Move<vk::VkImage> createImage2D(Context &context, uint32_t width, uint32_t heigh
     const uint32_t queueFamilyIndex    = context.getUniversalQueueFamilyIndex();
     const vk::VkImageCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
-        DE_NULL,                                 // pNext
+        nullptr,                                 // pNext
         0u,                                      // flags
         vk::VK_IMAGE_TYPE_2D,                    // imageType
         format,                                  // format
@@ -821,7 +821,7 @@ Move<vk::VkImageView> createAttachmentView(Context &context, vk::VkImage image, 
 {
     const vk::VkImageViewCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // sType
-        DE_NULL,                                      // pNext
+        nullptr,                                      // pNext
         0u,                                           // flags
         image,                                        // image
         vk::VK_IMAGE_VIEW_TYPE_2D,                    // viewType
@@ -874,25 +874,25 @@ Move<vk::VkRenderPass> createRenderPass(Context &context, vk::VkFormat colorAttF
         (vk::VkSubpassDescriptionFlags)0,
         vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
         0u,                                  // inputCount
-        DE_NULL,                             // pInputAttachments
+        nullptr,                             // pInputAttachments
         size,                                // colorCount
         &colorAttRef[0],                     // pColorAttachments
-        DE_NULL,                             // pResolveAttachments
+        nullptr,                             // pResolveAttachments
         &dsAttRef,                           // depthStencilAttachment
         0u,                                  // preserveCount
-        DE_NULL,                             // pPreserveAttachments
+        nullptr,                             // pPreserveAttachments
 
     };
     const vk::VkRenderPassCreateInfo renderPassParams = {
         vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (vk::VkRenderPassCreateFlags)0,
         size,             // attachmentCount
         &colorAttDesc[0], // pAttachments
         1u,               // subpassCount
         &subpassDesc,     // pSubpasses
         0u,               // dependencyCount
-        DE_NULL,          // pDependencies
+        nullptr,          // pDependencies
     };
 
     return vk::createRenderPass(context.getDeviceInterface(), context.getDevice(), &renderPassParams);
@@ -926,12 +926,12 @@ Move<vk::VkPipelineLayout> createPipelineLayout(Context &context, vk::VkDescript
 {
     const vk::VkPipelineLayoutCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                           // pNext
+        nullptr,                                           // pNext
         (vk::VkPipelineLayoutCreateFlags)0,
         1u,                   // descriptorSetCount
         &descriptorSetLayout, // pSetLayouts
         0u,                   // pushConstantRangeCount
-        DE_NULL,              // pPushConstantRanges
+        nullptr,              // pPushConstantRanges
     };
 
     return vk::createPipelineLayout(context.getDeviceInterface(), context.getDevice(), &params);
@@ -1044,17 +1044,17 @@ Move<vk::VkPipeline> createPipeline(Context &context, const vector<Value> &input
                                     tcu::UVec2 renderSize, uint32_t size)
 {
     const vk::VkShaderModule vertShader =
-        program.hasShader(glu::SHADERTYPE_VERTEX) ? program.getShader(glu::SHADERTYPE_VERTEX) : DE_NULL;
+        program.hasShader(glu::SHADERTYPE_VERTEX) ? program.getShader(glu::SHADERTYPE_VERTEX) : VK_NULL_HANDLE;
     const vk::VkShaderModule tessControlShader = program.hasShader(glu::SHADERTYPE_TESSELLATION_CONTROL) ?
                                                      program.getShader(glu::SHADERTYPE_TESSELLATION_CONTROL) :
-                                                     DE_NULL;
+                                                     VK_NULL_HANDLE;
     const vk::VkShaderModule tessEvalShader    = program.hasShader(glu::SHADERTYPE_TESSELLATION_EVALUATION) ?
                                                      program.getShader(glu::SHADERTYPE_TESSELLATION_EVALUATION) :
-                                                     DE_NULL;
+                                                     VK_NULL_HANDLE;
     const vk::VkShaderModule geomShader =
-        program.hasShader(glu::SHADERTYPE_GEOMETRY) ? program.getShader(glu::SHADERTYPE_GEOMETRY) : DE_NULL;
+        program.hasShader(glu::SHADERTYPE_GEOMETRY) ? program.getShader(glu::SHADERTYPE_GEOMETRY) : VK_NULL_HANDLE;
     const vk::VkShaderModule fragShader =
-        program.hasShader(glu::SHADERTYPE_FRAGMENT) ? program.getShader(glu::SHADERTYPE_FRAGMENT) : DE_NULL;
+        program.hasShader(glu::SHADERTYPE_FRAGMENT) ? program.getShader(glu::SHADERTYPE_FRAGMENT) : VK_NULL_HANDLE;
     const vector<vk::VkVertexInputAttributeDescription> vertexAttribParams(
         getVertexAttributeDescriptions(inputValues, inputLayout));
     const vector<vk::VkViewport> viewports(1, vk::makeViewport(renderSize));
@@ -1073,7 +1073,7 @@ Move<vk::VkPipeline> createPipeline(Context &context, const vector<Value> &input
     };
     const vk::VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // sType
-        DE_NULL,                                                       // pNext
+        nullptr,                                                       // pNext
         (vk::VkPipelineVertexInputStateCreateFlags)0,
         (inputValues.empty() ? 1u : 2u),     // bindingCount
         vertexBindings,                      // pVertexBindingDescriptions
@@ -1100,7 +1100,7 @@ Move<vk::VkPipeline> createPipeline(Context &context, const vector<Value> &input
 
     const vk::VkPipelineColorBlendStateCreateInfo blendParams = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // sType
-        DE_NULL,                                                      // pNext
+        nullptr,                                                      // pNext
         (vk::VkPipelineColorBlendStateCreateFlags)0,
         VK_FALSE,                 // logicOpEnable
         vk::VK_LOGIC_OP_COPY,     // logicOp
@@ -1125,9 +1125,9 @@ Move<vk::VkPipeline> createPipeline(Context &context, const vector<Value> &input
         0u,                                      // const uint32_t                                subpass
         0u,                                      // const uint32_t                                patchControlPoints
         &vertexInputStateParams, // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-        DE_NULL,                 // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-        DE_NULL,                 // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-        DE_NULL,                 // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+        nullptr,                 // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+        nullptr,                 // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+        nullptr,                 // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
         &blendParams);           // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
 }
 
@@ -1141,7 +1141,7 @@ Move<vk::VkFramebuffer> createFramebuffer(Context &context, vk::VkRenderPass ren
     }
     const vk::VkFramebufferCreateInfo framebufferParams = {
         vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (vk::VkFramebufferCreateFlags)0,
         renderPass,       // renderPass
         size,             // attachmentCount
@@ -1173,7 +1173,7 @@ Move<vk::VkDescriptorPool> createDescriptorPool(Context &context)
 Move<vk::VkDescriptorSet> allocateDescriptorSet(Context &context, vk::VkDescriptorPool descriptorPool,
                                                 vk::VkDescriptorSetLayout setLayout)
 {
-    const vk::VkDescriptorSetAllocateInfo params = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+    const vk::VkDescriptorSetAllocateInfo params = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                     descriptorPool, 1u, &setLayout};
 
     return vk::allocateDescriptorSet(context.getDeviceInterface(), context.getDevice(), &params);
@@ -1421,7 +1421,7 @@ ShaderCaseInstance::ShaderCaseInstance(Context &context, const ShaderCaseSpecifi
     {
         const vk::VkMemoryBarrier vertFlushBarrier = {
             vk::VK_STRUCTURE_TYPE_MEMORY_BARRIER,                                     // sType
-            DE_NULL,                                                                  // pNext
+            nullptr,                                                                  // pNext
             vk::VK_ACCESS_HOST_WRITE_BIT,                                             // srcAccessMask
             vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | vk::VK_ACCESS_UNIFORM_READ_BIT, // dstAccessMask
         };
@@ -1430,7 +1430,7 @@ ShaderCaseInstance::ShaderCaseInstance(Context &context, const ShaderCaseSpecifi
         {
             vk::VkImageMemoryBarrier barrier = {
                 vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // sType
-                DE_NULL,                                      // pNext
+                nullptr,                                      // pNext
                 0u,                                           // srcAccessMask
                 vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // dstAccessMask
                 vk::VK_IMAGE_LAYOUT_UNDEFINED,                // oldLayout
@@ -1449,8 +1449,8 @@ ShaderCaseInstance::ShaderCaseInstance(Context &context, const ShaderCaseSpecifi
             colorAttBarrier[outNdx] = barrier;
         }
         vkd.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                               (vk::VkDependencyFlags)0, 1, &vertFlushBarrier, 0,
-                               (const vk::VkBufferMemoryBarrier *)DE_NULL, m_outputCount, &colorAttBarrier[0]);
+                               (vk::VkDependencyFlags)0, 1, &vertFlushBarrier, 0, nullptr, m_outputCount,
+                               &colorAttBarrier[0]);
     }
 
     {
@@ -1468,12 +1468,12 @@ ShaderCaseInstance::ShaderCaseInstance(Context &context, const ShaderCaseSpecifi
 
     if (!m_spec.values.uniforms.empty() || !m_spec.values.outputs.empty())
         vkd.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u,
-                                  &*m_descriptorSet, 0u, DE_NULL);
+                                  &*m_descriptorSet, 0u, nullptr);
 
     {
         const vk::VkBuffer buffers[]     = {*m_posNdxBuffer, *m_inputBuffer};
         const vk::VkDeviceSize offsets[] = {POSITIONS_OFFSET, 0u};
-        const uint32_t numBuffers        = buffers[1] != 0 ? 2u : 1u;
+        const uint32_t numBuffers        = buffers[1] != VK_NULL_HANDLE ? 2u : 1u;
         vkd.cmdBindVertexBuffers(*m_cmdBuffer, 0u, numBuffers, buffers, offsets);
     }
 
@@ -1487,7 +1487,7 @@ ShaderCaseInstance::ShaderCaseInstance(Context &context, const ShaderCaseSpecifi
         {
             vk::VkImageMemoryBarrier barrier = {
                 vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // sType
-                DE_NULL,                                      // pNext
+                nullptr,                                      // pNext
                 vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // srcAccessMask
                 vk::VK_ACCESS_TRANSFER_READ_BIT,              // dstAccessMask
                 vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // oldLayout
@@ -1507,8 +1507,8 @@ ShaderCaseInstance::ShaderCaseInstance(Context &context, const ShaderCaseSpecifi
         }
 
         vkd.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                               (const vk::VkBufferMemoryBarrier *)DE_NULL, m_outputCount, &renderFinishBarrier[0]);
+                               (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, m_outputCount,
+                               &renderFinishBarrier[0]);
     }
 
     {
@@ -1541,7 +1541,7 @@ ShaderCaseInstance::ShaderCaseInstance(Context &context, const ShaderCaseSpecifi
         {
             vk::VkBufferMemoryBarrier barrier = {
                 vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // sType
-                DE_NULL,                                     // pNext
+                nullptr,                                     // pNext
                 vk::VK_ACCESS_TRANSFER_WRITE_BIT,            // srcAccessMask
                 vk::VK_ACCESS_HOST_READ_BIT,                 // dstAccessMask
                 queueFamilyIndex,                            // srcQueueFamilyIndex
@@ -1553,8 +1553,7 @@ ShaderCaseInstance::ShaderCaseInstance(Context &context, const ShaderCaseSpecifi
             copyFinishBarrier[outNdx] = barrier;
         }
         vkd.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                               (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, m_outputCount,
-                               &copyFinishBarrier[0], 0, (const vk::VkImageMemoryBarrier *)DE_NULL);
+                               (vk::VkDependencyFlags)0, 0, nullptr, m_outputCount, &copyFinishBarrier[0], 0, nullptr);
     }
 
     endCommandBuffer(vkd, *m_cmdBuffer);

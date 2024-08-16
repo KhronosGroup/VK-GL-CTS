@@ -217,10 +217,10 @@ CacheTestInstance::CacheTestInstance(Context &context, const CacheTestParam *par
     {
         const VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             0u,                                           // VkPipelineCacheCreateFlags flags;
             0u,                                           // uintptr_t initialDataSize;
-            DE_NULL,                                      // const void* pInitialData;
+            nullptr,                                      // const void* pInitialData;
         };
 
         m_cache = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
@@ -427,12 +427,12 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance(Context &context, const Cac
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout =
@@ -476,7 +476,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance(Context &context, const Cac
         VkPipeline basePipeline =
             (ndx == PIPELINE_CACHE_NDX_DERIVATIVE && m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE].wasBuild()) ?
                 m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE].getPipeline() :
-                DE_NULL;
+                VK_NULL_HANDLE;
 
         preparePipelineWrapper(m_pipeline[ndx], vertShaderModule, tescShaderModule, teseShaderModule, geomShaderModule,
                                fragShaderModule, &m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * ndx],
@@ -535,7 +535,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper &
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateParams{
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
         1u,                                                        // uint32_t vertexBindingDescriptionCount;
         &vertexInputBindingDescription,   // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -560,7 +560,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper &
 
     const VkPipelineColorBlendStateCreateInfo colorBlendStateParams{
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
         VK_FALSE,                                                 // VkBool32 logicOpEnable;
         VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -571,7 +571,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper &
 
     VkPipelineDepthStencilStateCreateInfo depthStencilStateParams{
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags;
         VK_TRUE,                                                    // VkBool32 depthTestEnable;
         VK_TRUE,                                                    // VkBool32 depthWriteEnable;
@@ -650,16 +650,16 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper &
                                                          VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
         .setDefaultRasterizationState()
         .setDefaultMultisampleState()
-        .setupVertexInputState(&vertexInputStateParams, DE_NULL, *m_cache, pipelineCreationFeedbackWrapper[0])
+        .setupVertexInputState(&vertexInputStateParams, nullptr, *m_cache, pipelineCreationFeedbackWrapper[0])
         .setupPreRasterizationShaderState(viewport, scissor, m_pipelineLayout, *m_renderPass, 0u, vertShaderModule,
-                                          DE_NULL, tescShaderModule, teseShaderModule, geomShaderModule, DE_NULL,
+                                          nullptr, tescShaderModule, teseShaderModule, geomShaderModule, nullptr,
                                           nullptr, nullptr, *m_cache, pipelineCreationFeedbackWrapper[1])
         .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragShaderModule, &depthStencilStateParams,
-                                  DE_NULL, DE_NULL, *m_cache, pipelineCreationFeedbackWrapper[2])
-        .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams, DE_NULL, *m_cache,
+                                  nullptr, nullptr, *m_cache, pipelineCreationFeedbackWrapper[2])
+        .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams, nullptr, *m_cache,
                                   pipelineCreationFeedbackWrapper[3])
         .setMonolithicPipelineLayout(m_pipelineLayout)
-        .buildPipeline(*m_cache, basePipelineHandle, basePipelineHandle != DE_NULL ? -1 : 0,
+        .buildPipeline(*m_cache, basePipelineHandle, basePipelineHandle != VK_NULL_HANDLE ? -1 : 0,
                        pipelineCreationFeedbackWrapper[4]);
 }
 
@@ -978,7 +978,7 @@ void ComputeCacheTestInstance::buildShader(uint32_t ndx)
     // Create compute shader
     VkShaderModuleCreateInfo shaderModuleCreateInfo = {
         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,                              // VkStructureType sType;
-        DE_NULL,                                                                  // const void* pNext;
+        nullptr,                                                                  // const void* pNext;
         0u,                                                                       // VkShaderModuleCreateFlags flags;
         m_context.getBinaryCollection().get(shader_name).getSize(),               // uintptr_t codeSize;
         (uint32_t *)m_context.getBinaryCollection().get(shader_name).getBinary(), // const uint32_t* pCode;
@@ -997,7 +997,7 @@ void ComputeCacheTestInstance::buildPipeline(const CacheTestParam *param, uint32
 
     const VkPipelineCreationFeedbackCreateInfoEXT pipelineCreationFeedbackCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                                      // const void * pNext;
+        nullptr,                                                      // const void * pNext;
         &m_pipelineCreationFeedback[ndx],     // VkPipelineCreationFeedbackEXT* pPipelineCreationFeedback;
         zeroOutFeedbackCount ? 0u : 1u,       // uint32_t pipelineStageCreationFeedbackCount;
         &m_pipelineStageCreationFeedback[ndx] // VkPipelineCreationFeedbackEXT* pPipelineStageCreationFeedbacks;
@@ -1006,24 +1006,24 @@ void ComputeCacheTestInstance::buildPipeline(const CacheTestParam *param, uint32
     // Create compute pipeline layout
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         0u,                                            // VkPipelineLayoutCreateFlags flags;
         1u,                                            // uint32_t setLayoutCount;
         &m_descriptorSetLayout[ndx].get(),             // const VkDescriptorSetLayout* pSetLayouts;
         0u,                                            // uint32_t pushConstantRangeCount;
-        DE_NULL,                                       // const VkPushConstantRange* pPushConstantRanges;
+        nullptr,                                       // const VkPushConstantRange* pPushConstantRanges;
     };
 
     m_pipelineLayout[ndx] = createPipelineLayout(vk, vkDevice, &pipelineLayoutCreateInfo);
 
     const VkPipelineShaderStageCreateInfo stageCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                             // const void* pNext;
+        nullptr,                                             // const void* pNext;
         0u,                                                  // VkPipelineShaderStageCreateFlags flags;
         VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
         *m_computeShaderModule[ndx],                         // VkShaderModule module;
         "main",                                              // const char* pName;
-        DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+        nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
     };
 
     VkComputePipelineCreateInfo pipelineCreateInfo = {
@@ -1032,7 +1032,7 @@ void ComputeCacheTestInstance::buildPipeline(const CacheTestParam *param, uint32
         0u,                                             // VkPipelineCreateFlags flags;
         stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
         *m_pipelineLayout[ndx],                         // VkPipelineLayout layout;
-        (VkPipeline)0,                                  // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0u,                                             // int32_t basePipelineIndex;
     };
 
@@ -1052,21 +1052,21 @@ void ComputeCacheTestInstance::buildPipeline(const CacheTestParam *param, uint32
     {
         // Destroy the NO_CACHE pipeline to check that the cached one really hits cache,
         // except for the case where we're testing cache hit of a pipeline still active.
-        vk.destroyPipeline(vkDevice, m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE], DE_NULL);
+        vk.destroyPipeline(vkDevice, m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE], nullptr);
     }
 
-    vk.createComputePipelines(vkDevice, *m_cache, 1u, &pipelineCreateInfo, DE_NULL, &m_pipeline[ndx]);
+    vk.createComputePipelines(vkDevice, *m_cache, 1u, &pipelineCreateInfo, nullptr, &m_pipeline[ndx]);
 
     if (ndx != PIPELINE_CACHE_NDX_NO_CACHE)
     {
         // Destroy the pipeline as soon as it is created, except the NO_CACHE because
         // it is needed as a base pipeline for the derivative case.
-        vk.destroyPipeline(vkDevice, m_pipeline[ndx], DE_NULL);
+        vk.destroyPipeline(vkDevice, m_pipeline[ndx], nullptr);
 
         if (ndx == PIPELINE_CACHE_NDX_CACHED && param->isDelayedDestroy())
         {
             // Destroy the pipeline we didn't destroy earlier for the isDelayedDestroy case.
-            vk.destroyPipeline(vkDevice, m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE], DE_NULL);
+            vk.destroyPipeline(vkDevice, m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE], nullptr);
         }
     }
 }

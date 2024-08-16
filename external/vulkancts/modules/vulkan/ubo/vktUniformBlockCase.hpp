@@ -155,7 +155,7 @@ private:
 
         Data(void)
         {
-            array.elementType = DE_NULL;
+            array.elementType = nullptr;
             array.size        = 0;
         }
     } m_data;

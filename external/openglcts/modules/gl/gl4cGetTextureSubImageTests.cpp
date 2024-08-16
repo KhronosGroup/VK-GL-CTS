@@ -74,9 +74,9 @@ gl4cts::GetTextureSubImage::Errors::Errors(deqp::Context &context)
     , m_texture_rectangle(0)
     , m_texture_2D_compressed(0)
     , m_texture_2D_multisampled(0)
-    , m_destination_buffer(DE_NULL)
-    , m_gl_GetTextureSubImage(DE_NULL)
-    , m_gl_GetCompressedTextureSubImage(DE_NULL)
+    , m_destination_buffer(nullptr)
+    , m_gl_GetTextureSubImage(nullptr)
+    , m_gl_GetCompressedTextureSubImage(nullptr)
 {
 }
 
@@ -229,7 +229,7 @@ void gl4cts::GetTextureSubImage::Errors::prepare()
         (PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC)m_context.getRenderContext().getProcAddress(
             "glGetCompressedTextureSubImage");
 
-    if ((DE_NULL == m_gl_GetTextureSubImage) || (DE_NULL == m_gl_GetCompressedTextureSubImage))
+    if ((nullptr == m_gl_GetTextureSubImage) || (nullptr == m_gl_GetCompressedTextureSubImage))
     {
         throw 0;
     }
@@ -237,7 +237,7 @@ void gl4cts::GetTextureSubImage::Errors::prepare()
     /* Allocate destination buffer. */
     m_destination_buffer = (glw::GLubyte *)malloc(s_destination_buffer_size);
 
-    if (DE_NULL == m_destination_buffer)
+    if (nullptr == m_destination_buffer)
     {
         throw 0;
     }
@@ -690,7 +690,7 @@ void gl4cts::GetTextureSubImage::Errors::clean()
     if (m_destination_buffer)
     {
         free(m_destination_buffer);
-        m_destination_buffer = DE_NULL;
+        m_destination_buffer = nullptr;
     }
 }
 
@@ -766,7 +766,7 @@ tcu::TestNode::IterateResult gl4cts::GetTextureSubImage::Functional::iterate(voi
     try
     {
         /* Report error when function pointers are not available. */
-        if ((DE_NULL == m_gl_GetCompressedTextureSubImage) || (DE_NULL == m_gl_GetTextureSubImage))
+        if ((nullptr == m_gl_GetCompressedTextureSubImage) || (nullptr == m_gl_GetTextureSubImage))
         {
             m_testCtx.getLog()
                 << tcu::TestLog::Message
@@ -1045,7 +1045,7 @@ bool gl4cts::GetTextureSubImage::Functional::check(glw::GLenum target, bool is_c
     /* Storage for fetched texturte. */
     glw::GLubyte *texture_data = new glw::GLubyte[size];
 
-    if (DE_NULL == texture_data)
+    if (nullptr == texture_data)
     {
         throw 0;
     }

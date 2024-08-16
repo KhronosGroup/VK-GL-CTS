@@ -41,7 +41,7 @@ Resource *AssetArchive::getResource(const char *name) const
     return new AssetResource(m_assetMgr, name);
 }
 
-AssetResource::AssetResource(AAssetManager *assetMgr, const char *name) : Resource(name), m_asset(DE_NULL)
+AssetResource::AssetResource(AAssetManager *assetMgr, const char *name) : Resource(name), m_asset(nullptr)
 {
     m_asset = AAssetManager_open(assetMgr, name, AASSET_MODE_RANDOM);
 

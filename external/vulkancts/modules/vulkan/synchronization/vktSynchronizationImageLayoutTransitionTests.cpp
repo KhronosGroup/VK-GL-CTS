@@ -63,7 +63,7 @@ inline VkImageCreateInfo makeImageCreateInfo()
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, //  VkStructureType         sType;
-        DE_NULL,                             //  const void*             pNext;
+        nullptr,                             //  const void*             pNext;
         0,                                   //  VkImageCreateFlags      flags;
         VK_IMAGE_TYPE_2D,                    //  VkImageType             imageType;
         FORMAT,                              //  VkFormat                format;
@@ -75,7 +75,7 @@ inline VkImageCreateInfo makeImageCreateInfo()
         usage,                               //  VkImageUsageFlags       usage;
         VK_SHARING_MODE_EXCLUSIVE,           //  VkSharingMode           sharingMode;
         0u,                                  //  uint32_t                queueFamilyIndexCount;
-        DE_NULL,                             //  const uint32_t*         pQueueFamilyIndices;
+        nullptr,                             //  const uint32_t*         pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           //  VkImageLayout           initialLayout;
     };
 
@@ -86,7 +86,7 @@ Move<VkBuffer> makeVertexBuffer(const DeviceInterface &vk, const VkDevice device
 {
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType      sType;
-        DE_NULL,                              // const void*          pNext;
+        nullptr,                              // const void*          pNext;
         0u,                                   // VkBufferCreateFlags  flags;
         1024u,                                // VkDeviceSize         size;
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags   usage;
@@ -213,7 +213,7 @@ tcu::TestStatus SynchronizationImageLayoutTransitionTestInstance::iterate(void)
     const Move<VkShaderModule> fragmentModule =
         createShaderModule(vk, device, m_context.getBinaryCollection().get("frag1"), 0u);
 
-    const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, DE_NULL);
+    const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, VK_NULL_HANDLE);
 
     const VkPipelineColorBlendAttachmentState clrBlendAttachmentState = {
         VK_TRUE,                             // VkBool32                 blendEnable;
@@ -228,7 +228,7 @@ tcu::TestStatus SynchronizationImageLayoutTransitionTestInstance::iterate(void)
 
     const VkPipelineColorBlendStateCreateInfo clrBlendStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                               sType;
-        DE_NULL,                                  // const void*                                   pNext;
+        nullptr,                                  // const void*                                   pNext;
         (VkPipelineColorBlendStateCreateFlags)0u, // VkPipelineColorBlendStateCreateFlags          flags;
         VK_FALSE,                                 // VkBool32                                      logicOpEnable;
         VK_LOGIC_OP_CLEAR,                        // VkLogicOp                                     logicOp;
@@ -242,7 +242,7 @@ tcu::TestStatus SynchronizationImageLayoutTransitionTestInstance::iterate(void)
 
     const VkPipelineVertexInputStateCreateInfo vtxInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags;
         1u,                     // uint32_t                                    vertexBindingDescriptionCount;
         &vtxBindingDescription, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions
@@ -252,9 +252,9 @@ tcu::TestStatus SynchronizationImageLayoutTransitionTestInstance::iterate(void)
     };
 
     const Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
-        vk, device, pipelineLayout.get(), vertexModule.get(), DE_NULL, DE_NULL, DE_NULL, fragmentModule.get(),
-        renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vtxInputStateCreateInfo,
-        DE_NULL, DE_NULL, DE_NULL, &clrBlendStateCreateInfo);
+        vk, device, pipelineLayout.get(), vertexModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        fragmentModule.get(), renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
+        &vtxInputStateCreateInfo, nullptr, nullptr, nullptr, &clrBlendStateCreateInfo);
 
     const VkBufferCreateInfo resultBufferCreateInfo =
         makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
@@ -277,7 +277,7 @@ tcu::TestStatus SynchronizationImageLayoutTransitionTestInstance::iterate(void)
     vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
 
-    beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), 0, DE_NULL);
+    beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), 0, nullptr);
     vk.cmdDraw(*cmdBuffer, static_cast<uint32_t>(vertices.size()), 1u, 0u, 0u);
     endRenderPass(vk, *cmdBuffer);
 
@@ -294,14 +294,14 @@ tcu::TestStatus SynchronizationImageLayoutTransitionTestInstance::iterate(void)
         targetImage.get(),                             // VkImage                     image
         targetSubresourceRange                         // VkImageSubresourceRange     subresourceRange
     );
-    VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+    VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
 #ifndef CTS_USES_VULKANSC
     vk.cmdPipelineBarrier2(cmdBuffer.get(), &dependencyInfo);
 #else
     vk.cmdPipelineBarrier2KHR(cmdBuffer.get(), &dependencyInfo);
 #endif // CTS_USES_VULKANSC
 
-    beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), 0, DE_NULL);
+    beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), 0, nullptr);
     vk.cmdDraw(*cmdBuffer, static_cast<uint32_t>(vertices.size()), 1u, 0u, 0u);
     endRenderPass(vk, *cmdBuffer);
 

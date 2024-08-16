@@ -548,8 +548,8 @@ void SlicedViewTestInstance::runPipeline(const DeviceInterface &vkd, const VkDev
     m_pipelineLayout = makePipelineLayout(vkd, device, m_setLayout.get());
 
     DescriptorSetUpdateBuilder updateBuilder;
-    const auto slicedImageDescInfo   = makeDescriptorImageInfo(DE_NULL, slicedImage, kUsageLayout);
-    const auto auxiliarImageDescInfo = makeDescriptorImageInfo(DE_NULL, auxiliarImage, kUsageLayout);
+    const auto slicedImageDescInfo   = makeDescriptorImageInfo(VK_NULL_HANDLE, slicedImage, kUsageLayout);
+    const auto auxiliarImageDescInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, auxiliarImage, kUsageLayout);
     updateBuilder.writeSingle(m_descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType,
                               &slicedImageDescInfo);
     updateBuilder.writeSingle(m_descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(1u), descriptorType,
@@ -583,9 +583,10 @@ void SlicedViewTestInstance::runGraphicsPipeline(const DeviceInterface &vkd, con
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
 
-    m_pipeline = makeGraphicsPipeline(vkd, device, m_pipelineLayout.get(), vertShader.get(), DE_NULL, DE_NULL, DE_NULL,
-                                      fragShader.get(), m_renderPass.get(), viewports, scissors,
-                                      VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputStateCreateInfo);
+    m_pipeline =
+        makeGraphicsPipeline(vkd, device, m_pipelineLayout.get(), vertShader.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, fragShader.get(), m_renderPass.get(), viewports, scissors,
+                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputStateCreateInfo);
 
     beginRenderPass(vkd, cmdBuffer, m_renderPass.get(), m_framebuffer.get(), scissors.at(0u));
     vkd.cmdBindPipeline(cmdBuffer, bindPoint, m_pipeline.get());
@@ -675,7 +676,7 @@ bool SlicedViewTestInstance::runSamplingPipeline(const VkImage fullImage, const 
 
     DescriptorSetUpdateBuilder updateBuilder;
     const auto sampledImageInfo = makeDescriptorImageInfo(sampler.get(), slicedView, kUsageLayout);
-    const auto storageImageInfo = makeDescriptorImageInfo(DE_NULL, auxiliarView.get(), kUsageLayout);
+    const auto storageImageInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, auxiliarView.get(), kUsageLayout);
     updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &sampledImageInfo);
     updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(1u),

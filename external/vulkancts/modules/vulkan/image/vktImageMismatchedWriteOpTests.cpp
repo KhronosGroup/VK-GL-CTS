@@ -275,7 +275,7 @@ StorageImage2D::StorageImage2D(Context &context, VkFormat vkFormat, const int wi
 
         const VkImageCreateInfo imageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,         // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             imageCreateFlags,                            // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                            // VkImageType imageType;
             m_vkFormat,                                  // VkFormat format;
@@ -330,8 +330,7 @@ void StorageImage2D::upload(const VkCommandBuffer cmdBuffer)
                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *m_image, fullImageSubresourceRange);
 
         vki.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 1,
-                               &beforeCopyBarrier);
+                               (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 1, &beforeCopyBarrier);
     }
 
     vki.cmdCopyBufferToImage(cmdBuffer, m_buffer.getBuffer(), *m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u,
@@ -347,8 +346,7 @@ void StorageImage2D::upload(const VkCommandBuffer cmdBuffer)
                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_layout, *m_image, fullImageSubresourceRange);
 
         vki.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                               (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 1,
-                               &afterCopyBarrier);
+                               (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 1, &afterCopyBarrier);
     }
 }
 
@@ -368,8 +366,7 @@ void StorageImage2D::download(const VkCommandBuffer cmdBuffer)
                                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *m_image, fullImageSubresourceRange);
 
         vki.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 1,
-                               &beforeCopyBarrier);
+                               (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 1, &beforeCopyBarrier);
     }
 
     vki.cmdCopyImageToBuffer(cmdBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_buffer.getBuffer(), 1,
@@ -384,8 +381,7 @@ void StorageImage2D::download(const VkCommandBuffer cmdBuffer)
                                    m_layout, *m_image, fullImageSubresourceRange);
 
         vki.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                               (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 1,
-                               &afterCopyBarrier);
+                               (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 1, &afterCopyBarrier);
     }
 }
 
@@ -406,7 +402,7 @@ StorageBuffer2D::StorageBuffer2D(Context &context, const tcu::TextureFormat &for
 
     const VkBufferCreateInfo bufferCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         m_bufferSize,                         // VkDeviceSize size;
         bufferUsageFlags,                     // VkBufferUsageFlags usage;
@@ -940,7 +936,8 @@ tcu::TestStatus MismatchedWriteOpTestInstance::iterate(void)
 
     ut::StorageBuffer2D buffer(m_context, m_test->getBufferFormat(), m_params->textureWidth, m_params->textureHeight);
 
-    VkDescriptorImageInfo inputImageInfo = makeDescriptorImageInfo(DE_NULL, image.getView(), VK_IMAGE_LAYOUT_GENERAL);
+    VkDescriptorImageInfo inputImageInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, image.getView(), VK_IMAGE_LAYOUT_GENERAL);
     VkDescriptorBufferInfo outputBufferInfo = makeDescriptorBufferInfo(buffer.getBuffer(), 0u, buffer.getSize());
 
     DescriptorSetUpdateBuilder builder;
@@ -958,7 +955,7 @@ tcu::TestStatus MismatchedWriteOpTestInstance::iterate(void)
     image.upload(*cmdBuffer);
     vki.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     vki.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(),
-                              0u, DE_NULL);
+                              0u, nullptr);
     vki.cmdDispatch(*cmdBuffer, m_params->textureWidth, m_params->textureHeight, 1);
     image.download(*cmdBuffer);
     endCommandBuffer(vki, *cmdBuffer);

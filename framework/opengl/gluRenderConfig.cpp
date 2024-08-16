@@ -151,7 +151,7 @@ void parseRenderConfig(RenderConfig *config, const tcu::CommandLine &cmdLine)
     if (cmdLine.getSurfaceHeight() > 0)
         config->height = cmdLine.getSurfaceHeight();
 
-    if (cmdLine.getGLConfigName() != DE_NULL)
+    if (cmdLine.getGLConfigName() != nullptr)
         parseConfigBitsFromName(config, cmdLine.getGLConfigName());
 
     if (cmdLine.getGLConfigId() >= 0)

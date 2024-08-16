@@ -138,13 +138,13 @@ Move<VkBuffer> createBuffer(const DeviceInterface &vkd, VkDevice device, VkDevic
                             VkBufferUsageFlags usageFlags)
 {
     const VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                                           DE_NULL,
+                                           nullptr,
                                            (VkBufferCreateFlags)0,
                                            size,
                                            usageFlags,
                                            VK_SHARING_MODE_EXCLUSIVE,
                                            0u,
-                                           DE_NULL};
+                                           nullptr};
     return createBuffer(vkd, device, &createInfo);
 }
 
@@ -511,7 +511,7 @@ static BufferInterface *createTestBuffer(DataType type, AtomicOperation atomicOp
         return new TestBufferFloatingPoint<double>(atomicOp);
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -939,9 +939,9 @@ tcu::TestStatus AtomicOperationCaseInstance::iterate(void)
     Move<VkDescriptorPool> extraResourcesSetPool;
     Move<VkDescriptorSet> extraResourcesSet;
 
-    const VkDescriptorSetLayoutBinding bindings[] = {{0u, descType, 1, VK_SHADER_STAGE_ALL, DE_NULL}};
+    const VkDescriptorSetLayoutBinding bindings[] = {{0u, descType, 1, VK_SHADER_STAGE_ALL, nullptr}};
 
-    const VkDescriptorSetLayoutCreateInfo layoutInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, DE_NULL,
+    const VkDescriptorSetLayoutCreateInfo layoutInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr,
                                                         (VkDescriptorSetLayoutCreateFlags)0u,
                                                         DE_LENGTH_OF_ARRAY(bindings), bindings};
 
@@ -951,7 +951,7 @@ tcu::TestStatus AtomicOperationCaseInstance::iterate(void)
 
     const VkDescriptorPoolCreateInfo poolInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
         1u, // maxSets
         DE_LENGTH_OF_ARRAY(poolSizes),
@@ -959,7 +959,7 @@ tcu::TestStatus AtomicOperationCaseInstance::iterate(void)
 
     extraResourcesSetPool = createDescriptorPool(vkd, device, &poolInfo);
 
-    const VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+    const VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                    *extraResourcesSetPool, 1u, &extraResourcesLayout.get()};
 
     extraResourcesSet = allocateDescriptorSet(vkd, device, &allocInfo);
@@ -970,17 +970,17 @@ tcu::TestStatus AtomicOperationCaseInstance::iterate(void)
     bufferInfo.range  = VK_WHOLE_SIZE;
 
     const VkWriteDescriptorSet descriptorWrite = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                                  DE_NULL,
+                                                  nullptr,
                                                   *extraResourcesSet,
                                                   0u, // dstBinding
                                                   0u, // dstArrayElement
                                                   1u,
                                                   descType,
-                                                  (const VkDescriptorImageInfo *)DE_NULL,
+                                                  nullptr,
                                                   &bufferInfo,
-                                                  (const VkBufferView *)DE_NULL};
+                                                  nullptr};
 
-    vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+    vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, nullptr);
 
     // Storage for output varying data.
     std::vector<uint32_t> outputs(NUM_ELEMENTS);
@@ -996,7 +996,7 @@ tcu::TestStatus AtomicOperationCaseInstance::iterate(void)
     UniquePtr<ShaderExecutor> executor(
         createExecutor(m_context, m_shaderType.getType(), m_shaderSpec, *extraResourcesLayout));
 
-    executor->execute(numWorkGroups, DE_NULL, &outputPtr[0], *extraResourcesSet);
+    executor->execute(numWorkGroups, nullptr, &outputPtr[0], *extraResourcesSet);
     buffer.invalidate();
 
     tcu::ResultCollector resultCollector(log);

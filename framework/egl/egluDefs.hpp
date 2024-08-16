@@ -25,7 +25,7 @@
 
 #include "tcuDefs.hpp"
 
-#define EGLU_CHECK(EGLW) eglu::checkError((EGLW).getError(), DE_NULL, __FILE__, __LINE__)
+#define EGLU_CHECK(EGLW) eglu::checkError((EGLW).getError(), nullptr, __FILE__, __LINE__)
 #define EGLU_CHECK_MSG(EGLW, MSG) eglu::checkError((EGLW).getError(), MSG, __FILE__, __LINE__)
 #define EGLU_CHECK_CALL(EGLW, CALL)                                     \
     do                                                                  \

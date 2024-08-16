@@ -119,7 +119,7 @@ public:
     }
 
     virtual IterateResult iterate(void);
-    virtual void render(sglr::Context &context) = DE_NULL;
+    virtual void render(sglr::Context &context) = 0;
 };
 
 DepthCase::DepthCase(Context &context, const char *name, const char *description) : TestCase(context, name, description)
@@ -132,7 +132,7 @@ TestCase::IterateResult DepthCase::iterate(void)
     glu::RenderContext &renderCtx         = m_context.getRenderContext();
     const tcu::RenderTarget &renderTarget = renderCtx.getRenderTarget();
     tcu::TestLog &log                     = m_testCtx.getLog();
-    const char *failReason                = DE_NULL;
+    const char *failReason                = nullptr;
 
     // Position & size for context
     de::Random rnd(deStringHash(getName()));

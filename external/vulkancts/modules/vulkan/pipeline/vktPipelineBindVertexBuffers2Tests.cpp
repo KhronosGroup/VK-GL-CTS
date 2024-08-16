@@ -60,7 +60,7 @@ vk::VkImageCreateInfo makeImageCreateInfo(const vk::VkExtent2D extent, const vk:
 {
     const vk::VkImageCreateInfo imageParams = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,          // VkStructureType sType;
-        DE_NULL,                                          // const void* pNext;
+        nullptr,                                          // const void* pNext;
         (vk::VkImageCreateFlags)0u,                       // VkImageCreateFlags flags;
         vk::VK_IMAGE_TYPE_2D,                             // VkImageType imageType;
         format,                                           // VkFormat format;
@@ -72,7 +72,7 @@ vk::VkImageCreateInfo makeImageCreateInfo(const vk::VkExtent2D extent, const vk:
         usage,                                            // VkImageUsageFlags usage;
         vk::VK_SHARING_MODE_EXCLUSIVE,                    // VkSharingMode sharingMode;
         0u,                                               // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                          // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                          // const uint32_t* pQueueFamilyIndices;
         vk::VK_IMAGE_LAYOUT_UNDEFINED,                    // VkImageLayout initialLayout;
     };
     return imageParams;
@@ -144,7 +144,7 @@ vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
     // Create a universal queue that supports graphics and compute
     const vk::VkDeviceQueueCreateInfo queueParams = {
         vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         0u,                                             // VkDeviceQueueCreateFlags flags;
         context.getUniversalQueueFamilyIndex(),         // uint32_t queueFamilyIndex;
         1u,                                             // uint32_t queueCount;
@@ -178,7 +178,7 @@ vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
         {
             pcCI = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                     VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                 context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
@@ -284,12 +284,12 @@ tcu::TestStatus BindBuffers2Instance::iterate(void)
 
     const vk::VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                           // const void* pNext;
+        nullptr,                                           // const void* pNext;
         0u,                                                // VkPipelineLayoutCreateFlags flags;
         0u,                                                // uint32_t descriptorSetCount;
-        DE_NULL,                                           // const VkDescriptorSetLayout* pSetLayouts;
+        nullptr,                                           // const VkDescriptorSetLayout* pSetLayouts;
         0u,                                                // uint32_t pushConstantRangeCount;
-        DE_NULL                                            // const VkPushDescriptorRange* pPushDescriptorRanges;
+        nullptr                                            // const VkPushDescriptorRange* pPushDescriptorRanges;
     };
 
     const vk::VkImageSubresourceRange colorSubresourceRange =
@@ -660,7 +660,7 @@ vk::VkDevice BindVertexBuffers2Instance::getDevice() const
 
 vk::VkQueue BindVertexBuffers2Instance::getQueue() const
 {
-    vk::VkQueue queue = DE_NULL;
+    vk::VkQueue queue = VK_NULL_HANDLE;
     if (m_robustness2)
     {
         const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
@@ -726,7 +726,7 @@ void BindVertexBuffers2Instance::createPipeline(const vk::PipelineLayoutWrapper 
 
     const vk::VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{
         vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                                sType
-        DE_NULL,                     // const void*                                    pNext
+        nullptr,                     // const void*                                    pNext
         0u,                          // VkPipelineRasterizationStateCreateFlags        flags
         VK_FALSE,                    // VkBool32                                        depthClampEnable
         VK_FALSE,                    // VkBool32                                        rasterizerDiscardEnable

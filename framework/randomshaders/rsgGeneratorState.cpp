@@ -31,10 +31,10 @@ namespace rsg
 GeneratorState::GeneratorState(const ProgramParameters &programParams, de::Random &random)
     : m_programParams(programParams)
     , m_random(random)
-    , m_shaderParams(DE_NULL)
-    , m_shader(DE_NULL)
-    , m_varManager(DE_NULL)
-    , m_statementStack(DE_NULL)
+    , m_shaderParams(nullptr)
+    , m_shader(nullptr)
+    , m_varManager(nullptr)
+    , m_statementStack(nullptr)
     , m_expressionDepth(0)
 {
     m_exprFlagStack.push_back(0);
