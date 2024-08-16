@@ -116,6 +116,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineInputAttributeOffsetTests.hpp
 	vktPipelineEmptyFSTests.cpp
 	vktPipelineEmptyFSTests.hpp
+	vktPipelineLegacyAttrTests.cpp
+	vktPipelineLegacyAttrTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_SRCS

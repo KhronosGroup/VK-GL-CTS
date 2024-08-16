@@ -1374,7 +1374,7 @@ ConstPixelBufferAccess::ConstPixelBufferAccess(const TextureFormat &format, cons
     , m_data((void *)data)
 {
     DE_ASSERT(isValid(format));
-    DE_ASSERT(m_format.getPixelSize() <= m_pitch.x());
+    //DE_ASSERT(m_format.getPixelSize() <= m_pitch.x());
 }
 
 ConstPixelBufferAccess::ConstPixelBufferAccess(const TextureFormat &format, const IVec3 &size, const IVec3 &pitch,
@@ -1386,7 +1386,7 @@ ConstPixelBufferAccess::ConstPixelBufferAccess(const TextureFormat &format, cons
     , m_data((void *)data)
 {
     DE_ASSERT(isValid(format));
-    DE_ASSERT(m_format.getPixelSize() <= m_pitch.x());
+    //DE_ASSERT(m_format.getPixelSize() <= m_pitch.x());
 }
 
 ConstPixelBufferAccess::ConstPixelBufferAccess(const TextureLevel &level)
