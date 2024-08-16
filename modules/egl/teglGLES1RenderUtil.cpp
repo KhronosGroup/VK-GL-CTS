@@ -40,6 +40,7 @@ namespace gles1
 
 void clear (int x, int y, int width, int height, const tcu::Vec4& color)
 {
+	glDisable(GL_DITHER);
 	glEnable(GL_SCISSOR_TEST);
 	glScissor(x, y, width, height);
 	glClearColor(color.x(), color.y(), color.z(), color.w());

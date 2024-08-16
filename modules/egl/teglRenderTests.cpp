@@ -30,6 +30,7 @@
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuSurface.hpp"
+#include "tcuVectorUtil.hpp"
 
 #include "egluDefs.hpp"
 #include "egluUtil.hpp"
@@ -392,6 +393,16 @@ float getColorThreshold (const tcu::PixelFormat& colorBits)
 	{
 		return 0.02f;
 	}
+}
+
+// Returns a threshold for fuzzyCompareMaxError. This should allow up to one shade of difference for the given format,
+// plus some slack due to MIN_ERR_THRESHOLD (in tcuFuzzyImageCompare.cpp), which is required to pass MSAA tests.
+float getColorThresholdMaxError (const tcu::PixelFormat& colorBits)
+{
+	Vec4	colorThreshold	= colorBits.getColorThreshold().toVec();
+	Vec4	errThreshold	= tcu::max(colorThreshold, Vec4(0.0f));
+	Vec4	errThreshold2	= tcu::pow(errThreshold, Vec4(2.0f));
+	return sqrtf(errThreshold2.x() + errThreshold2.y() + errThreshold2.z() + errThreshold2.w());
 }
 
 tcu::TextureFormat getDepthFormat (const int depthBits)
@@ -849,6 +860,14 @@ void SingleThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface 
 	{
 		bool imagesOk = tcu::fuzzyCompare(log, "ComparisonResult", "Image comparison result", refFrame, frame, threshold, tcu::COMPARE_LOG_RESULT);
 
+		// fuzzyCompare can return very high error values even for single-shade differences on RGBA4444 and RGBA5551.
+		// If comparison fails, try fuzzyCompareMaxError instead.
+		if (!imagesOk && (pixelFmt.redBits < 8 || pixelFmt.greenBits < 8 || pixelFmt.blueBits < 8))
+		{
+			imagesOk = tcu::fuzzyCompareMaxError(log, "PerPixelComparisonResult", "Per-pixel image comparison result",
+				refFrame, frame, getColorThresholdMaxError(pixelFmt), tcu::COMPARE_LOG_RESULT);
+		}
+
 		if (!imagesOk)
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Image comparison failed");
 	}
@@ -1096,6 +1115,14 @@ void MultiThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface s
 	// Compare images
 	{
 		bool imagesOk = tcu::fuzzyCompare(log, "ComparisonResult", "Image comparison result", refFrame, frame, threshold, tcu::COMPARE_LOG_RESULT);
+
+		// fuzzyCompare can return very high error values even for single-shade differences on RGBA4444 and RGBA5551.
+		// If comparison fails, try fuzzyCompareMaxError instead.
+		if (!imagesOk && (pixelFmt.redBits < 8 || pixelFmt.greenBits < 8 || pixelFmt.blueBits < 8))
+		{
+			imagesOk = tcu::fuzzyCompareMaxError(log, "PerPixelComparisonResult", "Per-pixel image comparison result",
+				refFrame, frame, getColorThresholdMaxError(pixelFmt), tcu::COMPARE_LOG_RESULT);
+		}
 
 		if (!imagesOk)
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Image comparison failed");

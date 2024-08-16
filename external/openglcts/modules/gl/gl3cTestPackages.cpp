@@ -23,9 +23,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "gl3cTestPackages.hpp"
-#include "gl3cClipDistance.hpp"
 #include "gl3cCommonBugsTests.hpp"
-#include "gl3cCullDistanceTests.hpp"
 #include "gl3cGLSLnoperspectiveTests.hpp"
 #include "gl3cGPUShader5Tests.hpp"
 #include "gl3cTextureSizePromotion.hpp"
@@ -34,12 +32,17 @@
 #include "gl3cTransformFeedbackTests.hpp"
 #include "gl3cTransformFeedback3Tests.hpp"
 #include "gl4cPipelineStatisticsQueryTests.hpp"
-#include "glcPixelStorageModesTests.hpp"
+#include "glcClipDistance.hpp"
+#include "glcCullDistance.hpp"
+#include "glcBufferObjectsTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcFramebufferBlitTests.hpp"
+#include "glcGLSLVectorConstructorTests.hpp"
 #include "glcInfoTests.hpp"
+#include "glcNearestEdgeTests.hpp"
 #include "glcPackedDepthStencilTests.hpp"
 #include "glcPackedPixelsTests.hpp"
+#include "glcPixelStorageModesTests.hpp"
 #include "glcShaderFunctionTests.hpp"
 #include "glcShaderIndexingTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
@@ -51,8 +54,7 @@
 #include "glcTextureLodBiasTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
-#include "glcNearestEdgeTests.hpp"
-#include "glcGLSLVectorConstructorTests.hpp"
+#include "glcUniformBlockNegativeTests.hpp"
 #include "gluStateReset.hpp"
 #include "qpTestLog.h"
 #include "tcuTestLog.hpp"
@@ -147,6 +149,7 @@ public:
 	{
 		addChild(new deqp::ShaderLibraryGroup(m_context, "declarations", "Declaration Tests", "gl30/declarations.test"));
 		addChild(new deqp::GLSLVectorConstructorTests(m_context, glu::GLSL_VERSION_130));
+		addChild(new deqp::UniformBlockNegativeTests(m_context, glu::GLSL_VERSION_150));
 	}
 };
 
@@ -169,7 +172,7 @@ void GL30TestPackage::init(void)
 	try
 	{
 		addChild(new deqp::InfoTests(getContext()));
-		addChild(new gl3cts::ClipDistance::Tests(getContext()));
+		addChild(new glcts::ClipDistance::Tests(getContext()));
 		addChild(new gl3cts::GLSLnoperspectiveTests(getContext()));
 		addChild(new gl3cts::TransformFeedback::Tests(getContext()));
 		addChild(new gl3cts::TransformFeedback3Tests(getContext()));
@@ -179,6 +182,7 @@ void GL30TestPackage::init(void)
 		addChild(new deqp::Functional::TextureShadowLodTest(getContext()));
 		addChild(new glcts::FramebufferBlitTests(getContext()));
 		addChild(new glcts::TextureLodBiasTests(getContext()));
+		addChild(new glcts::BufferObjectsTests(getContext()));
 	}
 	catch (...)
 	{

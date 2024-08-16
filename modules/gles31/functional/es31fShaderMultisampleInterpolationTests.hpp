@@ -44,6 +44,7 @@ public:
 private:
 											ShaderMultisampleInterpolationTests		(ShaderMultisampleInterpolationTests& other);
 	ShaderMultisampleInterpolationTests&	operator=								(const ShaderMultisampleInterpolationTests& other);
+	bool isLegal(unsigned caseType);
 };
 
 } // Functional

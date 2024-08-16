@@ -1489,17 +1489,6 @@ void NegativeCompileInterpolationCase::init (void)
 	if (!checkSupport(m_context) && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_multisample_interpolation"))
 		TCU_THROW(NotSupportedError, "Test requires GL_OES_shader_multisample_interpolation extension");
 
-	if(!glu::isContextTypeES(m_context.getRenderContext().getType()))
-	{
-		if(m_caseType == CASE_VEC4_IDENTITY_SWIZZLE
-		   || m_caseType == CASE_VEC4_CROP_SWIZZLE
-		   || m_caseType == CASE_VEC4_MIXED_SWIZZLE
-		   || m_caseType == CASE_INTERPOLATE_IVEC4
-		   || m_caseType == CASE_INTERPOLATE_UVEC4
-		   || m_caseType == CASE_INTERPOLATE_STRUCT_MEMBER)
-			TCU_THROW(NotSupportedError, "Test requires a GLES context");
-	}
-
 	m_testCtx.getLog() << tcu::TestLog::Message << "Trying to compile illegal shader, expecting compile to fail." << tcu::TestLog::EndMessage;
 }
 
@@ -1675,6 +1664,20 @@ ShaderMultisampleInterpolationTests::~ShaderMultisampleInterpolationTests (void)
 {
 }
 
+bool ShaderMultisampleInterpolationTests::isLegal(unsigned caseType)
+{
+	if (glu::isContextTypeES(m_context.getRenderContext().getType()))
+		return true;
+	if(caseType == NegativeCompileInterpolationCase::CASE_VEC4_IDENTITY_SWIZZLE
+	   || caseType == NegativeCompileInterpolationCase::CASE_VEC4_CROP_SWIZZLE
+	   || caseType == NegativeCompileInterpolationCase::CASE_VEC4_MIXED_SWIZZLE
+	   || caseType == NegativeCompileInterpolationCase::CASE_INTERPOLATE_IVEC4
+	   || caseType == NegativeCompileInterpolationCase::CASE_INTERPOLATE_UVEC4
+	   || caseType == NegativeCompileInterpolationCase::CASE_INTERPOLATE_STRUCT_MEMBER)
+		return false;
+	return true;
+}
+
 void ShaderMultisampleInterpolationTests::init (void)
 {
 	using namespace MultisampleShaderRenderUtil;
@@ -1792,11 +1795,14 @@ void ShaderMultisampleInterpolationTests::init (void)
 			interpolateAtSampleGroup->addChild(group);
 
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(negativeCompileCases); ++ndx)
-				group->addChild(new NegativeCompileInterpolationCase(m_context,
-																	 negativeCompileCases[ndx].name,
-																	 negativeCompileCases[ndx].description,
-																	 negativeCompileCases[ndx].caseType,
-																	 NegativeCompileInterpolationCase::INTERPOLATE_AT_SAMPLE));
+			{
+				if (isLegal(negativeCompileCases[ndx].caseType))
+					group->addChild(new NegativeCompileInterpolationCase(m_context,
+																		 negativeCompileCases[ndx].name,
+																		 negativeCompileCases[ndx].description,
+																		 negativeCompileCases[ndx].caseType,
+																		 NegativeCompileInterpolationCase::INTERPOLATE_AT_SAMPLE));
+			}
 		}
 	}
 
@@ -1829,11 +1835,14 @@ void ShaderMultisampleInterpolationTests::init (void)
 			methodGroup->addChild(group);
 
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(negativeCompileCases); ++ndx)
-				group->addChild(new NegativeCompileInterpolationCase(m_context,
-																	 negativeCompileCases[ndx].name,
-																	 negativeCompileCases[ndx].description,
-																	 negativeCompileCases[ndx].caseType,
-																	 NegativeCompileInterpolationCase::INTERPOLATE_AT_CENTROID));
+			{
+				if (isLegal(negativeCompileCases[ndx].caseType))
+					group->addChild(new NegativeCompileInterpolationCase(m_context,
+																		 negativeCompileCases[ndx].name,
+																		 negativeCompileCases[ndx].description,
+																		 negativeCompileCases[ndx].caseType,
+																		 NegativeCompileInterpolationCase::INTERPOLATE_AT_CENTROID));
+			}
 		}
 	}
 
@@ -1889,11 +1898,14 @@ void ShaderMultisampleInterpolationTests::init (void)
 			methodGroup->addChild(group);
 
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(negativeCompileCases); ++ndx)
-				group->addChild(new NegativeCompileInterpolationCase(m_context,
-																	 negativeCompileCases[ndx].name,
-																	 negativeCompileCases[ndx].description,
-																	 negativeCompileCases[ndx].caseType,
-																	 NegativeCompileInterpolationCase::INTERPOLATE_AT_OFFSET));
+			{
+				if (isLegal(negativeCompileCases[ndx].caseType))
+					group->addChild(new NegativeCompileInterpolationCase(m_context,
+																		 negativeCompileCases[ndx].name,
+																		 negativeCompileCases[ndx].description,
+																		 negativeCompileCases[ndx].caseType,
+																		 NegativeCompileInterpolationCase::INTERPOLATE_AT_OFFSET));
+			}
 		}
 	}
 }

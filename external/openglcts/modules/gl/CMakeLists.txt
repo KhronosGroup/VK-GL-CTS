@@ -1,14 +1,10 @@
 # GL-CTS.es2
 
 set(GLCTS_GL_SRCS
-	gl3cClipDistance.cpp
-	gl3cClipDistance.hpp
 	gl3cCommonBugsTests.cpp
 	gl3cCommonBugsTests.hpp
 	gl3cTestPackages.cpp
 	gl3cTestPackages.hpp
-	gl3cCullDistanceTests.cpp
-	gl3cCullDistanceTests.hpp
 	gl3cGPUShader5Tests.cpp
 	gl3cGPUShader5Tests.hpp
 	gl3cGLSLnoperspectiveTests.cpp

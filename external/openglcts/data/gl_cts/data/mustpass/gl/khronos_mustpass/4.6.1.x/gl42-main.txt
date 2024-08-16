@@ -844,6 +844,7 @@ KHR-GL42.shaders30.glsl_constructors.bvec4_from_bool_mat4x3_vs
 KHR-GL42.shaders30.glsl_constructors.bvec4_from_bool_mat4x3_fs
 KHR-GL42.shaders30.glsl_constructors.bvec4_from_bool_mat4x3_bool_invalid_vs
 KHR-GL42.shaders30.glsl_constructors.bvec4_from_bool_mat4x3_bool_invalid_fs
+KHR-GL42.shaders30.uniform_block_negative.structure_declaration
 KHR-GL42.ext_texture_shadow_lod.texture.sampler2darrayshadow_fragment
 KHR-GL42.ext_texture_shadow_lod.texture.sampler2darrayshadow_bias_fragment
 KHR-GL42.ext_texture_shadow_lod.texture.samplercubearrayshadow_vertex
@@ -861,6 +862,11 @@ KHR-GL42.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_vertex
 KHR-GL42.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_fragment
 KHR-GL42.framebuffer_blit.framebuffer_blit_functionality_multisampled_to_singlesampled_blit
 KHR-GL42.texture_lod_bias.texture_lod_bias_all
+KHR-GL42.buffer_objects.gen_buffers
+KHR-GL42.buffer_objects.triangles
+KHR-GL42.buffer_objects.elements
+KHR-GL42.buffer_objects.multi_texture
+KHR-GL42.buffer_objects.sub_data
 KHR-GL42.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL42.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL42.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp

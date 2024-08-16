@@ -1773,7 +1773,8 @@ void PointSizeCase::init (void)
 
 void PointSizeCase::deinit (void)
 {
-	if (glu::isContextTypeGLCore(m_context.getRenderContext().getType()))
+	if (glu::isContextTypeGLCore(m_context.getRenderContext().getType()) &&
+		m_context.getRenderContext().getFunctions().disable)
 	{
 		m_context.getRenderContext().getFunctions().disable(GL_PROGRAM_POINT_SIZE);
 	}

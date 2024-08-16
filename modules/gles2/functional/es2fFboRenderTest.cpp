@@ -267,6 +267,7 @@ const char* FboConfig::getFormatName (GLenum format)
 	{
 		case GL_RGB:				return "rgb";
 		case GL_RGBA:				return "rgba";
+		case GL_BGRA:				return "bgra";
 		case GL_ALPHA:				return "alpha";
 		case GL_LUMINANCE:			return "luminance";
 		case GL_LUMINANCE_ALPHA:	return "luminance_alpha";
@@ -400,6 +401,12 @@ static void checkColorFormatSupport (sglr::Context& context, deUint32 sizedForma
 		case GL_R16F:
 			if (!isExtensionSupported(context, "GL_EXT_color_buffer_half_float"))
 				throw tcu::NotSupportedError("GL_EXT_color_buffer_half_float is not supported");
+			break;
+
+		case GL_BGRA:
+			if (!isExtensionSupported(context, "GL_EXT_texture_format_BGRA8888"))
+				throw tcu::NotSupportedError("GL_EXT_texture_format_BGRA8888 is not supported");
+			break;
 
 		default:
 			break;
@@ -2112,6 +2119,7 @@ void addChildVariants (deqp::gles2::TestCaseGroup* group)
 		{ GL_RENDERBUFFER,	GL_RGBA4 },
 //		{ GL_RENDERBUFFER,	GL_RGBA16F },
 //		{ GL_RENDERBUFFER,	GL_RGB16F }
+		{ GL_RENDERBUFFER,	GL_BGRA },
 	};
 	TypeFormatPair depthbufferConfigs[] =
 	{

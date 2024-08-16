@@ -62,11 +62,11 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 	if (validationEnabled)
 	{
 		// Make sure the debug report extension is enabled when validation is enabled.
-		if (!isExtensionStructSupported(availableExtensions, RequiredExtension("VK_EXT_debug_report")))
-			TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
+		if (!isExtensionStructSupported(availableExtensions, RequiredExtension("VK_EXT_debug_utils")))
+			TCU_THROW(NotSupportedError, "VK_EXT_debug_utils is not supported");
 
-		if (!de::contains(begin(actualExtensions), end(actualExtensions), "VK_EXT_debug_report"))
-			actualExtensions.push_back("VK_EXT_debug_report");
+		if (!de::contains(begin(actualExtensions), end(actualExtensions), "VK_EXT_debug_utils"))
+			actualExtensions.push_back("VK_EXT_debug_utils");
 
 		DE_ASSERT(recorder);
 	}

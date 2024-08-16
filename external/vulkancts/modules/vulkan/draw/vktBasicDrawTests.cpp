@@ -29,13 +29,13 @@
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include "deDefs.h"
 #include "deRandom.hpp"
 #include "deString.h"
 
 #include "tcuTestCase.hpp"
-#include "tcuRGBA.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuVectorUtil.hpp"
@@ -1748,10 +1748,12 @@ void populateSubGroup (tcu::TestCaseGroup* testGroup, const TestCaseParams caseP
 
 void createDrawTests(tcu::TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 {
+	auto& testCtx = testGroup->getTestContext();
+
 	for (deUint32 drawTypeIndex = 0; drawTypeIndex < DRAW_COMMAND_TYPE_DRAW_LAST; ++drawTypeIndex)
 	{
 		const DrawCommandType			command			(static_cast<DrawCommandType>(drawTypeIndex));
-		de::MovePtr<tcu::TestCaseGroup>	topologyGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), getDrawCommandTypeName(command)));
+		de::MovePtr<tcu::TestCaseGroup>	topologyGroup	(new tcu::TestCaseGroup(testCtx, getDrawCommandTypeName(command)));
 
 		for (deUint32 topologyIdx = 0; topologyIdx != vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST; ++topologyIdx)
 		{
@@ -1773,13 +1775,18 @@ void createDrawTests(tcu::TestCaseGroup* testGroup, const SharedGroupParams grou
 	}
 
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testGroup->getTestContext(), "misc"));
+	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 	if (groupParams->useDynamicRendering == false)
 	{
-		DrawIndexedIndirectParams params(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, groupParams, vk::VK_INDEX_TYPE_UINT32, false);
-		params.addCommand(4, 1, 0, 0, 0);
-		params.useMaintenance5 = true;
-		miscGroup->addChild(new IndexedIndirectCase(testGroup->getTestContext(), "maintenance5", params));
+		{
+			DrawIndexedIndirectParams params(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, groupParams, vk::VK_INDEX_TYPE_UINT32, false);
+			params.addCommand(4, 1, 0, 0, 0);
+			params.useMaintenance5 = true;
+			miscGroup->addChild(new IndexedIndirectCase(testCtx, "maintenance5", params));
+		}
+		{
+			miscGroup->addChild(cts_amber::createAmberTestCase(testCtx, "flat_b_sat_error", "", "draw/misc", "flat_b_sat_error.amber"));
+		}
 	}
 	testGroup->addChild(miscGroup.release());
 #endif // CTS_USES_VULKANSC

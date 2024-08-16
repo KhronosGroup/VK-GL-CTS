@@ -91,6 +91,7 @@
 #include "vktSpvAsmIntegerDotProductTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktSpvAsmPhysicalStorageBufferPointerTests.hpp"
+#include "vktSpvAsmRawAccessChainTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -21009,6 +21010,7 @@ do { \
 #endif // CTS_USES_VULKANSC
 			computeTests->addChild(createPhysicalStorageBufferTestGroup(testCtx));
 			computeTests->addChild(createOpMulExtendedGroup(testCtx));
+			computeTests->addChild(createRawAccessChainGroup(testCtx));
 
 			graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 			graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
