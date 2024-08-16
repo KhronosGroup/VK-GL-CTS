@@ -798,24 +798,14 @@ void DrawTestCase<T>::checkSupport(Context &context) const
 
     if (m_data.groupParams.nestedSecondaryCmdBuffer)
     {
-        bool maintenance7 = false;
-        if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance7"))
-        {
-            const auto &features =
-                *vk::findStructure<vk::VkPhysicalDeviceMaintenance7FeaturesKHR>(&context.getDeviceFeatures2());
-            maintenance7 = features.maintenance7;
-        }
-        if (!maintenance7)
-        {
-            context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
-            const auto &features =
-                *vk::findStructure<vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
-            if (!features.nestedCommandBuffer)
-                TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
-            if (!features.nestedCommandBufferRendering)
-                TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported, so "
-                                             "VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT cannot be used");
-        }
+        context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+        const auto &features =
+            *vk::findStructure<vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+        if (!features.nestedCommandBuffer)
+            TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+        if (!features.nestedCommandBufferRendering)
+            TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported, so "
+                                         "VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT cannot be used");
     }
 
     if (m_data.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
