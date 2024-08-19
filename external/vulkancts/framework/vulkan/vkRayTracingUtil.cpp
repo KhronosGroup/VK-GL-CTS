@@ -962,7 +962,9 @@ public:
                 const MemoryRequirement &addMemoryRequirement = MemoryRequirement::Any,
                 const VkBuffer creationBuffer = VK_NULL_HANDLE, const VkDeviceSize creationBufferSize = 0u) override;
     void build(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
-               BottomLevelAccelerationStructure *srcAccelerationStructure = nullptr) override;
+               BottomLevelAccelerationStructure *srcAccelerationStructure = nullptr,
+               VkPipelineStageFlags barrierDstStages =
+                   static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT)) override;
     void copyFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
                   BottomLevelAccelerationStructure *accelerationStructure, bool compactCopy) override;
 
@@ -1071,10 +1073,10 @@ BottomLevelAccelerationStructureKHR::BottomLevelAccelerationStructureKHR()
     , m_workerThreadCount(0)
     , m_useArrayOfPointers(false)
     , m_useMaintenance5(false)
-    , m_accelerationStructureBuffer(VK_NULL_HANDLE)
-    , m_vertexBuffer(VK_NULL_HANDLE)
-    , m_indexBuffer(VK_NULL_HANDLE)
-    , m_deviceScratchBuffer(VK_NULL_HANDLE)
+    , m_accelerationStructureBuffer()
+    , m_vertexBuffer()
+    , m_indexBuffer()
+    , m_deviceScratchBuffer()
     , m_hostScratchBuffer(new std::vector<uint8_t>)
     , m_accelerationStructureKHR()
     , m_indirectBuffer(VK_NULL_HANDLE)
@@ -1334,7 +1336,8 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
 
 void BottomLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const VkDevice device,
                                                 const VkCommandBuffer cmdBuffer,
-                                                BottomLevelAccelerationStructure *srcAccelerationStructure)
+                                                BottomLevelAccelerationStructure *srcAccelerationStructure,
+                                                VkPipelineStageFlags barrierDstStages)
 {
     DE_ASSERT(!m_geometriesData.empty());
     DE_ASSERT(m_accelerationStructureKHR.get() != VK_NULL_HANDLE);
@@ -1442,7 +1445,7 @@ void BottomLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const
         const VkMemoryBarrier memBarrier = makeMemoryBarrier(accessMasks, accessMasks);
 
         cmdPipelineMemoryBarrier(vk, cmdBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-                                 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, &memBarrier);
+                                 barrierDstStages, &memBarrier);
     }
 }
 
@@ -2111,7 +2114,8 @@ void BottomLevelAccelerationStructurePool::batchCreate(const DeviceInterface &vk
 }
 
 void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterface &vkd, const VkDevice device,
-                                                             Allocator &allocator, const VkDeviceSize maxBufferSize)
+                                                             Allocator &allocator, const VkDeviceSize maxBufferSize,
+                                                             bool scratchIsHostVisible)
 {
     // Prevent a programmer from calling this method more than once.
     if (m_createOnce)
@@ -2148,11 +2152,14 @@ void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterfa
 
     auto createDeviceScratchBuffer = [&](VkDeviceSize bufferSize) -> de::SharedPtr<BufferWithMemory>
     {
+        const auto extraMemReqs =
+            (scratchIsHostVisible ? (MemoryRequirement::HostVisible | MemoryRequirement::Coherent) :
+                                    MemoryRequirement::Any);
+        const auto memReqs = (MemoryRequirement::DeviceAddress | extraMemReqs);
+
         const VkBufferCreateInfo bci = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                                                             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-        BufferWithMemory *p          = new BufferWithMemory(vkd, device, allocator, bci,
-                                                            MemoryRequirement::HostVisible | MemoryRequirement::Coherent |
-                                                                MemoryRequirement::DeviceAddress);
+        BufferWithMemory *p          = new BufferWithMemory(vkd, device, allocator, bci, memReqs);
         return de::SharedPtr<BufferWithMemory>(p);
     };
 
@@ -2298,9 +2305,12 @@ void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterfa
 void BottomLevelAccelerationStructurePool::batchBuild(const DeviceInterface &vk, const VkDevice device,
                                                       VkCommandBuffer cmdBuffer)
 {
-    for (const auto &str : m_structs)
+    for (size_t i = 0u; i < m_structs.size(); ++i)
     {
-        str->build(vk, device, cmdBuffer);
+        const bool last = (i == m_structs.size() - 1u);
+        const VkPipelineStageFlags barrierDst =
+            (last ? VK_PIPELINE_STAGE_ALL_COMMANDS_BIT : VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR);
+        m_structs.at(i)->build(vk, device, cmdBuffer, nullptr, barrierDst);
     }
 }
 

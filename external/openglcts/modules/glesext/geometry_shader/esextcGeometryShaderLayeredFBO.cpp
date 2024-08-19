@@ -962,16 +962,13 @@ GeometryShaderFramebufferTextureInvalidLevelNumber::GeometryShaderFramebufferTex
     Context &context, const ExtParameters &extParams, const char *name, const char *description)
     : TestCaseBase(context, extParams, name, description)
     , m_fbo_id(0)
+    , m_texels(nullptr)
     , m_tex_depth(4)
     , m_tex_height(4)
     , m_tex_width(4)
     , m_to_2d_array_id(0)
     , m_to_3d_id(0)
 {
-    /* Allocate memory for m_tex_depth * m_tex_height * m_tex_width texels, with each texel being 4 GLubytes. */
-    m_texels = new glw::GLubyte[m_tex_depth * m_tex_height * m_tex_width * 4];
-
-    memset(m_texels, 255, m_tex_depth * m_tex_height * m_tex_width * 4);
 }
 
 /** Deinitializes GLES objects created during the test. */
@@ -1024,6 +1021,11 @@ tcu::TestNode::IterateResult GeometryShaderFramebufferTextureInvalidLevelNumber:
     {
         throw tcu::NotSupportedError(GEOMETRY_SHADER_EXTENSION_NOT_SUPPORTED, "", __FILE__, __LINE__);
     }
+
+    /* Allocate memory for m_tex_depth * m_tex_height * m_tex_width texels, with each texel being 4 GLubytes. */
+    const auto dataSize = m_tex_depth * m_tex_height * m_tex_width * 4;
+    m_texels            = new glw::GLubyte[dataSize];
+    memset(m_texels, 255, dataSize);
 
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
@@ -1134,14 +1136,10 @@ GeometryShaderFramebufferTextureArgumentRefersToBufferTexture::
     , m_bo_id(0)
     , m_fbo_id(0)
     , m_tbo_id(0)
+    , m_tex_height(64)
+    , m_tex_width(64)
+    , m_texels(nullptr)
 {
-    m_tex_width  = 64;
-    m_tex_height = 64;
-
-    /* Allocate memory for m_tex_height * m_tex_width texels, with each texel being 3 GLints. */
-    m_texels = new glw::GLint[m_tex_height * m_tex_width * 3];
-
-    memset(m_texels, 255, sizeof(glw::GLint) * m_tex_height * m_tex_width * 3);
 }
 
 /** Deinitializes GLES objects created during the test. */
@@ -1200,6 +1198,13 @@ tcu::TestNode::IterateResult GeometryShaderFramebufferTextureArgumentRefersToBuf
         throw tcu::NotSupportedError(TEXTURE_BUFFER_EXTENSION_NOT_SUPPORTED, "", __FILE__, __LINE__);
     }
 
+    /* Allocate memory for m_tex_height * m_tex_width texels, with each texel being 3 GLints. */
+    const glw::GLuint itemCount    = m_tex_height * m_tex_width * 3u;
+    const glw::GLsizeiptr dataSize = static_cast<glw::GLsizeiptr>(sizeof(glw::GLint) * itemCount);
+
+    m_texels = new glw::GLint[itemCount];
+    memset(m_texels, 255, dataSize);
+
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
     /* Generate buffer object */
@@ -1209,7 +1214,7 @@ tcu::TestNode::IterateResult GeometryShaderFramebufferTextureArgumentRefersToBuf
     gl.bindBuffer(GL_ARRAY_BUFFER, m_bo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed.");
 
-    gl.bufferData(GL_ARRAY_BUFFER, sizeof(m_texels), m_texels, GL_DYNAMIC_READ);
+    gl.bufferData(GL_ARRAY_BUFFER, dataSize, m_texels, GL_DYNAMIC_READ);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
 
     /* Generate and bind framebuffer object */

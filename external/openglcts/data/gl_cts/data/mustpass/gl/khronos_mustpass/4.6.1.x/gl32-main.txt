@@ -879,6 +879,7 @@ KHR-GL32.CommonBugs.CommonBug_PerVertexValidation
 KHR-GL32.CommonBugs.CommonBug_ReservedNames
 KHR-GL32.CommonBugs.CommonBug_SparseBuffersWithCopyOps
 KHR-GL32.texture_size_promotion.functional
+KHR-GL32.primitive_restart.restart_mode
 KHR-GL32.gpu_shader5_gl.implicit_conversions
 KHR-GL32.gpu_shader5_gl.function_overloading
 KHR-GL32.gpu_shader5_gl.float_encoding

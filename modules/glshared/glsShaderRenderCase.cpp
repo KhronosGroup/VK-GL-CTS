@@ -41,12 +41,11 @@
 #include "glwEnums.hpp"
 
 #include "deRandom.hpp"
-#include "deMemory.h"
 #include "deString.h"
 #include "deMath.h"
 #include "deStringUtil.hpp"
+#include "deUniquePtr.hpp"
 
-#include <stdio.h>
 #include <vector>
 #include <string>
 
@@ -391,11 +390,12 @@ void ShaderEvaluator::evaluate(ShaderEvalContext &ctx)
 
 ShaderRenderCase::ShaderRenderCase(TestContext &testCtx, RenderContext &renderCtx, const ContextInfo &ctxInfo,
                                    const char *name, const char *description, bool isVertexCase,
-                                   ShaderEvalFunc evalFunc)
+                                   ShaderEvalFunc evalFunc, bool useLevel)
     : TestCase(testCtx, name, description)
     , m_renderCtx(renderCtx)
     , m_ctxInfo(ctxInfo)
     , m_isVertexCase(isVertexCase)
+    , m_useLevel(useLevel)
     , m_defaultEvaluator(evalFunc)
     , m_evaluator(m_defaultEvaluator)
     , m_clearColor(DEFAULT_CLEAR_COLOR)
@@ -405,11 +405,12 @@ ShaderRenderCase::ShaderRenderCase(TestContext &testCtx, RenderContext &renderCt
 
 ShaderRenderCase::ShaderRenderCase(TestContext &testCtx, RenderContext &renderCtx, const ContextInfo &ctxInfo,
                                    const char *name, const char *description, bool isVertexCase,
-                                   ShaderEvaluator &evaluator)
+                                   ShaderEvaluator &evaluator, bool useLevel)
     : TestCase(testCtx, name, description)
     , m_renderCtx(renderCtx)
     , m_ctxInfo(ctxInfo)
     , m_isVertexCase(isVertexCase)
+    , m_useLevel(useLevel)
     , m_defaultEvaluator(nullptr)
     , m_evaluator(evaluator)
     , m_clearColor(DEFAULT_CLEAR_COLOR)
@@ -488,16 +489,73 @@ TestNode::IterateResult ShaderRenderCase::iterate(void)
     QuadGrid quadGrid(m_isVertexCase ? m_gridSize : 4, width, height, Vec4(0.125f, 0.25f, 0.5f, 1.0f),
                       m_userAttribTransforms, m_textures);
 
-    // Render result.
-    Surface resImage(width, height);
-    render(resImage, programID, quadGrid);
+    // Render result. When using levels, the render will be done to the internal level with the right format. After
+    // finishing and reading the pixels back correctly, we'll convert the level pixels to a tcu::Surface in order to be
+    // used with fuzzyCompare, which does not take arbitrary formats.
+    using ISPtr    = de::MovePtr<InternalSurface>;
+    using LevelPtr = de::MovePtr<tcu::TextureLevel>;
+
+    // Always used and point either to the surface directly or to an intermediate level.
+    ISPtr resInternalSurfacePtr;
+    ISPtr refInternalSurfacePtr;
+
+    // Used when m_useLevel is true as intermediate results.
+    LevelPtr resLevelPtr;
+    LevelPtr refLevelPtr;
+
+    tcu::Surface refImage(width, height);
+    tcu::Surface resImage(width, height);
+
+    if (m_useLevel)
+    {
+        const auto pixelFormat = m_renderCtx.getRenderTarget().getPixelFormat();
+        uint32_t type = ((pixelFormat.redBits == 10) && (pixelFormat.greenBits == 10) && (pixelFormat.blueBits == 10) &&
+                         (pixelFormat.alphaBits == 2 || pixelFormat.alphaBits == 0)) ?
+                            GL_UNSIGNED_INT_2_10_10_10_REV :
+                            GL_UNSIGNED_BYTE;
+        const auto textureFormat = mapGLTransferFormat(GL_RGBA, type);
+
+        resLevelPtr = LevelPtr(new tcu::TextureLevel(textureFormat, width, height));
+        refLevelPtr = LevelPtr(new tcu::TextureLevel(textureFormat, width, height));
+
+        resInternalSurfacePtr = ISPtr(new InternalSurface(*resLevelPtr));
+        refInternalSurfacePtr = ISPtr(new InternalSurface(*refLevelPtr));
+    }
+    else
+    {
+        // In this case, the internal surface points directly to the result surface.
+        resInternalSurfacePtr = ISPtr(new InternalSurface(resImage));
+        refInternalSurfacePtr = ISPtr(new InternalSurface(refImage));
+    }
+
+    render(*resInternalSurfacePtr, programID, quadGrid);
 
     // Compute reference.
-    Surface refImage(width, height);
     if (m_isVertexCase)
-        computeVertexReference(refImage, quadGrid);
+        computeVertexReference(*refInternalSurfacePtr, quadGrid);
     else
-        computeFragmentReference(refImage, quadGrid);
+        computeFragmentReference(*refInternalSurfacePtr, quadGrid);
+
+    if (m_useLevel)
+    {
+        // Convert intermediate result and reference levels to a surface for fuzzyCompare.
+        const auto resAccess = resLevelPtr->getAccess();
+        const auto refAccess = refLevelPtr->getAccess();
+
+        const auto convertPixel = [](tcu::Surface &out, const PixelBufferAccess &access, int x, int y)
+        {
+            const auto color = access.getPixel(x, y);
+            const auto rgba  = tcu::RGBA(color);
+            out.setPixel(x, y, rgba);
+        };
+
+        for (int y = 0; y < height; ++y)
+            for (int x = 0; x < width; ++x)
+            {
+                convertPixel(resImage, resAccess, x, y);
+                convertPixel(refImage, refAccess, x, y);
+            }
+    }
 
     // Compare.
     bool testOk = compareImages(resImage, refImage, 0.07f);
@@ -505,7 +563,7 @@ TestNode::IterateResult ShaderRenderCase::iterate(void)
     // De-initialize.
     gl.useProgram(0);
 
-    m_testCtx.setTestResult(testOk ? QP_TEST_RESULT_PASS : QP_TEST_RESULT_FAIL, testOk ? "Pass" : "Fail");
+    m_testCtx.setTestResult((testOk ? QP_TEST_RESULT_PASS : QP_TEST_RESULT_FAIL), (testOk ? "Pass" : "Fail"));
     return TestNode::STOP;
 }
 
@@ -643,7 +701,7 @@ static void getDefaultVertexArrays(const glw::Functions &gl, const QuadGrid &qua
     }
 }
 
-void ShaderRenderCase::render(Surface &result, int programID, const QuadGrid &quadGrid)
+void ShaderRenderCase::render(InternalSurface &result, int programID, const QuadGrid &quadGrid)
 {
     const glw::Functions &gl = m_renderCtx.getFunctions();
 
@@ -689,7 +747,7 @@ void ShaderRenderCase::render(Surface &result, int programID, const QuadGrid &qu
     GLU_EXPECT_NO_ERROR(gl.getError(), "post render");
 }
 
-void ShaderRenderCase::computeVertexReference(Surface &result, const QuadGrid &quadGrid)
+void ShaderRenderCase::computeVertexReference(InternalSurface &result, const QuadGrid &quadGrid)
 {
     // Buffer info.
     int width     = result.getWidth();
@@ -771,12 +829,12 @@ void ShaderRenderCase::computeVertexReference(Surface &result, const QuadGrid &q
                     const Vec4 &t2 = tri ? c10 : c01;
                     Vec4 color     = t0 + (t1 - t0) * tx + (t2 - t0) * ty;
 
-                    result.setPixel(ix, iy, tcu::RGBA(color));
+                    result.setPixel(ix, iy, color);
                 }
         }
 }
 
-void ShaderRenderCase::computeFragmentReference(Surface &result, const QuadGrid &quadGrid)
+void ShaderRenderCase::computeFragmentReference(InternalSurface &result, const QuadGrid &quadGrid)
 {
     // Buffer info.
     int width     = result.getWidth();
@@ -799,14 +857,14 @@ void ShaderRenderCase::computeFragmentReference(Surface &result, const QuadGrid 
             if (!hasAlpha)
                 color.w() = 1.0f;
 
-            result.setPixel(x, y, tcu::RGBA(color));
+            result.setPixel(x, y, color);
         }
 }
 
 bool ShaderRenderCase::compareImages(const Surface &resImage, const Surface &refImage, float errorThreshold)
 {
     return tcu::fuzzyCompare(m_testCtx.getLog(), "ComparisonResult", "Image comparison result", refImage, resImage,
-                             errorThreshold, tcu::COMPARE_LOG_RESULT);
+                             errorThreshold, tcu::COMPARE_LOG_EVERYTHING);
 }
 
 // Uniform name helpers.
@@ -1089,6 +1147,56 @@ void setupDefaultUniforms(const glu::RenderContext &context, uint32_t programID)
         if (uniLoc != -1)
             gl.uniform4fv(uniLoc, 1, s_vec4Uniforms[i].value.getPtr());
     }
+}
+
+ShaderRenderCase::InternalSurface::InternalSurface(tcu::Surface &surface)
+    : m_surfacePtr(&surface)
+    , m_levelPtr(nullptr)
+    , m_levelAccess()
+{
+}
+
+ShaderRenderCase::InternalSurface::InternalSurface(tcu::TextureLevel &level)
+    : m_surfacePtr(nullptr)
+    , m_levelPtr(&level)
+    , m_levelAccess(m_levelPtr->getAccess())
+{
+}
+
+int ShaderRenderCase::InternalSurface::getWidth() const
+{
+    if (m_surfacePtr)
+        return m_surfacePtr->getWidth();
+    return m_levelPtr->getWidth();
+}
+
+int ShaderRenderCase::InternalSurface::getHeight() const
+{
+    if (m_surfacePtr)
+        return m_surfacePtr->getHeight();
+    return m_levelPtr->getHeight();
+}
+
+tcu::ConstPixelBufferAccess ShaderRenderCase::InternalSurface::getAccess(void) const
+{
+    if (m_surfacePtr)
+        return m_surfacePtr->getAccess();
+    return m_levelPtr->getAccess();
+}
+
+tcu::PixelBufferAccess ShaderRenderCase::InternalSurface::getAccess(void)
+{
+    if (m_surfacePtr)
+        return m_surfacePtr->getAccess();
+    return m_levelPtr->getAccess();
+}
+
+void ShaderRenderCase::InternalSurface::setPixel(int x, int y, const tcu::Vec4 &color) const
+{
+    if (m_surfacePtr)
+        m_surfacePtr->setPixel(x, y, tcu::RGBA(color));
+    else
+        m_levelAccess.setPixel(color, x, y);
 }
 
 } // namespace gls

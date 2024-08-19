@@ -61,11 +61,12 @@ public:
     /* Public methods */
     ShaderGroupVoteTestCaseBase(deqp::Context &context, ExtParameters &extParam, const char *name,
                                 const char *description);
+    virtual ~ShaderGroupVoteTestCaseBase();
 
-    void init();
-    void deinit();
+    void init() override;
+    void deinit() override;
 
-    tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate() override;
 
     typedef std::vector<ComputeShader *>::iterator ComputeShaderIter;
 

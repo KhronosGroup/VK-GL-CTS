@@ -9,6 +9,8 @@ set(GLCTS_GL_SRCS
 	gl3cGPUShader5Tests.hpp
 	gl3cGLSLnoperspectiveTests.cpp
 	gl3cGLSLnoperspectiveTests.hpp
+	gl3cPrimitiveRestart.cpp
+	gl3cPrimitiveRestart.hpp
 	gl3cTextureSizePromotion.cpp
 	gl3cTextureSizePromotion.hpp
 	gl3cTextureSwizzleTests.cpp

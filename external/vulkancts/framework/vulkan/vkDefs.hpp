@@ -275,14 +275,16 @@ public:
 
     virtual GetInstanceProcAddrFunc getGetInstanceProcAddr() const = 0;
 
+    virtual ~PlatformInterface()
+    {
+    }
+    PlatformInterface(const PlatformInterface &)            = delete;
+    PlatformInterface &operator=(const PlatformInterface &) = delete;
+
 protected:
     PlatformInterface(void)
     {
     }
-
-private:
-    PlatformInterface(const PlatformInterface &);
-    PlatformInterface &operator=(const PlatformInterface &);
 };
 
 class InstanceInterface
@@ -290,14 +292,16 @@ class InstanceInterface
 public:
 #include "vkVirtualInstanceInterface.inl"
 
+    virtual ~InstanceInterface()
+    {
+    }
+    InstanceInterface(const InstanceInterface &)            = delete;
+    InstanceInterface &operator=(const InstanceInterface &) = delete;
+
 protected:
     InstanceInterface(void)
     {
     }
-
-private:
-    InstanceInterface(const InstanceInterface &);
-    InstanceInterface &operator=(const InstanceInterface &);
 };
 
 class DeviceInterface
@@ -311,14 +315,16 @@ public:
                                         VkShaderModule *pShaderModule) const = 0;
 #endif // CTS_USES_VULKANSC
 
+    virtual ~DeviceInterface()
+    {
+    }
+    DeviceInterface(const DeviceInterface &)            = delete;
+    DeviceInterface &operator=(const DeviceInterface &) = delete;
+
 protected:
     DeviceInterface(void)
     {
     }
-
-private:
-    DeviceInterface(const DeviceInterface &);
-    DeviceInterface &operator=(const DeviceInterface &);
 };
 
 class Error : public tcu::TestError

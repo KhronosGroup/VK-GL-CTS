@@ -23,6 +23,7 @@
 
 #include "teglSyncTests.hpp"
 
+#include "deSTLUtil.hpp"
 #include "deStringUtil.hpp"
 
 #include "egluNativeWindow.hpp"
@@ -387,7 +388,16 @@ class CreateLongRunningSyncTest : public SyncTest
         m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(3, 1));
 
         m_eglDisplay = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
-        m_eglConfig  = eglu::chooseSingleConfig(egl, m_eglDisplay, displayAttribList);
+
+        if (eglu::getVersion(egl, m_eglDisplay) < eglu::Version(1, 5))
+        {
+            const vector<string> extensions = eglu::getDisplayExtensions(egl, m_eglDisplay);
+
+            if (!de::contains(extensions.begin(), extensions.end(), "EGL_KHR_create_context"))
+                TCU_THROW(NotSupportedError, "EGL_OPENGL_ES3_BIT_KHR not supported");
+        }
+
+        m_eglConfig = eglu::chooseSingleConfig(egl, m_eglDisplay, displayAttribList);
 
         m_extensions = (Extension)(m_extensions | getSyncTypeExtension(m_syncType));
 

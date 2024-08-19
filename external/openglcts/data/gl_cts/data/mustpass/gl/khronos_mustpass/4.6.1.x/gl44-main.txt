@@ -879,6 +879,7 @@ KHR-GL44.CommonBugs.CommonBug_PerVertexValidation
 KHR-GL44.CommonBugs.CommonBug_ReservedNames
 KHR-GL44.CommonBugs.CommonBug_SparseBuffersWithCopyOps
 KHR-GL44.texture_size_promotion.functional
+KHR-GL44.primitive_restart.restart_mode
 KHR-GL44.gpu_shader5_gl.implicit_conversions
 KHR-GL44.gpu_shader5_gl.function_overloading
 KHR-GL44.gpu_shader5_gl.float_encoding

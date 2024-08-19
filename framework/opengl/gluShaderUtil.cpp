@@ -25,6 +25,8 @@
 #include "glwEnums.hpp"
 #include "deArrayUtil.hpp"
 
+#include <fstream>
+
 namespace glu
 {
 
@@ -1403,6 +1405,31 @@ DataType getDataTypeFromGLType(uint32_t glType)
     default:
         return TYPE_LAST;
     }
+}
+
+// Miscellaneous
+bool saveShader(const std::string &name, const std::string &code)
+{
+    bool equals = false;
+    std::ifstream existingShaderFile(name + ".glsl");
+    if (existingShaderFile.is_open())
+    {
+        std::string existingCode;
+        existingShaderFile >> existingCode;
+        equals = code == existingCode;
+        existingShaderFile.close();
+    }
+    if (false == equals)
+    {
+        std::ofstream newShaderFile(name + ".x");
+        if (newShaderFile.is_open())
+        {
+            newShaderFile << code;
+            newShaderFile.close();
+            equals = true;
+        }
+    }
+    return equals;
 }
 
 } // namespace glu

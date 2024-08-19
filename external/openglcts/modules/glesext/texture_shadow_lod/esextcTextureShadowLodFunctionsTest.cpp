@@ -42,6 +42,7 @@
 #include "tcuTextureUtil.hpp"
 
 #include <sstream>
+#include <memory>
 
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -360,7 +361,7 @@ void TextureShadowLodTestCase::init(void)
 {
     // Check extension and other features are supported with this context/platform.
     {
-        glu::ContextInfo *info = glu::ContextInfo::create(m_renderCtx);
+        std::unique_ptr<glu::ContextInfo> info(glu::ContextInfo::create(m_renderCtx));
 
         // First check if extension is available.
         if (!info->isExtensionSupported("GL_EXT_texture_shadow_lod"))

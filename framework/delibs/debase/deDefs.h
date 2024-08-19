@@ -180,13 +180,6 @@
 
 #include "deDefs_kc_cts.h"
 
-/* Null pointer.  DEPRECATED: use NULL in C and nullptr in C++. */
-#ifndef DE_NULL
-#if defined(__cplusplus)
-#define DE_NULL nullptr
-#endif
-#endif
-
 /* Function pointer type. */
 typedef void (*deFunctionPtr)(void);
 

@@ -26,6 +26,7 @@
 #include "gl3cCommonBugsTests.hpp"
 #include "gl3cGLSLnoperspectiveTests.hpp"
 #include "gl3cGPUShader5Tests.hpp"
+#include "gl3cPrimitiveRestart.hpp"
 #include "gl3cTextureSizePromotion.hpp"
 #include "gl3cTextureSwizzleTests.hpp"
 #include "gl3cTransformFeedbackOverflowQueryTests.hpp"
@@ -226,6 +227,7 @@ void GL31TestPackage::init(void)
     {
         addChild(new gl3cts::CommonBugsTests(getContext()));
         addChild(new gl3cts::TextureSizePromotion::Tests(getContext()));
+        addChild(new gl3cts::PrimitiveRestartTests(getContext()));
     }
     catch (...)
     {
