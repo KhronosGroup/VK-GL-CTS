@@ -1726,6 +1726,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMapMemoryPlaced
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryMapPlacedInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRawAccessChainsFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCommandBufferInheritanceFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageAlignmentControlFeaturesMESA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageAlignmentControlPropertiesMESA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageAlignmentControlCreateInfoMESA& value);

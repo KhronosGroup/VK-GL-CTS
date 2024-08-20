@@ -1594,6 +1594,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_NV_command_buffer_inheritance")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_maintenance7")
 	{
 		return;
@@ -1995,12 +1999,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_KHR_push_descriptor")
 	{
 		functions.push_back("vkCmdPushDescriptorSetKHR");
-		// Dependencies: VK_VERSION_1_1
-		if (checkVersion(1, 1, apiVersion)) {
-			functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
-		}
-		// Dependencies: VK_KHR_descriptor_update_template
-		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_descriptor_update_template"))) {
+		// Dependencies: VK_VERSION_1_1,VK_KHR_descriptor_update_template
+		if (checkVersion(1, 1, apiVersion) || (checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_descriptor_update_template"))) {
 			functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
 		}
 		return;
@@ -2699,12 +2699,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkAcquireFullScreenExclusiveModeEXT");
 		functions.push_back("vkReleaseFullScreenExclusiveModeEXT");
-		// Dependencies: VK_KHR_device_group
+		// Dependencies: VK_KHR_device_group,VK_VERSION_1_1
 		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_device_group"))) {
-			functions.push_back("vkGetDeviceGroupSurfacePresentModes2EXT");
-		}
-		// Dependencies: VK_VERSION_1_1
-		if (checkVersion(1, 1, apiVersion)) {
 			functions.push_back("vkGetDeviceGroupSurfacePresentModes2EXT");
 		}
 		return;
@@ -3721,6 +3717,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_NV_command_buffer_inheritance")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_maintenance7")
 	{
 		return;
@@ -4162,6 +4162,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_descriptor_pool_overallocation",
 	"VK_NV_raw_access_chains",
 	"VK_KHR_shader_relaxed_extended_instruction",
+	"VK_NV_command_buffer_inheritance",
 	"VK_KHR_maintenance7",
 	"VK_NV_shader_atomic_float16_vector",
 	"VK_EXT_shader_replicated_composites",

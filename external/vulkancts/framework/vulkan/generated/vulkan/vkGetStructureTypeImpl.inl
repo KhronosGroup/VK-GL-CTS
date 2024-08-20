@@ -4533,6 +4533,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceRawAccessChainsFeatu
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceCommandBufferInheritanceFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceImageAlignmentControlFeaturesMESA> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA;

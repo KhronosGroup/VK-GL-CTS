@@ -186,6 +186,7 @@ const vk::VkPhysicalDeviceMaintenance6FeaturesKHR&							getMaintenance6Features
 const vk::VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV&			getDescriptorPoolOverallocationFeaturesNV			(void) const;
 const vk::VkPhysicalDeviceRawAccessChainsFeaturesNV&						getRawAccessChainsFeaturesNV						(void) const;
 const vk::VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR&		getShaderRelaxedExtendedInstructionFeatures			(void) const;
+const vk::VkPhysicalDeviceCommandBufferInheritanceFeaturesNV&				getCommandBufferInheritanceFeaturesNV				(void) const;
 const vk::VkPhysicalDeviceMaintenance7FeaturesKHR&							getMaintenance7Features								(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&				getShaderAtomicFloat16VectorFeaturesNV				(void) const;
 const vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT&			getShaderReplicatedCompositesFeaturesEXT			(void) const;

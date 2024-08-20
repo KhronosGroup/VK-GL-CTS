@@ -1817,7 +1817,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 290
+#define VK_HEADER_VERSION 293
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 3, VK_HEADER_VERSION)
@@ -2869,6 +2869,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV = 1000546000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV = 1000555000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR = 1000558000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV = 1000559000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR = 1000562000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_PROPERTIES_KHR = 1000562001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_LIST_KHR = 1000562002,
@@ -2880,9 +2881,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA = 1000575000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA = 1000575001,
     VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA = 1000575002,
-    VK_STRUCTURE_TYPE_IMPORT_MEMORY_METAL_HANDLE_INFO_EXT = 1000601000,
-    VK_STRUCTURE_TYPE_MEMORY_METAL_HANDLE_PROPERTIES_EXT = 1000601001,
-    VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT = 1000601002,
+    VK_STRUCTURE_TYPE_IMPORT_MEMORY_METAL_HANDLE_INFO_EXT = 1000602000,
+    VK_STRUCTURE_TYPE_MEMORY_METAL_HANDLE_PROPERTIES_EXT = 1000602001,
+    VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT = 1000602002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
   // VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT is a deprecated alias
@@ -12407,10 +12408,6 @@ typedef enum VkVideoEncodeTuningModeKHR {
     VK_VIDEO_ENCODE_TUNING_MODE_LOSSLESS_KHR = 4,
     VK_VIDEO_ENCODE_TUNING_MODE_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkVideoEncodeTuningModeKHR;
-
-typedef enum VkVideoEncodeFlagBitsKHR {
-    VK_VIDEO_ENCODE_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
-} VkVideoEncodeFlagBitsKHR;
 typedef VkFlags VkVideoEncodeFlagsKHR;
 
 typedef enum VkVideoEncodeCapabilityFlagBitsKHR {
@@ -17930,14 +17927,14 @@ typedef struct VkDescriptorAddressInfoEXT {
 
 typedef struct VkDescriptorBufferBindingInfoEXT {
     VkStructureType       sType;
-    void*                 pNext;
+    const void*           pNext;
     VkDeviceAddress       address;
     VkBufferUsageFlags    usage;
 } VkDescriptorBufferBindingInfoEXT;
 
 typedef struct VkDescriptorBufferBindingPushDescriptorBufferHandleEXT {
     VkStructureType    sType;
-    void*              pNext;
+    const void*        pNext;
     VkBuffer           buffer;
 } VkDescriptorBufferBindingPushDescriptorBufferHandleEXT;
 
@@ -21063,6 +21060,18 @@ typedef struct VkPhysicalDeviceRawAccessChainsFeaturesNV {
     void*              pNext;
     VkBool32           shaderRawAccessChains;
 } VkPhysicalDeviceRawAccessChainsFeaturesNV;
+
+
+
+// VK_NV_command_buffer_inheritance is a preprocessor guard. Do not pass it to API calls.
+#define VK_NV_command_buffer_inheritance 1
+#define VK_NV_COMMAND_BUFFER_INHERITANCE_SPEC_VERSION 1
+#define VK_NV_COMMAND_BUFFER_INHERITANCE_EXTENSION_NAME "VK_NV_command_buffer_inheritance"
+typedef struct VkPhysicalDeviceCommandBufferInheritanceFeaturesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           commandBufferInheritance;
+} VkPhysicalDeviceCommandBufferInheritanceFeaturesNV;
 
 
 
