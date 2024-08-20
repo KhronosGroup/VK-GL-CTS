@@ -195,8 +195,9 @@ tcu::TestStatus SimpleDraw::iterate(void)
     submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
     // Validation
-    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)),
-                                  (int)(0.5f + static_cast<float>(HEIGHT)));
+    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat),
+                                  (int)(0.5f + static_cast<float>(m_renderWidth)),
+                                  (int)(0.5f + static_cast<float>(m_renderHeight)));
 
     referenceFrame.allocLevel(0);
 
@@ -224,7 +225,7 @@ tcu::TestStatus SimpleDraw::iterate(void)
     const vk::VkOffset3D zeroOffset = {0, 0, 0};
     const tcu::ConstPixelBufferAccess renderedFrame =
         m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset,
-                                        WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+                                        m_renderWidth, m_renderHeight, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
     qpTestResult res = QP_TEST_RESULT_PASS;
 
@@ -346,8 +347,9 @@ tcu::TestStatus SimpleDrawInstanced::iterate(void)
     // Validation
     VK_CHECK(m_vk.queueWaitIdle(queue));
 
-    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)),
-                                  (int)(0.5f + static_cast<float>(HEIGHT)));
+    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat),
+                                  (int)(0.5f + static_cast<float>(m_renderWidth)),
+                                  (int)(0.5f + static_cast<float>(m_renderHeight)));
 
     referenceFrame.allocLevel(0);
 
@@ -375,7 +377,7 @@ tcu::TestStatus SimpleDrawInstanced::iterate(void)
     const vk::VkOffset3D zeroOffset = {0, 0, 0};
     const tcu::ConstPixelBufferAccess renderedFrame =
         m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset,
-                                        WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+                                        m_renderWidth, m_renderHeight, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
     qpTestResult res = QP_TEST_RESULT_PASS;
 
