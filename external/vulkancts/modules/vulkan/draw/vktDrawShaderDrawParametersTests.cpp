@@ -225,8 +225,8 @@ void DrawTest::drawReferenceImage(const tcu::PixelBufferAccess &refImage) const
     const Vec4 allColors[]         = {Vec4(1.0f), Vec4(0.0f, 0.0f, 1.0f, 1.0f), Vec4(0.0f, 1.0f, 0.0f, 1.0f)};
     const int numInstances         = isInstanced() ? MAX_INSTANCE_COUNT : 1;
     const int numIndirectDraws     = isMultiDraw() ? MAX_INDIRECT_DRAW_COUNT : 1;
-    const int rectWidth            = static_cast<int>(static_cast<float>(WIDTH) * 0.6f / 2.0f);
-    const int rectHeight           = static_cast<int>(static_cast<float>(HEIGHT) * 0.6f / 2.0f);
+    const int rectWidth            = static_cast<int>(static_cast<float>(m_renderWidth) * 0.6f / 2.0f);
+    const int rectHeight           = static_cast<int>(static_cast<float>(m_renderHeight) * 0.6f / 2.0f);
 
     DE_ASSERT(DE_LENGTH_OF_ARRAY(perInstanceOffset) >= numInstances);
     DE_ASSERT(DE_LENGTH_OF_ARRAY(allColors) >= numInstances && DE_LENGTH_OF_ARRAY(allColors) >= numIndirectDraws);
@@ -239,8 +239,8 @@ void DrawTest::drawReferenceImage(const tcu::PixelBufferAccess &refImage) const
         {
             const Vec2 offset = perInstanceOffset[instanceNdx] + perDrawOffset[drawNdx];
             const Vec4 &color = allColors[isMultiDraw() ? drawNdx : instanceNdx];
-            int x             = static_cast<int>(static_cast<float>(WIDTH) * (1.0f - 0.3f + offset.x()) / 2.0f);
-            int y             = static_cast<int>(static_cast<float>(HEIGHT) * (1.0f - 0.3f + offset.y()) / 2.0f);
+            int x             = static_cast<int>(static_cast<float>(m_renderWidth) * (1.0f - 0.3f + offset.x()) / 2.0f);
+            int y = static_cast<int>(static_cast<float>(m_renderHeight) * (1.0f - 0.3f + offset.y()) / 2.0f);
 
             tcu::clear(tcu::getSubregion(refImage, x, y, rectWidth, rectHeight), color);
         }
@@ -315,15 +315,15 @@ tcu::TestStatus DrawTest::iterate(void)
     // Validate
     {
         tcu::TextureLevel referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat),
-                                         static_cast<int>(0.5f + static_cast<float>(WIDTH)),
-                                         static_cast<int>(0.5f + static_cast<float>(HEIGHT)));
+                                         static_cast<int>(0.5f + static_cast<float>(m_renderWidth)),
+                                         static_cast<int>(0.5f + static_cast<float>(m_renderHeight)));
 
         drawReferenceImage(referenceFrame.getAccess());
 
         const vk::VkOffset3D zeroOffset                 = {0, 0, 0};
         const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(
             m_context.getUniversalQueue(), m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset,
-            WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+            m_renderWidth, m_renderHeight, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
         if (!tcu::fuzzyCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result",
                                referenceFrame.getAccess(), renderedFrame, 0.05f, tcu::COMPARE_LOG_RESULT))

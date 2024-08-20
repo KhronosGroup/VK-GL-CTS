@@ -477,8 +477,8 @@ tcu::TestStatus ConcurrentDraw::iterate(void)
 
     // Validation - draw
 
-    tcu::Texture2D referenceFrame(mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)),
-                                  (int)(0.5f + static_cast<float>(HEIGHT)));
+    tcu::Texture2D referenceFrame(mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(m_renderWidth)),
+                                  (int)(0.5f + static_cast<float>(m_renderHeight)));
 
     referenceFrame.allocLevel(0);
 
@@ -506,7 +506,7 @@ tcu::TestStatus ConcurrentDraw::iterate(void)
     const VkOffset3D zeroOffset = {0, 0, 0};
     const tcu::ConstPixelBufferAccess renderedFrame =
         m_colorTargetImage->readSurface(drawQueue, m_context.getDefaultAllocator(), VK_IMAGE_LAYOUT_GENERAL, zeroOffset,
-                                        WIDTH, HEIGHT, VK_IMAGE_ASPECT_COLOR_BIT);
+                                        m_renderWidth, m_renderHeight, VK_IMAGE_ASPECT_COLOR_BIT);
 
     qpTestResult res = QP_TEST_RESULT_PASS;
 

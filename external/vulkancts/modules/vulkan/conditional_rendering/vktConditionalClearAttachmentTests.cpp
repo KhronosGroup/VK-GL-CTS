@@ -148,9 +148,9 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate(void)
     };
 
     const vk::VkClearRect rect = {
-        vk::makeRect2D(WIDTH, HEIGHT), // VkRect2D    rect;
-        0u,                            // uint32_t    baseArrayLayer;
-        1u,                            // uint32_t    layerCount;
+        vk::makeRect2D(m_renderWidth, m_renderHeight), // VkRect2D    rect;
+        0u,                                            // uint32_t    baseArrayLayer;
+        1u,                                            // uint32_t    layerCount;
     };
 
     m_conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData);
@@ -214,8 +214,9 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate(void)
     submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
     // Validation
-    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)),
-                                  (int)(0.5f + static_cast<float>(HEIGHT)));
+    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat),
+                                  (int)(0.5f + static_cast<float>(m_renderWidth)),
+                                  (int)(0.5f + static_cast<float>(m_renderHeight)));
     referenceFrame.allocLevel(0);
 
     const int32_t frameWidth  = referenceFrame.getWidth();
@@ -236,7 +237,7 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate(void)
     const vk::VkOffset3D zeroOffset = {0, 0, 0};
     const tcu::ConstPixelBufferAccess renderedFrame =
         m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset,
-                                        WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+                                        m_renderWidth, m_renderHeight, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
     qpTestResult res = QP_TEST_RESULT_PASS;
 

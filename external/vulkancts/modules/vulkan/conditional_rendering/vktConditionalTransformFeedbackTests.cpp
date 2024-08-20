@@ -328,8 +328,8 @@ void ConditionalTransformFeedbackDraw::createStreamPipeline(void)
 
     const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
 
-    vk::VkViewport viewport = vk::makeViewport(WIDTH, HEIGHT);
-    vk::VkRect2D scissor    = vk::makeRect2D(WIDTH, HEIGHT);
+    vk::VkViewport viewport = vk::makeViewport(m_renderWidth, m_renderHeight);
+    vk::VkRect2D scissor    = vk::makeRect2D(m_renderWidth, m_renderHeight);
 
     const vk::VkVertexInputBindingDescription vertexInputBindingDescription = {0, sizeof(VertexElementData),
                                                                                vk::VK_VERTEX_INPUT_RATE_VERTEX};
