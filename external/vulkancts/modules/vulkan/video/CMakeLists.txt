@@ -3,7 +3,6 @@ if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
 	include_directories(${NV_VIDEO_PARSER_INCLUDE_DIRS})
 	include_directories(.)
 
-	add_definitions(-DES_STATIC_COMPILATION)
 	add_compile_definitions(ENABLE_AV1_DECODER)
 	add_compile_definitions(DE_BUILD_VIDEO)
 endif()
