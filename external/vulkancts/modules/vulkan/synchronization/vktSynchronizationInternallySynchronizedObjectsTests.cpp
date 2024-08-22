@@ -172,16 +172,16 @@ public:
         m_mutex.unlock();
     }
 
-    inline void setDevice(Move<VkDevice> device, const Context &context)
+    inline void setDevice(Move<VkDevice> device, const VkInstance &instance, const Context &context)
     {
         m_logicalDevice = device;
 #ifndef CTS_USES_VULKANSC
-        m_deviceDriver = de::MovePtr<DeviceDriver>(
-            new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice,
-                             context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
+        m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance,
+                                                                    *m_logicalDevice, context.getUsedApiVersion(),
+                                                                    context.getTestContext().getCommandLine()));
 #else
         m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
-            new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice,
+            new DeviceDriverSC(context.getPlatformInterface(), instance, *m_logicalDevice,
                                context.getTestContext().getCommandLine(), context.getResourceInterface(),
                                context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(),
                                context.getUsedApiVersion()),
@@ -212,13 +212,13 @@ protected:
     Mutex m_mutex;
 };
 
-MovePtr<Allocator> createAllocator(const Context &context, const VkDevice &device)
+MovePtr<Allocator> createAllocator(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice,
+                                   MultiQueues &queues)
 {
-    const DeviceInterface &deviceInterface = context.getDeviceInterface();
-    const InstanceInterface &instance      = context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice  = context.getPhysicalDevice();
+    const DeviceInterface &deviceInterface = queues.getDeviceInterface();
+    const VkDevice device                  = queues.getDevice();
     const VkPhysicalDeviceMemoryProperties deviceMemoryProperties =
-        getPhysicalDeviceMemoryProperties(instance, physicalDevice);
+        getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 
     // Create memory allocator for device
     return MovePtr<Allocator>(new SimpleAllocator(deviceInterface, device, deviceMemoryProperties));
@@ -351,7 +351,7 @@ MovePtr<MultiQueues> createQueues(Context &context, const VkQueueFlags &queueFla
 
     queues.setDevice(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
                                         context.getPlatformInterface(), instance, vki, physicalDevice, &deviceInfo),
-                     context);
+                     instance, context);
     vk::DeviceInterface &vk = queues.getDeviceInterface();
 
     for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queues.countQueueFamilyIndex(); ++queueFamilyIndex)
@@ -368,7 +368,7 @@ MovePtr<MultiQueues> createQueues(Context &context, const VkQueueFlags &queueFla
         }
     }
 
-    queues.m_allocator = createAllocator(context, queues.getDevice());
+    queues.m_allocator = createAllocator(vki, physicalDevice, queues);
     return moveQueues;
 }
 
@@ -703,8 +703,8 @@ public:
         for (int executionNdx = 0; executionNdx < EXECUTION_PER_THREAD; ++executionNdx)
         {
             const int shaderNdx       = executionNdx % (int)m_pipelineInfo.size();
-            const DeviceInterface &vk = m_context.getDeviceInterface();
             const VkDevice device     = m_queues.getDevice();
+            const DeviceInterface &vk = m_queues.getDeviceInterface();
             Move<VkPipeline> pipeline = createComputePipeline(vk, device, m_pipelineCache, &m_pipelineInfo[shaderNdx]);
 
             TestStatus result = executeComputePipeline(m_context, *pipeline, m_pipelineLayout, m_descriptorSetLayout,
@@ -747,8 +747,8 @@ public:
         for (int executionNdx = 0; executionNdx < EXECUTION_PER_THREAD; ++executionNdx)
         {
             const int shaderNdx       = executionNdx % (int)m_pipelineInfo.size();
-            const DeviceInterface &vk = m_context.getDeviceInterface();
             const VkDevice device     = m_queues.getDevice();
+            const DeviceInterface &vk = m_queues.getDeviceInterface();
             Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, m_pipelineCache, &m_pipelineInfo[shaderNdx]);
 
             TestStatus result = executeGraphicPipeline(m_context, *pipeline, m_pipelineLayout, m_descriptorSetLayout,
@@ -796,7 +796,7 @@ public:
         MovePtr<MultiQueues> queues          = createQueues(m_context, VK_QUEUE_COMPUTE_BIT, instance, instanceDriver);
         const DeviceInterface &vk            = queues->getDeviceInterface();
         const VkDevice device                = queues->getDevice();
-        ShaderModuleVector shaderCompModules = addShaderModules(device);
+        ShaderModuleVector shaderCompModules = addShaderModules(vk, device);
         Buffer resultBuffer(vk, device, *queues->m_allocator,
                             makeBufferCreateInfo(BUFFER_SIZE, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
                             MemoryRequirement::HostVisible);
@@ -849,9 +849,8 @@ public:
     }
 
 private:
-    ShaderModuleVector addShaderModules(const VkDevice &device)
+    ShaderModuleVector addShaderModules(const DeviceInterface &vk, const VkDevice &device)
     {
-        const DeviceInterface &vk = m_context.getDeviceInterface();
         ShaderModuleVector shaderCompModules;
         shaderCompModules.resize(m_shadersExecutions.size());
         for (int shaderNdx = 0; shaderNdx < static_cast<int>(m_shadersExecutions.size()); ++shaderNdx)
@@ -931,15 +930,15 @@ public:
         requireFeatures(instanceDriver, physicalDevice, FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 
         MovePtr<MultiQueues> queues   = createQueues(m_context, VK_QUEUE_GRAPHICS_BIT, instance, instanceDriver);
-        const DeviceInterface &vk     = m_context.getDeviceInterface();
         const VkDevice device         = queues->getDevice();
+        const DeviceInterface &vk     = queues->getDeviceInterface();
         VkFormat colorFormat          = VK_FORMAT_R8G8B8A8_UNORM;
         Move<VkRenderPass> renderPass = makeRenderPass(vk, device, colorFormat);
         const Move<VkDescriptorSetLayout> descriptorSetLayout(
             DescriptorSetLayoutBuilder()
                 .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
                 .build(vk, device));
-        ShaderModuleVector shaderGraphicModules = addShaderModules(device);
+        ShaderModuleVector shaderGraphicModules = addShaderModules(vk, device);
         const Move<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
         vector<VkPipelineShaderStageCreateInfo> shaderStageInfos = addShaderStageInfo(shaderGraphicModules);
         vector<VkGraphicsPipelineCreateInfo> pipelineInfo =
@@ -986,9 +985,8 @@ public:
     }
 
 private:
-    ShaderModuleVector addShaderModules(const VkDevice &device)
+    ShaderModuleVector addShaderModules(const DeviceInterface &vk, const VkDevice &device)
     {
-        const DeviceInterface &vk = m_context.getDeviceInterface();
         ShaderModuleVector shaderModules;
         shaderModules.resize(m_shadersExecutions.size() + 1);
         for (int shaderNdx = 0; shaderNdx < static_cast<int>(m_shadersExecutions.size()); ++shaderNdx)
