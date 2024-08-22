@@ -215,7 +215,10 @@ tcu::TestStatus manyExecutesRun(Context &context, ManyExecutesParams params)
 
     // Main command buffer contents.
     const auto mainCmdBuffer = (params.secondaries ? *secCmdBuffer : priCmdBuffer);
-    beginCommandBuffer(ctx.vkd, mainCmdBuffer);
+    if (params.secondaries)
+        beginSecondaryCommandBuffer(ctx.vkd, mainCmdBuffer);
+    else
+        beginCommandBuffer(ctx.vkd, mainCmdBuffer);
 
     ctx.vkd.cmdBindDescriptorSets(mainCmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
     ctx.vkd.cmdBindPipeline(mainCmdBuffer, bindPoint, *pipeline);

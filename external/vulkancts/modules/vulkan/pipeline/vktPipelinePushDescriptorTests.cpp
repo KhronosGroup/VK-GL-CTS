@@ -124,14 +124,16 @@ Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const Plat
     VkPhysicalDeviceFeatures features;
     deMemset(&features, 0, sizeof(features));
 
-    vector<string> requiredExtensionsStr                                                  = {"VK_KHR_push_descriptor"};
+    vector<string> requiredExtensionsStr = {"VK_KHR_push_descriptor"};
+    if (params.useMaintenance5)
+        requiredExtensionsStr.push_back("VK_KHR_maintenance5");
     VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT graphicsPipelineLibraryFeaturesEXT = initVulkanStructure();
-    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR =
-        initVulkanStructure(&graphicsPipelineLibraryFeaturesEXT);
+    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR               = initVulkanStructure();
     VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeaturesEXT = initVulkanStructure(&dynamicRenderingFeaturesKHR);
-    VkPhysicalDeviceFeatures2 features2                             = initVulkanStructure(&shaderObjectFeaturesEXT);
+    VkPhysicalDeviceFeatures2 features2                             = initVulkanStructure();
     if (isConstructionTypeLibrary(params.pipelineConstructionType))
     {
+        features2.pNext = &graphicsPipelineLibraryFeaturesEXT;
         requiredExtensionsStr.push_back("VK_KHR_pipeline_library");
         requiredExtensionsStr.push_back("VK_EXT_graphics_pipeline_library");
         vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
@@ -140,6 +142,7 @@ Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const Plat
     }
     else if (isConstructionTypeShaderObject(params.pipelineConstructionType))
     {
+        features2.pNext = &shaderObjectFeaturesEXT;
         if (context.getUsedApiVersion() < VK_API_VERSION_1_3)
             requiredExtensionsStr.push_back("VK_KHR_dynamic_rendering");
         requiredExtensionsStr.push_back("VK_EXT_shader_object");

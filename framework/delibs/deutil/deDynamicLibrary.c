@@ -44,7 +44,15 @@ deDynamicLibrary *deDynamicLibrary_open(const char *fileName)
         return NULL;
 
     if (getenv("LD_LIBRARY_PATH"))
-        library->libHandle = dlopen(basename((char *)fileName), RTLD_LAZY);
+    {
+        // basename() requires a non-const string because it may modify the its contents, so we cannot pass fileName to
+        // it directly. The string may be coming from statically allocated memory. E.g. this segfaulted in FreeBSD.
+        char *aux = deStrdup(fileName);
+        if (!aux)
+            return NULL;
+        library->libHandle = dlopen(basename(aux), RTLD_LAZY);
+        deFree(aux);
+    }
     else
         library->libHandle = dlopen(fileName, RTLD_LAZY);
 

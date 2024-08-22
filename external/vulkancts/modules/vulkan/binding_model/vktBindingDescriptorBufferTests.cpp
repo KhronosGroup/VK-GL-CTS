@@ -5090,7 +5090,7 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
 
                         resources.sampler = createSampler(vk, *m_device, &createInfo);
                     }
-                    else
+                    else if (m_testIteration == 0)
                     {
                         resources.sampler = createSampler(vk, *m_device, &createInfo);
                     }

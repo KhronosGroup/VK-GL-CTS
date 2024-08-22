@@ -6447,8 +6447,11 @@ public:
         };
 
         std::map<uint32_t, ResultItem *> nItemToResultItemPtrMap;
-        std::map<uint32_t, std::vector<std::unique_ptr<ResultItem>>> nRayToResultItemPtrVecMap;
-        std::map<uint32_t, std::map<uint32_t, std::vector<ResultItem *>>> nRayToNLevelToResultItemPtrVecMap;
+        std::map<uint32_t, std::vector<ResultItem *>> nLevelToResultItemPtrVecMap;
+        std::vector<std::unique_ptr<ResultItem>> resultItemPtrVec;
+
+        uint32_t rayCount;
+        std::map<uint32_t, std::vector<std::pair<const uint32_t *, uint32_t>>> nRayToResultItemPtrIndexVecMap;
 
         if (doFullCheck)
         {
@@ -6483,72 +6486,95 @@ public:
             goto end;
         }
 
-        /* Convert an array of result items, stored in undefined order, to a representation we can easily verify */
+        /*
+         * We are creating a map of rays, each of which has a list of result items for that ray,
+         * so we can verify each ray sequentially and save memory on the temporary maps.
+         */
         for (uint32_t nItem = 0; nItem < nItemsStored; ++nItem)
         {
             const uint32_t *currentItemU32Ptr = resultU32Ptr +
                                                 3 /* nItemsRegistered, nCHitInvocations, nMissInvocations*/ +
                                                 4 /* items per result item */ * nItem;
-            std::unique_ptr<ResultItem> resultItemPtr;
-
-            resultItemPtr.reset(new ResultItem());
-
-            resultItemPtr->depth       = *(currentItemU32Ptr + 2);
-            resultItemPtr->nOriginRay  = *(currentItemU32Ptr + 0);
-            resultItemPtr->nParentNode = *(currentItemU32Ptr + 3);
-
-            switch (*(currentItemU32Ptr + 1))
-            {
-            case 1:
-                resultItemPtr->stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-                break;
-            case 2:
-                resultItemPtr->stage = VK_SHADER_STAGE_MISS_BIT_KHR;
-                break;
-            case 3:
-                resultItemPtr->stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
-                break;
-
-            default:
-            {
-                /* This should never happen */
-                DE_ASSERT(false);
-
-                goto end;
-            }
-            }
-
-            if (resultItemPtr->depth >= m_depthToUse && m_depthToUse > 0u)
-            {
-                DE_ASSERT(resultItemPtr->depth < m_depthToUse);
-
-                goto end;
-            }
-
-            if (resultItemPtr->nOriginRay >= m_nRaysToTest)
-            {
-                DE_ASSERT(resultItemPtr->nOriginRay < m_nRaysToTest);
-
-                goto end;
-            }
-
-            nItemToResultItemPtrMap[nItem] = resultItemPtr.get();
-
-            nRayToNLevelToResultItemPtrVecMap[resultItemPtr->nOriginRay][resultItemPtr->depth].push_back(
-                resultItemPtr.get());
-            nRayToResultItemPtrVecMap[resultItemPtr->nOriginRay].push_back(std::move(resultItemPtr));
+            uint32_t nOriginRay = *(currentItemU32Ptr + 0);
+            nRayToResultItemPtrIndexVecMap[nOriginRay].push_back(std::make_pair(currentItemU32Ptr, nItem));
         }
 
-        if (doFullCheck)
+        /*
+         * Convert an array of result items, stored in undefined order, to a representation we can easily verify.
+         * Loop to verify result items with the same ray id in each iteration.
+         */
+        rayCount = getDispatchSize()[0] * getDispatchSize()[1] * getDispatchSize()[2];
+        for (uint32_t nRay = 0; nRay < rayCount; ++nRay)
         {
-            for (const auto &iterator1 : nRayToNLevelToResultItemPtrVecMap)
+            // If the nRay is not in the map, an empty vector will be created,
+            // and the subsequent verification will be simplified in this case.
+            const std::vector<std::pair<const uint32_t *, uint32_t>> &currentItemU32PtrIndexVec =
+                nRayToResultItemPtrIndexVecMap[nRay];
+            for (const auto &iterator1 : currentItemU32PtrIndexVec)
             {
-                const auto &currentNLevelToResultItemPtrVecMap = iterator1.second;
-                uint32_t nRayGenShaderResultItemsFound         = 0;
+                const uint32_t *currentItemU32Ptr = iterator1.first;
+                uint32_t nItem                    = iterator1.second;
 
-                for (const auto &iterator2 : currentNLevelToResultItemPtrVecMap)
+                std::unique_ptr<ResultItem> resultItemPtr;
+                resultItemPtr.reset(new ResultItem());
+
+                resultItemPtr->depth       = *(currentItemU32Ptr + 2);
+                resultItemPtr->nOriginRay  = *(currentItemU32Ptr + 0);
+                resultItemPtr->nParentNode = *(currentItemU32Ptr + 3);
+
+                switch (*(currentItemU32Ptr + 1))
                 {
-                    const auto &currentResultItemPtrVec = iterator2.second;
+                case 1:
+                    resultItemPtr->stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+                    break;
+                case 2:
+                    resultItemPtr->stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+                    break;
+                case 3:
+                    resultItemPtr->stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+                    break;
+
+                default:
+                {
+                    /* This should never happen */
+                    DE_ASSERT(false);
+
+                    goto end;
+                }
+                }
+
+                if (resultItemPtr->depth >= m_depthToUse && m_depthToUse > 0u)
+                {
+                    DE_ASSERT(resultItemPtr->depth < m_depthToUse);
+
+                    goto end;
+                }
+
+                if (resultItemPtr->nOriginRay >= m_nRaysToTest)
+                {
+                    DE_ASSERT(resultItemPtr->nOriginRay < m_nRaysToTest);
+
+                    goto end;
+                }
+
+                nItemToResultItemPtrMap[nItem] = resultItemPtr.get();
+
+                nLevelToResultItemPtrVecMap[resultItemPtr->depth].push_back(resultItemPtr.get());
+                resultItemPtrVec.push_back(std::move(resultItemPtr));
+            }
+
+            if (nLevelToResultItemPtrVecMap.empty())
+            {
+                continue;
+            }
+
+            if (doFullCheck)
+            {
+                uint32_t nRayGenShaderResultItemsFound = 0;
+
+                for (const auto &iterator1 : nLevelToResultItemPtrVecMap)
+                {
+                    const auto &currentResultItemPtrVec = iterator1.second;
 
                     for (const auto &currentResultItemPtr : currentResultItemPtrVec)
                     {
@@ -6604,19 +6630,14 @@ public:
                     goto end;
                 }
             }
-        }
 
-        // 1. Verify all nodes that are not leaves have both child nodes attached, and that leaf nodes do not have any children assigned.
-        if (doFullCheck)
-        {
-            for (const auto &iterator1 : nRayToNLevelToResultItemPtrVecMap)
+            // 1. Verify all nodes that are not leaves have both child nodes attached, and that leaf nodes do not have any children assigned.
+            if (doFullCheck)
             {
-                const auto &currentNLevelToResultItemPtrVecMap = iterator1.second;
-
-                for (const auto &iterator2 : currentNLevelToResultItemPtrVecMap)
+                for (const auto &iterator1 : nLevelToResultItemPtrVecMap)
                 {
-                    const auto &currentNLevel           = iterator2.first;
-                    const auto &currentResultItemPtrVec = iterator2.second;
+                    const auto &currentNLevel           = iterator1.first;
+                    const auto &currentResultItemPtrVec = iterator1.second;
 
                     for (const auto &currentResultItemPtr : currentResultItemPtrVec)
                     {
@@ -6656,17 +6677,12 @@ public:
                     }
                 }
             }
-        }
 
-        // 2. Verify depth level is correct for each node.
-        for (const auto &iterator1 : nRayToNLevelToResultItemPtrVecMap)
-        {
-            const auto &currentNLevelToResultItemPtrVecMap = iterator1.second;
-
-            for (const auto &iterator2 : currentNLevelToResultItemPtrVecMap)
+            // 2. Verify depth level is correct for each node.
+            for (const auto &iterator1 : nLevelToResultItemPtrVecMap)
             {
-                const auto &currentNLevel           = iterator2.first;
-                const auto &currentResultItemPtrVec = iterator2.second;
+                const auto &currentNLevel           = iterator1.first;
+                const auto &currentResultItemPtrVec = iterator1.second;
 
                 for (const auto &currentResultItemPtr : currentResultItemPtrVec)
                 {
@@ -6687,55 +6703,34 @@ public:
                     }
                 }
             }
-        }
 
-        // 3. Verify child node ptrs point to nodes that are assigned correct shader stage.
-        for (const auto &iterator : nItemToResultItemPtrMap)
-        {
-            const auto &currentResultItemPtr = iterator.second;
-
-            if (currentResultItemPtr->childCHitNodePtr != nullptr &&
-                currentResultItemPtr->childCHitNodePtr->stage != VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
+            // 3. Verify child node ptrs point to nodes that are assigned correct shader stage.
+            for (const auto &iterator : nItemToResultItemPtrMap)
             {
-                DE_ASSERT(currentResultItemPtr->childCHitNodePtr->stage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+                const auto &currentResultItemPtr = iterator.second;
 
-                goto end;
-            }
-
-            if (currentResultItemPtr->childMissNodePtr != nullptr &&
-                currentResultItemPtr->childMissNodePtr->stage != VK_SHADER_STAGE_MISS_BIT_KHR)
-            {
-                DE_ASSERT(currentResultItemPtr->childMissNodePtr->stage = VK_SHADER_STAGE_MISS_BIT_KHR);
-
-                goto end;
-            }
-        }
-
-        // 4. Verify nodes hold correct ray index.
-        for (const auto &iterator : nRayToResultItemPtrVecMap)
-        {
-            const auto &currentNRay = iterator.first;
-
-            for (const auto &currentResultItemPtr : iterator.second)
-            {
-                if (currentResultItemPtr->nOriginRay != currentNRay)
+                if (currentResultItemPtr->childCHitNodePtr != nullptr &&
+                    currentResultItemPtr->childCHitNodePtr->stage != VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
                 {
-                    DE_ASSERT(currentResultItemPtr->nOriginRay == currentNRay);
+                    DE_ASSERT(currentResultItemPtr->childCHitNodePtr->stage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+
+                    goto end;
+                }
+
+                if (currentResultItemPtr->childMissNodePtr != nullptr &&
+                    currentResultItemPtr->childMissNodePtr->stage != VK_SHADER_STAGE_MISS_BIT_KHR)
+                {
+                    DE_ASSERT(currentResultItemPtr->childMissNodePtr->stage = VK_SHADER_STAGE_MISS_BIT_KHR);
 
                     goto end;
                 }
             }
-        }
 
-        // 5. Verify child nodes are assigned correct depth levels.
-        for (const auto &iterator1 : nRayToNLevelToResultItemPtrVecMap)
-        {
-            const auto &currentNLevelToResultItemPtrVecMap = iterator1.second;
-
-            for (const auto &iterator2 : currentNLevelToResultItemPtrVecMap)
+            // 4. Verify child nodes are assigned correct depth levels.
+            for (const auto &iterator1 : nLevelToResultItemPtrVecMap)
             {
-                const auto &currentNLevel           = iterator2.first;
-                const auto &currentResultItemPtrVec = iterator2.second;
+                const auto &currentNLevel           = iterator1.first;
+                const auto &currentResultItemPtrVec = iterator1.second;
 
                 for (const auto &currentResultItemPtr : currentResultItemPtrVec)
                 {
@@ -6768,16 +6763,13 @@ public:
                     }
                 }
             }
-        }
 
-        // 6. Verify that RT shader stages were invoked for all anticipated recursion levels.
-        if (doFullCheck)
-        {
-            for (const auto &iterator1 : nRayToNLevelToResultItemPtrVecMap)
+            // 5. Verify that RT shader stages were invoked for all anticipated recursion levels.
+            if (doFullCheck)
             {
                 for (uint32_t nLevel = 0; nLevel < m_depthToUse; nLevel++)
                 {
-                    if (iterator1.second.find(nLevel) == iterator1.second.end())
+                    if (nLevelToResultItemPtrVecMap.find(nLevel) == nLevelToResultItemPtrVecMap.end())
                     {
                         DE_ASSERT(false);
 
@@ -6785,7 +6777,22 @@ public:
                     }
                 }
             }
-        }
+
+            /* clear containers before next iteration */
+            {
+                nItemToResultItemPtrMap.clear();
+
+                /* clear nLevelToResultItemPtrVecMap */
+                for (auto &iterator1 : nLevelToResultItemPtrVecMap)
+                {
+                    iterator1.second.clear();
+                }
+                nLevelToResultItemPtrVecMap.clear();
+
+                resultItemPtrVec.clear();
+            }
+
+        } // end for (uint32_t nRay = 0; nRay < rayCount; ++nRay)
 
         result = true;
     end:
