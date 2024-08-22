@@ -7862,8 +7862,8 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
                         case VK_SHADER_STAGE_COMPUTE_BIT:
                             // we want to test at least full subgroup
                             // both are primary numbers
-                            sizeX = 13u;
-                            sizeY = 19u;
+                            sizeX = 7u;
+                            sizeY = 13u;
                             break;
                         case VK_SHADER_STAGE_FRAGMENT_BIT:
                             sizeX = 32;

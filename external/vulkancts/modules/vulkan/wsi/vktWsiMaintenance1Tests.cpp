@@ -1951,17 +1951,17 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     if (surfaceFormats.empty())
         return tcu::TestStatus::fail("No VkSurfaceFormatKHR defined");
 
+    const std::vector<VkPresentModeKHR> presentModes =
+        getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
+    if (std::find(presentModes.begin(), presentModes.end(), testParams.mode) == presentModes.end())
+        TCU_THROW(NotSupportedError, "Present mode not supported");
+
     const VkSurfaceCapabilitiesKHR capabilities =
         getPerPresentSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface, testParams.mode);
     const VkSurfaceTransformFlagBitsKHR transform =
         (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) != 0 ?
             VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR :
             capabilities.currentTransform;
-
-    const std::vector<VkPresentModeKHR> presentModes =
-        getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
-    if (std::find(presentModes.begin(), presentModes.end(), testParams.mode) == presentModes.end())
-        TCU_THROW(NotSupportedError, "Present mode not supported");
 
     if (testParams.scaling != 0)
     {
@@ -2045,9 +2045,17 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             const VkSemaphore presentSem = **presentSems[i];
             const VkSemaphore acquireSem = **acquireSems[i];
             std::vector<uint32_t> acquiredIndices(acquireCount, 0x12345);
+            FenceSp acquireFenceSp      = FenceSp(new Unique<VkFence>(createFence(vkd, device)));
+            const VkFence &acquireFence = **acquireFenceSp;
 
-            VkResult result = vkd.acquireNextImageKHR(
-                device, *swapchain, foreverNs, presentIndex == 0 ? acquireSem : DE_NULL, DE_NULL, &acquiredIndices[0]);
+            VkResult result =
+                vkd.acquireNextImageKHR(device, *swapchain, foreverNs, presentIndex == 0 ? acquireSem : DE_NULL,
+                                        acquireFence, &acquiredIndices[0]);
+            if (result == VK_SUCCESS)
+            {
+                VK_CHECK(vkd.waitForFences(device, 1u, &acquireFence, VK_TRUE, kMaxFenceWaitTimeout));
+                VK_CHECK(vkd.resetFences(device, 1u, &acquireFence));
+            }
 
             // If out of date, recreate the swapchain and reacquire.
             if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -2069,7 +2077,12 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
 
                 result =
                     vkd.acquireNextImageKHR(device, *swapchain, foreverNs, presentIndex == 0 ? acquireSem : DE_NULL,
-                                            DE_NULL, &acquiredIndices[0]);
+                                            acquireFence, &acquiredIndices[0]);
+                if (result == VK_SUCCESS)
+                {
+                    VK_CHECK(vkd.waitForFences(device, 1u, &acquireFence, VK_TRUE, kMaxFenceWaitTimeout));
+                    VK_CHECK(vkd.resetFences(device, 1u, &acquireFence));
+                }
             }
 
             VK_CHECK_WSI(result);
@@ -2077,8 +2090,10 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             for (uint32_t j = 1; j < acquireCount; ++j)
             {
                 VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
-                                                     presentIndex == j ? acquireSem : DE_NULL, DE_NULL,
+                                                     presentIndex == j ? acquireSem : DE_NULL, acquireFence,
                                                      &acquiredIndices[j]));
+                VK_CHECK(vkd.waitForFences(device, 1u, &acquireFence, VK_TRUE, kMaxFenceWaitTimeout));
+                VK_CHECK(vkd.resetFences(device, 1u, &acquireFence));
             }
 
             // Construct a list of image indices to be released.  That is every index except the one being presented, if any.
@@ -2087,6 +2102,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             {
                 releaseIndices.erase(releaseIndices.begin() + presentIndex);
             }
+            size_t imageReleaseSize = releaseIndices.size();
 
             // Randomize the indices to be released.
             rng.shuffle(releaseIndices.begin(), releaseIndices.end());
@@ -2149,12 +2165,12 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                 VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT,
                 DE_NULL,
                 *swapchain,
-                (uint32_t)releaseIndices.size(),
+                (uint32_t)imageReleaseSize,
                 releaseIndices.data(),
             };
 
             bool imagesReleased = false;
-            if (testParams.releaseBeforePresent)
+            if (testParams.releaseBeforePresent && imageReleaseSize > 0)
             {
                 VK_CHECK(vkd.releaseSwapchainImagesEXT(device, &releaseInfo));
                 imagesReleased = true;
@@ -2185,7 +2201,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                 if (aggregateResult == VK_ERROR_OUT_OF_DATE_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
                 {
                     // If OUT_OF_DATE is returned from present, recreate the swapchain and release images to the retired swapchain.
-                    if (!imagesReleased && testParams.releaseBeforeRetire)
+                    if (!imagesReleased && testParams.releaseBeforeRetire && imageReleaseSize > 0)
                     {
                         VK_CHECK(vkd.releaseSwapchainImagesEXT(device, &releaseInfo));
                         imagesReleased = true;
@@ -2199,7 +2215,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     swapchainInfo.oldSwapchain = *swapchain;
                     Move<VkSwapchainKHR> newSwapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
 
-                    if (!imagesReleased && !testParams.releaseBeforeRetire)
+                    if (!imagesReleased && !testParams.releaseBeforeRetire && imageReleaseSize > 0)
                     {
                         // Release the images to the retired swapchain before deleting it (as part of move assignment below)
                         VK_CHECK(vkd.releaseSwapchainImagesEXT(device, &releaseInfo));
@@ -2207,7 +2223,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     }
 
                     // Must have released old swapchain's images before destruction
-                    DE_ASSERT(imagesReleased);
+                    DE_ASSERT(imagesReleased || imageReleaseSize == 0);
                     swapchain = std::move(newSwapchain);
 
                     const size_t previousImageCount = swapchainImages.size();
@@ -2225,7 +2241,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             }
 
             // If asked to release after present, do it now.
-            if (!imagesReleased)
+            if (!imagesReleased && imageReleaseSize > 0)
             {
                 VK_CHECK_WSI(vkd.releaseSwapchainImagesEXT(device, &releaseInfo));
             }
