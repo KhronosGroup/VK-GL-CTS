@@ -19112,7 +19112,7 @@ void ShadingLanguage420PackTests::addBindingUniformInvalidTest()
         GLSL420Pack::BindingUniformInvalidTest::MISSING,
     };
 
-    for (uint test_case_idx = 0; test_case_idx < cases.size(); ++test_case_idx)
+    for (GLuint test_case_idx = 0; test_case_idx < cases.size(); ++test_case_idx)
     {
         addChild(new GLSL420Pack::BindingUniformInvalidTest(m_context, cases[test_case_idx]));
     }
@@ -19140,7 +19140,7 @@ void ShadingLanguage420PackTests::addBindingSamplerInvalidTest()
         GLSL420Pack::BindingSamplerInvalidTest::MISSING,
     };
 
-    for (uint test_case_idx = 0; test_case_idx < cases.size(); ++test_case_idx)
+    for (GLuint test_case_idx = 0; test_case_idx < cases.size(); ++test_case_idx)
     {
         addChild(new GLSL420Pack::BindingSamplerInvalidTest(m_context, cases[test_case_idx]));
     }
@@ -19168,7 +19168,7 @@ void ShadingLanguage420PackTests::addBindingImageInvalidTest()
         GLSL420Pack::BindingImageInvalidTest::MISSING,
     };
 
-    for (uint test_case_idx = 0; test_case_idx < cases.size(); ++test_case_idx)
+    for (GLuint test_case_idx = 0; test_case_idx < cases.size(); ++test_case_idx)
     {
         addChild(new GLSL420Pack::BindingImageInvalidTest(m_context, cases[test_case_idx]));
     }
@@ -19308,7 +19308,7 @@ void ShadingLanguage420PackTests::addScalarSwizzlersInvalidTest()
         GLSL420Pack::ScalarSwizzlersInvalidTest::MISSING_PARENTHESIS,
     };
 
-    for (uint test_case_idx = 0; test_case_idx < cases.size(); ++test_case_idx)
+    for (GLuint test_case_idx = 0; test_case_idx < cases.size(); ++test_case_idx)
     {
         addChild(new GLSL420Pack::ScalarSwizzlersInvalidTest(m_context, cases[test_case_idx]));
     }
@@ -19316,7 +19316,7 @@ void ShadingLanguage420PackTests::addScalarSwizzlersInvalidTest()
 
 void ShadingLanguage420PackTests::addBuiltInAssignmentTest()
 {
-    for (uint test_case_idx = 0; test_case_idx < 2; ++test_case_idx)
+    for (GLuint test_case_idx = 0; test_case_idx < 2; ++test_case_idx)
     {
         addChild(new GLSL420Pack::BuiltInAssignmentTest(m_context, test_case_idx));
     }
