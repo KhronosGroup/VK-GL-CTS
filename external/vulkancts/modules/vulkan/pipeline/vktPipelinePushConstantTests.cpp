@@ -84,6 +84,7 @@ enum RangeSizeCase
     SIZE_CASE_48,
     SIZE_CASE_128,
     SIZE_CASE_256,
+    SIZE_CASE_MAX,
     SIZE_CASE_UNSUPPORTED
 };
 
@@ -238,7 +239,8 @@ public:
                                      const uint32_t rangeCount,
                                      const PushConstantData pushConstantRange[MAX_RANGE_COUNT],
                                      const bool multipleUpdate, const IndexType indexType, const bool pushConstant2,
-                                     const PushConstantUseStage pcUsedStage = PC_USE_STAGE_ALL);
+                                     const PushConstantUseStage pcUsedStage = PC_USE_STAGE_ALL,
+                                     const bool sizeQueriedFromDevice       = false);
     virtual ~PushConstantGraphicsTestInstance(void);
     void init(void);
     virtual tcu::TestStatus iterate(void);
@@ -257,6 +259,7 @@ protected:
     const IndexType m_indexType;
     const PushConstantUseStage m_pcUsedStage;
     bool m_pushConstant2;
+    bool m_sizeQueriedFromDevice;
 
 private:
     const tcu::UVec2 m_renderSize;
@@ -306,13 +309,14 @@ void PushConstantGraphicsTestInstance::createShaderModule(const DeviceInterface 
 PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance(
     Context &context, const PipelineConstructionType pipelineConstructionType, const uint32_t rangeCount,
     const PushConstantData pushConstantRange[MAX_RANGE_COUNT], bool multipleUpdate, IndexType indexType,
-    const bool pushConstant2, const PushConstantUseStage pcUsedStage)
+    const bool pushConstant2, const PushConstantUseStage pcUsedStage, const bool sizeQueriedFromDevice)
     : vkt::TestInstance(context)
     , m_pipelineConstructionType(pipelineConstructionType)
     , m_rangeCount(rangeCount)
     , m_indexType(indexType)
     , m_pcUsedStage(pcUsedStage)
     , m_pushConstant2(pushConstant2)
+    , m_sizeQueriedFromDevice(sizeQueriedFromDevice)
     , m_renderSize(32, 32)
     , m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)
     , m_multipleUpdate(multipleUpdate)
@@ -332,8 +336,14 @@ void PushConstantGraphicsTestInstance::init(void)
     SimpleAllocator memAlloc(
         vk, vkDevice,
         getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
-    const VkComponentMapping componentMappingRGBA             = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G,
-                                                                 VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
+    const VkComponentMapping componentMappingRGBA = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G,
+                                                     VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
+    if (m_sizeQueriedFromDevice)
+    {
+        const VkPhysicalDeviceLimits &limits = m_context.getDeviceProperties().limits;
+        m_pushConstantRange[0].range.size    = limits.maxPushConstantsSize;
+        m_pushConstantRange[0].update.size   = limits.maxPushConstantsSize;
+    }
     const std::vector<VkPushConstantRange> pushConstantRanges = getPushConstantRanges();
     bool useTessellation                                      = false;
     bool useGeometry                                          = false;
@@ -569,6 +579,20 @@ void PushConstantGraphicsTestInstance::init(void)
         const std::vector<VkViewport> viewports{makeViewport(m_renderSize)};
         const std::vector<VkRect2D> scissors{makeRect2D(m_renderSize)};
 
+        uint32_t specializationData = m_pushConstantRange[0].range.size;
+
+        const VkSpecializationMapEntry specializationMapEntry = {
+            0,                          // uint32_t constantID
+            0,                          // uint32_t offset
+            sizeof(specializationData), // uint32_t size
+        };
+        const VkSpecializationInfo specializationInfo = {
+            1,                          // uint32_t    mapEntryCount
+            &specializationMapEntry,    // const void* pMapEntries
+            sizeof(specializationData), // size_t      dataSize
+            &specializationData         // const void* pData
+        };
+
         m_graphicsPipeline.setMonolithicPipelineLayout(m_preRasterizationStatePipelineLayout)
             .setDefaultRasterizationState()
             .setDefaultDepthStencilState()
@@ -580,7 +604,8 @@ void PushConstantGraphicsTestInstance::init(void)
                                               0u, m_vertexShaderModule, nullptr,
                                               useTessellation ? m_tessControlShaderModule : ShaderWrapper(),
                                               useTessellation ? m_tessEvaluationShaderModule : ShaderWrapper(),
-                                              useGeometry ? m_geometryShaderModule : ShaderWrapper())
+                                              useGeometry ? m_geometryShaderModule : ShaderWrapper(),
+                                              m_sizeQueriedFromDevice ? &specializationInfo : DE_NULL)
             .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
             .setupFragmentOutputState(*m_renderPass)
             .buildPipeline();
@@ -747,7 +772,8 @@ public:
                                          const uint32_t rangeCount,
                                          const PushConstantData pushConstantRange[MAX_RANGE_COUNT],
                                          const bool multipleUpdate, const IndexType indexType, const bool pushConstant2,
-                                         const PushConstantUseStage pcUsedStage = PC_USE_STAGE_ALL);
+                                         const PushConstantUseStage pcUsedStage = PC_USE_STAGE_ALL,
+                                         const bool sizeQueriedFromDevice       = false);
     virtual ~PushConstantGraphicsDisjointInstance(void);
     std::vector<VkPushConstantRange> getPushConstantRanges(void);
     void updatePushConstants(VkCommandBuffer cmdBuffer, VkPipelineLayout pipelineLayout);
@@ -757,9 +783,9 @@ public:
 PushConstantGraphicsDisjointInstance::PushConstantGraphicsDisjointInstance(
     Context &context, const PipelineConstructionType pipelineConstructionType, const uint32_t rangeCount,
     const PushConstantData pushConstantRange[MAX_RANGE_COUNT], const bool multipleUpdate, const IndexType indexType,
-    const bool pushConstant2, const PushConstantUseStage pcUsedStage)
+    const bool pushConstant2, const PushConstantUseStage pcUsedStage, const bool sizeQueriedFromDevice)
     : PushConstantGraphicsTestInstance(context, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate,
-                                       indexType, pushConstant2, pcUsedStage)
+                                       indexType, pushConstant2, pcUsedStage, sizeQueriedFromDevice)
 {
     deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
 }
@@ -788,7 +814,8 @@ void PushConstantGraphicsDisjointInstance::updatePushConstants(VkCommandBuffer c
                                                                VkPipelineLayout pipelineLayout)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
-    std::vector<tcu::Vec4> color(16, tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    std::vector<tcu::Vec4> color(m_sizeQueriedFromDevice ? ((m_pushConstantRange[0].range.size + 12) / 16) : 16,
+                                 tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
     std::vector<tcu::Vec4> allOnes(8, tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
     switch (m_indexType)
@@ -1092,7 +1119,8 @@ public:
                              const PipelineConstructionType pipelineConstructionType, const uint32_t rangeCount,
                              const PushConstantData pushConstantRange[MAX_RANGE_COUNT], const bool multipleUpdate,
                              const IndexType indexType, const bool pushConstant2,
-                             const PushConstantUseStage pcUsedStage = PC_USE_STAGE_ALL);
+                             const PushConstantUseStage pcUsedStage = PC_USE_STAGE_ALL,
+                             const bool sizeQueriedFromDevice       = false);
     virtual ~PushConstantGraphicsTest(void);
 
     virtual void checkSupport(Context &context) const;
@@ -1108,6 +1136,7 @@ protected:
     const IndexType m_indexType;
     const bool m_pushConstant2;
     const PushConstantUseStage m_pcUsedStage;
+    const bool m_sizeQueriedFromDevice;
 };
 
 PushConstantGraphicsTest::PushConstantGraphicsTest(tcu::TestContext &testContext, const std::string &name,
@@ -1115,7 +1144,8 @@ PushConstantGraphicsTest::PushConstantGraphicsTest(tcu::TestContext &testContext
                                                    const uint32_t rangeCount,
                                                    const PushConstantData pushConstantRange[MAX_RANGE_COUNT],
                                                    const bool multipleUpdate, const IndexType indexType,
-                                                   const bool pushConstant2, const PushConstantUseStage pcUsedStage)
+                                                   const bool pushConstant2, const PushConstantUseStage pcUsedStage,
+                                                   const bool sizeQueriedFromDevice)
     : vkt::TestCase(testContext, name)
     , m_pipelineConstructionType(pipelineConstructionType)
     , m_rangeCount(rangeCount)
@@ -1123,6 +1153,7 @@ PushConstantGraphicsTest::PushConstantGraphicsTest(tcu::TestContext &testContext
     , m_indexType(indexType)
     , m_pushConstant2(pushConstant2)
     , m_pcUsedStage(pcUsedStage)
+    , m_sizeQueriedFromDevice(sizeQueriedFromDevice)
 {
     deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
 }
@@ -1141,19 +1172,27 @@ void PushConstantGraphicsTest::checkSupport(Context &context) const
 
     const VkPhysicalDeviceLimits &limits = context.getDeviceProperties().limits;
 
-    for (size_t rangeNdx = 0; rangeNdx < m_rangeCount; rangeNdx++)
+    if (!m_sizeQueriedFromDevice)
     {
-        if (m_pushConstantRange[rangeNdx].range.size > limits.maxPushConstantsSize)
+        for (size_t rangeNdx = 0; rangeNdx < m_rangeCount; rangeNdx++)
         {
-            TCU_THROW(NotSupportedError, "PushConstant size " +
-                                             std::to_string(m_pushConstantRange[rangeNdx].range.size) +
-                                             " exceeds device limit " + std::to_string(limits.maxPushConstantsSize));
+            if (m_pushConstantRange[rangeNdx].range.size > limits.maxPushConstantsSize)
+            {
+                TCU_THROW(NotSupportedError,
+                          "PushConstant size " + std::to_string(m_pushConstantRange[rangeNdx].range.size) +
+                              " exceeds device limit " + std::to_string(limits.maxPushConstantsSize));
+            }
         }
     }
 }
 
 RangeSizeCase PushConstantGraphicsTest::getRangeSizeCase(uint32_t rangeSize) const
 {
+    if (m_sizeQueriedFromDevice)
+    {
+        return SIZE_CASE_MAX;
+    }
+
     switch (rangeSize)
     {
     case 8:
@@ -1187,7 +1226,8 @@ public:
                                      const PipelineConstructionType pipelineConstructionType, const uint32_t rangeCount,
                                      const PushConstantData pushConstantRange[MAX_RANGE_COUNT],
                                      const bool multipleUpdate, const IndexType indexType, const bool pushConstant2,
-                                     const PushConstantUseStage pcUseStage = PC_USE_STAGE_ALL);
+                                     const PushConstantUseStage pcUseStage = PC_USE_STAGE_ALL,
+                                     const bool sizeQueriedFromDevice      = false);
     virtual ~PushConstantGraphicsDisjointTest(void);
 
     virtual void initPrograms(SourceCollections &sourceCollections) const;
@@ -1197,9 +1237,10 @@ public:
 PushConstantGraphicsDisjointTest::PushConstantGraphicsDisjointTest(
     tcu::TestContext &testContext, const std::string &name, const PipelineConstructionType pipelineConstructionType,
     const uint32_t rangeCount, const PushConstantData pushConstantRange[MAX_RANGE_COUNT], const bool multipleUpdate,
-    const IndexType indexType, const bool pushConstant2, const PushConstantUseStage pcUseStage)
+    const IndexType indexType, const bool pushConstant2, const PushConstantUseStage pcUseStage,
+    const bool sizeQueriedFromDevice)
     : PushConstantGraphicsTest(testContext, name, pipelineConstructionType, rangeCount, pushConstantRange,
-                               multipleUpdate, indexType, pushConstant2, pcUseStage)
+                               multipleUpdate, indexType, pushConstant2, pcUseStage, sizeQueriedFromDevice)
 {
 }
 
@@ -1227,6 +1268,11 @@ void PushConstantGraphicsDisjointTest::initPrograms(SourceCollections &sourceCol
 
             if (m_pcUsedStage & PC_USE_STAGE_VERTEX)
             {
+                if (m_sizeQueriedFromDevice)
+                {
+                    vertexSrc << "layout (constant_id = 0) const uint MaxPushConstantSize = 128;\n";
+                }
+
                 vertexSrc << "layout(push_constant) uniform Material {\n";
 
                 switch (m_indexType)
@@ -1261,6 +1307,10 @@ void PushConstantGraphicsDisjointTest::initPrograms(SourceCollections &sourceCol
                         break;
                     case SIZE_CASE_256:
                         vertexSrc << "vec4 color[16];\n"
+                                  << "} matInst;\n";
+                        break;
+                    case SIZE_CASE_MAX:
+                        vertexSrc << "vec4 color[(MaxPushConstantSize + 12) / 16];\n"
                                   << "} matInst;\n";
                         break;
                     default:
@@ -1328,6 +1378,26 @@ void PushConstantGraphicsDisjointTest::initPrograms(SourceCollections &sourceCol
                                   << "  color = color + matInst.color[i];\n"
                                   << "}\n"
                                   << "vtxColor = color * 0.0625;\n"
+                                  << "}\n";
+                        break;
+                    case SIZE_CASE_MAX:
+                        vertexSrc << "vec4 color = vec4(0.0, 0, 0, 0.0);\n"
+                                  << "for (int i = 0; i < (MaxPushConstantSize / 16); i++)\n"
+                                  << "{\n"
+                                  << "  color = color + matInst.color[i];\n"
+                                  << "}\n"
+                                  << "for (int i = 0; i < ((MaxPushConstantSize % 16) / 4); i++)\n"
+                                  << "{\n"
+                                  << "  switch (i) {\n"
+                                  << "  case 0: if (matInst.color[(MaxPushConstantSize + 12) / 16 - 1].x != 1.0) color "
+                                     "= vec4(0.0); break;\n"
+                                  << "  case 1: if (matInst.color[(MaxPushConstantSize + 12) / 16 - 1].y != 0.0) color "
+                                     "= vec4(0.0); break;\n"
+                                  << "  case 2: if (matInst.color[(MaxPushConstantSize + 12) / 16 - 1].z != 0.0) color "
+                                     "= vec4(0.0); break;\n"
+                                  << "  default: break;}\n"
+                                  << "}\n"
+                                  << "vtxColor = color / (MaxPushConstantSize / 16);\n"
                                   << "}\n";
                         break;
                     default:
@@ -1586,7 +1656,7 @@ TestInstance *PushConstantGraphicsDisjointTest::createInstance(Context &context)
 {
     return new PushConstantGraphicsDisjointInstance(context, m_pipelineConstructionType, m_rangeCount,
                                                     m_pushConstantRange, m_multipleUpdate, m_indexType, m_pushConstant2,
-                                                    m_pcUsedStage);
+                                                    m_pcUsedStage, m_sizeQueriedFromDevice);
 }
 
 class PushConstantGraphicsOverlapTest : public PushConstantGraphicsTest
@@ -3225,6 +3295,12 @@ tcu::TestCaseGroup *createPushConstantTests(tcu::TestContext &testCtx,
         {"range_size_128", 1u, {{{VK_SHADER_STAGE_VERTEX_BIT, 0, 128}, {0, 128}}}, false, INDEX_TYPE_CONST_LITERAL},
         // test range size is 256 bytes(maximum valid size in Vulkan 1.4)
         {"range_size_256", 1u, {{{VK_SHADER_STAGE_VERTEX_BIT, 0, 256}, {0, 256}}}, false, INDEX_TYPE_CONST_LITERAL},
+        // test range size is max bytes queried from driver and will be overwritten
+        {"range_size_max",
+         1u,
+         {{{VK_SHADER_STAGE_VERTEX_BIT, 0, 0xFFFF}, {0, 0xFFFF}}},
+         false,
+         INDEX_TYPE_CONST_LITERAL},
         // test range count, including all valid shader stage in graphics pipeline, and also multiple shader stages share one single range
         {"count_2_shaders_vert_frag",
          2u,
@@ -3457,7 +3533,8 @@ tcu::TestCaseGroup *createPushConstantTests(tcu::TestContext &testCtx,
                 name += "_command2";
             graphicsTests->addChild(new PushConstantGraphicsDisjointTest(
                 testCtx, name.c_str(), pipelineConstructionType, graphicsParams[ndx].count, graphicsParams[ndx].range,
-                graphicsParams[ndx].hasMultipleUpdates, graphicsParams[ndx].indexType, pushConstant2));
+                graphicsParams[ndx].hasMultipleUpdates, graphicsParams[ndx].indexType, pushConstant2, PC_USE_STAGE_ALL,
+                graphicsParams[ndx].range[0].range.size == 0xFFFF));
         }
 
         for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(overlapGraphicsParams); ndx++)

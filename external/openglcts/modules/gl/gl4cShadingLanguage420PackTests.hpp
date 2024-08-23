@@ -682,28 +682,6 @@ protected:
 class LineContinuationTest : public GLSLTestBase
 {
 public:
-    /* Public methods */
-    LineContinuationTest(deqp::Context &);
-
-    virtual ~LineContinuationTest()
-    {
-    }
-
-protected:
-    /* Protected methods inherited from GLSLTestBase */
-    virtual void getShaderSourceConfig(glw::GLuint &out_n_parts, bool &out_use_lengths);
-
-    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
-
-    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-                                     Utils::shaderSource &out_source);
-
-    virtual const glw::GLchar *prepareSourceTexture(Utils::texture &texture);
-
-    virtual void prepareVertexBuffer(const Utils::program &program, Utils::buffer &buffer, Utils::vertexArray &vao);
-
-private:
-    /* Private enums */
     enum CASES
     {
         ASSIGNMENT_BEFORE_OPERATOR = 0,
@@ -738,7 +716,6 @@ private:
         DOS,
     };
 
-    /* Private types */
     /** Declare test case
      *
      **/
@@ -749,6 +726,27 @@ private:
         glw::GLuint m_line_endings;
     };
 
+    /* Public methods */
+    LineContinuationTest(deqp::Context &context, testCase test_case);
+
+    virtual ~LineContinuationTest()
+    {
+    }
+
+protected:
+    /* Protected methods inherited from GLSLTestBase */
+    virtual void getShaderSourceConfig(glw::GLuint &out_n_parts, bool &out_use_lengths);
+
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
+
+    virtual const glw::GLchar *prepareSourceTexture(Utils::texture &texture);
+
+    virtual void prepareVertexBuffer(const Utils::program &program, Utils::buffer &buffer, Utils::vertexArray &vao);
+
+private:
     /* Private methods */
     const glw::GLchar *casesToStr(CASES cases) const;
     const glw::GLchar *getExpectedValueString() const;
@@ -842,8 +840,24 @@ protected:
 class UTF8CharactersTest : public GLSLTestBase
 {
 public:
+    enum CASES
+    {
+        IN_COMMENT = 0,
+        IN_PREPROCESSOR,
+        AS_LAST_CHARACTER_NULL_TERMINATED,
+        AS_LAST_CHARACTER_NON_NULL_TERMINATED,
+
+        DEBUG_CASE
+    };
+
+    struct testCase
+    {
+        CASES m_case;
+        Utils::UTF8_CHARACTERS m_character;
+    };
+
     /* Public methods */
-    UTF8CharactersTest(deqp::Context &);
+    UTF8CharactersTest(deqp::Context &context, testCase test_case);
 
     virtual ~UTF8CharactersTest()
     {
@@ -860,26 +874,9 @@ public:
     virtual const glw::GLchar *prepareSourceTexture(Utils::texture &texture);
 
 private:
-    /* Private enums */
-    enum CASES
-    {
-        IN_COMMENT = 0,
-        IN_PREPROCESSOR,
-        AS_LAST_CHARACTER_NULL_TERMINATED,
-        AS_LAST_CHARACTER_NON_NULL_TERMINATED,
-
-        DEBUG_CASE
-    };
-
-    /* Private types */
-    struct testCase
-    {
-        CASES m_case;
-        Utils::UTF8_CHARACTERS m_character;
-    };
-
     /* Private methods */
     const glw::GLchar *casesToStr() const;
+    const glw::GLchar *characterToStr() const;
 
     /* Private variables */
     testCase m_test_case;
@@ -896,7 +893,7 @@ class UTF8InSourceTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    UTF8InSourceTest(deqp::Context &);
+    UTF8InSourceTest(deqp::Context &context, Utils::UTF8_CHARACTERS character);
 
     virtual ~UTF8InSourceTest()
     {
@@ -909,6 +906,8 @@ public:
                                      Utils::shaderSource &out_source);
 
 private:
+    const glw::GLchar *characterToStr() const;
+
     /* Private variables */
     Utils::UTF8_CHARACTERS m_character;
 };
@@ -939,25 +938,6 @@ private:
 class ImplicitConversionsValidTest : public GLSLTestBase
 {
 public:
-    /* Public methods */
-    ImplicitConversionsValidTest(deqp::Context &);
-
-    virtual ~ImplicitConversionsValidTest()
-    {
-    }
-
-protected:
-    /* Methods to be implemented by child class */
-    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
-
-    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-                                     Utils::shaderSource &out_source);
-
-    virtual void prepareUniforms(Utils::program &program);
-    virtual bool testInit();
-
-private:
-    /* Private types */
     struct typesPair
     {
         Utils::TYPES m_t1;
@@ -971,6 +951,23 @@ private:
         glw::GLuint m_n_rows;
     };
 
+    /* Public methods */
+    ImplicitConversionsValidTest(deqp::Context &context, testCase test_case);
+
+    virtual ~ImplicitConversionsValidTest()
+    {
+    }
+
+protected:
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
+
+    virtual void prepareUniforms(Utils::program &program);
+
+private:
     /* Private methods */
     const testCase &getCurrentTestCase();
 
@@ -1171,7 +1168,7 @@ class QualifierOrderTest : public GLSLTestBase
 {
 public:
     /* Public methods */
-    QualifierOrderTest(deqp::Context &);
+    QualifierOrderTest(deqp::Context &context, Utils::qualifierSet &test_case, glw::GLuint test_id);
 
     virtual ~QualifierOrderTest()
     {
@@ -1185,8 +1182,6 @@ protected:
                                      Utils::shaderSource &out_source);
 
     virtual void prepareVertexBuffer(const Utils::program &program, Utils::buffer &buffer, Utils::vertexArray &vao);
-
-    virtual bool testInit();
 
 private:
     /* Private methods */
@@ -1239,7 +1234,7 @@ class QualifierOrderBlockTest : public GLSLTestBase
 {
 public:
     /* Public methods */
-    QualifierOrderBlockTest(deqp::Context &);
+    QualifierOrderBlockTest(deqp::Context &context, Utils::qualifierSet &test_case, glw::GLuint test_id);
 
     virtual ~QualifierOrderBlockTest()
     {
@@ -1253,8 +1248,6 @@ protected:
                                      Utils::shaderSource &out_source);
 
     virtual void prepareVertexBuffer(const Utils::program &program, Utils::buffer &buffer, Utils::vertexArray &vao);
-
-    virtual bool testInit();
 
 private:
     /* Private methods */
@@ -1281,7 +1274,7 @@ class QualifierOrderUniformTest : public GLSLTestBase
 {
 public:
     /* Public methods */
-    QualifierOrderUniformTest(deqp::Context &);
+    QualifierOrderUniformTest(deqp::Context &context, Utils::qualifierSet test_case, glw::GLuint test_id);
 
     virtual ~QualifierOrderUniformTest()
     {
@@ -1320,7 +1313,7 @@ class QualifierOrderFunctionInoutTest : public GLSLTestBase
 {
 public:
     /* Public methods */
-    QualifierOrderFunctionInoutTest(deqp::Context &);
+    QualifierOrderFunctionInoutTest(deqp::Context &context, Utils::qualifierSet test_case, glw::GLuint test_id);
 
     virtual ~QualifierOrderFunctionInoutTest()
     {
@@ -1334,7 +1327,6 @@ protected:
                                      Utils::shaderSource &out_source);
 
     virtual void prepareUniforms(Utils::program &program);
-    virtual bool testInit();
 
 private:
     /* Private methods */
@@ -1359,7 +1351,7 @@ class QualifierOrderFunctionInputTest : public GLSLTestBase
 {
 public:
     /* Public methods */
-    QualifierOrderFunctionInputTest(deqp::Context &);
+    QualifierOrderFunctionInputTest(deqp::Context &context, Utils::qualifierSet test_case, glw::GLuint test_id);
 
     virtual ~QualifierOrderFunctionInputTest()
     {
@@ -1373,7 +1365,6 @@ protected:
                                      Utils::shaderSource &out_source);
 
     virtual void prepareUniforms(Utils::program &program);
-    virtual bool testInit();
 
 private:
     /* Private methods */
@@ -1397,7 +1388,7 @@ class QualifierOrderFunctionOutputTest : public GLSLTestBase
 {
 public:
     /* Public methods */
-    QualifierOrderFunctionOutputTest(deqp::Context &);
+    QualifierOrderFunctionOutputTest(deqp::Context &context, Utils::qualifierSet test_case, glw::GLuint test_id);
 
     virtual ~QualifierOrderFunctionOutputTest()
     {
@@ -1411,7 +1402,6 @@ protected:
                                      Utils::shaderSource &out_source);
 
     virtual void prepareUniforms(Utils::program &program);
-    virtual bool testInit();
 
 private:
     /* Private methods */
@@ -1535,7 +1525,7 @@ class BindingUniformSingleBlockTest : public GLSLTestBase
 {
 public:
     /* Public methods */
-    BindingUniformSingleBlockTest(deqp::Context &);
+    BindingUniformSingleBlockTest(deqp::Context &context, Utils::SHADER_STAGES test_stage);
 
     virtual ~BindingUniformSingleBlockTest()
     {
@@ -1716,8 +1706,19 @@ protected:
 class BindingUniformInvalidTest : public NegativeTestBase
 {
 public:
+    enum TESTCASES
+    {
+        NEGATIVE_VALUE,
+        VARIABLE_NAME,
+        STD140,
+        MISSING,
+
+        /* */
+        TEST_CASES_MAX
+    };
+
     /* Public methods */
-    BindingUniformInvalidTest(deqp::Context &);
+    BindingUniformInvalidTest(deqp::Context &context, TESTCASES case_index);
 
     virtual ~BindingUniformInvalidTest()
     {
@@ -1731,23 +1732,13 @@ protected:
                                      Utils::shaderSource &out_source);
 
 private:
-    /* Private enums */
-    enum TESTCASES
-    {
-        NEGATIVE_VALUE,
-        VARIABLE_NAME,
-        STD140,
-        MISSING,
-
-        /* */
-        TEST_CASES_MAX
-    };
-
     /* Private methods */
     const glw::GLchar *getCaseString(TESTCASES test_case);
+    const glw::GLchar *getTestCaseString(TESTCASES test_case);
 
     /* Provate variables */
     TESTCASES m_case;
+    TESTCASES m_test_case_idx;
 };
 
 /** Test implementation, description follows:
@@ -1795,7 +1786,7 @@ class BindingSamplersTest : public GLSLTestBase
 {
 public:
     /* Public methods */
-    BindingSamplersTest(deqp::Context &);
+    BindingSamplersTest(deqp::Context &context, Utils::TEXTURE_TYPES test_case);
 
     virtual ~BindingSamplersTest()
     {
@@ -1838,7 +1829,7 @@ class BindingSamplerSingleTest : public GLSLTestBase
 {
 public:
     /* Public methods */
-    BindingSamplerSingleTest(deqp::Context &);
+    BindingSamplerSingleTest(deqp::Context &context, Utils::SHADER_STAGES test_stage);
 
     virtual ~BindingSamplerSingleTest()
     {
@@ -1986,8 +1977,19 @@ private:
 class BindingSamplerInvalidTest : public NegativeTestBase
 {
 public:
+    enum TESTCASES
+    {
+        NEGATIVE_VALUE,
+        VARIABLE_NAME,
+        STD140,
+        MISSING,
+
+        /* */
+        TEST_CASES_MAX
+    };
+
     /* Public methods */
-    BindingSamplerInvalidTest(deqp::Context &);
+    BindingSamplerInvalidTest(deqp::Context &context, TESTCASES case_index);
     virtual ~BindingSamplerInvalidTest()
     {
     }
@@ -2000,23 +2002,13 @@ protected:
                                      Utils::shaderSource &out_source);
 
 private:
-    /* Private enums */
-    enum TESTCASES
-    {
-        NEGATIVE_VALUE,
-        VARIABLE_NAME,
-        STD140,
-        MISSING,
-
-        /* */
-        TEST_CASES_MAX
-    };
-
     /* Private methods */
     const glw::GLchar *getCaseString(TESTCASES test_case);
+    const glw::GLchar *getTestCaseString(TESTCASES test_case);
 
     /* Provate variables */
     TESTCASES m_case;
+    TESTCASES m_test_case_idx;
 };
 
 /** Test implementation, description follows:
@@ -2065,7 +2057,7 @@ class BindingImagesTest : public BindingImageTest
 {
 public:
     /* Public methods */
-    BindingImagesTest(deqp::Context &);
+    BindingImagesTest(deqp::Context &context, Utils::TEXTURE_TYPES test_case);
 
     virtual ~BindingImagesTest()
     {
@@ -2113,7 +2105,7 @@ class BindingImageSingleTest : public BindingImageTest
 {
 public:
     /* Public methods */
-    BindingImageSingleTest(deqp::Context &);
+    BindingImageSingleTest(deqp::Context &context, Utils::SHADER_STAGES test_stage);
 
     virtual ~BindingImageSingleTest()
     {
@@ -2263,8 +2255,20 @@ private:
 class BindingImageInvalidTest : public NegativeTestBase
 {
 public:
+    /* Private enums */
+    enum TESTCASES
+    {
+        NEGATIVE_VALUE,
+        VARIABLE_NAME,
+        STD140,
+        MISSING,
+
+        /* */
+        TEST_CASES_MAX
+    };
+
     /* Public methods */
-    BindingImageInvalidTest(deqp::Context &);
+    BindingImageInvalidTest(deqp::Context &context, TESTCASES test_case_idx);
 
     virtual ~BindingImageInvalidTest()
     {
@@ -2278,23 +2282,13 @@ protected:
                                      Utils::shaderSource &out_source);
 
 private:
-    /* Private enums */
-    enum TESTCASES
-    {
-        NEGATIVE_VALUE,
-        VARIABLE_NAME,
-        STD140,
-        MISSING,
-
-        /* */
-        TEST_CASES_MAX
-    };
-
     /* Private methods */
     const glw::GLchar *getCaseString(TESTCASES test_case);
+    const glw::GLchar *getTestCaseString(TESTCASES test_case);
 
     /* Provate variables */
     TESTCASES m_case;
+    TESTCASES m_test_case_idx;
 };
 
 /** Test implementation, description follows:
@@ -2400,25 +2394,6 @@ private:
 class InitializerListTest : public GLSLTestBase
 {
 public:
-    /* Public methods */
-    InitializerListTest(deqp::Context &);
-
-    virtual ~InitializerListTest()
-    {
-    }
-
-protected:
-    /* Methods to be implemented by child class */
-    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
-
-    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-                                     Utils::shaderSource &out_source);
-
-    virtual void prepareUniforms(Utils::program &program);
-    virtual bool testInit();
-
-private:
-    /* Private enums */
     enum TESTED_INITIALIZERS
     {
         VECTOR,
@@ -2448,7 +2423,6 @@ private:
         TESTED_INITIALIZERS_MAX
     };
 
-    /* Private types */
     struct testCase
     {
         TESTED_INITIALIZERS m_initializer;
@@ -2457,6 +2431,23 @@ private:
         glw::GLuint m_n_rows;
     };
 
+    /* Public methods */
+    InitializerListTest(deqp::Context &context, testCase test_case);
+
+    virtual ~InitializerListTest()
+    {
+    }
+
+protected:
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
+
+    virtual void prepareUniforms(Utils::program &program);
+
+private:
     /* Private methods */
     std::string getArrayDefinition();
     std::string getExpectedValue();
@@ -2479,6 +2470,7 @@ private:
     std::string getVectorSum(const glw::GLchar *vector_name, glw::GLuint size);
 
     std::string getVectorValues(glw::GLuint column, glw::GLuint size);
+    std::string getInitializerName(TESTED_INITIALIZERS initializer);
 
     /* Private variables */
     std::vector<testCase> m_test_cases;
@@ -2533,23 +2525,6 @@ private:
 class InitializerListNegativeTest : public NegativeTestBase
 {
 public:
-    /* Public methods */
-    InitializerListNegativeTest(deqp::Context &);
-
-    virtual ~InitializerListNegativeTest()
-    {
-    }
-
-protected:
-    /* Methods to be implemented by child class */
-    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
-
-    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
-                                     Utils::shaderSource &out_source);
-
-    virtual bool testInit();
-
-private:
     /* Private enums */
     enum TESTED_ERRORS
     {
@@ -2573,12 +2548,28 @@ private:
         TESTED_ERRORS_MAX
     };
 
+    /* Public methods */
+    InitializerListNegativeTest(deqp::Context &context, TESTED_ERRORS test_case);
+
+    virtual ~InitializerListNegativeTest()
+    {
+    }
+
+protected:
+    /* Methods to be implemented by child class */
+    virtual bool prepareNextTestCase(glw::GLuint test_case_index);
+
+    virtual void prepareShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
+                                     Utils::shaderSource &out_source);
+
+private:
     /* Private methods */
     std::string getInitialization();
     void logTestCaseName();
     std::string getSum();
     std::string getTypeDefinition();
     std::string getTypeName();
+    std::string getTestedErrorName(TESTED_ERRORS error);
 
     /* Private variables */
     std::vector<TESTED_ERRORS> m_test_cases;
@@ -2609,8 +2600,16 @@ private:
 class LengthOfVectorAndMatrixTest : public GLSLTestBase
 {
 public:
+    /* Private types */
+    struct testCase
+    {
+        Utils::TYPES m_type;
+        glw::GLuint m_n_cols;
+        glw::GLuint m_n_rows;
+    };
+
     /* Public methods */
-    LengthOfVectorAndMatrixTest(deqp::Context &);
+    LengthOfVectorAndMatrixTest(deqp::Context &context, testCase test_case);
 
     virtual ~LengthOfVectorAndMatrixTest()
     {
@@ -2627,17 +2626,7 @@ protected:
 
     virtual void prepareVertexBuffer(const Utils::program &program, Utils::buffer &buffer, Utils::vertexArray &vao);
 
-    virtual bool testInit();
-
 private:
-    /* Private types */
-    struct testCase
-    {
-        Utils::TYPES m_type;
-        glw::GLuint m_n_cols;
-        glw::GLuint m_n_rows;
-    };
-
     /* Private methods */
     std::string getExpectedValue(Utils::SHADER_STAGES in_stage);
     std::string getInitialization();
@@ -2650,6 +2639,7 @@ private:
 
     void prepareDrawShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400,
                                  Utils::shaderSource &out_source);
+    std::string getTypeName(Utils::TYPES type);
 
     glw::GLuint m_current_test_case_index;
     bool m_is_compute_program;
@@ -2783,8 +2773,20 @@ protected:
 class ScalarSwizzlersInvalidTest : public NegativeTestBase
 {
 public:
+    /* Private enums */
+    enum TESTED_CASES
+    {
+        INVALID_Y,
+        INVALID_B,
+        INVALID_Q,
+        INVALID_XY,
+        INVALID_XRS,
+        WRONG,
+        MISSING_PARENTHESIS,
+    };
+
     /* Public methods */
-    ScalarSwizzlersInvalidTest(deqp::Context &);
+    ScalarSwizzlersInvalidTest(deqp::Context &context, TESTED_CASES test_case);
 
     virtual ~ScalarSwizzlersInvalidTest()
     {
@@ -2798,19 +2800,10 @@ protected:
                                      Utils::shaderSource &out_source);
 
 private:
-    /* Private enums */
-    enum TESTED_CASES
-    {
-        INVALID_Y,
-        INVALID_B,
-        INVALID_Q,
-        INVALID_XY,
-        INVALID_XRS,
-        WRONG,
-        MISSING_PARENTHESIS,
-    };
+    const glw::GLchar *getTestCaseString(TESTED_CASES test_case);
 
     TESTED_CASES m_case;
+    TESTED_CASES m_test_case_idx;
 };
 
 /** Test implementation, description follows:
@@ -2866,7 +2859,7 @@ class BuiltInAssignmentTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    BuiltInAssignmentTest(deqp::Context &);
+    BuiltInAssignmentTest(deqp::Context &context, glw::GLuint test_case);
 
     virtual ~BuiltInAssignmentTest()
     {
@@ -2902,6 +2895,30 @@ private:
     /* Private methods */
     ShadingLanguage420PackTests(const ShadingLanguage420PackTests &other);
     ShadingLanguage420PackTests &operator=(const ShadingLanguage420PackTests &other);
+
+    void addBindingSamplerSingleTest();
+    void addBindingImageSingleTest();
+    void addUTF8CharactersTest();
+    void addUTF8InSourceTest();
+    void addQualifierOrderTest();
+    void addQualifierOrderBlockTest();
+    void addLineContinuationTest();
+    void addImplicitConversionsValidTest();
+    void addQualifierOrderUniformTest();
+    void addQualifierOrderFunctionInoutTest();
+    void addQualifierOrderFunctionInputTest();
+    void addQualifierOrderFunctionOutputTest();
+    void addBindingUniformSingleBlockTest();
+    void addBindingUniformInvalidTest();
+    void addBindingSamplersTest();
+    void addBindingSamplerInvalidTest();
+    void addBindingImagesTest();
+    void addBindingImageInvalidTest();
+    void addInitializerListTest();
+    void addInitializerListNegativeTest();
+    void addLengthOfVectorAndMatrixTest();
+    void addScalarSwizzlersInvalidTest();
+    void addBuiltInAssignmentTest();
 };
 
 } // namespace gl4cts

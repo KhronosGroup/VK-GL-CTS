@@ -236,7 +236,6 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/image/vktImageLoadStoreTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageLoadStoreUtil.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageMisalignedCubeTests.cpp",
-        "external/vulkancts/modules/vulkan/image/vktImageMismatchedDimensionalityTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageMismatchedFormatsTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageMismatchedWriteOpTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageMultisampleLoadStoreTests.cpp",

@@ -467,12 +467,16 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV);
     if (extensionEnabled(deviceExtensions, "VK_NV_scissor_exclusive"))
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV);
+    if (extensionEnabled(deviceExtensions, "VK_NV_scissor_exclusive"))
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV);
     if (extensionEnabled(deviceExtensions, "VK_EXT_discard_rectangles"))
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_ENABLE_EXT);
     if (extensionEnabled(deviceExtensions, "VK_EXT_discard_rectangles"))
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT);
     if (extensionEnabled(deviceExtensions, "VK_EXT_discard_rectangles"))
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT);
+    if (extensionEnabled(deviceExtensions, "VK_EXT_attachment_feedback_loop_dynamic_state"))
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT);
 
     const vk::VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
@@ -603,6 +607,9 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
 
         vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader2, *tescShader, *teseShader, *geomShader, *fragShader2,
                                 taskSupported, meshSupported);
+        vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
+                                                false,
+                                                !m_context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
     }
     else if (m_params.testType == RENDER_PASS_PIPELINE_SHADER_OBJECT)
@@ -616,6 +623,9 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline1);
         vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1,
                                 taskSupported, meshSupported);
+        vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
+                                                false,
+                                                !m_context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
     }
     else if (m_params.testType == SHADER_OBJECT_MIN_PIPELINE)

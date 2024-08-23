@@ -406,6 +406,26 @@ private:
     const bool m_useFragmentShadingRate;
 };
 #endif // CTS_USES_VULKANSC
+
+class CompatibleRenderPassTest : public vkt::TestCase
+{
+public:
+    CompatibleRenderPassTest(tcu::TestContext &testContext, const std::string &name,
+                             const PipelineConstructionType pipelineConstructionType, bool dynamic);
+
+    ~CompatibleRenderPassTest(void)
+    {
+    }
+
+    void initPrograms(SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &context) const;
+    virtual void checkSupport(Context &context) const;
+
+private:
+    const PipelineConstructionType m_pipelineConstructionType;
+    const bool m_dynamic;
+};
+
 class MultisampleRenderer
 {
 public:
@@ -855,6 +875,22 @@ void checkSupport(Context &context, MultisampleTestParams params)
                                           params.pipelineConstructionType);
 }
 #endif // CTS_USES_VULKANSC
+
+class CompatibleRenderPassTestInstance : public vkt::TestInstance
+{
+public:
+    CompatibleRenderPassTestInstance(Context &context, const PipelineConstructionType pipelineConstructionType,
+                                     bool dynamic);
+    ~CompatibleRenderPassTestInstance(void)
+    {
+    }
+
+    tcu::TestStatus iterate(void);
+
+private:
+    const PipelineConstructionType m_pipelineConstructionType;
+    const bool m_dynamic;
+};
 
 void initMultisamplePrograms(SourceCollections &sources, MultisampleTestParams params)
 {
@@ -1918,6 +1954,46 @@ TestInstance *SampleMaskWithDepthTestTest::createInstance(Context &context) cons
                                                m_enablePostDepthCoverage, m_useFragmentShadingRate);
 }
 #endif // CTS_USES_VULKANSC
+
+CompatibleRenderPassTest::CompatibleRenderPassTest(tcu::TestContext &testContext, const std::string &name,
+                                                   const PipelineConstructionType pipelineConstructionType,
+                                                   bool dynamic)
+    : vkt::TestCase(testContext, name)
+    , m_pipelineConstructionType(pipelineConstructionType)
+    , m_dynamic(dynamic)
+{
+}
+void CompatibleRenderPassTest::initPrograms(SourceCollections &programCollection) const
+{
+    std::stringstream vert;
+    std::stringstream frag;
+
+    vert << "#version 450\n"
+         << "void main() {\n"
+         << "    vec2 pos = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));\n"
+         << "    gl_Position = vec4(pos * 2.0f - 1.0f, 0.0f, 1.0f);\n"
+         << "}\n";
+
+    frag << "#version 450\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main() {\n"
+         << "    outColor = vec4(1.0f);\n"
+         << "}\n";
+
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance *CompatibleRenderPassTest::createInstance(Context &context) const
+{
+    return new CompatibleRenderPassTestInstance(context, m_pipelineConstructionType, m_dynamic);
+}
+
+void CompatibleRenderPassTest::checkSupport(Context &context) const
+{
+    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                          m_pipelineConstructionType);
+}
 
 // RasterizationSamplesInstance
 
@@ -3219,6 +3295,316 @@ tcu::TestStatus SampleMaskWithDepthTestInstance::verifyImage(const tcu::ConstPix
         return tcu::TestStatus::fail("Failed");
 }
 #endif // CTS_USES_VULKANSC
+
+CompatibleRenderPassTestInstance::CompatibleRenderPassTestInstance(
+    Context &context, const PipelineConstructionType pipelineConstructionType, bool dynamic)
+    : vkt::TestInstance(context)
+    , m_pipelineConstructionType(pipelineConstructionType)
+    , m_dynamic(dynamic)
+{
+}
+
+tcu::TestStatus CompatibleRenderPassTestInstance::iterate(void)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice vkDevice   = m_context.getDevice();
+    Allocator &memAlloc       = m_context.getDefaultAllocator();
+    const VkQueue queue       = m_context.getUniversalQueue();
+    const auto queueIndex     = m_context.getUniversalQueueFamilyIndex();
+    auto &log                 = m_context.getTestContext().getLog();
+
+    vk::VkImageCreateInfo colorImageParams = {
+        vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                       // VkStructureType sType;
+        DE_NULL,                                                                       // const void* pNext;
+        (vk::VkImageCreateFlags)0u,                                                    // VkImageCreateFlags flags;
+        vk::VK_IMAGE_TYPE_2D,                                                          // VkImageType imageType;
+        vk::VK_FORMAT_R8G8B8A8_UNORM,                                                  // VkFormat format;
+        {32u, 32u, 1u},                                                                // VkExtent3D extent;
+        1u,                                                                            // uint32_t mipLevels;
+        1u,                                                                            // uint32_t arrayLayers;
+        vk::VK_SAMPLE_COUNT_4_BIT,                                                     // VkSampleCountFlagBits samples;
+        vk::VK_IMAGE_TILING_OPTIMAL,                                                   // VkImageTiling tiling;
+        vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
+        vk::VK_SHARING_MODE_EXCLUSIVE,                                                 // VkSharingMode sharingMode;
+        1u,                        // uint32_t queueFamilyIndexCount;
+        DE_NULL,                   // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout initialLayout;
+    };
+
+    vk::ImageWithMemory colorAttachment(vk, vkDevice, memAlloc, colorImageParams, MemoryRequirement::Any);
+    colorImageParams.samples = vk::VK_SAMPLE_COUNT_1_BIT;
+    vk::ImageWithMemory resolveAttachment(vk, vkDevice, memAlloc, colorImageParams, MemoryRequirement::Any);
+
+    vk::VkImageViewCreateInfo colorAttachmentViewParams = {
+        vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                      // const void* pNext;
+        0u,                                           // VkImageViewCreateFlags flags;
+        *colorAttachment,                             // VkImage image;
+        vk::VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
+        vk::VK_FORMAT_R8G8B8A8_UNORM,                 // VkFormat format;
+        {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
+         VK_COMPONENT_SWIZZLE_A},                   // VkComponentMapping components;
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u} // VkImageSubresourceRange subresourceRange;
+    };
+
+    auto colorImageView             = createImageView(vk, vkDevice, &colorAttachmentViewParams);
+    colorAttachmentViewParams.image = *resolveAttachment;
+    auto resolveImageView           = createImageView(vk, vkDevice, &colorAttachmentViewParams);
+
+    std::vector<VkAttachmentDescription> attachmentDescriptions;
+    const VkAttachmentDescription colorAttachmentDescription = {
+        0u,                                      // VkAttachmentDescriptionFlags flags;
+        vk::VK_FORMAT_R8G8B8A8_UNORM,            // VkFormat format;
+        vk::VK_SAMPLE_COUNT_4_BIT,               // VkSampleCountFlagBits samples;
+        VK_ATTACHMENT_LOAD_OP_CLEAR,             // VkAttachmentLoadOp loadOp;
+        VK_ATTACHMENT_STORE_OP_STORE,            // VkAttachmentStoreOp storeOp;
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE,         // VkAttachmentLoadOp stencilLoadOp;
+        VK_ATTACHMENT_STORE_OP_DONT_CARE,        // VkAttachmentStoreOp stencilStoreOp;
+        VK_IMAGE_LAYOUT_UNDEFINED,               // VkImageLayout initialLayout;
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout finalLayout;
+    };
+
+    const VkAttachmentDescription resolveAttachmentDescription = {
+        0u,                                      // VkAttachmentDescriptionFlags flags;
+        vk::VK_FORMAT_R8G8B8A8_UNORM,            // VkFormat format;
+        VK_SAMPLE_COUNT_1_BIT,                   // VkSampleCountFlagBits samples;
+        VK_ATTACHMENT_LOAD_OP_CLEAR,             // VkAttachmentLoadOp loadOp;
+        VK_ATTACHMENT_STORE_OP_STORE,            // VkAttachmentStoreOp storeOp;
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE,         // VkAttachmentLoadOp stencilLoadOp;
+        VK_ATTACHMENT_STORE_OP_DONT_CARE,        // VkAttachmentStoreOp stencilStoreOp;
+        VK_IMAGE_LAYOUT_UNDEFINED,               // VkImageLayout initialLayout;
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout finalLayout;
+    };
+
+    attachmentDescriptions.push_back(colorAttachmentDescription);
+    attachmentDescriptions.push_back(resolveAttachmentDescription);
+
+    const VkAttachmentReference colorAttachmentReference = {
+        0u,                                      // uint32_t attachment;
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout layout;
+    };
+
+    const VkAttachmentReference resolveAttachmentReference = {
+        1u,                                      // uint32_t attachment;
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout layout;
+    };
+
+    vk::VkSubpassDescription subpassDescription = {
+        0u,                                  // VkSubpassDescriptionFlags       flags
+        vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint             pipelineBindPoint
+        0u,                                  // uint32_t                        inputAttachmentCount
+        DE_NULL,                             // const VkAttachmentReference*    pInputAttachments
+        1u,                                  // uint32_t                        colorAttachmentCount
+        &colorAttachmentReference,           // const VkAttachmentReference*    pColorAttachments
+        &resolveAttachmentReference,         // const VkAttachmentReference*    pResolveAttachments
+        DE_NULL,                             // const VkAttachmentReference*    pDepthStencilAttachment
+        0u,                                  // uint32_t                        preserveAttachmentCount
+        DE_NULL                              // const VkAttachmentReference*    pPreserveAttachments
+    };
+
+    vk::VkRenderPassCreateInfo renderPassParams = {
+        vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                       // const void* pNext;
+        0u,                                            // VkRenderPassCreateFlags flags;
+        2u,                                            // uint32_t attachmentCount;
+        attachmentDescriptions.data(),                 // const VkAttachmentDescription* pAttachments;
+        1u,                                            // uint32_t subpassCount;
+        &subpassDescription,                           // const VkSubpassDescription* pSubpasses;
+        0u,                                            // uint32_t dependencyCount;
+        DE_NULL                                        // const VkSubpassDependency* pDependencies;
+    };
+
+    auto renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
+
+    std::vector<vk::VkImageView> framebufferAttachments{*colorImageView, *resolveImageView};
+
+    const VkFramebufferCreateInfo framebufferParams = {
+        VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                   // const void* pNext;
+        0u,                                        // VkFramebufferCreateFlags flags;
+        *renderPass,                               // VkRenderPass renderPass;
+        2u,                                        // uint32_t attachmentCount;
+        framebufferAttachments.data(),             // const VkImageView* pAttachments;
+        32u,                                       // uint32_t width;
+        32u,                                       // uint32_t height;
+        1u                                         // uint32_t layers;
+    };
+
+    renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, *colorAttachment);
+
+    renderPassParams.attachmentCount       = 1;
+    subpassDescription.pResolveAttachments = DE_NULL;
+    auto compatibleRenderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
+
+    const std::vector<VkViewport> viewports{vk::makeViewport(32u, 32u)};
+    const std::vector<VkRect2D> scissors{vk::makeRect2D(32u, 32u)};
+
+    const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                  // const void* pNext;
+        0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
+        vk::VK_SAMPLE_COUNT_4_BIT,                                // VkSampleCountFlagBits rasterizationSamples;
+        VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
+        1.0f,                                                     // float minSampleShading;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
+        VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
+        VK_FALSE,                                                 // VkBool32 alphaToOneEnable;
+    };
+
+    const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                       // const void* pNext;
+        0u,                                            // VkPipelineLayoutCreateFlags flags;
+        0u,                                            // uint32_t setLayoutCount;
+        DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+        0u,                                            // uint32_t pushConstantRangeCount;
+        DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+    };
+
+    const auto &binaries  = m_context.getBinaryCollection();
+    const auto vertModule = createShaderModule(vk, vkDevice, binaries.get("vert"));
+    const auto fragModule = createShaderModule(vk, vkDevice, binaries.get("frag"));
+    auto pipelineLayout   = PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
+        DE_NULL,                                                   // const void* pNext;
+        0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
+        0u,                                                        // uint32_t vertexBindingDescriptionCount;
+        DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        0u,      // uint32_t vertexAttributeDescriptionCount;
+        DE_NULL  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+    };
+
+    const auto &edsFeatures = m_context.getExtendedDynamicStateFeaturesEXT();
+    std::vector<vk::VkDynamicState> dynamicStates;
+
+    if (m_dynamic)
+    {
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VIEWPORT);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_SCISSOR);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_BIAS);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_BLEND_CONSTANTS);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_BOUNDS);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_WRITE_MASK);
+        dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_REFERENCE);
+#ifndef CTS_USES_VULKANSC
+        if (edsFeatures.extendedDynamicState)
+        {
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_CULL_MODE);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_COMPARE_OP);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_FRONT_FACE);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_OP);
+            dynamicStates.push_back(vk::VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE);
+        }
+#endif
+    }
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                              // const void* pNext;
+        0u,                                                   // VkPipelineDynamicStateCreateFlags flags;
+        de::sizeU32(dynamicStates),                           // uint32_t dynamicStateCount;
+        de::dataOrNull(dynamicStates),                        // const VkDynamicState* pDynamicStates;
+    };
+
+    std::vector<VkViewport> staticViewports = viewports;
+    std::vector<VkRect2D> staticScissors    = scissors;
+    if (m_dynamic && edsFeatures.extendedDynamicState)
+    {
+        staticViewports.clear();
+        staticScissors.clear();
+    }
+
+    const auto pipeline =
+        makeGraphicsPipeline(vk, vkDevice, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, fragModule.get(), compatibleRenderPass.get(), staticViewports,
+                             staticScissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &vertexInputStateParams,
+                             DE_NULL, &multisampleStateCreateInfo, DE_NULL, DE_NULL, &dynamicStateInfo);
+
+    auto cmdPool   = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueIndex);
+    auto cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    VkClearValue colorClearValue;
+    colorClearValue.color.float32[0] = 0.25f;
+    colorClearValue.color.float32[1] = 0.25f;
+    colorClearValue.color.float32[2] = 0.25f;
+    colorClearValue.color.float32[3] = 1.0f;
+
+    std::vector<VkClearValue> clearValues;
+    clearValues.push_back(colorClearValue);
+    colorClearValue.color.float32[0] = 0.5f;
+    colorClearValue.color.float32[1] = 0.5f;
+    colorClearValue.color.float32[2] = 0.5f;
+    clearValues.push_back(colorClearValue);
+
+    beginCommandBuffer(vk, *cmdBuffer, 0u);
+
+    renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, 32u, 32u), (uint32_t)clearValues.size(), clearValues.data());
+
+    vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+
+    if (m_dynamic)
+    {
+        vk.cmdSetViewport(*cmdBuffer, 0u, 1u, viewports.data());
+        vk.cmdSetScissor(*cmdBuffer, 0u, 1u, scissors.data());
+        vk.cmdSetDepthBias(*cmdBuffer, 0.0f, 1.0f, 1.0f);
+        float blendConstants[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+        vk.cmdSetBlendConstants(*cmdBuffer, blendConstants);
+        vk.cmdSetDepthBounds(*cmdBuffer, 0.0f, 1.0f);
+        vk.cmdSetStencilCompareMask(*cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xff);
+        vk.cmdSetStencilWriteMask(*cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xff);
+        vk.cmdSetStencilReference(*cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, 0xff);
+#ifndef CTS_USES_VULKANSC
+        if (edsFeatures.extendedDynamicState)
+        {
+            vk.cmdSetCullMode(*cmdBuffer, vk::VK_CULL_MODE_NONE);
+            vk.cmdSetDepthBoundsTestEnable(*cmdBuffer, VK_FALSE);
+            vk.cmdSetDepthCompareOp(*cmdBuffer, vk::VK_COMPARE_OP_ALWAYS);
+            vk.cmdSetDepthTestEnable(*cmdBuffer, VK_FALSE);
+            vk.cmdSetDepthWriteEnable(*cmdBuffer, VK_FALSE);
+            vk.cmdSetFrontFace(*cmdBuffer, vk::VK_FRONT_FACE_COUNTER_CLOCKWISE);
+            vk.cmdSetPrimitiveTopology(*cmdBuffer, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+            vk.cmdSetStencilOp(*cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, vk::VK_STENCIL_OP_KEEP,
+                               vk::VK_STENCIL_OP_KEEP, vk::VK_STENCIL_OP_KEEP, vk::VK_COMPARE_OP_ALWAYS);
+            vk.cmdSetStencilTestEnable(*cmdBuffer, VK_FALSE);
+        }
+#endif
+    }
+
+    vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
+
+    renderPass.end(vk, *cmdBuffer);
+
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
+
+    const auto colorLevel  = readColorAttachment(vk, vkDevice, queue, queueIndex, memAlloc, *resolveAttachment,
+                                                 vk::VK_FORMAT_R8G8B8A8_UNORM, tcu::UVec2(32u, 32u));
+    const auto colorAccess = colorLevel->getAccess();
+
+    const tcu::IVec3 iExtent(32, 32, 1);
+    tcu::TextureLevel refColor(mapVkFormat(vk::VK_FORMAT_R8G8B8A8_UNORM), iExtent.x(), iExtent.y());
+    const tcu::Vec4 clearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    tcu::clear(refColor, clearColor);
+    auto refColorAccess = refColor.getAccess();
+    tcu::Vec4 colorThreshold(0.0f, 0.0f, 0.0f, 0.0f);
+    const auto colorOK = tcu::floatThresholdCompare(log, "Color", "Color Result", refColorAccess, colorAccess,
+                                                    colorThreshold, tcu::COMPARE_LOG_ON_ERROR);
+
+    if (!colorOK)
+    {
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Passed");
+}
+
 // MultisampleRenderer
 
 MultisampleRenderer::MultisampleRenderer(Context &context, const PipelineConstructionType pipelineConstructionType,
@@ -6540,6 +6926,13 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
         }
 
         multisampleTests->addChild(conservativeGroup.release());
+
+        TestCaseGroupPtr compatibleRenderPassGroup(new tcu::TestCaseGroup(testCtx, "compatible_render_pass"));
+        compatibleRenderPassGroup->addChild(
+            new CompatibleRenderPassTest(testCtx, "static", pipelineConstructionType, false));
+        compatibleRenderPassGroup->addChild(
+            new CompatibleRenderPassTest(testCtx, "dynamic", pipelineConstructionType, true));
+        multisampleTests->addChild(compatibleRenderPassGroup.release());
     }
 
     {

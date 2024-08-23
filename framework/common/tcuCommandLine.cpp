@@ -275,7 +275,7 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<TerminateOnFail>(nullptr, "deqp-terminate-on-fail", "Terminate the run on first failure",
                                    s_enableNames, "disable")
         << Option<TerminateOnDeviceLost>(nullptr, "deqp-terminate-on-device-lost",
-                                         "Terminate the run on a device lost error", s_enableNames, "disable")
+                                         "Terminate the run on a device lost error", s_enableNames, "enable")
         << Option<SubProcess>(nullptr, "deqp-subprocess",
                               "Inform app that it works as subprocess (Vulkan SC only, do not use manually)",
                               s_enableNames, "disable")

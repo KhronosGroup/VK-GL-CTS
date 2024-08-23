@@ -224,7 +224,7 @@ tcu::TestStatus conditionalDispatchRun(Context &context, TestParams params)
 
     if (params.pipelineToken)
         dgcPipeline.reset(new DGCComputePipeline(metadataPool, ctx.vkd, ctx.device, ctx.allocator, 0u, *pipelineLayout,
-                                                 stageFlags, *compModule));
+                                                 0u, *compModule));
     else
         normalPipeline = makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, *compModule);
 
