@@ -74,7 +74,7 @@ Move<VkSemaphore> createTestSemaphore(Context &context, const DeviceInterface &v
 
 #define FENCE_WAIT ~0ull
 
-VideoDevice *getVideoDevice(Context &context, bool usingTimelineSemaphores,
+VideoDevice *getVideoDevice(Context &context, bool usingTimelineSemaphores, bool usingSync2,
                             VideoCodecOperationFlags videoCodecOperationFlags)
 {
     DE_ASSERT(videoCodecOperationFlags != 0);
@@ -82,6 +82,8 @@ VideoDevice *getVideoDevice(Context &context, bool usingTimelineSemaphores,
     VideoDevice::VideoDeviceFlags videoFlags = VideoDevice::VideoDeviceFlagBits::VIDEO_DEVICE_FLAG_NONE;
     if (usingTimelineSemaphores)
         videoFlags |= VideoDevice::VideoDeviceFlagBits::VIDEO_DEVICE_FLAG_REQUIRE_TIMELINE_OR_NOT_SUPPORTED;
+    if (usingSync2)
+        videoFlags |= VideoDevice::VideoDeviceFlagBits::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED;
 
     return new VideoDevice(context, videoCodecOperationFlags, videoFlags);
 }
@@ -89,10 +91,11 @@ VideoDevice *getVideoDevice(Context &context, bool usingTimelineSemaphores,
 tcu::TestStatus basicOneQueueCase(Context &context, const TestConfig config)
 {
     bool usingTimelineSemaphores = config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE;
+    bool usingSync2              = config.type == SynchronizationType::SYNCHRONIZATION2;
 
     de::MovePtr<VideoDevice> videoDevice(
         config.videoCodecOperationFlags != 0 ?
-            getVideoDevice(context, usingTimelineSemaphores, config.videoCodecOperationFlags) :
+            getVideoDevice(context, usingTimelineSemaphores, usingSync2, config.videoCodecOperationFlags) :
             DE_NULL);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
@@ -223,10 +226,11 @@ tcu::TestStatus basicChainCase(Context &context, TestConfig config)
 {
     VkResult err                 = VK_SUCCESS;
     bool usingTimelineSemaphores = config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE;
+    bool usingSync2              = config.type == SynchronizationType::SYNCHRONIZATION2;
 
     de::MovePtr<VideoDevice> videoDevice(
         config.videoCodecOperationFlags != 0 ?
-            getVideoDevice(context, usingTimelineSemaphores, config.videoCodecOperationFlags) :
+            getVideoDevice(context, usingTimelineSemaphores, usingSync2, config.videoCodecOperationFlags) :
             DE_NULL);
 
     const DeviceInterface &vk = getSyncDeviceInterface(videoDevice, context);
@@ -289,10 +293,12 @@ tcu::TestStatus basicChainCase(Context &context, TestConfig config)
 
 tcu::TestStatus basicChainTimelineCase(Context &context, TestConfig config)
 {
-    VkResult err = VK_SUCCESS;
-    de::MovePtr<VideoDevice> videoDevice(config.videoCodecOperationFlags != 0 ?
-                                             getVideoDevice(context, true, config.videoCodecOperationFlags) :
-                                             DE_NULL);
+    VkResult err    = VK_SUCCESS;
+    bool usingSync2 = config.type == SynchronizationType::SYNCHRONIZATION2;
+    de::MovePtr<VideoDevice> videoDevice(
+        config.videoCodecOperationFlags != 0 ?
+            getVideoDevice(context, true, usingSync2, config.videoCodecOperationFlags) :
+            DE_NULL);
 
     const DeviceInterface &vk      = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device          = getSyncDevice(videoDevice, context);
@@ -365,9 +371,11 @@ tcu::TestStatus basicThreadTimelineCase(Context &context, TestConfig config)
 {
     const VkSemaphoreTypeCreateInfo scti = {VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO, DE_NULL,
                                             VK_SEMAPHORE_TYPE_TIMELINE, 0};
-    de::MovePtr<VideoDevice> videoDevice(config.videoCodecOperationFlags != 0 ?
-                                             getVideoDevice(context, true, config.videoCodecOperationFlags) :
-                                             DE_NULL);
+    bool usingSync2                      = config.type == SynchronizationType::SYNCHRONIZATION2;
+    de::MovePtr<VideoDevice> videoDevice(
+        config.videoCodecOperationFlags != 0 ?
+            getVideoDevice(context, true, usingSync2, config.videoCodecOperationFlags) :
+            DE_NULL);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
     const VkSemaphoreCreateInfo sci = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &scti, 0};
@@ -446,9 +454,11 @@ VkResult basicWaitForTimelineValueHelper(Context &context, TestConfig config, Vk
 {
     const VkSemaphoreTypeCreateInfo scti = {VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO, DE_NULL,
                                             VK_SEMAPHORE_TYPE_TIMELINE, 0};
-    de::MovePtr<VideoDevice> videoDevice(config.videoCodecOperationFlags != 0 ?
-                                             getVideoDevice(context, true, config.videoCodecOperationFlags) :
-                                             DE_NULL);
+    bool usingSync2                      = config.type == SynchronizationType::SYNCHRONIZATION2;
+    de::MovePtr<VideoDevice> videoDevice(
+        config.videoCodecOperationFlags != 0 ?
+            getVideoDevice(context, true, usingSync2, config.videoCodecOperationFlags) :
+            DE_NULL);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
     const VkSemaphoreCreateInfo sci = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &scti, 0};
@@ -548,6 +558,7 @@ tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
     const InstanceInterface &instanceInterface = context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice      = context.getPhysicalDevice();
     bool usingTimelineSemaphores               = config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE;
+    bool usingSync2                            = config.type == SynchronizationType::SYNCHRONIZATION2;
 
     std::vector<VkQueueFamilyVideoPropertiesKHR> videoQueueFamilyProperties2;
 #else
@@ -744,7 +755,7 @@ tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
 #ifndef CTS_USES_VULKANSC
     de::MovePtr<VideoDevice> videoDevice(
         config.videoCodecOperationFlags != 0 ?
-            getVideoDevice(context, usingTimelineSemaphores, config.videoCodecOperationFlags) :
+            getVideoDevice(context, usingTimelineSemaphores, usingSync2, config.videoCodecOperationFlags) :
             DE_NULL);
 
     de::MovePtr<vk::DeviceDriver> deviceDriver = de::MovePtr<DeviceDriver>(
