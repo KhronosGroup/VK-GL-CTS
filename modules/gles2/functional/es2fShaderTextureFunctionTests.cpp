@@ -282,8 +282,8 @@ ShaderTextureFunctionCase::ShaderTextureFunctionCase(Context &context, const cha
     , m_lookupSpec(lookup)
     , m_textureSpec(texture)
     , m_evaluator(evalFunc, m_lookupParams)
-    , m_texture2D(DE_NULL)
-    , m_textureCube(DE_NULL)
+    , m_texture2D(nullptr)
+    , m_textureCube(nullptr)
 {
 }
 
@@ -461,7 +461,7 @@ void ShaderTextureFunctionCase::initShaderSources(void)
     tcu::TextureFormat texFmt = glu::mapGLTransferFormat(m_textureSpec.format, m_textureSpec.dataType);
     glu::DataType samplerType = glu::TYPE_LAST;
     const char *baseFuncName  = m_textureSpec.type == TEXTURETYPE_2D ? "texture2D" : "textureCube";
-    const char *funcExt       = DE_NULL;
+    const char *funcExt       = nullptr;
 
     switch (m_textureSpec.type)
     {
@@ -576,8 +576,8 @@ void ShaderTextureFunctionCase::deinit(void)
     delete m_texture2D;
     delete m_textureCube;
 
-    m_texture2D   = DE_NULL;
-    m_textureCube = DE_NULL;
+    m_texture2D   = nullptr;
+    m_textureCube = nullptr;
 }
 
 void ShaderTextureFunctionCase::setupUniforms(int programID, const tcu::Vec4 &)

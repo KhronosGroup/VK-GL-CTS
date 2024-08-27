@@ -65,7 +65,7 @@ public:
             // Create a universal queue that supports graphics and compute
             const VkDeviceQueueCreateInfo queueParams = {
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // sType
-                DE_NULL,                                    // pNext
+                nullptr,                                    // pNext
                 0u,                                         // flags
                 ctx.getUniversalQueueFamilyIndex(),         // queueFamilyIndex
                 1u,                                         // queueCount
@@ -78,7 +78,7 @@ public:
 
             VkPhysicalDeviceDepthClampZeroOneFeaturesEXT clampParams = {
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_EXT, // sType
-                DE_NULL,                                                             // pNext
+                nullptr,                                                             // pNext
                 VK_TRUE,                                                             // depthClampZeroOne
             };
 
@@ -97,10 +97,10 @@ public:
                 1,                                    // queueRecordCount
                 &queueParams,                         // pRequestedQueues
                 0,                                    // layerCount
-                DE_NULL,                              // ppEnabledLayerNames
+                nullptr,                              // ppEnabledLayerNames
                 1,                                    // enabledExtensionCount
                 &ext,                                 // ppEnabledExtensionNames
-                DE_NULL,                              // pEnabledFeatures
+                nullptr,                              // pEnabledFeatures
             };
 
             const bool validation = ctx.getTestContext().getCommandLine().isValidationEnabled();

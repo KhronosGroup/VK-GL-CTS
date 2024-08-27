@@ -53,9 +53,9 @@ tcu::TestStatus Maintenance7LayeredApiVulkanPropertiesTestInstance::iterate(void
 
     vk::VkPhysicalDeviceLayeredApiPropertiesListKHR layeredApiPropertiesList = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_LIST_KHR, // VkStructureType sType;
-        DE_NULL,                                                               // void* pNext;
+        nullptr,                                                               // void* pNext;
         0u,                                                                    // uint32_t layeredApiCount;
-        DE_NULL, // VkPhysicalDeviceLayeredApiPropertiesKHR* pLayeredApis;
+        nullptr, // VkPhysicalDeviceLayeredApiPropertiesKHR* pLayeredApis;
     };
     vk::VkPhysicalDeviceProperties2 properties2 = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, // VkStructureType sType;

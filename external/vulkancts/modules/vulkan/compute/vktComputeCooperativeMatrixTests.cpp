@@ -217,7 +217,7 @@ void getCooperativeMatrixPropertiesAll(Context &context, std::vector<T> &propert
     uint32_t propertyCount = 0;
 
     VK_CHECK(getCooperativeMatrixProperties(context.getInstanceInterface(), context.getPhysicalDevice(), &propertyCount,
-                                            (T *)DE_NULL));
+                                            (T *)nullptr));
 
     if (propertyCount > 0)
     {
@@ -1703,8 +1703,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         {
             VkBufferDeviceAddressInfo info{
                 VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType  sType;
-                DE_NULL,                                      // const void*  pNext;
-                0,                                            // VkBuffer            buffer
+                nullptr,                                      // const void*  pNext;
+                VK_NULL_HANDLE,                               // VkBuffer            buffer
             };
             VkDeviceAddress *addrsInMemory = (VkDeviceAddress *)ptrs[4];
             for (uint32_t i = 0; i < 4; ++i)
@@ -1857,7 +1857,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         beginCommandBuffer(vk, *cmdBuffer, 0u);
 
         vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u,
-                                 DE_NULL);
+                                 nullptr);
         pipeline.bind(*cmdBuffer);
 
         vk.cmdDispatch(*cmdBuffer, m_data.workgroupsX, m_data.workgroupsY, 1);

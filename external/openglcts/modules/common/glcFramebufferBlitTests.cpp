@@ -41,6 +41,8 @@
 #include "tcuRenderTarget.hpp"
 #include "tcuStringTemplate.hpp"
 
+#include <cmath>
+
 #define CHECK(actual, expected, info)                                                                          \
     {                                                                                                          \
         result &= ((actual) != (expected)) ? false : true;                                                     \
@@ -116,21 +118,21 @@ const Stencil DST_STCIL = 0;
 
 const char *getEnumName(const GLenum e)
 {
-    if (glu::getUncompressedTextureFormatName(e) != DE_NULL)
+    if (glu::getUncompressedTextureFormatName(e) != nullptr)
         return glu::getUncompressedTextureFormatName(e);
-    else if (glu::getFaceName(e) != DE_NULL)
+    else if (glu::getFaceName(e) != nullptr)
         return glu::getFaceName(e);
-    else if (glu::getFramebufferAttachmentName(e) != DE_NULL)
+    else if (glu::getFramebufferAttachmentName(e) != nullptr)
         return glu::getFramebufferAttachmentName(e);
-    else if (glu::getBooleanName((int)e) != DE_NULL)
+    else if (glu::getBooleanName((int)e) != nullptr)
         return glu::getBooleanName((int)e);
-    else if (glu::getFramebufferStatusName(e) != DE_NULL)
+    else if (glu::getFramebufferStatusName(e) != nullptr)
         return glu::getFramebufferStatusName(e);
-    else if (glu::getInternalFormatTargetName(e) != DE_NULL)
+    else if (glu::getInternalFormatTargetName(e) != nullptr)
         return glu::getInternalFormatTargetName(e);
-    else if (glu::getFramebufferTargetName(e) != DE_NULL)
+    else if (glu::getFramebufferTargetName(e) != nullptr)
         return glu::getFramebufferTargetName(e);
-    else if (glu::getErrorName(e) != DE_NULL)
+    else if (glu::getErrorName(e) != nullptr)
         return glu::getErrorName(e);
     else
     {
@@ -331,6 +333,7 @@ void FramebufferBlitMultiToSingleSampledTestCase::init()
     m_defaultProg = setup_shaders(m_default_vert_shader, m_default_frag_shader);
     m_renderProg  = setup_shaders(m_render_vert_shader, m_render_frag_shader);
 
+    m_defaultFBO  = m_context.getRenderContext().getDefaultFramebuffer();
     int bufWidth  = m_context.getRenderTarget().getWidth();
     int bufHeight = m_context.getRenderTarget().getHeight();
 
@@ -1074,7 +1077,7 @@ bool FramebufferBlitMultiToSingleSampledTestCase::setupDefaultShader(GLuint &vao
     const GLsizei vertSize = (vboData.size() / 4) * sizeof(GLfloat);
     const GLsizei uvOffset = (4 * sizeof(GLfloat));
 
-    gl.vertexAttribPointer(attribPos, 4, GL_FLOAT, GL_FALSE, vertSize, DE_NULL);
+    gl.vertexAttribPointer(attribPos, 4, GL_FLOAT, GL_FALSE, vertSize, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
     gl.enableVertexAttribArray(attribPos);
     GLU_EXPECT_NO_ERROR(gl.getError(), "enableVertexAttribArray");
@@ -1293,7 +1296,7 @@ bool FramebufferBlitMultiToSingleSampledTestCase::setupRenderShader(GLuint &vao,
     GLU_EXPECT_NO_ERROR(gl.getError(), "getAttribLocation");
     CHECK_RET((attribPos != -1), true, getAttribLocation);
 
-    gl.vertexAttribPointer(attribPos, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(attribPos, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
 
     // Setup shader attributes

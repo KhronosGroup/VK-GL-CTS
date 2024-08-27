@@ -328,7 +328,9 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<Storag
     convert(const Float<OtherStorageType, OtherExponentBits, OtherMantissaBits, OtherExponentBias, OtherFlags> &other,
             RoundingDirection rd)
 {
-    if (!(Flags & FLOAT_HAS_SIGN) && other.sign() < 0)
+    int sign = other.sign();
+
+    if (!(Flags & FLOAT_HAS_SIGN) && sign < 0)
     {
         // Negative number, truncate to zero.
         return zero(+1);
@@ -336,7 +338,7 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<Storag
 
     if (other.isInf())
     {
-        return inf(other.sign());
+        return inf(sign);
     }
 
     if (other.isNaN())
@@ -346,7 +348,7 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<Storag
 
     if (other.isZero())
     {
-        return zero(other.sign());
+        return zero(sign);
     }
 
     const int eMin = 1 - ExponentBias;
@@ -383,7 +385,7 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<Storag
 
             case ROUND_DOWNWARD:
                 m = (m >> bitDiff);
-                if (lastBits != 0ull && other.sign() < 0)
+                if (lastBits != 0ull && sign < 0)
                 {
                     m += 1;
                 }
@@ -391,7 +393,7 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<Storag
 
             case ROUND_UPWARD:
                 m = (m >> bitDiff);
-                if (lastBits != 0ull && other.sign() > 0)
+                if (lastBits != 0ull && sign > 0)
                 {
                     m += 1;
                 }
@@ -406,7 +408,7 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<Storag
             }
         }
 
-        return zero(other.sign());
+        return zero(sign);
     }
 
     // Remove leading 1.
@@ -429,7 +431,7 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<Storag
 
         case ROUND_DOWNWARD:
             m = (m >> bitDiff);
-            if (lastBits != 0ull && other.sign() < 0)
+            if (lastBits != 0ull && sign < 0)
             {
                 m += 1;
             }
@@ -437,7 +439,7 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<Storag
 
         case ROUND_UPWARD:
             m = (m >> bitDiff);
-            if (lastBits != 0ull && other.sign() > 0)
+            if (lastBits != 0ull && sign > 0)
             {
                 m += 1;
             }
@@ -468,9 +470,8 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<Storag
     if (e > eMax)
     {
         // Overflow.
-        return (((other.sign() < 0 && rd == ROUND_UPWARD) || (other.sign() > 0 && rd == ROUND_DOWNWARD)) ?
-                    largestNormal(other.sign()) :
-                    inf(other.sign()));
+        return (((sign < 0 && rd == ROUND_UPWARD) || (sign > 0 && rd == ROUND_DOWNWARD)) ? largestNormal(sign) :
+                                                                                           inf(sign));
     }
 
     DE_ASSERT(de::inRange(e, eMin, eMax));

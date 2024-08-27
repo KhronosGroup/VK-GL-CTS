@@ -95,7 +95,7 @@ EGLSurface createWindowSurface(EGLDisplay display, EGLConfig config, eglu::Nativ
     {
     case LEGACY:
     {
-        surface = egl.createWindowSurface(display, config, window.getLegacyNative(), DE_NULL);
+        surface = egl.createWindowSurface(display, config, window.getLegacyNative(), nullptr);
         EGLU_CHECK_MSG(egl, "eglCreateWindowSurface() failed");
     }
     break;
@@ -103,14 +103,14 @@ EGLSurface createWindowSurface(EGLDisplay display, EGLConfig config, eglu::Nativ
     {
         checkEGLPlatformSupport(egl);
         void *nativeWindow = window.getPlatformExtension();
-        surface            = egl.createPlatformWindowSurfaceEXT(display, config, nativeWindow, DE_NULL);
+        surface            = egl.createPlatformWindowSurfaceEXT(display, config, nativeWindow, nullptr);
         EGLU_CHECK_MSG(egl, "eglCreatePlatformWindowSurfaceEXT() failed");
     }
     break;
     case EGL15:
     {
         checkEGL15Support(egl, display);
-        surface = egl.createPlatformWindowSurface(display, config, window.getPlatformNative(), DE_NULL);
+        surface = egl.createPlatformWindowSurface(display, config, window.getPlatformNative(), nullptr);
         EGLU_CHECK_MSG(egl, "eglCreatePlatformWindowSurface() failed");
     }
     }
@@ -127,17 +127,17 @@ EGLSurface createPixmapSurface(EGLDisplay display, EGLConfig config, eglu::Nativ
     switch (createType)
     {
     case LEGACY:
-        surface = egl.createPixmapSurface(display, config, pixmap.getLegacyNative(), DE_NULL);
+        surface = egl.createPixmapSurface(display, config, pixmap.getLegacyNative(), nullptr);
         EGLU_CHECK_MSG(egl, "eglCreatePixmapSurface() failed");
         break;
     case EXTENSION:
         checkEGLPlatformSupport(egl);
-        surface = egl.createPlatformPixmapSurfaceEXT(display, config, pixmap.getPlatformExtension(), DE_NULL);
+        surface = egl.createPlatformPixmapSurfaceEXT(display, config, pixmap.getPlatformExtension(), nullptr);
         EGLU_CHECK_MSG(egl, "eglCreatePlatformPixmapSurfaceEXT() failed");
         break;
     case EGL15:
         checkEGL15Support(egl, display);
-        surface = egl.createPlatformPixmapSurface(display, config, pixmap.getPlatformNative(), DE_NULL);
+        surface = egl.createPlatformPixmapSurface(display, config, pixmap.getPlatformNative(), nullptr);
         EGLU_CHECK_MSG(egl, "eglCreatePlatformPixmapSurface() failed");
         break;
     }
@@ -195,7 +195,7 @@ public:
             const int width  = 64;
             const int height = 64;
             de::UniquePtr<eglu::NativeWindow> window(windowFactory.createWindow(
-                &m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL,
+                &m_eglTestCtx.getNativeDisplay(), display, config, nullptr,
                 eglu::WindowParams(width, height, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
             eglu::UniqueSurface surface(
                 egl, display,
@@ -272,7 +272,7 @@ public:
             const int width  = 64;
             const int height = 64;
             de::UniquePtr<eglu::NativePixmap> pixmap(
-                pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL, width, height));
+                pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), display, config, nullptr, width, height));
             eglu::UniqueSurface surface(
                 egl, display,
                 createPixmapSurface(display, config, m_eglTestCtx.getNativeDisplay(), *pixmap, m_createType));

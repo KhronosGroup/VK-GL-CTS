@@ -89,9 +89,9 @@ FboTestCase::IterateResult FboTestCase::iterate(void)
         // Check error.
         uint32_t err = glGetError();
         if (err != GL_NO_ERROR)
-            throw glu::Error(err, glu::getErrorStr(err).toString().c_str(), DE_NULL, __FILE__, __LINE__);
+            throw glu::Error(err, glu::getErrorStr(err).toString().c_str(), nullptr, __FILE__, __LINE__);
 
-        setContext(DE_NULL);
+        setContext(nullptr);
     }
     catch (const FboTestUtil::FboIncompleteException &e)
     {
@@ -117,7 +117,7 @@ FboTestCase::IterateResult FboTestCase::iterate(void)
 
         setContext(&context);
         render(reference);
-        setContext(DE_NULL);
+        setContext(nullptr);
     }
 
     bool isOk = compare(reference, result);
@@ -154,7 +154,7 @@ void FboTestCase::checkError(void)
 {
     uint32_t err = glGetError();
     if (err != GL_NO_ERROR)
-        throw glu::Error((int)err, (string("Got ") + glu::getErrorStr(err).toString()).c_str(), DE_NULL, __FILE__,
+        throw glu::Error((int)err, (string("Got ") + glu::getErrorStr(err).toString()).c_str(), nullptr, __FILE__,
                          __LINE__);
 }
 

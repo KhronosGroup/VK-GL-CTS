@@ -132,7 +132,7 @@ RenderData::RenderData(const ObjectData &object, const glu::RenderContext &rende
     gl.bindAttribLocation(m_program.getProgram(), 0, "a_position");
 
     gl.bindVertexArray(*m_vao);
-    gl.vertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(0);
     gl.bindVertexArray(0);
 }

@@ -50,7 +50,7 @@ public:
                                      const char **vs_body_parts, unsigned int n_vs_body_parts,
                                      const char **attribute_names, const unsigned int *attribute_locations,
                                      unsigned int n_attribute_properties,
-                                     const glw::GLchar *const *tf_varyings = DE_NULL, unsigned int n_tf_varyings = 0,
+                                     const glw::GLchar *const *tf_varyings = nullptr, unsigned int n_tf_varyings = 0,
                                      glw::GLenum tf_varying_mode = GL_NONE);
 
     static std::string getSparseBOFlagsString(glw::GLenum flags);

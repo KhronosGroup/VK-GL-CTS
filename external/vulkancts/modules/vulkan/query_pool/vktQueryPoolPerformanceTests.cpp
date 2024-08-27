@@ -163,7 +163,7 @@ tcu::TestStatus EnumerateAndValidateTest::iterate(void)
 
         uint32_t counterCount = 0;
         VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueNdx,
-                                                                                   &counterCount, DE_NULL, DE_NULL));
+                                                                                   &counterCount, nullptr, nullptr));
 
         if (counterCount == 0)
             continue;
@@ -180,13 +180,13 @@ tcu::TestStatus EnumerateAndValidateTest::iterate(void)
                 VkResult result;
 
                 result = vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(
-                    physicalDevice, queueNdx, &incompleteCounterCount, &counters[0], DE_NULL);
+                    physicalDevice, queueNdx, &incompleteCounterCount, &counters[0], nullptr);
                 if (result != VK_INCOMPLETE)
                     TCU_FAIL("VK_INCOMPLETE not returned");
             }
 
             VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(
-                physicalDevice, queueNdx, &counterCountRead, &counters[0], DE_NULL));
+                physicalDevice, queueNdx, &counterCountRead, &counters[0], nullptr));
 
             if (counterCountRead != counterCount)
                 TCU_FAIL("Number of counters read (" + de::toString(counterCountRead) +
@@ -218,7 +218,7 @@ tcu::TestStatus EnumerateAndValidateTest::iterate(void)
             uint32_t counterCountRead = counterCount;
 
             VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(
-                physicalDevice, queueNdx, &counterCountRead, DE_NULL, &counterDescriptors[0]));
+                physicalDevice, queueNdx, &counterCountRead, nullptr, &counterDescriptors[0]));
 
             if (counterCountRead != counterCount)
                 TCU_FAIL("Number of counters read (" + de::toString(counterCountRead) +
@@ -555,13 +555,13 @@ void GraphicQueryTestBase::initStateObjects(void)
         renderPassCreateInfo.addSubpass(SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
                                                            0,                               // flags
                                                            0,                               // inputCount
-                                                           DE_NULL,                         // pInputAttachments
+                                                           nullptr,                         // pInputAttachments
                                                            1,                               // colorCount
                                                            &colorAttachmentReference,       // pColorAttachments
-                                                           DE_NULL,                         // pResolveAttachments
+                                                           nullptr,                         // pResolveAttachments
                                                            AttachmentReference(),           // depthStencilAttachment
                                                            0,                               // preserveCount
-                                                           DE_NULL));                       // preserveAttachments
+                                                           nullptr));                       // preserveAttachments
 
         m_renderPass = createRenderPass(vkd, device, &renderPassCreateInfo);
 
@@ -678,15 +678,15 @@ tcu::TestStatus GraphicQueryTest::iterate(void)
                 allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
             const Unique<VkFence> fence(createFence(vkd, device));
             const VkSubmitInfo submitInfo = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-                DE_NULL,                               // pNext
-                0u,                                    // waitSemaphoreCount
-                DE_NULL,                               // pWaitSemaphores
-                (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-                1u,                                    // commandBufferCount
-                &resetCmdBuffer.get(),                 // pCommandBuffers
-                0u,                                    // signalSemaphoreCount
-                DE_NULL,                               // pSignalSemaphores
+                VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+                nullptr,                       // pNext
+                0u,                            // waitSemaphoreCount
+                nullptr,                       // pWaitSemaphores
+                nullptr,                       // pWaitDstStageMask
+                1u,                            // commandBufferCount
+                &resetCmdBuffer.get(),         // pCommandBuffers
+                0u,                            // signalSemaphoreCount
+                nullptr,                       // pSignalSemaphores
             };
 
             beginCommandBuffer(vkd, *resetCmdBuffer);
@@ -745,15 +745,15 @@ tcu::TestStatus GraphicQueryTest::iterate(void)
                 VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR, NULL, passIndex};
 
             const VkSubmitInfo submitInfo = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-                &performanceQuerySubmitInfo,           // pNext
-                0u,                                    // waitSemaphoreCount
-                DE_NULL,                               // pWaitSemaphores
-                (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-                1u,                                    // commandBufferCount
-                &cmdBuffer.get(),                      // pCommandBuffers
-                0u,                                    // signalSemaphoreCount
-                DE_NULL,                               // pSignalSemaphores
+                VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+                &performanceQuerySubmitInfo,   // pNext
+                0u,                            // waitSemaphoreCount
+                nullptr,                       // pWaitSemaphores
+                nullptr,                       // pWaitDstStageMask
+                1u,                            // commandBufferCount
+                &cmdBuffer.get(),              // pCommandBuffers
+                0u,                            // signalSemaphoreCount
+                nullptr,                       // pSignalSemaphores
             };
 
             VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
@@ -803,15 +803,15 @@ tcu::TestStatus GraphicMultiplePoolsTest::iterate(void)
                 allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
             const Unique<VkFence> fence(createFence(vkd, device));
             const VkSubmitInfo submitInfo = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-                DE_NULL,                               // pNext
-                0u,                                    // waitSemaphoreCount
-                DE_NULL,                               // pWaitSemaphores
-                (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-                1u,                                    // commandBufferCount
-                &resetCmdBuffer.get(),                 // pCommandBuffers
-                0u,                                    // signalSemaphoreCount
-                DE_NULL,                               // pSignalSemaphores
+                VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+                nullptr,                       // pNext
+                0u,                            // waitSemaphoreCount
+                nullptr,                       // pWaitSemaphores
+                nullptr,                       // pWaitDstStageMask
+                1u,                            // commandBufferCount
+                &resetCmdBuffer.get(),         // pCommandBuffers
+                0u,                            // signalSemaphoreCount
+                nullptr,                       // pSignalSemaphores
             };
 
             beginCommandBuffer(vkd, *resetCmdBuffer);
@@ -871,15 +871,15 @@ tcu::TestStatus GraphicMultiplePoolsTest::iterate(void)
                 VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR, NULL, passIndex};
 
             const VkSubmitInfo submitInfo = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-                &performanceQuerySubmitInfo,           // pNext
-                0u,                                    // waitSemaphoreCount
-                DE_NULL,                               // pWaitSemaphores
-                (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-                1u,                                    // commandBufferCount
-                &cmdBuffer.get(),                      // pCommandBuffers
-                0u,                                    // signalSemaphoreCount
-                DE_NULL,                               // pSignalSemaphores
+                VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+                &performanceQuerySubmitInfo,   // pNext
+                0u,                            // waitSemaphoreCount
+                nullptr,                       // pWaitSemaphores
+                nullptr,                       // pWaitDstStageMask
+                1u,                            // commandBufferCount
+                &cmdBuffer.get(),              // pCommandBuffers
+                0u,                            // signalSemaphoreCount
+                nullptr,                       // pSignalSemaphores
             };
 
             VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
@@ -937,12 +937,12 @@ void ComputeQueryTestBase::initStateObjects(void)
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-            DE_NULL,                                       // pNext
+            nullptr,                                       // pNext
             0u,                                            // flags
             1u,                                            // setLayoutCount
             &(*descriptorSetLayout),                       // pSetLayouts
             0u,                                            // pushConstantRangeCount
-            DE_NULL,                                       // pPushConstantRanges
+            nullptr,                                       // pPushConstantRanges
         };
         m_pipelineLayout = createPipelineLayout(vkd, device, &pipelineLayoutParams);
     }
@@ -953,20 +953,20 @@ void ComputeQueryTestBase::initStateObjects(void)
             createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp"), 0u));
         const VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // sType
-            DE_NULL,                                             // pNext
+            nullptr,                                             // pNext
             (VkPipelineShaderStageCreateFlags)0u,                // flags
             VK_SHADER_STAGE_COMPUTE_BIT,                         // stage
             *cs,                                                 // module
             "main",                                              // pName
-            DE_NULL,                                             // pSpecializationInfo
+            nullptr,                                             // pSpecializationInfo
         };
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // sType
-            DE_NULL,                                        // pNext
+            nullptr,                                        // pNext
             (VkPipelineCreateFlags)0u,                      // flags
             pipelineShaderStageParams,                      // stage
             *m_pipelineLayout,                              // layout
-            DE_NULL,                                        // basePipelineHandle
+            VK_NULL_HANDLE,                                 // basePipelineHandle
             0,                                              // basePipelineIndex
         };
         m_pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
@@ -979,7 +979,7 @@ void ComputeQueryTestBase::initStateObjects(void)
                            .build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
     const VkDescriptorSetAllocateInfo allocateParams = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // sType
-        DE_NULL,                                        // pNext
+        nullptr,                                        // pNext
         *m_descriptorPool,                              // descriptorPool
         1u,                                             // setLayoutCount
         &(*descriptorSetLayout),                        // pSetLayouts
@@ -1006,7 +1006,7 @@ void ComputeQueryTestBase::initStateObjects(void)
 
     const VkBufferMemoryBarrier barrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                // sType
-        DE_NULL,                                                // pNext
+        nullptr,                                                // pNext
         VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // srcAccessMask
         VK_ACCESS_HOST_READ_BIT,                                // dstAccessMask
         VK_QUEUE_FAMILY_IGNORED,                                // srcQueueFamilyIndex
@@ -1058,32 +1058,31 @@ tcu::TestStatus ComputeQueryTest::iterate(void)
         beginCommandBuffer(vkd, *cmdBuffer, 0u);
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipeline);
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u,
-                                  &(m_descriptorSet.get()), 0u, DE_NULL);
+                                  &(m_descriptorSet.get()), 0u, nullptr);
 
         vkd.cmdBeginQuery(*cmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
         vkd.cmdDispatch(*cmdBuffer, 2, 2, 2);
         vkd.cmdEndQuery(*cmdBuffer, *queryPool, 0u);
 
         vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                               (VkDependencyFlags)0u, 0u, (const VkMemoryBarrier *)DE_NULL, 1u, &m_computeFinishBarrier,
-                               0u, (const VkImageMemoryBarrier *)DE_NULL);
+                               (VkDependencyFlags)0u, 0u, nullptr, 1u, &m_computeFinishBarrier, 0u, nullptr);
         endCommandBuffer(vkd, *cmdBuffer);
 
         // submit reset of queries only once
         {
             const VkSubmitInfo submitInfo = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-                DE_NULL,                               // pNext
-                0u,                                    // waitSemaphoreCount
-                DE_NULL,                               // pWaitSemaphores
-                (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-                1u,                                    // commandBufferCount
-                &resetCmdBuffer.get(),                 // pCommandBuffers
-                0u,                                    // signalSemaphoreCount
-                DE_NULL,                               // pSignalSemaphores
+                VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+                nullptr,                       // pNext
+                0u,                            // waitSemaphoreCount
+                nullptr,                       // pWaitSemaphores
+                nullptr,                       // pWaitDstStageMask
+                1u,                            // commandBufferCount
+                &resetCmdBuffer.get(),         // pCommandBuffers
+                0u,                            // signalSemaphoreCount
+                nullptr,                       // pSignalSemaphores
             };
 
-            VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+            VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE));
         }
 
         // submit command buffer for each pass and wait for its completion
@@ -1096,15 +1095,15 @@ tcu::TestStatus ComputeQueryTest::iterate(void)
                 VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR, NULL, passIndex};
 
             const VkSubmitInfo submitInfo = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-                &performanceQuerySubmitInfo,           // pNext
-                0u,                                    // waitSemaphoreCount
-                DE_NULL,                               // pWaitSemaphores
-                (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-                1u,                                    // commandBufferCount
-                &cmdBuffer.get(),                      // pCommandBuffers
-                0u,                                    // signalSemaphoreCount
-                DE_NULL,                               // pSignalSemaphores
+                VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+                &performanceQuerySubmitInfo,   // pNext
+                0u,                            // waitSemaphoreCount
+                nullptr,                       // pWaitSemaphores
+                nullptr,                       // pWaitDstStageMask
+                1u,                            // commandBufferCount
+                &cmdBuffer.get(),              // pCommandBuffers
+                0u,                            // signalSemaphoreCount
+                nullptr,                       // pSignalSemaphores
             };
 
             VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
@@ -1161,7 +1160,7 @@ tcu::TestStatus ComputeMultiplePoolsTest::iterate(void)
         beginCommandBuffer(vkd, *cmdBuffer, 0u);
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipeline);
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u,
-                                  &(m_descriptorSet.get()), 0u, DE_NULL);
+                                  &(m_descriptorSet.get()), 0u, nullptr);
 
         // perform two queries
         for (uint32_t loop = 0; loop < DE_LENGTH_OF_ARRAY(queryPools); ++loop)
@@ -1173,25 +1172,24 @@ tcu::TestStatus ComputeMultiplePoolsTest::iterate(void)
         }
 
         vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                               (VkDependencyFlags)0u, 0u, (const VkMemoryBarrier *)DE_NULL, 1u, &m_computeFinishBarrier,
-                               0u, (const VkImageMemoryBarrier *)DE_NULL);
+                               (VkDependencyFlags)0u, 0u, nullptr, 1u, &m_computeFinishBarrier, 0u, nullptr);
         endCommandBuffer(vkd, *cmdBuffer);
 
         // submit reset of queries only once
         {
             const VkSubmitInfo submitInfo = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-                DE_NULL,                               // pNext
-                0u,                                    // waitSemaphoreCount
-                DE_NULL,                               // pWaitSemaphores
-                (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-                1u,                                    // commandBufferCount
-                &resetCmdBuffer.get(),                 // pCommandBuffers
-                0u,                                    // signalSemaphoreCount
-                DE_NULL,                               // pSignalSemaphores
+                VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+                nullptr,                       // pNext
+                0u,                            // waitSemaphoreCount
+                nullptr,                       // pWaitSemaphores
+                nullptr,                       // pWaitDstStageMask
+                1u,                            // commandBufferCount
+                &resetCmdBuffer.get(),         // pCommandBuffers
+                0u,                            // signalSemaphoreCount
+                nullptr,                       // pSignalSemaphores
             };
 
-            VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+            VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE));
         }
 
         // submit command buffer for each pass and wait for its completion
@@ -1204,15 +1202,15 @@ tcu::TestStatus ComputeMultiplePoolsTest::iterate(void)
                 VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR, NULL, passIndex};
 
             const VkSubmitInfo submitInfo = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-                &performanceQuerySubmitInfo,           // pNext
-                0u,                                    // waitSemaphoreCount
-                DE_NULL,                               // pWaitSemaphores
-                (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-                1u,                                    // commandBufferCount
-                &cmdBuffer.get(),                      // pCommandBuffers
-                0u,                                    // signalSemaphoreCount
-                DE_NULL,                               // pSignalSemaphores
+                VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+                &performanceQuerySubmitInfo,   // pNext
+                0u,                            // waitSemaphoreCount
+                nullptr,                       // pWaitSemaphores
+                nullptr,                       // pWaitDstStageMask
+                1u,                            // commandBufferCount
+                &cmdBuffer.get(),              // pCommandBuffers
+                0u,                            // signalSemaphoreCount
+                nullptr,                       // pSignalSemaphores
             };
 
             VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));

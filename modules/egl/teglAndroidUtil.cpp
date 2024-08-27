@@ -90,7 +90,7 @@ int32_t androidGetSdkVersion(void)
     {
         char value[128] = {0};
         __system_property_get("ro.build.version.sdk", value);
-        sdkVersion = static_cast<int32_t>(strtol(value, DE_NULL, 10));
+        sdkVersion = static_cast<int32_t>(strtol(value, nullptr, 10));
         printf("SDK Version is %d\n", sdkVersion);
     }
     return sdkVersion;
@@ -116,9 +116,9 @@ AhbFunctions ahbFunctions;
 bool ahbFunctionsLoaded(AhbFunctions *pAhbFunctions, int32_t sdkVersion)
 {
     static bool ahbApiLoaded = false;
-    if (ahbApiLoaded || ((pAhbFunctions->allocate != DE_NULL) && (pAhbFunctions->describe != DE_NULL) &&
-                         (pAhbFunctions->acquire != DE_NULL) && (pAhbFunctions->release != DE_NULL) &&
-                         (pAhbFunctions->isSupported != DE_NULL || sdkVersion < 29)))
+    if (ahbApiLoaded || ((pAhbFunctions->allocate != nullptr) && (pAhbFunctions->describe != nullptr) &&
+                         (pAhbFunctions->acquire != nullptr) && (pAhbFunctions->release != nullptr) &&
+                         (pAhbFunctions->isSupported != nullptr || sdkVersion < 29)))
     {
         ahbApiLoaded = true;
         return true;
@@ -143,7 +143,7 @@ bool loadAhbDynamicApis(int32_t sdkVersion)
             ahbFunctions.isSupported = reinterpret_cast<pfnAHardwareBuffer_isSupported>(
                 libnativewindow.getFunction("AHardwareBuffer_isSupported"));
         else
-            ahbFunctions.isSupported = DE_NULL;
+            ahbFunctions.isSupported = nullptr;
 
         return ahbFunctionsLoaded(&ahbFunctions, sdkVersion);
     }
@@ -230,7 +230,7 @@ AndroidNativeClientBuffer::AndroidNativeClientBuffer(const Library &egl, GLenum 
     };
 
     // If we have AHardwareBuffer_isSupported use that before trying the allocation.
-    if (ahbFunctions.isSupported != DE_NULL)
+    if (ahbFunctions.isSupported != nullptr)
     {
         if (!ahbFunctions.isSupported(&hbufferdesc))
             TCU_THROW(NotSupportedError, "Texture format unsupported");
@@ -260,7 +260,7 @@ EGLClientBuffer AndroidNativeClientBuffer::get(void) const
 void AndroidNativeClientBuffer::lock(void **data)
 {
     const int status =
-        AHardwareBuffer_lock(m_hardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY, -1, DE_NULL, data);
+        AHardwareBuffer_lock(m_hardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY, -1, nullptr, data);
 
     if (status != 0)
         TCU_FAIL(("AHardwareBuffer_lock failed with error: " + de::toString(status)).c_str());
@@ -268,7 +268,7 @@ void AndroidNativeClientBuffer::lock(void **data)
 
 void AndroidNativeClientBuffer::unlock(void)
 {
-    const int status = AHardwareBuffer_unlock(m_hardwareBuffer, DE_NULL);
+    const int status = AHardwareBuffer_unlock(m_hardwareBuffer, nullptr);
 
     if (status != 0)
         TCU_FAIL(("AHardwareBuffer_unlock failed with error: " + de::toString(status)).c_str());
@@ -322,10 +322,10 @@ MovePtr<ClientBuffer> AndroidNativeImageSource::createBuffer(const Library &egl,
     MovePtr<AndroidNativeClientBuffer> buffer(
         new AndroidNativeClientBuffer(egl, m_format, m_numLayers, m_isY8Cb8Cr8_420));
 
-    if (ref != DE_NULL)
+    if (ref != nullptr)
     {
         const TextureFormat texFormat = glu::mapGLInternalFormat(m_format);
-        void *bufferData              = DE_NULL;
+        void *bufferData              = nullptr;
 
         *ref                  = Texture2D(texFormat, 64, 64);
         ref->m_yuvTextureUsed = m_isY8Cb8Cr8_420;

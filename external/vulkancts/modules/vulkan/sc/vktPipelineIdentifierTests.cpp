@@ -160,21 +160,21 @@ tcu::TestStatus testGraphicsPipelineIdentifier(Context &context, TestParams test
     {
         shaderStageCreateInfos[i].push_back({
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType;
-            DE_NULL,                                             // const void*                         pNext;
+            nullptr,                                             // const void*                         pNext;
             (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags    flags;
             VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits               stage;
             *shaders[2 * i],                                     // VkShaderModule                      shader;
             "main",                                              // const char*                         pName;
-            DE_NULL, // const VkSpecializationInfo*         pSpecializationInfo;
+            nullptr, // const VkSpecializationInfo*         pSpecializationInfo;
         });
         shaderStageCreateInfos[i].push_back({
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType;
-            DE_NULL,                                             // const void*                         pNext;
+            nullptr,                                             // const void*                         pNext;
             (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags    flags;
             VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits               stage;
             *shaders[2 * i + 1],                                 // VkShaderModule                      shader;
             "main",                                              // const char*                         pName;
-            DE_NULL, // const VkSpecializationInfo*         pSpecializationInfo;
+            nullptr, // const VkSpecializationInfo*         pSpecializationInfo;
         });
     }
 
@@ -194,12 +194,12 @@ tcu::TestStatus testGraphicsPipelineIdentifier(Context &context, TestParams test
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                     sType;
-        DE_NULL,                                       // const void*                         pNext;
+        nullptr,                                       // const void*                         pNext;
         (VkPipelineLayoutCreateFlags)0u,               // VkPipelineLayoutCreateFlags         flags;
         0u,                                            // uint32_t                            setLayoutCount;
-        DE_NULL,                                       // const VkDescriptorSetLayout*        pSetLayouts;
+        nullptr,                                       // const VkDescriptorSetLayout*        pSetLayouts;
         0u,                                            // uint32_t                            pushConstantRangeCount;
-        DE_NULL                                        // const VkPushConstantRange*          pPushConstantRanges;
+        nullptr                                        // const VkPushConstantRange*          pPushConstantRanges;
     };
     Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 
@@ -334,17 +334,17 @@ tcu::TestStatus testGraphicsPipelineIdentifier(Context &context, TestParams test
     }
 
     VkResult result = createGraphicsPipelinesFunc(device, pipelineCache, pipelineCount,
-                                                  graphicsPipelineCreateInfos.data(), DE_NULL, pipelines.data());
+                                                  graphicsPipelineCreateInfos.data(), nullptr, pipelines.data());
     bool isOK       = true;
     for (uint32_t i = 0; i < pipelineCount; ++i)
     {
-        if (expectedNullHandle[i] == 0 && pipelines[i] == DE_NULL)
+        if (expectedNullHandle[i] == 0 && pipelines[i] == VK_NULL_HANDLE)
         {
             context.getTestContext().getLog()
                 << tcu::TestLog::Message << "Pipeline " << i << " should be created" << tcu::TestLog::EndMessage;
             isOK = false;
         }
-        if (expectedNullHandle[i] != 0 && pipelines[i] != DE_NULL)
+        if (expectedNullHandle[i] != 0 && pipelines[i] != VK_NULL_HANDLE)
         {
             context.getTestContext().getLog()
                 << tcu::TestLog::Message << "Pipeline " << i << " should not be created" << tcu::TestLog::EndMessage;
@@ -360,7 +360,7 @@ tcu::TestStatus testGraphicsPipelineIdentifier(Context &context, TestParams test
     }
 
     for (uint32_t i = 0; i < pipelineCount; ++i)
-        destroyPipelineFunc(device, pipelines[i], DE_NULL);
+        destroyPipelineFunc(device, pipelines[i], nullptr);
 
     return isOK ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Fail");
 }
@@ -387,23 +387,23 @@ tcu::TestStatus testComputePipelineIdentifier(Context &context, TestParams testP
     {
         shaderStageCreateInfos[i] = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType;
-            DE_NULL,                                             // const void*                         pNext;
+            nullptr,                                             // const void*                         pNext;
             (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags    flags;
             VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits               stage;
             *computeShaders[i],                                  // VkShaderModule                      shader;
             "main",                                              // const char*                         pName;
-            DE_NULL, // const VkSpecializationInfo*         pSpecializationInfo;
+            nullptr, // const VkSpecializationInfo*         pSpecializationInfo;
         };
     }
 
     const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                     sType;
-        DE_NULL,                                       // const void*                         pNext;
+        nullptr,                                       // const void*                         pNext;
         (VkPipelineLayoutCreateFlags)0u,               // VkPipelineLayoutCreateFlags         flags;
         0u,                                            // uint32_t                            setLayoutCount;
-        DE_NULL,                                       // const VkDescriptorSetLayout*        pSetLayouts;
+        nullptr,                                       // const VkDescriptorSetLayout*        pSetLayouts;
         0u,                                            // uint32_t                            pushConstantRangeCount;
-        DE_NULL                                        // const VkPushConstantRange*          pPushConstantRanges;
+        nullptr                                        // const VkPushConstantRange*          pPushConstantRanges;
     };
     Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 
@@ -525,18 +525,18 @@ tcu::TestStatus testComputePipelineIdentifier(Context &context, TestParams testP
     }
 
     VkResult result = createComputePipelinesFunc(device, pipelineCache, pipelineCount,
-                                                 computePipelineCreateInfos.data(), DE_NULL, pipelines.data());
+                                                 computePipelineCreateInfos.data(), nullptr, pipelines.data());
 
     bool isOK = true;
     for (uint32_t i = 0; i < pipelineCount; ++i)
     {
-        if (expectedNullHandle[i] == 0 && pipelines[i] == DE_NULL)
+        if (expectedNullHandle[i] == 0 && pipelines[i] == VK_NULL_HANDLE)
         {
             context.getTestContext().getLog()
                 << tcu::TestLog::Message << "Pipeline " << i << " should be created" << tcu::TestLog::EndMessage;
             isOK = false;
         }
-        if (expectedNullHandle[i] != 0 && pipelines[i] != DE_NULL)
+        if (expectedNullHandle[i] != 0 && pipelines[i] != VK_NULL_HANDLE)
         {
             context.getTestContext().getLog()
                 << tcu::TestLog::Message << "Pipeline " << i << " should not be created" << tcu::TestLog::EndMessage;
@@ -552,7 +552,7 @@ tcu::TestStatus testComputePipelineIdentifier(Context &context, TestParams testP
     }
 
     for (uint32_t i = 0; i < pipelineCount; ++i)
-        destroyPipelineFunc(device, pipelines[i], DE_NULL);
+        destroyPipelineFunc(device, pipelines[i], nullptr);
 
     return isOK ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Fail");
 }

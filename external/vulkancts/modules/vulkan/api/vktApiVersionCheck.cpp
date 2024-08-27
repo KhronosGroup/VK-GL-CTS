@@ -154,7 +154,7 @@ public:
 
         // Tests with default instance and device without extensions
         {
-            CustomInstance instance = createCustomInstanceFromContext(m_context, DE_NULL, false);
+            CustomInstance instance = createCustomInstanceFromContext(m_context, nullptr, false);
             Move<VkDevice> device   = createTestDevice(m_context, instance, vector<string>(), false);
             GetInstanceProcAddrFunc getInstanceProcAddr =
                 reinterpret_cast<GetInstanceProcAddrFunc>(funcLibrary.getFunction("vkGetInstanceProcAddr"));
@@ -235,7 +235,7 @@ public:
         {
             const vector<string> supportedInstanceExtensions = getSupportedInstanceExtensions(instanceApiVersion);
             CustomInstance instance =
-                createCustomInstanceWithExtensions(m_context, supportedInstanceExtensions, DE_NULL, false);
+                createCustomInstanceWithExtensions(m_context, supportedInstanceExtensions, nullptr, false);
             const vector<string> supportedDeviceExtensions = getSupportedDeviceExtensions(deviceApiVersion);
             Move<VkDevice> device = createTestDevice(m_context, instance, supportedDeviceExtensions, false);
             GetInstanceProcAddrFunc getInstanceProcAddr =
@@ -310,7 +310,7 @@ private:
                                   VkQueueFlags requiredCaps)
     {
         uint32_t numQueues = 0;
-        vkInstance.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numQueues, DE_NULL);
+        vkInstance.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numQueues, nullptr);
         if (numQueues > 0)
         {
             vector<VkQueueFamilyProperties> properties(numQueues);
@@ -345,7 +345,7 @@ private:
     vector<string> getSupportedInstanceExtensions(const uint32_t apiVersion)
     {
         vector<VkExtensionProperties> enumeratedExtensions(
-            enumerateInstanceExtensionProperties(m_context.getPlatformInterface(), DE_NULL));
+            enumerateInstanceExtensionProperties(m_context.getPlatformInterface(), nullptr));
         vector<VkExtensionProperties> supportedExtensions;
 
         for (size_t extNdx = 0; extNdx < enumeratedExtensions.size(); extNdx++)
@@ -360,7 +360,7 @@ private:
     vector<string> getSupportedDeviceExtensions(const uint32_t apiVersion)
     {
         vector<VkExtensionProperties> enumeratedExtensions(enumerateDeviceExtensionProperties(
-            m_context.getInstanceInterface(), m_context.getPhysicalDevice(), DE_NULL));
+            m_context.getInstanceInterface(), m_context.getPhysicalDevice(), nullptr));
         vector<VkExtensionProperties> supportedExtensions;
 
         for (size_t extNdx = 0; extNdx < enumeratedExtensions.size(); extNdx++)
@@ -389,13 +389,13 @@ private:
             extensionPtrs.push_back(extensions[i].c_str());
 
         VkDeviceQueueCreateInfo queueInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                                             DE_NULL,
+                                             nullptr,
                                              static_cast<VkDeviceQueueCreateFlags>(0u),
                                              queueIndex,
                                              1u,
                                              &queuePriority};
 
-        void *pNext = DE_NULL;
+        void *pNext = nullptr;
 #ifdef CTS_USES_VULKANSC
         VkDeviceObjectReservationCreateInfo memReservationInfo =
             context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() :
@@ -415,7 +415,7 @@ private:
             {
                 pcCI = {
                     VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                    DE_NULL,                                      // const void* pNext;
+                    nullptr,                                      // const void* pNext;
                     VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                         VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                     context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
@@ -441,10 +441,10 @@ private:
             1u,
             &queueInfo,
             0u,
-            DE_NULL,
+            nullptr,
             (uint32_t)extensions.size(),
-            extensions.size() ? &extensionPtrs[0] : DE_NULL,
-            DE_NULL,
+            extensions.size() ? &extensionPtrs[0] : nullptr,
+            nullptr,
         };
 
         const bool validationEnabled = (cmdLine.isValidationEnabled() && allowLayers);
@@ -464,21 +464,21 @@ private:
     void checkPlatformFunction(const APIContext &ctx, tcu::TestLog &log, const char *const name, bool shouldBeNonNull,
                                uint32_t &failsQuantity)
     {
-        if ((ctx.getInstanceProcAddr(DE_NULL, name) == DE_NULL) == shouldBeNonNull)
-            reportFail(log, "vkGetInstanceProcAddr", "DE_NULL", name, shouldBeNonNull, failsQuantity);
+        if ((ctx.getInstanceProcAddr(nullptr, name) == nullptr) == shouldBeNonNull)
+            reportFail(log, "vkGetInstanceProcAddr", "nullptr", name, shouldBeNonNull, failsQuantity);
     }
 
     void checkInstanceFunction(const APIContext &ctx, tcu::TestLog &log, const char *const name, bool shouldBeNonNull,
                                uint32_t &failsQuantity)
     {
-        if ((ctx.getInstanceProcAddr(ctx.instance, name) == DE_NULL) == shouldBeNonNull)
+        if ((ctx.getInstanceProcAddr(ctx.instance, name) == nullptr) == shouldBeNonNull)
             reportFail(log, "vkGetInstanceProcAddr", "instance", name, shouldBeNonNull, failsQuantity);
     }
 
     void checkDeviceFunction(const APIContext &ctx, tcu::TestLog &log, const char *const name, bool shouldBeNonNull,
                              uint32_t &failsQuantity)
     {
-        if ((ctx.getDeviceProcAddr(ctx.device, name) == DE_NULL) == shouldBeNonNull)
+        if ((ctx.getDeviceProcAddr(ctx.device, name) == nullptr) == shouldBeNonNull)
             reportFail(log, "vkGetDeviceProcAddr", "device", name, shouldBeNonNull, failsQuantity);
     }
 
@@ -651,7 +651,7 @@ public:
 #endif // CTS_USES_VULKANSC
 
             // create instance for currentluy tested vulkan version
-            Move<VkInstance> customInstance(vk::createInstance(vkp, &instanceCreateInfo, DE_NULL));
+            Move<VkInstance> customInstance(vk::createInstance(vkp, &instanceCreateInfo, nullptr));
             std::unique_ptr<vk::InstanceDriver> instanceDriver(new InstanceDriver(vkp, *customInstance));
             const VkPhysicalDevice physicalDevice =
                 chooseDevice(*instanceDriver, *customInstance, m_context.getTestContext().getCommandLine());
@@ -715,7 +715,7 @@ public:
                         continue;
 
                     // check if returned function pointer is NULL
-                    if (deviceDriver.getDeviceProcAddr(*device, funcName) != DE_NULL)
+                    if (deviceDriver.getDeviceProcAddr(*device, funcName) != nullptr)
                     {
                         log << tcu::TestLog::Message << "getDeviceProcAddr(" << funcName
                             << ") returned non-null pointer, expected NULL" << tcu::TestLog::EndMessage;

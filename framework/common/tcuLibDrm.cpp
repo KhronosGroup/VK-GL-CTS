@@ -87,13 +87,13 @@ LibDrm::~LibDrm(void)
 
 drmDevicePtr *LibDrm::getDevices(int *pNumDevices) const
 {
-    *pNumDevices = intGetDevices(DE_NULL, 0);
+    *pNumDevices = intGetDevices(nullptr, 0);
 
     if (*pNumDevices < 0)
         TCU_THROW(NotSupportedError, "Failed to query number of DRM devices in system");
 
     if (*pNumDevices == 0)
-        return DE_NULL;
+        return nullptr;
 
     drmDevicePtr *devs = new drmDevicePtr[*pNumDevices];
 
@@ -131,7 +131,7 @@ const char *LibDrm::findDeviceNode(drmDevicePtr *devices, int count, int64_t maj
         }
     }
 
-    return DE_NULL;
+    return nullptr;
 }
 
 void LibDrm::freeDevices(drmDevicePtr *devices, int count) const
@@ -153,7 +153,7 @@ LibDrm::FdPtr LibDrm::openFd(const char *node) const
 {
     int fd = open(node, O_RDWR);
     if (fd < 0)
-        return FdPtr(DE_NULL);
+        return FdPtr(nullptr);
     else
         return FdPtr(new int{fd}, closeAndDeleteFd);
 }
@@ -178,7 +178,7 @@ LibDrm::FdPtr LibDrm::createLease(int fd, const uint32_t *objects, int numObject
     uint32_t leaseId;
     int leaseFd = pCreateLease(fd, objects, numObjects, flags, &leaseId);
     if (leaseFd < 0)
-        return FdPtr(DE_NULL);
+        return FdPtr(nullptr);
     else
         return FdPtr(new int{leaseFd}, closeAndDeleteFd);
 }

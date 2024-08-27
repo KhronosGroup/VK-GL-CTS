@@ -65,7 +65,7 @@ static int32_t androidGetSdkVersion()
     {
         char value[128] = {0};
         __system_property_get("ro.build.version.sdk", value);
-        sdkVersion = static_cast<int32_t>(strtol(value, DE_NULL, 10));
+        sdkVersion = static_cast<int32_t>(strtol(value, nullptr, 10));
         printf("SDK Version is %d\n", sdkVersion);
     }
     return sdkVersion;
@@ -158,11 +158,11 @@ static AhbFunctions ahbFunctions;
 static bool ahbFunctionsLoaded(AhbFunctions *pAhbFunctions)
 {
     static bool ahbApiLoaded = false;
-    if (ahbApiLoaded || ((pAhbFunctions->allocate != DE_NULL) && (pAhbFunctions->describe != DE_NULL) &&
-                         (pAhbFunctions->acquire != DE_NULL) && (pAhbFunctions->release != DE_NULL) &&
-                         (pAhbFunctions->lock != DE_NULL) && (pAhbFunctions->unlock != DE_NULL)
+    if (ahbApiLoaded || ((pAhbFunctions->allocate != nullptr) && (pAhbFunctions->describe != nullptr) &&
+                         (pAhbFunctions->acquire != nullptr) && (pAhbFunctions->release != nullptr) &&
+                         (pAhbFunctions->lock != nullptr) && (pAhbFunctions->unlock != nullptr)
 #if defined(BUILT_WITH_ANDROID_T_HARDWARE_BUFFER)
-                         && (pAhbFunctions->lockPlanes != DE_NULL)
+                         && (pAhbFunctions->lockPlanes != nullptr)
 #endif // defined(BUILT_WITH_ANDROID_T_HARDWARE_BUFFER)
                              ))
     {
@@ -257,7 +257,7 @@ vk::pt::AndroidHardwareBufferPtr AndroidHardwareBufferExternalApi26::allocate(ui
         0u  // Initialize to zero, reserved for future use
     };
 
-    AHardwareBuffer *hbuffer = DE_NULL;
+    AHardwareBuffer *hbuffer = nullptr;
     ahbFunctions.allocate(&hbufferdesc, &hbuffer);
 
     return vk::pt::AndroidHardwareBufferPtr(hbuffer);
@@ -699,7 +699,7 @@ AndroidHardwareBufferExternalApi *AndroidHardwareBufferExternalApi::getInstance(
 #endif // defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
     DE_UNREF(sdkVersion);
 #endif // DE_OS == DE_OS_ANDROID
-    return DE_NULL;
+    return nullptr;
 }
 
 int32_t AndroidHardwareBufferInstance::getSdkVersion()

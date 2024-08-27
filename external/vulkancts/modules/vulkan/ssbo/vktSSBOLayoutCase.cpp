@@ -215,14 +215,14 @@ const StructType *ShaderInterface::findStruct(const char *name) const
 {
     std::vector<StructType *>::const_iterator pos =
         std::find_if(m_structs.begin(), m_structs.end(), StructNameEquals(name));
-    return pos != m_structs.end() ? *pos : DE_NULL;
+    return pos != m_structs.end() ? *pos : nullptr;
 }
 
 void ShaderInterface::getNamedStructs(std::vector<const StructType *> &structs) const
 {
     for (std::vector<StructType *>::const_iterator i = m_structs.begin(); i != m_structs.end(); i++)
     {
-        if ((*i)->getTypeName() != DE_NULL)
+        if ((*i)->getTypeName() != nullptr)
             structs.push_back(*i);
     }
 }
@@ -737,7 +737,7 @@ void computeReferenceLayout(BufferLayout &layout, ShaderInterface &interface)
     for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
     {
         BufferBlock &block      = interface.getBlock(blockNdx);
-        bool hasInstanceName    = block.getInstanceName() != DE_NULL;
+        bool hasInstanceName    = block.getInstanceName() != nullptr;
         std::string blockPrefix = hasInstanceName ? (std::string(block.getBlockName()) + ".") : std::string("");
         int curOffset           = 0;
         int activeBlockNdx      = (int)layout.blocks.size();
@@ -1038,7 +1038,7 @@ void generateDeclaration(std::ostream &src, const BufferBlock &block, int bindin
 
     if (!usePhysStorageBuffer)
     {
-        if (block.getInstanceName() != DE_NULL)
+        if (block.getInstanceName() != nullptr)
         {
             src << " " << block.getInstanceName();
             if (block.getFlags() & LAYOUT_DESCRIPTOR_INDEXING)
@@ -1550,7 +1550,7 @@ string generateComputeShader(const ShaderInterface &interface, const BufferLayou
             for (int blockNdx = 0; blockNdx < interface.getNumBlocks(); blockNdx++)
             {
                 const BufferBlock &block = interface.getBlock(blockNdx);
-                if (block.getInstanceName() != DE_NULL)
+                if (block.getInstanceName() != nullptr)
                 {
                     src << "    " << block.getBlockName() << " " << block.getInstanceName();
                     if (block.isArray())
@@ -2094,7 +2094,7 @@ void initRefDataStorage(const ShaderInterface &interface, const BufferLayout &la
 
     // Pointers for each block.
     {
-        uint8_t *basePtr = storage.data.empty() ? DE_NULL : &storage.data[0];
+        uint8_t *basePtr = storage.data.empty() ? nullptr : &storage.data[0];
         int curOffset    = 0;
 
         DE_ASSERT(bufferSizes.size() == layout.blocks.size());
@@ -2155,7 +2155,7 @@ vk::Move<vk::VkBuffer> createBuffer(Context &context, vk::VkDeviceSize bufferSiz
 
     const vk::VkBufferCreateInfo bufferInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         0u,                                       // VkBufferCreateFlags flags;
         bufferSize,                               // VkDeviceSize size;
         usageFlags,                               // VkBufferUsageFlags usage;
@@ -2258,7 +2258,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
         poolBuilder.build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
     const vk::VkDescriptorSetAllocateInfo allocInfo = {
-        vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL, *descriptorPool, 1u, &descriptorSetLayout.get(),
+        vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, *descriptorPool, 1u, &descriptorSetLayout.get(),
     };
 
     const vk::Unique<vk::VkDescriptorSet> descriptorSet(allocateDescriptorSet(vk, device, &allocInfo));
@@ -2391,8 +2391,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
 
         vk::VkBufferDeviceAddressInfo info = {
             vk::VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType sType;
-            DE_NULL,                                          // const void* pNext;
-            0,                                                // VkBuffer            buffer
+            nullptr,                                          // const void* pNext;
+            VK_NULL_HANDLE,                                   // VkBuffer            buffer
         };
 
         for (uint32_t i = 0; i < descriptors.size(); ++i)
@@ -2421,7 +2421,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
 
     const vk::VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                           // const void* pNext;
+        nullptr,                                           // const void* pNext;
         (vk::VkPipelineLayoutCreateFlags)0,
         1u,                               // uint32_t descriptorSetCount;
         &*descriptorSetLayout,            // const VkDescriptorSetLayout* pSetLayouts;
@@ -2436,16 +2436,16 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
         createShaderModule(vk, device, m_context.getBinaryCollection().get("compute"), 0));
     const vk::VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                 // const void* pNext;
+        nullptr,                                                 // const void* pNext;
         (vk::VkPipelineShaderStageCreateFlags)0,
         vk::VK_SHADER_STAGE_COMPUTE_BIT, // VkShaderStage stage;
         *shaderModule,                   // VkShader shader;
         "main",                          //
-        DE_NULL,                         // const VkSpecializationInfo* pSpecializationInfo;
+        nullptr,                         // const VkSpecializationInfo* pSpecializationInfo;
     };
     const vk::VkComputePipelineCreateInfo pipelineCreateInfo = {
         vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                            // const void* pNext;
+        nullptr,                                            // const void* pNext;
         0,                                                  // VkPipelineCreateFlags flags;
         pipelineShaderStageParams,                          // VkPipelineShaderStageCreateInfo stage;
         *pipelineLayout,                                    // VkPipelineLayout layout;
@@ -2471,7 +2471,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
                             (uint32_t)(sizeof(vk::VkDeviceAddress) * gpuAddrs.size()), &gpuAddrs[0]);
     }
     vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
@@ -2484,7 +2484,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
             const vk::VkBuffer uniformBuffer = m_uniformBuffers[blockNdx].get()->get();
 
             const vk::VkBufferMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                       DE_NULL,
+                                                       nullptr,
                                                        vk::VK_ACCESS_SHADER_WRITE_BIT,
                                                        vk::VK_ACCESS_HOST_READ_BIT,
                                                        VK_QUEUE_FAMILY_IGNORED,
@@ -2504,7 +2504,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
             totalSize += bufferSizes[bufferNdx];
 
         const vk::VkBufferMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                   DE_NULL,
+                                                   nullptr,
                                                    vk::VK_ACCESS_SHADER_WRITE_BIT,
                                                    vk::VK_ACCESS_HOST_READ_BIT,
                                                    VK_QUEUE_FAMILY_IGNORED,
@@ -2515,8 +2515,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
         barriers.push_back(barrier);
     }
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
-                          (vk::VkDependencyFlags)0, 0u, DE_NULL, static_cast<uint32_t>(barriers.size()), &barriers[0],
-                          0u, DE_NULL);
+                          (vk::VkDependencyFlags)0, 0u, nullptr, static_cast<uint32_t>(barriers.size()), &barriers[0],
+                          0u, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 

@@ -215,9 +215,9 @@ tcu::TestNode::IterateResult CreationTest::iterate()
  */
 DefaultsTest::DefaultsTest(deqp::Context &context)
     : deqp::TestCase(context, "xfb_defaults", "Transform Feedback Defaults Test")
-    , m_gl_getTransformFeedbackiv(DE_NULL)
-    , m_gl_getTransformFeedbacki_v(DE_NULL)
-    , m_gl_getTransformFeedbacki64_v(DE_NULL)
+    , m_gl_getTransformFeedbackiv(nullptr)
+    , m_gl_getTransformFeedbacki_v(nullptr)
+    , m_gl_getTransformFeedbacki64_v(nullptr)
     , m_xfb_dsa(0)
     , m_xfb_indexed_binding_points_count(0)
 {
@@ -299,8 +299,8 @@ void DefaultsTest::prepare()
     m_gl_getTransformFeedbacki_v   = (GetTransformFeedbacki_v_ProcAddress)gl.getTransformFeedbacki_v;
     m_gl_getTransformFeedbacki64_v = (GetTransformFeedbacki64_v_ProcAddress)gl.getTransformFeedbacki64_v;
 
-    if ((DE_NULL == m_gl_getTransformFeedbackiv) || (DE_NULL == m_gl_getTransformFeedbacki_v) ||
-        (DE_NULL == m_gl_getTransformFeedbacki64_v))
+    if ((nullptr == m_gl_getTransformFeedbackiv) || (nullptr == m_gl_getTransformFeedbacki_v) ||
+        (nullptr == m_gl_getTransformFeedbacki64_v))
     {
         m_context.getTestContext().getLog()
             << tcu::TestLog::Message << "Function pointers are set to NULL values." << tcu::TestLog::EndMessage;
@@ -537,10 +537,10 @@ void DefaultsTest::clean()
  */
 BuffersTest::BuffersTest(deqp::Context &context)
     : deqp::TestCase(context, "xfb_buffers", "Transform Feedback Buffers Test")
-    , m_gl_getTransformFeedbacki_v(DE_NULL)
-    , m_gl_getTransformFeedbacki64_v(DE_NULL)
-    , m_gl_TransformFeedbackBufferBase(DE_NULL)
-    , m_gl_TransformFeedbackBufferRange(DE_NULL)
+    , m_gl_getTransformFeedbacki_v(nullptr)
+    , m_gl_getTransformFeedbacki64_v(nullptr)
+    , m_gl_TransformFeedbackBufferBase(nullptr)
+    , m_gl_TransformFeedbackBufferRange(nullptr)
     , m_xfb_dsa(0)
     , m_bo_a(0)
     , m_bo_b(0)
@@ -637,8 +637,8 @@ void BuffersTest::prepareObjects()
     m_gl_TransformFeedbackBufferBase  = (TransformFeedbackBufferBase_ProcAddress)gl.transformFeedbackBufferBase;
     m_gl_TransformFeedbackBufferRange = (TransformFeedbackBufferRange_ProcAddress)gl.transformFeedbackBufferRange;
 
-    if ((DE_NULL == m_gl_getTransformFeedbacki_v) || (DE_NULL == m_gl_getTransformFeedbacki64_v) ||
-        (DE_NULL == m_gl_TransformFeedbackBufferBase) || (DE_NULL == m_gl_TransformFeedbackBufferRange))
+    if ((nullptr == m_gl_getTransformFeedbacki_v) || (nullptr == m_gl_getTransformFeedbacki64_v) ||
+        (nullptr == m_gl_TransformFeedbackBufferBase) || (nullptr == m_gl_TransformFeedbackBufferRange))
     {
         m_context.getTestContext().getLog()
             << tcu::TestLog::Message << "Function pointers are set to NULL values." << tcu::TestLog::EndMessage;
@@ -952,9 +952,9 @@ const glw::GLuint BuffersTest::s_bo_size = 512;
  */
 ErrorsTest::ErrorsTest(deqp::Context &context)
     : deqp::TestCase(context, "xfb_errors", "Transform Feedback Errors Test")
-    , m_gl_getTransformFeedbackiv(DE_NULL)
-    , m_gl_getTransformFeedbacki_v(DE_NULL)
-    , m_gl_getTransformFeedbacki64_v(DE_NULL)
+    , m_gl_getTransformFeedbackiv(nullptr)
+    , m_gl_getTransformFeedbacki_v(nullptr)
+    , m_gl_getTransformFeedbacki64_v(nullptr)
 {
     /* Intentionally left blank. */
 }
@@ -1042,8 +1042,8 @@ void ErrorsTest::prepareFunctionPointers()
     m_gl_getTransformFeedbacki_v   = (GetTransformFeedbacki_v_ProcAddress)gl.getTransformFeedbacki_v;
     m_gl_getTransformFeedbacki64_v = (GetTransformFeedbacki64_v_ProcAddress)gl.getTransformFeedbacki64_v;
 
-    if ((DE_NULL == m_gl_getTransformFeedbackiv) || (DE_NULL == m_gl_getTransformFeedbacki_v) ||
-        (DE_NULL == m_gl_getTransformFeedbacki64_v))
+    if ((nullptr == m_gl_getTransformFeedbackiv) || (nullptr == m_gl_getTransformFeedbacki_v) ||
+        (nullptr == m_gl_getTransformFeedbacki64_v))
     {
         m_context.getTestContext().getLog()
             << tcu::TestLog::Message << "Function pointers are set to NULL values." << tcu::TestLog::EndMessage;
@@ -1557,8 +1557,8 @@ bool ErrorsTest::testIndexedQueriesForInvalidBindingPoint()
  */
 FunctionalTest::FunctionalTest(deqp::Context &context)
     : deqp::TestCase(context, "xfb_functional", "Transform Feedback Functional Test")
-    , m_gl_getTransformFeedbackiv(DE_NULL)
-    , m_gl_TransformFeedbackBufferBase(DE_NULL)
+    , m_gl_getTransformFeedbackiv(nullptr)
+    , m_gl_TransformFeedbackBufferBase(nullptr)
     , m_xfb_dsa(0)
     , m_bo(0)
     , m_po(0)
@@ -1641,7 +1641,7 @@ void FunctionalTest::prepareFunctionPointers()
     m_gl_getTransformFeedbackiv      = (GetTransformFeedbackiv_ProcAddress)gl.getTransformFeedbackiv;
     m_gl_TransformFeedbackBufferBase = (TransformFeedbackBufferBase_ProcAddress)gl.transformFeedbackBufferBase;
 
-    if ((DE_NULL == m_gl_getTransformFeedbackiv) || (DE_NULL == m_gl_TransformFeedbackBufferBase))
+    if ((nullptr == m_gl_getTransformFeedbackiv) || (nullptr == m_gl_TransformFeedbackBufferBase))
     {
         m_context.getTestContext().getLog()
             << tcu::TestLog::Message << "Function pointers are set to NULL values." << tcu::TestLog::EndMessage;
@@ -1680,7 +1680,7 @@ void FunctionalTest::prepareBuffer()
     gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, m_bo);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer have failed");
 
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, s_bo_size, DE_NULL, GL_DYNAMIC_COPY);
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, s_bo_size, nullptr, GL_DYNAMIC_COPY);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData have failed");
 
     gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, 0);
@@ -1719,7 +1719,7 @@ void FunctionalTest::prepareProgram()
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 

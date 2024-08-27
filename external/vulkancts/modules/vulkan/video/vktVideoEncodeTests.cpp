@@ -123,62 +123,94 @@ enum TestType
     TEST_TYPE_LAST
 };
 
+enum TestCodec
+{
+    TEST_CODEC_H264,
+    TEST_CODEC_H265,
+
+    TEST_CODEC_LAST
+};
+
 const char *getTestName(const TestType testType)
 {
     switch (testType)
     {
     case TEST_TYPE_H264_ENCODE_I:
-        return "h264_i";
-    case TEST_TYPE_H264_ENCODE_RC_VBR:
-        return "h264_rc_vbr";
-    case TEST_TYPE_H264_ENCODE_RC_CBR:
-        return "h264_rc_cbr";
-    case TEST_TYPE_H264_ENCODE_RC_DISABLE:
-        return "h264_rc_disable";
-    case TEST_TYPE_H264_ENCODE_QUALITY_LEVEL:
-        return "h264_quality_level";
-    case TEST_TYPE_H264_ENCODE_USAGE:
-        return "h264_usage";
-    case TEST_TYPE_H264_ENCODE_I_P:
-        return "h264_i_p";
-    case TEST_TYPE_H264_ENCODE_I_P_NOT_MATCHING_ORDER:
-        return "h264_i_p_not_matching_order";
-    case TEST_TYPE_H264_I_P_B_13:
-        return "h264_i_p_b_13";
-    case TEST_TYPE_H264_ENCODE_RESOLUTION_CHANGE_DPB:
-        return "h264_resolution_change_dpb";
-    case TEST_TYPE_H264_ENCODE_QUERY_RESULT_WITH_STATUS:
-        return "h264_query_with_status";
-    case TEST_TYPE_H264_ENCODE_INLINE_QUERY:
-        return "h264_inline_query";
-    case TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES:
-        return "h264_resources_without_profiles";
     case TEST_TYPE_H265_ENCODE_I:
-        return "h265_i";
+        return "i";
+    case TEST_TYPE_H264_ENCODE_RC_VBR:
     case TEST_TYPE_H265_ENCODE_RC_VBR:
-        return "h265_rc_vbr";
+        return "rc_vbr";
+    case TEST_TYPE_H264_ENCODE_RC_CBR:
     case TEST_TYPE_H265_ENCODE_RC_CBR:
-        return "h265_rc_cbr";
+        return "rc_cbr";
+    case TEST_TYPE_H264_ENCODE_RC_DISABLE:
     case TEST_TYPE_H265_ENCODE_RC_DISABLE:
-        return "h265_rc_disable";
+        return "rc_disable";
+    case TEST_TYPE_H264_ENCODE_QUALITY_LEVEL:
     case TEST_TYPE_H265_ENCODE_QUALITY_LEVEL:
-        return "h265_quality_level";
+        return "quality_level";
+    case TEST_TYPE_H264_ENCODE_USAGE:
     case TEST_TYPE_H265_ENCODE_USAGE:
-        return "h265_usage";
+        return "usage";
+    case TEST_TYPE_H264_ENCODE_I_P:
     case TEST_TYPE_H265_ENCODE_I_P:
-        return "h265_i_p";
+        return "i_p";
+    case TEST_TYPE_H264_ENCODE_I_P_NOT_MATCHING_ORDER:
     case TEST_TYPE_H265_ENCODE_I_P_NOT_MATCHING_ORDER:
-        return "h265_i_p_not_matching_order";
+        return "i_p_not_matching_order";
+    case TEST_TYPE_H264_I_P_B_13:
     case TEST_TYPE_H265_I_P_B_13:
-        return "h265_i_p_b_13";
+        return "i_p_b_13";
+    case TEST_TYPE_H264_ENCODE_RESOLUTION_CHANGE_DPB:
     case TEST_TYPE_H265_ENCODE_RESOLUTION_CHANGE_DPB:
-        return "h265_resolution_change_dpb";
+        return "resolution_change_dpb";
+    case TEST_TYPE_H264_ENCODE_QUERY_RESULT_WITH_STATUS:
     case TEST_TYPE_H265_ENCODE_QUERY_RESULT_WITH_STATUS:
-        return "h265_query_with_status";
+        return "query_with_status";
+    case TEST_TYPE_H264_ENCODE_INLINE_QUERY:
     case TEST_TYPE_H265_ENCODE_INLINE_QUERY:
-        return "h265_inline_query";
+        return "inline_query";
+    case TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES:
     case TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES:
-        return "h265_resources_without_profiles";
+        return "resources_without_profiles";
+    default:
+        TCU_THROW(InternalError, "Unknown TestType");
+    }
+}
+
+enum TestCodec getTestCodec(const TestType testType)
+{
+    switch (testType)
+    {
+    case TEST_TYPE_H264_ENCODE_I:
+    case TEST_TYPE_H264_ENCODE_RC_VBR:
+    case TEST_TYPE_H264_ENCODE_RC_CBR:
+    case TEST_TYPE_H264_ENCODE_RC_DISABLE:
+    case TEST_TYPE_H264_ENCODE_QUALITY_LEVEL:
+    case TEST_TYPE_H264_ENCODE_USAGE:
+    case TEST_TYPE_H264_ENCODE_I_P:
+    case TEST_TYPE_H264_ENCODE_I_P_NOT_MATCHING_ORDER:
+    case TEST_TYPE_H264_I_P_B_13:
+    case TEST_TYPE_H264_ENCODE_RESOLUTION_CHANGE_DPB:
+    case TEST_TYPE_H264_ENCODE_QUERY_RESULT_WITH_STATUS:
+    case TEST_TYPE_H264_ENCODE_INLINE_QUERY:
+    case TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES:
+        return TEST_CODEC_H264;
+    case TEST_TYPE_H265_ENCODE_I:
+    case TEST_TYPE_H265_ENCODE_RC_VBR:
+    case TEST_TYPE_H265_ENCODE_RC_CBR:
+    case TEST_TYPE_H265_ENCODE_RC_DISABLE:
+    case TEST_TYPE_H265_ENCODE_QUALITY_LEVEL:
+    case TEST_TYPE_H265_ENCODE_USAGE:
+    case TEST_TYPE_H265_ENCODE_I_P:
+    case TEST_TYPE_H265_ENCODE_I_P_NOT_MATCHING_ORDER:
+    case TEST_TYPE_H265_I_P_B_13:
+    case TEST_TYPE_H265_ENCODE_RESOLUTION_CHANGE_DPB:
+    case TEST_TYPE_H265_ENCODE_QUERY_RESULT_WITH_STATUS:
+    case TEST_TYPE_H265_ENCODE_INLINE_QUERY:
+    case TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES:
+        return TEST_CODEC_H265;
     default:
         TCU_THROW(InternalError, "Unknown TestType");
     }
@@ -1083,7 +1115,7 @@ void fillBuffer(const DeviceInterface &vk, const VkDevice device, Allocation &bu
 {
     const VkMappedMemoryRange memRange = {
         VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, // VkStructureType sType;
-        DE_NULL,                               // const void* pNext;
+        nullptr,                               // const void* pNext;
         bufferAlloc.getMemory(),               // VkDeviceMemory memory;
         bufferAlloc.getOffset(),               // VkDeviceSize offset;
         VK_WHOLE_SIZE                          // VkDeviceSize size;
@@ -1096,7 +1128,7 @@ void fillBuffer(const DeviceInterface &vk, const VkDevice device, Allocation &bu
 }
 
 VkVideoPictureResourceInfoKHR makeVideoPictureResource(const VkExtent2D &codedExtent, uint32_t baseArrayLayer,
-                                                       const VkImageView imageView, const void *pNext = DE_NULL)
+                                                       const VkImageView imageView, const void *pNext = nullptr)
 {
     const VkVideoPictureResourceInfoKHR videoPictureResource = {
         VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR, //  VkStructureType sType;
@@ -1112,7 +1144,7 @@ VkVideoPictureResourceInfoKHR makeVideoPictureResource(const VkExtent2D &codedEx
 
 VkVideoReferenceSlotInfoKHR makeVideoReferenceSlot(int32_t slotIndex,
                                                    const VkVideoPictureResourceInfoKHR *pPictureResource,
-                                                   const void *pNext = DE_NULL)
+                                                   const void *pNext = nullptr)
 {
     const VkVideoReferenceSlotInfoKHR videoReferenceSlotKHR = {
         VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR, //  VkStructureType sType;
@@ -1204,10 +1236,10 @@ de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImageFromContext(DeviceCo
 
     VkSubmitInfo decodeSubmitInfo = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO, //  VkStructureType sType;
-        DE_NULL,                       //  const void* pNext;
+        nullptr,                       //  const void* pNext;
         0u,                            //  uint32_t waitSemaphoreCount;
-        DE_NULL,                       //  const VkSemaphore* pWaitSemaphores;
-        DE_NULL,                       //  const VkPipelineStageFlags* pWaitDstStageMask;
+        nullptr,                       //  const VkSemaphore* pWaitSemaphores;
+        nullptr,                       //  const VkPipelineStageFlags* pWaitDstStageMask;
         1u,                            //  uint32_t commandBufferCount;
         &*cmdDecodeBuffer,             //  const VkCommandBuffer* pCommandBuffers;
         1u,                            //  uint32_t signalSemaphoreCount;
@@ -1221,14 +1253,14 @@ de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImageFromContext(DeviceCo
     }
     const VkSubmitInfo transferSubmitInfo = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO, //  VkStructureType sType;
-        DE_NULL,                       //  const void* pNext;
+        nullptr,                       //  const void* pNext;
         1u,                            //  uint32_t waitSemaphoreCount;
         &*semaphore,                   //  const VkSemaphore* pWaitSemaphores;
         &waitDstStageMask,             //  const VkPipelineStageFlags* pWaitDstStageMask;
         1u,                            //  uint32_t commandBufferCount;
         &*cmdTransferBuffer,           //  const VkCommandBuffer* pCommandBuffers;
         0u,                            //  uint32_t signalSemaphoreCount;
-        DE_NULL,                       //  const VkSemaphore* pSignalSemaphores;
+        nullptr,                       //  const VkSemaphore* pSignalSemaphores;
     };
 
     beginCommandBuffer(videoDeviceDriver, *cmdDecodeBuffer, 0u);
@@ -1262,14 +1294,14 @@ de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImageFromContext(DeviceCo
 
     const VkSubmitInfo transferSubmitInfo2 = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-        DE_NULL,                       //  const void* pNext;
+        nullptr,                       //  const void* pNext;
         0u,                            //  uint32_t waitSemaphoreCount;
-        DE_NULL,                       //  const VkSemaphore* pWaitSemaphores;
-        DE_NULL,                       //  const VkPipelineStageFlags* pWaitDstStageMask;
+        nullptr,                       //  const VkSemaphore* pWaitSemaphores;
+        nullptr,                       //  const VkPipelineStageFlags* pWaitDstStageMask;
         1u,                            //  uint32_t commandBufferCount;
         &*cmdTransferBuffer,           //  const VkCommandBuffer* pCommandBuffers;
         0u,                            //  uint32_t signalSemaphoreCount;
-        DE_NULL,                       // const VkSemaphore* pSignalSemaphores;
+        nullptr,                       // const VkSemaphore* pSignalSemaphores;
     };
 
     VK_CHECK(videoDeviceDriver.queueSubmit(queueTransfer, 1u, &transferSubmitInfo2, *transferFence));
@@ -1346,7 +1378,7 @@ VkFormat VideoEncodeTestInstance::checkImageFormat(VkImageUsageFlags flags,
     const VkPhysicalDevice physicalDevice      = m_context.getPhysicalDevice();
     MovePtr<vector<VkFormat>> supportedFormats = getSupportedFormats(vki, physicalDevice, flags, videoProfileList);
 
-    if (supportedFormats == DE_NULL || supportedFormats->empty())
+    if (!supportedFormats || supportedFormats->empty())
         TCU_THROW(NotSupportedError, "No supported picture formats");
 
     for (const auto &supportedFormat : *supportedFormats)
@@ -1586,7 +1618,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     DE_ASSERT(qualityLevel < videoEncodeCapabilities->maxQualityLevels);
 
     const MovePtr<VkVideoEncodeQualityLevelInfoKHR> videoEncodeQualityLevelInfo =
-        getVideoEncodeQualityLevelInfo(qualityLevel, DE_NULL);
+        getVideoEncodeQualityLevelInfo(qualityLevel, nullptr);
 
     std::vector<MovePtr<StdVideoH264SequenceParameterSet>> stdVideoH264SequenceParameterSets;
     std::vector<MovePtr<StdVideoH264PictureParameterSet>> stdVideoH264PictureParameterSets;
@@ -1612,13 +1644,13 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
         uint32_t extentHeight = i == 0 ? codedExtent.height : codedExtent.height / 2;
 
         stdVideoH264SequenceParameterSets.push_back(getStdVideoH264EncodeSequenceParameterSet(
-            extentWidth, extentHeight, m_testDefinition->maxNumRefs(), DE_NULL));
+            extentWidth, extentHeight, m_testDefinition->maxNumRefs(), nullptr));
         stdVideoH264PictureParameterSets.push_back(getStdVideoH264EncodePictureParameterSet(
             m_testDefinition->ppsActiveRefs0(), m_testDefinition->ppsActiveRefs1()));
         encodeH264SessionParametersAddInfoKHRs.push_back(createVideoEncodeH264SessionParametersAddInfoKHR(
             1u, stdVideoH264SequenceParameterSets.back().get(), 1u, stdVideoH264PictureParameterSets.back().get()));
         H264sessionParametersCreateInfos.push_back(createVideoEncodeH264SessionParametersCreateInfoKHR(
-            useQualityLevel ? videoEncodeQualityLevelInfo.get() : DE_NULL, 1u, 1u,
+            useQualityLevel ? videoEncodeQualityLevelInfo.get() : nullptr, 1u, 1u,
             encodeH264SessionParametersAddInfoKHRs.back().get()));
 
         stdVideoH265ProfileTierLevels.push_back(
@@ -1638,10 +1670,10 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
             1u, stdVideoH265VideoParameterSets.back().get(), 1u, stdVideoH265SequenceParameterSets.back().get(), 1u,
             stdVideoH265PictureParameterSets.back().get()));
         H265sessionParametersCreateInfos.push_back(getVideoEncodeH265SessionParametersCreateInfoKHR(
-            useQualityLevel ? videoEncodeQualityLevelInfo.get() : DE_NULL, 1u, 1u, 1u,
+            useQualityLevel ? videoEncodeQualityLevelInfo.get() : nullptr, 1u, 1u, 1u,
             encodeH265SessionParametersAddInfoKHRs.back().get()));
 
-        const void *sessionParametersCreateInfoPtr = DE_NULL;
+        const void *sessionParametersCreateInfoPtr = nullptr;
 
         if (m_testDefinition->getProfile()->IsH264())
         {
@@ -1728,7 +1760,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
         dpbImageViews.push_back(std::move(dpbImageView));
         dpbPictureResources.push_back(std::move(dpbPictureResource));
 
-        const void *dpbSlotInfoPtr = DE_NULL;
+        const void *dpbSlotInfoPtr = nullptr;
 
         if (m_testDefinition->getProfile()->IsH264())
         {
@@ -1771,7 +1803,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                 makeImageCreateInfo(imageFormat, currentCodedExtent,
                                     resourcesWithoutProfiles ? VK_IMAGE_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR : 0,
                                     &transferQueueFamilyIndex, imageUsage,
-                                    resourcesWithoutProfiles ? DE_NULL : videoEncodeProfileList.get());
+                                    resourcesWithoutProfiles ? nullptr : videoEncodeProfileList.get());
 
             std::unique_ptr<const ImageWithMemory> image(new ImageWithMemory(
                 videoDeviceDriver, videoDevice, getAllocator(), imageCreateInfo, MemoryRequirement::Any));
@@ -1856,13 +1888,13 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
     VkVideoEncodeSessionParametersFeedbackInfoKHR videoEncodeSessionParametersFeedbackInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_FEEDBACK_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                                             //  void* pNext;
+        nullptr,                                                             //  void* pNext;
         false,                                                               //  VkBool32 hasOverrides;
     };
 
     const VkVideoEncodeH264SessionParametersGetInfoKHR videoEncodeH264SessionParametersGetInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_GET_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                                             //  const void* pNext;
+        nullptr,                                                             //  const void* pNext;
         true,                                                                //  VkBool32 writeStdSPS;
         true,                                                                //  VkBool32 writeStdPPS;
         0,                                                                   //  uint32_t stdSPSId;
@@ -1871,7 +1903,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
     const VkVideoEncodeH265SessionParametersGetInfoKHR videoEncodeH265SessionParametersGetInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_SESSION_PARAMETERS_GET_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                                             //  const void* pNext;
+        nullptr,                                                             //  const void* pNext;
         true,                                                                //  VkBool32 writeStdVPS;
         true,                                                                //  VkBool32 writeStdSPS;
         true,                                                                //  VkBool32 writeStdPPS;
@@ -1880,7 +1912,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
         0,                                                                   //  uint32_t stdPPSId;
     };
 
-    const void *videoEncodeSessionParametersGetInfoPtr = DE_NULL;
+    const void *videoEncodeSessionParametersGetInfoPtr = nullptr;
 
     if (m_testDefinition->getProfile()->IsH264())
     {
@@ -1907,7 +1939,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
         size_t requiredHeaderSize = 0;
         VK_CHECK(videoDeviceDriver.getEncodedVideoSessionParametersKHR(
             videoDevice, &videoEncodeSessionParametersGetInfo, &videoEncodeSessionParametersFeedbackInfo,
-            &requiredHeaderSize, DE_NULL));
+            &requiredHeaderSize, nullptr));
 
         DE_ASSERT(requiredHeaderSize != 0);
 
@@ -1939,7 +1971,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     const de::MovePtr<VkVideoEncodeH265RateControlLayerInfoKHR> videoEncodeH265RateControlLayerInfo =
         getVideoEncodeH265RateControlLayerInfo(true, maxQpValue, maxQpValue, maxQpValue);
 
-    const void *videoEncodeRateControlLayerInfoPtr = DE_NULL;
+    const void *videoEncodeRateControlLayerInfoPtr = nullptr;
 
     if (m_testDefinition->getProfile()->IsH264())
     {
@@ -1963,7 +1995,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
     const VkVideoEncodeH264RateControlInfoKHR videoEncodeH264RateControlInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                                   //  const void* pNext;
+        nullptr,                                                   //  const void* pNext;
         VK_VIDEO_ENCODE_H264_RATE_CONTROL_REGULAR_GOP_BIT_KHR,     //  VkVideoEncodeH264RateControlFlagsKHR flags;
         m_testDefinition->gopFrameCount(),                         //  uint32_t gopFrameCount;
         m_testDefinition->gopFrameCount(),                         //  uint32_t idrPeriod;
@@ -1973,7 +2005,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
     const VkVideoEncodeH265RateControlInfoKHR videoEncodeH265RateControlInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                                   //  const void* pNext;
+        nullptr,                                                   //  const void* pNext;
         VK_VIDEO_ENCODE_H265_RATE_CONTROL_REGULAR_GOP_BIT_KHR,     //  VkVideoEncodeH265RateControlFlagsKHR flags;
         m_testDefinition->gopFrameCount(),                         //  uint32_t gopFrameCount;
         m_testDefinition->gopFrameCount(),                         //  uint32_t idrPeriod;
@@ -1981,7 +2013,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
         (useConstantBitrate || useVariableBitrate) ? 1U : 0,       //  uint32_t subLayerCount;
     };
 
-    const void *videoEncodeRateControlInfoPtr = DE_NULL;
+    const void *videoEncodeRateControlInfoPtr = nullptr;
 
     if (m_testDefinition->getProfile()->IsH264())
     {
@@ -1994,12 +2026,12 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     DE_ASSERT(videoEncodeRateControlInfoPtr);
 
     const de::MovePtr<VkVideoEncodeRateControlInfoKHR> videoEncodeRateControlInfo = getVideoEncodeRateControlInfo(
-        !disableRateControl ? videoEncodeRateControlInfoPtr : DE_NULL, rateControlMode,
-        (useConstantBitrate || useVariableBitrate) ? videoEncodeRateControlLayerInfo.get() : DE_NULL);
+        !disableRateControl ? videoEncodeRateControlInfoPtr : nullptr, rateControlMode,
+        (useConstantBitrate || useVariableBitrate) ? videoEncodeRateControlLayerInfo.get() : nullptr);
     // End coding
     const VkVideoEndCodingInfoKHR videoEndCodingInfo = {
         VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                     //  const void* pNext;
+        nullptr,                                     //  const void* pNext;
         0u,                                          //  VkVideoEndCodingFlagsKHR flags;
     };
 
@@ -2044,7 +2076,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                 *videoEncodeSession,
                 resolutionChange ? videoEncodeSessionParameters[GOPIdx].get() : videoEncodeSessionParameters[0].get(),
                 dpbSlots, &dpbImageVideoReferenceSlots[0],
-                (rateControl && NALIdx > 0) ? videoEncodeRateControlInfo.get() : DE_NULL);
+                (rateControl && NALIdx > 0) ? videoEncodeRateControlInfo.get() : nullptr);
 
             videoDeviceDriver.cmdBeginVideoCodingKHR(encodeCmdBuffer, videoBeginCodingFrameInfoKHR.get());
 
@@ -2146,7 +2178,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
             H264pictureInfos.push_back(getStdVideoEncodeH264PictureInfo(
                 getH264PictureType(m_testDefinition->frameType(NALIdx)), m_testDefinition->frameNumber(NALIdx),
                 m_testDefinition->frameIdx(NALIdx) * 2, GOPIdx,
-                NALIdx > 0 ? videoEncodeH264ReferenceListInfos.back().get() : DE_NULL));
+                NALIdx > 0 ? videoEncodeH264ReferenceListInfos.back().get() : nullptr));
             videoEncodeH264PictureInfo.push_back(
                 getVideoEncodeH264PictureInfo(H264pictureInfos.back().get(), videoEncodeH264NaluSlices.back().get()));
 
@@ -2162,12 +2194,12 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                 m_testDefinition->getConsecutiveBFrameCount()));
             H265pictureInfos.push_back(getStdVideoEncodeH265PictureInfo(
                 getH265PictureType(m_testDefinition->frameType(NALIdx)), m_testDefinition->frameIdx(NALIdx),
-                NALIdx > 0 ? videoEncodeH265ReferenceListInfos.back().get() : DE_NULL,
+                NALIdx > 0 ? videoEncodeH265ReferenceListInfos.back().get() : nullptr,
                 stdVideoH265ShortTermRefPicSets.back().get()));
             videoEncodeH265PictureInfos.push_back(getVideoEncodeH265PictureInfo(
                 H265pictureInfos.back().get(), videoEncodeH265NaluSliceSegments.back().get()));
 
-            const void *videoEncodePictureInfoPtr = DE_NULL;
+            const void *videoEncodePictureInfoPtr = nullptr;
 
             if (m_testDefinition->getProfile()->IsH264())
             {
@@ -2179,7 +2211,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
             }
             DE_ASSERT(videoEncodePictureInfoPtr);
 
-            VkVideoReferenceSlotInfoKHR *setupReferenceSlotPtr = DE_NULL;
+            VkVideoReferenceSlotInfoKHR *setupReferenceSlotPtr = nullptr;
 
             int8_t curSlotIdx = m_testDefinition->curSlot(NALIdx);
             if (!bType)
@@ -2213,7 +2245,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                 dstBufferOffset = bitstreamBufferOffset;
             }
 
-            const void *pNext = DE_NULL;
+            const void *pNext = nullptr;
             de::MovePtr<VkVideoInlineQueryInfoKHR> inlineQueryInfo =
                 getVideoInlineQueryInfo(encodeQueryPool.get(), 0, 1, videoEncodePictureInfoPtr);
 
@@ -2228,7 +2260,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
             videoEncodeFrameInfos.push_back(getVideoEncodeInfo(
                 pNext, *encodeBuffer, dstBufferOffset, (*imagePictureResourceVector[srcPictureResourceIdx]),
-                setupReferenceSlotPtr, refsCount, (refsPool == 0) ? DE_NULL : referenceSlots));
+                setupReferenceSlotPtr, refsCount, (refsPool == 0) ? nullptr : referenceSlots));
 
             if (!useInlineQueries)
                 videoDeviceDriver.cmdBeginQuery(encodeCmdBuffer, encodeQueryPool.get(), 1, 0);
@@ -2484,13 +2516,28 @@ tcu::TestCaseGroup *createVideoEncodeTests(tcu::TestContext &testCtx)
 {
     MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "encode", "Video encoding session tests"));
 
+    MovePtr<tcu::TestCaseGroup> h264Group(new tcu::TestCaseGroup(testCtx, "h264", "H.264 video codec"));
+    MovePtr<tcu::TestCaseGroup> h265Group(new tcu::TestCaseGroup(testCtx, "h265", "H.265 video codec"));
+
     for (const auto &encodeTest : g_EncodeTests)
     {
         auto defn = TestDefinition::create(encodeTest);
 
         const char *testName = getTestName(defn->getTestType());
-        group->addChild(new VideoEncodeTestCase(testCtx, testName, defn));
+        auto testCodec       = getTestCodec(defn->getTestType());
+
+        if (testCodec == TEST_CODEC_H264)
+            h264Group->addChild(new VideoEncodeTestCase(testCtx, testName, defn));
+        else if (testCodec == TEST_CODEC_H265)
+            h265Group->addChild(new VideoEncodeTestCase(testCtx, testName, defn));
+        else
+        {
+            TCU_THROW(InternalError, "Unknown Video Codec");
+        }
     }
+
+    group->addChild(h264Group.release());
+    group->addChild(h265Group.release());
 
     return group.release();
 }

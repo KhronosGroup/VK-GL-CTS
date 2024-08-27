@@ -577,7 +577,7 @@ void renderGL(glu::RenderContext &renderContext, RenderBits renderBits, uint32_t
     if (renderBits & RENDERBITS_AS_VERTEX_ARRAY)
     {
         gl.bindBuffer(GL_ARRAY_BUFFER, texture.getGLBuffer());
-        gl.vertexAttribPointer(0, 2, GL_UNSIGNED_BYTE, true, 0, DE_NULL);
+        gl.vertexAttribPointer(0, 2, GL_UNSIGNED_BYTE, true, 0, nullptr);
     }
     else
     {
@@ -588,7 +588,7 @@ void renderGL(glu::RenderContext &renderContext, RenderBits renderBits, uint32_t
 
         gl.bindBuffer(GL_ARRAY_BUFFER, *coordBuffer);
         gl.bufferData(GL_ARRAY_BUFFER, (glw::GLsizei)coords.size(), &(coords[0]), GL_STREAM_DRAW);
-        gl.vertexAttribPointer(0, 2, GL_UNSIGNED_BYTE, true, 0, DE_NULL);
+        gl.vertexAttribPointer(0, 2, GL_UNSIGNED_BYTE, true, 0, nullptr);
     }
 
     if (renderBits & RENDERBITS_AS_VERTEX_TEXTURE)
@@ -613,7 +613,7 @@ void renderGL(glu::RenderContext &renderContext, RenderBits renderBits, uint32_t
     if (renderBits & RENDERBITS_AS_INDEX_ARRAY)
     {
         gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, texture.getGLBuffer());
-        gl.drawElements(GL_TRIANGLES, triangleCount * 3, GL_UNSIGNED_BYTE, DE_NULL);
+        gl.drawElements(GL_TRIANGLES, triangleCount * 3, GL_UNSIGNED_BYTE, nullptr);
         gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
     else
@@ -913,8 +913,8 @@ TextureBufferCase::TextureBufferCase(tcu::TestContext &testCtx, glu::RenderConte
     , m_modify(modify)
     , m_postRender(postRender)
 
-    , m_preRenderProgram(DE_NULL)
-    , m_postRenderProgram(DE_NULL)
+    , m_preRenderProgram(nullptr)
+    , m_postRenderProgram(nullptr)
 {
 }
 
@@ -974,13 +974,13 @@ void TextureBufferCase::init(void)
 void TextureBufferCase::deinit(void)
 {
     if (m_preRenderProgram == m_postRenderProgram)
-        m_postRenderProgram = DE_NULL;
+        m_postRenderProgram = nullptr;
 
     delete m_preRenderProgram;
-    m_preRenderProgram = DE_NULL;
+    m_preRenderProgram = nullptr;
 
     delete m_postRenderProgram;
-    m_postRenderProgram = DE_NULL;
+    m_postRenderProgram = nullptr;
 }
 
 tcu::TestCase::IterateResult TextureBufferCase::iterate(void)

@@ -931,7 +931,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry &geometry)
     VK_CHECK(m_vk.endCommandBuffer(m_primaryCmdBuffer.get()));
     VkCommandBuffer primaryCmd = m_primaryCmdBuffer.get();
     VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO, NULL, 0, NULL, NULL, 1, &primaryCmd, 0, NULL};
-    m_vk.queueSubmit(m_context.getUniversalQueue(), 1, &submitInfo, 0);
+    m_vk.queueSubmit(m_context.getUniversalQueue(), 1, &submitInfo, VK_NULL_HANDLE);
 }
 
 void InheritanceTestInstance::rasterizeExpectedResults(const TestGeometry &geometry, Texel (&output)[kHeight][kWidth])

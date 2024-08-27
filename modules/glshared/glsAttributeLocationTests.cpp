@@ -309,7 +309,7 @@ string getShaderInfoLog(const glw::Functions &gl, uint32_t shader)
 
     infoLog.resize(length, '\0');
 
-    gl.getShaderInfoLog(shader, (glw::GLsizei)infoLog.length(), DE_NULL, &(infoLog[0]));
+    gl.getShaderInfoLog(shader, (glw::GLsizei)infoLog.length(), nullptr, &(infoLog[0]));
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetShaderInfoLog()");
 
     return infoLog;
@@ -335,7 +335,7 @@ string getProgramInfoLog(const glw::Functions &gl, uint32_t program)
 
     infoLog.resize(length, '\0');
 
-    gl.getProgramInfoLog(program, (glw::GLsizei)infoLog.length(), DE_NULL, &(infoLog[0]));
+    gl.getProgramInfoLog(program, (glw::GLsizei)infoLog.length(), nullptr, &(infoLog[0]));
     GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramInfoLog()");
 
     return infoLog;
@@ -418,8 +418,8 @@ pair<uint32_t, uint32_t> createAndAttachShaders(TestLog &log, glu::RenderContext
             const char *const vertexShaderString   = vertexShaderSource.c_str();
             const char *const fragmentShaderString = fragmentShaderSource.c_str();
 
-            gl.shaderSource(vertexShader, 1, &vertexShaderString, DE_NULL);
-            gl.shaderSource(fragmentShader, 1, &fragmentShaderString, DE_NULL);
+            gl.shaderSource(vertexShader, 1, &vertexShaderString, nullptr);
+            gl.shaderSource(fragmentShader, 1, &fragmentShaderString, nullptr);
 
             GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource()");
         }

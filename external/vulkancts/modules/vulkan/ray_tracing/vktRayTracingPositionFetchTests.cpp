@@ -172,7 +172,6 @@ void PositionFetchCase::initPrograms(vk::SourceCollections &programCollection) c
        << "#extension GL_EXT_ray_tracing_position_fetch : require\n"
        << "\n"
        << layoutDeclsStr << "\n"
-       << "layout(location=0) rayPayloadEXT int value;\n"
        << "\n"
        << "void main()\n"
        << "{\n"
@@ -396,10 +395,10 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     de::MovePtr<BufferWithMemory> hitSBT;
     de::MovePtr<BufferWithMemory> callableSBT;
 
-    auto raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    auto missSBTRegion     = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    auto hitSBTRegion      = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    auto callableSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    auto raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     {
         const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();

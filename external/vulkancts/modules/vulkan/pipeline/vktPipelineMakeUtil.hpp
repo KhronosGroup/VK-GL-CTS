@@ -46,13 +46,13 @@ de::MovePtr<vk::Allocation> bindBufferDedicated(const vk::InstanceInterface &vki
 template <typename T>
 inline const T *dataOrNullPtr(const std::vector<T> &v)
 {
-    return (v.empty() ? DE_NULL : &v[0]);
+    return (v.empty() ? nullptr : &v[0]);
 }
 
 template <typename T>
 inline T *dataOrNullPtr(std::vector<T> &v)
 {
-    return (v.empty() ? DE_NULL : &v[0]);
+    return (v.empty() ? nullptr : &v[0]);
 }
 
 } // namespace pipeline

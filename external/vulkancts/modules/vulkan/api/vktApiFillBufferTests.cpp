@@ -140,7 +140,7 @@ Move<VkDevice> createCustomDevice(Context &context,
         {
             pcCI = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                     VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                 context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
@@ -165,10 +165,10 @@ Move<VkDevice> createCustomDevice(Context &context,
         1u,                                           // uint32_t queueCreateInfoCount;
         &deviceQueueCreateInfos,                      // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                           // uint32_t enabledLayerCount;
-        DE_NULL,                                      // const char* const* ppEnabledLayerNames;
+        nullptr,                                      // const char* const* ppEnabledLayerNames;
         static_cast<uint32_t>(extensionNames.size()), // uint32_t enabledExtensionCount;
         extensionNames.data(),                        // const char* const* ppEnabledExtensionNames;
-        DE_NULL,                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        nullptr,                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
     return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
@@ -270,7 +270,7 @@ tcu::TestStatus FillWholeBufferTestInstance::iterate(void)
 
     const VkBufferMemoryBarrier gpuToHostBarrier{
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
         VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -317,8 +317,8 @@ tcu::TestStatus FillWholeBufferTestInstance::iterate(void)
     if (useSynchronization2)
         (vk.*(cmdPipelineBarrier2Fun))(*m_cmdBuffer, &depInfo);
     else
-        vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, DE_NULL,
-                              1, &gpuToHostBarrier, 0, DE_NULL);
+        vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, nullptr,
+                              1, &gpuToHostBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *m_cmdBuffer);
 
@@ -479,7 +479,7 @@ tcu::TestStatus FillBufferTestInstance::iterate(void)
 
     const VkBufferMemoryBarrier dstBufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
         VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -492,8 +492,7 @@ tcu::TestStatus FillBufferTestInstance::iterate(void)
     beginCommandBuffer(vk, *m_cmdBuffer);
     vk.cmdFillBuffer(*m_cmdBuffer, *m_destination, m_params.dstOffset, m_params.size, m_params.testData[0]);
     vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &dstBufferBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &dstBufferBarrier, 0, nullptr);
     endCommandBuffer(vk, *m_cmdBuffer);
 
     submitCommandsAndWait(vk, m_device, queue, m_cmdBuffer.get());
@@ -611,7 +610,7 @@ tcu::TestStatus UpdateBufferTestInstance::iterate(void)
 
     const VkBufferMemoryBarrier dstBufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
         VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
@@ -624,8 +623,7 @@ tcu::TestStatus UpdateBufferTestInstance::iterate(void)
     beginCommandBuffer(vk, *m_cmdBuffer);
     vk.cmdUpdateBuffer(*m_cmdBuffer, *m_destination, m_params.dstOffset, m_params.size, m_params.testData);
     vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &dstBufferBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &dstBufferBarrier, 0, nullptr);
     endCommandBuffer(vk, *m_cmdBuffer);
 
     submitCommandsAndWait(vk, m_device, queue, m_cmdBuffer.get());

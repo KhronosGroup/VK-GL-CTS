@@ -179,7 +179,7 @@ std::vector<TestData> getTestDataList(Context &context, TestParams testParams)
 void checkSupport(Context &context, TestParams testParams)
 {
     const std::vector<VkExtensionProperties> supportedExtensions =
-        enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL);
+        enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr);
 
     if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_application_parameters")))
         TCU_THROW(NotSupportedError, "VK_EXT_application_parameters is not supported");
@@ -219,7 +219,7 @@ tcu::TestStatus createDeviceTest(Context &context, TestParams testParams)
 
         const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // sType
-            DE_NULL,                                    // pNext
+            nullptr,                                    // pNext
             (VkDeviceQueueCreateFlags)0u,               // flags
             0,                                          // queueFamilyIndex;
             1,                                          // queueCount;
@@ -233,23 +233,23 @@ tcu::TestStatus createDeviceTest(Context &context, TestParams testParams)
             1,                                    // queueRecordCount;
             &deviceQueueCreateInfo,               // pRequestedQueues;
             0,                                    // layerCount;
-            DE_NULL,                              // ppEnabledLayerNames;
+            nullptr,                              // ppEnabledLayerNames;
             0,                                    // extensionCount;
-            DE_NULL,                              // ppEnabledExtensionNames;
-            DE_NULL,                              // pEnabledFeatures;
+            nullptr,                              // ppEnabledExtensionNames;
+            nullptr,                              // pEnabledFeatures;
         };
 
         log << tcu::TestLog::Message << "Creating device with application parameters: " << appParams
             << tcu::TestLog::EndMessage;
 
-        VkDevice device       = (VkDevice)0;
-        const VkResult result = instanceDriver.createDevice(physicalDevice, &deviceCreateInfo, DE_NULL, &device);
+        VkDevice device       = VK_NULL_HANDLE;
+        const VkResult result = instanceDriver.createDevice(physicalDevice, &deviceCreateInfo, nullptr, &device);
 
         if (device)
         {
             const DeviceDriver deviceIface(platformInterface, instance, device, context.getUsedApiVersion(),
                                            context.getTestContext().getCommandLine());
-            deviceIface.destroyDevice(device, DE_NULL /*pAllocator*/);
+            deviceIface.destroyDevice(device, nullptr /*pAllocator*/);
         }
 
         log << tcu::TestLog::Message
@@ -277,7 +277,7 @@ tcu::TestStatus createInstanceTest(Context &context, TestParams testParams)
     for (TestData testData : testDataList)
     {
         const VkApplicationParametersEXT appParams{VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT,
-                                                   DE_NULL,
+                                                   nullptr,
                                                    testData.vendorId,
                                                    testData.deviceId,
                                                    testData.paramKey,
@@ -295,13 +295,13 @@ tcu::TestStatus createInstanceTest(Context &context, TestParams testParams)
 
         const VkInstanceCreateInfo instanceCreateInfo = {
             VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                // const void* pNext;
+            nullptr,                                // const void* pNext;
             (VkInstanceCreateFlags)0u,              // VkInstanceCreateFlags flags;
             &appInfo,                               // const VkApplicationInfo* pAppInfo;
             0u,                                     // uint32_t layerCount;
-            DE_NULL,                                // const char*const* ppEnabledLayernames;
+            nullptr,                                // const char*const* ppEnabledLayernames;
             0u,                                     // uint32_t extensionCount;
-            DE_NULL,                                // const char*const* ppEnabledExtensionNames;
+            nullptr,                                // const char*const* ppEnabledExtensionNames;
         };
 
         log << tcu::TestLog::Message << "Creating instance with application parameters: " << appParams
@@ -309,12 +309,12 @@ tcu::TestStatus createInstanceTest(Context &context, TestParams testParams)
 
         VkInstance instance = (VkInstance)0;
         const VkResult result =
-            platformInterface.createInstance(&instanceCreateInfo, DE_NULL /*pAllocator*/, &instance);
+            platformInterface.createInstance(&instanceCreateInfo, nullptr /*pAllocator*/, &instance);
 
         if (instance)
         {
             const InstanceDriver instanceIface(platformInterface, instance);
-            instanceIface.destroyInstance(instance, DE_NULL /*pAllocator*/);
+            instanceIface.destroyInstance(instance, nullptr /*pAllocator*/);
         }
 
         log << tcu::TestLog::Message

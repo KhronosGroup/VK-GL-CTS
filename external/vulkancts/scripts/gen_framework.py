@@ -1675,19 +1675,19 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
         "destroyDescriptorSetLayout"    : "\t\tdestroyDescriptorSetLayoutHandler(device, descriptorSetLayout, pAllocator);",
         "createImageView"                : "\t\tcreateImageViewHandler(device, pCreateInfo, pAllocator, pView);",
         "destroyImageView"                : "\t\tdestroyImageViewHandler(device, imageView, pAllocator);",
-        "createSemaphore"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(semaphoreRequestCount,1);\n\t\t*pSemaphore = Handle<HANDLE_TYPE_SEMAPHORE>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createSemaphore"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(semaphoreRequestCount,1);\n\t\t*pSemaphore = m_resourceInterface->incResourceCounter<VkSemaphore>();\n\t}",
         "destroySemaphore"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(semaphore,semaphoreRequestCount,1);\n\t}",
-        "createFence"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(fenceRequestCount,1);\n\t\t*pFence = Handle<HANDLE_TYPE_FENCE>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createFence"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(fenceRequestCount,1);\n\t\t*pFence = m_resourceInterface->incResourceCounter<VkFence>();\n\t}",
         "destroyFence"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(fence,fenceRequestCount,1);\n\t}",
-        "allocateMemory"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(deviceMemoryRequestCount,1);\n\t\t*pMemory = Handle<HANDLE_TYPE_DEVICE_MEMORY>(m_resourceInterface->incResourceCounter());\n\t}",
-        "createBuffer"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(bufferRequestCount,1);\n\t\t*pBuffer = Handle<HANDLE_TYPE_BUFFER>(m_resourceInterface->incResourceCounter());\n\t}",
+        "allocateMemory"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(deviceMemoryRequestCount,1);\n\t\t*pMemory = m_resourceInterface->incResourceCounter<VkDeviceMemory>();\n\t}",
+        "createBuffer"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(bufferRequestCount,1);\n\t\t*pBuffer = m_resourceInterface->incResourceCounter<VkBuffer>();\n\t}",
         "destroyBuffer"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(buffer,bufferRequestCount,1);\n\t}",
-        "createImage"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(imageRequestCount,1);\n\t\t*pImage = Handle<HANDLE_TYPE_IMAGE>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createImage"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(imageRequestCount,1);\n\t\t*pImage = m_resourceInterface->incResourceCounter<VkImage>();\n\t}",
         "destroyImage"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(image,imageRequestCount,1);\n\t}",
-        "createEvent"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(eventRequestCount,1);\n\t\t*pEvent = Handle<HANDLE_TYPE_EVENT>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createEvent"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(eventRequestCount,1);\n\t\t*pEvent = m_resourceInterface->incResourceCounter<VkEvent>();\n\t}",
         "destroyEvent"                    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(event,eventRequestCount,1);\n\t}",
         "createQueryPool"                : "\t\tcreateQueryPoolHandler(device, pCreateInfo, pAllocator, pQueryPool);",
-        "createBufferView"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(bufferViewRequestCount,1);\n\t\t*pView = Handle<HANDLE_TYPE_BUFFER_VIEW>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createBufferView"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(bufferViewRequestCount,1);\n\t\t*pView = m_resourceInterface->incResourceCounter<VkBufferView>();\n\t}",
         "destroyBufferView"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(bufferView,bufferViewRequestCount,1);\n\t}",
         "createPipelineLayout"            : "\t\tcreatePipelineLayoutHandlerStat(device, pCreateInfo, pAllocator, pPipelineLayout);",
         "destroyPipelineLayout"            : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(pipelineLayout,pipelineLayoutRequestCount,1);\n\t}",
@@ -1699,7 +1699,7 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
         "destroyPipeline"                : "\t\tdestroyPipelineHandler(device, pipeline, pAllocator);",
         "createSampler"                    : "\t\tcreateSamplerHandlerStat(device, pCreateInfo, pAllocator, pSampler);",
         "destroySampler"                : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(sampler,samplerRequestCount,1);\n\t}",
-        "createDescriptorPool"            : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(descriptorPoolRequestCount,1);\n\t\t*pDescriptorPool = Handle<HANDLE_TYPE_DESCRIPTOR_POOL>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createDescriptorPool"            : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(descriptorPoolRequestCount,1);\n\t\t*pDescriptorPool = m_resourceInterface->incResourceCounter<VkDescriptorPool>();\n\t}",
         "resetDescriptorPool"            : "\t\tresetDescriptorPoolHandlerStat(device, descriptorPool, flags);",
         "allocateDescriptorSets"        : "\t\tallocateDescriptorSetsHandlerStat(device, pAllocateInfo, pDescriptorSets);",
         "freeDescriptorSets"            : "\t\tfreeDescriptorSetsHandlerStat(device, descriptorPool, descriptorSetCount, pDescriptorSets);",
@@ -1721,7 +1721,7 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
         "getBufferMemoryRequirements2"    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tpMemoryRequirements->memoryRequirements.size = 1048576U;\n\t\tpMemoryRequirements->memoryRequirements.alignment = 1U;\n\t\tpMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;\n\t}",
         "getImageMemoryRequirements2"    : "\t{\n\t\tDDSTAT_LOCK();\n\t\tpMemoryRequirements->memoryRequirements.size = 1048576U;\n\t\tpMemoryRequirements->memoryRequirements.alignment = 1U;\n\t\tpMemoryRequirements->memoryRequirements.memoryTypeBits = ~0U;\n\t}",
         "getImageSubresourceLayout"        : "\t{\n\t\tDDSTAT_LOCK();\n\t\tpLayout->offset = 0U;\n\t\tpLayout->size = 1048576U;\n\t\tpLayout->rowPitch = 0U;\n\t\tpLayout->arrayPitch = 0U;\n\t\tpLayout->depthPitch = 0U;\n\t}",
-        "createPipelineCache"            : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(pipelineCacheRequestCount,1);\n\t\t*pPipelineCache = Handle<HANDLE_TYPE_PIPELINE_CACHE>(m_resourceInterface->incResourceCounter());\n\t}",
+        "createPipelineCache"            : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_CREATE(pipelineCacheRequestCount,1);\n\t\t*pPipelineCache = m_resourceInterface->incResourceCounter<VkPipelineCache>();\n\t}",
         "destroyPipelineCache"            : "\t{\n\t\tDDSTAT_LOCK();\n\t\tDDSTAT_HANDLE_DESTROY_IF(pipelineCache,pipelineCacheRequestCount,1);\n\t}",
         "cmdUpdateBuffer"                : "\t\tincreaseCommandBufferSize(commandBuffer, dataSize);",
         "getDeviceQueue"                : "\t\tm_vk.getDeviceQueue(device, queueFamilyIndex, queueIndex, pQueue);",
@@ -2011,7 +2011,7 @@ def writeRefUtilImpl (api, filename):
 
             yield "Move<%s> %s (%s)" % (function.objectType, function.name, argListToStr(function.ifaceArgs + function.arguments))
             yield "{"
-            yield "\t%s object = 0;" % function.objectType
+            yield "\t%s object = VK_NULL_HANDLE;" % function.objectType
             yield "\tVK_CHECK(vk.%s(%s));" % (function.name, ", ".join([a.name for a in function.arguments] + ["&object"]))
             yield "\treturn Move<%s>(check<%s>(object), Deleter<%s>(%s));" % (function.objectType, function.objectType, function.objectType, deleterArgsString)
             yield "}"
@@ -2309,7 +2309,7 @@ def writeSupportedExtensions(api, filename):
             # save array containing 'device' or 'instance' string followed by the optional vulkan version in which this extension is core;
             # note that register_extension section is also required for partialy promoted extensions like VK_EXT_extended_dynamic_state2
             # but those extensions should not fill 'core' tag
-            match = re.match("(\d).(\d).(\d).(\d)", data['register_extension']['core'])
+            match = re.match(r"(\d).(\d).(\d).(\d)", data['register_extension']['core'])
             if match == None:
                 continue
             major = int(match.group(2))
@@ -2700,8 +2700,8 @@ def writeDeviceFeatures2(api, filename):
                 continue
             for requirement in feature.requirementsList:
                 for type in requirement.typeList:
-                    matchedStructType = re.search(f'VkPhysicalDevice(\w+)Features', type, re.IGNORECASE)
-                    matchedCoreStructType = re.search(f'VkPhysicalDeviceVulkan(\d+)Features', type, re.IGNORECASE)
+                    matchedStructType = re.search(r'VkPhysicalDevice(\w+)Features', type, re.IGNORECASE)
+                    matchedCoreStructType = re.search(r'VkPhysicalDeviceVulkan(\d+)Features', type, re.IGNORECASE)
                     if matchedStructType and not matchedCoreStructType:
                         promotedFeatures.append(type)
             if promotedFeatures:
@@ -2806,11 +2806,11 @@ def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
     assert(FeaturesOrProperties in ['Features', 'Properties'])
     defs = []
     foundStructureEnums = []
-    structureEnumPattern = f'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_(\w+)_{FeaturesOrProperties.upper()}(\w+)'
+    structureEnumPattern = fr'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_(\w+)_{FeaturesOrProperties.upper()}(\w+)'
     structureEnumPatternNotExtension = structureEnumPattern[:-5] + '$'
-    structureTypePattern = f'VkPhysicalDevice(\w+){FeaturesOrProperties}(\w+)'
+    structureTypePattern = fr'VkPhysicalDevice(\w+){FeaturesOrProperties}(\w+)'
     structureTypePatternNotExtension = structureTypePattern[:-5] + '$'
-    structureTypeToSkipPattern = f'VkPhysicalDeviceVulkan\d\d{FeaturesOrProperties}'
+    structureTypeToSkipPattern = fr'VkPhysicalDeviceVulkan\d\d{FeaturesOrProperties}'
     structureExtendsPattern = f'VkPhysicalDevice{FeaturesOrProperties}2'
     # iterate over all extensions to find extension that adds enum value matching pattern;
     # this will always be in first requirement section
@@ -2896,8 +2896,8 @@ def writeDeviceFeatures(api, dfDefs, filename):
     initFromBlobDefinitions = []
     emptyInitDefinitions = []
     # iterate over all feature structures
-    allFeaturesPattern = re.compile("^VkPhysicalDevice\w+Features[1-9]*")
-    nonExtFeaturesPattern = re.compile("^VkPhysicalDevice\w+Features[1-9]*$")
+    allFeaturesPattern = re.compile(r"^VkPhysicalDevice\w+Features[1-9]*")
+    nonExtFeaturesPattern = re.compile(r"^VkPhysicalDevice\w+Features[1-9]*$")
     for structureType in api.compositeTypes:
         # skip structures that are not feature structures
         if not allFeaturesPattern.match(structureType.name):
@@ -3006,7 +3006,7 @@ def writeDeviceFeatureTest(api, filename):
     featureItems = []
     testFunctions = []
     # iterate over all feature structures
-    allFeaturesPattern = re.compile("^VkPhysicalDevice\w+Features[1-9]*")
+    allFeaturesPattern = re.compile(r"^VkPhysicalDevice\w+Features[1-9]*")
     for structureType in api.compositeTypes:
         # skip structures that are not feature structures
         if not allFeaturesPattern.match(structureType.name):
@@ -3094,8 +3094,8 @@ def writeDeviceProperties(api, dpDefs, filename):
     initFromBlobDefinitions = []
     emptyInitDefinitions = []
     # iterate over all property structures
-    allPropertiesPattern = re.compile("^VkPhysicalDevice\w+Properties[1-9]*")
-    nonExtPropertiesPattern = re.compile("^VkPhysicalDevice\w+Properties[1-9]*$")
+    allPropertiesPattern = re.compile(r"^VkPhysicalDevice\w+Properties[1-9]*")
+    nonExtPropertiesPattern = re.compile(r"^VkPhysicalDevice\w+Properties[1-9]*$")
     for structureType in api.compositeTypes:
         # skip structures that are not property structures
         if not allPropertiesPattern.match(structureType.name):
@@ -3739,7 +3739,7 @@ def writeApiExtensionDependencyInfo(api, filename):
             if match is not None:
                 if len(match[0]) != len(extDeps):
                     # there is more than just a version; check if it's accompanied by AND operator(s)
-                    ext_pattern = ".*\+*"+versionPattern+"\++.*|.*\++"+versionPattern+"\+*.*"
+                    ext_pattern = r".*\+*"+versionPattern+r"\++.*|.*\++"+versionPattern+r"\+*.*"
                     match = re.search(ext_pattern, ungroupPart[0])
                 if match is not None:
                     # specific version is explicitly requested
@@ -3769,7 +3769,7 @@ def writeApiExtensionDependencyInfo(api, filename):
                 major, minor, requiredVerFound = parseExtensionDependencies(ext.depends, ext)
                 if not requiredVerFound:
                     # find all extensions that are dependencies of this one
-                    matches = re.findall("VK_\w+", ext.depends, re.M)
+                    matches = re.findall(r"VK_\w+", ext.depends, re.M)
                     for m in matches:
                         for de in api.extensions:
                             if de.name == m:
@@ -3911,14 +3911,15 @@ def writeConformanceVersions(api, filename):
     # get list of all vulkan/vulkansc tags from git
     remote_urls = os.popen("git remote -v").read().split('\n')
     remote_url = None
+    url_regexp = r'\bgerrit\.khronos\.org\b.*\bvk-gl-cts\b'
     for line in remote_urls:
-        if "gerrit.khronos.org:29418/vk-gl-cts" in line:
+        if re.search(url_regexp, line, re.IGNORECASE) is not None:
             remote_url = line.split()[1]
             break
     listOfTags = os.popen("git ls-remote -t %s" % (remote_url)).read()
-    pattern = "vulkan-cts-(\d).(\d).(\d).(\d)"
+    pattern = r"vulkan-cts-(\d).(\d).(\d).(\d)"
     if args.api == 'SC':
-        pattern = "vulkansc-cts-(\d).(\d).(\d).(\d)"
+        pattern = r"vulkansc-cts-(\d).(\d).(\d).(\d)"
     matches = re.findall(pattern, listOfTags, re.M)
     if len(matches) == 0:
         return

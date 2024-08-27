@@ -108,7 +108,7 @@ void ExecutorTestCase<float>::validateOutput(de::SharedPtr<ShaderExecutor> execu
 {
     float result        = 0.0f;
     void *const outputs = &result;
-    executor->execute(1, DE_NULL, &outputs);
+    executor->execute(1, nullptr, &outputs);
 
     const float epsilon = 0.01f;
     if (de::abs(m_expectedOutput - result) > epsilon)
@@ -131,7 +131,7 @@ void ExecutorTestCase<int>::validateOutput(de::SharedPtr<ShaderExecutor> executo
 {
     int result          = 0;
     void *const outputs = &result;
-    executor->execute(1, DE_NULL, &outputs);
+    executor->execute(1, nullptr, &outputs);
 
     if (result == m_expectedOutput)
     {

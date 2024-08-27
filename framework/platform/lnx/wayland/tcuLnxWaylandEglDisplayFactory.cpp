@@ -89,7 +89,7 @@ public:
     }
     const eglw::EGLAttrib *getPlatformAttributes(void) const
     {
-        return DE_NULL;
+        return nullptr;
     }
 
 private:
@@ -196,7 +196,7 @@ NativeDisplay *DisplayFactory::createDisplay(const eglw::EGLAttrib *attribList) 
 {
     DE_UNREF(attribList);
 
-    MovePtr<wayland::Display> waylandDisplay(new wayland::Display(m_eventState, DE_NULL));
+    MovePtr<wayland::Display> waylandDisplay(new wayland::Display(m_eventState, nullptr));
 
     return new Display(waylandDisplay);
 }

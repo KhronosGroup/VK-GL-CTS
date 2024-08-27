@@ -268,8 +268,8 @@ Move<VkPipeline> LineWidthInstance::buildPipeline(VkPrimitiveTopology lineTopolo
     inputCreateInfo.pVertexBindingDescriptions           = &binding;
 
     return makeGraphicsPipeline(m_context.getDeviceInterface(), m_context.getDevice(), layout, vertexModule,
-                                VkShaderModule(0), VkShaderModule(0), VkShaderModule(0), fragmentModule, renderPass,
-                                viewports, scissors, lineTopology, subpass,
+                                VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, fragmentModule, renderPass, viewports,
+                                scissors, lineTopology, subpass,
                                 0u, // patchControlPoints
                                 &inputCreateInfo, &rasterizationCreateInfo,
                                 nullptr, // multisampleStateCreateInfo

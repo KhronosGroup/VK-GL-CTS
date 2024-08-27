@@ -81,7 +81,7 @@ tcu::IVec2 getSurfaceSize(const eglw::Library &egl, eglw::EGLDisplay display, eg
 tcu::IVec2 getSurfaceResolution(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLSurface surface);
 
 eglw::EGLDisplay getDisplay(NativeDisplay &nativeDisplay);
-eglw::EGLDisplay getAndInitDisplay(NativeDisplay &nativeDisplay, Version *version = DE_NULL);
+eglw::EGLDisplay getAndInitDisplay(NativeDisplay &nativeDisplay, Version *version = nullptr);
 void terminateDisplay(const eglw::Library &egl, eglw::EGLDisplay display);
 eglw::EGLSurface createWindowSurface(NativeDisplay &nativeDisplay, NativeWindow &window, eglw::EGLDisplay display,
                                      eglw::EGLConfig config, const eglw::EGLAttrib *attribList);

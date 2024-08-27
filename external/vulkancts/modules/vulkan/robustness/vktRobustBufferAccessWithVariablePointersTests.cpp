@@ -106,13 +106,13 @@ void createTestBuffer(Context &context, const vk::DeviceInterface &deviceInterfa
 {
     const VkBufferCreateInfo bufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         accessRange,                          // VkDeviceSize size;
         usage,                                // VkBufferUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
         VK_QUEUE_FAMILY_IGNORED,              // uint32_t queueFamilyIndexCount;
-        DE_NULL                               // const uint32_t* pQueueFamilyIndices;
+        nullptr                               // const uint32_t* pQueueFamilyIndices;
     };
 
     buffer = createBuffer(deviceInterface, device, &bufferParams);
@@ -1409,7 +1409,7 @@ AccessInstance::AccessInstance(Context &context, Move<VkDevice> device,
     createTestBuffer(context, vk, *m_device, inBufferAccessRange, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, memAlloc,
                      m_inBuffer, m_inBufferAlloc, m_inBufferAccess, &populateBufferWithValues, &m_bufferFormat);
     createTestBuffer(context, vk, *m_device, outBufferAccessRange, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, memAlloc,
-                     m_outBuffer, m_outBufferAlloc, m_outBufferAccess, &populateBufferWithFiller, DE_NULL);
+                     m_outBuffer, m_outBufferAlloc, m_outBufferAccess, &populateBufferWithFiller, nullptr);
 
     int32_t indices[] = {(m_accessOutOfBackingMemory && (m_bufferAccessType == BUFFER_ACCESS_TYPE_READ_FROM_STORAGE)) ?
                              static_cast<int32_t>(RobustAccessWithPointersTest::s_testArraySize) - 1 :
@@ -1451,7 +1451,7 @@ AccessInstance::AccessInstance(Context &context, Move<VkDevice> device,
 
         const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             *m_descriptorPool,                              // VkDescriptorPool descriptorPool;
             1u,                                             // uint32_t setLayoutCount;
             &m_descriptorSetLayout.get()                    // const VkDescriptorSetLayout* pSetLayouts;
@@ -1480,7 +1480,7 @@ AccessInstance::AccessInstance(Context &context, Move<VkDevice> device,
     {
         const VkFenceCreateInfo fenceParams = {
             VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             0u                                   // VkFenceCreateFlags flags;
         };
 
@@ -1593,14 +1593,14 @@ tcu::TestStatus AccessInstance::iterate(void)
     {
         const VkSubmitInfo submitInfo = {
             VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-            DE_NULL,                       // const void* pNext;
+            nullptr,                       // const void* pNext;
             0u,                            // uint32_t waitSemaphoreCount;
-            DE_NULL,                       // const VkSemaphore* pWaitSemaphores;
-            DE_NULL,                       // const VkPIpelineStageFlags* pWaitDstStageMask;
+            nullptr,                       // const VkSemaphore* pWaitSemaphores;
+            nullptr,                       // const VkPIpelineStageFlags* pWaitDstStageMask;
             1u,                            // uint32_t commandBufferCount;
             &cmdBuffer,                    // const VkCommandBuffer* pCommandBuffers;
             0u,                            // uint32_t signalSemaphoreCount;
-            DE_NULL                        // const VkSemaphore* pSignalSemaphores;
+            nullptr                        // const VkSemaphore* pSignalSemaphores;
         };
 
         VK_CHECK(vk.resetFences(*m_device, 1, &m_fence.get()));
@@ -1612,7 +1612,7 @@ tcu::TestStatus AccessInstance::iterate(void)
     {
         const VkMappedMemoryRange outBufferRange = {
             VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, //  VkStructureType sType;
-            DE_NULL,                               //  const void* pNext;
+            nullptr,                               //  const void* pNext;
             m_outBufferAlloc->getMemory(),         //  VkDeviceMemory mem;
             0ull,                                  //  VkDeviceSize offset;
             m_outBufferAccess.allocSize,           //  VkDeviceSize size;

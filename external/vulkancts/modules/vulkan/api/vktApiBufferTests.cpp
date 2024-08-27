@@ -205,7 +205,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest(VkDeviceSize size)
         // Create a minimal buffer first to get the supported memory types
         VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             m_testCase.flags,                     // VkBufferCreateFlags flags;
             1u,                                   // VkDeviceSize size;
             m_testCase.usage,                     // VkBufferUsageFlags usage;
@@ -236,7 +236,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest(VkDeviceSize size)
 
         size = std::min(size, maxBufferSize);
 
-        while (*memory == DE_NULL)
+        while (*memory == VK_NULL_HANDLE)
         {
             // Create the buffer
             {
@@ -245,7 +245,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest(VkDeviceSize size)
 
                 bufferParams.size = size;
                 buffer            = Move<VkBuffer>(); // free the previous buffer, if any
-                result = vk.createBuffer(vkDevice, &bufferParams, (vk::VkAllocationCallbacks *)DE_NULL, &rawBuffer);
+                result            = vk.createBuffer(vkDevice, &bufferParams, nullptr, &rawBuffer);
 
                 if (result != VK_SUCCESS)
                 {
@@ -260,7 +260,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest(VkDeviceSize size)
                     continue; // didn't work, try with a smaller buffer
                 }
 
-                buffer = Move<VkBuffer>(check<VkBuffer>(rawBuffer), Deleter<VkBuffer>(vk, vkDevice, DE_NULL));
+                buffer = Move<VkBuffer>(check<VkBuffer>(rawBuffer), Deleter<VkBuffer>(vk, vkDevice, nullptr));
             }
 
             vk.getBufferMemoryRequirements(vkDevice, *buffer, &memReqs); // get the proper size requirement
@@ -290,7 +290,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest(VkDeviceSize size)
                     heapTypeIndex,                          // uint32_t memoryTypeIndex;
                 };
 
-                result = vk.allocateMemory(vkDevice, &memAlloc, (VkAllocationCallbacks *)DE_NULL, &rawMemory);
+                result = vk.allocateMemory(vkDevice, &memAlloc, nullptr, &rawMemory);
 
                 if (result != VK_SUCCESS)
                 {
@@ -306,7 +306,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest(VkDeviceSize size)
                 }
 
                 memory = Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory),
-                                              Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL));
+                                              Deleter<VkDeviceMemory>(vk, vkDevice, nullptr));
             }
         } // while
     }
@@ -334,17 +334,17 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest(VkDeviceSize size)
 
         const VkBindSparseInfo bindSparseInfo = {
             VK_STRUCTURE_TYPE_BIND_SPARSE_INFO, // VkStructureType sType;
-            DE_NULL,                            // const void* pNext;
+            nullptr,                            // const void* pNext;
             0,                                  // uint32_t waitSemaphoreCount;
-            DE_NULL,                            // const VkSemaphore* pWaitSemaphores;
+            nullptr,                            // const VkSemaphore* pWaitSemaphores;
             1u,                                 // uint32_t bufferBindCount;
             &sparseBufferMemoryBindInfo,        // const VkSparseBufferMemoryBindInfo* pBufferBinds;
             0,                                  // uint32_t imageOpaqueBindCount;
-            DE_NULL,                            // const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
+            nullptr,                            // const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
             0,                                  // uint32_t imageBindCount;
-            DE_NULL,                            // const VkSparseImageMemoryBindInfo* pImageBinds;
+            nullptr,                            // const VkSparseImageMemoryBindInfo* pImageBinds;
             0,                                  // uint32_t signalSemaphoreCount;
-            DE_NULL,                            // const VkSemaphore* pSignalSemaphores;
+            nullptr,                            // const VkSemaphore* pSignalSemaphores;
         };
 
         const vk::Unique<vk::VkFence> fence(vk::createFence(vk, vkDevice));
@@ -398,7 +398,7 @@ tcu::TestStatus DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest(
 
     VkMemoryDedicatedRequirements dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         false,                                           // VkBool32                    prefersDedicatedAllocation
         false                                            // VkBool32                    requiresDedicatedAllocation
     };
@@ -414,7 +414,7 @@ tcu::TestStatus DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest(
     // Create a minimal buffer first to get the supported memory types
     VkBufferCreateInfo bufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                              // const void*                pNext
+        nullptr,                              // const void*                pNext
         m_testCase.flags,                     // VkBufferCreateFlags        flags
         1u,                                   // VkDeviceSize                size
         m_testCase.usage,                     // VkBufferUsageFlags        usage
@@ -427,7 +427,7 @@ tcu::TestStatus DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest(
 
     VkBufferMemoryRequirementsInfo2 info = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2, // VkStructureType            sType
-        DE_NULL,                                             // const void*                pNext
+        nullptr,                                             // const void*                pNext
         *buffer                                              // VkBuffer                    buffer
     };
 
@@ -459,7 +459,7 @@ tcu::TestStatus DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest(
 
     Move<VkDeviceMemory> memory;
     size = deAlign64(std::min(size, maxBufferSize >> 1), memReqs.memoryRequirements.alignment);
-    while (*memory == DE_NULL)
+    while (*memory == VK_NULL_HANDLE)
     {
         // Create the buffer
         {
@@ -468,7 +468,7 @@ tcu::TestStatus DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest(
 
             bufferParams.size = size;
             buffer            = Move<VkBuffer>(); // free the previous buffer, if any
-            result            = vk.createBuffer(vkDevice, &bufferParams, (VkAllocationCallbacks *)DE_NULL, &rawBuffer);
+            result            = vk.createBuffer(vkDevice, &bufferParams, nullptr, &rawBuffer);
 
             if (result != VK_SUCCESS)
             {
@@ -481,7 +481,7 @@ tcu::TestStatus DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest(
                 continue; // didn't work, try with a smaller buffer
             }
 
-            buffer = Move<VkBuffer>(check<VkBuffer>(rawBuffer), Deleter<VkBuffer>(vk, vkDevice, DE_NULL));
+            buffer = Move<VkBuffer>(check<VkBuffer>(rawBuffer), Deleter<VkBuffer>(vk, vkDevice, nullptr));
         }
 
         info.buffer = *buffer;
@@ -502,7 +502,7 @@ tcu::TestStatus DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest(
 
             vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
                 VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType            sType
-                DE_NULL,                                          // const void*                pNext
+                nullptr,                                          // const void*                pNext
                 VK_NULL_HANDLE,                                   // VkImage                    image
                 *buffer                                           // VkBuffer                    buffer
             };
@@ -514,7 +514,7 @@ tcu::TestStatus DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest(
                 heapTypeIndex,                          // uint32_t                    memoryTypeIndex
             };
 
-            result = vk.allocateMemory(vkDevice, &memoryAllocateInfo, (VkAllocationCallbacks *)DE_NULL, &rawMemory);
+            result = vk.allocateMemory(vkDevice, &memoryAllocateInfo, nullptr, &rawMemory);
 
             if (result != VK_SUCCESS)
             {
@@ -528,7 +528,7 @@ tcu::TestStatus DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest(
             }
 
             memory =
-                Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL));
+                Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, nullptr));
         }
     } // while
 
@@ -695,7 +695,7 @@ tcu::TestStatus testLargeBuffer(Context &context, LargeBufferParameters params)
 
     VkBufferCreateInfo bufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         params.flags,                         // VkBufferCreateFlags flags;
         params.bufferSize,                    // VkDeviceSize size;
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,   // VkBufferUsageFlags usage;
@@ -704,14 +704,14 @@ tcu::TestStatus testLargeBuffer(Context &context, LargeBufferParameters params)
         &queueFamilyIndex,                    // const uint32_t* pQueueFamilyIndices;
     };
 
-    VkResult result = vk.createBuffer(vkDevice, &bufferParams, (vk::VkAllocationCallbacks *)DE_NULL, &rawBuffer);
+    VkResult result = vk.createBuffer(vkDevice, &bufferParams, nullptr, &rawBuffer);
 
     // if buffer creation succeeds verify that the correct amount of memory was bound to it
     if (result == VK_SUCCESS)
     {
         VkMemoryRequirements memoryRequirements;
         vk.getBufferMemoryRequirements(vkDevice, rawBuffer, &memoryRequirements);
-        vk.destroyBuffer(vkDevice, rawBuffer, DE_NULL);
+        vk.destroyBuffer(vkDevice, rawBuffer, nullptr);
 
         if (memoryRequirements.size >= params.bufferSize)
             return tcu::TestStatus::pass("Pass");

@@ -98,7 +98,7 @@ DrawInvalidRangeCase::DrawInvalidRangeCase(Context &ctx, const char *name, const
     , m_useLimitMax(useLimitMax)
     , m_buffer(0)
     , m_indexBuffer(0)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -151,7 +151,7 @@ void DrawInvalidRangeCase::deinit(void)
     }
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 DrawInvalidRangeCase::IterateResult DrawInvalidRangeCase::iterate(void)
@@ -201,10 +201,10 @@ DrawInvalidRangeCase::IterateResult DrawInvalidRangeCase::iterate(void)
 
     gl.glBindBuffer(GL_ARRAY_BUFFER, m_buffer);
     gl.glEnableVertexAttribArray(positionLoc);
-    gl.glVertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.glVertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     GLU_EXPECT_NO_ERROR(gl.glGetError(), "set buffer");
 
-    gl.glDrawRangeElements(GL_POINTS, min, max, m_numIndices, GL_UNSIGNED_INT, DE_NULL);
+    gl.glDrawRangeElements(GL_POINTS, min, max, m_numIndices, GL_UNSIGNED_INT, nullptr);
 
     // Indexing outside range is an error, but it doesnt need to be checked. Causes implementation-dependent behavior.
     // Even if the indices are in range (m_min = 0), the specification allows partial processing of vertices in the range,

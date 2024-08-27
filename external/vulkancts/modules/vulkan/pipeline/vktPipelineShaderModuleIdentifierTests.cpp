@@ -1541,9 +1541,11 @@ struct DeviceHelper
             initVulkanStructure(&cacheControlFeatures);
         VkPhysicalDeviceBufferDeviceAddressFeaturesKHR deviceAddressFeatures =
             initVulkanStructure(&descriptorIdxFeatures);
+        VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures =
+            initVulkanStructure(&deviceAddressFeatures);
 
         VkPhysicalDeviceFeatures2 deviceFeatures =
-            initVulkanStructure(enableRayTracing ? reinterpret_cast<void *>(&deviceAddressFeatures) :
+            initVulkanStructure(enableRayTracing ? reinterpret_cast<void *>(&rayTracingPipelineFeatures) :
                                                    reinterpret_cast<void *>(&cacheControlFeatures));
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
@@ -1608,7 +1610,9 @@ tcu::TestStatus ConstantModuleIdentifiersInstance::iterate(void)
     // The second device may be the one from the context or a new device for the cases that require different devices.
     const auto &vkd   = m_context.getDeviceInterface();
     const auto device = m_context.getDevice();
-    const std::unique_ptr<DeviceHelper> helper(m_params->differentDevices ? new DeviceHelper(m_context) : nullptr);
+    const std::unique_ptr<DeviceHelper> helper(
+        m_params->differentDevices ? new DeviceHelper(m_context, m_params->pipelineType == PipelineType::RAY_TRACING) :
+                                     nullptr);
 
     const auto &di1 = vkd;
     const auto dev1 = device;
@@ -2146,10 +2150,10 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
     BufferPtr missSBT;
     BufferPtr callSBT;
 
-    VkStridedDeviceAddressRegionKHR rgenRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0ull, 0ull);
-    VkStridedDeviceAddressRegionKHR xhitRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0ull, 0ull);
-    VkStridedDeviceAddressRegionKHR missRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0ull, 0ull);
-    VkStridedDeviceAddressRegionKHR callRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0ull, 0ull);
+    VkStridedDeviceAddressRegionKHR rgenRegion = makeStridedDeviceAddressRegionKHR(0, 0ull, 0ull);
+    VkStridedDeviceAddressRegionKHR xhitRegion = makeStridedDeviceAddressRegionKHR(0, 0ull, 0ull);
+    VkStridedDeviceAddressRegionKHR missRegion = makeStridedDeviceAddressRegionKHR(0, 0ull, 0ull);
+    VkStridedDeviceAddressRegionKHR callRegion = makeStridedDeviceAddressRegionKHR(0, 0ull, 0ull);
 
     WrapperVec pipelineWrappers; // For graphics pipelines.
     PipelinePtrVec pipelinePtrs; // For other pipelines.

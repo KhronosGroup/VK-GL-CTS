@@ -1981,7 +1981,7 @@ tcu::TestStatus DataSpillTestInstance::iterate(void)
                                                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
             for (size_t i = 0; i < kNumAloneSamplers; ++i)
                 textureSamplerInfos.push_back(
-                    makeDescriptorImageInfo(samplers[i].get(), DE_NULL, VK_IMAGE_LAYOUT_UNDEFINED));
+                    makeDescriptorImageInfo(samplers[i].get(), VK_NULL_HANDLE, VK_IMAGE_LAYOUT_UNDEFINED));
 
             for (size_t i = 0; i < kNumCombined; ++i)
                 combinedSamplerInfos.push_back(makeDescriptorImageInfo(samplers[i + kNumAloneSamplers].get(),
@@ -2015,10 +2015,10 @@ tcu::TestStatus DataSpillTestInstance::iterate(void)
     de::MovePtr<BufferWithMemory> hitShaderBindingTable;
     de::MovePtr<BufferWithMemory> callableShaderBindingTable;
 
-    VkStridedDeviceAddressRegionKHR raygenShaderBindingTableRegion   = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR missShaderBindingTableRegion     = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion      = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    VkStridedDeviceAddressRegionKHR raygenShaderBindingTableRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR missShaderBindingTableRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     {
         const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
@@ -2649,10 +2649,10 @@ tcu::TestStatus DataSpillPipelineInterfaceTestInstance::iterate(void)
     de::MovePtr<BufferWithMemory> hitShaderBindingTable;
     de::MovePtr<BufferWithMemory> callableShaderBindingTable;
 
-    VkStridedDeviceAddressRegionKHR raygenShaderBindingTableRegion   = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR missShaderBindingTableRegion     = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion      = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    VkStridedDeviceAddressRegionKHR raygenShaderBindingTableRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR missShaderBindingTableRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     {
         const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();

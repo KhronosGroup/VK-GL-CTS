@@ -280,7 +280,7 @@ de::MovePtr<StdVideoEncodeH264PictureInfo> getStdVideoEncodeH264PictureInfo(
 
 de::MovePtr<VkVideoEncodeH264PictureInfoKHR> getVideoEncodeH264PictureInfo(
     const StdVideoEncodeH264PictureInfo *pictureInfo,
-    const VkVideoEncodeH264NaluSliceInfoKHR *pNaluSliceEntries = DE_NULL);
+    const VkVideoEncodeH264NaluSliceInfoKHR *pNaluSliceEntries = nullptr);
 
 de::MovePtr<StdVideoEncodeH265PictureInfo> getStdVideoEncodeH265PictureInfo(
     StdVideoH265PictureType pictureType, int32_t PicOrderCntVal, const StdVideoEncodeH265ReferenceListsInfo *pRefLists,
@@ -292,11 +292,11 @@ de::MovePtr<VkVideoEncodeH265PictureInfoKHR> getVideoEncodeH265PictureInfo(
 
 de::MovePtr<VkVideoBeginCodingInfoKHR> getVideoBeginCodingInfo(
     VkVideoSessionKHR videoEncodeSession, VkVideoSessionParametersKHR videoEncodeSessionParameters,
-    uint32_t referenceSlotCount = 0, const VkVideoReferenceSlotInfoKHR *pReferenceSlots = DE_NULL,
-    const void *pNext = DE_NULL);
+    uint32_t referenceSlotCount = 0, const VkVideoReferenceSlotInfoKHR *pReferenceSlots = nullptr,
+    const void *pNext = nullptr);
 
 de::MovePtr<VkVideoInlineQueryInfoKHR> getVideoInlineQueryInfo(VkQueryPool queryPool, uint32_t firstQuery,
-                                                               uint32_t queryCount, const void *pNext = DE_NULL);
+                                                               uint32_t queryCount, const void *pNext = nullptr);
 
 de::MovePtr<StdVideoDecodeH264PictureInfo> getStdVideoDecodeH264PictureInfo(void);
 
@@ -330,10 +330,10 @@ de::MovePtr<VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR> getPhysicalDeviceVid
     const VkVideoProfileInfoKHR *pVideoProfile, uint32_t qualityLevel);
 
 de::MovePtr<VkVideoEncodeQualityLevelInfoKHR> getVideoEncodeQualityLevelInfo(
-    uint32_t qualityLevel, VkVideoEncodeQualityLevelPropertiesKHR *videoEncodeQualityLevelProperties = DE_NULL);
+    uint32_t qualityLevel, VkVideoEncodeQualityLevelPropertiesKHR *videoEncodeQualityLevelProperties = nullptr);
 
 de::MovePtr<VkVideoCodingControlInfoKHR> getVideoCodingControlInfo(VkVideoCodingControlFlagsKHR flags,
-                                                                   const void *pNext = DE_NULL);
+                                                                   const void *pNext = nullptr);
 
 de::MovePtr<VkVideoEncodeInfoKHR> getVideoEncodeInfo(const void *pNext, const VkBuffer &dstBuffer,
                                                      const VkDeviceSize &dstBufferOffset,

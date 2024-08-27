@@ -60,7 +60,7 @@ void checkTextureSupport(Context &context, const Texture2DTestCaseParameters &te
         // check if image format supports cubic filtering
         const vk::VkPhysicalDeviceImageViewImageFormatInfoEXT imageViewImageFormatInfo = {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT, // VkStructureType    sType;
-            DE_NULL,                                                            // void*              pNext;
+            nullptr,                                                            // void*              pNext;
             VK_IMAGE_VIEW_TYPE_2D                                               // VkImageViewType    imageViewType;
         };
 
@@ -77,7 +77,7 @@ void checkTextureSupport(Context &context, const Texture2DTestCaseParameters &te
 
         vk::VkFilterCubicImageViewImageFormatPropertiesEXT cubicImageViewProperties = {
             VK_STRUCTURE_TYPE_FILTER_CUBIC_IMAGE_VIEW_IMAGE_FORMAT_PROPERTIES_EXT, // VkStructureType sType;
-            DE_NULL,                                                               // void* pNext;
+            nullptr,                                                               // void* pNext;
             false,                                                                 // VkBool32 filterCubic;
             false                                                                  // VkBool32 filterCubicMinmax;
         };
@@ -598,7 +598,7 @@ const char *getFaceDesc(const tcu::CubeFace face)
         return "+Z";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

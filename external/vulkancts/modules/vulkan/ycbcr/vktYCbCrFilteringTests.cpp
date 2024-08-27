@@ -131,7 +131,7 @@ Move<VkDescriptorSetLayout> LinearFilteringTestInstance::createDescriptorSetLayo
                                                         VK_SHADER_STAGE_ALL, &sampler};
     const VkDescriptorSetLayoutCreateInfo layoutInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkDescriptorSetLayoutCreateFlags)0u,
         1u,
         &binding,
@@ -147,7 +147,7 @@ Move<VkDescriptorPool> LinearFilteringTestInstance::createDescriptorPool(const u
     };
     const VkDescriptorPoolCreateInfo poolInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
         1u, // maxSets
         DE_LENGTH_OF_ARRAY(poolSizes),
@@ -161,7 +161,7 @@ Move<VkDescriptorSet> LinearFilteringTestInstance::createDescriptorSet(VkDescrip
                                                                        VkDescriptorSetLayout descLayout)
 {
     const VkDescriptorSetAllocateInfo allocInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL, descPool, 1u, &descLayout,
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, descPool, 1u, &descLayout,
     };
 
     return allocateDescriptorSet(m_vkd, m_device, &allocInfo);
@@ -171,7 +171,7 @@ Move<VkSamplerYcbcrConversion> LinearFilteringTestInstance::createYCbCrConversio
 {
     const VkSamplerYcbcrConversionCreateInfo conversionInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         m_format,
         VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,
         VK_SAMPLER_YCBCR_RANGE_ITU_FULL,
@@ -195,7 +195,7 @@ Move<VkImage> LinearFilteringTestInstance::createImage(uint32_t width, uint32_t 
     VkImageCreateFlags createFlags     = 0u;
     const VkImageCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         createFlags,
         VK_IMAGE_TYPE_2D,
         m_format,
@@ -207,7 +207,7 @@ Move<VkImage> LinearFilteringTestInstance::createImage(uint32_t width, uint32_t 
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        (const uint32_t *)DE_NULL,
+        nullptr,
         VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
@@ -241,18 +241,18 @@ void LinearFilteringTestInstance::bindImage(VkDescriptorSet descriptorSet, VkIma
     const VkDescriptorImageInfo imageInfo      = {sampler, imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
     const VkWriteDescriptorSet descriptorWrite = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        DE_NULL,
+        nullptr,
         descriptorSet,
         0u, // dstBinding
         0u, // dstArrayElement
         1u, // descriptorCount
         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         &imageInfo,
-        (const VkDescriptorBufferInfo *)DE_NULL,
-        (const VkBufferView *)DE_NULL,
+        nullptr,
+        nullptr,
     };
 
-    m_vkd.updateDescriptorSets(m_device, 1u, &descriptorWrite, 0u, DE_NULL);
+    m_vkd.updateDescriptorSets(m_device, 1u, &descriptorWrite, 0u, nullptr);
 }
 
 tcu::TestStatus LinearFilteringTestInstance::iterate(void)
@@ -262,7 +262,7 @@ tcu::TestStatus LinearFilteringTestInstance::iterate(void)
     const auto &instInt(m_context.getInstanceInterface());
     auto physicalDevice(m_context.getPhysicalDevice());
     const Unique<VkSamplerYcbcrConversion> conversion(createYCbCrConversion());
-    const VkSamplerYcbcrConversionInfo samplerConvInfo{VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO, DE_NULL,
+    const VkSamplerYcbcrConversionInfo samplerConvInfo{VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO, nullptr,
                                                        *conversion};
     const VkSamplerCreateInfo samplerCreateInfo(getSamplerInfo(&samplerConvInfo));
     const Unique<VkSampler> sampler(createSampler(m_vkd, m_device, &samplerCreateInfo));
@@ -271,7 +271,7 @@ tcu::TestStatus LinearFilteringTestInstance::iterate(void)
     {
         const VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,        // sType
-            DE_NULL,                                                      // pNext
+            nullptr,                                                      // pNext
             m_format,                                                     // format
             VK_IMAGE_TYPE_2D,                                             // type
             VK_IMAGE_TILING_OPTIMAL,                                      // tiling
@@ -281,7 +281,7 @@ tcu::TestStatus LinearFilteringTestInstance::iterate(void)
 
         VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = {};
         samplerYcbcrConversionImage.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
-        samplerYcbcrConversionImage.pNext = DE_NULL;
+        samplerYcbcrConversionImage.pNext = nullptr;
 
         VkImageFormatProperties2 imageFormatProperties = {};
         imageFormatProperties.sType                    = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;

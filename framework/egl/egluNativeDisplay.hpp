@@ -63,7 +63,7 @@ public:
     }
     const char *getPlatformExtensionName(void) const
     {
-        return (m_platformExtension.empty() ? DE_NULL : m_platformExtension.c_str());
+        return (m_platformExtension.empty() ? nullptr : m_platformExtension.c_str());
     }
 
     //! Get EGLNativeDisplayType that can be used with eglGetDisplay(). Default implementation throws tcu::NotSupportedError().
@@ -93,7 +93,7 @@ class NativeDisplayFactory : public tcu::FactoryBase
 public:
     virtual ~NativeDisplayFactory(void);
 
-    virtual NativeDisplay *createDisplay(const eglw::EGLAttrib *attribList = DE_NULL) const = 0;
+    virtual NativeDisplay *createDisplay(const eglw::EGLAttrib *attribList = nullptr) const = 0;
 
     NativeDisplay::Capability getCapabilities(void) const
     {
@@ -105,7 +105,7 @@ public:
     }
     const char *getPlatformExtensionName(void) const
     {
-        return (m_platformExtension.empty() ? DE_NULL : m_platformExtension.c_str());
+        return (m_platformExtension.empty() ? nullptr : m_platformExtension.c_str());
     }
 
     const NativeWindowFactoryRegistry &getNativeWindowRegistry(void) const

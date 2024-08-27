@@ -37,7 +37,7 @@ namespace de
 class MemPool
 {
 public:
-    MemPool(const deMemPoolUtil *util = DE_NULL, uint32_t flags = 0u);
+    MemPool(const deMemPoolUtil *util = nullptr, uint32_t flags = 0u);
     MemPool(MemPool *parent);
     ~MemPool(void);
 

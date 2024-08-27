@@ -756,7 +756,7 @@ void NegativeStateApiTests::init(void)
         m_log << TestLog::EndSection;
     });
     ES3F_ADD_API_CASE(get_vertex_attrib_pointerv, "Invalid glGetVertexAttribPointerv() usage", {
-        GLvoid *ptr[1] = {DE_NULL};
+        GLvoid *ptr[1] = {nullptr};
 
         m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if pname is not an accepted value.");
         glGetVertexAttribPointerv(0, -1, &ptr[0]);
@@ -840,7 +840,7 @@ void NegativeStateApiTests::init(void)
         glDeleteBuffers(1, &buf);
     });
     ES3F_ADD_API_CASE(get_buffer_pointerv, "Invalid glGetBufferPointerv() usage", {
-        GLvoid *params = DE_NULL;
+        GLvoid *params = nullptr;
         GLuint buf;
         glGenBuffers(1, &buf);
         glBindBuffer(GL_ARRAY_BUFFER, buf);

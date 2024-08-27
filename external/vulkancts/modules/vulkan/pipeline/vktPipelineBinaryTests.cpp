@@ -237,7 +237,7 @@ tcu::TestStatus ComputePipelineInternalCacheTestInstance::iterate(void)
     pipelineCreateInfo.stage.pName                 = "main";
     pipelineCreateInfo.stage.module                = *shaderModule;
     pipelineCreateInfo.layout                      = *pipelineLayout;
-    auto pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+    auto pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     // create pipeline binaries from internal cache
     BinariesStatus binariesStatus = BinariesStatus::VALID;
@@ -289,7 +289,7 @@ tcu::TestStatus ComputePipelineInternalCacheTestInstance::iterate(void)
         pipelineCreateInfo.stage.module = *shaderModule;
     }
 
-    pipeline       = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    pipeline       = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     auto cmdPool   = makeCommandPool(vk, device, m_context.getUniversalQueueFamilyIndex());
     auto cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -391,7 +391,7 @@ tcu::TestStatus GraphicsPipelineInternalCacheTestInstance::iterate(void)
             auto pipelineCreateInfo            = pipelineWrapper.getPipelineCreateInfo();
             VkPipelineBinaryInfoKHR binaryInfo = initVulkanStructure();
             pipelineCreateInfo.pNext           = &binaryInfo;
-            auto testPipeline                  = createGraphicsPipeline(vk, device, 0, &pipelineCreateInfo);
+            auto testPipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
             return tcu::TestStatus::pass("Pass");
         }
 
@@ -475,12 +475,13 @@ tcu::TestStatus GraphicsPipelineInternalCacheTestInstance::iterate(void)
         .setDefaultMultisampleState()
         .setMonolithicPipelineLayout(pipelineLayout)
         .disableShaderModules(binariesStatus == BinariesStatus::VALID)
-        .setupVertexInputState(&vertexInputState, nullptr, 0, {}, binaryInfoPtr[0])
+        .setupVertexInputState(&vertexInputState, nullptr, VK_NULL_HANDLE, {}, binaryInfoPtr[0])
         .setupPreRasterizationShaderState3(viewport, scissor, pipelineLayout, *renderPass, 0u, vertShader, 0, {}, {},
-                                           {}, {}, {}, {}, {}, 0, 0, 0, 0, 0, {}, 0, {}, binaryInfoPtr[1])
-        .setupFragmentShaderState2(pipelineLayout, *renderPass, 0u, fragShader, 0, 0, 0, 0, 0, {}, {}, binaryInfoPtr[2])
-        .setupFragmentOutputState(*renderPass, 0, 0, 0, 0, {}, {}, binaryInfoPtr[3])
-        .buildPipeline(0, 0, 0, {}, binaryInfoPtr[0]);
+                                           {}, {}, {}, {}, {}, 0, 0, 0, 0, 0, {}, VK_NULL_HANDLE, {}, binaryInfoPtr[1])
+        .setupFragmentShaderState2(pipelineLayout, *renderPass, 0u, fragShader, 0, 0, 0, 0, VK_NULL_HANDLE, {}, {},
+                                   binaryInfoPtr[2])
+        .setupFragmentOutputState(*renderPass, 0, 0, 0, VK_NULL_HANDLE, {}, {}, binaryInfoPtr[3])
+        .buildPipeline(VK_NULL_HANDLE, VK_NULL_HANDLE, 0, {}, binaryInfoPtr[0]);
 
     const auto queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const auto cmdPool =
@@ -669,10 +670,10 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
         pLibraryInterface,                // VkRayTracingPipelineInterfaceCreateInfoKHR* pLibraryInterface;
         DE_NULL,                          // const VkPipelineDynamicStateCreateInfo*     pDynamicState;
         *pipelineLayout,                  // VkPipelineLayout                            layout;
-        DE_NULL,                          // VkPipeline                                  basePipelineHandle;
+        VK_NULL_HANDLE,                   // VkPipeline                                  basePipelineHandle;
         0,                                // int32_t                                     basePipelineIndex;
     };
-    m_pipeline                    = createRayTracingPipelineKHR(vk, device, 0, 0, &pipelineCreateInfo);
+    m_pipeline = createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
     BinariesStatus binariesStatus = BinariesStatus::VALID;
 
     if (m_testParams.type == TestType::RAY_TRACING_PIPELINE_FROM_PIPELINE)
@@ -731,7 +732,8 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
     {
         VkPipelineBinaryInfoKHR binaryInfo = initVulkanStructure();
         pipelineCreateInfo.pNext           = &binaryInfo;
-        auto testPipeline                  = createRayTracingPipelineKHR(vk, device, 0, 0, &pipelineCreateInfo);
+        auto testPipeline =
+            createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
         return tcu::TestStatus::pass("Pass");
     }
 
@@ -748,7 +750,8 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
             binaryInfo.pNext               = &pipelineFlags2CreateInfo;
 
             // create raytracing pipeline library from pipeline library
-            pipelineLibrary = createRayTracingPipelineKHR(vk, device, 0, 0, &pipelineCreateInfo);
+            pipelineLibrary =
+                createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
 
             // create raytracing pipeline from pipeline library
             libraryInfo.libraryCount = 1u;
@@ -776,7 +779,7 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
         pipelineCreateInfo.pStages = m_shaderCreateInfoVect.data();
     }
 
-    m_pipeline = createRayTracingPipelineKHR(vk, device, 0, 0, &pipelineCreateInfo);
+    m_pipeline = createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
 
     auto rgenShaderBT = createShaderBindingTable(*m_pipeline, 0);
     auto chitShaderBT = createShaderBindingTable(*m_pipeline, 1);

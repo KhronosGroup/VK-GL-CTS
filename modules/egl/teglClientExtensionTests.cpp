@@ -96,7 +96,7 @@ TestCase::IterateResult BaseTest::iterate(void)
     if (eglError == EGL_BAD_DISPLAY)
         TCU_THROW(NotSupportedError, "EGL_EXT_client_extensions not supported");
     else if (eglError != EGL_SUCCESS)
-        throw eglu::Error(eglError, "eglQueryString()", DE_NULL, __FILE__, __LINE__);
+        throw eglu::Error(eglError, "eglQueryString()", nullptr, __FILE__, __LINE__);
 
     TCU_CHECK(clientExtesionsStr);
 
@@ -159,7 +159,7 @@ TestCase::IterateResult CheckExtensionsTest::iterate(void)
     if (eglQueryError == EGL_BAD_DISPLAY)
         TCU_THROW(NotSupportedError, "EGL_EXT_client_extensions not supported");
     else if (eglQueryError != EGL_SUCCESS)
-        throw eglu::Error(eglQueryError, "eglQueryString()", DE_NULL, __FILE__, __LINE__);
+        throw eglu::Error(eglQueryError, "eglQueryString()", nullptr, __FILE__, __LINE__);
 
     TCU_CHECK(clientExtensionsStr);
 
@@ -221,7 +221,7 @@ TestCase::IterateResult DisjointTest::iterate(void)
     if (eglQueryError == EGL_BAD_DISPLAY)
         TCU_THROW(NotSupportedError, "EGL_EXT_client_extensions not supported");
     else if (eglQueryError != EGL_SUCCESS)
-        throw eglu::Error(eglQueryError, "eglQueryString()", DE_NULL, __FILE__, __LINE__);
+        throw eglu::Error(eglQueryError, "eglQueryString()", nullptr, __FILE__, __LINE__);
 
     vector<string> displayExtensions;
     vector<string> clientExtensions;

@@ -1547,7 +1547,7 @@ const glw::GLchar *StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
             return s_fragment_shader_3D_idecl_lowp;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -1565,7 +1565,7 @@ const glw::GLchar *StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
                 return s_fragment_shader_3D_fdecl_lowp;
             default:
                 DE_FATAL("invalid texture dimension");
-                return DE_NULL;
+                return nullptr;
             }
         }
         else
@@ -1580,7 +1580,7 @@ const glw::GLchar *StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
                 return s_fragment_shader_3D_udecl_lowp;
             default:
                 DE_FATAL("invalid texture dimension");
-                return DE_NULL;
+                return nullptr;
             }
         }
     }
@@ -1597,7 +1597,7 @@ const glw::GLchar *StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
             return s_fragment_shader_3D_idecl_mediump;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -1615,7 +1615,7 @@ const glw::GLchar *StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
                 return s_fragment_shader_3D_fdecl_mediump;
             default:
                 DE_FATAL("invalid texture dimension");
-                return DE_NULL;
+                return nullptr;
             }
         }
         else
@@ -1630,7 +1630,7 @@ const glw::GLchar *StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
                 return s_fragment_shader_3D_udecl_mediump;
             default:
                 DE_FATAL("invalid texture dimension");
-                return DE_NULL;
+                return nullptr;
             }
         }
     }
@@ -1647,7 +1647,7 @@ const glw::GLchar *StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
             return s_fragment_shader_3D_idecl_highp;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -1663,7 +1663,7 @@ const glw::GLchar *StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
             return s_fragment_shader_3D_udecl_highp;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -1677,7 +1677,7 @@ const glw::GLchar *StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
         return s_fragment_shader_3D_fdecl_highp;
     default:
         DE_FATAL("invalid texture dimension");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -1700,7 +1700,7 @@ const glw::GLchar *StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderTail()
         return s_fragment_shader_3D_tail;
     default:
         DE_FATAL("invalid texture dimension");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -1723,7 +1723,7 @@ glw::GLenum StorageAndSubImageTest<T, S, N, D, I>::TextureTarget()
         return GL_TEXTURE_3D;
     default:
         DE_FATAL("invalid texture dimension");
-        return DE_NULL;
+        return 0;
     }
 }
 
@@ -2843,7 +2843,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
             return s_fragment_shader_ms_3D_idecl_lowp;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -2859,7 +2859,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
                 return s_fragment_shader_ms_3D_fdecl_lowp;
             default:
                 DE_FATAL("invalid texture dimension");
-                return DE_NULL;
+                return nullptr;
             }
         }
         else
@@ -2872,7 +2872,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
                 return s_fragment_shader_ms_3D_udecl_lowp;
             default:
                 DE_FATAL("invalid texture dimension");
-                return DE_NULL;
+                return nullptr;
             }
         }
     }
@@ -2887,7 +2887,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
             return s_fragment_shader_ms_3D_idecl_mediump;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -2903,7 +2903,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
                 return s_fragment_shader_ms_3D_fdecl_mediump;
             default:
                 DE_FATAL("invalid texture dimension");
-                return DE_NULL;
+                return nullptr;
             }
         }
         else
@@ -2916,7 +2916,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
                 return s_fragment_shader_ms_3D_udecl_mediump;
             default:
                 DE_FATAL("invalid texture dimension");
-                return DE_NULL;
+                return nullptr;
             }
         }
     }
@@ -2931,7 +2931,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
             return s_fragment_shader_ms_3D_idecl_highp;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -2945,7 +2945,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
             return s_fragment_shader_ms_3D_udecl_highp;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -2959,12 +2959,12 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
             return s_fragment_shader_ms_3D_fdecl_highp;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
     DE_FATAL("invalid type");
-    return DE_NULL;
+    return nullptr;
 }
 
 /** @brief Fragment shader declaration selector.
@@ -2984,7 +2984,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
             return s_fragment_shader_aux_3D_idecl_lowp;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -3000,7 +3000,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
                 return s_fragment_shader_aux_3D_fdecl_lowp;
             default:
                 DE_FATAL("invalid texture dimension");
-                return DE_NULL;
+                return nullptr;
             }
         }
         else
@@ -3013,7 +3013,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
                 return s_fragment_shader_aux_3D_udecl_lowp;
             default:
                 DE_FATAL("invalid texture dimension");
-                return DE_NULL;
+                return nullptr;
             }
         }
     }
@@ -3028,7 +3028,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
             return s_fragment_shader_aux_3D_idecl_mediump;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -3044,7 +3044,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
                 return s_fragment_shader_aux_3D_fdecl_mediump;
             default:
                 DE_FATAL("invalid texture dimension");
-                return DE_NULL;
+                return nullptr;
             }
         }
         else
@@ -3057,7 +3057,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
                 return s_fragment_shader_aux_3D_udecl_mediump;
             default:
                 DE_FATAL("invalid texture dimension");
-                return DE_NULL;
+                return nullptr;
             }
         }
     }
@@ -3072,7 +3072,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
             return s_fragment_shader_aux_3D_idecl_highp;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -3086,7 +3086,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
             return s_fragment_shader_aux_3D_udecl_highp;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
@@ -3100,12 +3100,12 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
             return s_fragment_shader_aux_3D_fdecl_highp;
         default:
             DE_FATAL("invalid texture dimension");
-            return DE_NULL;
+            return nullptr;
         }
     }
 
     DE_FATAL("invalid type");
-    return DE_NULL;
+    return nullptr;
 }
 
 /** @brief Fragment shader tail selector.
@@ -3123,7 +3123,7 @@ const glw::GLchar *StorageMultisampleTest<T, S, N, D>::FragmentShaderTail()
         return s_fragment_shader_tail_3D;
     default:
         DE_FATAL("invalid texture dimension");
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -3142,7 +3142,7 @@ glw::GLenum StorageMultisampleTest<T, S, N, D>::MultisampleTextureTarget()
         return GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
     default:
         DE_FATAL("invalid texture dimension");
-        return DE_NULL;
+        return 0;
     }
 }
 
@@ -3161,7 +3161,7 @@ glw::GLenum StorageMultisampleTest<T, S, N, D>::InputTextureTarget()
         return GL_TEXTURE_2D_ARRAY;
     default:
         DE_FATAL("invalid texture dimension");
-        return DE_NULL;
+        return 0;
     }
 }
 
@@ -4330,9 +4330,9 @@ CompressedSubImageTest::CompressedSubImageTest(deqp::Context &context)
     : deqp::TestCase(context, "textures_compressed_subimage", "Texture Compressed SubImage Test")
     , m_to(0)
     , m_to_aux(0)
-    , m_compressed_texture_data(DE_NULL)
-    , m_reference(DE_NULL)
-    , m_result(DE_NULL)
+    , m_compressed_texture_data(nullptr)
+    , m_reference(nullptr)
+    , m_result(nullptr)
     , m_reference_size(0)
     , m_reference_internalformat(0)
 {
@@ -4730,7 +4730,7 @@ bool CompressedSubImageTest::PrepareReferenceData(glw::GLenum internalformat)
     glw::GLint compressed_texture_size = 0;
 
     /* Quick checks. */
-    if ((DE_NULL != m_reference) || (DE_NULL != m_compressed_texture_data))
+    if ((nullptr != m_reference) || (nullptr != m_compressed_texture_data))
     {
         throw 0;
     }
@@ -4779,7 +4779,7 @@ bool CompressedSubImageTest::PrepareReferenceData(glw::GLenum internalformat)
                 /* Prepare storage. */
                 m_compressed_texture_data = new glw::GLubyte[compressed_texture_size];
 
-                if (DE_NULL != m_compressed_texture_data)
+                if (nullptr != m_compressed_texture_data)
                 {
                     m_reference_size = compressed_texture_size;
                 }
@@ -4805,7 +4805,7 @@ bool CompressedSubImageTest::PrepareReferenceData(glw::GLenum internalformat)
 
                 m_reference = new glw::GLubyte[m_reference_size];
 
-                if (DE_NULL == m_reference)
+                if (nullptr == m_reference)
                 {
                     throw 0;
                 }
@@ -4966,7 +4966,7 @@ bool CompressedSubImageTest::CheckData(glw::GLenum internalformat)
     /* Check texture content with reference. */
     m_result = new glw::GLubyte[m_reference_size * s_block_count];
 
-    if (DE_NULL == m_result)
+    if (nullptr == m_result)
     {
         throw 0;
     }
@@ -5013,7 +5013,7 @@ bool CompressedSubImageTest::CheckData<3>(glw::GLenum internalformat)
     /* Check texture content with reference. */
     m_result = new glw::GLubyte[m_reference_size * s_block_count];
 
-    if (DE_NULL == m_result)
+    if (nullptr == m_result)
     {
         throw 0;
     }
@@ -5114,25 +5114,25 @@ void CompressedSubImageTest::CleanAll()
     }
 
     /* Reference data storage. */
-    if (DE_NULL != m_reference)
+    if (nullptr != m_reference)
     {
         delete[] m_reference;
 
-        m_reference = DE_NULL;
+        m_reference = nullptr;
     }
 
-    if (DE_NULL != m_compressed_texture_data)
+    if (nullptr != m_compressed_texture_data)
     {
         delete[] m_compressed_texture_data;
 
-        m_compressed_texture_data = DE_NULL;
+        m_compressed_texture_data = nullptr;
     }
 
-    if (DE_NULL != m_result)
+    if (nullptr != m_result)
     {
         delete[] m_result;
 
-        m_result = DE_NULL;
+        m_result = nullptr;
     }
 
     m_reference_size = 0;
@@ -5315,7 +5315,7 @@ CopyTest::CopyTest(deqp::Context &context)
     , m_fbo(0)
     , m_to_src(0)
     , m_to_dst(0)
-    , m_result(DE_NULL)
+    , m_result(nullptr)
 {
     /* Intentionally left blank. */
 }
@@ -5518,7 +5518,7 @@ void CopyTest::CreateDestinationTexture<1>()
     gl.bindTexture(TextureTarget<1>(), m_to_dst);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindRenderbuffer call failed.");
 
-    gl.texImage1D(TextureTarget<1>(), 0, GL_RGBA8, s_texture_width, 0, GL_RGBA, GL_UNSIGNED_BYTE, DE_NULL);
+    gl.texImage1D(TextureTarget<1>(), 0, GL_RGBA8, s_texture_width, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D call failed.");
 }
 
@@ -5539,7 +5539,7 @@ void CopyTest::CreateDestinationTexture<2>()
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindRenderbuffer call failed.");
 
     gl.texImage2D(TextureTarget<2>(), 0, GL_RGBA8, s_texture_width, s_texture_height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                  DE_NULL);
+                  nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D call failed.");
 }
 
@@ -5560,7 +5560,7 @@ void CopyTest::CreateDestinationTexture<3>()
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindRenderbuffer call failed.");
 
     gl.texImage3D(TextureTarget<3>(), 0, GL_RGBA8, s_texture_width, s_texture_height, s_texture_depth, 0, GL_RGBA,
-                  GL_UNSIGNED_BYTE, DE_NULL);
+                  GL_UNSIGNED_BYTE, nullptr);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D call failed.");
 }
 
@@ -5749,7 +5749,7 @@ bool CopyTest::CheckData(glw::GLenum target, glw::GLuint size)
     /* Check texture content with reference. */
     m_result = new glw::GLubyte[size];
 
-    if (DE_NULL == m_result)
+    if (nullptr == m_result)
     {
         throw 0;
     }
@@ -5834,11 +5834,11 @@ void CopyTest::CleanAll()
         m_to_dst = 0;
     }
 
-    if (DE_NULL == m_result)
+    if (nullptr == m_result)
     {
         delete[] m_result;
 
-        m_result = DE_NULL;
+        m_result = nullptr;
     }
 
     while (GL_NO_ERROR != gl.getError())
@@ -6939,7 +6939,7 @@ tcu::TestNode::IterateResult GenerateMipmapTest::iterate()
 
     /* Texture and cpu results storage. */
     glw::GLuint texture  = 0;
-    glw::GLubyte *result = DE_NULL;
+    glw::GLubyte *result = nullptr;
 
     try
     {
@@ -6972,7 +6972,7 @@ tcu::TestNode::IterateResult GenerateMipmapTest::iterate()
         {
             result = new glw::GLubyte[s_texture_width];
 
-            if (DE_NULL == result)
+            if (nullptr == result)
             {
                 throw 0;
             }
@@ -7033,7 +7033,7 @@ tcu::TestNode::IterateResult GenerateMipmapTest::iterate()
         gl.deleteTextures(1, &texture);
     }
 
-    if (DE_NULL != result)
+    if (nullptr != result)
     {
         delete[] result;
     }
@@ -7092,7 +7092,7 @@ BindUnitTest::BindUnitTest(deqp::Context &context)
     , m_fbo(0)
     , m_rbo(0)
     , m_vao(0)
-    , m_result(DE_NULL)
+    , m_result(nullptr)
 {
     m_to[0] = 0;
     m_to[1] = 0;
@@ -7185,7 +7185,7 @@ void BindUnitTest::CreateProgram()
 
         for (glw::GLuint i = 0; i < shader_count; ++i)
         {
-            if (DE_NULL != shader[i].source)
+            if (nullptr != shader[i].source)
             {
                 shader[i].id = gl.createShader(shader[i].type);
 
@@ -7551,7 +7551,7 @@ void BindUnitTest::CleanAll()
     }
 
     /* Release heap. */
-    if (DE_NULL != m_result)
+    if (nullptr != m_result)
     {
         delete[] m_result;
     }
@@ -9355,10 +9355,10 @@ SubImageErrorsTest::SubImageErrorsTest(deqp::Context &context)
     , m_format_invalid(0)
     , m_type_invalid(0)
     , m_max_texture_size(1)
-    , m_reference_compressed_1D(DE_NULL)
-    , m_reference_compressed_2D(DE_NULL)
-    , m_reference_compressed_3D(DE_NULL)
-    , m_reference_compressed_rectangle(DE_NULL)
+    , m_reference_compressed_1D(nullptr)
+    , m_reference_compressed_2D(nullptr)
+    , m_reference_compressed_3D(nullptr)
+    , m_reference_compressed_rectangle(nullptr)
     , m_reference_compressed_1D_size(0)
     , m_reference_compressed_2D_size(0)
     , m_reference_compressed_3D_size(0)
@@ -10563,7 +10563,7 @@ bool SubImageErrorsTest::Test1DCompressed()
     bool is_ok = true;
 
     /* Do tests only if compressed 1D textures are supported. */
-    if (DE_NULL != m_reference_compressed_1D)
+    if (nullptr != m_reference_compressed_1D)
     {
         /* Check that INVALID_OPERATION is generated by CompressedTextureSubImage1D
          if texture is not the name of an existing texture object. */
@@ -10673,7 +10673,7 @@ bool SubImageErrorsTest::Test2DCompressed()
     bool is_ok = true;
 
     /* Do tests only if compressed 2D textures are supported. */
-    if (DE_NULL != m_reference_compressed_2D)
+    if (nullptr != m_reference_compressed_2D)
     {
         /* Check that INVALID_OPERATION is generated by CompressedTextureSubImage2D
          if texture is not the name of an existing texture object. */
@@ -10768,7 +10768,7 @@ bool SubImageErrorsTest::Test2DCompressed()
 
         /* Check that INVALID_OPERATION is generated by CompressedTextureSubImage2D
          if the effective target is TEXTURE_RECTANGLE. */
-        if (DE_NULL !=
+        if (nullptr !=
             m_reference_compressed_rectangle) /* Do test only if rectangle compressed texture is supported by the implementation. */
         {
             gl.compressedTextureSubImage2D(m_to_rectangle_compressed, 0, 0, 0, s_reference_width, s_reference_height,
@@ -10804,7 +10804,7 @@ bool SubImageErrorsTest::Test3DCompressed()
     bool is_ok = true;
 
     /* Do tests only if compressed 3D textures are supported. */
-    if (DE_NULL != m_reference_compressed_3D)
+    if (nullptr != m_reference_compressed_3D)
     {
         /* Check that INVALID_OPERATION is generated by CompressedTextureSubImage3D
          if texture is not the name of an existing texture object. */
@@ -10994,28 +10994,28 @@ void SubImageErrorsTest::Clean()
     m_type_invalid     = 0;
     m_max_texture_size = 1;
 
-    if (DE_NULL != m_reference_compressed_1D)
+    if (nullptr != m_reference_compressed_1D)
     {
         delete[] m_reference_compressed_1D;
 
         m_reference_compressed_1D = NULL;
     }
 
-    if (DE_NULL != m_reference_compressed_2D)
+    if (nullptr != m_reference_compressed_2D)
     {
         delete[] m_reference_compressed_2D;
 
         m_reference_compressed_2D = NULL;
     }
 
-    if (DE_NULL != m_reference_compressed_3D)
+    if (nullptr != m_reference_compressed_3D)
     {
         delete[] m_reference_compressed_3D;
 
         m_reference_compressed_3D = NULL;
     }
 
-    if (DE_NULL != m_reference_compressed_rectangle)
+    if (nullptr != m_reference_compressed_rectangle)
     {
         delete[] m_reference_compressed_rectangle;
 

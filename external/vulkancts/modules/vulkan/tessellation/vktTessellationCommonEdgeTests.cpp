@@ -394,12 +394,12 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
             .addVertexBinding(makeVertexInputBindingDescription(1u, sizeof(float), VK_VERTEX_INPUT_RATE_VERTEX))
             .addVertexAttribute(makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32_SFLOAT, 0u))
             .addVertexAttribute(makeVertexInputAttributeDescription(1u, 1u, VK_FORMAT_R32_SFLOAT, 0u))
-            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert"), DE_NULL)
+            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, context.getBinaryCollection().get("vert"), nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, context.getBinaryCollection().get("tesc"),
-                       DE_NULL)
+                       nullptr)
             .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-                       context.getBinaryCollection().get("tese"), DE_NULL)
-            .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag"), DE_NULL)
+                       context.getBinaryCollection().get("tese"), nullptr)
+            .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, context.getBinaryCollection().get("frag"), nullptr)
             .build(vk, device, *pipelineLayout, *renderPass));
 
     // Draw commands
@@ -413,7 +413,7 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *colorAttachmentImage, colorImageSubresourceRange);
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                               &colorAttachmentLayoutBarrier);
     }
 

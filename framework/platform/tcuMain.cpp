@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 
 #if (DE_OS != DE_OS_WIN32)
     // Set stdout to line-buffered mode (will be fully buffered by default if stdout is pipe).
-    setvbuf(stdout, DE_NULL, _IOLBF, 4 * 1024);
+    setvbuf(stdout, nullptr, _IOLBF, 4 * 1024);
 #endif
 
     try

@@ -1,0 +1,599 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!-- Coverage test for OpenGL 4.0 tokens and entry points -->
+<test mode="gl" pattern="coverage">
+    <enums>
+    <!-- GL_VERSION_4_0 -->
+    <enum>
+        <name>GL_VERSION_4_0</name>
+        <value>1</value>
+    </enum>
+    <!-- reuse GL_DRAW_INDIRECT_BUFFER -->
+    <!-- reuse GL_DRAW_INDIRECT_BUFFER_BINDING -->
+    <!-- reuse GL_GEOMETRY_SHADER_INVOCATIONS -->
+    <!-- reuse GL_MAX_GEOMETRY_SHADER_INVOCATIONS -->
+    <!-- reuse GL_MIN_FRAGMENT_INTERPOLATION_OFFSET -->
+    <!-- reuse GL_MAX_FRAGMENT_INTERPOLATION_OFFSET -->
+    <!-- reuse GL_FRAGMENT_INTERPOLATION_OFFSET_BITS -->
+    <!-- reuse GL_MAX_VERTEX_STREAMS -->
+    <!-- reuse GL_DOUBLE_VEC2 -->
+    <!-- reuse GL_DOUBLE_VEC3 -->
+    <!-- reuse GL_DOUBLE_VEC4 -->
+    <!-- reuse GL_DOUBLE_MAT2 -->
+    <!-- reuse GL_DOUBLE_MAT3 -->
+    <!-- reuse GL_DOUBLE_MAT4 -->
+    <!-- reuse GL_DOUBLE_MAT2x3 -->
+    <!-- reuse GL_DOUBLE_MAT2x4 -->
+    <!-- reuse GL_DOUBLE_MAT3x2 -->
+    <!-- reuse GL_DOUBLE_MAT3x4 -->
+    <!-- reuse GL_DOUBLE_MAT4x2 -->
+    <!-- reuse GL_DOUBLE_MAT4x3 -->
+    <!-- reuse GL_ACTIVE_SUBROUTINES -->
+    <!-- reuse GL_ACTIVE_SUBROUTINE_UNIFORMS -->
+    <!-- reuse GL_ACTIVE_SUBROUTINE_UNIFORM_LOCATIONS -->
+    <!-- reuse GL_ACTIVE_SUBROUTINE_MAX_LENGTH -->
+    <!-- reuse GL_ACTIVE_SUBROUTINE_UNIFORM_MAX_LENGTH -->
+    <!-- reuse GL_MAX_SUBROUTINES -->
+    <!-- reuse GL_MAX_SUBROUTINE_UNIFORM_LOCATIONS -->
+    <!-- reuse GL_NUM_COMPATIBLE_SUBROUTINES -->
+    <!-- reuse GL_COMPATIBLE_SUBROUTINES -->
+    <!-- reuse GL_PATCHES -->
+    <!-- reuse GL_PATCH_VERTICES -->
+    <!-- reuse GL_PATCH_DEFAULT_INNER_LEVEL -->
+    <!-- reuse GL_PATCH_DEFAULT_OUTER_LEVEL -->
+    <!-- reuse GL_TESS_CONTROL_OUTPUT_VERTICES -->
+    <!-- reuse GL_TESS_GEN_MODE -->
+    <!-- reuse GL_TESS_GEN_SPACING -->
+    <!-- reuse GL_TESS_GEN_VERTEX_ORDER -->
+    <!-- reuse GL_TESS_GEN_POINT_MODE -->
+    <!-- reuse GL_ISOLINES -->
+    <!-- reuse GL_FRACTIONAL_ODD -->
+    <!-- reuse GL_FRACTIONAL_EVEN -->
+    <!-- reuse GL_MAX_PATCH_VERTICES -->
+    <!-- reuse GL_MAX_TESS_GEN_LEVEL -->
+    <!-- reuse GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS -->
+    <!-- reuse GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS -->
+    <!-- reuse GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS -->
+    <!-- reuse GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS -->
+    <!-- reuse GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS -->
+    <!-- reuse GL_MAX_TESS_PATCH_COMPONENTS -->
+    <!-- reuse GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS -->
+    <!-- reuse GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS -->
+    <!-- reuse GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS -->
+    <!-- reuse GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS -->
+    <!-- reuse GL_MAX_TESS_CONTROL_INPUT_COMPONENTS -->
+    <!-- reuse GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS -->
+    <!-- reuse GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS -->
+    <!-- reuse GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS -->
+    <!-- reuse GL_UNIFORM_BLOCK_REFERENCED_BY_TESS_CONTROL_SHADER -->
+    <!-- reuse GL_UNIFORM_BLOCK_REFERENCED_BY_TESS_EVALUATION_SHADER -->
+    <!-- reuse GL_TESS_EVALUATION_SHADER -->
+    <!-- reuse GL_TESS_CONTROL_SHADER -->
+    <!-- reuse GL_TRANSFORM_FEEDBACK -->
+    <!-- reuse GL_TRANSFORM_FEEDBACK_BUFFER_PAUSED -->
+    <!-- reuse GL_TRANSFORM_FEEDBACK_BUFFER_ACTIVE -->
+    <!-- reuse GL_TRANSFORM_FEEDBACK_BINDING -->
+    <!-- reuse GL_MAX_TRANSFORM_FEEDBACK_BUFFERS -->
+    <!-- reuse GL_MAX_VERTEX_STREAMS -->
+    <!-- Reuse tokens from GL_ARB_draw_buffers_blend -->
+    <!-- Reuse tokens from GL_ARB_draw_indirect -->
+    <enum>
+        <name>GL_DRAW_INDIRECT_BUFFER</name>
+        <value>0x8F3F</value>
+    </enum>
+    <enum>
+        <name>GL_DRAW_INDIRECT_BUFFER_BINDING</name>
+        <value>0x8F43</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_gpu_shader5 -->
+    <enum>
+        <name>GL_GEOMETRY_SHADER_INVOCATIONS</name>
+        <value>0x887F</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_GEOMETRY_SHADER_INVOCATIONS</name>
+        <value>0x8E5A</value>
+    </enum>
+    <enum>
+        <name>GL_MIN_FRAGMENT_INTERPOLATION_OFFSET</name>
+        <value>0x8E5B</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_FRAGMENT_INTERPOLATION_OFFSET</name>
+        <value>0x8E5C</value>
+    </enum>
+    <enum>
+        <name>GL_FRAGMENT_INTERPOLATION_OFFSET_BITS</name>
+        <value>0x8E5D</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_VERTEX_STREAMS</name>
+        <value>0x8E71</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_gpu_shader_fp64 -->
+    <!-- reuse GL_DOUBLE -->
+    <enum>
+        <name>GL_DOUBLE_VEC2</name>
+        <value>0x8FFC</value>
+    </enum>
+    <enum>
+        <name>GL_DOUBLE_VEC3</name>
+        <value>0x8FFD</value>
+    </enum>
+    <enum>
+        <name>GL_DOUBLE_VEC4</name>
+        <value>0x8FFE</value>
+    </enum>
+    <enum>
+        <name>GL_DOUBLE_MAT2</name>
+        <value>0x8F46</value>
+    </enum>
+    <enum>
+        <name>GL_DOUBLE_MAT3</name>
+        <value>0x8F47</value>
+    </enum>
+    <enum>
+        <name>GL_DOUBLE_MAT4</name>
+        <value>0x8F48</value>
+    </enum>
+    <enum>
+        <name>GL_DOUBLE_MAT2x3</name>
+        <value>0x8F49</value>
+    </enum>
+    <enum>
+        <name>GL_DOUBLE_MAT2x4</name>
+        <value>0x8F4A</value>
+    </enum>
+    <enum>
+        <name>GL_DOUBLE_MAT3x2</name>
+        <value>0x8F4B</value>
+    </enum>
+    <enum>
+        <name>GL_DOUBLE_MAT3x4</name>
+        <value>0x8F4C</value>
+    </enum>
+    <enum>
+        <name>GL_DOUBLE_MAT4x2</name>
+        <value>0x8F4D</value>
+    </enum>
+    <enum>
+        <name>GL_DOUBLE_MAT4x3</name>
+        <value>0x8F4E</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_sample_shading -->
+    <enum>
+        <name>GL_SAMPLE_SHADING</name>
+        <value>0x8C36</value>
+    </enum>
+    <enum>
+        <name>GL_MIN_SAMPLE_SHADING_VALUE</name>
+        <value>0x8C37</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_shader_subroutine -->
+    <enum>
+        <name>GL_ACTIVE_SUBROUTINES</name>
+        <value>0x8DE5</value>
+    </enum>
+    <enum>
+        <name>GL_ACTIVE_SUBROUTINE_UNIFORMS</name>
+        <value>0x8DE6</value>
+    </enum>
+    <enum>
+        <name>GL_ACTIVE_SUBROUTINE_UNIFORM_LOCATIONS</name>
+        <value>0x8E47</value>
+    </enum>
+    <enum>
+        <name>GL_ACTIVE_SUBROUTINE_MAX_LENGTH</name>
+        <value>0x8E48</value>
+    </enum>
+    <enum>
+        <name>GL_ACTIVE_SUBROUTINE_UNIFORM_MAX_LENGTH</name>
+        <value>0x8E49</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_SUBROUTINES</name>
+        <value>0x8DE7</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_SUBROUTINE_UNIFORM_LOCATIONS</name>
+        <value>0x8DE8</value>
+    </enum>
+    <enum>
+        <name>GL_NUM_COMPATIBLE_SUBROUTINES</name>
+        <value>0x8E4A</value>
+    </enum>
+    <enum>
+        <name>GL_COMPATIBLE_SUBROUTINES</name>
+        <value>0x8E4B</value>
+    </enum>
+    <!-- reuse GL_UNIFORM_SIZE -->
+    <!-- reuse GL_UNIFORM_NAME_LENGTH -->
+    <!-- Reuse tokens from GL_ARB_tessellation_shader -->
+    <enum>
+        <name>GL_PATCHES</name>
+        <value>0x000E</value>
+    </enum>
+    <enum>
+        <name>GL_PATCH_VERTICES</name>
+        <value>0x8E72</value>
+    </enum>
+    <enum>
+        <name>GL_PATCH_DEFAULT_INNER_LEVEL</name>
+        <value>0x8E73</value>
+    </enum>
+    <enum>
+        <name>GL_PATCH_DEFAULT_OUTER_LEVEL</name>
+        <value>0x8E74</value>
+    </enum>
+    <enum>
+        <name>GL_TESS_CONTROL_OUTPUT_VERTICES</name>
+        <value>0x8E75</value>
+    </enum>
+    <enum>
+        <name>GL_TESS_GEN_MODE</name>
+        <value>0x8E76</value>
+    </enum>
+    <enum>
+        <name>GL_TESS_GEN_SPACING</name>
+        <value>0x8E77</value>
+    </enum>
+    <enum>
+        <name>GL_TESS_GEN_VERTEX_ORDER</name>
+        <value>0x8E78</value>
+    </enum>
+    <enum>
+        <name>GL_TESS_GEN_POINT_MODE</name>
+        <value>0x8E79</value>
+    </enum>
+    <!-- reuse GL_TRIANGLES -->
+    <!-- reuse GL_QUADS -->
+    <enum>
+        <name>GL_ISOLINES</name>
+        <value>0x8E7A</value>
+    </enum>
+    <!-- reuse GL_EQUAL -->
+    <enum>
+        <name>GL_FRACTIONAL_ODD</name>
+        <value>0x8E7B</value>
+    </enum>
+    <enum>
+        <name>GL_FRACTIONAL_EVEN</name>
+        <value>0x8E7C</value>
+    </enum>
+    <!-- reuse GL_CCW -->
+    <!-- reuse GL_CW -->
+    <enum>
+        <name>GL_MAX_PATCH_VERTICES</name>
+        <value>0x8E7D</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_TESS_GEN_LEVEL</name>
+        <value>0x8E7E</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS</name>
+        <value>0x8E7F</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS</name>
+        <value>0x8E80</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS</name>
+        <value>0x8E81</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS</name>
+        <value>0x8E82</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS</name>
+        <value>0x8E83</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_TESS_PATCH_COMPONENTS</name>
+        <value>0x8E84</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS</name>
+        <value>0x8E85</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS</name>
+        <value>0x8E86</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS</name>
+        <value>0x8E89</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS</name>
+        <value>0x8E8A</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_TESS_CONTROL_INPUT_COMPONENTS</name>
+        <value>0x886C</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS</name>
+        <value>0x886D</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS</name>
+        <value>0x8E1E</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS</name>
+        <value>0x8E1F</value>
+    </enum>
+    <enum>
+        <name>GL_UNIFORM_BLOCK_REFERENCED_BY_TESS_CONTROL_SHADER</name>
+        <value>0x84F0</value>
+    </enum>
+    <enum>
+        <name>GL_UNIFORM_BLOCK_REFERENCED_BY_TESS_EVALUATION_SHADER</name>
+        <value>0x84F1</value>
+    </enum>
+    <enum>
+        <name>GL_TESS_EVALUATION_SHADER</name>
+        <value>0x8E87</value>
+    </enum>
+    <enum>
+        <name>GL_TESS_CONTROL_SHADER</name>
+        <value>0x8E88</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_texture_buffer_object_rgb32 -->
+    <!-- reuse GL_RGB32F -->
+    <!-- reuse GL_RGB32UI -->
+    <!-- reuse GL_RGB32I -->
+    <!-- Reuse tokens from GL_ARB_texture_cube_map_array -->
+    <enum>
+        <name>GL_TEXTURE_CUBE_MAP_ARRAY</name>
+        <value>0x9009</value>
+    </enum>
+    <enum>
+        <name>GL_TEXTURE_BINDING_CUBE_MAP_ARRAY</name>
+        <value>0x900A</value>
+    </enum>
+    <enum>
+        <name>GL_PROXY_TEXTURE_CUBE_MAP_ARRAY</name>
+        <value>0x900B</value>
+    </enum>
+    <enum>
+        <name>GL_SAMPLER_CUBE_MAP_ARRAY</name>
+        <value>0x900C</value>
+    </enum>
+    <enum>
+        <name>GL_SAMPLER_CUBE_MAP_ARRAY_SHADOW</name>
+        <value>0x900D</value>
+    </enum>
+    <enum>
+        <name>GL_INT_SAMPLER_CUBE_MAP_ARRAY</name>
+        <value>0x900E</value>
+    </enum>
+    <enum>
+        <name>GL_UNSIGNED_INT_SAMPLER_CUBE_MAP_ARRAY</name>
+        <value>0x900F</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_texture_gather -->
+    <enum>
+        <name>GL_MIN_PROGRAM_TEXTURE_GATHER_OFFSET</name>
+        <value>0x8E5E</value>
+    </enum>
+    <enum>
+        <name>GL_MAX_PROGRAM_TEXTURE_GATHER_OFFSET</name>
+        <value>0x8E5F</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_texture_query_lod -->
+    <!-- Reuse tokens from GL_ARB_transform_feedback2 -->
+    <enum>
+        <name>GL_TRANSFORM_FEEDBACK</name>
+        <value>0x8E22</value>
+    </enum>
+    <enum>
+        <name>GL_TRANSFORM_FEEDBACK_BUFFER_PAUSED</name>
+        <value>0x8E23</value>
+    </enum>
+    <enum>
+        <name>GL_TRANSFORM_FEEDBACK_BUFFER_ACTIVE</name>
+        <value>0x8E24</value>
+    </enum>
+    <enum>
+        <name>GL_TRANSFORM_FEEDBACK_BINDING</name>
+        <value>0x8E25</value>
+    </enum>
+    <!-- Reuse tokens from GL_ARB_transform_feedback3 -->
+    <enum>
+        <name>GL_MAX_TRANSFORM_FEEDBACK_BUFFERS</name>
+        <value>0x8E70</value>
+    </enum>
+    </enums>
+    <funcs>
+    <!-- GL_VERSION_4_0 -->
+    <!-- Reuse entry points from GL_ARB_draw_indirect -->
+    <func>
+        <name>glDrawArraysIndirect</name>
+    </func>
+    <func>
+        <name>glDrawElementsIndirect</name>
+    </func>
+    <!-- Reuse entry points from GL_ARB_gpu_shader_fp64 -->
+    <func>
+        <name>glUniform1d</name>
+    </func>
+    <func>
+        <name>glUniform2d</name>
+    </func>
+    <func>
+        <name>glUniform3d</name>
+    </func>
+    <func>
+        <name>glUniform4d</name>
+    </func>
+    <func>
+        <name>glUniform1dv</name>
+    </func>
+    <func>
+        <name>glUniform2dv</name>
+    </func>
+    <func>
+        <name>glUniform3dv</name>
+    </func>
+    <func>
+        <name>glUniform4dv</name>
+    </func>
+    <func>
+        <name>glUniformMatrix2dv</name>
+    </func>
+    <func>
+        <name>glUniformMatrix3dv</name>
+    </func>
+    <func>
+        <name>glUniformMatrix4dv</name>
+    </func>
+    <func>
+        <name>glUniformMatrix2x3dv</name>
+    </func>
+    <func>
+        <name>glUniformMatrix2x4dv</name>
+    </func>
+    <func>
+        <name>glUniformMatrix3x2dv</name>
+    </func>
+    <func>
+        <name>glUniformMatrix3x4dv</name>
+    </func>
+    <func>
+        <name>glUniformMatrix4x2dv</name>
+    </func>
+    <func>
+        <name>glUniformMatrix4x3dv</name>
+    </func>
+    <func>
+        <name>glGetUniformdv</name>
+    </func>
+    <func>
+        <name>glProgramParameteri</name>
+    </func>
+    <func>
+        <name>glProgramUniform1dEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniform2dEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniform3dEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniform4dEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniform1dvEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniform2dvEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniform3dvEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniform4dvEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniformMatrix2dvEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniformMatrix3dvEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniformMatrix4dvEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniformMatrix2x3dvEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniformMatrix2x4dvEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniformMatrix3x2dvEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniformMatrix3x4dvEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniformMatrix4x2dvEXT</name>
+    </func>
+    <func>
+        <name>glProgramUniformMatrix4x3dvEXT</name>
+    </func>
+    <!-- Reuse entry points from GL_ARB_shader_subroutine -->
+    <func>
+        <name>glGetSubroutineUniformLocation</name>
+    </func>
+    <func>
+        <name>glGetSubroutineIndex</name>
+    </func>
+    <func>
+        <name>glGetActiveSubroutineUniformiv</name>
+    </func>
+    <func>
+        <name>glGetActiveSubroutineUniformName</name>
+    </func>
+    <func>
+        <name>glGetActiveSubroutineName</name>
+    </func>
+    <func>
+        <name>glUniformSubroutinesuiv</name>
+    </func>
+    <func>
+        <name>glGetUniformSubroutineuiv</name>
+    </func>
+    <func>
+        <name>glGetProgramStageiv</name>
+    </func>
+    <!-- Reuse entry points from GL_ARB_tessellation_shader -->
+    <func>
+        <name>glPatchParameteri</name>
+    </func>
+    <func>
+        <name>glPatchParameterfv</name>
+    </func>
+    <!-- Reuse entry points from GL_ARB_texture_cube_map_array -->
+    <!-- Reuse entry points from GL_ARB_texture_gather -->
+    <!-- Reuse entry points from GL_ARB_texture_query_lod -->
+    <!-- Reuse entry points from GL_ARB_transform_feedback2 -->
+    <func>
+        <name>glBindTransformFeedback</name>
+    </func>
+    <func>
+        <name>glDeleteTransformFeedbacks</name>
+    </func>
+    <func>
+        <name>glGenTransformFeedbacks</name>
+    </func>
+    <func>
+        <name>glIsTransformFeedback</name>
+    </func>
+    <func>
+        <name>glPauseTransformFeedback</name>
+    </func>
+    <func>
+        <name>glResumeTransformFeedback</name>
+    </func>
+    <func>
+        <name>glDrawTransformFeedback</name>
+    </func>
+    <!-- Reuse entry points from GL_ARB_transform_feedback3 -->
+    <func>
+        <name>glDrawTransformFeedbackStream</name>
+    </func>
+    <func>
+        <name>glBeginQueryIndexed</name>
+    </func>
+    <func>
+        <name>glEndQueryIndexed</name>
+    </func>
+    <func>
+        <name>glGetQueryIndexediv</name>
+    </func>
+    </funcs>
+</test>

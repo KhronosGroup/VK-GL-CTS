@@ -112,14 +112,14 @@ inline RGBA Surface::getPixel(int x, int y) const
 inline ConstPixelBufferAccess Surface::getAccess(void) const
 {
     return ConstPixelBufferAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_width, m_height, 1,
-                                  m_pixels.empty() ? DE_NULL : m_pixels.getPtr());
+                                  m_pixels.empty() ? nullptr : m_pixels.getPtr());
 }
 
 /** Get pixel buffer access from surface. */
 inline PixelBufferAccess Surface::getAccess(void)
 {
     return PixelBufferAccess(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_width, m_height, 1,
-                             m_pixels.empty() ? DE_NULL : m_pixels.getPtr());
+                             m_pixels.empty() ? nullptr : m_pixels.getPtr());
 }
 
 } // namespace tcu

@@ -217,7 +217,7 @@ vk::Move<vk::VkDescriptorSetLayout> createDescriptorSetLayout(
         {samplerBinding, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (uint32_t)sampler.size(),
          vk::VK_SHADER_STAGE_ALL, sampler.data()}};
     const vk::VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {
-        vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, DE_NULL,
+        vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr,
 
         0u, DE_LENGTH_OF_ARRAY(layoutBindings), layoutBindings};
 
@@ -233,7 +233,7 @@ vk::Move<vk::VkDescriptorPool> createDescriptorPool(
         {vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (uint32_t)samplers.size() * combinedSamplerDescriptorCount}};
     const vk::VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 
         1u,
@@ -249,7 +249,7 @@ vk::Move<vk::VkDescriptorSet> createDescriptorSet(
     const std::vector<de::SharedPtr<vk::Unique<vk::VkImageView>>> &imageViews, uint32_t samplerBinding)
 {
     const vk::VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
-        vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+        vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
 
         descriptorPool, 1u, &layout};
     vk::Move<vk::VkDescriptorSet> descriptorSet(vk::allocateDescriptorSet(vkd, device, &descriptorSetAllocateInfo));
@@ -262,13 +262,13 @@ vk::Move<vk::VkDescriptorSet> createDescriptorSet(
     }
 
     {
-        const vk::VkWriteDescriptorSet writes[] = {{vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, DE_NULL,
+        const vk::VkWriteDescriptorSet writes[] = {{vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr,
 
                                                     *descriptorSet, samplerBinding, 0u, (uint32_t)imageInfo.size(),
                                                     vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageInfo.data(),
-                                                    DE_NULL, DE_NULL}};
+                                                    nullptr, nullptr}};
 
-        vkd.updateDescriptorSets(device, DE_LENGTH_OF_ARRAY(writes), writes, 0u, DE_NULL);
+        vkd.updateDescriptorSets(device, DE_LENGTH_OF_ARRAY(writes), writes, 0u, nullptr);
     }
 
     return descriptorSet;
@@ -280,7 +280,7 @@ vk::Move<vk::VkSampler> createSampler(const vk::DeviceInterface &vkd, vk::VkDevi
 {
 #if !defined(FAKE_COLOR_CONVERSION)
     const vk::VkSamplerYcbcrConversionInfo samplerConversionInfo = {vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-                                                                    DE_NULL, conversion};
+                                                                    nullptr, conversion};
 #else
     DE_UNREF(conversion);
 #endif
@@ -289,7 +289,7 @@ vk::Move<vk::VkSampler> createSampler(const vk::DeviceInterface &vkd, vk::VkDevi
 #if !defined(FAKE_COLOR_CONVERSION)
         &samplerConversionInfo,
 #else
-        DE_NULL,
+        nullptr,
 #endif
 
         0u,
@@ -318,7 +318,7 @@ vk::Move<vk::VkImage> createImage(const vk::DeviceInterface &vkd, vk::VkDevice d
 {
     const vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         disjoint ? (vk::VkImageCreateFlags)vk::VK_IMAGE_CREATE_DISJOINT_BIT : (vk::VkImageCreateFlags)0u,
 
         vk::VK_IMAGE_TYPE_2D,
@@ -331,7 +331,7 @@ vk::Move<vk::VkImage> createImage(const vk::DeviceInterface &vkd, vk::VkDevice d
         vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT | vk::VK_IMAGE_USAGE_SAMPLED_BIT,
         vk::VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        (const uint32_t *)DE_NULL,
+        nullptr,
         vk::VK_IMAGE_LAYOUT_PREINITIALIZED,
     };
 
@@ -350,14 +350,14 @@ vk::Move<vk::VkImageView> createImageView(const vk::DeviceInterface &vkd, vk::Vk
 
 #if !defined(FAKE_COLOR_CONVERSION)
     const vk::VkSamplerYcbcrConversionInfo conversionInfo = {vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-                                                             DE_NULL, conversion};
+                                                             nullptr, conversion};
 #else
     DE_UNREF(conversion);
 #endif
     const vk::VkImageViewCreateInfo viewInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 #if defined(FAKE_COLOR_CONVERSION)
-        DE_NULL,
+        nullptr,
 #else
         &conversionInfo,
 #endif
@@ -381,7 +381,7 @@ vk::Move<vk::VkSamplerYcbcrConversion> createConversion(
 {
     const vk::VkSamplerYcbcrConversionCreateInfo conversionInfo = {
         vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
-        DE_NULL,
+        nullptr,
 
         format,
         colorModel,
@@ -448,7 +448,7 @@ void evalShader(Context &context, glu::ShaderType shaderType, const MultiPlaneIm
     {
         const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
             vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,            //VkStructureType sType;
-            DE_NULL,                                                              //const void* pNext;
+            nullptr,                                                              //const void* pNext;
             format,                                                               //VkFormat format;
             vk::VK_IMAGE_TYPE_2D,                                                 //VkImageType type;
             imageTiling,                                                          //VkImageTiling tiling;
@@ -459,7 +459,7 @@ void evalShader(Context &context, glu::ShaderType shaderType, const MultiPlaneIm
 
         vk::VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = {};
         samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
-        samplerYcbcrConversionImage.pNext = DE_NULL;
+        samplerYcbcrConversionImage.pNext = nullptr;
 
         vk::VkImageFormatProperties2 imageFormatProperties = {};
         imageFormatProperties.sType                        = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
@@ -531,7 +531,7 @@ void checkSupport(Context &context, const TestConfig config)
     {
         const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
             vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,            // sType;
-            DE_NULL,                                                              // pNext;
+            nullptr,                                                              // pNext;
             config.format,                                                        // format;
             vk::VK_IMAGE_TYPE_2D,                                                 // type;
             vk::VK_IMAGE_TILING_OPTIMAL,                                          // tiling;
@@ -541,7 +541,7 @@ void checkSupport(Context &context, const TestConfig config)
 
         vk::VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = {};
         samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
-        samplerYcbcrConversionImage.pNext = DE_NULL;
+        samplerYcbcrConversionImage.pNext = nullptr;
 
         vk::VkImageFormatProperties2 imageFormatProperties = {};
         imageFormatProperties.sType                        = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
@@ -567,7 +567,7 @@ void checkSupport(Context &context, const TestConfig config)
 
                 const vk::VkPhysicalDeviceImageFormatInfo2 planeImageFormatInfo = {
                     vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,            // sType;
-                    DE_NULL,                                                              // pNext;
+                    nullptr,                                                              // pNext;
                     planeCompatibleFormat,                                                // format;
                     vk::VK_IMAGE_TYPE_2D,                                                 // type;
                     vk::VK_IMAGE_TILING_OPTIMAL,                                          // tiling;
@@ -667,7 +667,7 @@ tcu::TestStatus textureConversionTest(Context &context, const TestConfig config)
     {
         const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
             vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,            // sType;
-            DE_NULL,                                                              // pNext;
+            nullptr,                                                              // pNext;
             config.format,                                                        // format;
             vk::VK_IMAGE_TYPE_2D,                                                 // type;
             vk::VK_IMAGE_TILING_OPTIMAL,                                          // tiling;
@@ -677,7 +677,7 @@ tcu::TestStatus textureConversionTest(Context &context, const TestConfig config)
 
         vk::VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = {};
         samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
-        samplerYcbcrConversionImage.pNext = DE_NULL;
+        samplerYcbcrConversionImage.pNext = nullptr;
 
         vk::VkImageFormatProperties2 imageFormatProperties = {};
         imageFormatProperties.sType                        = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
@@ -1144,7 +1144,7 @@ const char *swizzleToCompName(const char *identity, vk::VkComponentSwizzle swizz
         return "a";
     default:
         DE_FATAL("Unsupported swizzle");
-        return DE_NULL;
+        return nullptr;
     }
 }
 #endif

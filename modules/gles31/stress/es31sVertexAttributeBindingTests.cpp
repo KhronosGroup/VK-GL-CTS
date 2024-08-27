@@ -147,7 +147,7 @@ BindingRenderCase::BindingRenderCase(Context &ctx, const char *name, const char 
     : TestCase(ctx, name, desc)
     , m_unalignedData(unalignedData)
     , m_vao(0)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -182,7 +182,7 @@ void BindingRenderCase::deinit(void)
     }
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 BindingRenderCase::IterateResult BindingRenderCase::iterate(void)
@@ -554,7 +554,7 @@ BindVertexBufferCase::BindVertexBufferCase(Context &ctx, const char *name, const
     , m_offset(offset)
     , m_drawCount(drawCount)
     , m_buffer(0)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -592,7 +592,7 @@ void BindVertexBufferCase::deinit(void)
     }
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 BindVertexBufferCase::IterateResult BindVertexBufferCase::iterate(void)

@@ -387,7 +387,7 @@ ContextArray::ContextArray(Storage storage, sglr::Context &context)
     , m_bound(false)
     , m_attribNdx(0)
     , m_size(0)
-    , m_data(DE_NULL)
+    , m_data(nullptr)
     , m_componentCount(1)
     , m_target(Array::TARGET_ARRAY)
     , m_inputType(Array::INPUTTYPE_FLOAT)
@@ -659,7 +659,7 @@ GLenum ContextArray::primitiveToGL(Array::Primitive primitive)
 ContextArrayPack::ContextArrayPack(glu::RenderContext &renderCtx, sglr::Context &drawContext)
     : m_renderCtx(renderCtx)
     , m_ctx(drawContext)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_screen(std::min(512, renderCtx.getRenderTarget().getWidth()),
                std::min(512, renderCtx.getRenderTarget().getHeight()))
 {
@@ -1371,7 +1371,7 @@ char *RandomArrayGenerator::generateQuads(int seed, int count, int componentCoun
                                           Array::Primitive primitive, Array::InputType type, GLValue min, GLValue max,
                                           float gridSize)
 {
-    char *data = DE_NULL;
+    char *data = nullptr;
 
     switch (type)
     {
@@ -1632,7 +1632,7 @@ char *RandomArrayGenerator::createQuads(int seed, int count, int componentCount,
 char *RandomArrayGenerator::generatePerQuad(int seed, int count, int componentCount, int stride,
                                             Array::Primitive primitive, Array::InputType type, GLValue min, GLValue max)
 {
-    char *data = DE_NULL;
+    char *data = nullptr;
 
     switch (type)
     {
@@ -1735,11 +1735,11 @@ VertexArrayTest::VertexArrayTest(tcu::TestContext &testCtx, glu::RenderContext &
                                  const char *desc)
     : TestCase(testCtx, name, desc)
     , m_renderCtx(renderCtx)
-    , m_refBuffers(DE_NULL)
-    , m_refContext(DE_NULL)
-    , m_glesContext(DE_NULL)
-    , m_glArrayPack(DE_NULL)
-    , m_rrArrayPack(DE_NULL)
+    , m_refBuffers(nullptr)
+    , m_refContext(nullptr)
+    , m_glesContext(nullptr)
+    , m_glArrayPack(nullptr)
+    , m_rrArrayPack(nullptr)
     , m_isOk(false)
     , m_maxDiffRed(
           deCeilFloatToInt32(256.0f * (2.0f / (float)(1 << m_renderCtx.getRenderTarget().getPixelFormat().redBits))))
@@ -1782,11 +1782,11 @@ void VertexArrayTest::deinit(void)
     delete m_refContext;
     delete m_glesContext;
 
-    m_glArrayPack = DE_NULL;
-    m_rrArrayPack = DE_NULL;
-    m_refBuffers  = DE_NULL;
-    m_refContext  = DE_NULL;
-    m_glesContext = DE_NULL;
+    m_glArrayPack = nullptr;
+    m_rrArrayPack = nullptr;
+    m_refBuffers  = nullptr;
+    m_refContext  = nullptr;
+    m_glesContext = nullptr;
 }
 
 void VertexArrayTest::compare(void)
@@ -2077,7 +2077,7 @@ MultiVertexArrayTest::IterateResult MultiVertexArrayTest::iterate(void)
             const int seed = int(arraySpec.inputType) + 10 * int(arraySpec.outputType) + 100 * int(arraySpec.storage) +
                              1000 * int(m_spec.primitive) + 10000 * int(arraySpec.usage) + int(m_spec.drawCount) +
                              12 * int(arraySpec.componentCount) + int(arraySpec.stride) + int(arraySpec.normalize);
-            const char *data        = DE_NULL;
+            const char *data        = nullptr;
             const size_t stride     = (arraySpec.stride == 0) ?
                                           (arraySpec.componentCount * Array::inputTypeSize(arraySpec.inputType)) :
                                           (arraySpec.stride);

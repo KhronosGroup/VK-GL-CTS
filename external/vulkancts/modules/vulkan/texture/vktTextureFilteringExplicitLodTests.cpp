@@ -298,7 +298,7 @@ void initializeImage(Context &ctx, VkImage im, const ConstPixelBufferAccess *pba
 
     const VkBufferCreateInfo bufCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-        DE_NULL,                              // pNext
+        nullptr,                              // pNext
         0,                                    // flags
         bufSize,                              // size
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // usage
@@ -348,7 +348,7 @@ void initializeImage(Context &ctx, VkImage im, const ConstPixelBufferAccess *pba
     flushAlloc(vkd, dev, *bufMem);
 
     copyBufferToImage(vkd, dev, ctx.getUniversalQueue(), ctx.getUniversalQueueFamilyIndex(), buf.get(), bufSize,
-                      copyRegions, DE_NULL, VK_IMAGE_ASPECT_COLOR_BIT, imParams.levels, imParams.arrayLayers, im);
+                      copyRegions, nullptr, VK_IMAGE_ASPECT_COLOR_BIT, imParams.levels, imParams.arrayLayers, im);
 }
 
 struct TestCaseData
@@ -364,7 +364,7 @@ VkSamplerCreateInfo mapSamplerCreateInfo(const SamplerParameters &samplerParams)
 {
     VkSamplerCreateInfo samplerCreateInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,             // sType
-        DE_NULL,                                           // pNext
+        nullptr,                                           // pNext
         0U,                                                // flags
         samplerParams.magFilter,                           // magFilter
         samplerParams.minFilter,                           // minFilter
@@ -725,7 +725,7 @@ void TextureFilteringTestInstance::createResources(void)
     const VkImageCreateFlags imCreateFlags = (m_imParams.dim == IMG_DIM_CUBE) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
 
     const VkImageCreateInfo imCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                            DE_NULL,
+                                            nullptr,
                                             imCreateFlags,
                                             mapImageType(m_imParams.dim),
                                             m_imParams.format,
@@ -767,7 +767,7 @@ void TextureFilteringTestInstance::createResources(void)
 
     const VkImageViewCreateInfo imViewCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // sType
-        DE_NULL,                                  // pNext
+        nullptr,                                  // pNext
         0,                                        // flags
         m_im.get(),                               // image
         mapImageViewType(m_imParams),             // viewType
@@ -787,11 +787,11 @@ void TextureFilteringTestInstance::createResources(void)
 
     {
         const VkDescriptorSetLayoutBinding bindings[] = {
-            {0u, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1u, VK_SHADER_STAGE_ALL, DE_NULL},
+            {0u, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1u, VK_SHADER_STAGE_ALL, nullptr},
         };
         const VkDescriptorSetLayoutCreateInfo layoutInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             (VkDescriptorSetLayoutCreateFlags)0u,
             DE_LENGTH_OF_ARRAY(bindings),
             bindings,
@@ -806,7 +806,7 @@ void TextureFilteringTestInstance::createResources(void)
         };
         const VkDescriptorPoolCreateInfo poolInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             (VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
             1u, // maxSets
             DE_LENGTH_OF_ARRAY(poolSizes),
@@ -819,7 +819,7 @@ void TextureFilteringTestInstance::createResources(void)
     {
         const VkDescriptorSetAllocateInfo allocInfo = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            DE_NULL,
+            nullptr,
             *m_extraResourcesPool,
             1u,
             &m_extraResourcesLayout.get(),
@@ -832,18 +832,18 @@ void TextureFilteringTestInstance::createResources(void)
         const VkDescriptorImageInfo imageInfo      = {*m_sampler, *m_imView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         const VkWriteDescriptorSet descriptorWrite = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            DE_NULL,
+            nullptr,
             *m_extraResourcesSet,
             0u, // dstBinding
             0u, // dstArrayElement
             1u,
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             &imageInfo,
-            (const VkDescriptorBufferInfo *)DE_NULL,
-            (const VkBufferView *)DE_NULL,
+            nullptr,
+            nullptr,
         };
 
-        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, DE_NULL);
+        vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, nullptr);
     }
 
     m_executor =

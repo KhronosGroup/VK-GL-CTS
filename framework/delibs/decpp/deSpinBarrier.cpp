@@ -234,7 +234,7 @@ void multiThreadTest(int numThreads)
 {
     SpinBarrier barrier(numThreads);
     volatile int32_t sharedVar = 0;
-    std::vector<TestThread *> threads(numThreads, static_cast<TestThread *>(DE_NULL));
+    std::vector<TestThread *> threads(numThreads, static_cast<TestThread *>(nullptr));
 
     for (int ndx = 0; ndx < numThreads; ndx++)
     {
@@ -308,7 +308,7 @@ private:
 void multiThreadRemoveTest(int numThreads, SpinBarrier::WaitMode waitMode)
 {
     SpinBarrier barrier(numThreads);
-    std::vector<TestExitThread *> threads(numThreads, static_cast<TestExitThread *>(DE_NULL));
+    std::vector<TestExitThread *> threads(numThreads, static_cast<TestExitThread *>(nullptr));
 
     for (int ndx = 0; ndx < numThreads; ndx++)
     {

@@ -83,7 +83,7 @@ ShaderStructCase::ShaderStructCase(Context &context, const char *name, const cha
                        description, isVertexCase, evalFunc)
     , m_setupUniforms(setupUniformsFunc)
     , m_usesTexture(usesTextures)
-    , m_brickTexture(DE_NULL)
+    , m_brickTexture(nullptr)
 {
     m_vertShaderSource = vertShaderSource;
     m_fragShaderSource = fragShaderSource;
@@ -111,7 +111,7 @@ void ShaderStructCase::deinit(void)
 {
     gls::ShaderRenderCase::deinit();
     delete m_brickTexture;
-    m_brickTexture = DE_NULL;
+    m_brickTexture = nullptr;
 }
 
 void ShaderStructCase::setupUniforms(int programID, const tcu::Vec4 &constCoords)
@@ -198,14 +198,14 @@ void LocalStructTests::init(void)
         {                                                                                                            \
             static void eval(ShaderEvalContext &c) EVAL_FUNC_BODY                                                    \
         }; /* NOLINT(EVAL_FUNC_BODY) */                                                                              \
-        addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, true, false, &Eval_##NAME::eval, DE_NULL, \
+        addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, true, false, &Eval_##NAME::eval, nullptr, \
                                   SHADER_SRC, PARAMS));                                                              \
         addChild(createStructCase(m_context, #NAME "_fragment", DESCRIPTION, false, false, &Eval_##NAME::eval,       \
-                                  DE_NULL, SHADER_SRC, PARAMS));                                                     \
+                                  nullptr, SHADER_SRC, PARAMS));                                                     \
     } while (false)
 
 #define LOCAL_STRUCT_CASE(NAME, DESCRIPTION, SHADER_SRC, EVAL_FUNC_BODY) \
-    LOCAL_STRUCT_CASE_PARAMETERIZED(NAME, DESCRIPTION, SHADER_SRC, EVAL_FUNC_BODY, DE_NULL)
+    LOCAL_STRUCT_CASE_PARAMETERIZED(NAME, DESCRIPTION, SHADER_SRC, EVAL_FUNC_BODY, nullptr)
 
     LOCAL_STRUCT_CASE(basic, "Basic struct usage",
                       LineStream() << "${HEADER}"
@@ -1280,9 +1280,9 @@ void UniformStructTests::init(void)
             static void eval(ShaderEvalContext &c) EVAL_FUNC_BODY                                                   \
         }; /* NOLINT(EVAL_FUNC_BODY) */                                                                             \
         addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, true, TEXTURES, Eval_##NAME::eval,       \
-                                  SetUniforms_##NAME::setUniforms, SHADER_SRC, DE_NULL));                           \
+                                  SetUniforms_##NAME::setUniforms, SHADER_SRC, nullptr));                           \
         addChild(createStructCase(m_context, #NAME "_fragment", DESCRIPTION, false, TEXTURES, Eval_##NAME::eval,    \
-                                  SetUniforms_##NAME::setUniforms, SHADER_SRC, DE_NULL));                           \
+                                  SetUniforms_##NAME::setUniforms, SHADER_SRC, nullptr));                           \
     } while (false)
 
     UNIFORM_STRUCT_CASE(

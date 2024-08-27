@@ -1,10 +1,11 @@
-#ifndef _VKTIMAGEMISMATCHEDDIMENSIONALITYTESTS_HPP
-#define _VKTIMAGEMISMATCHEDDIMENSIONALITYTESTS_HPP
+#ifndef _VKTDRAWNONLINETESTS_HPP
+#define _VKTDRAWNONLINETESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
  * Copyright (c) 2024 The Khronos Group Inc.
+ * Copyright (c) 2024 Valve Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +21,21 @@
  *
  *//*!
  * \file
- * \brief Test that mismatched SPIR-V 'Dim' and descriptor imageType
-          doesn't crash the driver.
+ * \brief Draw tests to verify line drawing parameters do not affect non-line primitives
  *//*--------------------------------------------------------------------*/
 
-#include "tcuTestCase.hpp"
+#include "vkDefs.hpp"
+#include "vktTestCase.hpp"
+#include "vktDrawGroupParams.hpp"
 
-namespace vkt::image
+namespace vkt
+{
+namespace Draw
 {
 
-tcu::TestCaseGroup *createImageMismatchedDimensionalityTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createDrawNonLineTests(tcu::TestContext &testCtx);
 
-} // namespace vkt::image
+} // namespace Draw
+} // namespace vkt
 
-#endif // _VKTIMAGEMISMATCHEDDIMENSIONALITYTESTS_HPP
+#endif // _VKTDRAWNONLINETESTS_HPP

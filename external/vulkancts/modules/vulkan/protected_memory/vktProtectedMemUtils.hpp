@@ -62,7 +62,7 @@ void checkProtectedQueueSupport(Context &context);
 CustomInstance makeProtectedMemInstance(vkt::Context &context,
                                         const std::vector<std::string> &extraExtensions = std::vector<std::string>());
 uint32_t chooseProtectedMemQueueFamilyIndex(const vk::InstanceDriver &vkd, vk::VkPhysicalDevice physicalDevice,
-                                            vk::VkSurfaceKHR surface = DE_NULL);
+                                            vk::VkSurfaceKHR surface = VK_NULL_HANDLE);
 
 vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, vk::VkInstance instance,
                                               const vk::InstanceDriver &vkd, vk::VkPhysicalDevice physicalDevice,

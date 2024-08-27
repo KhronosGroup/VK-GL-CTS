@@ -84,12 +84,12 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
         vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // VkDescriptorType descriptorType;
         1u,                                    // uint32_t arraySize;
         vk::VK_SHADER_STAGE_COMPUTE_BIT,       // VkShaderStageFlags stageFlags;
-        DE_NULL                                // const VkSampler* pImmutableSamplers;
+        nullptr                                // const VkSampler* pImmutableSamplers;
     };
 
     const vk::VkDescriptorSetLayoutCreateInfo descriptorLayoutParams = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                 // const void* pNext;
+        nullptr,                                                 // const void* pNext;
         (vk::VkDescriptorSetLayoutCreateFlags)0,                 // VkDescriptorSetLayoutCreateFlags flags;
         1u,                                                      // uint32_t count;
         &layoutBinding                                           // const VkDescriptorSetLayoutBinding pBinding;
@@ -103,7 +103,7 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
     std::vector<vk::VkShaderCreateInfoEXT> shaderCreateInfos = {
         {
             vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             0u,                                           // VkShaderCreateFlagsEXT flags;
             vk::VK_SHADER_STAGE_VERTEX_BIT,               // VkShaderStageFlagBits stage;
             vk::getShaderObjectNextStages(vk::VK_SHADER_STAGE_VERTEX_BIT, tessellationSupported,
@@ -113,14 +113,14 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
             vert.getBinary(),                                 // const void* pCode;
             "main",                                           // const char* pName;
             0u,                                               // uint32_t setLayoutCount;
-            DE_NULL,                                          // VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                          // VkDescriptorSetLayout* pSetLayouts;
             0u,                                               // uint32_t pushConstantRangeCount;
-            DE_NULL,                                          // const VkPushConstantRange* pPushConstantRanges;
-            DE_NULL,                                          // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                          // const VkPushConstantRange* pPushConstantRanges;
+            nullptr,                                          // const VkSpecializationInfo* pSpecializationInfo;
         },
         {
             vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             0u,                                           // VkShaderCreateFlagsEXT flags;
             vk::VK_SHADER_STAGE_FRAGMENT_BIT,             // VkShaderStageFlagBits stage;
             vk::getShaderObjectNextStages(vk::VK_SHADER_STAGE_FRAGMENT_BIT, tessellationSupported,
@@ -130,14 +130,14 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
             frag.getBinary(),                                 // const void* pCode;
             "main",                                           // const char* pName;
             0u,                                               // uint32_t setLayoutCount;
-            DE_NULL,                                          // VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                          // VkDescriptorSetLayout* pSetLayouts;
             0u,                                               // uint32_t pushConstantRangeCount;
-            DE_NULL,                                          // const VkPushConstantRange* pPushConstantRanges;
-            DE_NULL,                                          // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                          // const VkPushConstantRange* pPushConstantRanges;
+            nullptr,                                          // const VkSpecializationInfo* pSpecializationInfo;
         },
         {
             vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             0u,                                           // VkShaderCreateFlagsEXT flags;
             vk::VK_SHADER_STAGE_COMPUTE_BIT,              // VkShaderStageFlagBits stage;
             0u,                                           // VkShaderStageFlags nextStage;
@@ -148,8 +148,8 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
             1u,                                           // uint32_t setLayoutCount;
             setLayout,                                    // VkDescriptorSetLayout* pSetLayouts;
             0u,                                           // uint32_t pushConstantRangeCount;
-            DE_NULL,                                      // const VkPushConstantRange* pPushConstantRanges;
-            DE_NULL,                                      // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                      // const VkPushConstantRange* pPushConstantRanges;
+            nullptr,                                      // const VkSpecializationInfo* pSpecializationInfo;
         },
     };
 
@@ -157,7 +157,7 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
     {
         shaderCreateInfos.push_back({
             vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             0u,                                           // VkShaderCreateFlagsEXT flags;
             vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, // VkShaderStageFlagBits stage;
             vk::getShaderObjectNextStages(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, tessellationSupported,
@@ -167,14 +167,14 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
             tesc.getBinary(),                                 // const void* pCode;
             "main",                                           // const char* pName;
             0u,                                               // uint32_t setLayoutCount;
-            DE_NULL,                                          // VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                          // VkDescriptorSetLayout* pSetLayouts;
             0u,                                               // uint32_t pushConstantRangeCount;
-            DE_NULL,                                          // const VkPushConstantRange* pPushConstantRanges;
-            DE_NULL,                                          // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                          // const VkPushConstantRange* pPushConstantRanges;
+            nullptr,                                          // const VkSpecializationInfo* pSpecializationInfo;
         });
         shaderCreateInfos.push_back({
             vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,    // VkStructureType sType;
-            DE_NULL,                                         // const void* pNext;
+            nullptr,                                         // const void* pNext;
             0u,                                              // VkShaderCreateFlagsEXT flags;
             vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, // VkShaderStageFlagBits stage;
             vk::getShaderObjectNextStages(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, tessellationSupported,
@@ -184,10 +184,10 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
             tese.getBinary(),                                 // const void* pCode;
             "main",                                           // const char* pName;
             0u,                                               // uint32_t setLayoutCount;
-            DE_NULL,                                          // VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                          // VkDescriptorSetLayout* pSetLayouts;
             0u,                                               // uint32_t pushConstantRangeCount;
-            DE_NULL,                                          // const VkPushConstantRange* pPushConstantRanges;
-            DE_NULL,                                          // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                          // const VkPushConstantRange* pPushConstantRanges;
+            nullptr,                                          // const VkSpecializationInfo* pSpecializationInfo;
         });
     }
 
@@ -195,7 +195,7 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
     {
         shaderCreateInfos.push_back({
             vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             0u,                                           // VkShaderCreateFlagsEXT flags;
             vk::VK_SHADER_STAGE_GEOMETRY_BIT,             // VkShaderStageFlagBits stage;
             vk::getShaderObjectNextStages(vk::VK_SHADER_STAGE_GEOMETRY_BIT, tessellationSupported,
@@ -205,10 +205,10 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
             geom.getBinary(),                                 // const void* pCode;
             "main",                                           // const char* pName;
             0u,                                               // uint32_t setLayoutCount;
-            DE_NULL,                                          // VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                          // VkDescriptorSetLayout* pSetLayouts;
             0u,                                               // uint32_t pushConstantRangeCount;
-            DE_NULL,                                          // const VkPushConstantRange* pPushConstantRanges;
-            DE_NULL,                                          // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                          // const VkPushConstantRange* pPushConstantRanges;
+            nullptr,                                          // const VkSpecializationInfo* pSpecializationInfo;
         });
     }
 
@@ -220,7 +220,7 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
         {
             shaderCreateInfos.push_back({
                 vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 0u,                                           // VkShaderCreateFlagsEXT flags;
                 vk::VK_SHADER_STAGE_MESH_BIT_EXT,             // VkShaderStageFlagBits stage;
                 0u,                                           // VkShaderStageFlags nextStage;
@@ -229,10 +229,10 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
                 mesh.getBinary(),                             // const void* pCode;
                 "main",                                       // const char* pName;
                 0u,                                           // uint32_t setLayoutCount;
-                DE_NULL,                                      // VkDescriptorSetLayout* pSetLayouts;
+                nullptr,                                      // VkDescriptorSetLayout* pSetLayouts;
                 0u,                                           // uint32_t pushConstantRangeCount;
-                DE_NULL,                                      // const VkPushConstantRange* pPushConstantRanges;
-                DE_NULL,                                      // const VkSpecializationInfo* pSpecializationInfo;
+                nullptr,                                      // const VkPushConstantRange* pPushConstantRanges;
+                nullptr,                                      // const VkSpecializationInfo* pSpecializationInfo;
             });
         }
 
@@ -240,7 +240,7 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
         {
             shaderCreateInfos.push_back({
                 vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 0u,                                           // VkShaderCreateFlagsEXT flags;
                 vk::VK_SHADER_STAGE_TASK_BIT_EXT,             // VkShaderStageFlagBits stage;
                 0u,                                           // VkShaderStageFlags nextStage;
@@ -249,10 +249,10 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
                 task.getBinary(),                             // const void* pCode;
                 "main",                                       // const char* pName;
                 0u,                                           // uint32_t setLayoutCount;
-                DE_NULL,                                      // VkDescriptorSetLayout* pSetLayouts;
+                nullptr,                                      // VkDescriptorSetLayout* pSetLayouts;
                 0u,                                           // uint32_t pushConstantRangeCount;
-                DE_NULL,                                      // const VkPushConstantRange* pPushConstantRanges;
-                DE_NULL,                                      // const VkSpecializationInfo* pSpecializationInfo;
+                nullptr,                                      // const VkPushConstantRange* pPushConstantRanges;
+                nullptr,                                      // const VkSpecializationInfo* pSpecializationInfo;
             });
         }
     }
@@ -261,9 +261,9 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
     std::vector<vk::VkShaderEXT> shadersTogether(shaderCreateInfos.size());
     for (uint32_t i = 0; i < (uint32_t)shaderCreateInfos.size(); ++i)
     {
-        vk.createShadersEXT(device, 1, &shaderCreateInfos[i], DE_NULL, &shadersSeparate[i]);
+        vk.createShadersEXT(device, 1, &shaderCreateInfos[i], nullptr, &shadersSeparate[i]);
     }
-    vk.createShadersEXT(device, (uint32_t)shaderCreateInfos.size(), &shaderCreateInfos[0], DE_NULL,
+    vk.createShadersEXT(device, (uint32_t)shaderCreateInfos.size(), &shaderCreateInfos[0], nullptr,
                         &shadersTogether[0]);
 
     bool match = true;
@@ -271,8 +271,8 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
     {
         size_t dataSizeSeparate = 0;
         size_t dataSizeTogether = 0;
-        vk.getShaderBinaryDataEXT(device, shadersSeparate[i], &dataSizeSeparate, DE_NULL);
-        vk.getShaderBinaryDataEXT(device, shadersTogether[i], &dataSizeTogether, DE_NULL);
+        vk.getShaderBinaryDataEXT(device, shadersSeparate[i], &dataSizeSeparate, nullptr);
+        vk.getShaderBinaryDataEXT(device, shadersTogether[i], &dataSizeTogether, nullptr);
         if (dataSizeSeparate != dataSizeTogether)
         {
             log << tcu::TestLog::Message << "Data size of shader created separately is " << dataSizeSeparate
@@ -302,9 +302,9 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate(void)
     }
 
     for (const auto &shader : shadersSeparate)
-        vk.destroyShaderEXT(device, shader, DE_NULL);
+        vk.destroyShaderEXT(device, shader, nullptr);
     for (const auto &shader : shadersTogether)
-        vk.destroyShaderEXT(device, shader, DE_NULL);
+        vk.destroyShaderEXT(device, shader, nullptr);
 
     if (!match)
         return tcu::TestStatus::fail("Fail");
@@ -535,7 +535,7 @@ tcu::TestStatus ShaderObjectStageInstance::iterate(void)
         const auto &src = binaries.get(getShaderName(stage) + std::to_string(i % 10));
         shaderCreateInfos.push_back({
             vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             0u,                                           // VkShaderCreateFlagsEXT flags;
             stage,                                        // VkShaderStageFlagBits stage;
             vk::getShaderObjectNextStages(stage, tessellationSupported,
@@ -545,16 +545,16 @@ tcu::TestStatus ShaderObjectStageInstance::iterate(void)
             src.getBinary(),                                  // const void* pCode;
             "main",                                           // const char* pName;
             useLayout ? 1u : 0u,                              // uint32_t setLayoutCount;
-            useLayout ? &*descriptorSetLayout : DE_NULL,      // VkDescriptorSetLayout* pSetLayouts;
+            useLayout ? &*descriptorSetLayout : nullptr,      // VkDescriptorSetLayout* pSetLayouts;
             0u,                                               // uint32_t pushConstantRangeCount;
-            DE_NULL,                                          // const VkPushConstantRange* pPushConstantRanges;
-            DE_NULL,                                          // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                          // const VkPushConstantRange* pPushConstantRanges;
+            nullptr,                                          // const VkSpecializationInfo* pSpecializationInfo;
         });
     }
 
     std::vector<vk::VkShaderEXT> shaders(count, VK_NULL_HANDLE);
     vk::VkResult result;
-    result = vk.createShadersEXT(device, count, &shaderCreateInfos[0], DE_NULL, &shaders[0]);
+    result = vk.createShadersEXT(device, count, &shaderCreateInfos[0], nullptr, &shaders[0]);
     if (result != vk::VK_SUCCESS)
     {
         log << tcu::TestLog::Message << "vkCreateShadersEXT returned " << result << tcu::TestLog::EndMessage;
@@ -565,13 +565,13 @@ tcu::TestStatus ShaderObjectStageInstance::iterate(void)
     std::vector<std::vector<uint8_t>> binaryData(count);
     for (size_t i = 0; i < count; ++i)
     {
-        vk.getShaderBinaryDataEXT(device, shaders[i], &binarySizes[i], DE_NULL);
+        vk.getShaderBinaryDataEXT(device, shaders[i], &binarySizes[i], nullptr);
         binaryData[i].resize(binarySizes[i]);
         vk.getShaderBinaryDataEXT(device, shaders[i], &binarySizes[i], (void *)&binaryData[i][0]);
     }
 
     for (const auto &shader : shaders)
-        vk.destroyShaderEXT(device, shader, DE_NULL);
+        vk.destroyShaderEXT(device, shader, nullptr);
 
     const uint32_t failIndex = random.getUint32() % count;
 
@@ -585,9 +585,9 @@ tcu::TestStatus ShaderObjectStageInstance::iterate(void)
         shaderCreateInfos[i].pCode = &binaryData[i][0];
     }
 
-    uint32_t garbage = 1234u;
+    vk::VkShaderEXT garbage{(void *)1234u};
     std::vector<vk::VkShaderEXT> binaryShaders(count, garbage); // Fill with garbage
-    result = vk.createShadersEXT(device, count, &shaderCreateInfos[0], DE_NULL, &binaryShaders[0]);
+    result = vk.createShadersEXT(device, count, &shaderCreateInfos[0], nullptr, &binaryShaders[0]);
 
     if (m_fail)
     {
@@ -607,7 +607,7 @@ tcu::TestStatus ShaderObjectStageInstance::iterate(void)
                     << failIndex << ", but shader at index " << i << "was not created" << tcu::TestLog::EndMessage;
                 return tcu::TestStatus::fail("Fail");
             }
-            vk.destroyShaderEXT(device, binaryShaders[i], DE_NULL);
+            vk.destroyShaderEXT(device, binaryShaders[i], nullptr);
         }
         if (binaryShaders[failIndex] != VK_NULL_HANDLE)
         {
@@ -626,7 +626,7 @@ tcu::TestStatus ShaderObjectStageInstance::iterate(void)
         }
 
         for (const auto &shader : binaryShaders)
-            vk.destroyShaderEXT(device, shader, DE_NULL);
+            vk.destroyShaderEXT(device, shader, nullptr);
     }
 
     return tcu::TestStatus::pass("Pass");

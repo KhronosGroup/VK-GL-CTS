@@ -118,7 +118,10 @@ TestInstance *EmptyFSCase::createInstance(Context &context) const
 void EmptyFSCase::checkSupport(Context &context) const
 {
     if (m_params.lastIsTessellation())
+    {
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
+    }
 
     if (m_params.lastIsGeometry())
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);

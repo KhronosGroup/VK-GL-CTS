@@ -80,7 +80,7 @@ static ShaderEvalFunc getEvalFunc(ReturnMode mode)
         return evalReturnDynamic;
     default:
         DE_ASSERT(false);
-        return (ShaderEvalFunc)DE_NULL;
+        return nullptr;
     }
 }
 
@@ -314,7 +314,7 @@ static const char *getReturnModeName(ReturnMode mode)
         return "dynamic";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -330,7 +330,7 @@ static const char *getReturnModeDesc(ReturnMode mode)
         return "Return based on coords";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

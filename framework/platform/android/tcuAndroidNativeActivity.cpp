@@ -149,7 +149,7 @@ void NativeActivity::onResume(void)
 void *NativeActivity::onSaveInstanceState(size_t *outSize)
 {
     *outSize = 0;
-    return DE_NULL;
+    return nullptr;
 }
 
 void NativeActivity::onPause(void)

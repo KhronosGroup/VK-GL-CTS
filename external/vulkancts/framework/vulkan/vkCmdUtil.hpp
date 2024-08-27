@@ -34,7 +34,7 @@ void beginCommandBuffer(const DeviceInterface &vk, const VkCommandBuffer command
                         VkCommandBufferUsageFlags flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
 // Begins a secondary command buffer.
-// Note if renderPass is not DE_NULL, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT will be added to the flags.
+// Note if renderPass is not nullptr, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT will be added to the flags.
 void beginSecondaryCommandBuffer(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
                                  const VkRenderPass renderPass         = VK_NULL_HANDLE,
                                  const VkFramebuffer framebuffer       = VK_NULL_HANDLE,
@@ -46,7 +46,7 @@ void endCommandBuffer(const DeviceInterface &vk, const VkCommandBuffer commandBu
 void beginRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
                      const VkFramebuffer framebuffer, const VkRect2D &renderArea, const uint32_t clearValueCount,
                      const VkClearValue *clearValues, const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE,
-                     const void *pNext = DE_NULL);
+                     const void *pNext = nullptr);
 
 void beginRenderPass(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
                      const VkFramebuffer framebuffer, const VkRect2D &renderArea, const VkClearValue &clearValue,

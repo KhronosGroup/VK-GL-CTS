@@ -258,7 +258,7 @@ bool ShaderBuiltinConstantCase<DataType>::verifyInShaderType(glu::ShaderType sha
     }
 
     shaderExecutor->useProgram();
-    shaderExecutor->execute(1, DE_NULL, &outputs);
+    shaderExecutor->execute(1, nullptr, &outputs);
 
     logVarValue(m_testCtx.getLog(), m_varName, result);
 
@@ -383,11 +383,11 @@ void ShaderBuiltinConstantTests::init(void)
 
         for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(intConstants); ndx++)
             coreGroup->addChild(new ShaderBuiltinConstantCase<int>(m_context, intConstants[ndx].varName,
-                                                                   intConstants[ndx].getValue, DE_NULL));
+                                                                   intConstants[ndx].getValue, nullptr));
 
         for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(ivec3Constants); ndx++)
             coreGroup->addChild(new ShaderBuiltinConstantCase<tcu::IVec3>(m_context, ivec3Constants[ndx].varName,
-                                                                          ivec3Constants[ndx].getValue, DE_NULL));
+                                                                          ivec3Constants[ndx].getValue, nullptr));
     }
 
     // OES_sample_variables

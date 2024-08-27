@@ -163,13 +163,13 @@ tcu::TestStatus TransferQueueInstance::iterate(void)
 
     const vk::VkBufferCreateInfo bufferCreateInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,                                                                          // flags
         static_cast<VkDeviceSize>(pixelDataSize),                                    // size
         vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT | vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT, // usage
         vk::VK_SHARING_MODE_EXCLUSIVE,                                               // sharingMode
         0u,                                                                          // queueFamilyCount
-        DE_NULL,                                                                     // pQueueFamilyIndices
+        nullptr,                                                                     // pQueueFamilyIndices
     };
 
     BufferWithMemory srcBuffer(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible);
@@ -178,7 +178,7 @@ tcu::TestStatus TransferQueueInstance::iterate(void)
     vk::VkExtent3D extent                       = {m_params.dimensions.width, m_params.dimensions.height, depth};
     const vk::VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                               // VkStructureType sType;
-        DE_NULL,                                                           // const void* pNext;
+        nullptr,                                                           // const void* pNext;
         0,                                                                 // VkImageCreateFlags flags;
         m_params.imageType,                                                // VkImageType imageType;
         m_params.imageFormat,                                              // VkFormat format;
@@ -190,7 +190,7 @@ tcu::TestStatus TransferQueueInstance::iterate(void)
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,                                         // VkSharingMode sharingMode;
         0u,                                                                // uint32_t queueFamilyIndexCount;
-        (const uint32_t *)DE_NULL,                                         // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                                           // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,                                         // VkImageLayout initialLayout;
     };
     Image image(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any);
@@ -214,8 +214,7 @@ tcu::TestStatus TransferQueueInstance::iterate(void)
     const VkImageMemoryBarrier imageBarrier = makeImageMemoryBarrier(
         0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *image, subresourceRange);
     vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                          (const VkBufferMemoryBarrier *)DE_NULL, 1u, &imageBarrier);
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1u, &imageBarrier);
     // Copy buffer to image
     {
         const bool isCompressed    = isCompressedFormat(m_params.imageFormat);
@@ -237,7 +236,7 @@ tcu::TestStatus TransferQueueInstance::iterate(void)
         };
 
         const VkImageMemoryBarrier postImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-                                                       DE_NULL,                                // const void* pNext;
+                                                       nullptr,                                // const void* pNext;
                                                        VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags srcAccessMask;
                                                        VK_ACCESS_TRANSFER_READ_BIT,  // VkAccessFlags dstAccessMask;
                                                        VK_IMAGE_LAYOUT_GENERAL,      // VkImageLayout oldLayout;
@@ -257,8 +256,7 @@ tcu::TestStatus TransferQueueInstance::iterate(void)
         vk.cmdCopyBufferToImage(*m_cmdBuffer, *srcBuffer, *image, VK_IMAGE_LAYOUT_GENERAL, 1, &copyRegion);
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                              (const VkBufferMemoryBarrier *)DE_NULL, 1, &postImageBarrier);
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
 
         vk.cmdCopyImageToBuffer(*m_cmdBuffer, *image, VK_IMAGE_LAYOUT_GENERAL, *dstBuffer, 1, &copyRegion);
     }

@@ -98,7 +98,7 @@ private:
         tcu::Vec2 minCoord;
         tcu::Vec2 maxCoord;
 
-        FilterCase(void) : texture(DE_NULL)
+        FilterCase(void) : texture(nullptr)
         {
         }
 
@@ -375,7 +375,7 @@ private:
         tcu::Vec2 bottomLeft;
         tcu::Vec2 topRight;
 
-        FilterCase(void) : texture(DE_NULL)
+        FilterCase(void) : texture(nullptr)
         {
         }
 
@@ -559,7 +559,7 @@ static const char *getFaceDesc(const tcu::CubeFace face)
         return "+Z";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -577,7 +577,7 @@ TextureCubeFilteringCase::IterateResult TextureCubeFilteringCase::iterate(void)
     ReferenceParams sampleParams(TEXTURETYPE_CUBE);
 
     if (viewport.width < viewportSize || viewport.height < viewportSize)
-        throw tcu::NotSupportedError("Too small render target", DE_NULL, __FILE__, __LINE__);
+        throw tcu::NotSupportedError("Too small render target", nullptr, __FILE__, __LINE__);
 
     // Setup texture
     gl.bindTexture(GL_TEXTURE_CUBE_MAP, curCase.texture->getGLTexture());

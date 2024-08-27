@@ -225,9 +225,9 @@ tcu::TestStatus DrawTestInstance::iterate(void)
                                       VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL));
 
             const VkAttachmentReference colorAttachmentRef = {0, VK_IMAGE_LAYOUT_GENERAL};
-            renderPassCreateInfo.addSubpass(SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, DE_NULL, 1,
-                                                               &colorAttachmentRef, DE_NULL, AttachmentReference(), 0,
-                                                               DE_NULL));
+            renderPassCreateInfo.addSubpass(SubpassDescription(VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 0, nullptr, 1,
+                                                               &colorAttachmentRef, nullptr, AttachmentReference(), 0,
+                                                               nullptr));
 
             renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
@@ -296,7 +296,7 @@ tcu::TestStatus DrawTestInstance::iterate(void)
 
 #ifndef CTS_USES_VULKANSC
             VkPipelineRenderingCreateInfoKHR renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                                 DE_NULL,
+                                                                 nullptr,
                                                                  0u,
                                                                  1u,
                                                                  &targetImageFormat,
@@ -403,7 +403,7 @@ void DrawTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, VkImage colo
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const ImageSubresourceRange subresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
-    const VkMemoryBarrier memBarrier{VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, VK_ACCESS_TRANSFER_WRITE_BIT,
+    const VkMemoryBarrier memBarrier{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_TRANSFER_WRITE_BIT,
                                      VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT};
 
     initialTransitionColor2DImage(vk, cmdBuffer, colorTargetImage, VK_IMAGE_LAYOUT_GENERAL,
@@ -413,7 +413,7 @@ void DrawTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, VkImage colo
                           &subresourceRange);
 
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0,
-                          1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+                          1, &memBarrier, 0, nullptr, 0, nullptr);
 }
 
 void DrawTestInstance::draw(VkCommandBuffer cmdBuffer, VkPipeline pipeline, VkBuffer vertexBuffer)
@@ -432,7 +432,7 @@ void DrawTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkForm
 {
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        DE_NULL,                                                         // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         renderingFlags,                                                  // VkRenderingFlagsKHR flags;
         0u,                                                              // uint32_t viewMask;
         1u,                                                              // uint32_t colorAttachmentCount;
@@ -449,7 +449,7 @@ void DrawTestInstance::beginSecondaryCmdBuffer(VkCommandBuffer cmdBuffer, VkForm
 
     const VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 

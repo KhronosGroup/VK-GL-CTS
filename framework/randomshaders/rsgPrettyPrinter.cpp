@@ -28,7 +28,7 @@ namespace rsg
 {
 
 static const char *s_tokenStr[] = {
-    DE_NULL,       // IDENTIFIER,
+    nullptr,       // IDENTIFIER,
     "struct",      // STRUCT,
     "invariant",   // INVARIANT,
     "precision",   // PRECISION,
@@ -77,9 +77,9 @@ static const char *s_tokenStr[] = {
     "mat4",        // MAT4,
     "sampler2D",   // SAMPLER2D,
     "samplerCube", // SAMPLERCUBE,
-    DE_NULL,       // FLOAT_LITERAL,
-    DE_NULL,       // INT_LITERAL,
-    DE_NULL,       // BOOL_LITERAL,
+    nullptr,       // FLOAT_LITERAL,
+    nullptr,       // INT_LITERAL,
+    nullptr,       // BOOL_LITERAL,
     " = ",         // EQUAL,
     " *= ",        // MUL_ASSIGN,
     " /= ",        // DIV_ASSIGN,
@@ -108,8 +108,8 @@ static const char *s_tokenStr[] = {
     "inout",       // INOUT,
     "layout",      // LAYOUT,
     "location",    // LOCATION,
-    DE_NULL,       // INDENT_INC,
-    DE_NULL,       // INDENT_DEC,
+    nullptr,       // INDENT_INC,
+    nullptr,       // INDENT_DEC,
     "\n"           // NEWLINE,
 };
 

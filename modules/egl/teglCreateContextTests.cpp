@@ -51,11 +51,11 @@ static const struct
     EGLint apiBit;
     bool noConfigOptional;
     const EGLint *ctxAttrs;
-} s_apis[] = {{"OpenGL", EGL_OPENGL_API, EGL_OPENGL_BIT, false, DE_NULL},
+} s_apis[] = {{"OpenGL", EGL_OPENGL_API, EGL_OPENGL_BIT, false, nullptr},
               {"OpenGL ES 1", EGL_OPENGL_ES_API, EGL_OPENGL_ES_BIT, true, s_es1Attrs},
               {"OpenGL ES 2", EGL_OPENGL_ES_API, EGL_OPENGL_ES2_BIT, true, s_es2Attrs},
               {"OpenGL ES 3", EGL_OPENGL_ES_API, EGL_OPENGL_ES3_BIT_KHR, false, s_es3Attrs},
-              {"OpenVG", EGL_OPENVG_API, EGL_OPENVG_BIT, false, DE_NULL}};
+              {"OpenVG", EGL_OPENVG_API, EGL_OPENVG_BIT, false, nullptr}};
 
 class CreateContextCase : public SimpleConfigCase
 {
@@ -124,7 +124,7 @@ public:
     IterateResult iterate(void)
     {
         const eglw::Library &egl = m_eglTestCtx.getLibrary();
-        const eglu::UniqueDisplay display(egl, eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay(), DE_NULL));
+        const eglu::UniqueDisplay display(egl, eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay(), nullptr));
         tcu::TestLog &log = m_testCtx.getLog();
 
         if (!eglu::hasExtension(egl, *display, "EGL_KHR_no_config_context"))

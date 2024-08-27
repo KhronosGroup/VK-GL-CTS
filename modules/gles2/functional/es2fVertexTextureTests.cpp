@@ -526,10 +526,10 @@ Vertex2DTextureCase::Vertex2DTextureCase(Context &testCtx, const char *name, con
     , m_magFilter(magFilter)
     , m_wrapS(wrapS)
     , m_wrapT(wrapT)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
-    m_textures[0] = DE_NULL;
-    m_textures[1] = DE_NULL;
+    m_textures[0] = nullptr;
+    m_textures[1] = nullptr;
 }
 
 Vertex2DTextureCase::~Vertex2DTextureCase(void)
@@ -638,11 +638,11 @@ void Vertex2DTextureCase::deinit(void)
     for (int i = 0; i < 2; i++)
     {
         delete m_textures[i];
-        m_textures[i] = DE_NULL;
+        m_textures[i] = nullptr;
     }
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 float Vertex2DTextureCase::calculateLod(const Vec2 &texScale, const Vec2 &dstSize, int textureNdx) const
@@ -841,11 +841,11 @@ VertexCubeTextureCase::VertexCubeTextureCase(Context &testCtx, const char *name,
     , m_magFilter(magFilter)
     , m_wrapS(wrapS)
     , m_wrapT(wrapT)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_isES3Capable(false)
 {
-    m_textures[0] = DE_NULL;
-    m_textures[1] = DE_NULL;
+    m_textures[0] = nullptr;
+    m_textures[1] = nullptr;
 }
 
 VertexCubeTextureCase::~VertexCubeTextureCase(void)
@@ -972,11 +972,11 @@ void VertexCubeTextureCase::deinit(void)
     for (int i = 0; i < 2; i++)
     {
         delete m_textures[i];
-        m_textures[i] = DE_NULL;
+        m_textures[i] = nullptr;
     }
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 float VertexCubeTextureCase::calculateLod(const Vec2 &texScale, const Vec2 &dstSize, int textureNdx) const

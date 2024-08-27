@@ -98,8 +98,8 @@ bool assembleSpirV(const SpirVAsmSource *program, std::vector<uint32_t> *dst, Sp
                    SpirvVersion spirvVersion)
 {
     const spv_context context = spvContextCreate(mapTargetSpvEnvironment(spirvVersion));
-    spv_binary binary         = DE_NULL;
-    spv_diagnostic diagnostic = DE_NULL;
+    spv_binary binary         = nullptr;
+    spv_diagnostic diagnostic = nullptr;
 
     if (!context)
         throw std::bad_alloc();
@@ -143,8 +143,8 @@ bool assembleSpirV(const SpirVAsmSource *program, std::vector<uint32_t> *dst, Sp
 void disassembleSpirV(size_t binarySizeInWords, const uint32_t *binary, std::ostream *dst, SpirvVersion spirvVersion)
 {
     const spv_context context = spvContextCreate(mapTargetSpvEnvironment(spirvVersion));
-    spv_text text             = DE_NULL;
-    spv_diagnostic diagnostic = DE_NULL;
+    spv_text text             = nullptr;
+    spv_diagnostic diagnostic = nullptr;
 
     if (!context)
         throw std::bad_alloc();
@@ -176,9 +176,9 @@ bool validateSpirV(size_t binarySizeInWords, const uint32_t *binary, std::ostrea
                    const SpirvValidatorOptions &val_options)
 {
     const spv_context context     = spvContextCreate(getSpirvToolsEnvForValidatorOptions(val_options));
-    spv_diagnostic diagnostic     = DE_NULL;
-    spv_validator_options options = DE_NULL;
-    spv_text disasmText           = DE_NULL;
+    spv_diagnostic diagnostic     = nullptr;
+    spv_validator_options options = nullptr;
+    spv_text disasmText           = nullptr;
 
     if (!context)
         throw std::bad_alloc();
@@ -189,7 +189,7 @@ bool validateSpirV(size_t binarySizeInWords, const uint32_t *binary, std::ostrea
 
         options = spvValidatorOptionsCreate();
 
-        if (options == DE_NULL)
+        if (options == nullptr)
             throw std::bad_alloc();
 
         switch (val_options.blockLayout)
@@ -232,12 +232,12 @@ bool validateSpirV(size_t binarySizeInWords, const uint32_t *binary, std::ostrea
 
             const uint32_t disasmOptions = SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES | SPV_BINARY_TO_TEXT_OPTION_INDENT;
             const spv_result_t disasmResult =
-                spvBinaryToText(context, binary, binarySizeInWords, disasmOptions, &disasmText, DE_NULL);
+                spvBinaryToText(context, binary, binarySizeInWords, disasmOptions, &disasmText, nullptr);
 
             if (disasmResult != SPV_SUCCESS)
                 *infoLog << "Disassembly failed with code: " << de::toString(disasmResult) << "\n";
 
-            if (disasmText != DE_NULL)
+            if (disasmText != nullptr)
                 *infoLog << disasmText->str << "\n";
         }
 

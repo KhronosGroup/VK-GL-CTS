@@ -70,7 +70,7 @@ tcu::TestStatus EmptyDescriptorUpdateCase(Context &context)
     vk::DescriptorSetLayoutBuilder builder;
 
     builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk::VK_SHADER_STAGE_ALL);
-    builder.addBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, (vk::VkShaderStageFlags)0, DE_NULL);
+    builder.addBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, (vk::VkShaderStageFlags)0, nullptr);
     builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk::VK_SHADER_STAGE_ALL);
 
     vk::Unique<vk::VkDescriptorSetLayout> layout(builder.build(vki, device, (vk::VkDescriptorSetLayoutCreateFlags)0));
@@ -84,7 +84,7 @@ tcu::TestStatus EmptyDescriptorUpdateCase(Context &context)
     // Create descriptor set
     const vk::VkDescriptorSetAllocateInfo setAllocateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                sType
-        DE_NULL,                                            // const void*                    pNext
+        nullptr,                                            // const void*                    pNext
         *descriptorPool,                                    // VkDescriptorPool                descriptorPool
         1,                                                  // uint32_t                        descriptorSetCount
         &layout.get()                                       // const VkDescriptorSetLayout*    pSetLayouts
@@ -95,13 +95,13 @@ tcu::TestStatus EmptyDescriptorUpdateCase(Context &context)
     // Create a buffer to be used for update
     const vk::VkBufferCreateInfo bufferCreateInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
-        DE_NULL,                                  // const void*            pNext
-        (vk::VkBufferCreateFlags)DE_NULL,         // VkBufferCreateFlags    flags
+        nullptr,                                  // const void*            pNext
+        (vk::VkBufferCreateFlags)0,               // VkBufferCreateFlags    flags
         256,                                      // VkDeviceSize            size
         vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,   // VkBufferUsageFlags    usage
         vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode
         0,                                        // uint32_t                queueFamilyIndexCount
-        DE_NULL                                   // const uint32_t*        pQueueFamilyIndices
+        nullptr                                   // const uint32_t*        pQueueFamilyIndices
     };
 
     vk::Unique<vk::VkBuffer> buffer(createBuffer(vki, device, &bufferCreateInfo));
@@ -119,18 +119,18 @@ tcu::TestStatus EmptyDescriptorUpdateCase(Context &context)
 
     const vk::VkWriteDescriptorSet descriptorWrite = {
         vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureTypes                    Type
-        DE_NULL,                                    // const void*                        pNext
+        nullptr,                                    // const void*                        pNext
         *descriptorSet,                             // VkDescriptorSet                    dstSet
         2,                                          // uint32_t                            dstBinding
         0,                                          // uint32_t                            dstArrayElement
         1,                                          // uint32_t                            descriptorCount
         vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,      // VkDescriptorType                    descriptorType
-        DE_NULL,                                    // const VkDescriptorImageInfo*        pImageInfo
+        nullptr,                                    // const VkDescriptorImageInfo*        pImageInfo
         &descriptorInfo,                            // const VkDescriptorBufferInfo*    pBufferInfo
-        DE_NULL                                     // const VkBufferView*                pTexelBufferView
+        nullptr                                     // const VkBufferView*                pTexelBufferView
     };
 
-    vki.updateDescriptorSets(device, 1, &descriptorWrite, 0, DE_NULL);
+    vki.updateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
 
     // Test should always pass
     return tcu::TestStatus::pass("Pass");
@@ -318,7 +318,7 @@ struct DestroyedSampler
 {
     vk::VkSampler sampler;
 
-    DestroyedSampler(Context &context) : sampler{DE_NULL}
+    DestroyedSampler(Context &context) : sampler{VK_NULL_HANDLE}
     {
         const vk::VkSamplerCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
@@ -349,9 +349,9 @@ struct DestroyedSampler
 vk::VkSampler SamplerlessDescriptorWriteTestInstance::getSamplerHandle(void) const
 {
     if (m_params.pointer == PointerCase::ZERO)
-        return vk::VkSampler{DE_NULL};
+        return vk::VkSampler{(void *)0};
     if (m_params.pointer == PointerCase::ONE)
-        return vk::VkSampler{1};
+        return vk::VkSampler{(void *)1};
     DestroyedSampler destroyedSampler{m_context};
     return destroyedSampler.sampler;
 }
@@ -642,8 +642,8 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate(void)
     const std::vector<vk::VkRect2D> scissors(1u, vk::makeRect2D(kFramebufferExtent));
 
     const auto pipeline =
-        vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertexModule.get(), DE_NULL, DE_NULL, DE_NULL,
-                                 fragModule.get(), renderPass.get(), viewports, scissors);
+        vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertexModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                 VK_NULL_HANDLE, fragModule.get(), renderPass.get(), viewports, scissors);
 
     // Command pool and command buffer.
     const auto cmdPool =
@@ -860,7 +860,7 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
     // Create descriptor set
     const vk::VkDescriptorSetAllocateInfo setAllocateInfo = {
         vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType                sType
-        DE_NULL,                                            // const void*                    pNext
+        nullptr,                                            // const void*                    pNext
         *descriptorPool,                                    // VkDescriptorPool                descriptorPool
         1u,                                                 // uint32_t                        descriptorSetCount
         &layout.get()                                       // const VkDescriptorSetLayout*    pSetLayouts
@@ -943,7 +943,7 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
     // Create framebuffer image and view.
     const vk::VkImageCreateInfo fbImgCreateInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,   // VkStructureType            sType
-        DE_NULL,                                   // const void*                pNext
+        nullptr,                                   // const void*                pNext
         0u,                                        // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                      // VkImageType                imageType
         kImageFormat,                              // VkFormat                    format
@@ -1019,26 +1019,26 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
         0u,                                             // VkSubpassDescriptionFlags        flags
         vk::VK_PIPELINE_BIND_POINT_GRAPHICS,            // VkPipelineBindPoint                pipelineBindPoint
         0u,                                             // uint32_t                            inputAttachmentCount
-        DE_NULL,                                        // const VkAttachmentReference*        pInputAttachments
+        nullptr,                                        // const VkAttachmentReference*        pInputAttachments
         static_cast<uint32_t>(colorAttachments.size()), // uint32_t                            colorAttachmentCount
         colorAttachments.data(),                        // const VkAttachmentReference*        pColorAttachments
         0u,                                             // const VkAttachmentReference*        pResolveAttachments
-        DE_NULL,                                        // const VkAttachmentReference*        pDepthStencilAttachment
+        nullptr,                                        // const VkAttachmentReference*        pDepthStencilAttachment
         0u,                                             // uint32_t                            preserveAttachmentCount
-        DE_NULL                                         // const uint32_t*                    pPreserveAttachments
+        nullptr                                         // const uint32_t*                    pPreserveAttachments
     };
     const std::vector<vk::VkSubpassDescription> subpasses(1u, subpass);
 
     const vk::VkRenderPassCreateInfo renderPassInfo = {
         vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                    sType
-        DE_NULL,                                       // const void*                        pNext
+        nullptr,                                       // const void*                        pNext
         0u,                                            // VkRenderPassCreateFlags            flags
         static_cast<uint32_t>(attachmentDescs.size()), // uint32_t                            attachmentCount
         attachmentDescs.data(),                        // const VkAttachmentDescription*    pAttachments
         static_cast<uint32_t>(subpasses.size()),       // uint32_t                            subpassCount
         subpasses.data(),                              // const VkSubpassDescription*        pSubpasses
         0u,                                            // uint32_t                            dependencyCount
-        DE_NULL,                                       // const VkSubpassDependency*        pDependencies
+        nullptr,                                       // const VkSubpassDependency*        pDependencies
     };
     const auto renderPass = vk::createRenderPass(vkd, device, &renderPassInfo);
 
@@ -1070,7 +1070,7 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 
     const vk::VkPipelineColorBlendStateCreateInfo colorBlendState = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                                sType
-        DE_NULL,                    // const void*                                    pNext
+        nullptr,                    // const void*                                    pNext
         0u,                         // VkPipelineColorBlendStateCreateFlags            flags
         VK_FALSE,                   // VkBool32                                        logicOpEnable
         vk::VK_LOGIC_OP_CLEAR,      // VkLogicOp                                    logicOp
@@ -1079,10 +1079,10 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
         {1.0f, 1.0f, 1.0f, 1.0f}    // float                                        blendConstants[4]
     };
 
-    const auto pipeline = vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertexModule.get(), DE_NULL,
-                                                   DE_NULL, DE_NULL, fragModule.get(), renderPass.get(), viewports,
-                                                   scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, DE_NULL,
-                                                   DE_NULL, DE_NULL, DE_NULL, &colorBlendState);
+    const auto pipeline = vk::makeGraphicsPipeline(
+        vkd, device, pipelineLayout.get(), vertexModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        fragModule.get(), renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
+        nullptr, nullptr, nullptr, nullptr, &colorBlendState);
 
     // Command pool and command buffer.
     const auto cmdPool =
@@ -1121,9 +1121,9 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 
     vk::beginCommandBuffer(vkd, cmdBuffer);
     vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0u, 0u,
-                           DE_NULL, 1u, &vtxBufferBarrier, 0u, DE_NULL);
+                           nullptr, 1u, &vtxBufferBarrier, 0u, nullptr);
     vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                           vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                           vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                            &fbBarrier);
     vk::endCommandBuffer(vkd, cmdBuffer);
     vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
@@ -1250,18 +1250,18 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 
                 const vk::VkWriteDescriptorSet descriptorWrite = {
                     vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureTypes                    Type
-                    DE_NULL,                                    // const void*                        pNext
+                    nullptr,                                    // const void*                        pNext
                     *descriptorSet,                             // VkDescriptorSet                    dstSet
                     0,                                          // uint32_t                            dstBinding
                     0,                                          // uint32_t                            dstArrayElement
                     1u,                                         // uint32_t                            descriptorCount
                     vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,      // VkDescriptorType                    descriptorType
-                    DE_NULL,                                    // const VkDescriptorImageInfo*        pImageInfo
+                    nullptr,                                    // const VkDescriptorImageInfo*        pImageInfo
                     &descriptorInfo,                            // const VkDescriptorBufferInfo*    pBufferInfo
-                    DE_NULL                                     // const VkBufferView*                pTexelBufferView
+                    nullptr                                     // const VkBufferView*                pTexelBufferView
                 };
 
-                vkd.updateDescriptorSets(device, 1, &descriptorWrite, 0, DE_NULL);
+                vkd.updateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
             }
         }
 

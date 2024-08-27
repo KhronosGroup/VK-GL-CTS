@@ -94,7 +94,7 @@ void checkAllSupported(const Extensions &supportedExtensions, const vector<strin
 }
 
 CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
-                                     const VkAllocationCallbacks *pAllocator = DE_NULL)
+                                     const VkAllocationCallbacks *pAllocator = nullptr)
 {
     vector<string> extensions;
 
@@ -134,7 +134,7 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkInsta
                                    const VkAllocationCallbacks *pAllocator, bool validationEnabled)
 {
     const float queuePriorities[]              = {1.0f};
-    const VkDeviceQueueCreateInfo queueInfos[] = {{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, DE_NULL,
+    const VkDeviceQueueCreateInfo queueInfos[] = {{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
                                                    (VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                    DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
     const VkPhysicalDeviceFeatures features    = getDeviceFeaturesForWsi();
@@ -148,14 +148,14 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkInsta
         extensions.push_back("VK_EXT_hdr_metadata");
 
     VkDeviceCreateInfo deviceParams = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                       DE_NULL,
+                                       nullptr,
                                        (VkDeviceCreateFlags)0,
                                        DE_LENGTH_OF_ARRAY(queueInfos),
                                        &queueInfos[0],
                                        0u,      // enabledLayerCount
-                                       DE_NULL, // ppEnabledLayerNames
+                                       nullptr, // ppEnabledLayerNames
                                        (uint32_t)extensions.size(),
-                                       extensions.empty() ? DE_NULL : &extensions[0],
+                                       extensions.empty() ? nullptr : &extensions[0],
                                        &features};
 
     return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
@@ -167,8 +167,8 @@ struct InstanceHelper
     const CustomInstance instance;
     const InstanceDriver &vki;
 
-    InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = DE_NULL)
-        : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL))
+    InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = nullptr)
+        : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
         , instance(createInstanceWithWsi(context, supportedExtensions, wsiType, pAllocator))
         , vki(instance.getDriver())
     {
@@ -184,11 +184,11 @@ struct DeviceHelper
     const VkQueue queue;
 
     DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
-                 const VkAllocationCallbacks *pAllocator = DE_NULL)
+                 const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
-                                     enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL), queueFamilyIndex,
+                                     enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
                                      pAllocator, context.getTestContext().getCommandLine().isValidationEnabled()))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
@@ -238,7 +238,7 @@ struct GroupParameters
     {
     }
 
-    GroupParameters(void) : wsiType(TYPE_LAST), function((Function)DE_NULL)
+    GroupParameters(void) : wsiType(TYPE_LAST), function(nullptr)
     {
     }
 };
@@ -276,7 +276,7 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(Type wsiType, const Instanc
             capabilities.currentTransform;
     const VkSwapchainCreateInfoKHR parameters = {
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         (VkSwapchainCreateFlagsKHR)0,
         surface,
         de::clamp(desiredImageCount, capabilities.minImageCount,
@@ -291,12 +291,12 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters(Type wsiType, const Instanc
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        (const uint32_t *)DE_NULL,
+        nullptr,
         transform,
         static_cast<VkCompositeAlphaFlagBitsKHR>(alpha),
         VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,         // clipped
-        (VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     return parameters;
@@ -468,7 +468,7 @@ tcu::TestStatus colorspaceCompareTest(Context &context, TestParams params)
         const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
         const vector<VkImage> swapchainImages = getSwapchainImages(vkd, device, *swapchain);
         const vector<VkExtensionProperties> deviceExtensions(
-            enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, DE_NULL));
+            enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, nullptr));
 
         const WsiTriangleRenderer renderer(
             vkd, device, allocator, context.getBinaryCollection(), true, swapchainImages, swapchainImages,
@@ -488,7 +488,7 @@ tcu::TestStatus colorspaceCompareTest(Context &context, TestParams params)
             {
                 const VkResult acquireResult =
                     vkd.acquireNextImageKHR(device, *swapchain, std::numeric_limits<uint64_t>::max(),
-                                            imageReadySemaphore.get(), DE_NULL, &imageNdx);
+                                            imageReadySemaphore.get(), VK_NULL_HANDLE, &imageNdx);
 
                 if (acquireResult == VK_SUBOPTIMAL_KHR)
                 {
@@ -506,7 +506,7 @@ tcu::TestStatus colorspaceCompareTest(Context &context, TestParams params)
             {
                 const VkPipelineStageFlags waitDstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                 const VkSubmitInfo submitInfo           = {VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            0u,
                                                            &imageReadySemaphore.get(),
                                                            &waitDstStage,
@@ -515,16 +515,16 @@ tcu::TestStatus colorspaceCompareTest(Context &context, TestParams params)
                                                            1u,
                                                            &renderingCompleteSemaphore.get()};
                 const VkPresentInfoKHR presentInfo      = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            1u,
                                                            &renderingCompleteSemaphore.get(),
                                                            1u,
                                                            &swapchain.get(),
                                                            &imageNdx,
-                                                           (VkResult *)DE_NULL};
+                                                           nullptr};
 
                 renderer.recordFrame(commandBuffer.get(), imageNdx, 0);
-                VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, DE_NULL));
+                VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE));
                 VK_CHECK_WSI(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
             }
 
@@ -572,7 +572,7 @@ tcu::TestStatus surfaceFormatRenderTest(Context &context, Type wsiType, const In
     const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
     const vector<VkImage> swapchainImages = getSwapchainImages(vkd, device, *swapchain);
     const vector<VkExtensionProperties> deviceExtensions(
-        enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, DE_NULL));
+        enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, nullptr));
 
     if (checkHdr && !isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_hdr_metadata")))
         TCU_THROW(NotSupportedError, "Extension VK_EXT_hdr_metadata not supported");
@@ -620,7 +620,7 @@ tcu::TestStatus surfaceFormatRenderTest(Context &context, Type wsiType, const In
             {
                 const VkResult acquireResult =
                     vkd.acquireNextImageKHR(device, *swapchain, std::numeric_limits<uint64_t>::max(),
-                                            imageReadySemaphore, (vk::VkFence)0, &imageNdx);
+                                            imageReadySemaphore, VK_NULL_HANDLE, &imageNdx);
 
                 if (acquireResult == VK_SUBOPTIMAL_KHR)
                     context.getTestContext().getLog() << TestLog::Message << "Got " << acquireResult << " at frame "
@@ -637,7 +637,7 @@ tcu::TestStatus surfaceFormatRenderTest(Context &context, Type wsiType, const In
                 const VkCommandBuffer commandBuffer     = **commandBuffers[frameNdx % commandBuffers.size()];
                 const VkPipelineStageFlags waitDstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                 const VkSubmitInfo submitInfo           = {VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            1u,
                                                            &imageReadySemaphore,
                                                            &waitDstStage,
@@ -646,18 +646,18 @@ tcu::TestStatus surfaceFormatRenderTest(Context &context, Type wsiType, const In
                                                            1u,
                                                            &renderingCompleteSemaphore};
                 const VkPresentInfoKHR presentInfo      = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                                                           DE_NULL,
+                                                           nullptr,
                                                            1u,
                                                            &renderingCompleteSemaphore,
                                                            1u,
                                                            &*swapchain,
                                                            &imageNdx,
-                                                           (VkResult *)DE_NULL};
+                                                           nullptr};
 
                 if (checkHdr)
                 {
                     const VkHdrMetadataEXT hdrData = {VK_STRUCTURE_TYPE_HDR_METADATA_EXT,
-                                                      DE_NULL,
+                                                      nullptr,
                                                       makeXYColorEXT(0.680f, 0.320f),
                                                       makeXYColorEXT(0.265f, 0.690f),
                                                       makeXYColorEXT(0.150f, 0.060f),

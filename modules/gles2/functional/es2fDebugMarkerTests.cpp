@@ -180,10 +180,10 @@ public:
 
         gl.pushGroupMarkerEXT(-1, "foo");
         gl.insertEventMarkerEXT(-1, "foo");
-        gl.pushGroupMarkerEXT(0, DE_NULL);
-        gl.insertEventMarkerEXT(0, DE_NULL);
-        gl.pushGroupMarkerEXT(-1, DE_NULL);
-        gl.insertEventMarkerEXT(-1, DE_NULL);
+        gl.pushGroupMarkerEXT(0, nullptr);
+        gl.insertEventMarkerEXT(0, nullptr);
+        gl.pushGroupMarkerEXT(-1, nullptr);
+        gl.insertEventMarkerEXT(-1, nullptr);
 
         GLU_EXPECT_NO_ERROR(gl.getError(), "Debug marker calls must not set error state");
 

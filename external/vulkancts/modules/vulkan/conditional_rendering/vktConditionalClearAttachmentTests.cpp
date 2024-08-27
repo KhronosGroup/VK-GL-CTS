@@ -110,7 +110,7 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate(void)
     if (useSecondaryCmdBuffer)
     {
         const vk::VkCommandBufferInheritanceConditionalRenderingInfoEXT conditionalRenderingInheritanceInfo = {
-            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT, nullptr,
             m_conditionalData.conditionInherited ? VK_TRUE : VK_FALSE // conditionalRenderingEnable
         };
 
@@ -126,7 +126,7 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate(void)
         };
 
         const vk::VkCommandBufferBeginInfo commandBufferBeginInfo = {
-            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr,
             vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, &inheritanceInfo};
 
         if (m_conditionalData.secondaryCommandBufferNested)

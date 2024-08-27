@@ -4695,7 +4695,7 @@ public:
         // Create a universal queue that supports graphics and compute.
         const vk::VkDeviceQueueCreateInfo queueParams = {
             vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             0u,                                             // VkDeviceQueueCreateFlags flags;
             m_queueFamilyIndex,                             // uint32_t queueFamilyIndex;
             1u,                                             // uint32_t queueCount;
@@ -6220,12 +6220,12 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate(void)
 
         const vk::VkPipelineVertexInputStateCreateInfo emptyVertexInputStateCreateInfo = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                       // const void* pNext;
+            nullptr,                                                       // const void* pNext;
             0u,      // VkPipelineVertexInputStateCreateFlags flags;
             0u,      // uint32_t vertexBindingDescriptionCount;
-            DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+            nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
             0u,      // uint32_t vertexAttributeDescriptionCount;
-            DE_NULL, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+            nullptr, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
         };
 
 #ifndef CTS_USES_VULKANSC

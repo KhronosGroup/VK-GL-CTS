@@ -40,7 +40,7 @@ Move<VkCommandBuffer> makeCommandBuffer(const DeviceInterface &vk, const VkDevic
 {
     const VkCommandBufferAllocateInfo info = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         commandPool,                                    // VkCommandPool commandPool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t commandBufferCount;
@@ -55,7 +55,7 @@ Move<VkPipeline> makeComputePipeline(const DeviceInterface &vk, const VkDevice d
 {
     const VkPipelineShaderStageCreateInfo shaderStageInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                             // const void* pNext;
+        nullptr,                                             // const void* pNext;
         (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
         VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
         shaderModule,                                        // VkShaderModule module;
@@ -64,7 +64,7 @@ Move<VkPipeline> makeComputePipeline(const DeviceInterface &vk, const VkDevice d
     };
     const VkComputePipelineCreateInfo pipelineInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags flags;
         shaderStageInfo,                                // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout,                                 // VkPipelineLayout layout;
@@ -91,7 +91,7 @@ VkImageCreateInfo makeImageCreateInfo(const VkImageType imageType, const VkExten
 {
     return {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType;
-        DE_NULL,                             // const void*              pNext;
+        nullptr,                             // const void*              pNext;
         (VkImageCreateFlags)0,               // VkImageCreateFlags       flags;
         imageType,                           // VkImageType              imageType;
         format,                              // VkFormat                 format;
@@ -103,7 +103,7 @@ VkImageCreateInfo makeImageCreateInfo(const VkImageType imageType, const VkExten
         usage,                               // VkImageUsageFlags        usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode;
         0u,                                  // uint32_t                 queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t*          pQueueFamilyIndices;
+        nullptr,                             // const uint32_t*          pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout            initialLayout;
     };
 }
@@ -125,31 +125,31 @@ GraphicsPipelineBuilder &GraphicsPipelineBuilder::setShader(const DeviceInterfac
     switch (stage)
     {
     case (VK_SHADER_STAGE_VERTEX_BIT):
-        DE_ASSERT(m_vertexShaderModule.get() == DE_NULL);
+        DE_ASSERT(m_vertexShaderModule.get() == VK_NULL_HANDLE);
         m_vertexShaderModule = createShaderModule(vk, device, binary, (VkShaderModuleCreateFlags)0);
         module               = *m_vertexShaderModule;
         break;
 
     case (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT):
-        DE_ASSERT(m_tessControlShaderModule.get() == DE_NULL);
+        DE_ASSERT(m_tessControlShaderModule.get() == VK_NULL_HANDLE);
         m_tessControlShaderModule = createShaderModule(vk, device, binary, (VkShaderModuleCreateFlags)0);
         module                    = *m_tessControlShaderModule;
         break;
 
     case (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT):
-        DE_ASSERT(m_tessEvaluationShaderModule.get() == DE_NULL);
+        DE_ASSERT(m_tessEvaluationShaderModule.get() == VK_NULL_HANDLE);
         m_tessEvaluationShaderModule = createShaderModule(vk, device, binary, (VkShaderModuleCreateFlags)0);
         module                       = *m_tessEvaluationShaderModule;
         break;
 
     case (VK_SHADER_STAGE_GEOMETRY_BIT):
-        DE_ASSERT(m_geometryShaderModule.get() == DE_NULL);
+        DE_ASSERT(m_geometryShaderModule.get() == VK_NULL_HANDLE);
         m_geometryShaderModule = createShaderModule(vk, device, binary, (VkShaderModuleCreateFlags)0);
         module                 = *m_geometryShaderModule;
         break;
 
     case (VK_SHADER_STAGE_FRAGMENT_BIT):
-        DE_ASSERT(m_fragmentShaderModule.get() == DE_NULL);
+        DE_ASSERT(m_fragmentShaderModule.get() == VK_NULL_HANDLE);
         m_fragmentShaderModule = createShaderModule(vk, device, binary, (VkShaderModuleCreateFlags)0);
         module                 = *m_fragmentShaderModule;
         break;
@@ -161,7 +161,7 @@ GraphicsPipelineBuilder &GraphicsPipelineBuilder::setShader(const DeviceInterfac
 
     const VkPipelineShaderStageCreateInfo pipelineShaderStageInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                             // const void* pNext;
+        nullptr,                                             // const void* pNext;
         (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
         stage,                                               // VkShaderStageFlagBits stage;
         module,                                              // VkShaderModule module;
@@ -202,7 +202,7 @@ GraphicsPipelineBuilder &GraphicsPipelineBuilder::setVertexInputSingleAttribute(
 template <typename T>
 inline const T *dataPointer(const std::vector<T> &vec)
 {
-    return (vec.size() != 0 ? &vec[0] : DE_NULL);
+    return (vec.size() != 0 ? &vec[0] : nullptr);
 }
 
 Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const VkDevice device,
@@ -212,7 +212,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const
 {
     const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags;
         static_cast<uint32_t>(
             m_vertexInputBindings.size()), // uint32_t                                    vertexBindingDescriptionCount;
@@ -229,7 +229,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const
                                              m_primitiveTopology;
     const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                    // const void*                                 pNext;
+        nullptr,                                    // const void*                                 pNext;
         (VkPipelineInputAssemblyStateCreateFlags)0, // VkPipelineInputAssemblyStateCreateFlags     flags;
         topology,                                   // VkPrimitiveTopology                         topology;
         VK_FALSE, // VkBool32                                    primitiveRestartEnable;
@@ -237,7 +237,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const
 
     const VkPipelineTessellationStateCreateInfo pipelineTessellationStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         (VkPipelineTessellationStateCreateFlags)0,                 // VkPipelineTessellationStateCreateFlags      flags;
         m_patchControlPoints, // uint32_t                                    patchControlPoints;
     };
@@ -247,7 +247,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const
 
     const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                               // const void*                                 pNext;
+        nullptr,                                               // const void*                                 pNext;
         (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags          flags;
         1u,        // uint32_t                                    viewportCount;
         &viewport, // const VkViewport*                           pViewports;
@@ -258,7 +258,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const
     const bool isRasterizationDisabled = ((m_shaderStageFlags & VK_SHADER_STAGE_FRAGMENT_BIT) == 0);
     const VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                          sType;
-        DE_NULL,                                                    // const void*                              pNext;
+        nullptr,                                                    // const void*                              pNext;
         (VkPipelineRasterizationStateCreateFlags)0,                 // VkPipelineRasterizationStateCreateFlags  flags;
         VK_FALSE,                // VkBool32                                 depthClampEnable;
         isRasterizationDisabled, // VkBool32                                 rasterizerDiscardEnable;
@@ -274,12 +274,12 @@ Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const
 
     const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineMultisampleStateCreateFlags)0,                 // VkPipelineMultisampleStateCreateFlags flags;
         VK_SAMPLE_COUNT_1_BIT,                                    // VkSampleCountFlagBits rasterizationSamples;
         VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE                                                  // VkBool32 alphaToOneEnable;
     };
@@ -294,7 +294,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const
 
     const VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         (VkPipelineDepthStencilStateCreateFlags)0,                  // VkPipelineDepthStencilStateCreateFlags flags;
         VK_FALSE,                                                   // VkBool32 depthTestEnable;
         VK_FALSE,                                                   // VkBool32 depthWriteEnable;
@@ -322,7 +322,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const
 
     const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags flags;
         VK_FALSE,                                                 // VkBool32 logicOpEnable;
         VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -333,7 +333,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const
 
     const VkGraphicsPipelineCreateInfo graphicsPipelineInfo = {
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         (VkPipelineCreateFlags)0,                        // VkPipelineCreateFlags flags;
         static_cast<uint32_t>(m_shaderStages.size()),    // uint32_t stageCount;
         &m_shaderStages[0],                              // const VkPipelineShaderStageCreateInfo* pStages;
@@ -341,21 +341,21 @@ Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const
         &pipelineInputAssemblyStateInfo, // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
         (m_shaderStageFlags & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ?
              &pipelineTessellationStateInfo :
-             DE_NULL), // const VkPipelineTessellationStateCreateInfo* pTessellationState;
+             nullptr), // const VkPipelineTessellationStateCreateInfo* pTessellationState;
         (isRasterizationDisabled ?
-             DE_NULL :
+             nullptr :
              &pipelineViewportStateInfo), // const VkPipelineViewportStateCreateInfo* pViewportState;
         &pipelineRasterizationStateInfo,  // const VkPipelineRasterizationStateCreateInfo* pRasterizationState;
         (isRasterizationDisabled ?
-             DE_NULL :
+             nullptr :
              &pipelineMultisampleStateInfo), // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
         (isRasterizationDisabled ?
-             DE_NULL :
+             nullptr :
              &pipelineDepthStencilStateInfo), // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
         (isRasterizationDisabled ?
-             DE_NULL :
+             nullptr :
              &pipelineColorBlendStateInfo), // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
-        DE_NULL,                            // const VkPipelineDynamicStateCreateInfo* pDynamicState;
+        nullptr,                            // const VkPipelineDynamicStateCreateInfo* pDynamicState;
         pipelineLayout,                     // VkPipelineLayout layout;
         renderPass,                         // VkRenderPass renderPass;
         0u,                                 // uint32_t subpass;
@@ -578,11 +578,11 @@ public:
         VkPipelineStageFlags dstStageMask  = VK_PIPELINE_STAGE_NONE_KHR;
 #endif // CTS_USES_VULKANSC
         uint32_t memoryBarrierCount                  = pDependencyInfo->memoryBarrierCount;
-        VkMemoryBarrier *pMemoryBarriers             = DE_NULL;
+        VkMemoryBarrier *pMemoryBarriers             = nullptr;
         uint32_t bufferMemoryBarrierCount            = pDependencyInfo->bufferMemoryBarrierCount;
-        VkBufferMemoryBarrier *pBufferMemoryBarriers = DE_NULL;
+        VkBufferMemoryBarrier *pBufferMemoryBarriers = nullptr;
         uint32_t imageMemoryBarrierCount             = pDependencyInfo->imageMemoryBarrierCount;
-        VkImageMemoryBarrier *pImageMemoryBarriers   = DE_NULL;
+        VkImageMemoryBarrier *pImageMemoryBarriers   = nullptr;
 
         // translate VkMemoryBarrier2 to VkMemoryBarrier
         std::vector<VkMemoryBarrier> memoryBarriers;
@@ -704,9 +704,9 @@ public:
         uint32_t memoryBarrierCount                  = pDependencyInfo->memoryBarrierCount;
         uint32_t bufferMemoryBarrierCount            = pDependencyInfo->bufferMemoryBarrierCount;
         uint32_t imageMemoryBarrierCount             = pDependencyInfo->imageMemoryBarrierCount;
-        VkMemoryBarrier *pMemoryBarriers             = DE_NULL;
-        VkBufferMemoryBarrier *pBufferMemoryBarriers = DE_NULL;
-        VkImageMemoryBarrier *pImageMemoryBarriers   = DE_NULL;
+        VkMemoryBarrier *pMemoryBarriers             = nullptr;
+        VkBufferMemoryBarrier *pBufferMemoryBarriers = nullptr;
+        VkImageMemoryBarrier *pImageMemoryBarriers   = nullptr;
         std::vector<VkMemoryBarrier> memoryBarriers;
         std::vector<VkBufferMemoryBarrier> bufferMemoryBarriers;
         std::vector<VkImageMemoryBarrier> imageMemoryBarriers;
@@ -779,8 +779,8 @@ public:
         // make sure separate LegacySynchronizationWrapper is created per single submit
         DE_ASSERT(!m_submited);
 
-        std::vector<VkSubmitInfo> submitInfo(m_submitInfoData.size(), {VK_STRUCTURE_TYPE_SUBMIT_INFO, DE_NULL, 0u,
-                                                                       DE_NULL, DE_NULL, 0u, DE_NULL, 0u, DE_NULL});
+        std::vector<VkSubmitInfo> submitInfo(m_submitInfoData.size(), {VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 0u,
+                                                                       nullptr, nullptr, 0u, nullptr, 0u, nullptr});
 
         std::vector<VkTimelineSemaphoreSubmitInfo> timelineSemaphoreSubmitInfo;
         timelineSemaphoreSubmitInfo.reserve(m_submitInfoData.size());
@@ -797,17 +797,17 @@ public:
 
             if (data.waitSemaphoreValueIndexPlusOne || data.signalSemaphoreValueIndexPlusOne)
             {
-                uint64_t *pWaitSemaphoreValues = DE_NULL;
+                uint64_t *pWaitSemaphoreValues = nullptr;
                 if (data.waitSemaphoreValueIndexPlusOne)
                     pWaitSemaphoreValues = &m_timelineSemaphoreValues[data.waitSemaphoreValueIndexPlusOne - 1];
 
-                uint64_t *pSignalSemaphoreValues = DE_NULL;
+                uint64_t *pSignalSemaphoreValues = nullptr;
                 if (data.signalSemaphoreValueIndexPlusOne)
                     pSignalSemaphoreValues = &m_timelineSemaphoreValues[data.signalSemaphoreValueIndexPlusOne - 1];
 
                 timelineSemaphoreSubmitInfo.push_back({
                     VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO, // VkStructureType sType;
-                    DE_NULL,                                          // const void* pNext;
+                    nullptr,                                          // const void* pNext;
                     data.waitSemaphoreCount,                          // uint32_t            waitSemaphoreValueCount
                     pWaitSemaphoreValues,                             // const uint64_t*    pWaitSemaphoreValues
                     data.signalSemaphoreCount,                        // uint32_t            signalSemaphoreValueCount
@@ -867,7 +867,7 @@ public:
 #else
             VK_STRUCTURE_TYPE_SUBMIT_INFO_2_KHR, // VkStructureType                        sType
 #endif                                // CTS_USES_VULKANSC
-            DE_NULL,                  // const void*                            pNext
+            nullptr,                  // const void*                            pNext
             0u,                       // VkSubmitFlags                        flags
             waitSemaphoreInfoCount,   // uint32_t                                waitSemaphoreInfoCount
             pWaitSemaphoreInfos,      // const VkSemaphoreSubmitInfo*            pWaitSemaphoreInfos
@@ -945,11 +945,11 @@ void submitCommandsAndWait(SynchronizationWrapperPtr synchronizationWrapper, con
 
     synchronizationWrapper->addSubmitInfo(
         0u,                      // uint32_t                                waitSemaphoreInfoCount
-        DE_NULL,                 // const VkSemaphoreSubmitInfo*            pWaitSemaphoreInfos
+        nullptr,                 // const VkSemaphoreSubmitInfo*            pWaitSemaphoreInfos
         1u,                      // uint32_t                                commandBufferInfoCount
         &commandBufferInfoCount, // const VkCommandBufferSubmitInfo*        pCommandBufferInfos
         0u,                      // uint32_t                                signalSemaphoreInfoCount
-        DE_NULL                  // const VkSemaphoreSubmitInfo*            pSignalSemaphoreInfos
+        nullptr                  // const VkSemaphoreSubmitInfo*            pSignalSemaphoreInfos
     );
 
     const Unique<VkFence> fence(createFence(vk, device));
@@ -1035,7 +1035,7 @@ VkCommandBufferSubmitInfo makeCommonCommandBufferSubmitInfo(const VkCommandBuffe
 #else
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, // VkStructureType        sType
 #endif           // CTS_USES_VULKANSC
-        DE_NULL, // const void*            pNext
+        nullptr, // const void*            pNext
         cmdBuf,  // VkCommandBuffer        commandBuffer
         0u       // uint32_t                deviceMask
     };
@@ -1050,7 +1050,7 @@ VkSemaphoreSubmitInfo makeCommonSemaphoreSubmitInfo(VkSemaphore semaphore, uint6
 #else
         VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR,      // VkStructureType                sType
 #endif             // CTS_USES_VULKANSC
-        DE_NULL,   // const void*                    pNext
+        nullptr,   // const void*                    pNext
         semaphore, // VkSemaphore                    semaphore
         value,     // uint64_t                        value
         stageMask, // VkPipelineStageFlags2        stageMask
@@ -1068,7 +1068,7 @@ VkDependencyInfo makeCommonDependencyInfo(const VkMemoryBarrier2 *pMemoryBarrier
 #else
         VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,            // VkStructureType                    sType
 #endif           // CTS_USES_VULKANSC
-        DE_NULL, // const void*                        pNext
+        nullptr, // const void*                        pNext
         eventDependency ?
             (VkDependencyFlags)0u :
             (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT, // VkDependencyFlags                dependencyFlags
@@ -1097,10 +1097,10 @@ vk::Move<VkPipelineCache> PipelineCacheData::createPipelineCache(
     DE_UNREF(resourceInterface);
 #endif
     const de::ScopedLock dataLock(m_lock);
-    const struct vk::VkPipelineCacheCreateInfo params = {vk::VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, DE_NULL,
+    const struct vk::VkPipelineCacheCreateInfo params = {vk::VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, nullptr,
 #ifndef CTS_USES_VULKANSC
                                                          (vk::VkPipelineCacheCreateFlags)0, (uintptr_t)m_data.size(),
-                                                         (m_data.empty() ? DE_NULL : &m_data[0])
+                                                         (m_data.empty() ? nullptr : &m_data[0])
 #else
         VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
             VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT,
@@ -1119,7 +1119,7 @@ void PipelineCacheData::setFromPipelineCache(const vk::DeviceInterface &vk, cons
 
 #ifndef CTS_USES_VULKANSC
     uintptr_t dataSize = 0;
-    VK_CHECK(vk.getPipelineCacheData(device, pipelineCache, &dataSize, DE_NULL));
+    VK_CHECK(vk.getPipelineCacheData(device, pipelineCache, &dataSize, nullptr));
 
     m_data.resize(dataSize);
 
@@ -1134,7 +1134,7 @@ void PipelineCacheData::setFromPipelineCache(const vk::DeviceInterface &vk, cons
 
 vk::VkDevice getSyncDevice(de::MovePtr<VideoDevice> &device, Context &context)
 {
-    if (device == DE_NULL)
+    if (!device)
         return context.getDevice();
     else
         return device->getDeviceSupportingQueue();
@@ -1142,7 +1142,7 @@ vk::VkDevice getSyncDevice(de::MovePtr<VideoDevice> &device, Context &context)
 
 const vk::DeviceInterface &getSyncDeviceInterface(de::MovePtr<VideoDevice> &device, Context &context)
 {
-    if (device == DE_NULL)
+    if (!device)
         return context.getDeviceInterface();
     else
         return device->getDeviceDriver();
@@ -1150,7 +1150,7 @@ const vk::DeviceInterface &getSyncDeviceInterface(de::MovePtr<VideoDevice> &devi
 
 uint32_t getSyncQueueFamilyIndex(de::MovePtr<VideoDevice> &device, Context &context)
 {
-    if (device == DE_NULL)
+    if (!device)
         return context.getUniversalQueueFamilyIndex();
     else
         return device->getQueueFamilyVideo();
@@ -1158,7 +1158,7 @@ uint32_t getSyncQueueFamilyIndex(de::MovePtr<VideoDevice> &device, Context &cont
 
 vk::VkQueue getSyncQueue(de::MovePtr<VideoDevice> &device, Context &context)
 {
-    if (device == DE_NULL)
+    if (!device)
         return context.getUniversalQueue();
     else
         return getDeviceQueue(device->getDeviceDriver(), device->getDeviceSupportingQueue(),

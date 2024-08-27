@@ -251,7 +251,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
     const vk::VkSurfaceKHR surface                    = context.getSurface();
     const vk::VkSwapchainCreateInfoKHR baseParameters = {
         vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
 #ifndef NOT_PROTECTED
         vk::VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,
 #else
@@ -272,8 +272,8 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
         defaultTransform,
         firstSupportedCompositeAlpha(capabilities),
         vk::VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,             // clipped
-        (vk::VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     vk::VkImageCreateFlags imageCreateFlag =
@@ -293,7 +293,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
         vk::VkMemoryRequirements memoryRequirements;
         {
             const vk::VkImageCreateInfo imageInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                     DE_NULL,
+                                                     nullptr,
                                                      imageCreateFlag,
                                                      vk::VK_IMAGE_TYPE_2D,
                                                      baseParameters.imageFormat,
@@ -416,7 +416,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
             {
                 const vk::VkImageCreateInfo imageInfo = {
                     vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                    DE_NULL,
+                    nullptr,
                     imageCreateFlag,
                     vk::VK_IMAGE_TYPE_2D,
                     curFmt->format,
@@ -506,7 +506,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                 vk::VkMemoryRequirements memoryRequirements;
                 {
                     const vk::VkImageCreateInfo imageInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              imageCreateFlag,
                                                              vk::VK_IMAGE_TYPE_2D,
                                                              baseParameters.imageFormat,
@@ -562,7 +562,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
             vk::VkMemoryRequirements memoryRequirements;
             {
                 const vk::VkImageCreateInfo imageInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                         DE_NULL,
+                                                         nullptr,
                                                          imageCreateFlag,
                                                          vk::VK_IMAGE_TYPE_2D,
                                                          baseParameters.imageFormat,
@@ -619,7 +619,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                 vk::VkMemoryRequirements memoryRequirements;
                 {
                     const vk::VkImageCreateInfo imageInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              imageCreateFlag,
                                                              vk::VK_IMAGE_TYPE_2D,
                                                              baseParameters.imageFormat,
@@ -688,23 +688,31 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
 
     case TEST_DIMENSION_IMAGE_USAGE:
     {
-        uint32_t testIndex = 0u;
-        uint32_t testCount = 0u;
-        for (uint32_t flags = 1u; flags <= capabilities.supportedUsageFlags; ++flags)
-        {
-            if ((flags & ~capabilities.supportedUsageFlags) == 0)
-                testCount++;
-        }
+        const vk::InstanceDriver &instanceDriver  = context.getInstanceDriver();
+        const vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+        std::vector<vk::VkSwapchainCreateInfoKHR> cases;
 
         for (uint32_t flags = 1u; flags <= capabilities.supportedUsageFlags; ++flags)
         {
             if ((flags & ~capabilities.supportedUsageFlags) == 0)
             {
-                vk::VkSwapchainCreateInfoKHR createInfo = baseParameters;
-                createInfo.imageUsage                   = flags;
-                testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
+                vk::VkImageFormatProperties imageProps;
+
+                // The Vulkan 1.1.87 spec contains the following VU for VkSwapchainCreateInfoKHR:
+                //
+                //     * imageFormat, imageUsage, imageExtent, and imageArrayLayers must be supported for VK_IMAGE_TYPE_2D
+                //     VK_IMAGE_TILING_OPTIMAL images as reported by vkGetPhysicalDeviceImageFormatProperties.
+                if (instanceDriver.getPhysicalDeviceImageFormatProperties(
+                        physicalDevice, baseParameters.imageFormat, vk::VK_IMAGE_TYPE_2D, vk::VK_IMAGE_TILING_OPTIMAL,
+                        flags, (vk::VkImageCreateFlags)0u, &imageProps) != vk::VK_SUCCESS)
+                    continue;
+
+                cases.push_back(baseParameters);
+                cases.back().imageUsage = flags;
             }
         }
+        for (uint32_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
+            testExecutor(vkd, device, cases[caseNdx], log, caseNdx + 1, (uint32_t)cases.size());
 
         break;
     }
@@ -722,7 +730,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
             std::vector<vk::VkQueueFamilyProperties> properties;
             uint32_t numFamilies = 0;
 
-            instanceDriver.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, DE_NULL);
+            instanceDriver.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, nullptr);
             DE_ASSERT(numFamilies > 0);
             properties.resize(numFamilies);
 
@@ -873,7 +881,7 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
 {
     bool isExtensionForPresentModeEnabled = false;
     std::vector<vk::VkExtensionProperties> supportedExtensions(
-        enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), DE_NULL));
+        enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), nullptr));
     std::vector<std::string> instExts = getRequiredWsiExtensions(supportedExtensions, params.wsiType);
     std::vector<std::string> devExts;
     devExts.push_back("VK_KHR_swapchain");
@@ -882,7 +890,7 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
     if (params.dimension == TEST_DIMENSION_PRESENT_MODE)
     {
         Extensions deviceExtensions = vk::enumerateDeviceExtensionProperties(baseCtx.getInstanceInterface(),
-                                                                             baseCtx.getPhysicalDevice(), DE_NULL);
+                                                                             baseCtx.getPhysicalDevice(), nullptr);
         for (size_t i = 0u; i < deviceExtensions.size(); ++i)
         {
             if (std::strcmp(deviceExtensions[i].extensionName, "VK_KHR_shared_presentable_image") == 0)
@@ -897,6 +905,29 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
     const NativeObjects native(baseCtx, supportedExtensions, params.wsiType);
     ProtectedContext context(baseCtx, params.wsiType, *native.display, *native.window, instExts, devExts);
     vk::VkSurfaceKHR surface = context.getSurface();
+
+    if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
+    {
+        // Check if swapchain can be created for protected surface
+        const vk::InstanceInterface &vki = context.getInstanceDriver();
+        vk::VkSurfaceCapabilities2KHR extCapabilities;
+        vk::VkSurfaceProtectedCapabilitiesKHR extProtectedCapabilities;
+        const vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
+            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, nullptr, surface};
+
+        extProtectedCapabilities.sType             = vk::VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
+        extProtectedCapabilities.pNext             = nullptr;
+        extProtectedCapabilities.supportsProtected = false;
+
+        extCapabilities.sType = vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
+        extCapabilities.pNext = &extProtectedCapabilities;
+
+        VK_CHECK(
+            vki.getPhysicalDeviceSurfaceCapabilities2KHR(context.getPhysicalDevice(), &surfaceInfo, &extCapabilities));
+
+        if (extProtectedCapabilities.supportsProtected == false)
+            TCU_THROW(NotSupportedError, "Swapchain creation for Protected VkSurface is not Supported.");
+    }
 
     return executeSwapchainParameterCases(params.wsiType, params.dimension, context, surface,
                                           isExtensionForPresentModeEnabled, swapchainCreateExecutor);
@@ -913,7 +944,7 @@ struct GroupParameters
     {
     }
 
-    GroupParameters(void) : wsiType(vk::wsi::TYPE_LAST), function((Function)DE_NULL)
+    GroupParameters(void) : wsiType(vk::wsi::TYPE_LAST), function(nullptr)
     {
     }
 };
@@ -949,7 +980,7 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, 
             capabilities.currentTransform;
     const vk::VkSwapchainCreateInfoKHR parameters = {
         vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        DE_NULL,
+        nullptr,
         vk::VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,
         surface,
         de::clamp(desiredImageCount, capabilities.minImageCount,
@@ -964,12 +995,12 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, 
         vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         vk::VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        (const uint32_t *)DE_NULL,
+        nullptr,
         transform,
         firstSupportedCompositeAlpha(capabilities),
         vk::VK_PRESENT_MODE_FIFO_KHR,
-        VK_FALSE,             // clipped
-        (vk::VkSwapchainKHR)0 // oldSwapchain
+        VK_FALSE,      // clipped
+        VK_NULL_HANDLE // oldSwapchain
     };
 
     return parameters;
@@ -1037,13 +1068,13 @@ vk::Move<vk::VkRenderPass> TriangleRenderer::createRenderPass(const vk::DeviceIn
         (vk::VkSubpassDescriptionFlags)0u,
         vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
         0u,           // inputAttachmentCount
-        DE_NULL,      // pInputAttachments
+        nullptr,      // pInputAttachments
         1u,           // colorAttachmentCount
         &colorAttRef, // pColorAttachments
-        DE_NULL,      // pResolveAttachments
-        DE_NULL,      // depthStencilAttachment
+        nullptr,      // pResolveAttachments
+        nullptr,      // depthStencilAttachment
         0u,           // preserveAttachmentCount
-        DE_NULL,      // pPreserveAttachments
+        nullptr,      // pPreserveAttachments
     };
     const vk::VkSubpassDependency dependencies[] = {
         {VK_SUBPASS_EXTERNAL, // srcSubpass
@@ -1060,7 +1091,7 @@ vk::Move<vk::VkRenderPass> TriangleRenderer::createRenderPass(const vk::DeviceIn
     };
     const vk::VkRenderPassCreateInfo renderPassParams = {
         vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkRenderPassCreateFlags)0,
         1u,
         &colorAttDesc,
@@ -1083,10 +1114,10 @@ vk::Move<vk::VkPipelineLayout> TriangleRenderer::createPipelineLayout(const vk::
     };
     const vk::VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineLayoutCreateFlags)0,
         0u,      // setLayoutCount
-        DE_NULL, // pSetLayouts
+        nullptr, // pSetLayouts
         1u,
         &pushConstantRange,
     };
@@ -1252,7 +1283,7 @@ std::vector<CommandBufferSp> allocateCommandBuffers(const vk::DeviceInterface &v
 tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
 {
     std::vector<vk::VkExtensionProperties> supportedExtensions(
-        enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), DE_NULL));
+        enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), nullptr));
     std::vector<std::string> instExts = getRequiredWsiExtensions(supportedExtensions, wsiType);
     std::vector<std::string> devExts;
     devExts.push_back("VK_KHR_swapchain");
@@ -1260,9 +1291,33 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
     const tcu::UVec2 desiredSize(256, 256);
     const NativeObjects native(baseCtx, supportedExtensions, wsiType, tcu::just(desiredSize));
     ProtectedContext context(baseCtx, wsiType, *native.display, *native.window, instExts, devExts);
-    vk::VkSurfaceKHR surface                         = context.getSurface();
-    const vk::DeviceInterface &vkd                   = context.getDeviceInterface();
-    const vk::VkDevice device                        = context.getDevice();
+    vk::VkSurfaceKHR surface       = context.getSurface();
+    const vk::DeviceInterface &vkd = context.getDeviceInterface();
+    const vk::VkDevice device      = context.getDevice();
+
+    if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
+    {
+        // Check if swapchain can be created for protected surface
+        const vk::InstanceInterface &vki = context.getInstanceDriver();
+        vk::VkSurfaceCapabilities2KHR extCapabilities;
+        vk::VkSurfaceProtectedCapabilitiesKHR extProtectedCapabilities;
+        const vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
+            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, nullptr, surface};
+
+        extProtectedCapabilities.sType             = vk::VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
+        extProtectedCapabilities.pNext             = nullptr;
+        extProtectedCapabilities.supportsProtected = false;
+
+        extCapabilities.sType = vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
+        extCapabilities.pNext = &extProtectedCapabilities;
+
+        VK_CHECK(
+            vki.getPhysicalDeviceSurfaceCapabilities2KHR(context.getPhysicalDevice(), &surfaceInfo, &extCapabilities));
+
+        if (extProtectedCapabilities.supportsProtected == false)
+            TCU_THROW(NotSupportedError, "Swapchain creation for Protected VkSurface is not Supported.");
+    }
+
     const vk::VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(
         wsiType, context.getInstanceDriver(), context.getPhysicalDevice(), surface, desiredSize, 2);
     const vk::Unique<vk::VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
@@ -1291,29 +1346,6 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
     const std::vector<CommandBufferSp> commandBuffers(
         allocateCommandBuffers(vkd, device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY, maxQueuedFrames));
 
-    if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
-    {
-        // Check if swapchain can be created for protected surface
-        const vk::InstanceInterface &vki = context.getInstanceDriver();
-        vk::VkSurfaceCapabilities2KHR extCapabilities;
-        vk::VkSurfaceProtectedCapabilitiesKHR extProtectedCapabilities;
-        const vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
-            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, DE_NULL, surface};
-
-        extProtectedCapabilities.sType             = vk::VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
-        extProtectedCapabilities.pNext             = DE_NULL;
-        extProtectedCapabilities.supportsProtected = false;
-
-        extCapabilities.sType = vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
-        extCapabilities.pNext = &extProtectedCapabilities;
-
-        VK_CHECK(
-            vki.getPhysicalDeviceSurfaceCapabilities2KHR(context.getPhysicalDevice(), &surfaceInfo, &extCapabilities));
-
-        if (extProtectedCapabilities.supportsProtected == false)
-            TCU_THROW(NotSupportedError, "Swapchain creation for Protected VkSurface is not Supported.");
-    }
-
     try
     {
         const uint32_t numFramesToRender = 60 * 10;
@@ -1331,8 +1363,9 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
             VK_CHECK(vkd.resetFences(device, 1, &imageReadyFence));
 
             {
-                const vk::VkResult acquireResult = vkd.acquireNextImageKHR(
-                    device, *swapchain, std::numeric_limits<uint64_t>::max(), imageReadySemaphore, 0, &imageNdx);
+                const vk::VkResult acquireResult =
+                    vkd.acquireNextImageKHR(device, *swapchain, std::numeric_limits<uint64_t>::max(),
+                                            imageReadySemaphore, VK_NULL_HANDLE, &imageNdx);
 
                 if (acquireResult == vk::VK_SUBOPTIMAL_KHR)
                     context.getTestContext().getLog() << tcu::TestLog::Message << "Got " << acquireResult
@@ -1349,7 +1382,7 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
                 const vk::VkCommandBuffer commandBuffer     = **commandBuffers[frameNdx % commandBuffers.size()];
                 const vk::VkPipelineStageFlags waitDstStage = vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                 vk::VkSubmitInfo submitInfo                 = {vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                                               DE_NULL,
+                                                               nullptr,
                                                                1u,
                                                                &imageReadySemaphore,
                                                                &waitDstStage,
@@ -1360,19 +1393,19 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
 
                 const vk::VkProtectedSubmitInfo protectedInfo = {
                     vk::VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO, // sType
-                    DE_NULL,                                     // pNext
+                    nullptr,                                     // pNext
                     VK_TRUE,                                     // protectedSubmit
                 };
                 submitInfo.pNext = &protectedInfo;
 
                 const vk::VkPresentInfoKHR presentInfo = {vk::VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                                                          DE_NULL,
+                                                          nullptr,
                                                           1u,
                                                           &renderingCompleteSemaphore,
                                                           1u,
                                                           &*swapchain,
                                                           &imageNdx,
-                                                          (vk::VkResult *)DE_NULL};
+                                                          nullptr};
 
                 renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
                 VK_CHECK(vkd.queueSubmit(context.getQueue(), 1u, &submitInfo, imageReadyFence));

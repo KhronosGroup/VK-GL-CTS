@@ -123,7 +123,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
 {
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0u,              // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_3D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -136,7 +136,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, uint32_t 
             VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
     };
 
@@ -503,16 +503,16 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
             createShaderModule(vkd, device, m_context.getBinaryCollection().get("compute_indirect_command"), 0);
         const VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             VkPipelineShaderStageCreateFlags(0u),                // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             *computeShader,                                      // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
         };
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             VkPipelineCreateFlags(0u),                      // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             *computePipelineLayout,                         // VkPipelineLayout layout;
@@ -520,7 +520,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
             0,                                              // int32_t basePipelineIndex;
         };
 
-        computePipeline = vk::createComputePipeline(vkd, device, (VkPipelineCache)0u, &pipelineCreateInfo);
+        computePipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     const Move<VkDescriptorSetLayout> descriptorSetLayout =
@@ -561,8 +561,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
     const VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion =
         makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0),
                                           shaderGroupHandleSize, shaderGroupHandleSize);
-    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
-        makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     const VkFormat imageFormat = VK_FORMAT_R32_UINT;
     const VkImageCreateInfo imageCreateInfo =
@@ -704,7 +703,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
 
             vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
             vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u,
-                                      &computeDescriptorSet.get(), 0u, DE_NULL);
+                                      &computeDescriptorSet.get(), 0u, nullptr);
             vkd.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
             const VkBufferMemoryBarrier fillIndirectBufferMemoryBarrier =
@@ -729,7 +728,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
 
             vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
             vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u,
-                                      &computeDescriptorSet.get(), 0u, DE_NULL);
+                                      &computeDescriptorSet.get(), 0u, nullptr);
             vkd.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
             const VkBufferMemoryBarrier fillIndirectBufferMemoryBarrier =
@@ -742,7 +741,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -755,7 +754,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 
@@ -1197,16 +1196,16 @@ TestStatus TraceRaysIndirect2Instance::iterate(void)
             createShaderModule(vkd, device, m_context.getBinaryCollection().get("compute_indirect_command"), 0);
         const VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             VkPipelineShaderStageCreateFlags(0u),                // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             *computeShader,                                      // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
         };
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             VkPipelineCreateFlags(0u),                      // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             *computePipelineLayout,                         // VkPipelineLayout layout;
@@ -1214,7 +1213,7 @@ TestStatus TraceRaysIndirect2Instance::iterate(void)
             0,                                              // int32_t basePipelineIndex;
         };
 
-        computePipeline = vk::createComputePipeline(vkd, device, (VkPipelineCache)0u, &pipelineCreateInfo);
+        computePipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     const Move<VkDescriptorSetLayout> descriptorSetLayout =
@@ -1346,7 +1345,7 @@ TestStatus TraceRaysIndirect2Instance::iterate(void)
 
             vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
             vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u,
-                                      &computeDescriptorSet.get(), 0u, DE_NULL);
+                                      &computeDescriptorSet.get(), 0u, nullptr);
             vkd.cmdPushConstants(*cmdBuffer, *computePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                  uint32_t(sizeof(uint32_t)), &fullCopyStyle);
             vkd.cmdDispatch(*cmdBuffer, 1, 1, 1);
@@ -1360,7 +1359,7 @@ TestStatus TraceRaysIndirect2Instance::iterate(void)
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;
-            DE_NULL,                                                           //  const void* pNext;
+            nullptr,                                                           //  const void* pNext;
             1u,                                                                //  uint32_t accelerationStructureCount;
             topLevelAccelerationStructurePtr->getPtr(), //  const VkAccelerationStructureKHR* pAccelerationStructures;
         };
@@ -1373,7 +1372,7 @@ TestStatus TraceRaysIndirect2Instance::iterate(void)
             .update(vkd, device);
 
         vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1,
-                                  &descriptorSet.get(), 0, DE_NULL);
+                                  &descriptorSet.get(), 0, nullptr);
 
         vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 

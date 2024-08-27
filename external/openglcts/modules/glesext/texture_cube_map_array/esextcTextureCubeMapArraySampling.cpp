@@ -4363,7 +4363,7 @@ TextureCubeMapArraySamplingTest::programDefinition::programDefinition()
     , tesselation_evaluation_shader(0)
     , vertex_shader(0)
     , m_program_object_id(m_invalid_program_object_id)
-    , m_gl(DE_NULL)
+    , m_gl(nullptr)
 {
 }
 

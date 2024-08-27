@@ -25,13 +25,12 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineVertexInputTests.hpp"
+#include "vktPipelineLegacyAttrTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
-#include "vktPipelineReferenceRenderer.hpp"
 #include "vktTestCase.hpp"
-#include "vktTestCaseUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
@@ -44,6 +43,7 @@
 #include "tcuFloat.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuFloat.hpp"
+#include "tcuTextureUtil.hpp"
 #include "deMemory.h"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
@@ -1177,7 +1177,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            DE_NULL,                                                               // const void* pNext;
+            nullptr,                                                               // const void* pNext;
             0u,                                                                    // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
             m_colorFormat,                                                         // VkFormat format;
@@ -1206,7 +1206,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
     {
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkImageViewCreateFlags flags;
             *m_colorImage,                               // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
@@ -1225,7 +1225,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
     {
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             1u,                                        // uint32_t attachmentCount;
@@ -1242,12 +1242,12 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             0u,                                            // uint32_t setLayoutCount;
-            DE_NULL,                                       // const VkDescriptorSetLayout* pSetLayouts;
+            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
@@ -1284,7 +1284,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
 
         const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                   // const void* pNext;
+            nullptr,                                                   // const void* pNext;
             0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
             (uint32_t)bindingDescriptions.size(),                      // uint32_t vertexBindingDescriptionCount;
             bindingDescriptions.data(), // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -1308,7 +1308,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                                  // const void* pNext;
+            nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             false,                                                    // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -1323,7 +1323,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
             .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
             .setupVertexInputState(&vertexInputStateParams)
             .setupPreRasterizationShaderState(viewport, scissor, m_pipelineLayout, *m_renderPass, 0u,
-                                              m_vertexShaderModule, DE_NULL, ShaderWrapper(), ShaderWrapper(),
+                                              m_vertexShaderModule, nullptr, ShaderWrapper(), ShaderWrapper(),
                                               ShaderWrapper(), &specializationInfo)
             .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
             .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
@@ -1340,7 +1340,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
 
         const VkBufferCreateInfo vertexBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             bufferSize,                           // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
@@ -1377,7 +1377,7 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
 
         const VkImageMemoryBarrier attachmentLayoutBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,      // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkAccessFlags srcAccessMask;
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,        // VkAccessFlags dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout oldLayout;
@@ -1393,8 +1393,8 @@ VertexInputInstance::VertexInputInstance(Context &context, const PipelineConstru
         beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 0u,
-                              DE_NULL, 1u, &attachmentLayoutBarrier);
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u,
+                              nullptr, 1u, &attachmentLayoutBarrier);
 
         m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
                            attachmentClearValue);
@@ -1439,7 +1439,7 @@ VertexInputInstance::~VertexInputInstance(void)
     const VkDevice vkDevice   = m_context.getDevice();
 
     for (size_t bufferNdx = 0; bufferNdx < m_vertexBuffers.size(); bufferNdx++)
-        vk.destroyBuffer(vkDevice, m_vertexBuffers[bufferNdx], DE_NULL);
+        vk.destroyBuffer(vkDevice, m_vertexBuffers[bufferNdx], nullptr);
 
     for (size_t allocNdx = 0; allocNdx < m_vertexBufferAllocs.size(); allocNdx++)
         delete m_vertexBufferAllocs[allocNdx];
@@ -2562,6 +2562,14 @@ void createVertexInputTests(tcu::TestCaseGroup *vertexInputTests, PipelineConstr
 
     // Miscellaneous tests.
     addTestGroup(vertexInputTests, "misc", createMiscVertexInputTests, pipelineConstructionType);
+
+    if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
+        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
+        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
+    {
+        addTestGroup(vertexInputTests, "legacy_vertex_attributes", createLegacyVertexAttributesTests,
+                     pipelineConstructionType);
+    }
 }
 
 } // namespace pipeline

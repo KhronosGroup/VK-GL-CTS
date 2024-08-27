@@ -109,10 +109,10 @@ UniqueBase<T, D>::~UniqueBase(void)
 template <typename T, class D>
 void UniqueBase<T, D>::reset(void)
 {
-    if (m_data.ptr != DE_NULL)
+    if (m_data.ptr != nullptr)
     {
         m_data.deleter(m_data.ptr);
-        m_data.ptr = DE_NULL;
+        m_data.ptr = nullptr;
     }
 }
 
@@ -120,7 +120,7 @@ template <typename T, class D>
 PtrData<T, D> UniqueBase<T, D>::releaseData(void) throw()
 {
     PtrData<T, D> data = m_data;
-    m_data.ptr         = DE_NULL;
+    m_data.ptr         = nullptr;
     return data;
 }
 
@@ -149,7 +149,7 @@ template <typename T, class Deleter = DefaultDeleter<T>>
 class MovePtr : public UniqueBase<T, Deleter>
 {
 public:
-    MovePtr(void) : UniqueBase<T, Deleter>(DE_NULL, Deleter())
+    MovePtr(void) : UniqueBase<T, Deleter>(nullptr, Deleter())
     {
     }
     explicit MovePtr(T *ptr, Deleter deleter = Deleter()) : UniqueBase<T, Deleter>(ptr, deleter)

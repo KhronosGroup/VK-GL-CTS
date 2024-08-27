@@ -110,7 +110,7 @@ void copyImageLayerToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipLevel, 1u, 0, 1u);
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
-        DE_NULL,                                // const void*                pNext
+        nullptr,                                // const void*                pNext
         srcAccessMask,                          // VkAccessFlags            srcAccessMask
         VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags            dstAccessMask
         oldLayout,                              // VkImageLayout            oldLayout
@@ -122,7 +122,7 @@ void copyImageLayerToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer
     };
 
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                          DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+                          nullptr, 0u, nullptr, 1u, &imageBarrier);
 
     const VkImageSubresourceLayers subresource = {
         subresourceRange.aspectMask, // VkImageAspectFlags    aspectMask
@@ -144,7 +144,7 @@ void copyImageLayerToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer
 
     const VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType
-        DE_NULL,                                 // const void*        pNext
+        nullptr,                                 // const void*        pNext
         VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags    srcAccessMask
         VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags    dstAccessMask
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t            srcQueueFamilyIndex
@@ -154,8 +154,8 @@ void copyImageLayerToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer
         VK_WHOLE_SIZE                            // VkDeviceSize        size
     };
 
-    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u,
-                          &bufferBarrier, 0u, DE_NULL);
+    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u,
+                          &bufferBarrier, 0u, nullptr);
 }
 
 // Draws a chess pattern to the given 'layer' (z-dimension) of the 'image'. Other layers will be cleared to white.
@@ -217,7 +217,7 @@ VkSparseMemoryBind makeSparseMemoryBinding(const DeviceInterface &vk, const VkDe
         memoryType,                             // uint32_t memoryTypeIndex;
     };
 
-    VkDeviceMemory deviceMemory = 0;
+    VkDeviceMemory deviceMemory = VK_NULL_HANDLE;
     VK_CHECK(vk.allocateMemory(device, &allocInfo, VK_NULL_HANDLE, &deviceMemory));
 
     VkSparseMemoryBind memoryBind;
@@ -281,7 +281,7 @@ void Image2DView3DImageInstance::runComputePipeline(const VkDescriptorSet &descr
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet, 0u,
-                             DE_NULL);
+                             nullptr);
     vk.cmdDispatch(cmdBuffer, testMipLevelSize.x(), testMipLevelSize.y(), 1u);
 
     // Copy the result image to a buffer.
@@ -319,7 +319,7 @@ void Image2DView3DImageInstance::runGraphicsPipeline(const VkDescriptorSet &desc
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                     // const void*                                pNext
+        nullptr,                                                     // const void*                                pNext
         0u,                                                          // VkPipelineInputAssemblyStateCreateFlags    flags
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, // VkPrimitiveTopology                        topology
         VK_FALSE                            // VkBool32                                    primitiveRestartEnable
@@ -340,7 +340,7 @@ void Image2DView3DImageInstance::runGraphicsPipeline(const VkDescriptorSet &desc
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfoDefault = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                                sType
-        DE_NULL,                                  // const void*                                    pNext
+        nullptr,                                  // const void*                                    pNext
         (VkPipelineVertexInputStateCreateFlags)0, // VkPipelineVertexInputStateCreateFlags        flags
         1u,                             // uint32_t                                        vertexBindingDescriptionCount
         &vertexInputBindingDescription, // const VkVertexInputBindingDescription*        pVertexBindingDescriptions
@@ -360,7 +360,7 @@ void Image2DView3DImageInstance::runGraphicsPipeline(const VkDescriptorSet &desc
         .setupFragmentOutputState(*renderPass, 0u)
         .buildPipeline();
 
-    renderPass.createFramebuffer(vk, device, 0u, DE_NULL, DE_NULL, testMipLevelSize.x(), testMipLevelSize.y());
+    renderPass.createFramebuffer(vk, device, 0u, nullptr, nullptr, testMipLevelSize.x(), testMipLevelSize.y());
 
     // Create vertex buffer and fill it with full screen quad.
     const std::vector<tcu::Vec4> vertexData = {
@@ -381,7 +381,7 @@ void Image2DView3DImageInstance::runGraphicsPipeline(const VkDescriptorSet &desc
 
     graphicsPipeline.bind(cmdBuffer);
     vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet, 0u,
-                             DE_NULL);
+                             nullptr);
 
     renderPass.begin(vk, cmdBuffer, makeRect2D(testMipLevelSize.xy()));
     vk.cmdDraw(cmdBuffer, 4, 1, 0, 0);
@@ -552,7 +552,7 @@ tcu::TestStatus Image2DView3DImageInstance::iterate(void)
     {
         const VkImageCreateInfo resultImageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                         // VkStructureType            sType
-            DE_NULL,                                                     // const void*                pNext
+            nullptr,                                                     // const void*                pNext
             0U,                                                          // VkImageCreateFlags        flags
             VK_IMAGE_TYPE_2D,                                            // VkImageType                imageType
             m_testParameters.imageFormat,                                // VkFormat                    format
@@ -565,7 +565,7 @@ tcu::TestStatus Image2DView3DImageInstance::iterate(void)
                 VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags        usage
             VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
             0u,                                  // uint32_t                    queueFamilyIndexCount
-            DE_NULL,                             // const uint32_t*            pQueueFamilyIndices
+            nullptr,                             // const uint32_t*            pQueueFamilyIndices
             VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout            initialLayout
         };
 
@@ -578,7 +578,7 @@ tcu::TestStatus Image2DView3DImageInstance::iterate(void)
 
         const VkSamplerCreateInfo samplerCreateInfo = {
             VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType            sType
-            DE_NULL,                                 // const void*                pNext
+            nullptr,                                 // const void*                pNext
             (VkSamplerCreateFlags)0,                 // VkSamplerCreateFlags        flags
             VK_FILTER_NEAREST,                       // VkFilter                    magFilter
             VK_FILTER_NEAREST,                       // VkFilter                    minFilter

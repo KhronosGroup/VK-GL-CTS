@@ -699,7 +699,7 @@ protected:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_filter);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, m_filter);
-        glTexImage2D(GL_TEXTURE_2D, 0, m_format, texW, texH, 0, transferFmt.format, transferFmt.dataType, DE_NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, m_format, texW, texH, 0, transferFmt.format, transferFmt.dataType, nullptr);
 
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
@@ -838,7 +838,7 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_filter);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, m_filter);
         glTexImage2D(GL_TEXTURE_2D, 0, m_format, fboTexW, fboTexH, 0, transferFmt.format, transferFmt.dataType,
-                     DE_NULL);
+                     nullptr);
 
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTex, 0);
@@ -992,7 +992,7 @@ void FramebufferBlitTests::init(void)
             const char *name;
             IVec4 srcSwizzle;
             IVec4 dstSwizzle;
-        } swizzles[] = {{DE_NULL, IVec4(0, 1, 2, 3), IVec4(0, 1, 2, 3)},
+        } swizzles[] = {{nullptr, IVec4(0, 1, 2, 3), IVec4(0, 1, 2, 3)},
                         {"reverse_src_x", IVec4(2, 1, 0, 3), IVec4(0, 1, 2, 3)},
                         {"reverse_src_y", IVec4(0, 3, 2, 1), IVec4(0, 1, 2, 3)},
                         {"reverse_dst_x", IVec4(0, 1, 2, 3), IVec4(2, 1, 0, 3)},

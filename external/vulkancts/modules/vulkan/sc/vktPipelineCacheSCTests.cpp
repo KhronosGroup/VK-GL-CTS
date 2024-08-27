@@ -128,21 +128,21 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
             std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
             shaderStageCreateInfos.push_back({
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType;
-                DE_NULL,                                             // const void*                         pNext;
+                nullptr,                                             // const void*                         pNext;
                 (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags    flags;
                 VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits               stage;
                 *vertexShader,                                       // VkShaderModule                      shader;
                 "main",                                              // const char*                         pName;
-                DE_NULL, // const VkSpecializationInfo*         pSpecializationInfo;
+                nullptr, // const VkSpecializationInfo*         pSpecializationInfo;
             });
             shaderStageCreateInfos.push_back({
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType;
-                DE_NULL,                                             // const void*                         pNext;
+                nullptr,                                             // const void*                         pNext;
                 (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags    flags;
                 VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits               stage;
                 *fragmentShader,                                     // VkShaderModule                      shader;
                 "main",                                              // const char*                         pName;
-                DE_NULL, // const VkSpecializationInfo*         pSpecializationInfo;
+                nullptr, // const VkSpecializationInfo*         pSpecializationInfo;
             });
 
             VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo;
@@ -157,12 +157,12 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
 
             const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                     sType;
-                DE_NULL,                                       // const void*                         pNext;
+                nullptr,                                       // const void*                         pNext;
                 (VkPipelineLayoutCreateFlags)0u,               // VkPipelineLayoutCreateFlags         flags;
                 0u,                                            // uint32_t                            setLayoutCount;
-                DE_NULL,                                       // const VkDescriptorSetLayout*        pSetLayouts;
+                nullptr,                                       // const VkDescriptorSetLayout*        pSetLayouts;
                 0u,     // uint32_t                            pushConstantRangeCount;
-                DE_NULL // const VkPushConstantRange*          pPushConstantRanges;
+                nullptr // const VkPushConstantRange*          pPushConstantRanges;
             };
             Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 
@@ -198,22 +198,22 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
                 createShaderModule(vk, device, context.getBinaryCollection().get("compute"), 0);
             VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType;
-                DE_NULL,                                             // const void*                         pNext;
+                nullptr,                                             // const void*                         pNext;
                 (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags    flags;
                 VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits               stage;
                 *computeShader,                                      // VkShaderModule                      shader;
                 "main",                                              // const char*                         pName;
-                DE_NULL, // const VkSpecializationInfo*         pSpecializationInfo;
+                nullptr, // const VkSpecializationInfo*         pSpecializationInfo;
             };
 
             const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                     sType;
-                DE_NULL,                                       // const void*                         pNext;
+                nullptr,                                       // const void*                         pNext;
                 (VkPipelineLayoutCreateFlags)0u,               // VkPipelineLayoutCreateFlags         flags;
                 0u,                                            // uint32_t                            setLayoutCount;
-                DE_NULL,                                       // const VkDescriptorSetLayout*        pSetLayouts;
+                nullptr,                                       // const VkDescriptorSetLayout*        pSetLayouts;
                 0u,     // uint32_t                            pushConstantRangeCount;
-                DE_NULL // const VkPushConstantRange*          pPushConstantRanges;
+                nullptr // const VkPushConstantRange*          pPushConstantRanges;
             };
             Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 
@@ -263,7 +263,7 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
 
     const VkDeviceQueueCreateInfo deviceQueueCI = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // sType
-        DE_NULL,                                    // pNext
+        nullptr,                                    // pNext
         (VkDeviceQueueCreateFlags)0u,               // flags
         0,                                          //queueFamilyIndex;
         1,                                          //queueCount;
@@ -272,19 +272,19 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
 
     VkDeviceCreateInfo deviceCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // sType;
-        DE_NULL,                              // pNext;
+        nullptr,                              // pNext;
         (VkDeviceCreateFlags)0u,              // flags
         1,                                    // queueRecordCount;
         &deviceQueueCI,                       // pRequestedQueues;
         0,                                    // layerCount;
-        DE_NULL,                              // ppEnabledLayerNames;
+        nullptr,                              // ppEnabledLayerNames;
         0,                                    // extensionCount;
-        DE_NULL,                              // ppEnabledExtensionNames;
-        DE_NULL,                              // pEnabledFeatures;
+        nullptr,                              // ppEnabledExtensionNames;
+        nullptr,                              // pEnabledFeatures;
     };
 
     VkDeviceObjectReservationCreateInfo objectInfo = resetDeviceObjectReservationCreateInfo();
-    objectInfo.pNext                               = DE_NULL;
+    objectInfo.pNext                               = nullptr;
     objectInfo.pipelineLayoutRequestCount          = 2u;
     objectInfo.renderPassRequestCount              = 1u;
     objectInfo.subpassDescriptionRequestCount      = 1u;
@@ -295,7 +295,7 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
 
     VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                      // const void* pNext;
+        nullptr,                                      // const void* pNext;
         VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
             VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
         initialDataSize,                                          // uintptr_t initialDataSize;
@@ -327,10 +327,10 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
         {
             enabledLayers                        = getValidationLayers(instanceDriver, physicalDevice);
             deviceCreateInfo.enabledLayerCount   = static_cast<uint32_t>(enabledLayers.size());
-            deviceCreateInfo.ppEnabledLayerNames = (enabledLayers.empty() ? DE_NULL : enabledLayers.data());
+            deviceCreateInfo.ppEnabledLayerNames = (enabledLayers.empty() ? nullptr : enabledLayers.data());
         }
-        VkDevice object = 0;
-        VkResult result = instanceDriver.createDevice(physicalDevice, &deviceCreateInfo, DE_NULL, &object);
+        VkDevice object = VK_NULL_HANDLE;
+        VkResult result = instanceDriver.createDevice(physicalDevice, &deviceCreateInfo, nullptr, &object);
         switch (testParams.type)
         {
         case PCTT_WRONG_VENDOR_ID:
@@ -343,7 +343,7 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
         }
         if (result != VK_SUCCESS)
             return testStatus;
-        device = Move<VkDevice>(check<VkDevice>(object), Deleter<VkDevice>(vkp, instance, object, DE_NULL));
+        device = Move<VkDevice>(check<VkDevice>(object), Deleter<VkDevice>(vkp, instance, object, nullptr));
     }
 
     // create our own pipeline cache in subprocess. Use VK functions directly
@@ -355,7 +355,7 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
         (DestroyPipelineCacheFunc)getDeviceProcAddrFunc(*device, "vkDestroyPipelineCache");
 
     VkPipelineCache pipelineCache;
-    VkResult result = createPipelineCacheFunc(*device, &pipelineCacheCreateInfo, DE_NULL, &pipelineCache);
+    VkResult result = createPipelineCacheFunc(*device, &pipelineCacheCreateInfo, nullptr, &pipelineCache);
 
     switch (testParams.type)
     {
@@ -369,7 +369,7 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
     }
 
     if (result == VK_SUCCESS)
-        destroyPipelineCacheFunc(*device, pipelineCache, DE_NULL);
+        destroyPipelineCacheFunc(*device, pipelineCache, nullptr);
 
     return testStatus;
 }

@@ -559,7 +559,7 @@ WideColorSurfaceTest::WideColorSurfaceTest(EglTestContext &eglTestCtx, const cha
 void WideColorSurfaceTest::addTestAttributes(const EGLint *attributes)
 {
     uint32_t idx = 0;
-    if (attributes == DE_NULL)
+    if (attributes == nullptr)
         return;
 
     while (attributes[idx] != EGL_NONE)
@@ -1119,7 +1119,7 @@ void WideColorSurfaceTest::executeTest(void)
             eglu::selectNativeWindowFactory(displayFactory, m_testCtx.getCommandLine());
 
         de::UniquePtr<eglu::NativeWindow> window(windowFactory.createWindow(
-            &nativeDisplay, m_eglDisplay, m_eglConfig, DE_NULL,
+            &nativeDisplay, m_eglDisplay, m_eglConfig, nullptr,
             eglu::WindowParams(128, 128, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
         std::vector<EGLAttrib> attribs;
         if (m_colorSpace != EGL_NONE)
@@ -1187,9 +1187,9 @@ void WideColorSurfaceTest::executeTest(void)
             eglu::selectNativePixmapFactory(displayFactory, m_testCtx.getCommandLine());
 
         de::UniquePtr<eglu::NativePixmap> pixmap(
-            pixmapFactory.createPixmap(&nativeDisplay, m_eglDisplay, m_eglConfig, DE_NULL, 128, 128));
+            pixmapFactory.createPixmap(&nativeDisplay, m_eglDisplay, m_eglConfig, nullptr, 128, 128));
         const EGLSurface surface =
-            eglu::createPixmapSurface(nativeDisplay, *pixmap, m_eglDisplay, m_eglConfig, DE_NULL);
+            eglu::createPixmapSurface(nativeDisplay, *pixmap, m_eglDisplay, m_eglConfig, nullptr);
         TCU_CHECK(surface != EGL_NO_SURFACE);
         EGLU_CHECK_MSG(egl, "eglCreatePixmapSurface()");
 

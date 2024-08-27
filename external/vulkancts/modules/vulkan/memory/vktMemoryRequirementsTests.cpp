@@ -58,13 +58,13 @@ Move<VkBuffer> makeBuffer(const DeviceInterface &vk, const VkDevice device, cons
 {
     const VkBufferCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType;
-        DE_NULL,                              // const void*            pNext;
+        nullptr,                              // const void*            pNext;
         flags,                                // VkBufferCreateFlags    flags;
         size,                                 // VkDeviceSize           size;
         usage,                                // VkBufferUsageFlags     usage;
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode          sharingMode;
         0u,                                   // uint32_t               queueFamilyIndexCount;
-        DE_NULL,                              // const uint32_t*        pQueueFamilyIndices;
+        nullptr,                              // const uint32_t*        pQueueFamilyIndices;
     };
     return createBuffer(vk, device, &createInfo);
 }
@@ -79,12 +79,12 @@ VkMemoryRequirements getBufferMemoryRequirements(const DeviceInterface &vk, cons
 
 VkMemoryRequirements getBufferMemoryRequirements2(const DeviceInterface &vk, const VkDevice device,
                                                   const VkDeviceSize size, const VkBufferCreateFlags flags,
-                                                  const VkBufferUsageFlags usage, void *next = DE_NULL)
+                                                  const VkBufferUsageFlags usage, void *next = nullptr)
 {
     const Unique<VkBuffer> buffer(makeBuffer(vk, device, size, flags, usage));
     VkBufferMemoryRequirementsInfo2 info = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2, // VkStructureType    sType
-        DE_NULL,                                             // const void*        pNext
+        nullptr,                                             // const void*        pNext
         *buffer                                              // VkBuffer            buffer
     };
     VkMemoryRequirements2 req2 = {
@@ -101,20 +101,20 @@ VkMemoryRequirements getBufferMemoryRequirements2(const DeviceInterface &vk, con
 #ifndef CTS_USES_VULKANSC
 VkMemoryRequirements getBufferCreateInfoMemoryRequirementsKHR(const DeviceInterface &vk, const VkDevice device,
                                                               const VkDeviceSize size, const VkBufferCreateFlags flags,
-                                                              const VkBufferUsageFlags usage, void *next = DE_NULL)
+                                                              const VkBufferUsageFlags usage, void *next = nullptr)
 {
     const VkBufferCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType;
-        DE_NULL,                              // const void*            pNext;
+        nullptr,                              // const void*            pNext;
         flags,                                // VkBufferCreateFlags    flags;
         size,                                 // VkDeviceSize           size;
         usage,                                // VkBufferUsageFlags     usage;
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode          sharingMode;
         0u,                                   // uint32_t               queueFamilyIndexCount;
-        DE_NULL,                              // const uint32_t*        pQueueFamilyIndices;
+        nullptr,                              // const uint32_t*        pQueueFamilyIndices;
     };
     const VkDeviceBufferMemoryRequirementsKHR memoryInfo = {VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS_KHR,
-                                                            DE_NULL, &createInfo};
+                                                            nullptr, &createInfo};
     VkMemoryRequirements2 req2                           = {
         VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR, // VkStructureType        sType
         next,                                        // void*                pNext
@@ -128,13 +128,13 @@ VkMemoryRequirements getBufferCreateInfoMemoryRequirementsKHR(const DeviceInterf
 #endif // CTS_USES_VULKANSC
 
 VkMemoryRequirements getImageMemoryRequirements2(const DeviceInterface &vk, const VkDevice device,
-                                                 const VkImageCreateInfo &createInfo, void *next = DE_NULL)
+                                                 const VkImageCreateInfo &createInfo, void *next = nullptr)
 {
     const Unique<VkImage> image(createImage(vk, device, &createInfo));
 
     VkImageMemoryRequirementsInfo2 info = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2, // VkStructureType    sType
-        DE_NULL,                                            // const void*        pNext
+        nullptr,                                            // const void*        pNext
         *image                                              // VkImage            image
     };
     VkMemoryRequirements2 req2 = {
@@ -150,9 +150,9 @@ VkMemoryRequirements getImageMemoryRequirements2(const DeviceInterface &vk, cons
 
 #ifndef CTS_USES_VULKANSC
 VkMemoryRequirements getDeviceImageMemoryRequirements(const DeviceInterface &vk, const VkDevice device,
-                                                      const VkImageCreateInfo &createInfo, void *next = DE_NULL)
+                                                      const VkImageCreateInfo &createInfo, void *next = nullptr)
 {
-    VkDeviceImageMemoryRequirementsKHR info = {VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR, DE_NULL,
+    VkDeviceImageMemoryRequirementsKHR info = {VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR, nullptr,
                                                &createInfo, VkImageAspectFlagBits(0)};
     VkMemoryRequirements2 req2              = {
         VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR, // VkStructureType        sType
@@ -170,13 +170,13 @@ VkMemoryRequirements getDeviceImageMemoryRequirements(const DeviceInterface &vk,
 std::vector<VkSparseImageMemoryRequirements> getImageCreateInfoSparseMemoryRequirements(
     const DeviceInterface &vk, VkDevice device, const VkImageCreateInfo &createInfo)
 {
-    VkDeviceImageMemoryRequirementsKHR info = {VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR, DE_NULL,
+    VkDeviceImageMemoryRequirementsKHR info = {VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR, nullptr,
                                                &createInfo, VkImageAspectFlagBits(0)};
     uint32_t requirementsCount              = 0;
     std::vector<VkSparseImageMemoryRequirements> requirements;
     std::vector<VkSparseImageMemoryRequirements2> requirements2;
 
-    vk.getDeviceImageSparseMemoryRequirements(device, &info, &requirementsCount, DE_NULL);
+    vk.getDeviceImageSparseMemoryRequirements(device, &info, &requirementsCount, nullptr);
 
     if (requirementsCount > 0)
     {
@@ -184,7 +184,7 @@ std::vector<VkSparseImageMemoryRequirements> getImageCreateInfoSparseMemoryRequi
         for (uint32_t ndx = 0; ndx < requirementsCount; ++ndx)
         {
             requirements2[ndx].sType = VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2;
-            requirements2[ndx].pNext = DE_NULL;
+            requirements2[ndx].pNext = nullptr;
         }
 
         vk.getDeviceImageSparseMemoryRequirements(device, &info, &requirementsCount, &requirements2[0]);
@@ -602,7 +602,7 @@ void BufferMemoryRequirementsDedicatedAllocation::updateMemoryRequirements(
 
     VkMemoryDedicatedRequirements dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS, // VkStructureType    sType
-        DE_NULL,                                         // void*            pNext
+        nullptr,                                         // void*            pNext
         invalidVkBool32,                                 // VkBool32            prefersDedicatedAllocation
         invalidVkBool32                                  // VkBool32            requiresDedicatedAllocation
     };
@@ -1530,7 +1530,7 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest(Context &context, cons
                                 const bool isCube = (actualCreateFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) != 0u;
                                 const VkImageCreateInfo imageInfo = {
                                     VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType;
-                                    DE_NULL,                             // const void*              pNext;
+                                    nullptr,                             // const void*              pNext;
                                     actualCreateFlags,                   // VkImageCreateFlags       flags;
                                     loopImageType, // VkImageType              imageType;
                                     format,        // VkFormat                 format;
@@ -1542,7 +1542,7 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest(Context &context, cons
                                     actualUsageFlags,          // VkImageUsageFlags        usage;
                                     VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode;
                                     0u,      // uint32_t                 queueFamilyIndexCount;
-                                    DE_NULL, // const uint32_t*          pQueueFamilyIndices;
+                                    nullptr, // const uint32_t*          pQueueFamilyIndices;
                                     VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout            initialLayout;
                                 };
 
@@ -1664,7 +1664,7 @@ void ImageMemoryRequirementsDedicatedAllocation::updateMemoryRequirements(const 
 
     VkMemoryDedicatedRequirements dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS, // VkStructureType    sType
-        DE_NULL,                                         // void*            pNext
+        nullptr,                                         // void*            pNext
         invalidVkBool32,                                 // VkBool32            prefersDedicatedAllocation
         invalidVkBool32                                  // VkBool32            requiresDedicatedAllocation
     };
@@ -2020,7 +2020,7 @@ tcu::TestStatus testMultiplaneImages(Context &context, ImageTestParams params)
                                                                                                                    1u;
                 const VkImageCreateInfo imageInfo = {
                     VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType;
-                    DE_NULL,                             // const void*              pNext;
+                    nullptr,                             // const void*              pNext;
                     actualCreateFlags,                   // VkImageCreateFlags       flags;
                     imageType,                           // VkImageType              imageType;
                     format,                              // VkFormat                 format;
@@ -2036,7 +2036,7 @@ tcu::TestStatus testMultiplaneImages(Context &context, ImageTestParams params)
                     actualUsageFlags,          // VkImageUsageFlags        usage;
                     VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode;
                     0u,                        // uint32_t                 queueFamilyIndexCount;
-                    DE_NULL,                   // const uint32_t*          pQueueFamilyIndices;
+                    nullptr,                   // const uint32_t*          pQueueFamilyIndices;
                     VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout            initialLayout;
                 };
 
@@ -2052,24 +2052,24 @@ tcu::TestStatus testMultiplaneImages(Context &context, ImageTestParams params)
                     for (uint32_t planeNdx = 0; planeNdx < (uint32_t)getPlaneCount(format); planeNdx++)
                     {
                         VkMemoryRequirements2 requirements = {
-                            VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, DE_NULL, {0u, 0u, 0u}};
+                            VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, nullptr, {0u, 0u, 0u}};
                         const VkImageAspectFlagBits aspect = getPlaneAspect(planeNdx);
 
 #ifndef CTS_USES_VULKANSC
                         if (params.useMaint4)
                         {
                             const VkDeviceImageMemoryRequirementsKHR info = {
-                                VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR, DE_NULL, &imageInfo, aspect};
+                                VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS_KHR, nullptr, &imageInfo, aspect};
                             vk.getDeviceImageMemoryRequirements(device, &info, &requirements);
                         }
                         else
                         {
 #endif // CTS_USES_VULKANSC
                             const VkImagePlaneMemoryRequirementsInfo aspectInfo = {
-                                VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO, DE_NULL, aspect};
+                                VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO, nullptr, aspect};
                             const VkImageMemoryRequirementsInfo2 info = {
                                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
-                                (actualCreateFlags & VK_IMAGE_CREATE_DISJOINT_BIT) == 0 ? DE_NULL : &aspectInfo,
+                                (actualCreateFlags & VK_IMAGE_CREATE_DISJOINT_BIT) == 0 ? nullptr : &aspectInfo,
                                 *image};
 
                             vk.getImageMemoryRequirements2(device, &info, &requirements);
@@ -2087,7 +2087,7 @@ tcu::TestStatus testMultiplaneImages(Context &context, ImageTestParams params)
                         if (actualCreateFlags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)
                         {
                             std::vector<VkSparseImageMemoryRequirements> sparseRequirements;
-                            if ((*image == DE_NULL) || params.useMaint4)
+                            if ((*image == VK_NULL_HANDLE) || params.useMaint4)
                                 sparseRequirements =
                                     getDeviceImageSparseMemoryRequirements(vk, device, imageInfo, aspect);
                             else

@@ -193,7 +193,7 @@ inline VkSemaphoreSubmitInfoKHR makeSemaphoreSubmitInfo(VkSemaphore semaphore, V
 {
     return VkSemaphoreSubmitInfoKHR{
         VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                     //  const void* pNext;
+        nullptr,                                     //  const void* pNext;
         semaphore,                                   //  VkSemaphore semaphore;
         value,                                       //  uint64_t value;
         stageMask,                                   //  VkPipelineStageFlags2KHR stageMask;

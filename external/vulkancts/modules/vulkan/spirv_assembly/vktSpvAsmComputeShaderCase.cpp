@@ -94,13 +94,13 @@ Move<VkBuffer> createBufferAndBindMemory(vkt::Context &context, const DeviceInte
 
     const VkBufferCreateInfo bufferCreateInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-        DE_NULL,                              // pNext
+        nullptr,                              // pNext
         0u,                                   // flags
         numBytes,                             // size
         usageFlags,                           // usage
         VK_SHARING_MODE_EXCLUSIVE,            // sharingMode
         0u,                                   // queueFamilyCount
-        DE_NULL,                              // pQueueFamilyIndices
+        nullptr,                              // pQueueFamilyIndices
     };
 
     Move<VkBuffer> buffer(createBuffer(vkdi, device, &bufferCreateInfo));
@@ -145,7 +145,7 @@ Move<VkImage> createImageAndBindMemory(const DeviceInterface &vkdi, const VkDevi
 
     const VkImageCreateInfo resourceImageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         imageFormat,                         // VkFormat format;
@@ -225,12 +225,12 @@ Move<VkPipelineLayout> createPipelineLayout(const DeviceInterface &vkdi, const V
 {
     VkPipelineLayoutCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,
         1u,                   // descriptorSetCount
         &descriptorSetLayout, // pSetLayouts
         0u,                   // pushConstantRangeCount
-        DE_NULL,              // pPushConstantRanges
+        nullptr,              // pPushConstantRanges
     };
 
     VkPushConstantRange range = {
@@ -239,7 +239,7 @@ Move<VkPipelineLayout> createPipelineLayout(const DeviceInterface &vkdi, const V
         0,                           // size
     };
 
-    if (pushConstants != DE_NULL)
+    if (pushConstants)
     {
         vector<uint8_t> pushConstantsBytes;
         pushConstants->getBytes(pushConstantsBytes);
@@ -280,7 +280,7 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkdi, const VkD
 {
     DE_ASSERT(dtypes.size() == descriptorInfos.size() + descriptorImageInfos.size());
 
-    const VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL, pool, 1u,
+    const VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, pool, 1u,
                                                    &layout};
 
     Move<VkDescriptorSet> descriptorSet = allocateDescriptorSet(vkdi, device, &allocInfo);
@@ -353,24 +353,24 @@ Move<VkPipeline> createComputePipeline(const DeviceInterface &vkdi, const VkDevi
 
     const VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // sType
-        DE_NULL,                                             // pNext
+        nullptr,                                             // pNext
         (VkPipelineShaderStageCreateFlags)0,                 // flags
         VK_SHADER_STAGE_COMPUTE_BIT,                         // stage
         shader,                                              // module
         entryPoint,                                          // pName
-        (numSpecConstants == 0) ? DE_NULL : &specInfo,       // pSpecializationInfo
+        (numSpecConstants == 0) ? nullptr : &specInfo,       // pSpecializationInfo
     };
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // sType
-        DE_NULL,                                        // pNext
+        nullptr,                                        // pNext
         (VkPipelineCreateFlags)0,
         pipelineShaderStageCreateInfo, // cs
         pipelineLayout,                // layout
-        (VkPipeline)0,                 // basePipelineHandle
+        VK_NULL_HANDLE,                // basePipelineHandle
         0u,                            // basePipelineIndex
     };
 
-    return createComputePipeline(vkdi, device, (VkPipelineCache)0u, &pipelineCreateInfo);
+    return createComputePipeline(vkdi, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 } // namespace
@@ -431,7 +431,7 @@ void SpvAsmComputeShaderCase::checkSupport(Context &context) const
     assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.sparseBinding == false);
     assert(m_shaderSpec.requestedVulkanFeatures.coreFeatures.variableMultisampleRate == false);
 
-    const char *unsupportedFeature = DE_NULL;
+    const char *unsupportedFeature = nullptr;
     if (!isVulkanFeaturesSupported(context, m_shaderSpec.requestedVulkanFeatures, &unsupportedFeature))
         TCU_THROW(NotSupportedError,
                   std::string("At least following requested feature is not supported: ") + unsupportedFeature);
@@ -592,7 +592,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
             copyRegions.push_back(copyRegion);
 
             copyBufferToImage(vkdi, device, queue, queueFamilyIndex, buffer->get(), (uint32_t)numBytes, copyRegions,
-                              DE_NULL, VK_IMAGE_ASPECT_COLOR_BIT, 1u, 1u, image->get(), imageLayout);
+                              nullptr, VK_IMAGE_ASPECT_COLOR_BIT, 1u, 1u, image->get(), imageLayout);
         }
     }
 
@@ -616,7 +616,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
         {
             const VkImageViewCreateInfo imgViewParams = {
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                  // const void* pNext;
+                nullptr,                                  // const void* pNext;
                 0u,                                       // VkImageViewCreateFlags flags;
                 **inputImages[imageNdx++],                // VkImage image;
                 VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -640,7 +640,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
         {
             const VkSamplerCreateInfo samplerParams = {
                 VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                               // const void* pNext;
+                nullptr,                               // const void* pNext;
                 0,                                     // VkSamplerCreateFlags flags;
                 VK_FILTER_NEAREST,                     // VkFilter                    magFilter:
                 VK_FILTER_NEAREST,                     // VkFilter minFilter;
@@ -762,8 +762,8 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
     {
         VkBufferDeviceAddressInfo info{
             VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
-            0,                                            // VkBuffer            buffer
+            nullptr,                                      // const void* pNext;
+            VK_NULL_HANDLE,                               // VkBuffer            buffer
         };
 
         for (uint32_t inputNdx = 0; inputNdx < m_shaderSpec.inputs.size(); ++inputNdx)
@@ -826,8 +826,8 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
     beginCommandBuffer(vkdi, *cmdBuffer);
     vkdi.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
     vkdi.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &descriptorSet.get(),
-                               0, DE_NULL);
-    if (m_shaderSpec.pushConstants != DE_NULL)
+                               0, nullptr);
+    if (m_shaderSpec.pushConstants)
     {
         vector<uint8_t> pushConstantsBytes;
         m_shaderSpec.pushConstants->getBytes(pushConstantsBytes);
@@ -845,7 +845,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
     {
         const VkBufferMemoryBarrier buf_barrier = {
             VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //    VkStructureType    sType;
-            DE_NULL,                                 //    const void*        pNext;
+            nullptr,                                 //    const void*        pNext;
             VK_ACCESS_SHADER_WRITE_BIT,              //    VkAccessFlags      srcAccessMask;
             VK_ACCESS_HOST_READ_BIT,                 //    VkAccessFlags      dstAccessMask;
             VK_QUEUE_FAMILY_IGNORED,                 //    uint32_t           srcQueueFamilyIndex;
@@ -856,7 +856,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
         };
 
         vkdi.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0,
-                                DE_NULL, 1, &buf_barrier, 0, DE_NULL);
+                                nullptr, 1, &buf_barrier, 0, nullptr);
     }
     endCommandBuffer(vkdi, *cmdBuffer);
 

@@ -72,8 +72,8 @@ MutableRenderBufferTest::MutableRenderBufferTest(EglTestContext &eglTestCtx, con
     , m_enableConfigBit(enableConfigBit)
     , m_eglDisplay(EGL_NO_DISPLAY)
     , m_eglSurface(EGL_NO_SURFACE)
-    , m_eglConfig(DE_NULL)
-    , m_window(DE_NULL)
+    , m_eglConfig(nullptr)
+    , m_window(nullptr)
     , m_eglContext(EGL_NO_CONTEXT)
 {
 }
@@ -143,7 +143,7 @@ void MutableRenderBufferTest::init(void)
             }
         }
 
-        if (m_eglConfig == DE_NULL)
+        if (m_eglConfig == nullptr)
             TCU_THROW(NotSupportedError, "No config without support for mutable_render_buffer found");
     }
 
@@ -151,10 +151,10 @@ void MutableRenderBufferTest::init(void)
     const eglu::NativeWindowFactory &factory =
         eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
     m_window =
-        factory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, DE_NULL,
+        factory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, nullptr,
                              eglu::WindowParams(480, 480, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
     m_eglSurface =
-        eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, m_eglConfig, DE_NULL);
+        eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *m_window, m_eglDisplay, m_eglConfig, nullptr);
 
     // create context and make current
     const EGLint contextAttribList[] = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
@@ -192,10 +192,10 @@ void MutableRenderBufferTest::deinit(void)
         m_eglDisplay = EGL_NO_DISPLAY;
     }
 
-    if (m_window != DE_NULL)
+    if (m_window != nullptr)
     {
         delete m_window;
-        m_window = DE_NULL;
+        m_window = nullptr;
     }
 }
 

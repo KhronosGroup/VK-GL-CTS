@@ -11,6 +11,8 @@ include_directories(subgroups)
 set(GLCTS_COMMON_SRCS
 	glcAggressiveShaderOptimizationsTests.cpp
 	glcAggressiveShaderOptimizationsTests.hpp
+	glcApiCoverageTests.cpp
+	glcApiCoverageTests.hpp
 	glcBlendEquationAdvancedTests.cpp
 	glcBlendEquationAdvancedTests.hpp
 	glcBufferObjectsTests.cpp

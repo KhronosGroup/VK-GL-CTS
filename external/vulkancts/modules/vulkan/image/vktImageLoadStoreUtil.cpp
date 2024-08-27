@@ -82,7 +82,7 @@ VkImageCreateInfo makeImageCreateInfo(const Texture &texture, const VkFormat for
 
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (isCube(texture) ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u) |
             flags,                         // VkImageCreateFlags flags;
         mapImageType(texture.type()),      // VkImageType imageType;
@@ -95,7 +95,7 @@ VkImageCreateInfo makeImageCreateInfo(const Texture &texture, const VkFormat for
         usage,                             // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,         // VkSharingMode sharingMode;
         0u,                                // uint32_t queueFamilyIndexCount;
-        DE_NULL,                           // const uint32_t* pQueueFamilyIndices;
+        nullptr,                           // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,         // VkImageLayout initialLayout;
     };
     return imageParams;

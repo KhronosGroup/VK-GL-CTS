@@ -258,7 +258,7 @@ public:
     DrawTest(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const char *name, const char *desc);
     virtual ~DrawTest(void);
 
-    void addIteration(const DrawTestSpec &spec, const char *description = DE_NULL);
+    void addIteration(const DrawTestSpec &spec, const char *description = nullptr);
 
 private:
     void init(void);

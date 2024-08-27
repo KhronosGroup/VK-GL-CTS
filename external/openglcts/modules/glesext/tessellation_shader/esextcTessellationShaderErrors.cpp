@@ -82,12 +82,12 @@ TessellationShaderErrorsTestCaseBase::TessellationShaderErrorsTestCaseBase(Conte
                                                                            const ExtParameters &extParams,
                                                                            const char *name, const char *description)
     : TestCaseBase(context, extParams, name, description)
-    , m_fs_ids(DE_NULL)
+    , m_fs_ids(nullptr)
     , m_n_program_objects(0)
-    , m_po_ids(DE_NULL)
-    , m_tc_ids(DE_NULL)
-    , m_te_ids(DE_NULL)
-    , m_vs_ids(DE_NULL)
+    , m_po_ids(nullptr)
+    , m_tc_ids(nullptr)
+    , m_te_ids(nullptr)
+    , m_vs_ids(nullptr)
 {
     /* Left blank intentionally */
 }
@@ -108,35 +108,35 @@ void TessellationShaderErrorsTestCaseBase::deinit()
     /* Release all shader objects created for the test */
     for (unsigned int n_program_object = 0; n_program_object < m_n_program_objects; ++n_program_object)
     {
-        if (m_fs_ids != DE_NULL && m_fs_ids[n_program_object] != 0)
+        if (m_fs_ids != nullptr && m_fs_ids[n_program_object] != 0)
         {
             gl.deleteShader(m_fs_ids[n_program_object]);
 
             m_fs_ids[n_program_object] = 0;
         }
 
-        if (m_po_ids != DE_NULL && m_po_ids[n_program_object] != 0)
+        if (m_po_ids != nullptr && m_po_ids[n_program_object] != 0)
         {
             gl.deleteProgram(m_po_ids[n_program_object]);
 
             m_po_ids[n_program_object] = 0;
         }
 
-        if (m_tc_ids != DE_NULL && m_tc_ids[n_program_object] != 0)
+        if (m_tc_ids != nullptr && m_tc_ids[n_program_object] != 0)
         {
             gl.deleteShader(m_tc_ids[n_program_object]);
 
             m_tc_ids[n_program_object] = 0;
         }
 
-        if (m_te_ids != DE_NULL && m_te_ids[n_program_object] != 0)
+        if (m_te_ids != nullptr && m_te_ids[n_program_object] != 0)
         {
             gl.deleteShader(m_te_ids[n_program_object]);
 
             m_te_ids[n_program_object] = 0;
         }
 
-        if (m_vs_ids != DE_NULL && m_vs_ids[n_program_object] != 0)
+        if (m_vs_ids != nullptr && m_vs_ids[n_program_object] != 0)
         {
             gl.deleteShader(m_vs_ids[n_program_object]);
 
@@ -145,39 +145,39 @@ void TessellationShaderErrorsTestCaseBase::deinit()
     } /* for (all shader objects) */
 
     /* Release buffers allocated for the test */
-    if (m_fs_ids != DE_NULL)
+    if (m_fs_ids != nullptr)
     {
         delete[] m_fs_ids;
 
-        m_fs_ids = DE_NULL;
+        m_fs_ids = nullptr;
     }
 
-    if (m_po_ids != DE_NULL)
+    if (m_po_ids != nullptr)
     {
         delete[] m_po_ids;
 
-        m_po_ids = DE_NULL;
+        m_po_ids = nullptr;
     }
 
-    if (m_tc_ids != DE_NULL)
+    if (m_tc_ids != nullptr)
     {
         delete[] m_tc_ids;
 
-        m_tc_ids = DE_NULL;
+        m_tc_ids = nullptr;
     }
 
-    if (m_te_ids != DE_NULL)
+    if (m_te_ids != nullptr)
     {
         delete[] m_te_ids;
 
-        m_te_ids = DE_NULL;
+        m_te_ids = nullptr;
     }
 
-    if (m_vs_ids != DE_NULL)
+    if (m_vs_ids != nullptr)
     {
         delete[] m_vs_ids;
 
-        m_vs_ids = DE_NULL;
+        m_vs_ids = nullptr;
     }
 }
 
@@ -264,7 +264,7 @@ tcu::TestNode::IterateResult TessellationShaderErrorsTestCaseBase::iterate()
 
             _compilation_result expected_compilation_result = getCompilationResult(static_cast<_pipeline_stage>(stage));
             std::string so_code;
-            glw::GLuint *so_id_ptr = DE_NULL;
+            glw::GLuint *so_id_ptr = nullptr;
             std::string so_type;
 
             switch (static_cast<_pipeline_stage>(stage))

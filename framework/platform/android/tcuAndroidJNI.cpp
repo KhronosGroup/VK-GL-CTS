@@ -70,8 +70,8 @@ DE_BEGIN_EXTERN_C
 JNIEXPORT void JNICALL Java_com_drawelements_deqp_execserver_ExecService_startServer(JNIEnv *env, jobject obj,
                                                                                      jint port)
 {
-    tcu::Android::ExecService *service = DE_NULL;
-    JavaVM *vm                         = DE_NULL;
+    tcu::Android::ExecService *service = nullptr;
+    JavaVM *vm                         = nullptr;
 
     try
     {
@@ -103,7 +103,7 @@ JNIEXPORT void JNICALL Java_com_drawelements_deqp_execserver_ExecService_stopSer
         service->stop();
         delete service;
 
-        setExecService(env, obj, DE_NULL);
+        setExecService(env, obj, nullptr);
     }
     catch (const std::exception &e)
     {

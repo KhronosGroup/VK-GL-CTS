@@ -27,6 +27,7 @@
 
 namespace glcts
 {
+struct InternalFormat;
 
 class PackedPixelsTests : public deqp::TestCaseGroup
 {
@@ -41,6 +42,12 @@ private:
     /* Private methods */
     PackedPixelsTests(const PackedPixelsTests &other);
     PackedPixelsTests &operator=(const PackedPixelsTests &other);
+
+    template <class T>
+    void addRectangleTests(TestCaseGroup *testCaseGroup, std::string &name, const InternalFormat &internalFormat);
+    void addRectangleTest(TestCaseGroup *testCaseGroup, std::string &name, const InternalFormat &internalFormat);
+    void addPBORectangleTest(TestCaseGroup *testCaseGroup, std::string &name, const InternalFormat &internalFormat);
+    void addVariedRectangleTest(TestCaseGroup *testCaseGroup, std::string &name, const InternalFormat &internalFormat);
 };
 
 } // namespace glcts

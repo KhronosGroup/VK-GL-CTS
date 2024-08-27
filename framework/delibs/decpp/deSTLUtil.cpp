@@ -41,7 +41,7 @@ void STLUtil_selfTest(void)
         DE_TEST_ASSERT(lookup(m, 4) == 5);
         DE_TEST_ASSERT(*tryLookup(m, 4) == 5);
         DE_TEST_ASSERT(!contains(m, 3));
-        DE_TEST_ASSERT(tryLookup(m, 3) == DE_NULL);
+        DE_TEST_ASSERT(tryLookup(m, 3) == nullptr);
         DE_TEST_ASSERT(lookupDefault(m, 3, 7) == 7);
     }
 

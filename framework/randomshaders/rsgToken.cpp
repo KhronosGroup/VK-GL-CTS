@@ -46,7 +46,7 @@ Token &Token::operator=(const Token &other)
     if (m_type == IDENTIFIER)
     {
         deFree(m_arg.identifier);
-        m_arg.identifier = DE_NULL;
+        m_arg.identifier = nullptr;
     }
 
     m_type = other.m_type;

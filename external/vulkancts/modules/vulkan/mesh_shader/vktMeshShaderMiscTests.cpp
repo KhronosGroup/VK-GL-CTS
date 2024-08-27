@@ -4621,11 +4621,12 @@ tcu::TestStatus testMixedPipelines(Context &context)
     const std::vector<VkRect2D> scissors(1u, makeRect2D(colorExtent));
 
     const auto classicPipeline =
-        makeGraphicsPipeline(vkd, device, classicPipelineLayout.get(), vertModule.get(), DE_NULL, DE_NULL, DE_NULL,
-                             fragModule.get(), renderPass.get(), viewports, scissors);
+        makeGraphicsPipeline(vkd, device, classicPipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, fragModule.get(), renderPass.get(), viewports, scissors);
 
-    const auto meshPipeline = makeGraphicsPipeline(vkd, device, meshPipelineLayout.get(), DE_NULL, meshModule.get(),
-                                                   fragModule.get(), renderPass.get(), viewports, scissors);
+    const auto meshPipeline =
+        makeGraphicsPipeline(vkd, device, meshPipelineLayout.get(), VK_NULL_HANDLE, meshModule.get(), fragModule.get(),
+                             renderPass.get(), viewports, scissors);
 
     // Command pool and buffer.
     const auto cmdPool      = makeCommandPool(vkd, device, qIndex);

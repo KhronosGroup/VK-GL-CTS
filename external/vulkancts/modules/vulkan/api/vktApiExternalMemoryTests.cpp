@@ -92,9 +92,9 @@ vk::VkMemoryDedicatedRequirements getMemoryDedicatedRequirements(const vk::Devic
                                                                  vk::VkBuffer buffer)
 {
     const vk::VkBufferMemoryRequirementsInfo2 requirementInfo = {
-        vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2, DE_NULL, buffer};
+        vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2, nullptr, buffer};
     vk::VkMemoryDedicatedRequirements dedicatedRequirements = {vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
-                                                               DE_NULL, VK_FALSE, VK_FALSE};
+                                                               nullptr, VK_FALSE, VK_FALSE};
     vk::VkMemoryRequirements2 requirements                  = {
         vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, &dedicatedRequirements, {0u, 0u, 0u}};
 
@@ -107,9 +107,9 @@ vk::VkMemoryDedicatedRequirements getMemoryDedicatedRequirements(const vk::Devic
                                                                  vk::VkImage image)
 {
     const vk::VkImageMemoryRequirementsInfo2 requirementInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
-                                                                DE_NULL, image};
+                                                                nullptr, image};
     vk::VkMemoryDedicatedRequirements dedicatedRequirements  = {vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
-                                                                DE_NULL, VK_FALSE, VK_FALSE};
+                                                                nullptr, VK_FALSE, VK_FALSE};
     vk::VkMemoryRequirements2 requirements                   = {
         vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, &dedicatedRequirements, {0u, 0u, 0u}};
 
@@ -221,7 +221,7 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
                                         const vk::VkExternalMemoryHandleTypeFlags externalMemoryTypes,
                                         const vk::VkExternalFenceHandleTypeFlags externalFenceTypes,
                                         uint32_t queueFamilyIndex, bool useDedicatedAllocs = false,
-                                        void *protectedFeatures = DE_NULL)
+                                        void *protectedFeatures = nullptr)
 {
     const uint32_t apiVersion = context.getUsedApiVersion();
     bool useExternalSemaphore = false;
@@ -328,7 +328,7 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
     }
 
     const float priority                          = 0.5f;
-    const vk::VkDeviceQueueCreateInfo queues[]    = {{vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, DE_NULL, 0u,
+    const vk::VkDeviceQueueCreateInfo queues[]    = {{vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr, 0u,
 
                                                       queueFamilyIndex, 1u, &priority}};
     const vk::VkDeviceCreateInfo deviceCreateInfo = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -339,11 +339,11 @@ vk::Move<vk::VkDevice> createTestDevice(const Context &context, const vk::Platfo
                                                      queues,
 
                                                      0u,
-                                                     DE_NULL,
+                                                     nullptr,
 
                                                      (uint32_t)deviceExtensions.size(),
-                                                     deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0],
-                                                     DE_NULL};
+                                                     deviceExtensions.empty() ? nullptr : &deviceExtensions[0],
+                                                     nullptr};
 
     try
     {
@@ -381,8 +381,8 @@ void checkSemaphoreSupport(const vk::InstanceInterface &vki, vk::VkPhysicalDevic
                            vk::VkExternalSemaphoreHandleTypeFlagBits externalType)
 {
     const vk::VkPhysicalDeviceExternalSemaphoreInfo info = {
-        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO, DE_NULL, externalType};
-    vk::VkExternalSemaphoreProperties properties = {vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES, DE_NULL, 0u,
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO, nullptr, externalType};
+    vk::VkExternalSemaphoreProperties properties = {vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES, nullptr, 0u,
                                                     0u, 0u};
 
     vki.getPhysicalDeviceExternalSemaphoreProperties(device, &info, &properties);
@@ -398,8 +398,8 @@ void checkFenceSupport(const vk::InstanceInterface &vki, vk::VkPhysicalDevice de
                        vk::VkExternalFenceHandleTypeFlagBits externalType)
 {
     const vk::VkPhysicalDeviceExternalFenceInfo info = {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO,
-                                                        DE_NULL, externalType};
-    vk::VkExternalFenceProperties properties = {vk::VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES, DE_NULL, 0u, 0u, 0u};
+                                                        nullptr, externalType};
+    vk::VkExternalFenceProperties properties = {vk::VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES, nullptr, 0u, 0u, 0u};
 
     vki.getPhysicalDeviceExternalFenceProperties(device, &info, &properties);
 
@@ -415,11 +415,11 @@ void checkBufferSupport(const vk::InstanceInterface &vki, vk::VkPhysicalDevice d
                         vk::VkBufferUsageFlags usageFlag, bool dedicated)
 {
     const vk::VkPhysicalDeviceExternalBufferInfo info = {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO,
-                                                         DE_NULL,
+                                                         nullptr,
 
                                                          createFlag, usageFlag, externalType};
     vk::VkExternalBufferProperties properties         = {vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES,
-                                                         DE_NULL,
+                                                         nullptr,
 
                                                          {0u, 0u, 0u}};
 
@@ -443,7 +443,7 @@ void checkImageSupport(const vk::InstanceInterface &vki, vk::VkPhysicalDevice de
                        vk::VkImageUsageFlags usageFlag, vk::VkFormat format, vk::VkImageTiling tiling, bool dedicated)
 {
     const vk::VkPhysicalDeviceExternalImageFormatInfo externalInfo = {
-        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, DE_NULL, externalType};
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, nullptr, externalType};
     const vk::VkPhysicalDeviceImageFormatInfo2 info = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
         &externalInfo,
@@ -455,7 +455,7 @@ void checkImageSupport(const vk::InstanceInterface &vki, vk::VkPhysicalDevice de
         createFlag,
     };
     vk::VkExternalImageFormatProperties externalProperties = {
-        vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, DE_NULL, {0u, 0u, 0u}};
+        vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, nullptr, {0u, 0u, 0u}};
     vk::VkImageFormatProperties2 properties = {
         vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2, &externalProperties, {{0u, 0u, 0u}, 0u, 0u, 0u, 0u}};
 
@@ -477,19 +477,19 @@ void checkImageSupport(const vk::InstanceInterface &vki, vk::VkPhysicalDevice de
 void submitEmptySignal(const vk::DeviceInterface &vkd, vk::VkQueue queue, vk::VkSemaphore semaphore)
 {
     const vk::VkSubmitInfo submit = {vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                     DE_NULL,
+                                     nullptr,
 
                                      0u,
-                                     DE_NULL,
-                                     DE_NULL,
+                                     nullptr,
+                                     nullptr,
 
                                      0u,
-                                     DE_NULL,
+                                     nullptr,
 
                                      1u,
                                      &semaphore};
 
-    VK_CHECK(vkd.queueSubmit(queue, 1, &submit, (vk::VkFence)0u));
+    VK_CHECK(vkd.queueSubmit(queue, 1, &submit, VK_NULL_HANDLE));
 }
 
 void tuneWorkSizeYAndPrepareCommandBuffer(const Context &context, const vk::DeviceInterface &vk, vk::VkDevice device,
@@ -662,7 +662,7 @@ void submitAtomicCalculationsAndGetSemaphoreNative(const Context &context, const
                                      1u,
                                      &semaphore};
 
-    VK_CHECK(vk.queueSubmit(queue, 1, &submit, (vk::VkFence)0u));
+    VK_CHECK(vk.queueSubmit(queue, 1, &submit, VK_NULL_HANDLE));
 
     getSemaphoreNative(vk, device, semaphore, externalType, nativeHandle);
 
@@ -678,36 +678,36 @@ void submitEmptyWait(const vk::DeviceInterface &vkd, vk::VkQueue queue, vk::VkSe
     const vk::VkPipelineStageFlags stage = vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
     const vk::VkSubmitInfo submit        = {
         vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        DE_NULL,
+        nullptr,
 
         1u,
         &semaphore,
         &stage,
 
         0u,
-        DE_NULL,
+        nullptr,
 
         0u,
-        DE_NULL,
+        nullptr,
     };
 
-    VK_CHECK(vkd.queueSubmit(queue, 1, &submit, (vk::VkFence)0u));
+    VK_CHECK(vkd.queueSubmit(queue, 1, &submit, VK_NULL_HANDLE));
 }
 
 void submitEmptySignal(const vk::DeviceInterface &vkd, vk::VkQueue queue, vk::VkFence fence)
 {
     const vk::VkSubmitInfo submit = {vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                     DE_NULL,
+                                     nullptr,
 
                                      0u,
-                                     DE_NULL,
-                                     DE_NULL,
+                                     nullptr,
+                                     nullptr,
 
                                      0u,
-                                     DE_NULL,
+                                     nullptr,
 
                                      0u,
-                                     DE_NULL};
+                                     nullptr};
 
     VK_CHECK(vkd.queueSubmit(queue, 1, &submit, fence));
 }
@@ -723,9 +723,9 @@ void submitAtomicCalculationsAndGetFenceNative(const Context &context, const vk:
     const vk::Unique<vk::VkCommandBuffer> cmdBuffer(
         allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-    const vk::VkEventCreateInfo eventCreateInfo = {vk::VK_STRUCTURE_TYPE_EVENT_CREATE_INFO, DE_NULL, 0u};
+    const vk::VkEventCreateInfo eventCreateInfo = {vk::VK_STRUCTURE_TYPE_EVENT_CREATE_INFO, nullptr, 0u};
 
-    const vk::Unique<vk::VkEvent> event(createEvent(vk, device, &eventCreateInfo, DE_NULL));
+    const vk::Unique<vk::VkEvent> event(createEvent(vk, device, &eventCreateInfo, nullptr));
 
     const uint32_t maxXWorkSize = getMaxInvocations(context, 0);
     const uint32_t maxYWorkSize = getMaxInvocations(context, 1);
@@ -773,17 +773,17 @@ void submitAtomicCalculationsAndGetFenceNative(const Context &context, const vk:
                                          *computePipeline, computeFinishBarrier, *event, &workSize);
 
     const vk::VkSubmitInfo submit = {vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                     DE_NULL,
+                                     nullptr,
 
                                      0u,
-                                     DE_NULL,
-                                     DE_NULL,
+                                     nullptr,
+                                     nullptr,
 
                                      1u,
                                      &cmdBuffer.get(),
 
                                      0u,
-                                     DE_NULL};
+                                     nullptr};
 
     VK_CHECK(vk.queueSubmit(queue, 1, &submit, fence));
 
@@ -819,19 +819,19 @@ tcu::TestStatus testSemaphoreQueries(Context &context, const TestSemaphoreQuerie
 
     const vk::VkSemaphoreTypeCreateInfo semaphoreTypeInfo = {
         vk::VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         params.semaphoreType,
         0,
     };
     const vk::VkPhysicalDeviceExternalSemaphoreInfo info = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO, &semaphoreTypeInfo, params.externalType};
-    vk::VkExternalSemaphoreProperties properties = {vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES, DE_NULL, 0u,
+    vk::VkExternalSemaphoreProperties properties = {vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES, nullptr, 0u,
                                                     0u, 0u};
 
     vki.getPhysicalDeviceExternalSemaphoreProperties(device, &info, &properties);
     log << TestLog::Message << properties << TestLog::EndMessage;
 
-    TCU_CHECK(properties.pNext == DE_NULL);
+    TCU_CHECK(properties.pNext == nullptr);
     TCU_CHECK(properties.sType == vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES);
 
     if (params.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE)
@@ -903,10 +903,10 @@ tcu::TestStatus testSemaphoreWin32Create(Context &context, const SemaphoreTestCo
                                    context.getTestContext().getCommandLine());
         const vk::VkQueue queue(getQueue(vkd, *device, queueFamilyIndex));
         const vk::VkExportSemaphoreWin32HandleInfoKHR win32ExportInfo = {
-            vk::VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR, nullptr,
 
-            (vk::pt::Win32SecurityAttributesPtr)DE_NULL, DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
-            (vk::pt::Win32LPCWSTR)DE_NULL};
+            (vk::pt::Win32SecurityAttributesPtr) nullptr, DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
+            (vk::pt::Win32LPCWSTR) nullptr};
         const vk::VkExportSemaphoreCreateInfo exportCreateInfo = {
             vk::VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO, &win32ExportInfo,
             (vk::VkExternalMemoryHandleTypeFlags)config.externalType};
@@ -1942,13 +1942,13 @@ tcu::TestStatus testFenceQueries(Context &context, vk::VkExternalFenceHandleType
     TestLog &log = context.getTestContext().getLog();
 
     const vk::VkPhysicalDeviceExternalFenceInfo info = {vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO,
-                                                        DE_NULL, externalType};
-    vk::VkExternalFenceProperties properties = {vk::VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES, DE_NULL, 0u, 0u, 0u};
+                                                        nullptr, externalType};
+    vk::VkExternalFenceProperties properties = {vk::VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES, nullptr, 0u, 0u, 0u};
 
     vki.getPhysicalDeviceExternalFenceProperties(device, &info, &properties);
     log << TestLog::Message << properties << TestLog::EndMessage;
 
-    TCU_CHECK(properties.pNext == DE_NULL);
+    TCU_CHECK(properties.pNext == nullptr);
     TCU_CHECK(properties.sType == vk::VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES);
 
     return tcu::TestStatus::pass("Pass");
@@ -1986,10 +1986,10 @@ tcu::TestStatus testFenceWin32Create(Context &context, const FenceTestConfig con
                                    context.getTestContext().getCommandLine());
         const vk::VkQueue queue(getQueue(vkd, *device, queueFamilyIndex));
         const vk::VkExportFenceWin32HandleInfoKHR win32ExportInfo = {
-            vk::VK_STRUCTURE_TYPE_EXPORT_FENCE_WIN32_HANDLE_INFO_KHR, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_EXPORT_FENCE_WIN32_HANDLE_INFO_KHR, nullptr,
 
-            (vk::pt::Win32SecurityAttributesPtr)DE_NULL, DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
-            (vk::pt::Win32LPCWSTR)DE_NULL};
+            (vk::pt::Win32SecurityAttributesPtr) nullptr, DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
+            (vk::pt::Win32LPCWSTR) nullptr};
         const vk::VkExportFenceCreateInfo exportCreateInfo = {vk::VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO,
                                                               &win32ExportInfo,
                                                               (vk::VkExternalFenceHandleTypeFlags)config.externalType};
@@ -3125,10 +3125,10 @@ tcu::TestStatus testBufferQueries(Context &context, vk::VkExternalMemoryHandleTy
             const vk::VkBufferViewCreateFlags createFlag      = createFlags[createFlagNdx];
             const vk::VkBufferUsageFlags usageFlag            = usageFlags[usageFlagNdx];
             const vk::VkPhysicalDeviceExternalBufferInfo info = {
-                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, DE_NULL, createFlag, usageFlag,
+                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, nullptr, createFlag, usageFlag,
                 externalType};
             vk::VkExternalBufferProperties properties = {
-                vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES, DE_NULL, {0u, 0u, 0u}};
+                vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES, nullptr, {0u, 0u, 0u}};
 
             if (((createFlag & vk::VK_BUFFER_CREATE_SPARSE_BINDING_BIT) != 0) &&
                 (deviceFeatures.sparseBinding == VK_FALSE))
@@ -3147,7 +3147,7 @@ tcu::TestStatus testBufferQueries(Context &context, vk::VkExternalMemoryHandleTy
             log << TestLog::Message << properties << TestLog::EndMessage;
 
             TCU_CHECK(properties.sType == vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES);
-            TCU_CHECK(properties.pNext == DE_NULL);
+            TCU_CHECK(properties.pNext == nullptr);
             // \todo [2017-06-06 pyry] Can we validate anything else? Compatible types?
 
             if ((properties.externalMemoryProperties.externalMemoryFeatures &
@@ -3230,7 +3230,7 @@ tcu::TestStatus testBufferQueriesMaintenance5(Context &context, vk::VkExternalMe
 
     for (auto usageFlag : usageFlags)
     {
-        vk::VkPhysicalDeviceExternalBufferInfo info{vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, DE_NULL,
+        vk::VkPhysicalDeviceExternalBufferInfo info{vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, nullptr,
                                                     0u, usageFlag, externalType};
 
         vk::VkExternalBufferProperties properties1 = vk::initVulkanStructure();
@@ -3304,10 +3304,10 @@ tcu::TestStatus testMemoryWin32Create(Context &context, MemoryTestConfig config)
         createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
     const vk::VkMemoryRequirements requirements(getBufferMemoryRequirements(vkd, *device, *buffer));
     const vk::VkExportMemoryWin32HandleInfoKHR win32Info = {
-        vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR, DE_NULL,
+        vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR, nullptr,
 
-        (vk::pt::Win32SecurityAttributesPtr)DE_NULL, DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
-        (vk::pt::Win32LPCWSTR)DE_NULL};
+        (vk::pt::Win32SecurityAttributesPtr) nullptr, DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
+        (vk::pt::Win32LPCWSTR) nullptr};
     const vk::VkExportMemoryAllocateInfo exportInfo = {vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO, &win32Info,
                                                        (vk::VkExternalMemoryHandleTypeFlags)config.externalType};
 
@@ -3390,7 +3390,7 @@ tcu::TestStatus testMemoryImportTwice(Context &context, MemoryTestConfig config)
         getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
     const vk::Unique<vk::VkDeviceMemory> memory(allocateExportableMemory(vkd, *device, requirements.size,
                                                                          exportedMemoryTypeIndex, config.externalType,
-                                                                         config.dedicated ? *buffer : (vk::VkBuffer)0));
+                                                                         config.dedicated ? *buffer : VK_NULL_HANDLE));
     NativeHandle handleA;
 
     if (config.hostVisible)
@@ -3404,7 +3404,7 @@ tcu::TestStatus testMemoryImportTwice(Context &context, MemoryTestConfig config)
     {
         vk::VkAndroidHardwareBufferPropertiesANDROID ahbProperties = {
             vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID, // VkStructureType    sType
-            DE_NULL,                                                          // void*            pNext
+            nullptr,                                                          // void*            pNext
             0u,                                                               // VkDeviceSize        allocationSize
             0u                                                                // uint32_t            memoryTypeBits
         };
@@ -3476,7 +3476,7 @@ tcu::TestStatus testMemoryMultipleImports(Context &context, MemoryTestConfig con
         getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
     const vk::Unique<vk::VkDeviceMemory> memory(allocateExportableMemory(vkd, *device, requirements.size,
                                                                          exportedMemoryTypeIndex, config.externalType,
-                                                                         config.dedicated ? *buffer : (vk::VkBuffer)0));
+                                                                         config.dedicated ? *buffer : VK_NULL_HANDLE));
     NativeHandle handleA;
 
     getMemoryNative(vkd, *device, *memory, config.externalType, handleA);
@@ -3487,7 +3487,7 @@ tcu::TestStatus testMemoryMultipleImports(Context &context, MemoryTestConfig con
     {
         vk::VkAndroidHardwareBufferPropertiesANDROID ahbProperties = {
             vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID, // VkStructureType    sType
-            DE_NULL,                                                          // void*            pNext
+            nullptr,                                                          // void*            pNext
             0u,                                                               // VkDeviceSize        allocationSize
             0u                                                                // uint32_t            memoryTypeBits
         };
@@ -3538,7 +3538,7 @@ tcu::TestStatus testMemoryMultipleExports(Context &context, MemoryTestConfig con
         getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
     const vk::Unique<vk::VkDeviceMemory> memory(allocateExportableMemory(vkd, *device, requirements.size,
                                                                          exportedMemoryTypeIndex, config.externalType,
-                                                                         config.dedicated ? *buffer : (vk::VkBuffer)0));
+                                                                         config.dedicated ? *buffer : VK_NULL_HANDLE));
 
     for (size_t ndx = 0; ndx < count; ndx++)
     {
@@ -3574,7 +3574,7 @@ tcu::TestStatus testMemoryFdProperties(Context &context, MemoryTestConfig config
         getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
     const vk::Unique<vk::VkDeviceMemory> memory(allocateExportableMemory(vkd, *device, requirements.size,
                                                                          exportedMemoryTypeIndex, config.externalType,
-                                                                         config.dedicated ? *buffer : (vk::VkBuffer)0));
+                                                                         config.dedicated ? *buffer : VK_NULL_HANDLE));
 
     vk::VkMemoryFdPropertiesKHR properties;
     NativeHandle handle;
@@ -3631,7 +3631,7 @@ tcu::TestStatus testMemoryFdDup(Context &context, MemoryTestConfig config)
             getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
         const vk::Unique<vk::VkDeviceMemory> memory(
             allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType,
-                                     config.dedicated ? *buffer : (vk::VkBuffer)0));
+                                     config.dedicated ? *buffer : VK_NULL_HANDLE));
 
         if (config.hostVisible)
             writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
@@ -3706,7 +3706,7 @@ tcu::TestStatus testMemoryFdDup2(Context &context, MemoryTestConfig config)
             getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
         const vk::Unique<vk::VkDeviceMemory> memory(
             allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType,
-                                     config.dedicated ? *buffer : (vk::VkBuffer)0));
+                                     config.dedicated ? *buffer : VK_NULL_HANDLE));
 
         if (config.hostVisible)
             writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
@@ -3782,7 +3782,7 @@ tcu::TestStatus testMemoryFdDup3(Context &context, MemoryTestConfig config)
             getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
         const vk::Unique<vk::VkDeviceMemory> memory(
             allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType,
-                                     config.dedicated ? *buffer : (vk::VkBuffer)0));
+                                     config.dedicated ? *buffer : VK_NULL_HANDLE));
 
         if (config.hostVisible)
             writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
@@ -3858,7 +3858,7 @@ tcu::TestStatus testMemoryFdSendOverSocket(Context &context, MemoryTestConfig co
             getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
         const vk::Unique<vk::VkDeviceMemory> memory(
             allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType,
-                                     config.dedicated ? *buffer : (vk::VkBuffer)0));
+                                     config.dedicated ? *buffer : VK_NULL_HANDLE));
 
         if (config.hostVisible)
             writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
@@ -4020,7 +4020,7 @@ tcu::TestStatus testBufferBindExportImportBind(Context &context, const BufferTes
     uint32_t exportedMemoryTypeIndex(chooseMemoryType(requirements.memoryTypeBits));
     const vk::Unique<vk::VkDeviceMemory> memoryA(
         allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType,
-                                 config.dedicated ? *bufferA : (vk::VkBuffer)0));
+                                 config.dedicated ? *bufferA : VK_NULL_HANDLE));
     NativeHandle handle;
 
     VK_CHECK(vkd.bindBufferMemory(*device, *bufferA, *memoryA, 0u));
@@ -4033,7 +4033,7 @@ tcu::TestStatus testBufferBindExportImportBind(Context &context, const BufferTes
     {
         vk::VkAndroidHardwareBufferPropertiesANDROID ahbProperties = {
             vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID, // VkStructureType    sType
-            DE_NULL,                                                          // void*            pNext
+            nullptr,                                                          // void*            pNext
             0u,                                                               // VkDeviceSize        allocationSize
             0u                                                                // uint32_t            memoryTypeBits
         };
@@ -4081,7 +4081,7 @@ tcu::TestStatus testBufferExportBindImportBind(Context &context, const BufferTes
     uint32_t exportedMemoryTypeIndex(chooseMemoryType(requirements.memoryTypeBits));
     const vk::Unique<vk::VkDeviceMemory> memoryA(
         allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType,
-                                 config.dedicated ? *bufferA : (vk::VkBuffer)0));
+                                 config.dedicated ? *bufferA : VK_NULL_HANDLE));
     NativeHandle handle;
 
     getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
@@ -4093,7 +4093,7 @@ tcu::TestStatus testBufferExportBindImportBind(Context &context, const BufferTes
     {
         vk::VkAndroidHardwareBufferPropertiesANDROID ahbProperties = {
             vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID, // VkStructureType    sType
-            DE_NULL,                                                          // void*            pNext
+            nullptr,                                                          // void*            pNext
             0u,                                                               // VkDeviceSize        allocationSize
             0u                                                                // uint32_t            memoryTypeBits
         };
@@ -4141,7 +4141,7 @@ tcu::TestStatus testBufferExportImportBindBind(Context &context, const BufferTes
     uint32_t exportedMemoryTypeIndex(chooseMemoryType(requirements.memoryTypeBits));
     const vk::Unique<vk::VkDeviceMemory> memoryA(
         allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType,
-                                 config.dedicated ? *bufferA : (vk::VkBuffer)0));
+                                 config.dedicated ? *bufferA : VK_NULL_HANDLE));
     NativeHandle handle;
 
     getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
@@ -4152,7 +4152,7 @@ tcu::TestStatus testBufferExportImportBindBind(Context &context, const BufferTes
     {
         vk::VkAndroidHardwareBufferPropertiesANDROID ahbProperties = {
             vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID, // VkStructureType    sType
-            DE_NULL,                                                          // void*            pNext
+            nullptr,                                                          // void*            pNext
             0u,                                                               // VkDeviceSize        allocationSize
             0u                                                                // uint32_t            memoryTypeBits
         };
@@ -4223,7 +4223,7 @@ tcu::TestStatus testImageQueries(Context &context, vk::VkExternalMemoryHandleTyp
             const vk::VkImageType type = vk::VK_IMAGE_TYPE_2D;
             const vk::VkImageTiling tiling                                 = vk::VK_IMAGE_TILING_OPTIMAL;
             const vk::VkPhysicalDeviceExternalImageFormatInfo externalInfo = {
-                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, DE_NULL, externalType};
+                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, nullptr, externalType};
             const vk::VkPhysicalDeviceImageFormatInfo2 info = {
                 vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
                 &externalInfo,
@@ -4235,7 +4235,7 @@ tcu::TestStatus testImageQueries(Context &context, vk::VkExternalMemoryHandleTyp
                 createFlag,
             };
             vk::VkExternalImageFormatProperties externalProperties = {
-                vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, DE_NULL, {0u, 0u, 0u}};
+                vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, nullptr, {0u, 0u, 0u}};
             vk::VkImageFormatProperties2 properties = {
                 vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2, &externalProperties, {{0u, 0u, 0u}, 0u, 0u, 0u, 0u}};
 
@@ -4259,7 +4259,7 @@ tcu::TestStatus testImageQueries(Context &context, vk::VkExternalMemoryHandleTyp
 
             log << TestLog::Message << externalProperties << TestLog::EndMessage;
             TCU_CHECK(externalProperties.sType == vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES);
-            TCU_CHECK(externalProperties.pNext == DE_NULL);
+            TCU_CHECK(externalProperties.pNext == nullptr);
             // \todo [2017-06-06 pyry] Can we validate anything else? Compatible types?
 
             if ((externalProperties.externalMemoryProperties.externalMemoryFeatures &
@@ -4371,7 +4371,7 @@ tcu::TestStatus testImageBindExportImportBind(Context &context, const ImageTestC
     const uint32_t exportedMemoryTypeIndex(chooseMemoryType(requirements.memoryTypeBits));
     const vk::Unique<vk::VkDeviceMemory> memoryA(allocateExportableMemory(vkd, *device, requirements.size,
                                                                           exportedMemoryTypeIndex, config.externalType,
-                                                                          config.dedicated ? *imageA : (vk::VkImage)0));
+                                                                          config.dedicated ? *imageA : VK_NULL_HANDLE));
     NativeHandle handle;
 
     VK_CHECK(vkd.bindImageMemory(*device, *imageA, *memoryA, 0u));
@@ -4426,7 +4426,7 @@ tcu::TestStatus testImageExportBindImportBind(Context &context, const ImageTestC
     const uint32_t exportedMemoryTypeIndex(chooseMemoryType(requirements.memoryTypeBits));
     const vk::Unique<vk::VkDeviceMemory> memoryA(allocateExportableMemory(vkd, *device, requirements.size,
                                                                           exportedMemoryTypeIndex, config.externalType,
-                                                                          config.dedicated ? *imageA : (vk::VkImage)0));
+                                                                          config.dedicated ? *imageA : VK_NULL_HANDLE));
     NativeHandle handle;
 
     if (config.externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID &&
@@ -4498,7 +4498,7 @@ tcu::TestStatus testImageExportImportBindBind(Context &context, const ImageTestC
     const uint32_t exportedMemoryTypeIndex(chooseMemoryType(requirements.memoryTypeBits));
     const vk::Unique<vk::VkDeviceMemory> memoryA(allocateExportableMemory(vkd, *device, requirements.size,
                                                                           exportedMemoryTypeIndex, config.externalType,
-                                                                          config.dedicated ? *imageA : (vk::VkImage)0));
+                                                                          config.dedicated ? *imageA : VK_NULL_HANDLE));
     NativeHandle handle;
 
     getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
@@ -4677,12 +4677,12 @@ bool ValidateAHardwareBuffer(TestLog &log, vk::VkFormat format, uint64_t require
 
     vk::pt::AndroidHardwareBufferPtr ahb =
         ahbApi->allocate(64u, 64u, layerCount, ahbApi->vkFormatToAhbFormat(format), requiredAhbUsage);
-    if (ahb.internal == DE_NULL)
+    if (ahb.internal == nullptr)
     {
         enableMaxLayerTest = false;
         // try again with layerCount '1'
         ahb = ahbApi->allocate(64u, 64u, 1u, ahbApi->vkFormatToAhbFormat(format), requiredAhbUsage);
-        if (ahb.internal == DE_NULL)
+        if (ahb.internal == nullptr)
         {
             return false;
         }
@@ -4701,7 +4701,7 @@ bool ValidateAHardwareBuffer(TestLog &log, vk::VkFormat format, uint64_t require
 
         vk::VkAndroidHardwareBufferFormatPropertiesANDROID formatProperties = {
             vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID,
-            DE_NULL,
+            nullptr,
             vk::VK_FORMAT_UNDEFINED,
             0u,
             0u,
@@ -4757,7 +4757,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat(Context &context, vk::VkFor
 
     vk::VkPhysicalDeviceProtectedMemoryFeatures protectedFeatures;
     protectedFeatures.sType           = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
-    protectedFeatures.pNext           = DE_NULL;
+    protectedFeatures.pNext           = nullptr;
     protectedFeatures.protectedMemory = VK_FALSE;
 
     vk::VkPhysicalDeviceFeatures2 deviceFeatures;
@@ -4845,7 +4845,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat(Context &context, vk::VkFor
             const vk::VkImageTiling tiling = tilings[tilingIndex];
 
             const vk::VkPhysicalDeviceExternalImageFormatInfo externalInfo = {
-                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, DE_NULL,
+                vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, nullptr,
                 vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID};
             const vk::VkPhysicalDeviceImageFormatInfo2 info = {
                 vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
@@ -4858,7 +4858,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat(Context &context, vk::VkFor
             };
 
             vk::VkAndroidHardwareBufferUsageANDROID ahbUsageProperties = {
-                vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID, DE_NULL, 0u};
+                vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID, nullptr, 0u};
             vk::VkExternalImageFormatProperties externalProperties = {
                 vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, &ahbUsageProperties, {0u, 0u, 0u}};
             vk::VkImageFormatProperties2 properties = {
@@ -4946,8 +4946,8 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat(Context &context, vk::VkFor
 
                     uint32_t ahbFormat = 0;
                     uint64_t anhUsage  = 0;
-                    ahbApi->describe(handle.getAndroidHardwareBuffer(), DE_NULL, DE_NULL, DE_NULL, &ahbFormat,
-                                     &anhUsage, DE_NULL);
+                    ahbApi->describe(handle.getAndroidHardwareBuffer(), nullptr, nullptr, nullptr, &ahbFormat,
+                                     &anhUsage, nullptr);
                     TCU_CHECK(ahbFormat == ahbApi->vkFormatToAhbFormat(format));
                     TCU_CHECK((anhUsage & requiredAhbUsage) == requiredAhbUsage);
 
@@ -4981,8 +4981,8 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat(Context &context, vk::VkFor
 
                     uint32_t ahbFormat = 0;
                     uint64_t anhUsage  = 0;
-                    ahbApi->describe(handle.getAndroidHardwareBuffer(), DE_NULL, DE_NULL, DE_NULL, &ahbFormat,
-                                     &anhUsage, DE_NULL);
+                    ahbApi->describe(handle.getAndroidHardwareBuffer(), nullptr, nullptr, nullptr, &ahbFormat,
+                                     &anhUsage, nullptr);
                     TCU_CHECK(ahbFormat == ahbApi->vkFormatToAhbFormat(format));
                     TCU_CHECK((anhUsage & requiredAhbUsage) == requiredAhbUsage);
                 }
@@ -5012,8 +5012,8 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat(Context &context, vk::VkFor
 
                     uint32_t ahbFormat = 0;
                     uint64_t anhUsage  = 0;
-                    ahbApi->describe(handle.getAndroidHardwareBuffer(), DE_NULL, DE_NULL, DE_NULL, &ahbFormat,
-                                     &anhUsage, DE_NULL);
+                    ahbApi->describe(handle.getAndroidHardwareBuffer(), nullptr, nullptr, nullptr, &ahbFormat,
+                                     &anhUsage, nullptr);
                     TCU_CHECK(ahbFormat == ahbApi->vkFormatToAhbFormat(format));
                     TCU_CHECK((anhUsage & requiredAhbUsage) == requiredAhbUsage);
                 }

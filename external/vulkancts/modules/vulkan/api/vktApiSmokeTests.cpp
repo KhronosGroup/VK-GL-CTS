@@ -69,7 +69,7 @@ tcu::TestStatus createSamplerTest(Context &context)
     {
         const struct VkSamplerCreateInfo samplerInfo = {
             VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // sType
-            DE_NULL,                                 // pNext
+            nullptr,                                 // pNext
             0u,                                      // flags
             VK_FILTER_NEAREST,                       // magFilter
             VK_FILTER_NEAREST,                       // minFilter
@@ -339,7 +339,7 @@ tcu::TestStatus renderTriangleTest(Context &context)
 
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-        DE_NULL,                              // pNext
+        nullptr,                              // pNext
         0u,                                   // flags
         (VkDeviceSize)sizeof(vertices),       // size
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // usage
@@ -357,7 +357,7 @@ tcu::TestStatus renderTriangleTest(Context &context)
     const VkDeviceSize imageSizeBytes              = (VkDeviceSize)(sizeof(uint32_t) * renderSize.x() * renderSize.y());
     const VkBufferCreateInfo readImageBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-        DE_NULL,                              // pNext
+        nullptr,                              // pNext
         (VkBufferCreateFlags)0u,              // flags
         imageSizeBytes,                       // size
         VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // usage
@@ -374,7 +374,7 @@ tcu::TestStatus renderTriangleTest(Context &context)
 
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // sType
-        DE_NULL,                                                               // pNext
+        nullptr,                                                               // pNext
         0u,                                                                    // flags
         VK_IMAGE_TYPE_2D,                                                      // imageType
         VK_FORMAT_R8G8B8A8_UNORM,                                              // format
@@ -400,7 +400,7 @@ tcu::TestStatus renderTriangleTest(Context &context)
 
     const VkImageViewCreateInfo colorAttViewParams = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,                                                         // sType
-        DE_NULL,                                                                                          // pNext
+        nullptr,                                                                                          // pNext
         0u,                                                                                               // flags
         *image,                                                                                           // image
         VK_IMAGE_VIEW_TYPE_2D,                                                                            // viewType
@@ -419,12 +419,12 @@ tcu::TestStatus renderTriangleTest(Context &context)
     // Pipeline layout
     const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (vk::VkPipelineLayoutCreateFlags)0,
         0u,      // setLayoutCount
-        DE_NULL, // pSetLayouts
+        nullptr, // pSetLayouts
         0u,      // pushConstantRangeCount
-        DE_NULL, // pPushConstantRanges
+        nullptr, // pPushConstantRanges
     };
     const Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, vkDevice, &pipelineLayoutParams));
 
@@ -454,7 +454,7 @@ tcu::TestStatus renderTriangleTest(Context &context)
     // Framebuffer
     const VkFramebufferCreateInfo framebufferParams = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-        DE_NULL,                                   // pNext
+        nullptr,                                   // pNext
         0u,                                        // flags
         *renderPass,                               // renderPass
         1u,                                        // attachmentCount
@@ -467,7 +467,7 @@ tcu::TestStatus renderTriangleTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType
-        DE_NULL,                                         // pNext
+        nullptr,                                         // pNext
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags
         queueFamilyIndex,                                // queueFamilyIndex
     };
@@ -476,7 +476,7 @@ tcu::TestStatus renderTriangleTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
-        DE_NULL,                                        // pNext
+        nullptr,                                        // pNext
         *cmdPool,                                       // pool
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level
         1u,                                             // bufferCount
@@ -489,13 +489,13 @@ tcu::TestStatus renderTriangleTest(Context &context)
     {
         const VkMemoryBarrier vertFlushBarrier = {
             VK_STRUCTURE_TYPE_MEMORY_BARRIER,    // sType
-            DE_NULL,                             // pNext
+            nullptr,                             // pNext
             VK_ACCESS_HOST_WRITE_BIT,            // srcAccessMask
             VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT, // dstAccessMask
         };
         const VkImageMemoryBarrier colorAttBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,                                       // sType
-            DE_NULL,                                                                      // pNext
+            nullptr,                                                                      // pNext
             0u,                                                                           // srcAccessMask
             (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT), // dstAccessMask
             VK_IMAGE_LAYOUT_UNDEFINED,                                                    // oldLayout
@@ -512,8 +512,7 @@ tcu::TestStatus renderTriangleTest(Context &context)
             }                              // subresourceRange
         };
         vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                              (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                              &colorAttBarrier);
+                              (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, nullptr, 1, &colorAttBarrier);
     }
 
     beginRenderPass(vk, *cmdBuf, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()),
@@ -588,7 +587,7 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest(Context &context)
 
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-        DE_NULL,                              // pNext
+        nullptr,                              // pNext
         0u,                                   // flags
         (VkDeviceSize)sizeof(vertices),       // size
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // usage
@@ -606,7 +605,7 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest(Context &context)
     const VkDeviceSize imageSizeBytes              = (VkDeviceSize)(sizeof(uint32_t) * renderSize.x() * renderSize.y());
     const VkBufferCreateInfo readImageBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-        DE_NULL,                              // pNext
+        nullptr,                              // pNext
         (VkBufferCreateFlags)0u,              // flags
         imageSizeBytes,                       // size
         VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // usage
@@ -623,7 +622,7 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest(Context &context)
 
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // sType
-        DE_NULL,                                                               // pNext
+        nullptr,                                                               // pNext
         0u,                                                                    // flags
         VK_IMAGE_TYPE_2D,                                                      // imageType
         VK_FORMAT_R8G8B8A8_UNORM,                                              // format
@@ -665,30 +664,30 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest(Context &context)
         (VkSubpassDescriptionFlags)0u,   // flags
         VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
         0u,                              // inputAttachmentCount
-        DE_NULL,                         // pInputAttachments
+        nullptr,                         // pInputAttachments
         1u,                              // colorAttachmentCount
         &colorAttRef,                    // pColorAttachments
         &resolveAttRef,                  // pResolveAttachments
-        DE_NULL,                         // depthStencilAttachment
+        nullptr,                         // depthStencilAttachment
         0u,                              // preserveAttachmentCount
-        DE_NULL,                         // pPreserveAttachments
+        nullptr,                         // pPreserveAttachments
     };
     const VkRenderPassCreateInfo renderPassParams = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // sType
-        DE_NULL,                                   // pNext
+        nullptr,                                   // pNext
         0u,                                        // flags
         1u,                                        // attachmentCount
         &colorAttDesc,                             // pAttachments
         1u,                                        // subpassCount
         &subpassDesc,                              // pSubpasses
         0u,                                        // dependencyCount
-        DE_NULL,                                   // pDependencies
+        nullptr,                                   // pDependencies
     };
     const Unique<VkRenderPass> renderPass(createRenderPass(vk, vkDevice, &renderPassParams));
 
     const VkImageViewCreateInfo colorAttViewParams = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,                                                         // sType
-        DE_NULL,                                                                                          // pNext
+        nullptr,                                                                                          // pNext
         0u,                                                                                               // flags
         *image,                                                                                           // image
         VK_IMAGE_VIEW_TYPE_2D,                                                                            // viewType
@@ -707,12 +706,12 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest(Context &context)
     // Pipeline layout
     const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (vk::VkPipelineLayoutCreateFlags)0,
         0u,      // setLayoutCount
-        DE_NULL, // pSetLayouts
+        nullptr, // pSetLayouts
         0u,      // pushConstantRangeCount
-        DE_NULL, // pPushConstantRanges
+        nullptr, // pPushConstantRanges
     };
     const Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, vkDevice, &pipelineLayoutParams));
 
@@ -742,7 +741,7 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest(Context &context)
     // Framebuffer
     const VkFramebufferCreateInfo framebufferParams = {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-        DE_NULL,                                   // pNext
+        nullptr,                                   // pNext
         0u,                                        // flags
         *renderPass,                               // renderPass
         1u,                                        // attachmentCount
@@ -755,7 +754,7 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType
-        DE_NULL,                                         // pNext
+        nullptr,                                         // pNext
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags
         queueFamilyIndex,                                // queueFamilyIndex
     };
@@ -764,7 +763,7 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
-        DE_NULL,                                        // pNext
+        nullptr,                                        // pNext
         *cmdPool,                                       // pool
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level
         1u,                                             // bufferCount
@@ -777,13 +776,13 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest(Context &context)
     {
         const VkMemoryBarrier vertFlushBarrier = {
             VK_STRUCTURE_TYPE_MEMORY_BARRIER,    // sType
-            DE_NULL,                             // pNext
+            nullptr,                             // pNext
             VK_ACCESS_HOST_WRITE_BIT,            // srcAccessMask
             VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT, // dstAccessMask
         };
         const VkImageMemoryBarrier colorAttBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,                                       // sType
-            DE_NULL,                                                                      // pNext
+            nullptr,                                                                      // pNext
             0u,                                                                           // srcAccessMask
             (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT), // dstAccessMask
             VK_IMAGE_LAYOUT_UNDEFINED,                                                    // oldLayout
@@ -800,8 +799,7 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest(Context &context)
             }                              // subresourceRange
         };
         vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                              (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                              &colorAttBarrier);
+                              (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, nullptr, 1, &colorAttBarrier);
     }
 
     beginRenderPass(vk, *cmdBuf, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()),

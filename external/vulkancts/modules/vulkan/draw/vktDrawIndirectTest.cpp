@@ -487,28 +487,24 @@ void IndirectDraw::negateDataUsingCompute(vk::VkDeviceSize indirectBufferSize, v
 
     m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
     m_vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u,
-                               &m_descriptorSetIndirectBuffer.get(), 0u, DE_NULL);
+                               &m_descriptorSetIndirectBuffer.get(), 0u, nullptr);
     m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                            (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 1, &hostWriteBarrier, 0,
-                            (const vk::VkImageMemoryBarrier *)DE_NULL);
+                            (vk::VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier, 0, nullptr);
     m_vk.cmdDispatch(*m_cmdBuffer, 1, 1, 1);
     m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                            vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, (vk::VkDependencyFlags)0, 0,
-                            (const vk::VkMemoryBarrier *)DE_NULL, 1, &indirectDrawBarrier, 0,
-                            (const vk::VkImageMemoryBarrier *)DE_NULL);
+                            vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 1,
+                            &indirectDrawBarrier, 0, nullptr);
 
     if (m_testIndirectCountExt != IndirectCountType::NONE)
     {
         m_vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u,
-                                   &m_descriptorSetCountBuffer.get(), 0u, DE_NULL);
+                                   &m_descriptorSetCountBuffer.get(), 0u, nullptr);
         m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 1, &hostWriteBarrier,
-                                0, (const vk::VkImageMemoryBarrier *)DE_NULL);
+                                (vk::VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier, 0, nullptr);
         m_vk.cmdDispatch(*m_cmdBuffer, 1, 1, 1);
         m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, (vk::VkDependencyFlags)0, 0,
-                                (const vk::VkMemoryBarrier *)DE_NULL, 1, &indirectDrawBarrier, 0,
-                                (const vk::VkImageMemoryBarrier *)DE_NULL);
+                                vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 1,
+                                &indirectDrawBarrier, 0, nullptr);
     }
 }
 
@@ -1089,7 +1085,7 @@ void IndirectDraw::countBufferBarrier(vk::VkBuffer indirectCountBuffer, vk::VkDe
         indirectCountBuffer, 0ull, indirectCountBufferSize);
 
     m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                            vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0, 0, DE_NULL, 1, &countBufferBarrier, 0, DE_NULL);
+                            vk::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0, 0, nullptr, 1, &countBufferBarrier, 0, nullptr);
 }
 
 template <class FirstInstanceSupport>

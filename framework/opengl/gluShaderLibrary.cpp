@@ -409,7 +409,7 @@ ShaderParser::ShaderParser(const tcu::Archive &archive, const string &filename, 
     , m_filename(filename)
     , m_caseFactory(caseFactroy)
     , m_resource(archive.getResource(m_filename.c_str()))
-    , m_curPtr(DE_NULL)
+    , m_curPtr(nullptr)
     , m_curToken(TOKEN_LAST)
 {
 }
@@ -421,7 +421,7 @@ ShaderParser::~ShaderParser(void)
 void ShaderParser::parseError(const std::string &errorStr)
 {
     string atStr = string(m_curPtr, 80);
-    throw tcu::InternalError((string("Parser error: ") + errorStr + " near '" + atStr + " ...'").c_str(), DE_NULL,
+    throw tcu::InternalError((string("Parser error: ") + errorStr + " near '" + atStr + " ...'").c_str(), nullptr,
                              __FILE__, __LINE__);
 }
 
@@ -1099,7 +1099,7 @@ void ShaderParser::parseValue(ValueBlock &valueBlock)
     PARSE_DBG(("      parseValue()\n"));
 
     // Parsed results.
-    vector<Value> *dstBlock = DE_NULL;
+    vector<Value> *dstBlock = nullptr;
     DataType basicType      = TYPE_LAST;
     std::string valueName;
 

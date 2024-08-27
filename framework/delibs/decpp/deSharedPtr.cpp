@@ -159,7 +159,7 @@ void SharedPtr_selfTest(void)
     // Empty pointer test.
     {
         SharedPtr<Object> ptr;
-        DE_TEST_ASSERT(ptr.get() == DE_NULL);
+        DE_TEST_ASSERT(ptr.get() == nullptr);
         DE_TEST_ASSERT(!ptr);
     }
 
@@ -167,7 +167,7 @@ void SharedPtr_selfTest(void)
     {
         SharedPtr<Object> ptrA;
         SharedPtr<Object> ptrB(ptrA);
-        DE_TEST_ASSERT(ptrB.get() == DE_NULL);
+        DE_TEST_ASSERT(ptrB.get() == nullptr);
     }
 
     // Empty pointer assignment.
@@ -184,7 +184,7 @@ void SharedPtr_selfTest(void)
         {
             SharedPtr<Object> ptr(new Object(exists));
             DE_TEST_ASSERT(exists);
-            DE_TEST_ASSERT(ptr.get() != DE_NULL);
+            DE_TEST_ASSERT(ptr.get() != nullptr);
             DE_TEST_ASSERT(ptr);
         }
         DE_TEST_ASSERT(!exists);
@@ -197,7 +197,7 @@ void SharedPtr_selfTest(void)
         {
             SharedPtr<Object> ptr(new Object(exists));
             DE_TEST_ASSERT(exists);
-            DE_TEST_ASSERT(ptr.get() != DE_NULL);
+            DE_TEST_ASSERT(ptr.get() != nullptr);
             throw std::exception();
         }
         catch (const std::exception &)
@@ -210,7 +210,7 @@ void SharedPtr_selfTest(void)
     // Expression test.
     {
         bool exists = false;
-        bool test   = (SharedPtr<Object>(new Object(exists))).get() != DE_NULL && exists;
+        bool test   = (SharedPtr<Object>(new Object(exists))).get() != nullptr && exists;
         DE_TEST_ASSERT(!exists);
         DE_TEST_ASSERT(test);
     }
@@ -230,7 +230,7 @@ void SharedPtr_selfTest(void)
         {
             SharedPtr<Object> ptr(new Object(exists));
             DE_TEST_ASSERT(exists);
-            DE_TEST_ASSERT(ptr.get() != DE_NULL);
+            DE_TEST_ASSERT(ptr.get() != nullptr);
             ptr = *&ptr;
         }
         DE_TEST_ASSERT(!exists);
@@ -428,7 +428,7 @@ void SharedPtr_selfTest(void)
             SharedPtr<Object> ptr(new Object(exists), CustomDeleter(&deleterCalled));
             DE_TEST_ASSERT(exists);
             DE_TEST_ASSERT(!deleterCalled);
-            DE_TEST_ASSERT(ptr.get() != DE_NULL);
+            DE_TEST_ASSERT(ptr.get() != nullptr);
         }
         DE_TEST_ASSERT(!exists);
         DE_TEST_ASSERT(deleterCalled);

@@ -69,7 +69,7 @@ template <typename T>
 class PointerWrapper
 {
 public:
-    PointerWrapper() : ptr(DE_NULL)
+    PointerWrapper() : ptr(nullptr)
     {
     }
     PointerWrapper(T *p0) : ptr(p0)
@@ -82,7 +82,7 @@ template <typename T>
 class ConstPointerWrapper
 {
 public:
-    ConstPointerWrapper() : ptr(DE_NULL)
+    ConstPointerWrapper() : ptr(nullptr)
     {
     }
     ConstPointerWrapper(const T *p0) : ptr(p0)
@@ -104,6 +104,7 @@ typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV>
     PipelineRepresentativeFragmentTestCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineBinaryInfoKHR> PipelineBinaryInfoWrapper;
 typedef VkPipelineCreateFlags2KHR PipelineCreateFlags2;
+typedef PointerWrapper<VkPipelineRobustnessCreateInfoEXT> PipelineRobustnessCreateInfoWrapper;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
@@ -114,6 +115,7 @@ typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoW
 typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineBinaryInfoWrapper;
 typedef uint64_t PipelineCreateFlags2;
+typedef PointerWrapper<void> PipelineRobustnessCreateInfoWrapper;
 #endif
 
 PipelineCreateFlags2 translateCreateFlag(VkPipelineCreateFlags flagToTranslate);
@@ -124,13 +126,13 @@ public:
     PipelineLayoutWrapper() = default;
     PipelineLayoutWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk, VkDevice device,
                           const VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE,
-                          const VkPushConstantRange *pushConstantRange    = DE_NULL);
+                          const VkPushConstantRange *pushConstantRange    = nullptr);
     PipelineLayoutWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk, VkDevice device,
                           const std::vector<vk::Move<VkDescriptorSetLayout>> &descriptorSetLayout);
     PipelineLayoutWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk, VkDevice device,
                           uint32_t setLayoutCount, const VkDescriptorSetLayout *descriptorSetLayout);
     PipelineLayoutWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk, VkDevice device,
-                          const VkPipelineLayoutCreateInfo *pCreateInfo, const VkAllocationCallbacks * = DE_NULL);
+                          const VkPipelineLayoutCreateInfo *pCreateInfo, const VkAllocationCallbacks * = nullptr);
     PipelineLayoutWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk,
                           const VkDevice device, const uint32_t setLayoutCount,
                           const VkDescriptorSetLayout *descriptorSetLayout, const uint32_t pushConstantRangeCount,
@@ -210,7 +212,7 @@ public:
                       const VkImageLayout finalLayoutDepthStencil   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                       const VkImageLayout subpassLayoutColor        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                       const VkImageLayout subpassLayoutDepthStencil = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                      const VkAllocationCallbacks *const allocationCallbacks = DE_NULL);
+                      const VkAllocationCallbacks *const allocationCallbacks = nullptr);
 
     RenderPassWrapper(RenderPassWrapper &&rhs) noexcept;
     RenderPassWrapper &operator=(RenderPassWrapper &&rhs) noexcept;
@@ -232,7 +234,7 @@ public:
 
     void begin(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRect2D &renderArea,
                const uint32_t clearValueCount, const VkClearValue *clearValues,
-               const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE, const void *pNext = DE_NULL) const;
+               const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE, const void *pNext = nullptr) const;
     void begin(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRect2D &renderArea,
                const VkClearValue &clearValue, const VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE) const;
     void begin(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRect2D &renderArea,
@@ -342,7 +344,7 @@ public:
 
     bool isSet(void) const
     {
-        return m_binary != DE_NULL;
+        return m_binary != nullptr;
     }
 
     vk::VkShaderModule getModule(void) const;
@@ -436,6 +438,9 @@ public:
     GraphicsPipelineWrapper &setRepresentativeFragmentTestState(
         PipelineRepresentativeFragmentTestCreateInfoWrapper representativeFragmentTestState);
 
+    // Specify pipeline robustness state
+    GraphicsPipelineWrapper &setPipelineRobustnessState(PipelineRobustnessCreateInfoWrapper pipelineRobustnessState);
+
     // Specifying how a pipeline is created using VkPipelineCreateFlags2CreateInfoKHR.
     GraphicsPipelineWrapper &setPipelineCreateFlags2(PipelineCreateFlags2 pipelineFlags2);
 
@@ -501,10 +506,10 @@ public:
         const std::vector<VkViewport> &viewports, const std::vector<VkRect2D> &scissors,
         const PipelineLayoutWrapper &layout, const VkRenderPass renderPass, const uint32_t subpass,
         const ShaderWrapper vertexShaderModule,
-        const VkPipelineRasterizationStateCreateInfo *rasterizationState = DE_NULL,
+        const VkPipelineRasterizationStateCreateInfo *rasterizationState = nullptr,
         const ShaderWrapper tessellationControlShader                    = ShaderWrapper(),
         const ShaderWrapper tessellationEvalShader                       = ShaderWrapper(),
-        const ShaderWrapper geometryShader = ShaderWrapper(), const VkSpecializationInfo *specializationInfo = DE_NULL,
+        const ShaderWrapper geometryShader = ShaderWrapper(), const VkSpecializationInfo *specializationInfo = nullptr,
         VkPipelineFragmentShadingRateStateCreateInfoKHR *fragmentShadingRateState = nullptr,
         PipelineRenderingCreateInfoWrapper rendering                   = PipelineRenderingCreateInfoWrapper(),
         const VkPipelineCache partPipelineCache                        = VK_NULL_HANDLE,
@@ -573,9 +578,9 @@ public:
     GraphicsPipelineWrapper &setupFragmentShaderState(
         const PipelineLayoutWrapper &layout, const VkRenderPass renderPass, const uint32_t subpass,
         const ShaderWrapper fragmentShaderModule,
-        const VkPipelineDepthStencilStateCreateInfo *depthStencilState = DE_NULL,
-        const VkPipelineMultisampleStateCreateInfo *multisampleState   = DE_NULL,
-        const VkSpecializationInfo *specializationInfo                 = DE_NULL,
+        const VkPipelineDepthStencilStateCreateInfo *depthStencilState = nullptr,
+        const VkPipelineMultisampleStateCreateInfo *multisampleState   = nullptr,
+        const VkSpecializationInfo *specializationInfo                 = nullptr,
         const VkPipelineCache partPipelineCache                        = VK_NULL_HANDLE,
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
         RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo =
@@ -599,8 +604,8 @@ public:
     // Setup fragment output state.
     GraphicsPipelineWrapper &setupFragmentOutputState(
         const VkRenderPass renderPass, const uint32_t subpass = 0u,
-        const VkPipelineColorBlendStateCreateInfo *colorBlendState     = DE_NULL,
-        const VkPipelineMultisampleStateCreateInfo *multisampleState   = DE_NULL,
+        const VkPipelineColorBlendStateCreateInfo *colorBlendState     = nullptr,
+        const VkPipelineMultisampleStateCreateInfo *multisampleState   = nullptr,
         const VkPipelineCache partPipelineCache                        = VK_NULL_HANDLE,
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
         RenderingAttachmentLocationInfoWrapper renderingAttachmentLocationInfo =
@@ -612,7 +617,7 @@ public:
         const VkPipelineCache pipelineCache = VK_NULL_HANDLE, const VkPipeline basePipelineHandle = VK_NULL_HANDLE,
         const int32_t basePipelineIndex                            = 0,
         PipelineCreationFeedbackCreateInfoWrapper creationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
-        void *pNext                                                = DE_NULL);
+        void *pNext                                                = nullptr);
     // Create shader objects if used
 #ifndef CTS_USES_VULKANSC
     vk::VkShaderStageFlags getNextStages(vk::VkShaderStageFlagBits shaderStage, bool tessellationShaders,

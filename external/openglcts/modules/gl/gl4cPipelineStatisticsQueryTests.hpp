@@ -317,7 +317,7 @@ public:
     {
         std::stringstream log_sstream;
 
-        DE_ASSERT(expected_values != DE_NULL);
+        DE_ASSERT(expected_values != nullptr);
 
         log_sstream << "Invalid default " << value_type
                     << " query result value: found "

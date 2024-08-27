@@ -546,12 +546,12 @@ tcu::TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     {
         if ("gl_SubgroupSize" == caseDef.varName)
         {
-            return makeVertexFrameBufferTest(context, FORMAT_R32G32B32A32_UINT, DE_NULL, 0,
+            return makeVertexFrameBufferTest(context, FORMAT_R32G32B32A32_UINT, nullptr, 0,
                                              checkVertexPipelineStagesSubgroupSize);
         }
         else if ("gl_SubgroupInvocationID" == caseDef.varName)
         {
-            return makeVertexFrameBufferTest(context, FORMAT_R32G32B32A32_UINT, DE_NULL, 0,
+            return makeVertexFrameBufferTest(context, FORMAT_R32G32B32A32_UINT, nullptr, 0,
                                              checkVertexPipelineStagesSubgroupInvocationID);
         }
         else
@@ -564,12 +564,12 @@ tcu::TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     {
         if ("gl_SubgroupSize" == caseDef.varName)
         {
-            return makeTessellationEvaluationFrameBufferTest(context, FORMAT_R32G32B32A32_UINT, DE_NULL, 0,
+            return makeTessellationEvaluationFrameBufferTest(context, FORMAT_R32G32B32A32_UINT, nullptr, 0,
                                                              checkVertexPipelineStagesSubgroupSize);
         }
         else if ("gl_SubgroupInvocationID" == caseDef.varName)
         {
-            return makeTessellationEvaluationFrameBufferTest(context, FORMAT_R32G32B32A32_UINT, DE_NULL, 0,
+            return makeTessellationEvaluationFrameBufferTest(context, FORMAT_R32G32B32A32_UINT, nullptr, 0,
                                                              checkVertexPipelineStagesSubgroupInvocationID);
         }
         else
@@ -582,12 +582,12 @@ tcu::TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     {
         if ("gl_SubgroupSize" == caseDef.varName)
         {
-            return makeGeometryFrameBufferTest(context, FORMAT_R32G32B32A32_UINT, DE_NULL, 0,
+            return makeGeometryFrameBufferTest(context, FORMAT_R32G32B32A32_UINT, nullptr, 0,
                                                checkVertexPipelineStagesSubgroupSize);
         }
         else if ("gl_SubgroupInvocationID" == caseDef.varName)
         {
-            return makeGeometryFrameBufferTest(context, FORMAT_R32G32B32A32_UINT, DE_NULL, 0,
+            return makeGeometryFrameBufferTest(context, FORMAT_R32G32B32A32_UINT, nullptr, 0,
                                                checkVertexPipelineStagesSubgroupInvocationID);
         }
         else
@@ -614,19 +614,19 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
 
         if ("gl_SubgroupSize" == caseDef.varName)
         {
-            return makeComputeTest(context, FORMAT_R32G32B32A32_UINT, DE_NULL, 0, checkComputeSubgroupSize);
+            return makeComputeTest(context, FORMAT_R32G32B32A32_UINT, nullptr, 0, checkComputeSubgroupSize);
         }
         else if ("gl_SubgroupInvocationID" == caseDef.varName)
         {
-            return makeComputeTest(context, FORMAT_R32G32B32A32_UINT, DE_NULL, 0, checkComputeSubgroupInvocationID);
+            return makeComputeTest(context, FORMAT_R32G32B32A32_UINT, nullptr, 0, checkComputeSubgroupInvocationID);
         }
         else if ("gl_NumSubgroups" == caseDef.varName)
         {
-            return makeComputeTest(context, FORMAT_R32G32B32A32_UINT, DE_NULL, 0, checkComputeNumSubgroups);
+            return makeComputeTest(context, FORMAT_R32G32B32A32_UINT, nullptr, 0, checkComputeNumSubgroups);
         }
         else if ("gl_SubgroupID" == caseDef.varName)
         {
-            return makeComputeTest(context, FORMAT_R32G32B32A32_UINT, DE_NULL, 0, checkComputeSubgroupID);
+            return makeComputeTest(context, FORMAT_R32G32B32A32_UINT, nullptr, 0, checkComputeSubgroupID);
         }
         else
         {
@@ -653,12 +653,12 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
 
         if ("gl_SubgroupSize" == caseDef.varName)
         {
-            return subgroups::allStages(context, FORMAT_R32G32B32A32_UINT, DE_NULL, 0,
+            return subgroups::allStages(context, FORMAT_R32G32B32A32_UINT, nullptr, 0,
                                         checkVertexPipelineStagesSubgroupSize, stages);
         }
         else if ("gl_SubgroupInvocationID" == caseDef.varName)
         {
-            return subgroups::allStages(context, FORMAT_R32G32B32A32_UINT, DE_NULL, 0,
+            return subgroups::allStages(context, FORMAT_R32G32B32A32_UINT, nullptr, 0,
                                         checkVertexPipelineStagesSubgroupInvocationID, stages);
         }
         else

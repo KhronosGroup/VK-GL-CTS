@@ -288,7 +288,7 @@ void HostImageCopyTestInstance::transitionImageLayout(const Move<vk::VkCommandBu
     {
         vk::VkHostImageLayoutTransitionInfoEXT transition = {
             vk::VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                     // const void* pNext;
+            nullptr,                                                     // const void* pNext;
             image,                                                       // VkImage image;
             oldLayout,                                                   // VkImageLayout oldLayout;
             newLayout,                                                   // VkImageLayout newLayout;
@@ -302,7 +302,7 @@ void HostImageCopyTestInstance::transitionImageLayout(const Move<vk::VkCommandBu
         auto imageMemoryBarrier =
             makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, oldLayout, newLayout, image, subresourceRange);
         vk.cmdPipelineBarrier(**cmdBuffer, vk::VK_PIPELINE_STAGE_NONE, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                              DE_NULL, 0u, DE_NULL, 1, &imageMemoryBarrier);
+                              nullptr, 0u, nullptr, 1, &imageMemoryBarrier);
         vk::endCommandBuffer(vk, **cmdBuffer);
         vk::submitCommandsAndWait(vk, device, queue, **cmdBuffer);
     }
@@ -340,7 +340,7 @@ void HostImageCopyTestInstance::copyMemoryToImage(const std::vector<uint8_t> tes
 
         const vk::VkMemoryToImageCopyEXT region = {
             vk::VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             &data[dataOffset],                              // const void* memoryHostPointer;
             0,                                              // uint32_t memoryRowLength;
             0,                                              // uint32_t memoryImageHeight;
@@ -353,7 +353,7 @@ void HostImageCopyTestInstance::copyMemoryToImage(const std::vector<uint8_t> tes
 
     vk::VkCopyMemoryToImageInfoEXT copyMemoryToImageInfo = {
         vk::VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                             // const void* pNext;
+        nullptr,                                             // const void* pNext;
         0u,                                                  // VkMemoryImageCopyFlagsEXT flags;
         image,                                               // VkImage dstImage;
         m_parameters.dstLayout,                              // VkImageLayout dstImageLayout;
@@ -443,7 +443,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
         vk::VkImageCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                                 // const void*                pNext
+            nullptr,                                 // const void*                pNext
             0u,                                      // VkImageCreateFlags        flags
             vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
             m_parameters.imageSampledFormat,         // VkFormat                    format
@@ -455,7 +455,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
             sampledImageUsage,                       // VkImageUsageFlags        usage
             vk::VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
             0,                                       // uint32_t                    queueFamilyIndexCount
-            DE_NULL,                                 // const uint32_t*            pQueueFamilyIndices
+            nullptr,                                 // const uint32_t*            pQueueFamilyIndices
             vk::VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout            initialLayout
         };
 
@@ -489,7 +489,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
         vk::VkImageViewCreateInfo imageViewCreateInfo = {
             vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             (vk::VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags flags;
             sampledImage,                                 // VkImage image;
             vk::VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -516,7 +516,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
         const vk::VkImageCreateInfo createInfo = {
             vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-            DE_NULL,                                 // const void*                pNext
+            nullptr,                                 // const void*                pNext
             0u,                                      // VkImageCreateFlags        flags
             vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
             m_parameters.imageOutputFormat,          // VkFormat                    format
@@ -528,7 +528,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
             outputImageUsage,                        // VkImageUsageFlags        usage
             vk::VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
             0,                                       // uint32_t                    queueFamilyIndexCount
-            DE_NULL,                                 // const uint32_t*            pQueueFamilyIndices
+            nullptr,                                 // const uint32_t*            pQueueFamilyIndices
             vk::VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout            initialLayout
         };
 
@@ -537,7 +537,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
         vk::VkImageViewCreateInfo imageViewCreateInfo = {
             vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                      // const void* pNext;
+            nullptr,                                      // const void* pNext;
             (VkImageViewCreateFlags)0u,                   // VkImageViewCreateFlags flags;
             **outputImage,                                // VkImage image;
             vk::VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -569,13 +569,13 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         (vk::VkSubpassDescriptionFlags)0u,   // VkSubpassDescriptionFlags       flags
         vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint             pipelineBindPoint
         0u,                                  // uint32_t                        inputAttachmentCount
-        DE_NULL,                             // const VkAttachmentReference*    pInputAttachments
+        nullptr,                             // const VkAttachmentReference*    pInputAttachments
         1u,                                  // uint32_t                        colorAttachmentCount
         &colorAttachmentRef,                 // const VkAttachmentReference*    pColorAttachments
-        DE_NULL,                             // const VkAttachmentReference*    pResolveAttachments
-        DE_NULL,                             // const VkAttachmentReference*    pDepthStencilAttachment
+        nullptr,                             // const VkAttachmentReference*    pResolveAttachments
+        nullptr,                             // const VkAttachmentReference*    pDepthStencilAttachment
         0u,                                  // uint32_t                        preserveAttachmentCount
-        DE_NULL                              // const uint32_t*                 pPreserveAttachments
+        nullptr                              // const uint32_t*                 pPreserveAttachments
     };
 
     Move<vk::VkRenderPass> renderPass;
@@ -624,7 +624,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
     vk::VkSamplerCreateInfo samplerParams = {
         vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         0u,                                          // VkSamplerCreateFlags flags;
         vk::VK_FILTER_NEAREST,                       // VkFilter magFilter;
         vk::VK_FILTER_NEAREST,                       // VkFilter minFilter;
@@ -653,9 +653,9 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         nullptr,                                                       // const void* pNext;
         0u,                                                            // VkPipelineVertexInputStateCreateFlags flags;
         0u,                                                            // uint32_t vertexBindingDescriptionCount;
-        DE_NULL, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
         0u,      // uint32_t vertexAttributeDescriptionCount;
-        DE_NULL, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+        nullptr, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
     GraphicsPipelineWrapper pipeline(vki, vk, physicalDevice, device, deviceExtensions,
@@ -669,7 +669,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         {
             pipelineRenderingCreateInfo = {
                 vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType    sType
-                DE_NULL,                                              // const void*        pNext
+                nullptr,                                              // const void*        pNext
                 0u,                                                   // uint32_t            viewMask
                 1u,                                                   // uint32_t            colorAttachmentCount
                 &m_parameters.imageOutputFormat,                      // const VkFormat*    pColorAttachmentFormats
@@ -679,7 +679,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         }
 
         vk::PipelineRenderingCreateInfoWrapper renderingCreateInfoWrapper;
-        renderingCreateInfoWrapper.ptr = m_parameters.dynamicRendering ? &pipelineRenderingCreateInfo : DE_NULL;
+        renderingCreateInfoWrapper.ptr = m_parameters.dynamicRendering ? &pipelineRenderingCreateInfo : nullptr;
 
         pipeline.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
             .setDefaultRasterizationState()
@@ -687,8 +687,8 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
             .setDefaultDepthStencilState()
             .setDefaultColorBlendState()
             .setupVertexInputState(&vertexInput)
-            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vert, DE_NULL, {},
-                                              {}, {}, DE_NULL, DE_NULL, renderingCreateInfoWrapper)
+            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vert, nullptr, {},
+                                              {}, {}, nullptr, nullptr, renderingCreateInfoWrapper)
             .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, frag)
             .setupFragmentOutputState(*renderPass)
             .setMonolithicPipelineLayout(pipelineLayout)
@@ -700,20 +700,20 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
             vk::createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
         const vk::VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // sType
-            DE_NULL,                                                 // pNext
+            nullptr,                                                 // pNext
             (VkPipelineShaderStageCreateFlags)0u,                    // flags
             vk::VK_SHADER_STAGE_COMPUTE_BIT,                         // stage
             *cs,                                                     // module
             "main",                                                  // pName
-            DE_NULL,                                                 // pSpecializationInfo
+            nullptr,                                                 // pSpecializationInfo
         };
         const vk::VkComputePipelineCreateInfo pipelineCreateInfo = {
             vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // sType
-            DE_NULL,                                            // pNext
+            nullptr,                                            // pNext
             (VkPipelineCreateFlags)0u,                          // flags
             pipelineShaderStageParams,                          // stage
             *pipelineLayout,                                    // layout
-            DE_NULL,                                            // basePipelineHandle
+            VK_NULL_HANDLE,                                     // basePipelineHandle
             0,                                                  // basePipelineIndex
         };
         computePipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
@@ -811,7 +811,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
                 vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, m_parameters.dstLayout,
                 m_parameters.intermediateLayout, sampledImage, sampledSubresourceRange);
             vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  0u, 0u, DE_NULL, 0u, DE_NULL, 1, &imageMemoryBarrier);
+                                  0u, 0u, nullptr, 0u, nullptr, 1, &imageMemoryBarrier);
         }
 
         vk::endCommandBuffer(vk, *cmdBuffer);
@@ -839,7 +839,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
     {
         vk::VkImageSubresource2EXT subresource2 = {
             vk::VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2_EXT, // VkStructureType sType;
-            DE_NULL,                                       // void* pNext;
+            nullptr,                                       // void* pNext;
             sampledSubresource                             // VkImageSubresource imageSubresource;
         };
 
@@ -851,7 +851,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
         const vk::VkImageToMemoryCopyEXT region = {
             vk::VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY_EXT, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             data.data(),                                    // void* memoryHostPointer;
             0u,                                             // uint32_t memoryRowLength;
             0u,                                             // uint32_t memoryImageHeight;
@@ -862,7 +862,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
         const vk::VkCopyImageToMemoryInfoEXT copyImageToMemoryInfo = {
             vk::VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             vk::VK_HOST_IMAGE_COPY_MEMCPY_EXT,                   // VkMemoryImageCopyFlagsEXT flags;
             sampledImage,                                        // VkImage srcImage;
             vk::VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout srcImageLayout;
@@ -879,7 +879,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
         const vk::VkMemoryToImageCopyEXT toImageRegion = {
             vk::VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             data.data(),                                    // const void* memoryHostPointer;
             0,                                              // uint32_t memoryRowLength;
             0,                                              // uint32_t memoryImageHeight;
@@ -890,7 +890,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
         vk::VkCopyMemoryToImageInfoEXT copyMemoryToImageInfo = {
             vk::VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             vk::VK_HOST_IMAGE_COPY_MEMCPY_EXT,                   // VkMemoryImageCopyFlagsEXT flags;
             sampledImageCopy,                                    // VkImage dstImage;
             m_parameters.dstLayout,                              // VkImageLayout dstImageLayout;
@@ -931,7 +931,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
         vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, 1,
-                                 &*descriptorSet, 0, DE_NULL);
+                                 &*descriptorSet, 0, nullptr);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
         commandsLog << "vkCmdDraw()\n";
 
@@ -944,8 +944,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
             vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
             m_parameters.srcLayout, **outputImage, outputSubresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0,
-                              (const vk::VkMemoryBarrier *)DE_NULL, 0, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1,
+                              vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1,
                               &postImageBarrier);
     }
     else
@@ -954,17 +953,17 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
             makeImageMemoryBarrier(0u, vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
                                    vk::VK_IMAGE_LAYOUT_GENERAL, **outputImage, outputSubresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                              vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0u, nullptr, 0u, nullptr, 1u,
                               &imageMemoryBarrier);
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &*descriptorSet,
-                                 0, DE_NULL);
+                                 0, nullptr);
         vk.cmdDispatch(*cmdBuffer, renderArea.extent.width, renderArea.extent.height, 1);
         commandsLog << "vkCmdDispatch()\n";
 
         vk::VkImageMemoryBarrier postImageBarrier = {
             vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
-            DE_NULL,                                    // const void*                pNext
+            nullptr,                                    // const void*                pNext
             vk::VK_ACCESS_SHADER_WRITE_BIT,             // VkAccessFlags            srcAccessMask
             vk::VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags            dstAccessMask
             vk::VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout            oldLayout
@@ -976,8 +975,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         };
 
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                              (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &postImageBarrier);
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
     }
 
     const vk::VkBufferImageCopy copyRegion = {
@@ -1025,7 +1023,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
             const vk::VkImageToMemoryCopyEXT region = {
                 vk::VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY_EXT, // VkStructureType sType;
-                DE_NULL,                                        // const void* pNext;
+                nullptr,                                        // const void* pNext;
                 &paddedData[dataOffset],                        // void* memoryHostPointer;
                 memoryRowLength,                                // uint32_t memoryRowLength;
                 memoryImageHeight,                              // uint32_t memoryImageHeight;
@@ -1039,7 +1037,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
         const vk::VkCopyImageToMemoryInfoEXT copyImageToMemoryInfo = {
             vk::VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             0u,                                                  // VkMemoryImageCopyFlagsEXT flags;
             **outputImage,                                       // VkImage srcImage;
             m_parameters.srcLayout,                              // VkImageLayout srcImageLayout;
@@ -1183,7 +1181,7 @@ void HostImageCopyTestCase::checkSupport(vkt::Context &context) const
 
     vk::VkPhysicalDeviceHostImageCopyFeaturesEXT hostImageCopyFeatures = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES_EXT, // VkStructureType                    sType
-        DE_NULL,                                                            // const void*                        pNext
+        nullptr,                                                            // const void*                        pNext
         VK_FALSE,                                                           // VkBool32 hostImageCopy;
     };
 
@@ -1199,11 +1197,11 @@ void HostImageCopyTestCase::checkSupport(vkt::Context &context) const
 
     vk::VkPhysicalDeviceHostImageCopyPropertiesEXT hostImageCopyProperties = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES_EXT, // VkStructureType sType;
-        DE_NULL,                                                              // void* pNext;
+        nullptr,                                                              // void* pNext;
         0u,                                                                   // uint32_t copySrcLayoutCount;
-        DE_NULL,                                                              // VkImageLayout* pCopySrcLayouts;
+        nullptr,                                                              // VkImageLayout* pCopySrcLayouts;
         0u,                                                                   // uint32_t copyDstLayoutCount;
-        DE_NULL,                                                              // VkImageLayout* pCopyDstLayouts;
+        nullptr,                                                              // VkImageLayout* pCopyDstLayouts;
         {},   // uint8_t optimalTilingLayoutUUID[VK_UUID_SIZE];
         false // VkBool32 identicalMemoryTypeRequirements;
     };
@@ -1403,7 +1401,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
     const vk::VkCommandPoolCreateInfo cmdPoolInfo = {
         vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType
-        DE_NULL,                                             // pNext
+        nullptr,                                             // pNext
         vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags
         queueFamilyIndex,                                    // queuefamilyindex
     };
@@ -1428,7 +1426,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
     vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
-        m_tiling == vk::VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT ? &drmCreateInfo : DE_NULL,
+        m_tiling == vk::VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT ? &drmCreateInfo : nullptr,
         // const void*                pNext
         0u,                        // VkImageCreateFlags        flags
         imageType,                 // VkImageType                imageType
@@ -1442,9 +1440,16 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
         // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE,     // VkSharingMode            sharingMode
         0,                                 // uint32_t                    queueFamilyIndexCount
-        DE_NULL,                           // const uint32_t*            pQueueFamilyIndices
+        nullptr,                           // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_PREINITIALIZED // VkImageLayout            initialLayout
     };
+
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+        createInfo.usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
     de::MovePtr<ImageWithMemory> image = de::MovePtr<ImageWithMemory>(
         new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::HostVisible));
@@ -1461,11 +1466,11 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
     vk::VkPhysicalDeviceHostImageCopyPropertiesEXT hostImageCopyProperties = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES_EXT, // VkStructureType sType;
-        DE_NULL,                                                              // void* pNext;
+        nullptr,                                                              // void* pNext;
         0u,                                                                   // uint32_t copySrcLayoutCount;
-        DE_NULL,                                                              // VkImageLayout* pCopySrcLayouts;
+        nullptr,                                                              // VkImageLayout* pCopySrcLayouts;
         0u,                                                                   // uint32_t copyDstLayoutCount;
-        DE_NULL,                                                              // VkImageLayout* pCopyDstLayouts;
+        nullptr,                                                              // VkImageLayout* pCopyDstLayouts;
         {},    // uint8_t optimalTilingLayoutUUID[VK_UUID_SIZE];
         false, // VkBool32 identicalMemoryTypeRequirements;
     };
@@ -1488,7 +1493,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
     {
         const vk::VkHostImageLayoutTransitionInfoEXT transition = {
             vk::VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                     // const void* pNext;
+            nullptr,                                                     // const void* pNext;
             image->get(),                                                // VkImage image;
             vk::VK_IMAGE_LAYOUT_PREINITIALIZED,                          // VkImageLayout oldLayout;
             m_srcLayout,                                                 // VkImageLayout newLayout;
@@ -1501,7 +1506,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
     {
         vk::VkHostImageLayoutTransitionInfoEXT transition = {
             vk::VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                     // const void* pNext;
+            nullptr,                                                     // const void* pNext;
             copyImage->get(),                                            // VkImage image;
             vk::VK_IMAGE_LAYOUT_UNDEFINED,                               // VkImageLayout oldLayout;
             m_dstLayout,                                                 // VkImageLayout newLayout;
@@ -1511,7 +1516,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
         const vk::VkImageCopy2KHR region = {
             vk::VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR, // VkStructureType sType;
-            DE_NULL,                                // const void* pNext;
+            nullptr,                                // const void* pNext;
             subresourceLayers,                      // VkImageSubresourceLayers srcSubresource;
             offset,                                 // VkOffset3D srcOffset;
             subresourceLayers,                      // VkImageSubresourceLayers dstSubresource;
@@ -1524,7 +1529,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
         const vk::VkCopyImageToImageInfoEXT copyImageToImageInfo = {
             vk::VK_STRUCTURE_TYPE_COPY_IMAGE_TO_IMAGE_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                            // const void* pNext;
+            nullptr,                                            // const void* pNext;
             hostImageCopyFlags,                                 // VkHostImageCopyFlagsEXT flags;
             **image,                                            // VkImage srcImage;
             m_srcLayout,                                        // VkImageLayout srcImageLayout;
@@ -1545,7 +1550,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
     const vk::VkImageToMemoryCopyEXT region = {
         vk::VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY_EXT, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         data,                                           // void* memoryHostPointer;
         0u,                                             // uint32_t memoryRowLength;
         0u,                                             // uint32_t memoryImageHeight;
@@ -1556,7 +1561,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
     const vk::VkCopyImageToMemoryInfoEXT copyImageToMemoryInfo = {
         vk::VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                             // const void* pNext;
+        nullptr,                                             // const void* pNext;
         0u,                                                  // VkMemoryImageCopyFlagsEXT flags;
         endImage,                                            // VkImage srcImage;
         m_srcLayout,                                         // VkImageLayout srcImageLayout;
@@ -1571,7 +1576,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
             makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, m_srcLayout,
                                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **image, subresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_NONE, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                              DE_NULL, 0u, DE_NULL, 1, &imageMemoryBarrier);
+                              nullptr, 0u, nullptr, 1, &imageMemoryBarrier);
 
         const vk::VkBufferImageCopy copyRegion = {
             0u,                // VkDeviceSize bufferOffset;
@@ -1692,7 +1697,7 @@ void PreinitializedTestCase::checkSupport(vkt::Context &context) const
 
     vk::VkPhysicalDeviceHostImageCopyFeaturesEXT hostImageCopyFeatures = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES_EXT, // VkStructureType                    sType
-        DE_NULL,                                                            // const void*                        pNext
+        nullptr,                                                            // const void*                        pNext
         VK_FALSE,                                                           // VkBool32 hostImageCopy;
     };
 
@@ -1708,11 +1713,11 @@ void PreinitializedTestCase::checkSupport(vkt::Context &context) const
 
     vk::VkPhysicalDeviceHostImageCopyPropertiesEXT hostImageCopyProperties = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES_EXT, // VkStructureType sType;
-        DE_NULL,                                                              // void* pNext;
+        nullptr,                                                              // void* pNext;
         0u,                                                                   // uint32_t copySrcLayoutCount;
-        DE_NULL,                                                              // VkImageLayout* pCopySrcLayouts;
+        nullptr,                                                              // VkImageLayout* pCopySrcLayouts;
         0u,                                                                   // uint32_t copyDstLayoutCount;
-        DE_NULL,                                                              // VkImageLayout* pCopyDstLayouts;
+        nullptr,                                                              // VkImageLayout* pCopyDstLayouts;
         {},   // uint8_t optimalTilingLayoutUUID[VK_UUID_SIZE];
         false // VkBool32 identicalMemoryTypeRequirements;
     };
@@ -1750,24 +1755,33 @@ void PreinitializedTestCase::checkSupport(vkt::Context &context) const
     vk::VkImageType const imageType                    = m_size.depth > 1 ? vk::VK_IMAGE_TYPE_3D : vk::VK_IMAGE_TYPE_2D;
     vk::VkImageFormatProperties2 imageFormatProperties = {
         vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2, // VkStructureType sType;
-        DE_NULL,                                         // void* pNext;
+        nullptr,                                         // void* pNext;
         {},                                              // VkImageFormatProperties imageFormatProperties;
     };
     vk::VkPhysicalDeviceImageDrmFormatModifierInfoEXT modifierInfo = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_DRM_FORMAT_MODIFIER_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                                                  // const void* pNext;
+        nullptr,                                                                  // const void* pNext;
         modifier,                                                                 // uint64_t drmFormatModifier;
         VK_SHARING_MODE_EXCLUSIVE,                                                // VkSharingMode sharingMode;
         0u,                                                                       // uint32_t queueFamilyIndexCount;
-        DE_NULL // const uint32_t* pQueueFamilyIndices;
+        nullptr // const uint32_t* pQueueFamilyIndices;
     };
+
+    vk::VkImageUsageFlags usage = vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
     vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,                         // VkStructureType sType;
-        m_tiling == vk::VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT ? &modifierInfo : DE_NULL, // const void* pNext;
+        m_tiling == vk::VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT ? &modifierInfo : nullptr, // const void* pNext;
         m_format,                                                                          // VkFormat format;
         imageType,                                                                         // VkImageType type;
         m_tiling,                                                                          // VkImageTiling tiling;
-        vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,    // VkImageUsageFlags usage;
+        usage,                                                                             // VkImageUsageFlags usage;
         (vk::VkImageCreateFlags)0u                                                         // VkImageCreateFlags flags;
     };
     if (vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageFormatProperties) ==
@@ -1796,11 +1810,11 @@ tcu::TestStatus PropertiesTestInstance::iterate(void)
 
     vk::VkPhysicalDeviceHostImageCopyPropertiesEXT hostImageCopyProperties = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES_EXT, // VkStructureType sType;
-        DE_NULL,                                                              // void* pNext;
+        nullptr,                                                              // void* pNext;
         0u,                                                                   // uint32_t copySrcLayoutCount;
-        DE_NULL,                                                              // VkImageLayout* pCopySrcLayouts;
+        nullptr,                                                              // VkImageLayout* pCopySrcLayouts;
         0u,                                                                   // uint32_t copyDstLayoutCount;
-        DE_NULL,                                                              // VkImageLayout* pCopyDstLayouts;
+        nullptr,                                                              // VkImageLayout* pCopyDstLayouts;
         {},   // uint8_t optimalTilingLayoutUUID[VK_UUID_SIZE];
         false // VkBool32 identicalMemoryTypeRequirements;
     };
@@ -1893,7 +1907,7 @@ tcu::TestStatus QueryTestInstance::iterate(void)
 
     const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         m_format,                                                  // VkFormat format;
         vk::VK_IMAGE_TYPE_2D,                                      // VkImageType type;
         m_tiling,                                                  // VkImageTiling tiling;

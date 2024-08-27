@@ -105,7 +105,7 @@ SharedBasicVarCase::SharedBasicVarCase(Context &context, const char *name, DataT
     , m_basicType(basicType)
     , m_precision(precision)
     , m_workGroupSize(workGroupSize)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
 }
 
@@ -161,7 +161,7 @@ void SharedBasicVarCase::init(void)
     if (!m_program->isOk())
     {
         delete m_program;
-        m_program = DE_NULL;
+        m_program = nullptr;
         throw tcu::TestError("Compile failed");
     }
 }
@@ -169,7 +169,7 @@ void SharedBasicVarCase::init(void)
 void SharedBasicVarCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 SharedBasicVarCase::IterateResult SharedBasicVarCase::iterate(void)

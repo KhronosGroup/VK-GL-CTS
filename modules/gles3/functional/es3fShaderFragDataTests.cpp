@@ -135,7 +135,7 @@ public:
         const char *const fragIndexExpr = indexExprType == INDEX_EXPR_STATIC  ? "0" :
                                           indexExprType == INDEX_EXPR_UNIFORM ? "u_index" :
                                           indexExprType == INDEX_EXPR_DYNAMIC ? "int(v_index)" :
-                                                                                DE_NULL;
+                                                                                nullptr;
         glu::ProgramSources sources;
 
         DE_ASSERT(fragIndexExpr);

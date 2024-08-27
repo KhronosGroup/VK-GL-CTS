@@ -137,7 +137,10 @@ public:
     Half(int value) : Half((float)value)
     {
     }
-    Half(size_t value) : Half((float)value)
+    Half(uint32_t value) : Half((float)value)
+    {
+    }
+    Half(uint64_t value) : Half((float)value)
     {
     }
     Half() : Half(0)
@@ -179,7 +182,10 @@ public:
     F16Vec2(int i) : F16Vec2((float)i)
     {
     }
-    F16Vec2(size_t i) : F16Vec2((float)i)
+    F16Vec2(uint32_t i) : F16Vec2((float)i)
+    {
+    }
+    F16Vec2(uint64_t i) : F16Vec2((float)i)
     {
     }
     F16Vec2(float f) : F16Vec2(f, f)
@@ -211,7 +217,10 @@ public:
     F16Vec4(int i) : F16Vec4((float)i)
     {
     }
-    F16Vec4(size_t i) : F16Vec4((float)i)
+    F16Vec4(uint32_t i) : F16Vec4((float)i)
+    {
+    }
+    F16Vec4(uint64_t i) : F16Vec4((float)i)
     {
     }
     F16Vec4(float f) : F16Vec4(f, f, f, f)
@@ -772,7 +781,7 @@ static T computeBinaryAtomicOperationResult(const AtomicOperation op, const T a,
         return b;
     case ATOMIC_OPERATION_COMPARE_EXCHANGE:
     {
-        constexpr size_t val = (size_t)(sizeof(T) == 8 ? 0xBEFFFFFF18 : 18);
+        constexpr uint64_t val = (uint64_t)(sizeof(T) == 8 ? 0xBEFFFFFF18 : 18);
         return (a == T(val)) ? b : a;
     }
     default:
@@ -1597,7 +1606,7 @@ tcu::TestStatus BinaryAtomicInstanceBase::iterate(void)
 
     deviceInterface.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     deviceInterface.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                          &m_descriptorSet.get(), 0u, DE_NULL);
+                                          &m_descriptorSet.get(), 0u, nullptr);
 
     deviceInterface.cmdDispatch(*cmdBuffer, NUM_INVOCATIONS_PER_PIXEL * gridSize.x(), gridSize.y(), gridSize.z());
 
@@ -1611,7 +1620,7 @@ tcu::TestStatus BinaryAtomicInstanceBase::iterate(void)
     deviceInterface.cmdPipelineBarrier(
         *cmdBuffer,
         ((m_useTransfer || isTexelBuffer) ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT),
-        VK_PIPELINE_STAGE_HOST_BIT, false, 0u, DE_NULL, 1u, &outputBufferPreHostReadBarrier, 0u, DE_NULL);
+        VK_PIPELINE_STAGE_HOST_BIT, false, 0u, nullptr, 1u, &outputBufferPreHostReadBarrier, 0u, nullptr);
 
     endCommandBuffer(deviceInterface, *cmdBuffer);
 
@@ -1654,13 +1663,13 @@ void BinaryAtomicInstanceBase::shaderFillImage(const VkCommandBuffer cmdBuffer, 
         makeImageMemoryBarrier(0, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
                                m_resultImage->get(), subresourceRange);
 
-    deviceInterface.cmdPipelineBarrier(
-        cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0,
-        (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1, &imageBarrierPre);
+    deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
+                                       nullptr, 1, &imageBarrierPre);
 
     deviceInterface.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
     deviceInterface.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u,
-                                          &descriptorSet, 0u, DE_NULL);
+                                          &descriptorSet, 0u, nullptr);
 
     deviceInterface.cmdDispatch(cmdBuffer, gridSize.x(), gridSize.y(), gridSize.z());
 
@@ -1668,9 +1677,9 @@ void BinaryAtomicInstanceBase::shaderFillImage(const VkCommandBuffer cmdBuffer, 
         makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
                                VK_IMAGE_LAYOUT_GENERAL, m_resultImage->get(), subresourceRange);
 
-    deviceInterface.cmdPipelineBarrier(
-        cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0,
-        (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1, &imageBarrierPost);
+    deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
+                                       nullptr, 1, &imageBarrierPost);
 }
 
 void BinaryAtomicInstanceBase::createImageAndView(VkFormat imageFormat, const tcu::UVec3 &imageExent, bool useTransfer,
@@ -1689,7 +1698,7 @@ void BinaryAtomicInstanceBase::createImageAndView(VkFormat imageFormat, const tc
 
     VkImageCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         createFlags,                         // VkImageCreateFlags flags;
         mapImageType(m_imageType),           // VkImageType imageType;
         imageFormat,                         // VkFormat format;
@@ -1701,7 +1710,7 @@ void BinaryAtomicInstanceBase::createImageAndView(VkFormat imageFormat, const tc
         usageFlags,                          // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
 
@@ -1848,7 +1857,7 @@ void BinaryAtomicEndResultInstance::commandsAfterCompute(const VkCommandBuffer c
                                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_resultImage->get(), subresourceRange);
 
         deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                           VK_PIPELINE_STAGE_TRANSFER_BIT, false, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                           VK_PIPELINE_STAGE_TRANSFER_BIT, false, 0u, nullptr, 0u, nullptr, 1u,
                                            &resultImagePostDispatchBarrier);
 
         const VkBufferImageCopy bufferImageCopyParams =
@@ -1876,12 +1885,12 @@ void BinaryAtomicEndResultInstance::commandsAfterCompute(const VkCommandBuffer c
                                    VK_IMAGE_LAYOUT_GENERAL, m_resultImage->get(), subresourceRange);
 
         deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, false, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, false, 0u, nullptr, 0u, nullptr, 1u,
                                            &resultImagePostDispatchBarrier);
 
         deviceInterface.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
         deviceInterface.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u,
-                                              &descriptorSet, 0u, DE_NULL);
+                                              &descriptorSet, 0u, nullptr);
 
         switch (m_imageType)
         {
@@ -2193,7 +2202,7 @@ void BinaryAtomicIntermValuesInstance::commandsBeforeCompute(const VkCommandBuff
                                m_intermResultsImage->get(), subresourceRange);
 
     deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, false, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, false, 0u, nullptr, 0u, nullptr, 1u,
                                        &imagePreDispatchBarrier);
 }
 
@@ -2218,7 +2227,7 @@ void BinaryAtomicIntermValuesInstance::commandsAfterCompute(const VkCommandBuffe
                                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_intermResultsImage->get(), subresourceRange);
 
         deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                           VK_PIPELINE_STAGE_TRANSFER_BIT, false, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                           VK_PIPELINE_STAGE_TRANSFER_BIT, false, 0u, nullptr, 0u, nullptr, 1u,
                                            &imagePostDispatchBarrier);
 
         const UVec3 extendedLayerSize = UVec3(NUM_INVOCATIONS_PER_PIXEL * layerSize.x(), layerSize.y(), layerSize.z());
@@ -2248,12 +2257,12 @@ void BinaryAtomicIntermValuesInstance::commandsAfterCompute(const VkCommandBuffe
                                    VK_IMAGE_LAYOUT_GENERAL, m_intermResultsImage->get(), subresourceRange);
 
         deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, false, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, false, 0u, nullptr, 0u, nullptr, 1u,
                                            &resultImagePostDispatchBarrier);
 
         deviceInterface.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
         deviceInterface.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u,
-                                              &descriptorSet, 0u, DE_NULL);
+                                              &descriptorSet, 0u, nullptr);
 
         switch (m_imageType)
         {

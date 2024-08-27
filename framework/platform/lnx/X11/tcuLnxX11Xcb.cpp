@@ -83,7 +83,7 @@ XcbWindow::XcbWindow(XcbDisplay &display, int width, int height, xcb_visualid_t 
     m_window   = xcb_generate_id(connection);
     m_colormap = xcb_generate_id(connection);
 
-    if (visual == DE_NULL)
+    if (visual == nullptr)
         visual = &m_display.getScreen()->root_visual;
 
     values[0] = m_display.getScreen()->white_pixel;
@@ -154,14 +154,14 @@ void XcbWindow::setDimensions(int width, int height)
     xcb_void_cookie_t result;
     xcb_connection_t *display = m_display.getConnection();
     result = xcb_configure_window(display, m_window, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
-    DE_ASSERT(DE_NULL == xcb_request_check(display, result));
+    DE_ASSERT(nullptr == xcb_request_check(display, result));
     xcb_flush(display);
 
     for (;;)
     {
         xcb_generic_event_t *event = xcb_poll_for_event(display);
         int w, h;
-        if (event != DE_NULL)
+        if (event != nullptr)
         {
             if (XCB_PROPERTY_NOTIFY == (event->response_type & ~0x80))
             {

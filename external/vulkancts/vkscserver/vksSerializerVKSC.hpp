@@ -101,7 +101,7 @@ inline void SerializeItem(Serializer<ToRead> &serializer, vk::Handle<VKTYPE> &v)
 {
     u64 handle;
     serializer.Serialize(handle);
-    v = handle;
+    v = vk::Handle<VKTYPE>(reinterpret_cast<void *>(handle));
 }
 
 template <vk::HandleType VKTYPE>

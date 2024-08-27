@@ -282,8 +282,8 @@ AttributeCase::AttributeCase(Context &ctx, const char *name, const char *desc, c
     , m_useNegativeValues(useNegative)
     , m_funcName(funcName)
     , m_dataType(dataType)
-    , m_loader(DE_NULL)
-    , m_program(DE_NULL)
+    , m_loader(nullptr)
+    , m_program(nullptr)
     , m_bufID(0)
     , m_allIterationsPassed(true)
     , m_iteration(0)
@@ -352,10 +352,10 @@ void AttributeCase::init(void)
 void AttributeCase::deinit(void)
 {
     delete m_loader;
-    m_loader = DE_NULL;
+    m_loader = nullptr;
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     if (m_bufID)
     {
@@ -470,7 +470,7 @@ bool AttributeCase::renderWithValue(const tcu::Vec4 &v)
     GLU_EXPECT_NO_ERROR(gl.glGetError(), "setup");
 
     gl.glBindBuffer(GL_ARRAY_BUFFER, m_bufID);
-    gl.glVertexAttribPointer(positionIndex, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.glVertexAttribPointer(positionIndex, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.glEnableVertexAttribArray(positionIndex);
     GLU_EXPECT_NO_ERROR(gl.glGetError(), "position va");
 

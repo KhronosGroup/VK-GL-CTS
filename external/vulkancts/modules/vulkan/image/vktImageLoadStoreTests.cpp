@@ -441,8 +441,7 @@ void commandImageWriteBarrierBetweenShaderInvocations(Context &context, const Vk
                                fullImageSubresourceRange);
 
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                          (const VkBufferMemoryBarrier *)DE_NULL, 1, &shaderWriteBarrier);
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &shaderWriteBarrier);
 }
 
 void commandBufferWriteBarrierBeforeHostRead(Context &context, const VkCommandBuffer cmdBuffer, const VkBuffer buffer,
@@ -454,8 +453,7 @@ void commandBufferWriteBarrierBeforeHostRead(Context &context, const VkCommandBu
         makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, buffer, 0ull, bufferSizeBytes);
 
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &shaderWriteBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier, 0, nullptr);
 }
 
 //! Copy all layers of an image to a buffer.
@@ -477,12 +475,10 @@ void commandCopyImageToBuffer(Context &context, const VkCommandBuffer cmdBuffer,
         makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, buffer, 0ull, bufferSizeBytes);
 
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                          (const VkBufferMemoryBarrier *)DE_NULL, 1, &prepareForTransferBarrier);
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &prepareForTransferBarrier);
     vk.cmdCopyImageToBuffer(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1u, &copyRegion);
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
-                          0, (const VkMemoryBarrier *)DE_NULL, 1, &copyBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          0, nullptr, 1, &copyBarrier, 0, nullptr);
 }
 
 //! Copy all layers of a mipmap image to a buffer.
@@ -519,13 +515,11 @@ void commandCopyMipmapImageToBuffer(Context &context, const VkCommandBuffer cmdB
         makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, buffer, 0ull, bufferSizeBytes);
 
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                          (const VkBufferMemoryBarrier *)DE_NULL, 1, &prepareForTransferBarrier);
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &prepareForTransferBarrier);
     vk.cmdCopyImageToBuffer(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer,
                             (uint32_t)copyRegions.size(), copyRegions.data());
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
-                          0, (const VkMemoryBarrier *)DE_NULL, 1, &copyBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          0, nullptr, 1, &copyBarrier, 0, nullptr);
 }
 
 class StoreTest : public TestCase
@@ -1105,7 +1099,7 @@ void ImageStoreTestInstance::commandBindDescriptorsForLayer(const VkCommandBuffe
                      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &descriptorConstantsBufferInfo)
         .update(vk, device);
     vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u,
-                             DE_NULL);
+                             nullptr);
 }
 
 void ImageStoreTestInstance::commandBeforeCompute(const VkCommandBuffer cmdBuffer)
@@ -1124,8 +1118,7 @@ void ImageStoreTestInstance::commandBeforeCompute(const VkCommandBuffer cmdBuffe
         VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, m_constantsBuffer->get(), 0ull, constantsBufferSize);
 
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &writeConstantsBarrier, 1,
-                          &setImageLayoutBarrier);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &writeConstantsBarrier, 1, &setImageLayoutBarrier);
 }
 
 void ImageStoreTestInstance::commandBetweenShaderInvocations(const VkCommandBuffer cmdBuffer)
@@ -1201,7 +1194,7 @@ void BufferStoreTestInstance::commandBindDescriptorsForLayer(const VkCommandBuff
                      VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, &m_bufferView.get())
         .update(vk, device);
     vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &m_descriptorSet.get(),
-                             0u, DE_NULL);
+                             0u, nullptr);
 }
 
 void BufferStoreTestInstance::commandAfterCompute(const VkCommandBuffer cmdBuffer)
@@ -1787,7 +1780,7 @@ void ImageLoadStoreTestInstance::commandBindDescriptorsForLayer(const VkCommandB
                      &descriptorDstImageInfo)
         .update(vk, device);
     vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u,
-                             DE_NULL);
+                             nullptr);
 }
 
 void ImageLoadStoreTestInstance::commandBeforeCompute(const VkCommandBuffer cmdBuffer)
@@ -1810,9 +1803,8 @@ void ImageLoadStoreTestInstance::commandBeforeCompute(const VkCommandBuffer cmdB
 
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT,
                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1,
-                              &barrierFlushHostWriteBeforeCopy, DE_LENGTH_OF_ARRAY(preCopyImageBarriers),
-                              preCopyImageBarriers);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &barrierFlushHostWriteBeforeCopy,
+                              DE_LENGTH_OF_ARRAY(preCopyImageBarriers), preCopyImageBarriers);
     }
     {
         const VkImageMemoryBarrier barrierAfterCopy = makeImageMemoryBarrier(
@@ -1824,8 +1816,7 @@ void ImageLoadStoreTestInstance::commandBeforeCompute(const VkCommandBuffer cmdB
         vk.cmdCopyBufferToImage(cmdBuffer, m_imageBuffer->get(), m_imageSrc->get(),
                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                              (const VkBufferMemoryBarrier *)DE_NULL, 1, &barrierAfterCopy);
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &barrierAfterCopy);
     }
 }
 
@@ -1942,7 +1933,7 @@ ImageLoadStoreLodAMDTestInstance::ImageLoadStoreLodAMDTestInstance(Context &cont
     {
         const VkImageCreateInfo imageParamsSrc = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             (isCube(m_texture) ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u) |
                 imageFlags,                                               // VkImageCreateFlags flags;
             mapImageType(m_texture.type()),                               // VkImageType imageType;
@@ -1955,7 +1946,7 @@ ImageLoadStoreLodAMDTestInstance::ImageLoadStoreLodAMDTestInstance(Context &cont
             VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,                                    // VkSharingMode sharingMode;
             0u,                                                           // uint32_t queueFamilyIndexCount;
-            DE_NULL,                                                      // const uint32_t* pQueueFamilyIndices;
+            nullptr,                                                      // const uint32_t* pQueueFamilyIndices;
             VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout initialLayout;
         };
 
@@ -1965,7 +1956,7 @@ ImageLoadStoreLodAMDTestInstance::ImageLoadStoreLodAMDTestInstance(Context &cont
     {
         const VkImageCreateInfo imageParamsDst = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             (isCube(m_texture) ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u) |
                 imageFlags,                                               // VkImageCreateFlags flags;
             mapImageType(m_texture.type()),                               // VkImageType imageType;
@@ -1978,7 +1969,7 @@ ImageLoadStoreLodAMDTestInstance::ImageLoadStoreLodAMDTestInstance(Context &cont
             VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,                                    // VkSharingMode sharingMode;
             0u,                                                           // uint32_t queueFamilyIndexCount;
-            DE_NULL,                                                      // const uint32_t* pQueueFamilyIndices;
+            nullptr,                                                      // const uint32_t* pQueueFamilyIndices;
             VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout initialLayout;
         };
 
@@ -2089,7 +2080,7 @@ void ImageLoadStoreLodAMDTestInstance::commandBindDescriptorsForLayer(const VkCo
                      &descriptorDstImageInfo)
         .update(vk, device);
     vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u,
-                             DE_NULL);
+                             nullptr);
 }
 
 void ImageLoadStoreLodAMDTestInstance::commandBeforeCompute(const VkCommandBuffer cmdBuffer)
@@ -2110,9 +2101,8 @@ void ImageLoadStoreLodAMDTestInstance::commandBeforeCompute(const VkCommandBuffe
 
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT,
                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1,
-                              &barrierFlushHostWriteBeforeCopy, DE_LENGTH_OF_ARRAY(preCopyImageBarriers),
-                              preCopyImageBarriers);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &barrierFlushHostWriteBeforeCopy,
+                              DE_LENGTH_OF_ARRAY(preCopyImageBarriers), preCopyImageBarriers);
     }
     {
         const VkImageMemoryBarrier barrierAfterCopy = makeImageMemoryBarrier(
@@ -2139,8 +2129,7 @@ void ImageLoadStoreLodAMDTestInstance::commandBeforeCompute(const VkCommandBuffe
         vk.cmdCopyBufferToImage(cmdBuffer, m_imageBuffer->get(), m_imageSrc->get(),
                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (uint32_t)copyRegions.size(), copyRegions.data());
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                              (const VkBufferMemoryBarrier *)DE_NULL, 1, &barrierAfterCopy);
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &barrierAfterCopy);
     }
 }
 
@@ -2243,7 +2232,7 @@ void BufferLoadStoreTestInstance::commandBindDescriptorsForLayer(const VkCommand
                      VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, &m_bufferViewDst.get())
         .update(vk, device);
     vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &m_descriptorSet.get(),
-                             0u, DE_NULL);
+                             0u, nullptr);
 }
 
 void BufferLoadStoreTestInstance::commandAfterCompute(const VkCommandBuffer cmdBuffer)
@@ -2428,7 +2417,7 @@ void ImageExtendOperandTestInstance::commandBindDescriptorsForLayer(const VkComm
         .writeSingle(descriptorSet, DSUBL::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorDstImageInfo)
         .update(vk, device);
     vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u,
-                             DE_NULL);
+                             nullptr);
 }
 
 void ImageExtendOperandTestInstance::commandBeforeCompute(const VkCommandBuffer cmdBuffer)
@@ -2449,9 +2438,8 @@ void ImageExtendOperandTestInstance::commandBeforeCompute(const VkCommandBuffer 
 
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT,
                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1,
-                              &barrierFlushHostWriteBeforeCopy, DE_LENGTH_OF_ARRAY(preCopyImageBarriers),
-                              preCopyImageBarriers);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &barrierFlushHostWriteBeforeCopy,
+                              DE_LENGTH_OF_ARRAY(preCopyImageBarriers), preCopyImageBarriers);
     }
     {
         const VkImageMemoryBarrier barrierAfterCopy = makeImageMemoryBarrier(
@@ -2463,8 +2451,7 @@ void ImageExtendOperandTestInstance::commandBeforeCompute(const VkCommandBuffer 
         vk.cmdCopyBufferToImage(cmdBuffer, m_buffer->get(), m_imageSrc->get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u,
                                 &copyRegion);
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                              (const VkBufferMemoryBarrier *)DE_NULL, 1, &barrierAfterCopy);
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &barrierAfterCopy);
     }
 }
 

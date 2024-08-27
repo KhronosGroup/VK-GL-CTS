@@ -261,7 +261,7 @@ struct UniformSlot
     inline UniformSlot(void) : type(glu::TYPE_LAST)
     {
         value.i     = 0;
-        sampler.ptr = DE_NULL;
+        sampler.ptr = nullptr;
     }
 };
 

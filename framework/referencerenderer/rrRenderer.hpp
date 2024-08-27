@@ -75,7 +75,7 @@ private:
 struct Program
 {
     Program(const VertexShader *vertexShader_, const FragmentShader *fragmentShader_,
-            const GeometryShader *geometryShader_ = DE_NULL)
+            const GeometryShader *geometryShader_ = nullptr)
         : vertexShader(vertexShader_)
         , fragmentShader(fragmentShader_)
         , geometryShader(geometryShader_)

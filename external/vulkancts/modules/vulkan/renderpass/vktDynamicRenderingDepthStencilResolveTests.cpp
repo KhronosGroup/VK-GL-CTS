@@ -244,7 +244,7 @@ bool DepthStencilResolveTest::isFeaturesSupported()
     VkPhysicalDeviceDepthStencilResolveProperties dsResolveProperties;
     deMemset(&dsResolveProperties, 0, sizeof(VkPhysicalDeviceDepthStencilResolveProperties));
     dsResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
-    dsResolveProperties.pNext = DE_NULL;
+    dsResolveProperties.pNext = nullptr;
 
     VkPhysicalDeviceProperties2 deviceProperties;
     deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -348,7 +348,7 @@ VkImageSp DepthStencilResolveTest::createImage(VkFormat vkformat, uint32_t sampl
 
     const VkImageCreateInfo pCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType
-        DE_NULL,                             // const void*              pNext
+        nullptr,                             // const void*              pNext
         0u,                                  // VkImageCreateFlags       flags
         VK_IMAGE_TYPE_2D,                    // VkImageType              imageType
         vkformat,                            // VkFormat                 format
@@ -360,7 +360,7 @@ VkImageSp DepthStencilResolveTest::createImage(VkFormat vkformat, uint32_t sampl
         usage,                               // VkImageUsageFlags        usage
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
         0u,                                  // uint32_t                 queueFamilyIndexCount
-        DE_NULL,                             // const uint32_t*          pQueueFamilyIndices
+        nullptr,                             // const uint32_t*          pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout            initialLayout
     };
 
@@ -389,7 +389,7 @@ VkImageViewSp DepthStencilResolveTest::createImageView(VkImageSp image, VkFormat
 
     const VkImageViewCreateInfo pCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType            sType
-        DE_NULL,                                  // const void*                pNext
+        nullptr,                                  // const void*                pNext
         0u,                                       // VkImageViewCreateFlags     flags
         **image,                                  // VkImage                    image
         (m_config.viewLayers > 1) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY :
@@ -410,7 +410,7 @@ Move<VkPipelineLayout> DepthStencilResolveTest::createRenderPipelineLayout(void)
     };
 
     uint32_t pushConstantRangeCount          = 0u;
-    VkPushConstantRange *pPushConstantRanges = DE_NULL;
+    VkPushConstantRange *pPushConstantRanges = nullptr;
     if (m_config.verifyBuffer == VB_STENCIL)
     {
         pushConstantRangeCount = 1u;
@@ -419,10 +419,10 @@ Move<VkPipelineLayout> DepthStencilResolveTest::createRenderPipelineLayout(void)
 
     const VkPipelineLayoutCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                 sType
-        DE_NULL,                                       // const void*                     pNext
+        nullptr,                                       // const void*                     pNext
         (vk::VkPipelineLayoutCreateFlags)0,            // VkPipelineLayoutCreateFlags     flags
         0u,                                            // uint32_t                        setLayoutCount
-        DE_NULL,                                       // const VkDescriptorSetLayout*    pSetLayouts
+        nullptr,                                       // const VkDescriptorSetLayout*    pSetLayouts
         pushConstantRangeCount,                        // uint32_t                        pushConstantRangeCount
         pPushConstantRanges                            // const VkPushConstantRange*      pPushConstantRanges
     };
@@ -445,12 +445,12 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkFormat format, 
 
     const VkPipelineVertexInputStateCreateInfo vertexInputState = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType
-        DE_NULL,                                                   // const void*                                 pNext
+        nullptr,                                                   // const void*                                 pNext
         (VkPipelineVertexInputStateCreateFlags)0u,                 // VkPipelineVertexInputStateCreateFlags       flags
         0u,      // uint32_t                                    vertexBindingDescriptionCount
-        DE_NULL, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions
+        nullptr, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions
         0u,      // uint32_t                                    vertexAttributeDescriptionCount
-        DE_NULL  // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
+        nullptr  // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
     };
     const tcu::UVec2 view(m_config.width, m_config.height);
     const std::vector<VkViewport> viewports(1, makeViewport(view));
@@ -458,18 +458,18 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkFormat format, 
 
     const VkPipelineMultisampleStateCreateInfo multisampleState = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineMultisampleStateCreateFlags)0u,
         sampleCountBitFromSampleCount(m_config.sampleCount),
         VK_FALSE,
         0.0f,
-        DE_NULL,
+        nullptr,
         VK_FALSE,
         VK_FALSE,
     };
     const VkPipelineDepthStencilStateCreateInfo depthStencilState = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineDepthStencilStateCreateFlags)0u,
 
         VK_TRUE, // depthTestEnable
@@ -494,7 +494,7 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkFormat format, 
     dynamicState.push_back(VK_DYNAMIC_STATE_STENCIL_REFERENCE);
     const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType                      sType
-        DE_NULL,                                              // const void*                          pNext
+        nullptr,                                              // const void*                          pNext
         (VkPipelineDynamicStateCreateFlags)0u,                // VkPipelineDynamicStateCreateFlags    flags
         static_cast<uint32_t>(dynamicState.size()),           // uint32_t                             dynamicStateCount
         &dynamicState[0]                                      // const VkDynamicState*                pDynamicStates
@@ -502,10 +502,10 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkFormat format, 
 
     VkPipelineRenderingCreateInfoKHR dynamicRenderingInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType    sType;
-        DE_NULL,                                          // const void*        pNext;
+        nullptr,                                          // const void*        pNext;
         0,                                                // uint32_t           viewMask;
         0,                                                // uint32_t           colorAttachmentCount;
-        DE_NULL,                                          // const VkFormat*    pColorAttachmentFormats;
+        nullptr,                                          // const VkFormat*    pColorAttachmentFormats;
         VK_FORMAT_UNDEFINED,                              // VkFormat           depthAttachmentFormat;
         VK_FORMAT_UNDEFINED                               // VkFormat           stencilAttachmentFormat;
     };
@@ -523,7 +523,7 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkFormat format, 
         VK_NULL_HANDLE,       // const VkShaderModule                          tessellationControlShaderModule
         VK_NULL_HANDLE,       // const VkShaderModule                          tessellationEvalShaderModule
         m_config.imageLayers == 1 ?
-            DE_NULL :
+            VK_NULL_HANDLE :
             *geometryShaderModule,           // const VkShaderModule                          geometryShaderModule
         *fragmentShaderModule,               // const VkShaderModule                          fragmentShaderModule
         VK_NULL_HANDLE,                      // const VkRenderPass                            renderPass
@@ -533,12 +533,12 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkFormat format, 
         0u,                                  // const uint32_t                                subpass
         0u,                                  // const uint32_t                                patchControlPoints
         &vertexInputState,                   // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-        DE_NULL,            // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+        nullptr,            // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
         &multisampleState,  // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
         &depthStencilState, // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-        DE_NULL,            // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+        nullptr,            // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
         testingStencil ? &dynamicStateCreateInfo :
-                         DE_NULL,               // const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
+                         nullptr,               // const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
         &dynamicRenderingInfo,                  // const void*                                   pNext
         static_cast<VkPipelineCreateFlags>(0)); // const VkPipelineCreateFlags                   pipelineCreateFlags
 }
@@ -559,13 +559,13 @@ VkBufferSp DepthStencilResolveTest::createBuffer(void)
     const VkDeviceSize pixelSize(textureFormat.getPixelSize());
     const VkBufferCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                // VkStructureType        sType
-        DE_NULL,                                                             // const void*            pNext
+        nullptr,                                                             // const void*            pNext
         0u,                                                                  // VkBufferCreateFlags    flags
         m_config.width * m_config.height * m_config.imageLayers * pixelSize, // VkDeviceSize           size
         bufferUsage,                                                         // VkBufferUsageFlags     usage
         VK_SHARING_MODE_EXCLUSIVE,                                           // VkSharingMode          sharingMode
         0u,     // uint32_t               queueFamilyIndexCount
-        DE_NULL // const uint32_t*        pQueueFamilyIndices
+        nullptr // const uint32_t*        pQueueFamilyIndices
     };
     return safeSharedPtr(new Unique<VkBuffer>(vk::createBuffer(m_vkd, m_device, &createInfo)));
 }
@@ -580,11 +580,11 @@ void DepthStencilResolveTest::beginSecondaryCommandBuffer(VkCommandBuffer cmdBuf
 
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType                    sType
-        DE_NULL,                                                         // const void*                        pNext
+        nullptr,                                                         // const void*                        pNext
         renderingFlags,                                                  // VkRenderingFlagsKHR                flags
         0u,                                                              // uint32_t                            viewMask
         0u,            // uint32_t                            colorAttachmentCount
-        DE_NULL,       // const VkFormat*                    pColorAttachmentFormats
+        nullptr,       // const VkFormat*                    pColorAttachmentFormats
         depthFormat,   // VkFormat                            depthAttachmentFormat
         stencilFormat, // VkFormat                            stencilAttachmentFormat
         sampleCountBitFromSampleCount(m_config.sampleCount) // VkSampleCountFlagBits            rasterizationSamples
@@ -597,7 +597,7 @@ void DepthStencilResolveTest::beginSecondaryCommandBuffer(VkCommandBuffer cmdBuf
 
     const VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType                            sType
-        DE_NULL,                                     // const void*                                pNext
+        nullptr,                                     // const void*                                pNext
         usageFlags,                                  // VkCommandBufferUsageFlags                flags
         &bufferInheritanceInfo,                      // const VkCommandBufferInheritanceInfo*    pInheritanceInfo
     };
@@ -624,7 +624,7 @@ void DepthStencilResolveTest::submit(void)
 
     const VkImageMemoryBarrier preClearBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
-        DE_NULL,                                // const void*                pNext
+        nullptr,                                // const void*                pNext
         VK_ACCESS_NONE_KHR,                     // VkAccessFlags              srcAccessMask
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags              dstAccessMask
         VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout              oldLayout
@@ -637,7 +637,7 @@ void DepthStencilResolveTest::submit(void)
 
     const VkImageMemoryBarrier preRenderBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType            sType
-        DE_NULL,                                          // const void*                pNext
+        nullptr,                                          // const void*                pNext
         VK_ACCESS_TRANSFER_WRITE_BIT,                     // VkAccessFlags              srcAccessMask
         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags              dstAccessMask
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,             // VkImageLayout              oldLayout
@@ -655,7 +655,7 @@ void DepthStencilResolveTest::submit(void)
 
         beginCommandBuffer(vkd, *clearCmdBuffer);
         vkd.cmdPipelineBarrier(*clearCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
-                               0u, DE_NULL, 0u, DE_NULL, 1u, &preClearBarrier);
+                               0u, nullptr, 0u, nullptr, 1u, &preClearBarrier);
 
         vkd.cmdClearDepthStencilImage(*clearCmdBuffer, **m_singlesampleImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                       &m_config.clearValue, 1u, &imageRange);
@@ -673,7 +673,7 @@ void DepthStencilResolveTest::submit(void)
 
         const VkRenderingAttachmentInfo depthAttachment = {
             VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,      // VkStructureType          sType
-            DE_NULL,                                          // const void*              pNext
+            nullptr,                                          // const void*              pNext
             **m_multisampleImageView,                         // VkImageView              imageView
             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout            imageLayout
             m_config.depthResolveMode,                        // VkResolveModeFlagBits    resolveMode
@@ -686,7 +686,7 @@ void DepthStencilResolveTest::submit(void)
 
         VkRenderingInfoKHR renderingInfo = {
             VK_STRUCTURE_TYPE_RENDERING_INFO, // VkStructureType                     sType
-            DE_NULL,                          // const void*                         pNext
+            nullptr,                          // const void*                         pNext
             static_cast<VkRenderingFlags>(0), // VkRenderingFlags                    flags
             {
                 // VkRect2D                            renderArea
@@ -696,9 +696,9 @@ void DepthStencilResolveTest::submit(void)
             m_config.viewLayers, // uint32_t                            layerCount
             0,                   // uint32_t                            viewMask
             0,                   // uint32_t                            colorAttachmentCount
-            DE_NULL,             // const VkRenderingAttachmentInfo*    pColorAttachments
+            nullptr,             // const VkRenderingAttachmentInfo*    pColorAttachments
             &depthAttachment,    // const VkRenderingAttachmentInfo*    pDepthAttachment
-            DE_NULL              // const VkRenderingAttachmentInfo*    pStencilAttachment
+            nullptr              // const VkRenderingAttachmentInfo*    pStencilAttachment
         };
 
         if (m_config.groupParams->useSecondaryCmdBuffer)
@@ -728,7 +728,7 @@ void DepthStencilResolveTest::submit(void)
             vkd.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                                    vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                        vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &preRenderBarrier);
+                                   0u, 0u, nullptr, 0u, nullptr, 1u, &preRenderBarrier);
 
             if (!m_config.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
             {
@@ -747,7 +747,7 @@ void DepthStencilResolveTest::submit(void)
             vkd.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                                    vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                        vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &preRenderBarrier);
+                                   0u, 0u, nullptr, 0u, nullptr, 1u, &preRenderBarrier);
             vkd.cmdBeginRendering(*cmdBuffer, &renderingInfo);
             vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
             vkd.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
@@ -760,7 +760,7 @@ void DepthStencilResolveTest::submit(void)
         vkd.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                                vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                    vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                               0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &preRenderBarrier);
+                               0u, 0u, nullptr, 0u, nullptr, 1u, &preRenderBarrier);
         if (m_config.groupParams->useSecondaryCmdBuffer)
         {
             secCmdBuffer = allocateCommandBuffer(vkd, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
@@ -775,7 +775,7 @@ void DepthStencilResolveTest::submit(void)
 
                     const VkRenderingAttachmentInfo stencilAttachment = {
                         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,      // VkStructureType          sType
-                        DE_NULL,                                          // const void*              pNext
+                        nullptr,                                          // const void*              pNext
                         **m_multisampleImageView,                         // VkImageView              imageView
                         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout            imageLayout
                         m_config.stencilResolveMode,                      // VkResolveModeFlagBits    resolveMode
@@ -788,7 +788,7 @@ void DepthStencilResolveTest::submit(void)
 
                     VkRenderingInfoKHR renderingInfo = {
                         VK_STRUCTURE_TYPE_RENDERING_INFO, // VkStructureType                     sType
-                        DE_NULL,                          // const void*                         pNext
+                        nullptr,                          // const void*                         pNext
                         static_cast<VkRenderingFlags>(0), // VkRenderingFlags                    flags
                         {
                             // VkRect2D                            renderArea
@@ -798,8 +798,8 @@ void DepthStencilResolveTest::submit(void)
                         m_config.viewLayers, // uint32_t                            layerCount
                         0,                   // uint32_t                            viewMask
                         0,                   // uint32_t                            colorAttachmentCount
-                        DE_NULL,             // const VkRenderingAttachmentInfo*    pColorAttachments
-                        DE_NULL,             // const VkRenderingAttachmentInfo*    pDepthAttachment
+                        nullptr,             // const VkRenderingAttachmentInfo*    pColorAttachments
+                        nullptr,             // const VkRenderingAttachmentInfo*    pDepthAttachment
                         &stencilAttachment   // const VkRenderingAttachmentInfo*    pStencilAttachment
                     };
 
@@ -859,7 +859,7 @@ void DepthStencilResolveTest::submit(void)
 
                     const VkRenderingAttachmentInfo stencilAttachment = {
                         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,      // VkStructureType          sType
-                        DE_NULL,                                          // const void*              pNext
+                        nullptr,                                          // const void*              pNext
                         **m_multisampleImageView,                         // VkImageView              imageView
                         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout            imageLayout
                         m_config.stencilResolveMode,                      // VkResolveModeFlagBits    resolveMode
@@ -872,7 +872,7 @@ void DepthStencilResolveTest::submit(void)
 
                     VkRenderingInfoKHR renderingInfo = {
                         VK_STRUCTURE_TYPE_RENDERING_INFO, // VkStructureType                     sType
-                        DE_NULL,                          // const void*                         pNext
+                        nullptr,                          // const void*                         pNext
                         static_cast<VkRenderingFlags>(0), // VkRenderingFlags                    flags
                         {
                             // VkRect2D                            renderArea
@@ -882,8 +882,8 @@ void DepthStencilResolveTest::submit(void)
                         m_config.viewLayers, // uint32_t                            layerCount
                         0,                   // uint32_t                            viewMask
                         0,                   // uint32_t                            colorAttachmentCount
-                        DE_NULL,             // const VkRenderingAttachmentInfo*    pColorAttachments
-                        DE_NULL,             // const VkRenderingAttachmentInfo*    pDepthAttachment
+                        nullptr,             // const VkRenderingAttachmentInfo*    pColorAttachments
+                        nullptr,             // const VkRenderingAttachmentInfo*    pDepthAttachment
                         &stencilAttachment   // const VkRenderingAttachmentInfo*    pStencilAttachment
                     };
 
@@ -913,7 +913,7 @@ void DepthStencilResolveTest::submit(void)
     {
         const VkImageMemoryBarrier barrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-            DE_NULL,
+            nullptr,
 
             // Note: as per the spec, depth/stencil *resolve* operations are synchronized using the color attachment write access.
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -932,7 +932,7 @@ void DepthStencilResolveTest::submit(void)
              0u, 1u, 0u, m_config.viewLayers}};
 
         vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                               DE_NULL, 0u, DE_NULL, 1u, &barrier);
+                               nullptr, 0u, nullptr, 1u, &barrier);
     }
 
     // Copy image memory to buffers
@@ -955,7 +955,7 @@ void DepthStencilResolveTest::submit(void)
     // Memory barriers between copies and host access
     {
         const VkBufferMemoryBarrier barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                               DE_NULL,
+                                               nullptr,
 
                                                VK_ACCESS_TRANSFER_WRITE_BIT,
                                                VK_ACCESS_HOST_READ_BIT,
@@ -967,8 +967,8 @@ void DepthStencilResolveTest::submit(void)
                                                0u,
                                                VK_WHOLE_SIZE};
 
-        vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL,
-                               1u, &barrier, 0u, DE_NULL);
+        vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr,
+                               1u, &barrier, 0u, nullptr);
     }
 
     vk::endCommandBuffer(vkd, *cmdBuffer);

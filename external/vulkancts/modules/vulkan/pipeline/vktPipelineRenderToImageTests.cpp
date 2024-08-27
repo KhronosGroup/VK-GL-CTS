@@ -246,7 +246,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw,
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                   // const void* pNext;
+        nullptr,                                                   // const void* pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags flags;
         1u,                                                        // uint32_t vertexBindingDescriptionCount;
         &vertexInputBindingDescription, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
@@ -268,7 +268,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw,
 
     VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         (VkPipelineDepthStencilStateCreateFlags)0,                  // VkPipelineDepthStencilStateCreateFlags flags;
         useDepth,                                                   // VkBool32 depthTestEnable;
         VK_FALSE,                                                   // VkBool32 depthWriteEnable;
@@ -297,7 +297,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw,
 
     const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags flags;
         VK_FALSE,                                                 // VkBool32 logicOpEnable;
         VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -314,7 +314,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw,
         .setupFragmentShaderState(pipelineLayout, renderPass, subpass, fragmentModule, &pipelineDepthStencilStateInfo)
         .setupFragmentOutputState(renderPass, subpass, &pipelineColorBlendStateInfo)
         .setMonolithicPipelineLayout(pipelineLayout)
-        .buildPipeline(DE_NULL, basePipeline, -1);
+        .buildPipeline(VK_NULL_HANDLE, basePipeline, -1);
 }
 
 //! Make a render pass with one subpass per color attachment and depth/stencil attachment (if used).
@@ -373,32 +373,32 @@ RenderPassWrapper makeRenderPass(const DeviceInterface &vk, const VkDevice devic
         depthStencilAttachmentReferences[i] = depthStencilAttachmentRef;
 
         const VkAttachmentReference *pDepthStencilAttachment =
-            (depthStencilFormat != VK_FORMAT_UNDEFINED ? &depthStencilAttachmentReferences[i] : DE_NULL);
+            (depthStencilFormat != VK_FORMAT_UNDEFINED ? &depthStencilAttachmentReferences[i] : nullptr);
         const VkSubpassDescription subpassDescription = {
             (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
             0u,                              // uint32_t inputAttachmentCount;
-            DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+            nullptr,                         // const VkAttachmentReference* pInputAttachments;
             1u,                              // uint32_t colorAttachmentCount;
             &colorAttachmentReferences[i],   // const VkAttachmentReference* pColorAttachments;
-            DE_NULL,                         // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                         // const VkAttachmentReference* pResolveAttachments;
             pDepthStencilAttachment,         // const VkAttachmentReference* pDepthStencilAttachment;
             0u,                              // uint32_t preserveAttachmentCount;
-            DE_NULL                          // const uint32_t* pPreserveAttachments;
+            nullptr                          // const uint32_t* pPreserveAttachments;
         };
         subpasses.push_back(subpassDescription);
     }
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,            // VkStructureType sType;
-        DE_NULL,                                              // const void* pNext;
+        nullptr,                                              // const void* pNext;
         (VkRenderPassCreateFlags)0,                           // VkRenderPassCreateFlags flags;
         static_cast<uint32_t>(attachmentDescriptions.size()), // uint32_t attachmentCount;
         &attachmentDescriptions[0],                           // const VkAttachmentDescription* pAttachments;
         static_cast<uint32_t>(subpasses.size()),              // uint32_t subpassCount;
         &subpasses[0],                                        // const VkSubpassDescription* pSubpasses;
         0u,                                                   // uint32_t dependencyCount;
-        DE_NULL                                               // const VkSubpassDependency* pDependencies;
+        nullptr                                               // const VkSubpassDependency* pDependencies;
     };
 
     return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
@@ -410,7 +410,7 @@ Move<VkImage> makeImage(const DeviceInterface &vk, const VkDevice device, VkImag
 {
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         flags,                               // VkImageCreateFlags flags;
         imageType,                           // VkImageType imageType;
         format,                              // VkFormat format;
@@ -422,7 +422,7 @@ Move<VkImage> makeImage(const DeviceInterface &vk, const VkDevice device, VkImag
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
     return createImage(vk, device, &imageParams);
@@ -865,15 +865,15 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
 
         // Attempt a memory allocation
         {
-            VkDeviceMemory object                   = 0;
+            VkDeviceMemory object                   = VK_NULL_HANDLE;
             const VkMemoryAllocateInfo allocateInfo = {
                 VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, //VkStructureType sType;
-                DE_NULL,                                //const void* pNext;
+                nullptr,                                //const void* pNext;
                 neededMemory,                           //VkDeviceSize allocationSize;
                 memoryTypeNdx                           //uint32_t memoryTypeIndex;
             };
 
-            const VkResult result = vk.allocateMemory(device, &allocateInfo, DE_NULL, &object);
+            const VkResult result = vk.allocateMemory(device, &allocateInfo, nullptr, &object);
 
             if (VK_ERROR_OUT_OF_DEVICE_MEMORY == result || VK_ERROR_OUT_OF_HOST_MEMORY == result)
             {
@@ -890,7 +890,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
             {
                 //free memory using Move pointer
                 Move<VkDeviceMemory> memoryAllocated(check<VkDeviceMemory>(object),
-                                                     Deleter<VkDeviceMemory>(vk, device, DE_NULL));
+                                                     Deleter<VkDeviceMemory>(vk, device, nullptr));
                 allocationPossible = true;
             }
         }
@@ -982,7 +982,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
 
         const VkImageMemoryBarrier imageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType            sType;
-            DE_NULL,                                  // const void*                pNext;
+            nullptr,                                  // const void*                pNext;
             (VkAccessFlags)0,                         // VkAccessFlags              srcAccessMask;
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags              dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout              oldLayout;
@@ -1000,7 +1000,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
             }};
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                               &imageBarrier);
 
         endCommandBuffer(vk, *cmdBuffer);
@@ -1028,8 +1028,8 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
             // We also have to create pipelines for each subpass
             pipelines.emplace_back(vki, vk, physDevice, device, context.getDeviceExtensions(),
                                    caseDef.pipelineConstructionType,
-                                   (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT :
-                                                              VK_PIPELINE_CREATE_DERIVATIVE_BIT));
+                                   (basePipeline == VK_NULL_HANDLE ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT :
+                                                                     VK_PIPELINE_CREATE_DERIVATIVE_BIT));
 #else
             pipelines.emplace_back(vki, vk, physDevice, device, context.getDeviceExtensions(),
                                    caseDef.pipelineConstructionType, 0u);
@@ -1094,7 +1094,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
         {
             const VkImageMemoryBarrier imageBarriers[] = {{
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType sType;
-                DE_NULL,                                    // const void* pNext;
+                nullptr,                                    // const void* pNext;
                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,       // VkAccessFlags outputMask;
                 VK_ACCESS_TRANSFER_READ_BIT,                // VkAccessFlags inputMask;
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,   // VkImageLayout oldLayout;
@@ -1106,7 +1106,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
             }};
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                  VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                   DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
 
             // Copy the checked region rather than the whole image
@@ -1133,7 +1133,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
             const VkBufferMemoryBarrier bufferBarriers[] = {
                 {
                     VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType;
-                    DE_NULL,                                 // const void*        pNext;
+                    nullptr,                                 // const void*        pNext;
                     VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags      srcAccessMask;
                     VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags      dstAccessMask;
                     VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           srcQueueFamilyIndex;
@@ -1145,7 +1145,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
             };
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, DE_LENGTH_OF_ARRAY(bufferBarriers), bufferBarriers, 0u, DE_NULL);
+                                  nullptr, DE_LENGTH_OF_ARRAY(bufferBarriers), bufferBarriers, 0u, nullptr);
         }
 
         endCommandBuffer(vk, *cmdBuffer);
@@ -1319,8 +1319,8 @@ void drawToMipLevel(const Context &context, const CaseDef &caseDef, const int mi
 #ifndef CTS_USES_VULKANSC // Pipeline derivatives are forbidden in Vulkan SC
             pipelines.emplace_back(vki, vk, physDevice, device, context.getDeviceExtensions(),
                                    caseDef.pipelineConstructionType,
-                                   (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT :
-                                                              VK_PIPELINE_CREATE_DERIVATIVE_BIT));
+                                   (basePipeline == VK_NULL_HANDLE ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT :
+                                                                     VK_PIPELINE_CREATE_DERIVATIVE_BIT));
 #else
             pipelines.emplace_back(vki, vk, physDevice, device, context.getDeviceExtensions(),
                                    caseDef.pipelineConstructionType, 0u);
@@ -1489,7 +1489,7 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
         const VkImageMemoryBarrier imageBarriers[] = {
             {
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType            sType;
-                DE_NULL,                                  // const void*                pNext;
+                nullptr,                                  // const void*                pNext;
                 (VkAccessFlags)0,                         // VkAccessFlags              srcAccessMask;
                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags              dstAccessMask;
                 VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout              oldLayout;
@@ -1508,7 +1508,7 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
             },
             {
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType            sType;
-                DE_NULL,                                          // const void*                pNext;
+                nullptr,                                          // const void*                pNext;
                 (VkAccessFlags)0,                                 // VkAccessFlags              srcAccessMask;
                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags              dstAccessMask;
                 VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout              oldLayout;
@@ -1532,7 +1532,7 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                                   VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                              0u, 0u, DE_NULL, 0u, DE_NULL, numImageBarriers, imageBarriers);
+                              0u, 0u, nullptr, 0u, nullptr, numImageBarriers, imageBarriers);
 
         endCommandBuffer(vk, *cmdBuffer);
         submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -1559,7 +1559,7 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
         {
             const VkImageMemoryBarrier imageBarriers[] = {{
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType            sType;
-                DE_NULL,                                  // const void*                pNext;
+                nullptr,                                  // const void*                pNext;
                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags              srcAccessMask;
                 VK_ACCESS_TRANSFER_READ_BIT,              // VkAccessFlags              dstAccessMask;
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout              oldLayout;
@@ -1578,7 +1578,7 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
             }};
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                  VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                   DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
         }
         {
@@ -1612,7 +1612,7 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
             const VkBufferMemoryBarrier bufferBarriers[] = {
                 {
                     VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType    sType;
-                    DE_NULL,                                 // const void*        pNext;
+                    nullptr,                                 // const void*        pNext;
                     VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags      srcAccessMask;
                     VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags      dstAccessMask;
                     VK_QUEUE_FAMILY_IGNORED,                 // uint32_t           srcQueueFamilyIndex;
@@ -1624,7 +1624,7 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
             };
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, DE_LENGTH_OF_ARRAY(bufferBarriers), bufferBarriers, 0u, DE_NULL);
+                                  nullptr, DE_LENGTH_OF_ARRAY(bufferBarriers), bufferBarriers, 0u, nullptr);
         }
 
         endCommandBuffer(vk, *cmdBuffer);

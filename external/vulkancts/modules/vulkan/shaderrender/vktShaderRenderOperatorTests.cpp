@@ -754,7 +754,7 @@ private:
 ShaderOperatorCaseInstance::ShaderOperatorCaseInstance(Context &context, const bool isVertexCase,
                                                        const ShaderEvaluator &evaluator,
                                                        const UniformSetup &uniformSetup, const ShaderDataSpec spec)
-    : ShaderRenderCaseInstance(context, isVertexCase, evaluator, uniformSetup, DE_NULL, IMAGE_BACKING_MODE_REGULAR,
+    : ShaderRenderCaseInstance(context, isVertexCase, evaluator, uniformSetup, nullptr, IMAGE_BACKING_MODE_REGULAR,
                                (isVertexCase ? 92 : GRID_SIZE_DEFAULT_FRAGMENT))
     , m_spec(spec)
 {
@@ -852,7 +852,7 @@ ShaderOperatorCase::ShaderOperatorCase(tcu::TestContext &testCtx, const char *ca
     : ShaderRenderCase(testCtx, caseName, isVertexCase,
                        new OperatorShaderEvaluator(evalFunc, spec.referenceScale, spec.referenceBias,
                                                    getDataTypeScalarSize(spec.output)),
-                       DE_NULL, DE_NULL)
+                       nullptr, nullptr)
     , m_spec(spec)
     , m_shaderOp(shaderOp)
 {
@@ -861,14 +861,14 @@ ShaderOperatorCase::ShaderOperatorCase(tcu::TestContext &testCtx, const char *ca
 
 TestInstance *ShaderOperatorCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_evaluator != DE_NULL);
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_evaluator);
+    DE_ASSERT(m_uniformSetup);
     return new ShaderOperatorCaseInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_spec);
 }
 
 void ShaderOperatorCase::setupShaderData(void)
 {
-    const char *precision = m_spec.precision != PRECISION_LAST ? getPrecisionName(m_spec.precision) : DE_NULL;
+    const char *precision = m_spec.precision != PRECISION_LAST ? getPrecisionName(m_spec.precision) : nullptr;
     const char *inputPrecision[MAX_INPUTS];
 
     std::ostringstream vtx;
@@ -1987,12 +1987,12 @@ ShaderOperatorTests::~ShaderOperatorTests(void)
 
 void ShaderOperatorTests::init(void)
 {
-#define BOOL_FUNCS(FUNC_NAME) eval_##FUNC_NAME##_bool, DE_NULL, DE_NULL, DE_NULL
+#define BOOL_FUNCS(FUNC_NAME) eval_##FUNC_NAME##_bool, nullptr, nullptr, nullptr
 
-#define FLOAT_VEC_FUNCS(FUNC_NAME) DE_NULL, eval_##FUNC_NAME##_vec2, eval_##FUNC_NAME##_vec3, eval_##FUNC_NAME##_vec4
-#define INT_VEC_FUNCS(FUNC_NAME) DE_NULL, eval_##FUNC_NAME##_ivec2, eval_##FUNC_NAME##_ivec3, eval_##FUNC_NAME##_ivec4
-#define UINT_VEC_FUNCS(FUNC_NAME) DE_NULL, eval_##FUNC_NAME##_uvec2, eval_##FUNC_NAME##_uvec3, eval_##FUNC_NAME##_uvec4
-#define BOOL_VEC_FUNCS(FUNC_NAME) DE_NULL, eval_##FUNC_NAME##_bvec2, eval_##FUNC_NAME##_bvec3, eval_##FUNC_NAME##_bvec4
+#define FLOAT_VEC_FUNCS(FUNC_NAME) nullptr, eval_##FUNC_NAME##_vec2, eval_##FUNC_NAME##_vec3, eval_##FUNC_NAME##_vec4
+#define INT_VEC_FUNCS(FUNC_NAME) nullptr, eval_##FUNC_NAME##_ivec2, eval_##FUNC_NAME##_ivec3, eval_##FUNC_NAME##_ivec4
+#define UINT_VEC_FUNCS(FUNC_NAME) nullptr, eval_##FUNC_NAME##_uvec2, eval_##FUNC_NAME##_uvec3, eval_##FUNC_NAME##_uvec4
+#define BOOL_VEC_FUNCS(FUNC_NAME) nullptr, eval_##FUNC_NAME##_bvec2, eval_##FUNC_NAME##_bvec3, eval_##FUNC_NAME##_bvec4
 
 #define FLOAT_GENTYPE_FUNCS(FUNC_NAME) \
     eval_##FUNC_NAME##_float, eval_##FUNC_NAME##_vec2, eval_##FUNC_NAME##_vec3, eval_##FUNC_NAME##_vec4
@@ -2018,7 +2018,7 @@ void ShaderOperatorTests::init(void)
         << BuiltinOperInfo("minus", "-", UGT, Value(UGT, 0.0f, 4e9f), notUsed, notUsed, 2e-10f, 0.0f, PRECMASK_HIGHP,
                            UINT_GENTYPE_FUNCS(negate))
         << BuiltinOperInfo("not", "!", B, Value(B, -1.0f, 1.0f), notUsed, notUsed, 1.0f, 0.0f, PRECMASK_NA,
-                           eval_boolNot_bool, DE_NULL, DE_NULL, DE_NULL)
+                           eval_boolNot_bool, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("bitwise_not", "~", IGT, Value(IGT, -1e5f, 1e5f), notUsed, notUsed, 5e-5f, 0.5f,
                            PRECMASK_HIGHP, INT_GENTYPE_FUNCS(bitwiseNot))
         << BuiltinOperInfo("bitwise_not", "~", UGT, Value(UGT, 0.0f, 2e9f), notUsed, notUsed, 2e-10f, 0.0f,
@@ -2126,7 +2126,7 @@ void ShaderOperatorTests::init(void)
                                         const float, uint32_t, ShaderEvalFunc, ShaderEvalFunc, ShaderEvalFunc,
                                         ShaderEvalFunc) = isAssignEff ? BuiltinSideEffOperInfo : BuiltinOperInfo;
 
-        DE_ASSERT(operInfoFunc != DE_NULL);
+        DE_ASSERT(operInfoFunc != nullptr);
 
         // The following cases will be added for each operator, precision and fundamental type (float, int, uint) combination, where applicable:
         // gentype <op> gentype
@@ -2460,29 +2460,29 @@ void ShaderOperatorTests::init(void)
     binaryOpGroup
         // Scalar relational operators.
         << BuiltinOperInfo("less", "<", B, Value(F, -1.0f, 1.0f), Value(F, -1.0f, 1.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_lessThan_float, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_lessThan_float, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("less", "<", B, Value(I, -5.0f, 5.0f), Value(I, -5.0f, 5.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_lessThan_int, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_lessThan_int, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("less", "<", B, Value(U, 0.0f, 16.0f), Value(U, 0.0f, 16.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_lessThan_uint, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_lessThan_uint, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("less_or_equal", "<=", B, Value(F, -1.0f, 1.0f), Value(F, -1.0f, 1.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_lessThanEqual_float, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_lessThanEqual_float, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("less_or_equal", "<=", B, Value(I, -5.0f, 5.0f), Value(I, -5.0f, 5.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_lessThanEqual_int, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_lessThanEqual_int, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("less_or_equal", "<=", B, Value(U, 0.0f, 16.0f), Value(U, 0.0f, 16.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_lessThanEqual_uint, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_lessThanEqual_uint, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("greater", ">", B, Value(F, -1.0f, 1.0f), Value(F, -1.0f, 1.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_greaterThan_float, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_greaterThan_float, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("greater", ">", B, Value(I, -5.0f, 5.0f), Value(I, -5.0f, 5.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_greaterThan_int, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_greaterThan_int, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("greater", ">", B, Value(U, 0.0f, 16.0f), Value(U, 0.0f, 16.0f), notUsed, 1.0f, 0.0f,
-                           PRECMASK_ALL, eval_greaterThan_uint, DE_NULL, DE_NULL, DE_NULL)
+                           PRECMASK_ALL, eval_greaterThan_uint, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("greater_or_equal", ">=", B, Value(F, -1.0f, 1.0f), Value(F, -1.0f, 1.0f), notUsed, 1.0f,
-                           0.0f, PRECMASK_ALL, eval_greaterThanEqual_float, DE_NULL, DE_NULL, DE_NULL)
+                           0.0f, PRECMASK_ALL, eval_greaterThanEqual_float, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("greater_or_equal", ">=", B, Value(I, -5.0f, 5.0f), Value(I, -5.0f, 5.0f), notUsed, 1.0f,
-                           0.0f, PRECMASK_ALL, eval_greaterThanEqual_int, DE_NULL, DE_NULL, DE_NULL)
+                           0.0f, PRECMASK_ALL, eval_greaterThanEqual_int, nullptr, nullptr, nullptr)
         << BuiltinOperInfo("greater_or_equal", ">=", B, Value(U, 0.0f, 16.0f), Value(U, 0.0f, 16.0f), notUsed, 1.0f,
-                           0.0f, PRECMASK_ALL, eval_greaterThanEqual_uint, DE_NULL, DE_NULL, DE_NULL)
+                           0.0f, PRECMASK_ALL, eval_greaterThanEqual_uint, nullptr, nullptr, nullptr)
 
         // Equality comparison operators.
         << BuiltinOperInfo("equal", "==", B, Value(GT, -1.0f, 1.0f), Value(GT, -1.0f, 1.0f), notUsed, 1.0f, 0.0f,
@@ -2602,7 +2602,7 @@ void ShaderOperatorTests::init(void)
         addChild(outerGroup);
 
         // Only create new group if name differs from previous one.
-        TestCaseGroup *innerGroup = DE_NULL;
+        TestCaseGroup *innerGroup = nullptr;
 
         for (int funcInfoNdx = 0; funcInfoNdx < (int)outerGroupInfo.funcInfos.size(); funcInfoNdx++)
         {
@@ -2631,7 +2631,7 @@ void ShaderOperatorTests::init(void)
                                              isBoolOut  ? s_boolTypes[outScalarSize - 1] :
                                                           TYPE_LAST;
 
-                ShaderEvalFunc evalFunc = DE_NULL;
+                ShaderEvalFunc evalFunc = nullptr;
                 switch (inScalarSize)
                 {
                 case 1:
@@ -2651,7 +2651,7 @@ void ShaderOperatorTests::init(void)
                 }
 
                 // Skip if no valid eval func.
-                if (evalFunc == DE_NULL)
+                if (evalFunc == nullptr)
                     continue;
 
                 for (int precision = PRECISION_MEDIUMP; precision < PRECISION_LAST; precision++)

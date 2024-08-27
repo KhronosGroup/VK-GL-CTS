@@ -288,26 +288,26 @@ static Move<VkRenderPass> makeEmptyRenderPass(const DeviceInterface &vk, const V
         (VkSubpassDescriptionFlags)0,    //  VkSubpassDescriptionFlags flags;
         VK_PIPELINE_BIND_POINT_GRAPHICS, //  VkPipelineBindPoint pipelineBindPoint;
         0u,                              //  uint32_t inputAttachmentCount;
-        DE_NULL,                         //  const VkAttachmentReference* pInputAttachments;
+        nullptr,                         //  const VkAttachmentReference* pInputAttachments;
         0u,                              //  uint32_t colorAttachmentCount;
-        DE_NULL,                         //  const VkAttachmentReference* pColorAttachments;
-        DE_NULL,                         //  const VkAttachmentReference* pResolveAttachments;
-        DE_NULL,                         //  const VkAttachmentReference* pDepthStencilAttachment;
+        nullptr,                         //  const VkAttachmentReference* pColorAttachments;
+        nullptr,                         //  const VkAttachmentReference* pResolveAttachments;
+        nullptr,                         //  const VkAttachmentReference* pDepthStencilAttachment;
         0,                               //  uint32_t preserveAttachmentCount;
-        DE_NULL                          //  const uint32_t* pPreserveAttachments;
+        nullptr                          //  const uint32_t* pPreserveAttachments;
     };
     subpassDescriptions.push_back(description);
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,         //  VkStructureType sType;
-        DE_NULL,                                           //  const void* pNext;
+        nullptr,                                           //  const void* pNext;
         static_cast<VkRenderPassCreateFlags>(0u),          //  VkRenderPassCreateFlags flags;
         0u,                                                //  uint32_t attachmentCount;
-        DE_NULL,                                           //  const VkAttachmentDescription* pAttachments;
+        nullptr,                                           //  const VkAttachmentDescription* pAttachments;
         static_cast<uint32_t>(subpassDescriptions.size()), //  uint32_t subpassCount;
         &subpassDescriptions[0],                           //  const VkSubpassDescription* pSubpasses;
         0u,                                                //  uint32_t dependencyCount;
-        DE_NULL                                            //  const VkSubpassDependency* pDependencies;
+        nullptr                                            //  const VkSubpassDependency* pDependencies;
     };
 
     return createRenderPass(vk, device, &renderPassInfo);
@@ -318,11 +318,11 @@ static Move<VkFramebuffer> makeFramebuffer(const DeviceInterface &vk, const VkDe
 {
     const vk::VkFramebufferCreateInfo framebufferParams = {
         vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (vk::VkFramebufferCreateFlags)0,
         renderPass, // renderPass
         0u,         // attachmentCount
-        DE_NULL,    // pAttachments
+        nullptr,    // pAttachments
         width,      // width
         height,     // height
         1u,         // layers
@@ -341,7 +341,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType
-        DE_NULL,                                               // const void*                                 pNext
+        nullptr,                                               // const void*                                 pNext
         (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags          flags
         1u,        // uint32_t                                    viewportCount
         &viewport, // const VkViewport*                           pViewports
@@ -351,7 +351,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                     // const void*                                pNext
+        nullptr,                                                     // const void*                                pNext
         0u,                                                          // VkPipelineInputAssemblyStateCreateFlags    flags
         VK_PRIMITIVE_TOPOLOGY_POINT_LIST, // VkPrimitiveTopology                        topology
         VK_FALSE                          // VkBool32                                   primitiveRestartEnable
@@ -359,17 +359,17 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, //  VkStructureType                                    sType
-        DE_NULL,                                  //  const void*                                        pNext
+        nullptr,                                  //  const void*                                        pNext
         (VkPipelineVertexInputStateCreateFlags)0, //  VkPipelineVertexInputStateCreateFlags            flags
         0u,      //  uint32_t                                        vertexBindingDescriptionCount
-        DE_NULL, //  const VkVertexInputBindingDescription*            pVertexBindingDescriptions
+        nullptr, //  const VkVertexInputBindingDescription*            pVertexBindingDescriptions
         0u,      //  uint32_t                                        vertexAttributeDescriptionCount
-        DE_NULL, //  const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
+        nullptr, //  const VkVertexInputAttributeDescription*        pVertexAttributeDescriptions
     };
 
     const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, //  VkStructureType                            sType
-        DE_NULL,                                                    //  const void*                                pNext
+        nullptr,                                                    //  const void*                                pNext
         0u,                                                         //  VkPipelineRasterizationStateCreateFlags    flags
         VK_FALSE,                        //  VkBool32                                depthClampEnable
         VK_TRUE,                         //  VkBool32                                rasterizerDiscardEnable
@@ -396,7 +396,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         subpass,                        // const uint32_t                                    subpass
         &vertexInputStateCreateInfo,    // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
         &inputAssemblyStateCreateInfo,  // const VkPipelineInputAssemblyStateCreateInfo*    inputAssemblyStateCreateInfo
-        DE_NULL,                        // const VkPipelineTessellationStateCreateInfo*        tessStateCreateInfo
+        nullptr,                        // const VkPipelineTessellationStateCreateInfo*        tessStateCreateInfo
         &viewportStateCreateInfo,       // const VkPipelineViewportStateCreateInfo*            viewportStateCreateInfo
         &rasterizationStateCreateInfo); // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
 }
@@ -555,12 +555,12 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
 
         const VkRenderPassBeginInfo renderPassBeginInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             *renderPass,                              // VkRenderPass renderPass;
             *framebuffer,                             // VkFramebuffer framebuffer;
             makeRect2D(width, height),                // VkRect2D renderArea;
             0u,                                       // uint32_t clearValueCount;
-            DE_NULL                                   // const VkClearValue* pClearValues;
+            nullptr                                   // const VkClearValue* pClearValues;
         };
 
         vkd.cmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -587,8 +587,8 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
             shaderGroupBaseAlignment           = rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
         }
 
-        auto raygenSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-        auto unusedSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+        auto raygenSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+        auto unusedSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
         {
             const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();

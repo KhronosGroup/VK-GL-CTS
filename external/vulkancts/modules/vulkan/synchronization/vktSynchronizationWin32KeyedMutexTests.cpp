@@ -125,7 +125,7 @@ private:
 };
 
 SimpleAllocation::SimpleAllocation(const vk::DeviceInterface &vkd, vk::VkDevice device, const vk::VkDeviceMemory memory)
-    : Allocation(memory, 0, DE_NULL)
+    : Allocation(memory, 0, nullptr)
     , m_vkd(vkd)
     , m_device(device)
 {
@@ -133,7 +133,7 @@ SimpleAllocation::SimpleAllocation(const vk::DeviceInterface &vkd, vk::VkDevice 
 
 SimpleAllocation::~SimpleAllocation(void)
 {
-    m_vkd.freeMemory(m_device, getMemory(), DE_NULL);
+    m_vkd.freeMemory(m_device, getMemory(), nullptr);
 }
 
 CustomInstance createTestInstance(Context &context)
@@ -176,7 +176,7 @@ vk::Move<vk::VkDevice> createTestDevice(Context &context, vk::VkInstance instanc
         for (size_t ndx = 0; ndx < queueFamilyProperties.size(); ndx++)
         {
             const vk::VkDeviceQueueCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                                                            DE_NULL,
+                                                            nullptr,
                                                             0u,
 
                                                             (uint32_t)ndx,
@@ -187,17 +187,17 @@ vk::Move<vk::VkDevice> createTestDevice(Context &context, vk::VkInstance instanc
         }
 
         const vk::VkDeviceCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                                   DE_NULL,
+                                                   nullptr,
                                                    0u,
 
                                                    (uint32_t)queues.size(),
                                                    &queues[0],
 
                                                    0u,
-                                                   DE_NULL,
+                                                   nullptr,
 
                                                    (uint32_t)extensions.size(),
-                                                   extensions.empty() ? DE_NULL : &extensions[0],
+                                                   extensions.empty() ? nullptr : &extensions[0],
                                                    &features};
 
         return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &createInfo);
@@ -253,19 +253,19 @@ vk::Move<vk::VkDeviceMemory> importMemory(const vk::DeviceInterface &vkd, vk::Vk
 {
     const vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
         vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
-        DE_NULL,
+        nullptr,
         image,
         buffer,
     };
     const vk::VkImportMemoryWin32HandleInfoKHR importInfo = {
-        vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR, (requiresDedicated) ? &dedicatedInfo : DE_NULL,
-        externalType, handle.getWin32Handle(), (vk::pt::Win32LPCWSTR)NULL};
+        vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR, (requiresDedicated) ? &dedicatedInfo : nullptr,
+        externalType, handle.getWin32Handle(), (vk::pt::Win32LPCWSTR) nullptr};
 
     uint32_t handleCompatibleMemoryTypeBits = ~0u;
     if (!isOpaqueHandleType(externalType))
     {
         vk::VkMemoryWin32HandlePropertiesKHR memoryWin32HandleProperties = {
-            vk::VK_STRUCTURE_TYPE_MEMORY_WIN32_HANDLE_PROPERTIES_KHR, DE_NULL, 0u};
+            vk::VK_STRUCTURE_TYPE_MEMORY_WIN32_HANDLE_PROPERTIES_KHR, nullptr, 0u};
         VK_CHECK(vkd.getMemoryWin32HandlePropertiesKHR(device, externalType, handle.getWin32Handle(),
                                                        &memoryWin32HandleProperties));
         handleCompatibleMemoryTypeBits &= memoryWin32HandleProperties.memoryTypeBits;
@@ -288,12 +288,12 @@ de::MovePtr<vk::Allocation> importAndBindMemory(const vk::DeviceInterface &vkd, 
 {
     const vk::VkBufferMemoryRequirementsInfo2 requirementsInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
-        DE_NULL,
+        nullptr,
         buffer,
     };
     vk::VkMemoryDedicatedRequirements dedicatedRequirements = {
         vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
-        DE_NULL,
+        nullptr,
         VK_FALSE,
         VK_FALSE,
     };
@@ -310,7 +310,7 @@ de::MovePtr<vk::Allocation> importAndBindMemory(const vk::DeviceInterface &vkd, 
 
     vk::Move<vk::VkDeviceMemory> memory =
         importMemory(vkd, device, requirements.memoryRequirements, externalType, nativeHandle,
-                     !!dedicatedRequirements.requiresDedicatedAllocation, buffer, DE_NULL);
+                     !!dedicatedRequirements.requiresDedicatedAllocation, buffer, VK_NULL_HANDLE);
     VK_CHECK(vkd.bindBufferMemory(device, buffer, *memory, 0u));
 
     return de::MovePtr<vk::Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
@@ -322,12 +322,12 @@ de::MovePtr<vk::Allocation> importAndBindMemory(const vk::DeviceInterface &vkd, 
 {
     const vk::VkImageMemoryRequirementsInfo2 requirementsInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
-        DE_NULL,
+        nullptr,
         image,
     };
     vk::VkMemoryDedicatedRequirements dedicatedRequirements = {
         vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
-        DE_NULL,
+        nullptr,
         VK_FALSE,
         VK_FALSE,
     };
@@ -344,7 +344,7 @@ de::MovePtr<vk::Allocation> importAndBindMemory(const vk::DeviceInterface &vkd, 
 
     vk::Move<vk::VkDeviceMemory> memory =
         importMemory(vkd, device, requirements.memoryRequirements, externalType, nativeHandle,
-                     !!dedicatedRequirements.requiresDedicatedAllocation, DE_NULL, image);
+                     !!dedicatedRequirements.requiresDedicatedAllocation, VK_NULL_HANDLE, image);
     VK_CHECK(vkd.bindImageMemory(device, image, *memory, 0u));
 
     return de::MovePtr<vk::Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
@@ -363,7 +363,7 @@ de::MovePtr<Resource> importResource(const vk::DeviceInterface &vkd, vk::VkDevic
         const vk::VkImageSubresourceRange subresourceRange     = {resourceDesc.imageAspect, 0u, 1u, 0u, 1u};
         const vk::VkImageSubresourceLayers subresourceLayers   = {resourceDesc.imageAspect, 0u, 0u, 1u};
         const vk::VkExternalMemoryImageCreateInfo externalInfo = {
-            vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO, nullptr,
             (vk::VkExternalMemoryHandleTypeFlags)externalType};
         const vk::VkImageTiling tiling         = VK_IMAGE_TILING_OPTIMAL;
         const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -397,7 +397,7 @@ de::MovePtr<Resource> importResource(const vk::DeviceInterface &vkd, vk::VkDevic
         const vk::VkDeviceSize size        = static_cast<vk::VkDeviceSize>(resourceDesc.size.x());
         const vk::VkBufferUsageFlags usage = readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags();
         const vk::VkExternalMemoryBufferCreateInfo externalInfo = {
-            vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO, nullptr,
             (vk::VkExternalMemoryHandleTypeFlags)externalType};
         const vk::VkBufferCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
                                                    &externalInfo,
@@ -429,7 +429,7 @@ void recordWriteBarrier(const vk::DeviceInterface &vkd, vk::VkCommandBuffer comm
     if (resource.getType() == RESOURCE_TYPE_IMAGE)
     {
         const vk::VkImageMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   srcAccessMask,
                                                   dstAccessMask,
@@ -443,14 +443,13 @@ void recordWriteBarrier(const vk::DeviceInterface &vkd, vk::VkCommandBuffer comm
                                                   resource.getImage().handle,
                                                   resource.getImage().subresourceRange};
 
-        vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u,
-                               (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
+        vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, nullptr, 0u, nullptr, 1u,
                                (const vk::VkImageMemoryBarrier *)&barrier);
     }
     else
     {
         const vk::VkBufferMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                   DE_NULL,
+                                                   nullptr,
 
                                                    srcAccessMask,
                                                    dstAccessMask,
@@ -462,9 +461,8 @@ void recordWriteBarrier(const vk::DeviceInterface &vkd, vk::VkCommandBuffer comm
                                                    0u,
                                                    VK_WHOLE_SIZE};
 
-        vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u,
-                               (const vk::VkMemoryBarrier *)DE_NULL, 1u, (const vk::VkBufferMemoryBarrier *)&barrier,
-                               0u, (const vk::VkImageMemoryBarrier *)DE_NULL);
+        vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, nullptr, 1u,
+                               (const vk::VkBufferMemoryBarrier *)&barrier, 0u, nullptr);
     }
 }
 
@@ -482,7 +480,7 @@ void recordReadBarrier(const vk::DeviceInterface &vkd, vk::VkCommandBuffer comma
     if (resource.getType() == RESOURCE_TYPE_IMAGE)
     {
         const vk::VkImageMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                  DE_NULL,
+                                                  nullptr,
 
                                                   srcAccessMask,
                                                   dstAccessMask,
@@ -496,14 +494,13 @@ void recordReadBarrier(const vk::DeviceInterface &vkd, vk::VkCommandBuffer comma
                                                   resource.getImage().handle,
                                                   resource.getImage().subresourceRange};
 
-        vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u,
-                               (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
+        vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, nullptr, 0u, nullptr, 1u,
                                (const vk::VkImageMemoryBarrier *)&barrier);
     }
     else
     {
         const vk::VkBufferMemoryBarrier barrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                   DE_NULL,
+                                                   nullptr,
 
                                                    srcAccessMask,
                                                    dstAccessMask,
@@ -515,9 +512,8 @@ void recordReadBarrier(const vk::DeviceInterface &vkd, vk::VkCommandBuffer comma
                                                    0u,
                                                    VK_WHOLE_SIZE};
 
-        vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u,
-                               (const vk::VkMemoryBarrier *)DE_NULL, 1u, (const vk::VkBufferMemoryBarrier *)&barrier,
-                               0u, (const vk::VkImageMemoryBarrier *)DE_NULL);
+        vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, nullptr, 1u,
+                               (const vk::VkBufferMemoryBarrier *)&barrier, 0u, nullptr);
     }
 }
 
@@ -1459,7 +1455,7 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance(Context &context, TestC
             TCU_THROW(NotSupportedError, "Memory handle type not supported by this OS");
 
         const vk::VkPhysicalDeviceExternalImageFormatInfo externalInfo = {
-            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, DE_NULL, m_memoryHandleType};
+            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO, nullptr, m_memoryHandleType};
         const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
             vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
             &externalInfo,
@@ -1469,7 +1465,7 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance(Context &context, TestC
             m_supportReadOp->getInResourceUsageFlags() | m_supportWriteOp->getOutResourceUsageFlags(),
             0u};
         vk::VkExternalImageFormatProperties externalProperties = {
-            vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, DE_NULL, {0u, 0u, 0u}};
+            vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES, nullptr, {0u, 0u, 0u}};
         vk::VkImageFormatProperties2 formatProperties = {vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
                                                          &externalProperties,
                                                          {
@@ -1503,12 +1499,12 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance(Context &context, TestC
             TCU_THROW(NotSupportedError, "Memory handle type not supported by this OS");
 
         const vk::VkPhysicalDeviceExternalBufferInfo info = {
-            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO, nullptr,
 
             0u, m_supportReadOp->getInResourceUsageFlags() | m_supportWriteOp->getOutResourceUsageFlags(),
             m_memoryHandleType};
         vk::VkExternalBufferProperties properties = {
-            vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES, DE_NULL, {0u, 0u, 0u}};
+            vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES, nullptr, {0u, 0u, 0u}};
         m_vki.getPhysicalDeviceExternalBufferProperties(m_physicalDevice, &info, &properties);
 
         log << TestLog::Message << "External buffer properties: " << info << "\n" << properties << TestLog::EndMessage;
@@ -1587,7 +1583,7 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate(void)
             uint64_t keyExternal                                      = DX11Operation::KEYED_MUTEX_DX_COPY;
             vk::VkWin32KeyedMutexAcquireReleaseInfoKHR keyedMutexInfo = {
                 vk::VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR,
-                DE_NULL,
+                nullptr,
 
                 1,
                 &memory,
@@ -1604,15 +1600,15 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate(void)
                                                        &keyedMutexInfo,
 
                                                        0u,
-                                                       DE_NULL,
-                                                       DE_NULL,
+                                                       nullptr,
+                                                       nullptr,
 
                                                        1u,
                                                        &commandBuffer,
                                                        0u,
-                                                       DE_NULL};
+                                                       nullptr};
 
-            VK_CHECK(m_vkd.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+            VK_CHECK(m_vkd.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE));
         }
 
         dx11Op->copyMemory();
@@ -1624,7 +1620,7 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate(void)
             uint64_t keyExternal                                      = DX11Operation::KEYED_MUTEX_DONE;
             vk::VkWin32KeyedMutexAcquireReleaseInfoKHR keyedMutexInfo = {
                 vk::VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR,
-                DE_NULL,
+                nullptr,
 
                 1,
                 &memory,
@@ -1641,15 +1637,15 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate(void)
                                                        &keyedMutexInfo,
 
                                                        0u,
-                                                       DE_NULL,
-                                                       DE_NULL,
+                                                       nullptr,
+                                                       nullptr,
 
                                                        1u,
                                                        &commandBuffer,
                                                        0u,
-                                                       DE_NULL};
+                                                       nullptr};
 
-            VK_CHECK(m_vkd.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+            VK_CHECK(m_vkd.queueSubmit(queue, 1u, &submitInfo, VK_NULL_HANDLE));
         }
 
         VK_CHECK(m_vkd.queueWaitIdle(queue));

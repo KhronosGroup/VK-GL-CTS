@@ -938,11 +938,11 @@ TestCase::IterateResult CreateContextExtCase::iterate(void)
                 eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
             de::UniquePtr<eglu::NativeWindow> window(factory.createWindow(
-                &m_eglTestCtx.getNativeDisplay(), m_display, config, DE_NULL,
+                &m_eglTestCtx.getNativeDisplay(), m_display, config, nullptr,
                 eglu::WindowParams(256, 256, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
             eglu::UniqueSurface surface(
                 egl, m_display,
-                eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, m_display, config, DE_NULL));
+                eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, m_display, config, nullptr));
 
             executeForSurface(config, *surface);
         }
@@ -952,10 +952,10 @@ TestCase::IterateResult CreateContextExtCase::iterate(void)
                 eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 
             de::UniquePtr<eglu::NativePixmap> pixmap(
-                factory.createPixmap(&m_eglTestCtx.getNativeDisplay(), m_display, config, DE_NULL, 256, 256));
+                factory.createPixmap(&m_eglTestCtx.getNativeDisplay(), m_display, config, nullptr, 256, 256));
             eglu::UniqueSurface surface(
                 egl, m_display,
-                eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, m_display, config, DE_NULL));
+                eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, m_display, config, nullptr));
 
             executeForSurface(config, *surface);
         }

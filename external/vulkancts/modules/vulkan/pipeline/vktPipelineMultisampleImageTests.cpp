@@ -118,7 +118,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags;
         1u,                             // uint32_t                                    vertexBindingDescriptionCount;
         &vertexInputBindingDescription, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
@@ -129,7 +129,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                    // const void*                                 pNext;
+        nullptr,                                    // const void*                                 pNext;
         (VkPipelineInputAssemblyStateCreateFlags)0, // VkPipelineInputAssemblyStateCreateFlags     flags;
         topology,                                   // VkPrimitiveTopology                         topology;
         VK_FALSE, // VkBool32                                    primitiveRestartEnable;
@@ -140,7 +140,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                               // const void*                                 pNext;
+        nullptr,                                               // const void*                                 pNext;
         (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags          flags;
         1u,        // uint32_t                                    viewportCount;
         &viewport, // const VkViewport*                           pViewports;
@@ -150,7 +150,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     const VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                          sType;
-        DE_NULL,                                                    // const void*                              pNext;
+        nullptr,                                                    // const void*                              pNext;
         (VkPipelineRasterizationStateCreateFlags)0,                 // VkPipelineRasterizationStateCreateFlags  flags;
         VK_FALSE,                        // VkBool32                                 depthClampEnable;
         VK_FALSE,                        // VkBool32                                 rasterizerDiscardEnable;
@@ -166,12 +166,12 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineMultisampleStateCreateFlags)0,                 // VkPipelineMultisampleStateCreateFlags flags;
         numSamples,                                               // VkSampleCountFlagBits rasterizationSamples;
         VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE                                                  // VkBool32 alphaToOneEnable;
     };
@@ -186,7 +186,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                    // const void* pNext;
+        nullptr,                                                    // const void* pNext;
         (VkPipelineDepthStencilStateCreateFlags)0,                  // VkPipelineDepthStencilStateCreateFlags flags;
         VK_FALSE,                                                   // VkBool32 depthTestEnable;
         VK_FALSE,                                                   // VkBool32 depthWriteEnable;
@@ -215,7 +215,7 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
     const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags flags;
         VK_FALSE,                                                 // VkBool32 logicOpEnable;
         VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -227,27 +227,27 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
     const VkPipelineShaderStageCreateInfo pShaderStages[] = {
         {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits stage;
             vertexModule.getModule(),                            // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
         },
         {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             (VkPipelineShaderStageCreateFlags)0,                 // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits stage;
             fragmentModule.getModule(),                          // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
         }};
 
     DE_ASSERT(numSubpasses > 0u);
 
     std::vector<VkGraphicsPipelineCreateInfo> graphicsPipelineInfos(0);
-    std::vector<VkPipeline> rawPipelines(numSubpasses, DE_NULL);
+    std::vector<VkPipeline> rawPipelines(numSubpasses, VK_NULL_HANDLE);
 
     {
 #ifndef CTS_USES_VULKANSC
@@ -259,19 +259,19 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
 
         VkGraphicsPipelineCreateInfo createInfo = {
             VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                         // const void* pNext;
+            nullptr,                                         // const void* pNext;
             firstPipelineFlags,                              // VkPipelineCreateFlags flags;
             DE_LENGTH_OF_ARRAY(pShaderStages),               // uint32_t stageCount;
             pShaderStages,                                   // const VkPipelineShaderStageCreateInfo* pStages;
             &vertexInputStateInfo,           // const VkPipelineVertexInputStateCreateInfo* pVertexInputState;
             &pipelineInputAssemblyStateInfo, // const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
-            DE_NULL,                         // const VkPipelineTessellationStateCreateInfo* pTessellationState;
+            nullptr,                         // const VkPipelineTessellationStateCreateInfo* pTessellationState;
             &pipelineViewportStateInfo,      // const VkPipelineViewportStateCreateInfo* pViewportState;
             &pipelineRasterizationStateInfo, // const VkPipelineRasterizationStateCreateInfo* pRasterizationState;
             &pipelineMultisampleStateInfo,   // const VkPipelineMultisampleStateCreateInfo* pMultisampleState;
             &pipelineDepthStencilStateInfo,  // const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
             &pipelineColorBlendStateInfo,    // const VkPipelineColorBlendStateCreateInfo* pColorBlendState;
-            DE_NULL,                         // const VkPipelineDynamicStateCreateInfo* pDynamicState;
+            nullptr,                         // const VkPipelineDynamicStateCreateInfo* pDynamicState;
             pipelineLayout,                  // VkPipelineLayout layout;
             renderPass,                      // VkRenderPass renderPass;
             0u,                              // uint32_t subpass;
@@ -293,14 +293,14 @@ std::vector<PipelineSp> makeGraphicsPipelines(const DeviceInterface &vk, const V
         }
     }
 
-    VK_CHECK(vk.createGraphicsPipelines(device, DE_NULL, static_cast<uint32_t>(graphicsPipelineInfos.size()),
-                                        &graphicsPipelineInfos[0], DE_NULL, &rawPipelines[0]));
+    VK_CHECK(vk.createGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(graphicsPipelineInfos.size()),
+                                        &graphicsPipelineInfos[0], nullptr, &rawPipelines[0]));
 
     std::vector<PipelineSp> pipelines;
 
     for (std::vector<VkPipeline>::const_iterator it = rawPipelines.begin(); it != rawPipelines.end(); ++it)
         pipelines.push_back(
-            makeSharedPtr(Move<VkPipeline>(check<VkPipeline>(*it), Deleter<VkPipeline>(vk, device, DE_NULL))));
+            makeSharedPtr(Move<VkPipeline>(check<VkPipeline>(*it), Deleter<VkPipeline>(vk, device, nullptr))));
 
     return pipelines;
 }
@@ -335,7 +335,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const uint32_t subpass
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags;
         1u,                             // uint32_t                                    vertexBindingDescriptionCount;
         &vertexInputBindingDescription, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
@@ -349,12 +349,12 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const uint32_t subpass
 
     const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineMultisampleStateCreateFlags)0,                 // VkPipelineMultisampleStateCreateFlags flags;
         numSamples,                                               // VkSampleCountFlagBits rasterizationSamples;
         VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
         0.0f,                                                     // float minSampleShading;
-        DE_NULL,                                                  // const VkSampleMask* pSampleMask;
+        nullptr,                                                  // const VkSampleMask* pSampleMask;
         VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
         VK_FALSE                                                  // VkBool32 alphaToOneEnable;
     };
@@ -375,7 +375,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const uint32_t subpass
 
     const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                                  // const void* pNext;
+        nullptr,                                                  // const void* pNext;
         (VkPipelineColorBlendStateCreateFlags)0,                  // VkPipelineColorBlendStateCreateFlags flags;
         VK_FALSE,                                                 // VkBool32 logicOpEnable;
         VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
@@ -389,7 +389,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, const uint32_t subpass
         .setDefaultDepthStencilState()
         .setupVertexInputState(&vertexInputStateInfo)
         .setupPreRasterizationShaderState(viewport, scissor, pipelineLayout, renderPass, subpassNdx, vertexModule)
-        .setupFragmentShaderState(pipelineLayout, renderPass, subpassNdx, fragmentModule, DE_NULL,
+        .setupFragmentShaderState(pipelineLayout, renderPass, subpassNdx, fragmentModule, nullptr,
                                   &pipelineMultisampleStateInfo)
         .setupFragmentOutputState(renderPass, subpassNdx, &pipelineColorBlendStateInfo, &pipelineMultisampleStateInfo)
         .setMonolithicPipelineLayout(pipelineLayout)
@@ -432,27 +432,27 @@ RenderPassWrapper makeMultisampleRenderPass(const DeviceInterface &vk, const VkD
             (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
             0u,                              // uint32_t inputAttachmentCount;
-            DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+            nullptr,                         // const VkAttachmentReference* pInputAttachments;
             1u,                              // uint32_t colorAttachmentCount;
             &colorAttachmentReferences[i],   // const VkAttachmentReference* pColorAttachments;
-            DE_NULL,                         // const VkAttachmentReference* pResolveAttachments;
-            DE_NULL,                         // const VkAttachmentReference* pDepthStencilAttachment;
+            nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
             0u,                              // uint32_t preserveAttachmentCount;
-            DE_NULL                          // const uint32_t* pPreserveAttachments;
+            nullptr                          // const uint32_t* pPreserveAttachments;
         };
         subpasses.push_back(subpassDescription);
     }
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,            // VkStructureType sType;
-        DE_NULL,                                              // const void* pNext;
+        nullptr,                                              // const void* pNext;
         (VkRenderPassCreateFlags)0,                           // VkRenderPassCreateFlags flags;
         static_cast<uint32_t>(attachmentDescriptions.size()), // uint32_t attachmentCount;
         &attachmentDescriptions[0],                           // const VkAttachmentDescription* pAttachments;
         static_cast<uint32_t>(subpasses.size()),              // uint32_t subpassCount;
         &subpasses[0],                                        // const VkSubpassDescription* pSubpasses;
         0u,                                                   // uint32_t dependencyCount;
-        DE_NULL                                               // const VkSubpassDependency* pDependencies;
+        nullptr                                               // const VkSubpassDependency* pDependencies;
     };
 
     return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
@@ -484,25 +484,25 @@ RenderPassWrapper makeSimpleRenderPass(const DeviceInterface &vk, const VkDevice
         (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags flags;
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
         0u,                              // uint32_t inputAttachmentCount;
-        DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+        nullptr,                         // const VkAttachmentReference* pInputAttachments;
         1u,                              // uint32_t colorAttachmentCount;
         &colorAttachmentRef,             // const VkAttachmentReference* pColorAttachments;
-        DE_NULL,                         // const VkAttachmentReference* pResolveAttachments;
-        DE_NULL,                         // const VkAttachmentReference* pDepthStencilAttachment;
+        nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+        nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
         0u,                              // uint32_t preserveAttachmentCount;
-        DE_NULL                          // const uint32_t* pPreserveAttachments;
+        nullptr                          // const uint32_t* pPreserveAttachments;
     };
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags flags;
         1u,                                        // uint32_t attachmentCount;
         &colorAttachmentDescription,               // const VkAttachmentDescription* pAttachments;
         1u,                                        // uint32_t subpassCount;
         &subpassDescription,                       // const VkSubpassDescription* pSubpasses;
         0u,                                        // uint32_t dependencyCount;
-        DE_NULL                                    // const VkSubpassDependency* pDependencies;
+        nullptr                                    // const VkSubpassDependency* pDependencies;
     };
 
     return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
@@ -513,7 +513,7 @@ Move<VkImage> makeImage(const DeviceInterface &vk, const VkDevice device, const 
 {
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                             // const void* pNext;
+        nullptr,                             // const void* pNext;
         (VkImageCreateFlags)0,               // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
@@ -525,7 +525,7 @@ Move<VkImage> makeImage(const DeviceInterface &vk, const VkDevice device, const 
         usage,                               // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         0u,                                  // uint32_t queueFamilyIndexCount;
-        DE_NULL,                             // const uint32_t* pQueueFamilyIndices;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
     return createImage(vk, device, &imageParams);
@@ -536,7 +536,7 @@ Move<VkSampler> makeSampler(const DeviceInterface &vk, const VkDevice device)
 {
     const VkSamplerCreateInfo samplerParams = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         (VkSamplerCreateFlags)0,                 // VkSamplerCreateFlags flags;
         VK_FILTER_NEAREST,                       // VkFilter magFilter;
         VK_FILTER_NEAREST,                       // VkFilter minFilter;
@@ -837,7 +837,7 @@ std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
 
     default:
         DE_ASSERT(false);
-        orderPart = DE_NULL;
+        orderPart = nullptr;
     }
 
     switch (format.type)
@@ -885,7 +885,7 @@ std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
 
     default:
         DE_ASSERT(false);
-        typePart = DE_NULL;
+        typePart = nullptr;
     }
 
     return std::string() + orderPart + typePart;
@@ -1301,7 +1301,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
             const VkImageMemoryBarrier barriers[] = {
                 {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,          // VkStructureType sType;
-                    DE_NULL,                                         // const void* pNext;
+                    nullptr,                                         // const void* pNext;
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,            // VkAccessFlags outputMask;
                     VK_ACCESS_SHADER_READ_BIT,                       // VkAccessFlags inputMask;
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout oldLayout;
@@ -1314,7 +1314,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
             };
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                   DE_LENGTH_OF_ARRAY(barriers), barriers);
         }
 
@@ -1326,7 +1326,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
         else
             pipelineWrapper.back().bind(*cmdBuffer);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
         {
             const VkDeviceSize vertexBufferOffset = 0ull;
             vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
@@ -1448,7 +1448,7 @@ void renderAndResolve(Context &context, const CaseDef &caseDef, const VkBuffer r
     // Working image barrier, we change it based on which rendering stages were executed so far.
     VkImageMemoryBarrier colorImageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,          // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         (VkAccessFlags)0,                                // VkAccessFlags outputMask;
         (VkAccessFlags)0,                                // VkAccessFlags inputMask;
         VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout oldLayout;
@@ -1508,7 +1508,7 @@ void renderAndResolve(Context &context, const CaseDef &caseDef, const VkBuffer r
             colorImageBarrier.newLayout     = VK_IMAGE_LAYOUT_GENERAL;
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u,
+                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
                                   &colorImageBarrier);
 
             colorImageBarrier.srcAccessMask = colorImageBarrier.dstAccessMask;
@@ -1518,7 +1518,7 @@ void renderAndResolve(Context &context, const CaseDef &caseDef, const VkBuffer r
         {
             vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
             vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                                     &descriptorSet.get(), 0u, DE_NULL);
+                                     &descriptorSet.get(), 0u, nullptr);
             vk.cmdDispatch(*cmdBuffer, caseDef.renderSize.x(), caseDef.renderSize.y(), caseDef.numLayers);
         }
 
@@ -1539,7 +1539,7 @@ void renderAndResolve(Context &context, const CaseDef &caseDef, const VkBuffer r
                 colorImageBarrier,
                 {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,          // VkStructureType sType;
-                    DE_NULL,                                         // const void* pNext;
+                    nullptr,                                         // const void* pNext;
                     (VkAccessFlags)0,                                // VkAccessFlags outputMask;
                     VK_ACCESS_TRANSFER_WRITE_BIT,                    // VkAccessFlags inputMask;
                     VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout oldLayout;
@@ -1556,8 +1556,8 @@ void renderAndResolve(Context &context, const CaseDef &caseDef, const VkBuffer r
                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT :
                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 
-            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u,
-                                  DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
+            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u,
+                                  nullptr, DE_LENGTH_OF_ARRAY(barriers), barriers);
 
             colorImageBarrier.srcAccessMask = colorImageBarrier.dstAccessMask;
             colorImageBarrier.oldLayout     = colorImageBarrier.newLayout;
@@ -1947,7 +1947,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
             const VkImageMemoryBarrier barriers[] = {
                 {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,          // VkStructureType sType;
-                    DE_NULL,                                         // const void* pNext;
+                    nullptr,                                         // const void* pNext;
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,            // VkAccessFlags outputMask;
                     VK_ACCESS_SHADER_READ_BIT,                       // VkAccessFlags inputMask;
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout oldLayout;
@@ -1960,7 +1960,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
             };
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                   DE_LENGTH_OF_ARRAY(barriers), barriers);
         }
 
@@ -1972,7 +1972,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
         else
             pipelineWrapper.back().bind(*cmdBuffer);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                 &descriptorSet.get(), 0u, DE_NULL);
+                                 &descriptorSet.get(), 0u, nullptr);
         {
             const VkDeviceSize vertexBufferOffset = 0ull;
             vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);

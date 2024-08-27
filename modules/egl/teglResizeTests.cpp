@@ -102,7 +102,7 @@ public:
         , m_oldSize(params.oldSize)
         , m_newSize(params.newSize)
         , m_display(EGL_NO_DISPLAY)
-        , m_config(DE_NULL)
+        , m_config(nullptr)
         , m_log(m_testCtx.getLog())
         , m_status(m_log)
     {
@@ -160,9 +160,9 @@ void ResizeTest::init(void)
 
     const WindowParams windowParams(m_oldSize.x(), m_oldSize.y(), visibility);
     MovePtr<NativeWindow> nativeWindow(
-        windowFactory.createWindow(&nativeDisplay, eglDisplay, eglConfig, DE_NULL, windowParams));
+        windowFactory.createWindow(&nativeDisplay, eglDisplay, eglConfig, nullptr, windowParams));
     const EGLSurface eglSurface =
-        eglu::createWindowSurface(nativeDisplay, *nativeWindow, eglDisplay, eglConfig, DE_NULL);
+        eglu::createWindowSurface(nativeDisplay, *nativeWindow, eglDisplay, eglConfig, nullptr);
     MovePtr<UniqueSurface> surface(new UniqueSurface(egl, eglDisplay, eglSurface));
 
     m_log << TestLog::Message << "Chose EGLConfig with id " << configId << ".\n"
@@ -179,7 +179,7 @@ void ResizeTest::init(void)
 
 void ResizeTest::deinit(void)
 {
-    m_config = DE_NULL;
+    m_config = nullptr;
     m_context.clear();
     m_surface.clear();
     m_nativeWindow.clear();

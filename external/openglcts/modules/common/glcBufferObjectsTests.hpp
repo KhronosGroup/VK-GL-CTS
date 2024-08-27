@@ -74,7 +74,7 @@ protected:
 
     std::unique_ptr<glu::ShaderProgram> m_program;
 
-    std::vector<glw::GLfloat> m_matProjection;
+    std::array<glw::GLfloat, 16> m_matProjection;
     std::array<glw::GLfloat, 12> m_triVertexArray;
     std::array<glw::GLfloat, 6> m_triSubDataVertexArray;
     std::array<glw::GLfloat, 8> m_pointVertices;

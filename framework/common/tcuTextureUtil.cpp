@@ -1711,7 +1711,7 @@ ConstPixelBufferAccess getEffectiveDepthStencilAccess(const ConstPixelBufferAcce
 
 TextureFormat getEffectiveDepthStencilTextureFormat(const TextureFormat &baseFormat, Sampler::DepthStencilMode mode)
 {
-    return toSamplerAccess(ConstPixelBufferAccess(baseFormat, IVec3(0, 0, 0), DE_NULL), mode).getFormat();
+    return toSamplerAccess(ConstPixelBufferAccess(baseFormat, IVec3(0, 0, 0), nullptr), mode).getFormat();
 }
 
 template <typename ViewType>

@@ -45,13 +45,13 @@ Move<VkBuffer> createDataBuffer(vkt::Context &context, uint32_t offset, uint32_t
     const VkBufferUsageFlags usageFlags = (VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
     const VkBufferCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,                        // flags
         (VkDeviceSize)bufferSize,  // size
         usageFlags,                // usage
         VK_SHARING_MODE_EXCLUSIVE, // sharingMode
         0u,                        // queueFamilyCount
-        DE_NULL,                   // pQueueFamilyIndices
+        nullptr,                   // pQueueFamilyIndices
     };
     Move<VkBuffer> buffer(createBuffer(vki, device, &createInfo));
 
@@ -87,13 +87,13 @@ Move<VkBuffer> createColorDataBuffer(uint32_t offset, uint32_t bufferSize, const
     const VkBufferUsageFlags usageFlags = (VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
     const VkBufferCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,                        // flags
         (VkDeviceSize)bufferSize,  // size
         usageFlags,                // usage
         VK_SHARING_MODE_EXCLUSIVE, // sharingMode
         0u,                        // queueFamilyCount
-        DE_NULL,                   // pQueueFamilyIndices
+        nullptr,                   // pQueueFamilyIndices
     };
     Move<VkBuffer> buffer(createBuffer(vki, device, &createInfo));
 
@@ -154,7 +154,7 @@ Move<VkDescriptorSet> createDescriptorSet(vkt::Context &context, VkDescriptorPoo
     const vk::VkDescriptorBufferInfo bufferInfo =
         makeDescriptorBufferInfo(buffer, (vk::VkDeviceSize)offset, (vk::VkDeviceSize)sizeof(tcu::Vec4[2]));
 
-    const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+    const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                        pool, 1u, &layout};
     vk::Move<vk::VkDescriptorSet> descriptorSet     = allocateDescriptorSet(vki, device, &allocInfo);
 
@@ -186,7 +186,7 @@ Move<VkDescriptorSet> createDescriptorSet(VkDescriptorPool pool, VkDescriptorSet
         vk::makeDescriptorBufferInfo(viewB, (vk::VkDeviceSize)offsetB, (vk::VkDeviceSize)sizeof(tcu::Vec4[2])),
     };
 
-    const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL,
+    const vk::VkDescriptorSetAllocateInfo allocInfo = {vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr,
                                                        pool, 1u, &layout};
     vk::Move<vk::VkDescriptorSet> descriptorSet     = allocateDescriptorSet(vki, device, &allocInfo);
 

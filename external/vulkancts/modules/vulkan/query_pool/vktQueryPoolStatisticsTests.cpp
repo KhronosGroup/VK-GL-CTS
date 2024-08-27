@@ -260,7 +260,7 @@ public:
         // Create a universal queue that supports graphics and compute.
         const VkDeviceQueueCreateInfo queueParams = {
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0u,                                         // VkDeviceQueueCreateFlags flags;
             m_queueFamilyIndex,                         // uint32_t queueFamilyIndex;
             1u,                                         // uint32_t queueCount;
@@ -328,7 +328,7 @@ public:
             {
                 pcCI = {
                     VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                    DE_NULL,                                      // const void* pNext;
+                    nullptr,                                      // const void* pNext;
                     VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                         VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                     context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
@@ -642,12 +642,12 @@ struct GenericParameters
 
 void beginSecondaryCommandBuffer(
     const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkQueryPipelineStatisticFlags queryFlags,
-    const VkRenderPass renderPass = (VkRenderPass)0u, const VkFramebuffer framebuffer = (VkFramebuffer)0u,
+    const VkRenderPass renderPass = VK_NULL_HANDLE, const VkFramebuffer framebuffer = VK_NULL_HANDLE,
     const VkCommandBufferUsageFlags bufferUsageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)
 {
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
+        nullptr,
         renderPass,              // renderPass
         0u,                      // subpass
         framebuffer,             // framebuffer
@@ -658,7 +658,7 @@ void beginSecondaryCommandBuffer(
 
     const VkCommandBufferBeginInfo info = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         bufferUsageFlags,                            // VkCommandBufferUsageFlags flags;
         &secCmdBufInheritInfo,                       // const VkCommandBufferInheritanceInfo* pInheritanceInfo;
     };
@@ -670,7 +670,7 @@ Move<VkQueryPool> makeQueryPool(const DeviceInterface &vk, const VkDevice device
 {
     const VkQueryPoolCreateInfo queryPoolCreateInfo = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType                    sType
-        DE_NULL,                                  // const void*                        pNext
+        nullptr,                                  // const void*                        pNext
         (VkQueryPoolCreateFlags)0,                // VkQueryPoolCreateFlags            flags
         VK_QUERY_TYPE_PIPELINE_STATISTICS,        // VkQueryType                        queryType
         queryCount,                               // uint32_t                            entryCount
@@ -922,7 +922,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::iterate(void)
 
     const VkDescriptorSetAllocateInfo allocateParams = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *descriptorPool,                                // VkDescriptorPool descriptorPool;
         1u,                                             // uint32_t setLayoutCount;
         &(*descriptorSetLayout),                        // const VkDescriptorSetLayout* pSetLayouts;
@@ -957,7 +957,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest(const VkCommandPool 
     const VkQueue queue                              = deviceHelper.getQueue();
     const VkBufferMemoryBarrier computeFinishBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                // VkStructureType sType;
-        DE_NULL,                                                // const void* pNext;
+        nullptr,                                                // const void* pNext;
         VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // VkAccessFlags srcAccessMask;
         VK_ACCESS_HOST_READ_BIT,                                // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                                // uint32_t srcQueueFamilyIndex;
@@ -976,17 +976,17 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest(const VkCommandPool 
 
         const VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             (VkPipelineShaderStageCreateFlags)0u,                // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             *shaderModule,                                       // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
         };
 
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             (VkPipelineCreateFlags)0u,                      // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             pipelineLayout,                                 // VkPipelineLayout layout;
@@ -1006,7 +1006,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest(const VkCommandPool 
 
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u,
-                                 DE_NULL);
+                                 nullptr);
 
         vk.cmdBeginQuery(*cmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
         vk.cmdDispatch(*cmdBuffer, m_parameters[parametersNdx].groupSize.x(), m_parameters[parametersNdx].groupSize.y(),
@@ -1046,7 +1046,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest(const VkCommandPool 
 
             const VkBufferMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
-                DE_NULL,                                 //  const void* pNext;
+                nullptr,                                 //  const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
                 VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
@@ -1056,13 +1056,11 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest(const VkCommandPool 
                 1u * stride + dstOffsetQuery,            //  VkDeviceSize size;
             };
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &barrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
         }
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0u, 0u, (const VkMemoryBarrier *)DE_NULL, 1u, &computeFinishBarrier,
-                              0u, (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0u, 0u, nullptr, 1u, &computeFinishBarrier, 0u, nullptr);
 
         endCommandBuffer(vk, *cmdBuffer);
 
@@ -1188,7 +1186,7 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
 
     const VkBufferMemoryBarrier computeShaderWriteBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                // VkStructureType sType;
-        DE_NULL,                                                // const void* pNext;
+        nullptr,                                                // const void* pNext;
         VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // VkAccessFlags srcAccessMask;
         VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                                // uint32_t srcQueueFamilyIndex;
@@ -1200,7 +1198,7 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
 
     const VkBufferMemoryBarrier computeFinishBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                // VkStructureType sType;
-        DE_NULL,                                                // const void* pNext;
+        nullptr,                                                // const void* pNext;
         VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // VkAccessFlags srcAccessMask;
         VK_ACCESS_HOST_READ_BIT,                                // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                                // uint32_t srcQueueFamilyIndex;
@@ -1219,17 +1217,17 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
                                (VkShaderModuleCreateFlags)0u))));
         const VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             0u,                                                  // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             shaderModule.back().get()->get(),                    // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
         };
 
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             0u,                                             // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             pipelineLayout,                                 // VkPipelineLayout layout;
@@ -1251,7 +1249,7 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
     clearBuffer(vk, device, buffer, bufferSizeBytes);
     beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT);
     vk.cmdBindDescriptorSets(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u,
-                             &descriptorSet, 0u, DE_NULL);
+                             &descriptorSet, 0u, nullptr);
     if (m_parameters[0].resetType != RESET_TYPE_HOST)
         vk.cmdResetQueryPool(*secondaryCmdBuffer, *queryPool, 0u, 1u);
     vk.cmdBeginQuery(*secondaryCmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
@@ -1262,9 +1260,8 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
                        m_parameters[parametersNdx].groupSize.y(), m_parameters[parametersNdx].groupSize.z());
 
         vk.cmdPipelineBarrier(*secondaryCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0u, 0u,
-                              (const VkMemoryBarrier *)DE_NULL, 1u, &computeShaderWriteBarrier, 0u,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0u, 0u, nullptr, 1u,
+                              &computeShaderWriteBarrier, 0u, nullptr);
     }
     vk.cmdEndQuery(*secondaryCmdBuffer, *queryPool, 0u);
 
@@ -1300,7 +1297,7 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
 
         const VkBufferMemoryBarrier barrier = {
             VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
-            DE_NULL,                                 //  const void* pNext;
+            nullptr,                                 //  const void* pNext;
             VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
             VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
             VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
@@ -1310,8 +1307,7 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
             1u * stride + dstOffsetQuery,            //  VkDeviceSize size;
         };
         vk.cmdPipelineBarrier(*secondaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &barrier, 0,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
     }
 
     endCommandBuffer(vk, *secondaryCmdBuffer);
@@ -1320,8 +1316,7 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
     vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
 
     vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0u, 0u, (const VkMemoryBarrier *)DE_NULL, 1u, &computeFinishBarrier, 0u,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0u, 0u, nullptr, 1u, &computeFinishBarrier, 0u, nullptr);
 
     endCommandBuffer(vk, *primaryCmdBuffer);
 
@@ -1468,7 +1463,7 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(co
 
     const VkBufferMemoryBarrier computeShaderWriteBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                // VkStructureType sType;
-        DE_NULL,                                                // const void* pNext;
+        nullptr,                                                // const void* pNext;
         VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // VkAccessFlags srcAccessMask;
         VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                                // uint32_t srcQueueFamilyIndex;
@@ -1480,7 +1475,7 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(co
 
     const VkBufferMemoryBarrier computeFinishBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                // VkStructureType sType;
-        DE_NULL,                                                // const void* pNext;
+        nullptr,                                                // const void* pNext;
         VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, // VkAccessFlags srcAccessMask;
         VK_ACCESS_HOST_READ_BIT,                                // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                                // uint32_t srcQueueFamilyIndex;
@@ -1499,17 +1494,17 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(co
                                (VkShaderModuleCreateFlags)0u))));
         const VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             0u,                                                  // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             shaderModule.back().get()->get(),                    // VkShaderModule module;
             "main",                                              // const char* pName;
-            DE_NULL,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
         };
 
         const VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                        // const void* pNext;
+            nullptr,                                        // const void* pNext;
             0u,                                             // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             pipelineLayout,                                 // VkPipelineLayout layout;
@@ -1531,7 +1526,7 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(co
     clearBuffer(vk, device, buffer, bufferSizeBytes);
     beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT);
     vk.cmdBindDescriptorSets(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u,
-                             &descriptorSet, 0u, DE_NULL);
+                             &descriptorSet, 0u, nullptr);
     for (size_t parametersNdx = 1; parametersNdx < m_parameters.size(); ++parametersNdx)
     {
         vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline[parametersNdx].get()->get());
@@ -1539,9 +1534,8 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(co
                        m_parameters[parametersNdx].groupSize.y(), m_parameters[parametersNdx].groupSize.z());
 
         vk.cmdPipelineBarrier(*secondaryCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0u, 0u,
-                              (const VkMemoryBarrier *)DE_NULL, 1u, &computeShaderWriteBarrier, 0u,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0u, 0u, nullptr, 1u,
+                              &computeShaderWriteBarrier, 0u, nullptr);
     }
     endCommandBuffer(vk, *secondaryCmdBuffer);
 
@@ -1549,7 +1543,7 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(co
     if (m_parameters[0].resetType != RESET_TYPE_HOST)
         vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
     vk.cmdBindDescriptorSets(*primaryCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet,
-                             0u, DE_NULL);
+                             0u, nullptr);
     vk.cmdBindPipeline(*primaryCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline[0].get()->get());
 
     vk.cmdBeginQuery(*primaryCmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
@@ -1557,14 +1551,12 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(co
                    m_parameters[0].groupSize.z());
 
     vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0u, 0u, (const VkMemoryBarrier *)DE_NULL, 1u, &computeShaderWriteBarrier,
-                          0u, (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0u, 0u, nullptr, 1u, &computeShaderWriteBarrier, 0u, nullptr);
 
     vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
 
     vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0u, 0u, (const VkMemoryBarrier *)DE_NULL, 1u, &computeFinishBarrier, 0u,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0u, 0u, nullptr, 1u, &computeFinishBarrier, 0u, nullptr);
 
     vk.cmdEndQuery(*primaryCmdBuffer, *queryPool, 0u);
 
@@ -1600,7 +1592,7 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(co
 
         const VkBufferMemoryBarrier barrier = {
             VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
-            DE_NULL,                                 //  const void* pNext;
+            nullptr,                                 //  const void* pNext;
             VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
             VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
             VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
@@ -1610,8 +1602,7 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(co
             1u * stride + dstOffsetQuery,            //  VkDeviceSize size;
         };
         vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &barrier, 0,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
     }
 
     endCommandBuffer(vk, *primaryCmdBuffer);
@@ -1814,13 +1805,13 @@ void GraphicBasicTestInstance::creatColorAttachmentAndRenderPass(void)
         renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
                                                            0,                                   // flags
                                                            0,                                   // inputCount
-                                                           DE_NULL,                             // pInputAttachments
+                                                           nullptr,                             // pInputAttachments
                                                            0,                                   // colorCount
-                                                           DE_NULL,                             // pColorAttachments
-                                                           DE_NULL,                             // pResolveAttachments
+                                                           nullptr,                             // pColorAttachments
+                                                           nullptr,                             // pResolveAttachments
                                                            depthAttachmentReference, // depthStencilAttachment
                                                            0,                        // preserveCount
-                                                           DE_NULL));                // preserveAttachments
+                                                           nullptr));                // preserveAttachments
         m_renderPass = vk::createRenderPass(vk, device, &renderPassCreateInfo);
 
         std::vector<vk::VkImageView> attachments(1);
@@ -1866,13 +1857,13 @@ void GraphicBasicTestInstance::creatColorAttachmentAndRenderPass(void)
             (VkSubpassDescriptionFlags)0,    //VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, //VkPipelineBindPoint pipelineBindPoint;
             0u,                              //uint32_t inputAttachmentCount;
-            DE_NULL,                         //const VkAttachmentReference* pInputAttachments;
+            nullptr,                         //const VkAttachmentReference* pInputAttachments;
             1u,                              //uint32_t colorAttachmentCount;
             &colorAttachmentReference,       //const VkAttachmentReference* pColorAttachments;
-            DE_NULL,                         //const VkAttachmentReference* pResolveAttachments;
+            nullptr,                         //const VkAttachmentReference* pResolveAttachments;
             &depthAttachmentReference,       //const VkAttachmentReference* pDepthStencilAttachment;
             0u,                              //uint32_t preserveAttachmentCount;
-            DE_NULL,                         //const uint32_t* pPreserveAttachments;
+            nullptr,                         //const uint32_t* pPreserveAttachments;
         };
 
         renderPassCreateInfo.addSubpass(subpass);
@@ -2098,7 +2089,7 @@ tcu::TestStatus VertexShaderTestInstance::executeTest(void)
 
             const VkBufferMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
-                DE_NULL,                                 //  const void* pNext;
+                nullptr,                                 //  const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
                 VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
@@ -2108,8 +2099,7 @@ tcu::TestStatus VertexShaderTestInstance::executeTest(void)
                 queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
             };
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &barrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
         }
 
         if (!m_parametersGraphic.noColorAttachments)
@@ -2407,7 +2397,7 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest(void)
 
             const VkBufferMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
-                DE_NULL,                                 //  const void* pNext;
+                nullptr,                                 //  const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
                 VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
@@ -2417,8 +2407,7 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest(void)
                 queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
             };
             vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &barrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
         }
 
         if (!m_parametersGraphic.noColorAttachments)
@@ -2554,7 +2543,7 @@ tcu::TestStatus VertexShaderSecondaryInheritedTestInstance::executeTest(void)
 
             const VkBufferMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
-                DE_NULL,                                 //  const void* pNext;
+                nullptr,                                 //  const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
                 VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
@@ -2564,8 +2553,7 @@ tcu::TestStatus VertexShaderSecondaryInheritedTestInstance::executeTest(void)
                 queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
             };
             vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &barrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
         }
 
         if (!m_parametersGraphic.noColorAttachments)
@@ -2761,7 +2749,7 @@ tcu::TestStatus GeometryShaderTestInstance::executeTest(void)
 
             const VkBufferMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
-                DE_NULL,                                 //  const void* pNext;
+                nullptr,                                 //  const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
                 VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
@@ -2771,8 +2759,7 @@ tcu::TestStatus GeometryShaderTestInstance::executeTest(void)
                 queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
             };
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &barrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
         }
 
         if (!m_parametersGraphic.noColorAttachments)
@@ -3044,7 +3031,7 @@ tcu::TestStatus GeometryShaderSecondaryTestInstance::executeTest(void)
 
             const VkBufferMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
-                DE_NULL,                                 //  const void* pNext;
+                nullptr,                                 //  const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
                 VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
@@ -3054,8 +3041,7 @@ tcu::TestStatus GeometryShaderSecondaryTestInstance::executeTest(void)
                 queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
             };
             vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &barrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
         }
 
         if (!m_parametersGraphic.noColorAttachments)
@@ -3192,7 +3178,7 @@ tcu::TestStatus GeometryShaderSecondaryInheritedTestInstance::executeTest(void)
 
             const VkBufferMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
-                DE_NULL,                                 //  const void* pNext;
+                nullptr,                                 //  const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
                 VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
@@ -3202,8 +3188,7 @@ tcu::TestStatus GeometryShaderSecondaryInheritedTestInstance::executeTest(void)
                 queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
             };
             vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &barrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
         }
 
         if (!m_parametersGraphic.noColorAttachments)
@@ -3398,7 +3383,7 @@ tcu::TestStatus TessellationShaderTestInstance::executeTest(void)
 
             const VkBufferMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
-                DE_NULL,                                 //  const void* pNext;
+                nullptr,                                 //  const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
                 VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
@@ -3408,8 +3393,7 @@ tcu::TestStatus TessellationShaderTestInstance::executeTest(void)
                 queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
             };
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &barrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
         }
 
         if (!m_parametersGraphic.noColorAttachments)
@@ -3647,7 +3631,7 @@ tcu::TestStatus TessellationShaderSecondrayTestInstance::executeTest(void)
 
             const VkBufferMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,  //  VkStructureType sType;
-                DE_NULL,                                  //  const void* pNext;
+                nullptr,                                  //  const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,             //  VkAccessFlags srcAccessMask;
                 VK_ACCESS_HOST_READ_BIT,                  //  VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                  //  uint32_t srcQueueFamilyIndex;
@@ -3657,8 +3641,7 @@ tcu::TestStatus TessellationShaderSecondrayTestInstance::executeTest(void)
                 queryCountTess * stride + dstOffsetQuery, //  VkDeviceSize size;
             };
             vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &barrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
         }
 
         if (!m_parametersGraphic.noColorAttachments)
@@ -3795,7 +3778,7 @@ tcu::TestStatus TessellationShaderSecondrayInheritedTestInstance::executeTest(vo
 
             const VkBufferMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
-                DE_NULL,                                 //  const void* pNext;
+                nullptr,                                 //  const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
                 VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
@@ -3805,8 +3788,7 @@ tcu::TestStatus TessellationShaderSecondrayInheritedTestInstance::executeTest(vo
                 queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
             };
             vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &barrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
         }
 
         if (!m_parametersGraphic.noColorAttachments)
@@ -4354,13 +4336,13 @@ void GraphicBasicMultipleQueryTestInstance::creatColorAttachmentAndRenderPass(vo
             (VkSubpassDescriptionFlags)0,    //VkSubpassDescriptionFlags flags;
             VK_PIPELINE_BIND_POINT_GRAPHICS, //VkPipelineBindPoint pipelineBindPoint;
             0u,                              //uint32_t inputAttachmentCount;
-            DE_NULL,                         //const VkAttachmentReference* pInputAttachments;
+            nullptr,                         //const VkAttachmentReference* pInputAttachments;
             1u,                              //uint32_t colorAttachmentCount;
             &colorAttachmentReference,       //const VkAttachmentReference* pColorAttachments;
-            DE_NULL,                         //const VkAttachmentReference* pResolveAttachments;
+            nullptr,                         //const VkAttachmentReference* pResolveAttachments;
             &depthAttachmentReference,       //const VkAttachmentReference* pDepthStencilAttachment;
             0u,                              //uint32_t preserveAttachmentCount;
-            DE_NULL,                         //const uint32_t* pPreserveAttachments;
+            nullptr,                         //const uint32_t* pPreserveAttachments;
         };
 
         renderPassCreateInfo.addSubpass(subpass);
@@ -4515,7 +4497,7 @@ tcu::TestStatus VertexShaderMultipleQueryTestInstance::executeTest(void)
             const VkDeviceSize bufferSize = NUM_QUERY_STATISTICS * sizeof(uint64_t) * m_parametersGraphic.queryCount;
             const VkBufferMemoryBarrier barrier = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
-                DE_NULL,                                 //  const void* pNext;
+                nullptr,                                 //  const void* pNext;
                 VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
                 VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
                 VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
@@ -4526,8 +4508,7 @@ tcu::TestStatus VertexShaderMultipleQueryTestInstance::executeTest(void)
             };
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1u, &barrier, 0,
-                                  (const VkImageMemoryBarrier *)DE_NULL);
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
         }
 
         transition2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT,
@@ -4813,7 +4794,7 @@ tcu::TestStatus BlitBetweenIncompatibleFormatsTestInstance::iterate(void)
 
     VkImageCreateInfo imageCreateInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                               // VkStructureType sType;
-        DE_NULL,                                                           // const void* pNext;
+        nullptr,                                                           // const void* pNext;
         0,                                                                 // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                                  // VkImageType imageType;
         VK_FORMAT_R32G32B32A32_SFLOAT,                                     // VkFormat format;
@@ -4838,7 +4819,7 @@ tcu::TestStatus BlitBetweenIncompatibleFormatsTestInstance::iterate(void)
     VkImageMemoryBarrier imageBarriers[2];
     imageBarriers[0] = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                // const void* pNext;
+        nullptr,                                // const void* pNext;
         0,                                      // VkAccessFlags srcAccessMask;
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
         VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
@@ -4854,8 +4835,7 @@ tcu::TestStatus BlitBetweenIncompatibleFormatsTestInstance::iterate(void)
     beginCommandBuffer(vk, *cmdBuffer);
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                          (const VkBufferMemoryBarrier *)DE_NULL, 2, imageBarriers);
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 2, imageBarriers);
     vk.cmdClearColorImage(*cmdBuffer, **srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1,
                           &subresourceRange);
 
@@ -4864,8 +4844,7 @@ tcu::TestStatus BlitBetweenIncompatibleFormatsTestInstance::iterate(void)
     imageBarriers[0].oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     imageBarriers[0].newLayout     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                          (const VkBufferMemoryBarrier *)DE_NULL, 1, imageBarriers);
+                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, imageBarriers);
 
     vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
     vk.cmdBeginQuery(*cmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);

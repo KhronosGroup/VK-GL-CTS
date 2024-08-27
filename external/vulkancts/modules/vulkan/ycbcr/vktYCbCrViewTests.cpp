@@ -105,7 +105,7 @@ Move<VkImage> createTestImage(const DeviceInterface &vkd, VkDevice device, VkFor
 {
     const VkImageCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         createFlags,
         VK_IMAGE_TYPE_2D,
         format,
@@ -117,7 +117,7 @@ Move<VkImage> createTestImage(const DeviceInterface &vkd, VkDevice device, VkFor
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
-        (const uint32_t *)DE_NULL,
+        nullptr,
         VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
@@ -158,14 +158,14 @@ Move<VkDescriptorSetLayout> createDescriptorSetLayout(const DeviceInterface &vkd
     const VkDescriptorSetLayoutBinding bindings[]    = {{0u, // binding
                                                          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                                                          1u, // descriptorCount
-                                                         VK_SHADER_STAGE_ALL, (const VkSampler *)DE_NULL},
+                                                         VK_SHADER_STAGE_ALL, nullptr},
                                                         {1u, // binding
                                                          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                                                          1u, // descriptorCount
                                                          VK_SHADER_STAGE_ALL, &conversionSampler}};
     const VkDescriptorSetLayoutCreateInfo layoutInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkDescriptorSetLayoutCreateFlags)0u,
         DE_LENGTH_OF_ARRAY(bindings),
         bindings,
@@ -182,7 +182,7 @@ Move<VkDescriptorPool> createDescriptorPool(const DeviceInterface &vkd, VkDevice
     };
     const VkDescriptorPoolCreateInfo poolInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
         1u, // maxSets
         DE_LENGTH_OF_ARRAY(poolSizes),
@@ -200,7 +200,7 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkd, VkDevice d
 
     {
         const VkDescriptorSetAllocateInfo allocInfo = {
-            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, DE_NULL, descPool, 1u, &descLayout,
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, descPool, 1u, &descLayout,
         };
 
         descSet = allocateDescriptorSet(vkd, device, &allocInfo);
@@ -213,30 +213,30 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkd, VkDevice d
                                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         const VkWriteDescriptorSet descriptorWrites[] = {{
                                                              VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              *descSet,
                                                              0u, // dstBinding
                                                              0u, // dstArrayElement
                                                              1u, // descriptorCount
                                                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                                                              &imageInfo0,
-                                                             (const VkDescriptorBufferInfo *)DE_NULL,
-                                                             (const VkBufferView *)DE_NULL,
+                                                             nullptr,
+                                                             nullptr,
                                                          },
                                                          {
                                                              VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                                             DE_NULL,
+                                                             nullptr,
                                                              *descSet,
                                                              1u, // dstBinding
                                                              0u, // dstArrayElement
                                                              1u, // descriptorCount
                                                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                                                              &imageInfo1,
-                                                             (const VkDescriptorBufferInfo *)DE_NULL,
-                                                             (const VkBufferView *)DE_NULL,
+                                                             nullptr,
+                                                             nullptr,
                                                          }};
 
-        vkd.updateDescriptorSets(device, DE_LENGTH_OF_ARRAY(descriptorWrites), descriptorWrites, 0u, DE_NULL);
+        vkd.updateDescriptorSets(device, DE_LENGTH_OF_ARRAY(descriptorWrites), descriptorWrites, 0u, nullptr);
     }
 
     return descSet;
@@ -253,8 +253,8 @@ void executeImageBarrier(const DeviceInterface &vkd, VkDevice device, uint32_t q
 
     beginCommandBuffer(vkd, *cmdBuffer);
 
-    vkd.cmdPipelineBarrier(*cmdBuffer, srcStage, dstStage, (VkDependencyFlags)0u, 0u, (const VkMemoryBarrier *)DE_NULL,
-                           0u, (const VkBufferMemoryBarrier *)DE_NULL, 1u, &barrier);
+    vkd.cmdPipelineBarrier(*cmdBuffer, srcStage, dstStage, (VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u,
+                           &barrier);
 
     endCommandBuffer(vkd, *cmdBuffer);
 
@@ -509,7 +509,7 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
     {
         if ((createFlags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0)
         {
-            VkBindImagePlaneMemoryInfo planeInfo = {VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO, DE_NULL,
+            VkBindImagePlaneMemoryInfo planeInfo = {VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO, nullptr,
                                                     VK_IMAGE_ASPECT_PLANE_0_BIT};
 
             VkBindImageMemoryInfo coreInfo = {
@@ -531,7 +531,7 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
 
     const VkSamplerYcbcrConversionCreateInfo conversionInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         format,
         VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,
         VK_SAMPLER_YCBCR_RANGE_ITU_FULL,
@@ -549,14 +549,14 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
     const Unique<VkSamplerYcbcrConversion> conversion(createSamplerYcbcrConversion(vkd, device, &conversionInfo));
     const VkSamplerYcbcrConversionInfo samplerConversionInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-        DE_NULL,
+        nullptr,
         *conversion,
     };
     const Unique<VkImageView> wholeView(
         createImageView(vkd, device, *image, format, VK_IMAGE_ASPECT_COLOR_BIT, &samplerConversionInfo));
     const Unique<VkImageView> planeView(
         createImageView(vkd, device, !imageAlias ? *image : *imageAlias, params.planeCompatibleFormat,
-                        !imageAlias ? getPlaneAspect(params.planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT, DE_NULL));
+                        !imageAlias ? getPlaneAspect(params.planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT, nullptr));
 
     const VkSamplerCreateInfo wholeSamplerInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -580,7 +580,7 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
     };
     const VkSamplerCreateInfo planeSamplerInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,
         VK_FILTER_NEAREST,                       // magFilter
         VK_FILTER_NEAREST,                       // minFilter
@@ -603,7 +603,7 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
     {
         const VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,        // sType;
-            DE_NULL,                                                      // pNext;
+            nullptr,                                                      // pNext;
             format,                                                       // format;
             VK_IMAGE_TYPE_2D,                                             // type;
             VK_IMAGE_TILING_OPTIMAL,                                      // tiling;
@@ -613,7 +613,7 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
 
         VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = {};
         samplerYcbcrConversionImage.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
-        samplerYcbcrConversionImage.pNext = DE_NULL;
+        samplerYcbcrConversionImage.pNext = nullptr;
 
         VkImageFormatProperties2 imageFormatProperties = {};
         imageFormatProperties.sType                    = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
@@ -644,7 +644,7 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
     {
         // Transition alias to right layout first
         const VkImageMemoryBarrier initAliasBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                       DE_NULL,
+                                                       nullptr,
                                                        (VkAccessFlags)0,
                                                        VK_ACCESS_SHADER_READ_BIT,
                                                        VK_IMAGE_LAYOUT_UNDEFINED,

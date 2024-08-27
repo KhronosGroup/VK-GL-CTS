@@ -59,6 +59,9 @@ using std::vector;
 #define TCU_FAIL_STR(MSG) TCU_FAIL(string(MSG).c_str())
 #endif
 
+#define INVALID_DISPLAY VkDisplayKHR(reinterpret_cast<void *>(0xABCDEF11))
+#define INVALID_DISPLAY_MODE VkDisplayModeKHR(reinterpret_cast<void *>(0xABCDEF11))
+
 enum DisplayIndexTest
 {
     DISPLAY_TEST_INDEX_START,
@@ -120,7 +123,7 @@ std::string getResultAsString(vk::VkResult result)
 {
     const char *resultAsChar = vk::getResultName(result);
 
-    if (resultAsChar != DE_NULL)
+    if (resultAsChar != nullptr)
         return std::string(resultAsChar);
     else
         return de::toString(result);
@@ -324,7 +327,7 @@ bool DisplayCoverageTestInstance::getDisplays(DisplayVector &displays)
 
     result = m_vki.getPhysicalDeviceDisplayPropertiesKHR(m_physicalDevice, // VkPhysicalDevice            physicalDevice
                                                          &countReported,   // uint32_t*                pPropertyCount
-                                                         DE_NULL);         // VkDisplayPropertiesKHR*    pProperties
+                                                         nullptr);         // VkDisplayPropertiesKHR*    pProperties
 
     if (result != VK_SUCCESS)
     {
@@ -360,7 +363,7 @@ bool DisplayCoverageTestInstance::getDisplays(DisplayVector &displays)
     {
         const VkDisplayKHR display = displaysProps[displayIndex].display;
 
-        if (display == DE_NULL)
+        if (display == VK_NULL_HANDLE)
         {
             displays.clear();
 
@@ -393,7 +396,7 @@ bool DisplayCoverageTestInstance::getDisplaysForPlane(uint32_t plane, DisplayVec
     result = m_vki.getDisplayPlaneSupportedDisplaysKHR(m_physicalDevice, // VkPhysicalDevice    physicalDevice
                                                        plane,            // uint32_t            planeIndex
                                                        &countReported,   // uint32_t*        pDisplayCount
-                                                       DE_NULL);         // VkDisplayKHR*    pDisplays
+                                                       nullptr);         // VkDisplayKHR*    pDisplays
 
     if (result != VK_SUCCESS)
     {
@@ -451,7 +454,7 @@ bool DisplayCoverageTestInstance::getDisplayModeProperties(VkDisplayKHR display,
     result = m_vki.getDisplayModePropertiesKHR(m_physicalDevice, // VkPhysicalDevice                physicalDevice
                                                display,          // VkDisplayKHR                    display
                                                &countReported,   // uint32_t*                    pPropertyCount
-                                               DE_NULL);         // VkDisplayModePropertiesKHR*    pProperties
+                                               nullptr);         // VkDisplayModePropertiesKHR*    pProperties
 
     if (result != VK_SUCCESS)
     {
@@ -502,7 +505,7 @@ bool DisplayCoverageTestInstance::getDisplays2(DisplayVector &displays)
     uint32_t countRetrieved                        = 0u;
     const VkDisplayPropertiesKHR displayProperties = {
         VK_NULL_HANDLE, // VkDisplayKHR                    display
-        DE_NULL,        // const char*                    displayName
+        nullptr,        // const char*                    displayName
         {0, 0},         // VkExtent2D                    physicalDimensions
         {0, 0},         // VkExtent2D                    physicalResolution
         0,              // VkSurfaceTransformFlagsKHR    supportedTransforms
@@ -511,7 +514,7 @@ bool DisplayCoverageTestInstance::getDisplays2(DisplayVector &displays)
     };
     const VkDisplayProperties2KHR displayProperties2 = {
         VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR, // VkStructureType            sType
-        DE_NULL,                                    // void*                    pNext
+        nullptr,                                    // void*                    pNext
         displayProperties                           // VkDisplayPropertiesKHR    displayProperties
     };
 
@@ -523,7 +526,7 @@ bool DisplayCoverageTestInstance::getDisplays2(DisplayVector &displays)
     result =
         m_vki.getPhysicalDeviceDisplayProperties2KHR(m_physicalDevice, // VkPhysicalDevice            physicalDevice
                                                      &countReported,   // uint32_t*                pPropertyCount
-                                                     DE_NULL);         // VkDisplayProperties2KHR*    pProperties
+                                                     nullptr);         // VkDisplayProperties2KHR*    pProperties
 
     if (result != VK_SUCCESS)
     {
@@ -560,7 +563,7 @@ bool DisplayCoverageTestInstance::getDisplays2(DisplayVector &displays)
     {
         const VkDisplayKHR display = displaysProps[displayIndex].displayProperties.display;
 
-        if (display == DE_NULL)
+        if (display == VK_NULL_HANDLE)
         {
             displays.clear();
 
@@ -597,7 +600,7 @@ bool DisplayCoverageTestInstance::getDisplayModeProperties2(VkDisplayKHR display
         }};
     const VkDisplayModeProperties2KHR displayModeProperties2 = {
         VK_STRUCTURE_TYPE_DISPLAY_MODE_PROPERTIES_2_KHR, // VkStructureType                sType
-        DE_NULL,                                         // void*                        pNext
+        nullptr,                                         // void*                        pNext
         displayModeProperties                            // VkDisplayModePropertiesKHR    displayModeProperties
     };
     VkResult result;
@@ -607,7 +610,7 @@ bool DisplayCoverageTestInstance::getDisplayModeProperties2(VkDisplayKHR display
     result = m_vki.getDisplayModeProperties2KHR(m_physicalDevice, // VkPhysicalDevice                physicalDevice
                                                 display,          // VkDisplayKHR                    display
                                                 &countReported,   // uint32_t*                    pPropertyCount
-                                                DE_NULL);         // VkDisplayModeProperties2KHR*    pProperties
+                                                nullptr);         // VkDisplayModeProperties2KHR*    pProperties
 
     if (result != VK_SUCCESS)
     {
@@ -693,7 +696,7 @@ void DisplayCoverageTestInstance::validateDisplayPlaneProperties(tcu::ResultColl
                   "CurrentStackIndex must be less than the number of planes reported " +
                       de::toString(nonUpdated.currentStackIndex));
 
-    results.check(currentDisplay == DE_NULL || de::contains(displaySet, currentDisplay),
+    results.check(currentDisplay == VK_NULL_HANDLE || de::contains(displaySet, currentDisplay),
                   "Plane bound to invalid handle " + de::toString(toValidate.currentDisplay));
 }
 
@@ -774,7 +777,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
     result =
         m_vki.getPhysicalDeviceDisplayPropertiesKHR(m_physicalDevice,      // VkPhysicalDevice            physicalDevice
                                                     &displayCountReported, // uint32_t*                pPropertyCount
-                                                    DE_NULL);              // VkDisplayPropertiesKHR*    pProperties
+                                                    nullptr);              // VkDisplayPropertiesKHR*    pProperties
 
     if (result != VK_SUCCESS && result != VK_INCOMPLETE && result != VK_ERROR_OUT_OF_HOST_MEMORY &&
         result != VK_ERROR_OUT_OF_DEVICE_MEMORY)
@@ -804,14 +807,14 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
         const VkDisplayPropertiesKHR invalidDisplayProps = {
             // Most values are set to fail the test to make sure driver updates these
             VK_NULL_HANDLE,                      // VkDisplayKHR display;
-            DE_NULL,                             // const char* displayName;
+            nullptr,                             // const char* displayName;
             {0, 0},                              // VkExtent2D physicalDimensions;
             {0, 0},                              // VkExtent2D physicalResolution;
             ~RECOGNIZED_SURFACE_TRANSFORM_FLAGS, // VkSurfaceTransformFlagsKHR supportedTransforms;
             (vk::VkBool32)(VK_TRUE + 1),         // VkBool32 planeReorderPossible;
             (vk::VkBool32)(VK_TRUE + 1)          // VkBool32 persistentContent;
         };
-        const VkDisplayKHR canaryDisplay = static_cast<VkDisplayKHR>(0xABCDEF11);
+        const VkDisplayKHR canaryDisplay = INVALID_DISPLAY;
         const uint32_t canaryItemCount   = 1;
         std::vector<VkDisplayPropertiesKHR> displaysProps(displayCountRequested + canaryItemCount, invalidDisplayProps);
         uint32_t displayCountRetrieved = displayCountRequested;
@@ -919,7 +922,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
     result = m_vki.getPhysicalDeviceDisplayPlanePropertiesKHR(
         m_physicalDevice,    // VkPhysicalDevice                physicalDevice
         &planeCountReported, // uint32_t*                    pPropertyCount
-        DE_NULL);            // VkDisplayPlanePropertiesKHR*    pProperties
+        nullptr);            // VkDisplayPlanePropertiesKHR*    pProperties
 
     if (result != VK_SUCCESS && result != VK_INCOMPLETE && result != VK_ERROR_OUT_OF_HOST_MEMORY &&
         result != VK_ERROR_OUT_OF_DEVICE_MEMORY)
@@ -951,7 +954,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
             VK_NULL_HANDLE, // VkDisplayKHR    currentDisplay
             DEUINT32_MAX    // uint32_t        currentStackIndex
         };
-        const VkDisplayKHR canaryDisplay = static_cast<VkDisplayKHR>(0xABCDEF11);
+        const VkDisplayKHR canaryDisplay = INVALID_DISPLAY;
         const uint32_t canaryItemCount   = 1;
         std::vector<VkDisplayPlanePropertiesKHR> planeProps(planeCountRequested + canaryItemCount, invalidPlaneProps);
         uint32_t planeCountRetrieved = planeCountRequested;
@@ -988,7 +991,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
                           "CurrentStackIndex must be less than the number of planes reported " +
                               de::toString(planeCountReported));
 
-            results.check(currentDisplay == DE_NULL || de::contains(displaySet, currentDisplay),
+            results.check(currentDisplay == VK_NULL_HANDLE || de::contains(displaySet, currentDisplay),
                           "Plane bound to invalid handle " + de::toString(currentDisplay));
 
             if (results.getResult() != QP_TEST_RESULT_PASS)
@@ -1034,7 +1037,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneSupportedDisplay
     result = m_vki.getPhysicalDeviceDisplayPlanePropertiesKHR(
         m_physicalDevice,    // VkPhysicalDevice                physicalDevice
         &planeCountReported, // uint32_t*                    pPropertyCount
-        DE_NULL);            // VkDisplayPlanePropertiesKHR*    pProperties
+        nullptr);            // VkDisplayPlanePropertiesKHR*    pProperties
 
     if (result != VK_SUCCESS && result != VK_INCOMPLETE && result != VK_ERROR_OUT_OF_HOST_MEMORY &&
         result != VK_ERROR_OUT_OF_DEVICE_MEMORY)
@@ -1064,7 +1067,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneSupportedDisplay
         result = m_vki.getDisplayPlaneSupportedDisplaysKHR(m_physicalDevice,      // VkPhysicalDevice    physicalDevice
                                                            planeIndex,            // uint32_t            planeIndex
                                                            &displayCountReported, // uint32_t*        pDisplayCount
-                                                           DE_NULL);              // VkDisplayKHR*    pDisplays
+                                                           nullptr);              // VkDisplayKHR*    pDisplays
 
         if (result != VK_SUCCESS)
             TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
@@ -1075,7 +1078,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneSupportedDisplay
         {
             const uint32_t displayCountExpected = std::min(displayCountRequested, displayCountReported);
             const VkDisplayKHR nullDisplay      = VK_NULL_HANDLE;
-            const VkDisplayKHR canaryDisplay    = static_cast<VkDisplayKHR>(0xABCDEF11);
+            const VkDisplayKHR canaryDisplay    = INVALID_DISPLAY;
             const uint32_t canaryItemCount      = 1;
             std::vector<VkDisplayKHR> displaysForPlane(displayCountRequested + canaryItemCount, nullDisplay);
             uint32_t displayCountRetrieved = displayCountRequested;
@@ -1152,7 +1155,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModePropertiesKHR(voi
         result = m_vki.getDisplayModePropertiesKHR(m_physicalDevice, // VkPhysicalDevice                physicalDevice
                                                    display,          // VkDisplayKHR                    display
                                                    &modesCountReported, // uint32_t*                    pPropertyCount
-                                                   DE_NULL);            // VkDisplayModePropertiesKHR*    pProperties
+                                                   nullptr);            // VkDisplayModePropertiesKHR*    pProperties
 
         // Test the call correctly writes data in various size arrays
         for (uint32_t modesCountRequested = 0; modesCountRequested < modesCountReported + 2;
@@ -1166,7 +1169,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModePropertiesKHR(voi
                                                              {0, 0}, // VkExtent2D                    visibleRegion
                                                              0       // uint32_t                        refreshRate
                                                          }};
-            const VkDisplayModeKHR canaryDisplayMode  = static_cast<VkDisplayModeKHR>(0xABCDEF11);
+            const VkDisplayModeKHR canaryDisplayMode  = INVALID_DISPLAY_MODE;
             const uint32_t canaryItemCount            = 1;
             std::vector<VkDisplayModePropertiesKHR> modesForDisplay(modesCountRequested + canaryItemCount, nullMode);
             uint32_t modesCountRetrieved = modesCountRequested;
@@ -1240,7 +1243,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testCreateDisplayModeKHR(void)
         DisplayModePropertiesVector modes;
         VkDisplayModeCreateInfoKHR createInfo = {
             VK_STRUCTURE_TYPE_DISPLAY_MODE_CREATE_INFO_KHR, // VkStructureType                sType
-            DE_NULL,                                        // const void*                    pNext
+            nullptr,                                        // const void*                    pNext
             0,                                              // VkDisplayModeCreateFlagsKHR    flags
             {
                 // VkDisplayModeParametersKHR    parameters
@@ -1288,13 +1291,13 @@ tcu::TestStatus DisplayCoverageTestInstance::testCreateDisplayModeKHR(void)
                 m_vki.createDisplayModeKHR(m_physicalDevice, // VkPhysicalDevice                        physicalDevice
                                            display,          // VkDisplayKHR                            display
                                            &createInfoFail,  // const VkDisplayModeCreateInfoKHR*    pCreateInfo
-                                           DE_NULL,          // const VkAllocationCallbacks*            pAllocator
+                                           nullptr,          // const VkAllocationCallbacks*            pAllocator
                                            &modeFail);       // VkDisplayModeKHR*                    pMode
 
             if (result != VK_ERROR_INITIALIZATION_FAILED)
                 TCU_FAIL_STR(string("Expected VK_ERROR_INITIALIZATION_FAILED. Have ") + getResultAsString(result));
 
-            if (modeFail != DE_NULL)
+            if (modeFail != VK_NULL_HANDLE)
                 TCU_FAIL("Mode should be kept invalid on fail");
         }
 
@@ -1304,13 +1307,13 @@ tcu::TestStatus DisplayCoverageTestInstance::testCreateDisplayModeKHR(void)
         result = m_vki.createDisplayModeKHR(m_physicalDevice, // VkPhysicalDevice                        physicalDevice
                                             display,          // VkDisplayKHR                            display
                                             &createInfo,      // const VkDisplayModeCreateInfoKHR*    pCreateInfo
-                                            DE_NULL,          // const VkAllocationCallbacks*            pAllocator
+                                            nullptr,          // const VkAllocationCallbacks*            pAllocator
                                             &mode);           // VkDisplayModeKHR*                    pMode
 
         if (result != VK_SUCCESS)
             TCU_FAIL_STR("Expected VK_SUCCESS. Have " + getResultAsString(result));
 
-        if (mode == DE_NULL)
+        if (mode == VK_NULL_HANDLE)
             TCU_FAIL("Valid handle expected");
 
         // Builtin mode count should not be updated with a new mode
@@ -1342,7 +1345,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneCapabilitiesKHR(
     result = m_vki.getPhysicalDeviceDisplayPlanePropertiesKHR(
         m_physicalDevice,    // VkPhysicalDevice                physicalDevice
         &planeCountReported, // uint32_t*                    pPropertyCount
-        DE_NULL);            // VkDisplayPlanePropertiesKHR*    pProperties
+        nullptr);            // VkDisplayPlanePropertiesKHR*    pProperties
 
     if (result != VK_SUCCESS)
         TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
@@ -1518,7 +1521,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testDisplaySurface(SurfaceTestKind 
     result = m_vki.getPhysicalDeviceDisplayPlanePropertiesKHR(
         m_physicalDevice,    // VkPhysicalDevice                physicalDevice
         &planeCountReported, // uint32_t*                    pPropertyCount
-        DE_NULL);            // VkDisplayPlanePropertiesKHR*    pProperties
+        nullptr);            // VkDisplayPlanePropertiesKHR*    pProperties
 
     if (result != VK_SUCCESS)
         TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
@@ -1605,7 +1608,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testDisplaySurface(SurfaceTestKind 
                             const VkInstance instance                      = m_context.getInstance();
                             const VkDisplaySurfaceCreateInfoKHR createInfo = {
                                 VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR, // VkStructureType                    sType
-                                DE_NULL,     // const void*                        pNext
+                                nullptr,     // const void*                        pNext
                                 0,           // VkDisplaySurfaceCreateFlagsKHR    flags
                                 displayMode, // VkDisplayModeKHR                    displayMode
                                 planeIndex,  // uint32_t                            planeIndex
@@ -1621,13 +1624,13 @@ tcu::TestStatus DisplayCoverageTestInstance::testDisplaySurface(SurfaceTestKind 
                             result = m_vki.createDisplayPlaneSurfaceKHR(
                                 instance,    // VkInstance                            instance
                                 &createInfo, // const VkDisplaySurfaceCreateInfoKHR*    pCreateInfo
-                                DE_NULL,     // const VkAllocationCallbacks*            pAllocator
+                                nullptr,     // const VkAllocationCallbacks*            pAllocator
                                 &surface);   // VkSurfaceKHR*                        pSurface
 
                             if (result != VK_SUCCESS)
                                 TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
 
-                            if (surface == DE_NULL)
+                            if (surface == VK_NULL_HANDLE)
                                 TCU_FAIL("Invalid surface handle returned");
 
                             if (testKind == SURFACE_COUNTERS)
@@ -1669,7 +1672,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testDisplaySurface(SurfaceTestKind 
 
                             m_vki.destroySurfaceKHR(instance, // VkInstance                            instance
                                                     surface,  // VkSurfaceKHR*                        pSurface
-                                                    DE_NULL); // const VkAllocationCallbacks*            pAllocator
+                                                    nullptr); // const VkAllocationCallbacks*            pAllocator
 
                             testPerformed = true;
                         }
@@ -1702,7 +1705,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
     result =
         m_vki.getPhysicalDeviceDisplayProperties2KHR(m_physicalDevice, // VkPhysicalDevice            physicalDevice
                                                      &displayCountReported, // uint32_t*                pPropertyCount
-                                                     DE_NULL);              // VkDisplayProperties2KHR*    pProperties
+                                                     nullptr);              // VkDisplayProperties2KHR*    pProperties
 
     if (result != VK_SUCCESS && result != VK_INCOMPLETE && result != VK_ERROR_OUT_OF_HOST_MEMORY &&
         result != VK_ERROR_OUT_OF_DEVICE_MEMORY)
@@ -1732,7 +1735,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
         const VkDisplayPropertiesKHR nonUpdatedDisplayProperties = {
             // Most values are set to fail the test to make sure driver updates them
             VK_NULL_HANDLE,                      // VkDisplayKHR                    display
-            DE_NULL,                             // const char*                    displayName
+            nullptr,                             // const char*                    displayName
             {0, 0},                              // VkExtent2D                    physicalDimensions
             {0, 0},                              // VkExtent2D                    physicalResolution
             ~RECOGNIZED_SURFACE_TRANSFORM_FLAGS, // VkSurfaceTransformFlagsKHR    supportedTransforms
@@ -1742,10 +1745,10 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
         const VkStructureType queryStructureType                   = VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR;
         const VkDisplayProperties2KHR nonUpdatedDisplayProperties2 = {
             queryStructureType,         // VkStructureType            sType
-            DE_NULL,                    // void*                    pNext
+            nullptr,                    // void*                    pNext
             nonUpdatedDisplayProperties // VkDisplayPropertiesKHR    displayProperties
         };
-        const VkDisplayKHR canaryDisplay = static_cast<VkDisplayKHR>(0xABCDEF11);
+        const VkDisplayKHR canaryDisplay = INVALID_DISPLAY;
         const uint32_t canaryItemCount   = 1;
         std::vector<VkDisplayProperties2KHR> displaysProps2(displayCountRequested + canaryItemCount,
                                                             nonUpdatedDisplayProperties2);
@@ -1786,7 +1789,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
             results.check(properties2.sType == queryStructureType,
                           "sType has changed to " + de::toString(properties2.sType));
 
-            results.check(properties2.pNext == DE_NULL, "pNext has changed to " + de::toString(properties2.pNext));
+            results.check(properties2.pNext == nullptr, "pNext has changed to " + de::toString(properties2.pNext));
 
             validateDisplayProperties(results, properties, nonUpdatedDisplayProperties);
 
@@ -1841,7 +1844,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
     result = m_vki.getPhysicalDeviceDisplayPlaneProperties2KHR(
         m_physicalDevice,    // VkPhysicalDevice                    physicalDevice
         &planeCountReported, // uint32_t*                        pPropertyCount
-        DE_NULL);            // VkDisplayPlaneProperties2KHR*    pProperties
+        nullptr);            // VkDisplayPlaneProperties2KHR*    pProperties
 
     if (result != VK_SUCCESS && result != VK_INCOMPLETE && result != VK_ERROR_OUT_OF_HOST_MEMORY &&
         result != VK_ERROR_OUT_OF_DEVICE_MEMORY)
@@ -1876,10 +1879,10 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
         const VkStructureType queryStructureType = VK_STRUCTURE_TYPE_DISPLAY_PLANE_PROPERTIES_2_KHR;
         const VkDisplayPlaneProperties2KHR nonUpdatedPlaneProperties2 = {
             queryStructureType,       // VkStructureType                sType
-            DE_NULL,                  // void*                        pNext
+            nullptr,                  // void*                        pNext
             nonUpdatedPlaneProperties // VkDisplayPlanePropertiesKHR    displayPlaneProperties
         };
-        const VkDisplayKHR canaryDisplay = static_cast<VkDisplayKHR>(0xABCDEF11);
+        const VkDisplayKHR canaryDisplay = INVALID_DISPLAY;
         const uint32_t canaryItemCount   = 1;
         std::vector<VkDisplayPlaneProperties2KHR> planeProps2(planeCountRequested + canaryItemCount,
                                                               nonUpdatedPlaneProperties2);
@@ -1917,7 +1920,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
             results.check(properties2.sType == queryStructureType,
                           "sType has changed to " + de::toString(properties2.sType));
 
-            results.check(properties2.pNext == DE_NULL, "pNext has changed to " + de::toString(properties2.pNext));
+            results.check(properties2.pNext == nullptr, "pNext has changed to " + de::toString(properties2.pNext));
 
             validateDisplayPlaneProperties(results, properties, nonUpdatedPlaneProperties, displaySet);
 
@@ -1953,7 +1956,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneCapabilities2KHR
     result = m_vki.getPhysicalDeviceDisplayPlaneProperties2KHR(
         m_physicalDevice,    // VkPhysicalDevice                    physicalDevice
         &planeCountReported, // uint32_t*                        pPropertyCount
-        DE_NULL);            // VkDisplayPlaneProperties2KHR*    pProperties
+        nullptr);            // VkDisplayPlaneProperties2KHR*    pProperties
 
     if (result != VK_SUCCESS)
         TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
@@ -1995,7 +1998,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneCapabilities2KHR
                 const uint32_t unrecognizedAlphaFlags   = ~RECOGNIZED_DISPLAY_PLANE_ALPHA_FLAGS;
                 const VkDisplayPlaneInfo2KHR planeInfo2 = {
                     VK_STRUCTURE_TYPE_DISPLAY_PLANE_INFO_2_KHR, // VkStructureType    sType
-                    DE_NULL,                                    // const void*        pNext
+                    nullptr,                                    // const void*        pNext
                     displayMode,                                // VkDisplayModeKHR    mode
                     planeIndex                                  // uint32_t            planeIndex
                 };
@@ -2013,7 +2016,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneCapabilities2KHR
                 const VkStructureType queryStructureType          = VK_STRUCTURE_TYPE_DISPLAY_PLANE_CAPABILITIES_2_KHR;
                 VkDisplayPlaneCapabilities2KHR planeCapabilities2 = {
                     queryStructureType, // VkStructureType                    sType
-                    DE_NULL,            // void*                            pNext
+                    nullptr,            // void*                            pNext
                     planeCapabilities   // VkDisplayPlaneCapabilitiesKHR    capabilities
                 };
                 tcu::ResultCollector results(m_log);
@@ -2028,7 +2031,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneCapabilities2KHR
                 results.check(planeCapabilities2.sType == queryStructureType,
                               "sType has changed to " + de::toString(planeCapabilities2.sType));
 
-                results.check(planeCapabilities2.pNext == DE_NULL,
+                results.check(planeCapabilities2.pNext == nullptr,
                               "pNext has changed to " + de::toString(planeCapabilities2.pNext));
 
                 // Validate results returned by driver in planeCapabilities2 using non-updated planeCapabilities
@@ -2076,7 +2079,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModeProperties2KHR(vo
         result = m_vki.getDisplayModeProperties2KHR(m_physicalDevice, // VkPhysicalDevice                physicalDevice
                                                     display,          // VkDisplayKHR                    display
                                                     &modesCountReported, // uint32_t*                    pPropertyCount
-                                                    DE_NULL);            // VkDisplayModeProperties2KHR*    pProperties
+                                                    nullptr);            // VkDisplayModeProperties2KHR*    pProperties
 
         // Test the call correctly writes data in various size arrays
         for (uint32_t modesCountRequested = 0; modesCountRequested < modesCountReported + 2;
@@ -2094,10 +2097,10 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModeProperties2KHR(vo
             const VkStructureType queryStructureType = VK_STRUCTURE_TYPE_DISPLAY_MODE_PROPERTIES_2_KHR;
             const VkDisplayModeProperties2KHR nonUpdatedModeProperties2 = {
                 queryStructureType,      // VkStructureType                sType
-                DE_NULL,                 // void*                        pNext
+                nullptr,                 // void*                        pNext
                 nonUpdatedModeProperties // VkDisplayModePropertiesKHR    displayModeProperties
             };
-            const VkDisplayModeKHR canaryDisplayMode = static_cast<VkDisplayModeKHR>(0xABCDEF11);
+            const VkDisplayModeKHR canaryDisplayMode = INVALID_DISPLAY_MODE;
             const uint32_t canaryItemCount           = 1;
             std::vector<VkDisplayModeProperties2KHR> modesProperties2(modesCountRequested + canaryItemCount,
                                                                       nonUpdatedModeProperties2);
@@ -2136,7 +2139,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModeProperties2KHR(vo
                 results.check(properties2.sType == queryStructureType,
                               "sType has changed to " + de::toString(properties2.sType));
 
-                results.check(properties2.pNext == DE_NULL, "pNext has changed to " + de::toString(properties2.pNext));
+                results.check(properties2.pNext == nullptr, "pNext has changed to " + de::toString(properties2.pNext));
 
                 validateDisplayModeProperties(results, properties, nonUpdatedModeProperties);
 

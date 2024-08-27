@@ -187,7 +187,7 @@ SamplePosRasterizationTest::SamplePosRasterizationTest(Context &context, const c
     , m_vaoID(0)
     , m_vboID(0)
     , m_subpixelBits(0)
-    , m_samplerProgram(DE_NULL)
+    , m_samplerProgram(nullptr)
     , m_samplerProgramPosLoc(-1)
     , m_samplerProgramSamplerLoc(-1)
     , m_samplerProgramSampleNdxLoc(-1)
@@ -321,7 +321,7 @@ void SamplePosRasterizationTest::deinit(void)
     if (m_samplerProgram)
     {
         delete m_samplerProgram;
-        m_samplerProgram = DE_NULL;
+        m_samplerProgram = nullptr;
     }
 }
 
@@ -413,7 +413,7 @@ void SamplePosRasterizationTest::genMultisampleTexture(void)
     gl.viewport(0, 0, m_canvasSize, m_canvasSize);
     gl.clearColor(0, 0, 0, 1);
     gl.clear(GL_COLOR_BUFFER_BIT);
-    gl.vertexAttribPointer(posLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(posLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(posLoc);
     GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
 
@@ -507,7 +507,7 @@ void SamplePosRasterizationTest::drawSample(tcu::Surface &dst, int sampleNdx)
     gl.viewport(0, 0, m_canvasSize, m_canvasSize);
     gl.clearColor(0, 0, 0, 1);
     gl.clear(GL_COLOR_BUFFER_BIT);
-    gl.vertexAttribPointer(m_samplerProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(m_samplerProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(m_samplerProgramPosLoc);
     GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
 
@@ -616,11 +616,11 @@ SampleMaskCase::SampleMaskCase(Context &context, const char *name, const char *d
     , m_vaoID(0)
     , m_vboID(0)
     , m_fboID(0)
-    , m_samplerProgram(DE_NULL)
+    , m_samplerProgram(nullptr)
     , m_samplerProgramPosLoc(-1)
     , m_samplerProgramSamplerLoc(-1)
     , m_samplerProgramSampleNdxLoc(-1)
-    , m_alphaProgram(DE_NULL)
+    , m_alphaProgram(nullptr)
     , m_alphaProgramPosLoc(-1)
 {
 }
@@ -756,12 +756,12 @@ void SampleMaskCase::deinit(void)
     if (m_samplerProgram)
     {
         delete m_samplerProgram;
-        m_samplerProgram = DE_NULL;
+        m_samplerProgram = nullptr;
     }
     if (m_alphaProgram)
     {
         delete m_alphaProgram;
-        m_alphaProgram = DE_NULL;
+        m_alphaProgram = nullptr;
     }
 }
 
@@ -967,7 +967,7 @@ void SampleMaskCase::updateTexture(int sample)
 
     gl.bindVertexArray(m_vaoID);
     gl.bindBuffer(GL_ARRAY_BUFFER, m_vboID);
-    gl.vertexAttribPointer(m_alphaProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(m_alphaProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(m_alphaProgramPosLoc);
     GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
 
@@ -1067,7 +1067,7 @@ void SampleMaskCase::drawSample(tcu::Surface &dst, int sample)
     gl.viewport(0, 0, m_canvasSize, m_canvasSize);
     gl.clearColor(0, 0, 0, 1);
     gl.clear(GL_COLOR_BUFFER_BIT);
-    gl.vertexAttribPointer(m_samplerProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(m_samplerProgramPosLoc, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(m_samplerProgramPosLoc);
     GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
 
@@ -1187,8 +1187,8 @@ MultisampleTextureUsageCase::MultisampleTextureUsageCase(Context &ctx, const cha
     , m_fboID(0)
     , m_vaoID(0)
     , m_textureID(0)
-    , m_drawShader(DE_NULL)
-    , m_samplerShader(DE_NULL)
+    , m_drawShader(nullptr)
+    , m_samplerShader(nullptr)
     , m_isColorFormat(m_type == TEXTURE_COLOR_2D || m_type == TEXTURE_COLOR_2D_ARRAY)
     , m_isSignedFormat(m_type == TEXTURE_INT_2D || m_type == TEXTURE_INT_2D_ARRAY)
     , m_isUnsignedFormat(m_type == TEXTURE_UINT_2D || m_type == TEXTURE_UINT_2D_ARRAY)
@@ -1330,13 +1330,13 @@ void MultisampleTextureUsageCase::deinit(void)
     if (m_drawShader)
     {
         delete m_drawShader;
-        m_drawShader = DE_NULL;
+        m_drawShader = nullptr;
     }
 
     if (m_samplerShader)
     {
         delete m_samplerShader;
-        m_samplerShader = DE_NULL;
+        m_samplerShader = nullptr;
     }
 }
 
@@ -1580,7 +1580,7 @@ void MultisampleTextureUsageCase::renderToTexture(float value)
     if (m_vaoID)
         gl.bindVertexArray(m_vaoID);
 
-    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(posLocation);
 
     gl.useProgram(m_drawShader->getProgram());
@@ -1642,7 +1642,7 @@ void MultisampleTextureUsageCase::sampleTexture(tcu::Surface &dst, float value)
 
     // setup shader and draw
 
-    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, DE_NULL);
+    gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
     gl.enableVertexAttribArray(posLocation);
 
     gl.useProgram(m_samplerShader->getProgram());

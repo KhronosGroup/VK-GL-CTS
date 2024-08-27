@@ -107,8 +107,8 @@ private:
             expected_gen_point_mode_value          = 0;
             expected_gen_spacing_value             = 0;
             expected_gen_vertex_order_value        = 0;
-            tc_body                                = DE_NULL;
-            te_body                                = DE_NULL;
+            tc_body                                = nullptr;
+            te_body                                = nullptr;
         }
     } _test_descriptor;
 

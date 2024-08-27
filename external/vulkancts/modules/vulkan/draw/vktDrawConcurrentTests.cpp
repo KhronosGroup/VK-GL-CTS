@@ -130,7 +130,7 @@ tcu::TestStatus ConcurrentDraw::iterate(void)
     VkPhysicalDeviceFeatures deviceFeatures;
     const float queuePriority = 1.0f;
     VkDeviceQueueCreateInfo queueInfos;
-    Queue computeQueue = {DE_NULL, (uint32_t)NO_MATCH_FOUND};
+    Queue computeQueue = {nullptr, (uint32_t)NO_MATCH_FOUND};
 
     // Set up compute
 
@@ -152,7 +152,7 @@ tcu::TestStatus ConcurrentDraw::iterate(void)
     deMemset(&queueInfo, 0, sizeof(queueInfo));
 
     queueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueInfo.pNext            = DE_NULL;
+    queueInfo.pNext            = nullptr;
     queueInfo.flags            = (VkDeviceQueueCreateFlags)0u;
     queueInfo.queueFamilyIndex = computeQueue.queueFamilyIndex;
     queueInfo.queueCount       = 1;
@@ -163,7 +163,7 @@ tcu::TestStatus ConcurrentDraw::iterate(void)
     deMemset(&deviceInfo, 0, sizeof(deviceInfo));
     instanceDriver.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 
-    void *pNext = DE_NULL;
+    void *pNext = nullptr;
 #ifdef CTS_USES_VULKANSC
     VkDeviceObjectReservationCreateInfo memReservationInfo =
         m_context.getTestContext().getCommandLine().isSubProcess() ? m_context.getResourceInterface()->getStatMax() :
@@ -183,7 +183,7 @@ tcu::TestStatus ConcurrentDraw::iterate(void)
         {
             pcCI = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                     VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                 m_context.getResourceInterface()->getCacheDataSize(),     // uintptr_t initialDataSize;
@@ -205,9 +205,9 @@ tcu::TestStatus ConcurrentDraw::iterate(void)
     deviceInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceInfo.pNext                   = pNext;
     deviceInfo.enabledExtensionCount   = 0u;
-    deviceInfo.ppEnabledExtensionNames = DE_NULL;
+    deviceInfo.ppEnabledExtensionNames = nullptr;
     deviceInfo.enabledLayerCount       = 0u;
-    deviceInfo.ppEnabledLayerNames     = DE_NULL;
+    deviceInfo.ppEnabledLayerNames     = nullptr;
     deviceInfo.pEnabledFeatures        = &deviceFeatures;
     deviceInfo.queueCreateInfoCount    = 1;
     deviceInfo.pQueueCreateInfos       = &queueInfos;
@@ -304,26 +304,24 @@ tcu::TestStatus ConcurrentDraw::iterate(void)
     beginCommandBuffer(vk, *computeCommandBuffer);
     vk.cmdBindPipeline(*computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     vk.cmdBindDescriptorSets(*computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
     vk.cmdPipelineBarrier(*computeCommandBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &hostWriteBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier, 0, nullptr);
     vk.cmdDispatch(*computeCommandBuffer, 1, 1, 1);
     vk.cmdPipelineBarrier(*computeCommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &shaderWriteBarrier, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier, 0, nullptr);
     endCommandBuffer(vk, *computeCommandBuffer);
 
     const VkSubmitInfo submitInfo = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-        DE_NULL,                               // pNext
-        0u,                                    // waitSemaphoreCount
-        DE_NULL,                               // pWaitSemaphores
-        (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-        1u,                                    // commandBufferCount
-        &computeCommandBuffer.get(),           // pCommandBuffers
-        0u,                                    // signalSemaphoreCount
-        DE_NULL                                // pSignalSemaphores
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+        nullptr,                       // pNext
+        0u,                            // waitSemaphoreCount
+        nullptr,                       // pWaitSemaphores
+        nullptr,                       // pWaitDstStageMask
+        1u,                            // commandBufferCount
+        &computeCommandBuffer.get(),   // pCommandBuffers
+        0u,                            // signalSemaphoreCount
+        nullptr                        // pSignalSemaphores
     };
 
     // Set up draw
@@ -404,25 +402,25 @@ tcu::TestStatus ConcurrentDraw::iterate(void)
 
     VkDeviceGroupSubmitInfo deviceGroupSubmitInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         0u,                                         // uint32_t waitSemaphoreCount;
-        DE_NULL,                                    // const uint32_t* pWaitSemaphoreDeviceIndices;
+        nullptr,                                    // const uint32_t* pWaitSemaphoreDeviceIndices;
         1u,                                         // uint32_t commandBufferCount;
         &deviceMask,                                // const uint32_t* pCommandBufferDeviceMasks;
         0u,                                         // uint32_t signalSemaphoreCount;
-        DE_NULL,                                    // const uint32_t* pSignalSemaphoreDeviceIndices;
+        nullptr,                                    // const uint32_t* pSignalSemaphoreDeviceIndices;
     };
 
     const VkSubmitInfo drawSubmitInfo = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO,                      // VkStructureType sType;
-        useDeviceGroups ? &deviceGroupSubmitInfo : DE_NULL, // const void* pNext;
+        useDeviceGroups ? &deviceGroupSubmitInfo : nullptr, // const void* pNext;
         0u,                                                 // uint32_t waitSemaphoreCount;
-        DE_NULL,                                            // const VkSemaphore* pWaitSemaphores;
-        (const VkPipelineStageFlags *)DE_NULL,              // const VkPipelineStageFlags* pWaitDstStageMask;
+        nullptr,                                            // const VkSemaphore* pWaitSemaphores;
+        nullptr,                                            // const VkPipelineStageFlags* pWaitDstStageMask;
         1u,                                                 // uint32_t commandBufferCount;
         &drawCommandBuffer,                                 // const VkCommandBuffer* pCommandBuffers;
         0u,                                                 // uint32_t signalSemaphoreCount;
-        DE_NULL,                                            // const VkSemaphore* pSignalSemaphores;
+        nullptr,                                            // const VkSemaphore* pSignalSemaphores;
     };
 
     const Unique<VkFence> computeFence(createFence(vk, *computeDevice));

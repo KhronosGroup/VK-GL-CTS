@@ -166,13 +166,13 @@ StateObjects::StateObjects(const vk::DeviceInterface &vk, vkt::Context &context,
         renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
                                                            0,                                   // flags
                                                            0,                                   // inputCount
-                                                           DE_NULL,                             // pInputAttachments
+                                                           nullptr,                             // pInputAttachments
                                                            1,                                   // colorCount
                                                            &colorAttachmentReference,           // pColorAttachments
-                                                           DE_NULL,                             // pResolveAttachments
+                                                           nullptr,                             // pResolveAttachments
                                                            depthAttachmentReference, // depthStencilAttachment
                                                            0,                        // preserveCount
-                                                           DE_NULL));                // preserveAttachments
+                                                           nullptr));                // preserveAttachments
 
         m_renderPass = vk::createRenderPass(vk, device, &renderPassCreateInfo);
 
@@ -329,7 +329,7 @@ PrimaryCommandBufferConcurrentTestInstance::PrimaryCommandBufferConcurrentTestIn
 
         vk::VkQueryPoolCreateInfo queryPoolCreateInfo = {
             vk::VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             0u,
             static_cast<vk::VkQueryType>(poolNdx),
             NUM_QUERIES_IN_POOL,
@@ -338,7 +338,7 @@ PrimaryCommandBufferConcurrentTestInstance::PrimaryCommandBufferConcurrentTestIn
         if (poolNdx == QUERY_TYPE_PIPELINE_STATISTICS)
             queryPoolCreateInfo.pipelineStatistics = vk::VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT;
 
-        m_queryPools[poolNdx] = createQueryPool(vk, device, &queryPoolCreateInfo, /*pAllocator*/ DE_NULL);
+        m_queryPools[poolNdx] = createQueryPool(vk, device, &queryPoolCreateInfo, /*pAllocator*/ nullptr);
     }
 
     std::vector<tcu::Vec4> vertices(NUM_VERTICES_IN_DRAWCALL);
@@ -617,7 +617,7 @@ SecondaryCommandBufferConcurrentTestInstance::SecondaryCommandBufferConcurrentTe
 
         vk::VkQueryPoolCreateInfo queryPoolCreateInfo = {
             vk::VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
-            DE_NULL,
+            nullptr,
             0u,
             static_cast<vk::VkQueryType>(poolNdx),
             NUM_QUERIES_IN_POOL,
@@ -626,7 +626,7 @@ SecondaryCommandBufferConcurrentTestInstance::SecondaryCommandBufferConcurrentTe
         if (poolNdx == QUERY_TYPE_PIPELINE_STATISTICS)
             queryPoolCreateInfo.pipelineStatistics = vk::VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT;
 
-        m_queryPools[poolNdx] = createQueryPool(vk, device, &queryPoolCreateInfo, /*pAllocator*/ DE_NULL);
+        m_queryPools[poolNdx] = createQueryPool(vk, device, &queryPoolCreateInfo, /*pAllocator*/ nullptr);
     }
 
     std::vector<tcu::Vec4> vertices(NUM_VERTICES_IN_DRAWCALL);
@@ -644,12 +644,12 @@ void beginSecondaryCommandBuffer(const vk::DeviceInterface &vk, const vk::VkComm
                                  const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo)
 {
     const vk::VkCommandBufferUsageFlags flags =
-        bufferInheritanceInfo.renderPass != DE_NULL ?
+        bufferInheritanceInfo.renderPass != VK_NULL_HANDLE ?
             (vk::VkCommandBufferUsageFlags)vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT :
             (vk::VkCommandBufferUsageFlags)0u;
     const vk::VkCommandBufferBeginInfo beginInfo = {
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                         // pNext
+        nullptr,                                         // pNext
         flags,                                           // flags
         &bufferInheritanceInfo,                          // pInheritanceInfo
     };
@@ -677,7 +677,7 @@ tcu::TestStatus SecondaryCommandBufferConcurrentTestInstance::iterate(void)
         // Begin secondary command buffer
         const vk::VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
             vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-            DE_NULL,
+            nullptr,
             *m_stateObjects->m_renderPass,         // renderPass
             0u,                                    // subpass
             *m_stateObjects->m_framebuffer,        // framebuffer

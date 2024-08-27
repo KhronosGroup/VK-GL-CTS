@@ -814,7 +814,7 @@ ConstructorOp::~ConstructorOp(void)
 Expression *ConstructorOp::createNextChild(GeneratorState &state)
 {
     int numChildren   = (int)m_inputExpressions.size();
-    Expression *child = DE_NULL;
+    Expression *child = nullptr;
 
     // \note Created in reverse order!
     if (numChildren < (int)m_inputValueRanges.size())
@@ -894,8 +894,8 @@ void ConstructorOp::evaluate(ExecutionContext &evalCtx)
 
 AssignOp::AssignOp(GeneratorState &state, ConstValueRangeAccess valueRange)
     : m_valueRange(valueRange)
-    , m_lvalueExpr(DE_NULL)
-    , m_rvalueExpr(DE_NULL)
+    , m_lvalueExpr(nullptr)
+    , m_rvalueExpr(nullptr)
 {
     if (m_valueRange.getType().isVoid())
     {
@@ -992,7 +992,7 @@ float AssignOp::getWeight(const GeneratorState &state, ConstValueRangeAccess val
 
 Expression *AssignOp::createNextChild(GeneratorState &state)
 {
-    if (m_lvalueExpr == DE_NULL)
+    if (m_lvalueExpr == nullptr)
     {
         // Construct lvalue
         // \todo [2011-03-14 pyry] Proper l-value generation:
@@ -1003,14 +1003,14 @@ Expression *AssignOp::createNextChild(GeneratorState &state)
         m_lvalueExpr = Expression::createRandomLValue(state, m_valueRange.asAccess());
         return m_lvalueExpr;
     }
-    else if (m_rvalueExpr == DE_NULL)
+    else if (m_rvalueExpr == nullptr)
     {
         // Construct value expr
         m_rvalueExpr = Expression::createRandom(state, m_valueRange.asAccess());
         return m_rvalueExpr;
     }
     else
-        return DE_NULL;
+        return nullptr;
 }
 
 void AssignOp::tokenize(GeneratorState &state, TokenStream &str) const
@@ -1316,7 +1316,7 @@ void VariableAccess::evaluate(ExecutionContext &evalCtx)
     m_valueAccess = evalCtx.getValue(m_variable);
 }
 
-ParenOp::ParenOp(GeneratorState &state, ConstValueRangeAccess valueRange) : m_valueRange(valueRange), m_child(DE_NULL)
+ParenOp::ParenOp(GeneratorState &state, ConstValueRangeAccess valueRange) : m_valueRange(valueRange), m_child(nullptr)
 {
     DE_UNREF(state);
 }
@@ -1328,13 +1328,13 @@ ParenOp::~ParenOp(void)
 
 Expression *ParenOp::createNextChild(GeneratorState &state)
 {
-    if (m_child == DE_NULL)
+    if (m_child == nullptr)
     {
         m_child = Expression::createRandom(state, m_valueRange.asAccess());
         return m_child;
     }
     else
-        return DE_NULL;
+        return nullptr;
 }
 
 void ParenOp::tokenize(GeneratorState &state, TokenStream &str) const
@@ -1367,7 +1367,7 @@ const int swizzlePrecedence = 2;
 SwizzleOp::SwizzleOp(GeneratorState &state, ConstValueRangeAccess valueRange)
     : m_outValueRange(valueRange)
     , m_numInputElements(0)
-    , m_child(DE_NULL)
+    , m_child(nullptr)
 {
     DE_ASSERT(!m_outValueRange.getType().isVoid()); // \todo [2011-06-13 pyry] Void support
     DE_ASSERT(m_outValueRange.getType().isFloatOrVec() || m_outValueRange.getType().isIntOrVec() ||
@@ -1407,7 +1407,7 @@ SwizzleOp::~SwizzleOp(void)
 Expression *SwizzleOp::createNextChild(GeneratorState &state)
 {
     if (m_child)
-        return DE_NULL;
+        return nullptr;
 
     // Compute input value range.
     VariableType inVarType  = VariableType(m_outValueRange.getType().getBaseType(), m_numInputElements);
@@ -1439,7 +1439,7 @@ void SwizzleOp::tokenize(GeneratorState &state, TokenStream &str) const
     const char *rgbaSet[]   = {"r", "g", "b", "a"};
     const char *xyzwSet[]   = {"x", "y", "z", "w"};
     const char *stpqSet[]   = {"s", "t", "p", "q"};
-    const char **swizzleSet = DE_NULL;
+    const char **swizzleSet = nullptr;
 
     switch (state.getRandom().getInt(0, 2))
     {
@@ -1514,8 +1514,8 @@ static int countSamplers(const VariableManager &varManager, VariableType::Type s
 
 TexLookup::TexLookup(GeneratorState &state, ConstValueRangeAccess valueRange)
     : m_type(TYPE_LAST)
-    , m_coordExpr(DE_NULL)
-    , m_lodBiasExpr(DE_NULL)
+    , m_coordExpr(nullptr)
+    , m_lodBiasExpr(nullptr)
     , m_valueType(VariableType::TYPE_FLOAT, 4)
     , m_value(m_valueType)
 {
@@ -1648,7 +1648,7 @@ Expression *TexLookup::createNextChild(GeneratorState &state)
         return m_coordExpr;
     }
 
-    return DE_NULL; // Done.
+    return nullptr; // Done.
 }
 
 void TexLookup::tokenize(GeneratorState &state, TokenStream &str) const

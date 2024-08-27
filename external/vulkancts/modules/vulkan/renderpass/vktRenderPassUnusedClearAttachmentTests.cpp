@@ -343,7 +343,7 @@ Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice vkDevice
 
     // Create attachment descriptions.
     const AttachmentDesc attachmentDescription(
-        DE_NULL,                                  // const void*                        pNext
+        nullptr,                                  // const void*                        pNext
         (VkAttachmentDescriptionFlags)0,          // VkAttachmentDescriptionFlags        flags
         FORMAT_COLOR,                             // VkFormat                            format
         VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits            samples
@@ -388,7 +388,7 @@ Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice vkDevice
     for (size_t i = 0; i < testParams.colorUsed.size(); ++i)
     {
         attachmentReferences.push_back(
-            AttachmentRef(DE_NULL, // const void*            pNext
+            AttachmentRef(nullptr, // const void*            pNext
                           (testParams.colorUsed[i] ? static_cast<uint32_t>(i) :
                                                      VK_ATTACHMENT_UNUSED), // uint32_t                attachment
                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,         // VkImageLayout        layout
@@ -400,43 +400,43 @@ Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice vkDevice
     if (isDepthStencil)
     {
         depthAttachmentRef.reset(new AttachmentRef(
-            DE_NULL,
+            nullptr,
             (testParams.depthStencilUsed ? static_cast<uint32_t>(testParams.colorUsed.size()) : VK_ATTACHMENT_UNUSED),
             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, dsClearAspectMask));
     }
 
     // Create subpass description with the previous color attachment references.
     const SubpassDesc subpassDescription(
-        DE_NULL,
+        nullptr,
         (VkSubpassDescriptionFlags)0,                       // VkSubpassDescriptionFlags        flags
         VK_PIPELINE_BIND_POINT_GRAPHICS,                    // VkPipelineBindPoint                pipelineBindPoint
         0u,                                                 // uint32_t                            viewMask
         0u,                                                 // uint32_t                            inputAttachmentCount
-        DE_NULL,                                            // const VkAttachmentReference*        pInputAttachments
+        nullptr,                                            // const VkAttachmentReference*        pInputAttachments
         static_cast<uint32_t>(attachmentReferences.size()), // uint32_t                            colorAttachmentCount
         (attachmentReferences.empty() ?
-             DE_NULL :
+             nullptr :
              attachmentReferences.data()), // const VkAttachmentReference*        pColorAttachments
-        DE_NULL,                           // const VkAttachmentReference*        pResolveAttachments
+        nullptr,                           // const VkAttachmentReference*        pResolveAttachments
         (depthAttachmentRef ? depthAttachmentRef.get() :
-                              DE_NULL), // const VkAttachmentReference*        pDepthStencilAttachment
+                              nullptr), // const VkAttachmentReference*        pDepthStencilAttachment
         0u,                             // uint32_t                            preserveAttachmentCount
-        DE_NULL                         // const uint32_t*                    pPreserveAttachments
+        nullptr                         // const uint32_t*                    pPreserveAttachments
     );
 
     const RenderPassCreateInfo renderPassInfo(
-        DE_NULL,                                              // const void*                        pNext
+        nullptr,                                              // const void*                        pNext
         (VkRenderPassCreateFlags)0,                           // VkRenderPassCreateFlags            flags
         static_cast<uint32_t>(attachmentDescriptions.size()), // uint32_t                            attachmentCount
         (attachmentDescriptions.empty() ?
-             DE_NULL :
+             nullptr :
              attachmentDescriptions.data()), // const VkAttachmentDescription*    pAttachments
         1u,                                  // uint32_t                            subpassCount
         &subpassDescription,                 // const VkSubpassDescription*        pSubpasses
         0u,                                  // uint32_t                            dependencyCount
-        DE_NULL,                             // const VkSubpassDependency*        pDependencies
+        nullptr,                             // const VkSubpassDependency*        pDependencies
         0u,                                  // uint32_t                            correlatedViewMaskCount
-        DE_NULL                              // const uint32_t*                    pCorrelatedViewMasks
+        nullptr                              // const uint32_t*                    pCorrelatedViewMasks
     );
 
     return renderPassInfo.createRenderPass(vk, vkDevice);
@@ -477,7 +477,7 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
     {
         const VkImageCreateInfo colorImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             0u,                                  // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
             FORMAT_COLOR,                        // VkFormat format;
@@ -496,7 +496,7 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
 
         const VkImageCreateInfo depthImageParams = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             0u,                                  // VkImageCreateFlags flags;
             VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
             m_testParams.depthStencilFormat,     // VkFormat format;
@@ -526,7 +526,7 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
             {
                 const VkImageViewCreateInfo colorAttachmentViewParams = {
                     VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
-                    DE_NULL,                                    // const void* pNext;
+                    nullptr,                                    // const void* pNext;
                     0u,                                         // VkImageViewCreateFlags flags;
                     *m_colorImages.back(),                      // VkImage image;
                     VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
@@ -551,7 +551,7 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
                 // From undefined layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL.
                 const VkImageMemoryBarrier preImageBarrier = {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-                    DE_NULL,                                // const void* pNext;
+                    nullptr,                                // const void* pNext;
                     0u,                                     // VkAccessFlags srcAccessMask;
                     VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
                     VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
@@ -571,7 +571,7 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
                 // From VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL.
                 const VkImageMemoryBarrier postImageBarrier = {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType;
-                    DE_NULL,                                  // const void* pNext;
+                    nullptr,                                  // const void* pNext;
                     VK_ACCESS_TRANSFER_WRITE_BIT,             // VkAccessFlags srcAccessMask;
                     VK_ACCESS_SHADER_READ_BIT,                // VkAccessFlags dstAccessMask;
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,     // VkImageLayout oldLayout;
@@ -599,13 +599,11 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
                 // Clear image and transfer layout.
                 beginCommandBuffer(vk, *cmdBuffer);
                 vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                      (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                                      (const VkBufferMemoryBarrier *)DE_NULL, 1, &preImageBarrier);
+                                      (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &preImageBarrier);
                 vk.cmdClearColorImage(*cmdBuffer, *m_colorImages.back(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                       &m_initialColor.color, 1, &clearRange);
                 vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                                      (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                                      (const VkBufferMemoryBarrier *)DE_NULL, 1, &postImageBarrier);
+                                      (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
                 endCommandBuffer(vk, *cmdBuffer);
 
                 submitCommandsAndWait(vk, vkDevice, m_context.getUniversalQueue(), cmdBuffer.get());
@@ -628,7 +626,7 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
             {
                 const VkImageViewCreateInfo depthAttachmentViewParams = {
                     VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-                    DE_NULL,                                  // const void* pNext;
+                    nullptr,                                  // const void* pNext;
                     0u,                                       // VkImageViewCreateFlags flags;
                     *m_depthImage,                            // VkImage image;
                     VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -652,7 +650,7 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
                 // From undefined layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL.
                 const VkImageMemoryBarrier preImageBarrier = {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-                    DE_NULL,                                // const void* pNext;
+                    nullptr,                                // const void* pNext;
                     0u,                                     // VkAccessFlags srcAccessMask;
                     VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
                     VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
@@ -672,7 +670,7 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
                 // From VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL to VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL.
                 const VkImageMemoryBarrier postImageBarrier = {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType sType;
-                    DE_NULL,                                          // const void* pNext;
+                    nullptr,                                          // const void* pNext;
                     VK_ACCESS_TRANSFER_WRITE_BIT,                     // VkAccessFlags srcAccessMask;
                     VK_ACCESS_SHADER_READ_BIT,                        // VkAccessFlags dstAccessMask;
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,             // VkImageLayout oldLayout;
@@ -700,13 +698,11 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
                 // Clear image and transfer layout.
                 beginCommandBuffer(vk, *cmdBuffer);
                 vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                      (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                                      (const VkBufferMemoryBarrier *)DE_NULL, 1, &preImageBarrier);
+                                      (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &preImageBarrier);
                 vk.cmdClearDepthStencilImage(*cmdBuffer, *m_depthImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                              &m_initialColorDepth.depthStencil, 1, &clearRange);
                 vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                                      (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 0,
-                                      (const VkBufferMemoryBarrier *)DE_NULL, 1, &postImageBarrier);
+                                      (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
                 endCommandBuffer(vk, *cmdBuffer);
 
                 submitCommandsAndWait(vk, vkDevice, m_context.getUniversalQueue(), cmdBuffer.get());
@@ -735,11 +731,11 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,          // VkStructureType sType;
-            DE_NULL,                                            // const void* pNext;
+            nullptr,                                            // const void* pNext;
             0u,                                                 // VkFramebufferCreateFlags flags;
             *m_renderPass,                                      // VkRenderPass renderPass;
             static_cast<uint32_t>(imageViews.size()),           // uint32_t attachmentCount;
-            (imageViews.empty() ? DE_NULL : imageViews.data()), // const VkImageView* pAttachments;
+            (imageViews.empty() ? nullptr : imageViews.data()), // const VkImageView* pAttachments;
             kImageWidth,                                        // uint32_t width;
             kImageHeight,                                       // uint32_t height;
             1u                                                  // uint32_t layers;
@@ -752,21 +748,21 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
     {
         const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType                        sType
-            DE_NULL,                                             // const void*                            pNext
+            nullptr,                                             // const void*                            pNext
             0u,                                                  // VkDescriptorSetLayoutCreateFlags        flags
             0u,                                                  // uint32_t                                bindingCount
-            DE_NULL                                              // const VkDescriptorSetLayoutBinding*    pBindings
+            nullptr                                              // const VkDescriptorSetLayoutBinding*    pBindings
         };
         m_descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutParams);
 
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             0u,                                            // VkPipelineLayoutCreateFlags flags;
             1u,                                            // uint32_t setLayoutCount;
             &m_descriptorSetLayout.get(),                  // const VkDescriptorSetLayout* pSetLayouts;
             0u,                                            // uint32_t pushConstantRangeCount;
-            DE_NULL                                        // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -797,19 +793,19 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
 
         const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                                sType
-            DE_NULL,           // const void*                                    pNext
+            nullptr,           // const void*                                    pNext
             0u,                // VkPipelineColorBlendStateCreateFlags            flags
             VK_FALSE,          // VkBool32                                        logicOpEnable
             VK_LOGIC_OP_CLEAR, // VkLogicOp                                    logicOp
             static_cast<uint32_t>(
                 colorBlendAttachmentStates.size()), // uint32_t                                        attachmentCount
             (colorBlendAttachmentStates.empty() ?
-                 DE_NULL :
+                 nullptr :
                  colorBlendAttachmentStates.data()), // const VkPipelineColorBlendAttachmentState*    pAttachments
             {0.0f, 0.0f, 0.0f, 0.0f}                 // float                                        blendConstants[4]
         };
 
-        void *pNext = DE_NULL;
+        void *pNext = nullptr;
 #ifndef CTS_USES_VULKANSC
         const std::vector<VkFormat> colorAttachmentFormats(testParams.colorUsed.size(), FORMAT_COLOR);
         const bool hasDepth = m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
@@ -818,7 +814,7 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
                                 m_testParams.depthStencilType == DEPTH_STENCIL_STENCIL_ONLY;
         VkPipelineRenderingCreateInfoKHR renderingCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-            DE_NULL,
+            nullptr,
             0u,
             static_cast<uint32_t>(colorAttachmentFormats.size()),
             colorAttachmentFormats.data(),
@@ -845,12 +841,12 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context &co
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // const VkPrimitiveTopology                        topology
             0u,                                  // const uint32_t                                    subpass
             0u,                                  // const uint32_t                                    patchControlPoints
-            DE_NULL, // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
-            DE_NULL, // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
-            DE_NULL, // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
-            DE_NULL, // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
+            nullptr, // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
+            nullptr, // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
+            nullptr, // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
+            nullptr, // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
             &colorBlendStateCreateInfo, // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
-            DE_NULL,                    // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
+            nullptr,                    // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
             pNext);                     // const void*                                        pNext
     }
 
@@ -915,15 +911,15 @@ void UnusedClearAttachmentTestInstance::createCommandBuffer(const DeviceInterfac
 
     const VkRenderPassBeginInfo renderPassBeginInfo{
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                  // const void* pNext;
+        nullptr,                                  // const void* pNext;
         *m_renderPass,                            // VkRenderPass renderPass;
         *m_framebuffer,                           // VkFramebuffer framebuffer;
         renderArea,                               // VkRect2D renderArea;
         0u,                                       // uint32_t clearValueCount;
-        DE_NULL                                   // const VkClearValue* pClearValues;
+        nullptr                                   // const VkClearValue* pClearValues;
     };
 
-    const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
+    const typename RenderpassSubpass::SubpassBeginInfo subpassBeginInfo(nullptr, VK_SUBPASS_CONTENTS_INLINE);
     RenderpassSubpass::cmdBeginRenderPass(vk, *m_cmdBuffer, &renderPassBeginInfo, &subpassBeginInfo);
 
     vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
@@ -933,7 +929,7 @@ void UnusedClearAttachmentTestInstance::createCommandBuffer(const DeviceInterfac
                                1u, &clearRect);
     }
 
-    const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);
+    const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(nullptr);
     RenderpassSubpass::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
 
     endCommandBuffer(vk, *m_cmdBuffer);
@@ -982,30 +978,30 @@ void UnusedClearAttachmentTestInstance::createCommandBufferDynamicRendering(cons
     for (size_t i = 0; i < m_colorAttachmentViews.size(); ++i)
     {
         colorAttachments.push_back({
-            VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,              // VkStructureType sType;
-            DE_NULL,                                                      // const void* pNext;
-            (m_testParams.colorUsed[i]) ? *m_colorAttachmentViews[i] : 0, // VkImageView imageView;
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                     // VkImageLayout imageLayout;
-            VK_RESOLVE_MODE_NONE,                                         // VkResolveModeFlagBits resolveMode;
-            VK_NULL_HANDLE,                                               // VkImageView resolveImageView;
-            VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout resolveImageLayout;
-            VK_ATTACHMENT_LOAD_OP_LOAD,                                   // VkAttachmentLoadOp loadOp;
-            VK_ATTACHMENT_STORE_OP_STORE,                                 // VkAttachmentStoreOp storeOp;
-            m_clearColor                                                  // VkClearValue clearValue;
+            VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,                           // VkStructureType sType;
+            nullptr,                                                                   // const void* pNext;
+            (m_testParams.colorUsed[i]) ? *m_colorAttachmentViews[i] : VK_NULL_HANDLE, // VkImageView imageView;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                                  // VkImageLayout imageLayout;
+            VK_RESOLVE_MODE_NONE,         // VkResolveModeFlagBits resolveMode;
+            VK_NULL_HANDLE,               // VkImageView resolveImageView;
+            VK_IMAGE_LAYOUT_UNDEFINED,    // VkImageLayout resolveImageLayout;
+            VK_ATTACHMENT_LOAD_OP_LOAD,   // VkAttachmentLoadOp loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE, // VkAttachmentStoreOp storeOp;
+            m_clearColor                  // VkClearValue clearValue;
         });
     }
 
     VkRenderingAttachmentInfoKHR depthAttachment{
-        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,              // VkStructureType sType;
-        DE_NULL,                                                      // const void* pNext;
-        (m_testParams.depthStencilUsed) ? *m_depthAttachmentView : 0, // VkImageView imageView;
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,             // VkImageLayout imageLayout;
-        VK_RESOLVE_MODE_NONE,                                         // VkResolveModeFlagBits resolveMode;
-        VK_NULL_HANDLE,                                               // VkImageView resolveImageView;
-        VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout resolveImageLayout;
-        VK_ATTACHMENT_LOAD_OP_LOAD,                                   // VkAttachmentLoadOp loadOp;
-        VK_ATTACHMENT_STORE_OP_STORE,                                 // VkAttachmentStoreOp storeOp;
-        m_clearColorDepth                                             // VkClearValue clearValue;
+        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,                           // VkStructureType sType;
+        nullptr,                                                                   // const void* pNext;
+        (m_testParams.depthStencilUsed) ? *m_depthAttachmentView : VK_NULL_HANDLE, // VkImageView imageView;
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,                          // VkImageLayout imageLayout;
+        VK_RESOLVE_MODE_NONE,                                                      // VkResolveModeFlagBits resolveMode;
+        VK_NULL_HANDLE,                                                            // VkImageView resolveImageView;
+        VK_IMAGE_LAYOUT_UNDEFINED,                                                 // VkImageLayout resolveImageLayout;
+        VK_ATTACHMENT_LOAD_OP_LOAD,                                                // VkAttachmentLoadOp loadOp;
+        VK_ATTACHMENT_STORE_OP_STORE,                                              // VkAttachmentStoreOp storeOp;
+        m_clearColorDepth                                                          // VkClearValue clearValue;
     };
 
     const bool hasDepth = (m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
@@ -1022,7 +1018,7 @@ void UnusedClearAttachmentTestInstance::createCommandBufferDynamicRendering(cons
 
     VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,    // VkStructureType sType;
-        DE_NULL,                                                            // const void* pNext;
+        nullptr,                                                            // const void* pNext;
         0u,                                                                 // VkRenderingFlagsKHR flags;
         0u,                                                                 // uint32_t viewMask;
         static_cast<uint32_t>(colorAttachmentFormats.size()),               // uint32_t colorAttachmentCount;
@@ -1035,22 +1031,22 @@ void UnusedClearAttachmentTestInstance::createCommandBufferDynamicRendering(cons
     const VkCommandBufferInheritanceInfo bufferInheritanceInfo = initVulkanStructure(&inheritanceRenderingInfo);
     VkCommandBufferBeginInfo commandBufBeginParams{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
-        DE_NULL,                                     // const void* pNext;
+        nullptr,                                     // const void* pNext;
         VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, // VkCommandBufferUsageFlags flags;
         &bufferInheritanceInfo};
 
     VkRenderingInfoKHR renderingInfo{
         VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
-        DE_NULL,
+        nullptr,
         0u,                                             // VkRenderingFlagsKHR flags;
         renderArea,                                     // VkRect2D renderArea;
         1u,                                             // uint32_t layerCount;
         0u,                                             // uint32_t viewMask;
         static_cast<uint32_t>(colorAttachments.size()), // uint32_t colorAttachmentCount;
-        colorAttachments.empty() ? DE_NULL :
+        colorAttachments.empty() ? nullptr :
                                    colorAttachments.data(), // const VkRenderingAttachmentInfoKHR* pColorAttachments;
-        hasDepth ? &depthAttachment : DE_NULL,              // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
-        hasStencil ? &depthAttachment : DE_NULL,            // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+        hasDepth ? &depthAttachment : nullptr,              // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+        hasStencil ? &depthAttachment : nullptr,            // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
     };
 
     m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);

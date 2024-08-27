@@ -99,7 +99,7 @@ void recordCommands(Context &context, VkCommandBuffer cmdBuffer, VkImage image)
 
     const VkImageMemoryBarrier imageBarrier = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
-        DE_NULL,                                // const void*                pNext
+        nullptr,                                // const void*                pNext
         0,                                      // VkAccessFlags            srcAccessMask
         VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags            dstAccessMask
         VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout            oldLayout
@@ -116,8 +116,8 @@ void recordCommands(Context &context, VkCommandBuffer cmdBuffer, VkImage image)
         },                             // VkImageSubresourceRange    subresourceRange
     };
 
-    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, DE_NULL,
-                          0, DE_NULL, 1, &imageBarrier);
+    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr,
+                          0, nullptr, 1, &imageBarrier);
 
     const VkClearColorValue clearColor{{1.0f, 1.0f, 1.0f, 1.0f}};
     const VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
@@ -134,7 +134,7 @@ void submitCommands(ExtensionUse extensionUse, Context &context, VkCommandBuffer
 
     const VkFenceCreateInfo fenceParams = {
         VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType        sType
-        DE_NULL,                             // const void*            pNext
+        nullptr,                             // const void*            pNext
         0u,                                  // VkFenceCreateFlags    flags
     };
 
@@ -142,16 +142,16 @@ void submitCommands(ExtensionUse extensionUse, Context &context, VkCommandBuffer
 
     VkFrameBoundaryEXT frameBoundary = {
         VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT, // VkStructureType            sType
-        DE_NULL,                              // const void*                pNext
+        nullptr,                              // const void*                pNext
         0u,                                   // VkFrameBoundaryFlagsEXT    flags
         frameID,                              // uint64_t                    frameID
         (lastInFrame ? 1u : 0u),              // uint32_t                    imageCount
-        (lastInFrame ? pImages : DE_NULL),    // const VkImage*            pImages
+        (lastInFrame ? pImages : nullptr),    // const VkImage*            pImages
         0u,                                   // uint32_t bufferCount;
-        DE_NULL,                              // VkBuffer* pBuffers;
+        nullptr,                              // VkBuffer* pBuffers;
         0u,                                   // uint64_t                    tagName
         0u,                                   // size_t                    tagSize
-        DE_NULL,                              // const void*                pTag
+        nullptr,                              // const void*                pTag
     };
 
     if (lastInFrame)
@@ -165,12 +165,12 @@ void submitCommands(ExtensionUse extensionUse, Context &context, VkCommandBuffer
             VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType                sType
             &frameBoundary,                // const void*                    pNext
             0,                             // uint32_t                        waitSemaphoreCount
-            DE_NULL,                       // const VkSemaphore*            pWaitSemaphores
-            DE_NULL,                       // const VkPipelineStageFlags*    pWaitDstStageMask
+            nullptr,                       // const VkSemaphore*            pWaitSemaphores
+            nullptr,                       // const VkPipelineStageFlags*    pWaitDstStageMask
             1,                             // uint32_t                        commandBufferCount
             &cmdBuffer,                    // const VkCommandBuffer*        pCommandBuffers
             0u,                            // uint32_t                        signalSemaphoreCount
-            DE_NULL,                       // const VkSemaphore*            pSignalSemaphores
+            nullptr,                       // const VkSemaphore*            pSignalSemaphores
         };
 
         VK_CHECK(vk.queueSubmit(context.getUniversalQueue(), 1, &submitInfo, *fence));
@@ -180,7 +180,7 @@ void submitCommands(ExtensionUse extensionUse, Context &context, VkCommandBuffer
     {
         const VkCommandBufferSubmitInfo cmdBufferSubmitInfo = {
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO_KHR, // VkStructureType    sType
-            DE_NULL,                                          // const void*        pNext
+            nullptr,                                          // const void*        pNext
             cmdBuffer,                                        // VkCommandBuffer    commandBuffer
             0u,                                               // uint32_t            deviceMask
         };
@@ -190,11 +190,11 @@ void submitCommands(ExtensionUse extensionUse, Context &context, VkCommandBuffer
             &frameBoundary,                  // const void*                        pNext
             0u,                              // VkSubmitFlagsKHR                    flags
             0u,                              // uint32_t                            waitSemaphoreInfoCount
-            DE_NULL,                         // const VkSemaphoreSubmitInfo*        pWaitSemaphoreInfos
+            nullptr,                         // const VkSemaphoreSubmitInfo*        pWaitSemaphoreInfos
             1u,                              // uint32_t                            commandBufferInfoCount
             &cmdBufferSubmitInfo,            // const VkCommandBufferSubmitInfo*    pCommandBufferInfos
             0u,                              // uint32_t                            signalSemaphoreInfoCount
-            DE_NULL,                         // const VkSemaphoreSubmitInfo*        pSignalSemaphoreInfos
+            nullptr,                         // const VkSemaphoreSubmitInfo*        pSignalSemaphoreInfos
         };
 
         VK_CHECK(vk.queueSubmit2(context.getUniversalQueue(), 1, &submitInfo2KHR, *fence));
@@ -215,7 +215,7 @@ tcu::TestStatus testCase(Context &context, TestParams params)
     const VkExtent3D extent{16, 16, 1};
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                               // VkStructureType        sType
-        DE_NULL,                                                           // const void*            pNext
+        nullptr,                                                           // const void*            pNext
         0u,                                                                // VkImageCreateFlags    flags
         VK_IMAGE_TYPE_2D,                                                  // VkImageType            imageType
         VK_FORMAT_R8G8B8A8_UNORM,                                          // VkFormat                format
@@ -227,7 +227,7 @@ tcu::TestStatus testCase(Context &context, TestParams params)
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags    usage
         VK_SHARING_MODE_EXCLUSIVE,                                         // VkSharingMode        sharingMode
         0u,                        // uint32_t                queueFamilyIndexCount
-        (const uint32_t *)DE_NULL, // const uint32_t*        pQueueFamilyIndices
+        nullptr,                   // const uint32_t*        pQueueFamilyIndices
         VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout        initialLayout
     };
 
@@ -372,7 +372,7 @@ Move<VkSwapchainKHR> createSwapchain(Context &context, VkSurfaceKHR surface)
 
     const VkSwapchainCreateInfoKHR swapchainParams = {
         VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR, // VkStructureType                    sType
-        DE_NULL,                                     // const void*                        pNext
+        nullptr,                                     // const void*                        pNext
         0u,                                          // VkSwapchainCreateFlagsKHR        flags
         surface,                                     // VkSurfaceKHR                        surface
         std::max(1u, capabilities.minImageCount),    // uint32_t                            minImageCount
@@ -383,12 +383,12 @@ Move<VkSwapchainKHR> createSwapchain(Context &context, VkSurfaceKHR surface)
         VK_IMAGE_USAGE_TRANSFER_DST_BIT,             // VkImageUsageFlags                imageUsage
         VK_SHARING_MODE_EXCLUSIVE,                   // VkSharingMode                    imageSharingMode
         0u,                                          // uint32_t                            queueFamilyIndexCount
-        (const uint32_t *)DE_NULL,                   // const uint32_t*                    pQueueFamilyIndices
+        nullptr,                                     // const uint32_t*                    pQueueFamilyIndices
         capabilities.currentTransform,               // VkSurfaceTransformFlagBitsKHR    preTransform
         VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,           // VkCompositeAlphaFlagBitsKHR        compositeAlpha
         VK_PRESENT_MODE_FIFO_KHR,                    // VkPresentModeKHR                    presentMode
         VK_FALSE,                                    // VkBool32                            clipped
-        (VkSwapchainKHR)0                            // VkSwapchainKHR                    oldSwapchain
+        VK_NULL_HANDLE                               // VkSwapchainKHR                    oldSwapchain
     };
 
     return createSwapchainKHR(vk, vkDevice, &swapchainParams);
@@ -401,7 +401,7 @@ tcu::TestStatus testCaseWsi(Context &context, vk::wsi::Type wsiType)
     const VkInstance vkInstance  = context.getInstance();
     const VkDevice vkDevice      = context.getDevice();
 
-    const NativeObjects native(context, enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL),
+    const NativeObjects native(context, enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr),
                                wsiType);
     const Unique<VkSurfaceKHR> surface(wsi::createSurface(vki, vkInstance, wsiType, *native.display, *native.window,
                                                           context.getTestContext().getCommandLine()));
@@ -415,7 +415,7 @@ tcu::TestStatus testCaseWsi(Context &context, vk::wsi::Type wsiType)
 
     const VkSemaphoreCreateInfo semaphoreCreateInfo = {
         VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                 // const void* pNext;
+        nullptr,                                 // const void* pNext;
         0u,                                      // VkSemaphoreCreateFlags flags;
     };
 
@@ -437,27 +437,27 @@ tcu::TestStatus testCaseWsi(Context &context, vk::wsi::Type wsiType)
 
     const VkFrameBoundaryEXT frameBoundary = {
         VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT, // VkStructureType            sType
-        DE_NULL,                              // const void*                pNext
+        nullptr,                              // const void*                pNext
         VK_FRAME_BOUNDARY_FRAME_END_BIT_EXT,  // VkFrameBoundaryFlagsEXT    flags
         1,                                    // uint64_t                    frameID
         1u,                                   // uint32_t                    imageCount
         frameImages,                          // const VkImage*            pImages
         0u,                                   // uint32_t bufferCount;
-        DE_NULL,                              // VkBuffer* pBuffers;
+        nullptr,                              // VkBuffer* pBuffers;
         0u,                                   // uint64_t                    tagName
         0u,                                   // size_t                    tagSize
-        DE_NULL,                              // const void*                pTag
+        nullptr,                              // const void*                pTag
     };
 
     const VkPresentInfoKHR presentInfo = {
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, // VkStructureType sType;
         &frameBoundary,                     // const void* pNext;
         0U,                                 // uint32_t waitSemaphoreCount;
-        DE_NULL,                            // const VkSemaphore* pWaitSemaphores;
+        nullptr,                            // const VkSemaphore* pWaitSemaphores;
         1U,                                 // uint32_t swapchainCount;
         swapchains,                         // const VkSwapchainKHR* pSwapchains;
         &currentBuffer,                     // const uint32_t* pImageIndices;
-        DE_NULL,                            // VkResult* pResults;
+        nullptr,                            // VkResult* pResults;
     };
 
     VK_CHECK(vk.queuePresentKHR(context.getUniversalQueue(), &presentInfo));

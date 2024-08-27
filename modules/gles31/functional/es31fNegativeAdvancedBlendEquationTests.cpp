@@ -144,7 +144,7 @@ glw::GLenum getEquation(BlendEquation equation)
     default:
         DE_FATAL("Equation not supported.");
     }
-    return DE_NULL;
+    return 0;
 }
 
 std::string generateVertexShaderSource(NegativeTestContext &ctx)

@@ -4220,9 +4220,9 @@ void addShaderCode16BitStorageInputOutput16To16x2(vk::SourceCollections &dst, Te
                                   "                             OpReturn\n"
                                   "                             OpFunctionEnd\n");
 
-    dst.spirvAsmSources.add("vert", DE_NULL)
+    dst.spirvAsmSources.add("vert", nullptr)
         << vertexShader.specialize(spec) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-    dst.spirvAsmSources.add("frag", DE_NULL)
+    dst.spirvAsmSources.add("frag", nullptr)
         << fragmentShader.specialize(spec) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 
@@ -7003,7 +7003,8 @@ void addGraphics16BitStorageUniformFloat16To64Group(tcu::TestCaseGroup *testGrou
 
                 VulkanFeatures features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
-                features.coreFeatures.shaderFloat64 = true;
+                features.coreFeatures.shaderFloat64                  = true;
+                features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
                 createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions,
                                         testGroup, features);
@@ -7127,7 +7128,8 @@ void addGraphics16BitStorageUniformFloat16To64Group(tcu::TestCaseGroup *testGrou
 
                 VulkanFeatures features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
-                features.coreFeatures.shaderFloat64 = true;
+                features.coreFeatures.shaderFloat64                  = true;
+                features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
                 createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions,
                                         testGroup, features);
@@ -7255,7 +7257,8 @@ void addGraphics16BitStorageUniformFloat16To64Group(tcu::TestCaseGroup *testGrou
 
             VulkanFeatures features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
-            features.coreFeatures.shaderFloat64 = true;
+            features.coreFeatures.shaderFloat64                  = true;
+            features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
             createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup,
                                     features);
@@ -7282,8 +7285,9 @@ void addGraphics16BitStoragePushConstantFloat16To64Group(tcu::TestCaseGroup *tes
 
     extensions.push_back("VK_KHR_16bit_storage");
 
-    requiredFeatures.coreFeatures.shaderFloat64            = true;
-    requiredFeatures.ext16BitStorage.storagePushConstant16 = true;
+    requiredFeatures.coreFeatures.shaderFloat64                  = true;
+    requiredFeatures.ext16BitStorage.storagePushConstant16       = true;
+    requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
     fragments["capability"] = "OpCapability StoragePushConstant16\n"
                               "OpCapability Float64\n";
@@ -7785,6 +7789,7 @@ void addGraphics16BitStorageUniformFloat64To16Group(tcu::TestCaseGroup *testGrou
 
                 features                            = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
                 features.coreFeatures.shaderFloat64 = true;
+                features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
                 createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions,
                                         testGroup, features);
@@ -7883,6 +7888,7 @@ void addGraphics16BitStorageUniformFloat64To16Group(tcu::TestCaseGroup *testGrou
 
                 features                            = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
                 features.coreFeatures.shaderFloat64 = true;
+                features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
                 createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions,
                                         testGroup, features);
@@ -8007,6 +8013,7 @@ void addGraphics16BitStorageUniformFloat64To16Group(tcu::TestCaseGroup *testGrou
 
                 features                            = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
                 features.coreFeatures.shaderFloat64 = true;
+                features.coreFeatures.vertexPipelineStoresAndAtomics = true;
 
                 createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions,
                                         testGroup, features);

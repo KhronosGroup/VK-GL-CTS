@@ -140,13 +140,13 @@ StateObjects::StateObjects(const vk::DeviceInterface &vk, vkt::Context &context,
         renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
                                                            0,                                   // flags
                                                            0,                                   // inputCount
-                                                           DE_NULL,                             // pInputAttachments
+                                                           nullptr,                             // pInputAttachments
                                                            0,                                   // colorCount
-                                                           DE_NULL,                             // pColorAttachments
-                                                           DE_NULL,                             // pResolveAttachments
+                                                           nullptr,                             // pColorAttachments
+                                                           nullptr,                             // pResolveAttachments
                                                            depthAttachmentReference, // depthStencilAttachment
                                                            0,                        // preserveCount
-                                                           DE_NULL));                // preserveAttachments
+                                                           nullptr));                // preserveAttachments
 
         m_renderPass = vk::createRenderPass(vk, device, &renderPassCreateInfo);
 
@@ -203,13 +203,13 @@ StateObjects::StateObjects(const vk::DeviceInterface &vk, vkt::Context &context,
         renderPassCreateInfo.addSubpass(SubpassDescription(vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
                                                            0,                                   // flags
                                                            0,                                   // inputCount
-                                                           DE_NULL,                             // pInputAttachments
+                                                           nullptr,                             // pInputAttachments
                                                            1,                                   // colorCount
                                                            &colorAttachmentReference,           // pColorAttachments
-                                                           DE_NULL,                             // pResolveAttachments
+                                                           nullptr,                             // pResolveAttachments
                                                            depthAttachmentReference, // depthStencilAttachment
                                                            0,                        // preserveCount
-                                                           DE_NULL));                // preserveAttachments
+                                                           nullptr));                // preserveAttachments
 
         m_renderPass = vk::createRenderPass(vk, device, &renderPassCreateInfo);
 
@@ -687,17 +687,17 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
     {
         const vk::VkSubmitInfo submitInfoReset = {
             vk::VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-            DE_NULL,                           // const void* pNext;
+            nullptr,                           // const void* pNext;
             0u,                                // uint32_t waitSemaphoreCount;
-            DE_NULL,                           // const VkSemaphore* pWaitSemaphores;
-            (const vk::VkPipelineStageFlags *)DE_NULL,
+            nullptr,                           // const VkSemaphore* pWaitSemaphores;
+            nullptr,
             1u,                                   // uint32_t commandBufferCount;
             &m_queryPoolResetCommandBuffer.get(), // const VkCommandBuffer* pCommandBuffers;
             0u,                                   // uint32_t signalSemaphoreCount;
-            DE_NULL                               // const VkSemaphore* pSignalSemaphores;
+            nullptr                               // const VkSemaphore* pSignalSemaphores;
         };
 
-        vk.queueSubmit(queue, 1, &submitInfoReset, DE_NULL);
+        vk.queueSubmit(queue, 1, &submitInfoReset, VK_NULL_HANDLE);
 
         // Trivially wait for reset to complete. This is to ensure the query pool is in reset state before
         // host accesses, so as to not insert any synchronization before capturing the results needed for WAIT_NONE
@@ -708,19 +708,19 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
     {
         const vk::VkSubmitInfo submitInfoRender = {
             vk::VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-            DE_NULL,                           // const void* pNext;
+            nullptr,                           // const void* pNext;
             0,                                 // uint32_t waitSemaphoreCount;
-            DE_NULL,                           // const VkSemaphore* pWaitSemaphores;
-            (const vk::VkPipelineStageFlags *)DE_NULL,
+            nullptr,                           // const VkSemaphore* pWaitSemaphores;
+            nullptr,
             1,                            // uint32_t commandBufferCount;
             &m_renderCommandBuffer.get(), // const VkCommandBuffer* pCommandBuffers;
             0,                            // uint32_t signalSemaphoreCount;
-            DE_NULL                       // const VkSemaphore* pSignalSemaphores;
+            nullptr                       // const VkSemaphore* pSignalSemaphores;
         };
 
         if (!hasSeparateResetCmdBuf() && m_testVector.queryResultsMode == RESULTS_MODE_GET_RESET)
             vk.resetQueryPool(m_context.getDevice(), *m_queryPool, 0, NUM_QUERIES_IN_POOL);
-        vk.queueSubmit(queue, 1, &submitInfoRender, DE_NULL);
+        vk.queueSubmit(queue, 1, &submitInfoRender, VK_NULL_HANDLE);
     }
 
     if (m_testVector.queryWait == WAIT_QUEUE)
@@ -737,16 +737,16 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
 
         const vk::VkSubmitInfo submitInfo = {
             vk::VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-            DE_NULL,                           // const void* pNext;
+            nullptr,                           // const void* pNext;
             0,                                 // uint32_t waitSemaphoreCount;
-            DE_NULL,                           // const VkSemaphore* pWaitSemaphores;
-            (const vk::VkPipelineStageFlags *)DE_NULL,
+            nullptr,                           // const VkSemaphore* pWaitSemaphores;
+            nullptr,
             1,                                 // uint32_t commandBufferCount;
             &m_copyResultsCommandBuffer.get(), // const VkCommandBuffer* pCommandBuffers;
             0,                                 // uint32_t signalSemaphoreCount;
-            DE_NULL                            // const VkSemaphore* pSignalSemaphores;
+            nullptr                            // const VkSemaphore* pSignalSemaphores;
         };
-        vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
+        vk.queueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
     }
 
     if (m_testVector.queryResultsMode == RESULTS_MODE_COPY || m_testVector.queryResultsMode == RESULTS_MODE_COPY_RESET)

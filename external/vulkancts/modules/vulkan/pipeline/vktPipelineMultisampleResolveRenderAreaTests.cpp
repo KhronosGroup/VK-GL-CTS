@@ -95,7 +95,7 @@ VkImageCreateInfo MultisampleRenderAreaTestInstance::makeImageCreateInfo(const t
 {
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,           // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         (VkImageCreateFlags)0,                         // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                              // VkImageType imageType;
         m_colorFormat,                                 // VkFormat format;
@@ -108,7 +108,7 @@ VkImageCreateInfo MultisampleRenderAreaTestInstance::makeImageCreateInfo(const t
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,                                             // VkSharingMode sharingMode;
         0u,                                                                    // uint32_t queueFamilyIndexCount;
-        DE_NULL,                                                               // const uint32_t* pQueueFamilyIndices;
+        nullptr,                                                               // const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,                                             // VkImageLayout initialLayout;
     };
 
@@ -162,25 +162,25 @@ RenderPassWrapper MultisampleRenderAreaTestInstance::makeRenderPass(const Device
         (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags flags;
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
         0u,                              // uint32_t inputAttachmentCount;
-        DE_NULL,                         // const VkAttachmentReference* pInputAttachments;
+        nullptr,                         // const VkAttachmentReference* pInputAttachments;
         1u,                              // uint32_t colorAttachmentCount;
         &colorAttachmentRef,             // const VkAttachmentReference* pColorAttachments;
         &resolveAttachmentRef,           // const VkAttachmentReference* pResolveAttachments;
-        DE_NULL,                         // const VkAttachmentReference* pDepthStencilAttachment;
+        nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
         0u,                              // uint32_t preserveAttachmentCount;
-        DE_NULL                          // const uint32_t* pPreserveAttachments;
+        nullptr                          // const uint32_t* pPreserveAttachments;
     };
 
     const VkRenderPassCreateInfo renderPassInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                   // const void* pNext;
+        nullptr,                                   // const void* pNext;
         (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags flags;
         (uint32_t)attachmentDescriptions.size(),   // uint32_t attachmentCount;
         attachmentDescriptions.data(),             // const VkAttachmentDescription* pAttachments;
         1u,                                        // uint32_t subpassCount;
         &subpassDescription,                       // const VkSubpassDescription* pSubpasses;
         0u,                                        // uint32_t dependencyCount;
-        DE_NULL,                                   // const VkSubpassDependency* pDependencies;
+        nullptr,                                   // const VkSubpassDependency* pDependencies;
     };
 
     return RenderPassWrapper(m_pipelineConstructionType, vk, device, &renderPassInfo);
@@ -196,7 +196,7 @@ void MultisampleRenderAreaTestInstance::preparePipelineWrapper(
 
     const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                  // const void*                                pNext
+        nullptr,                                                  // const void*                                pNext
         0u,                                                       // VkPipelineMultisampleStateCreateFlags    flags
         (VkSampleCountFlagBits)m_sampleCount, // VkSampleCountFlagBits                    rasterizationSamples
         false,                                // VkBool32                                    sampleShadingEnable
@@ -211,8 +211,8 @@ void MultisampleRenderAreaTestInstance::preparePipelineWrapper(
         .setDefaultRasterizationState()
         .setupVertexInputState()
         .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass, 0u, vertexModule)
-        .setupFragmentShaderState(pipelineLayout, renderPass, 0u, fragmentModule, DE_NULL, &multisampleStateCreateInfo)
-        .setupFragmentOutputState(renderPass, 0u, DE_NULL, &multisampleStateCreateInfo)
+        .setupFragmentShaderState(pipelineLayout, renderPass, 0u, fragmentModule, nullptr, &multisampleStateCreateInfo)
+        .setupFragmentOutputState(renderPass, 0u, nullptr, &multisampleStateCreateInfo)
         .setMonolithicPipelineLayout(pipelineLayout)
         .buildPipeline();
 }

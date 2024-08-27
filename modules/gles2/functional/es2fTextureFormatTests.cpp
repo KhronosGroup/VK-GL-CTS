@@ -100,7 +100,7 @@ Texture2DFormatCase::Texture2DFormatCase(tcu::TestContext &testCtx, glu::RenderC
     , m_dataType(dataType)
     , m_width(width)
     , m_height(height)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
 {
 }
@@ -132,7 +132,7 @@ void Texture2DFormatCase::init(void)
 void Texture2DFormatCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -246,7 +246,7 @@ TextureCubeFormatCase::TextureCubeFormatCase(tcu::TestContext &testCtx, glu::Ren
     , m_dataType(dataType)
     , m_width(width)
     , m_height(height)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
     , m_curFace(0)
     , m_isOk(false)
@@ -329,7 +329,7 @@ void TextureCubeFormatCase::init(void)
 void TextureCubeFormatCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -449,7 +449,7 @@ Compressed2DFormatCase::Compressed2DFormatCase(tcu::TestContext &testCtx, glu::R
     , m_renderCtx(renderCtx)
     , m_renderCtxInfo(renderCtxInfo)
     , m_filenames(filenames)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
 {
 }
@@ -469,7 +469,7 @@ void Compressed2DFormatCase::init(void)
 void Compressed2DFormatCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }
@@ -562,7 +562,7 @@ CompressedCubeFormatCase::CompressedCubeFormatCase(tcu::TestContext &testCtx, gl
     , m_renderCtx(renderCtx)
     , m_renderCtxInfo(renderCtxInfo)
     , m_filenames(filenames)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
     , m_renderer(renderCtx, testCtx.getLog(), glu::GLSL_VERSION_100_ES, glu::PRECISION_MEDIUMP)
     , m_curFace(0)
     , m_isOk(false)
@@ -588,7 +588,7 @@ void CompressedCubeFormatCase::init(void)
 void CompressedCubeFormatCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 
     m_renderer.clear();
 }

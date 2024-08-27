@@ -101,7 +101,7 @@ CommandBufferBareTestEnvironment<NumBuffers>::CommandBufferBareTestEnvironment(
 
     const VkCommandBufferAllocateInfo cmdBufferAllocateInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType             sType;
-        DE_NULL,                                        // const void*                 pNext;
+        nullptr,                                        // const void*                 pNext;
         *m_commandPool,                                 // VkCommandPool               commandPool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel        level;
         NumBuffers                                      // uint32_t                    commandBufferCount;
@@ -186,7 +186,7 @@ CommandBufferRenderPassTestEnvironment::CommandBufferRenderPassTestEnvironment(
     {
         const VkImageCreateInfo imageCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                             // const void* pNext;
+            nullptr,                             // const void* pNext;
             0u,                                  // VkImageCreateFlags flags;
             DEFAULT_IMAGE_TYPE,                  // VkImageType imageType;
             DEFAULT_IMAGE_FORMAT,                // VkFormat format;
@@ -203,7 +203,7 @@ CommandBufferRenderPassTestEnvironment::CommandBufferRenderPassTestEnvironment(
             VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout initialLayout;
         };
 
-        m_colorImage = createImage(m_vkd, m_device, &imageCreateInfo, DE_NULL);
+        m_colorImage = createImage(m_vkd, m_device, &imageCreateInfo, nullptr);
     }
 
     m_colorImageMemory =
@@ -214,7 +214,7 @@ CommandBufferRenderPassTestEnvironment::CommandBufferRenderPassTestEnvironment(
     {
         const VkImageViewCreateInfo imageViewCreateInfo = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
             *m_colorImage,                            // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
@@ -230,7 +230,7 @@ CommandBufferRenderPassTestEnvironment::CommandBufferRenderPassTestEnvironment(
             },                             // VkImageSubresourceRange subresourceRange;
         };
 
-        m_colorImageView = createImageView(m_vkd, m_device, &imageViewCreateInfo, DE_NULL);
+        m_colorImageView = createImageView(m_vkd, m_device, &imageViewCreateInfo, nullptr);
     }
 
     {
@@ -238,7 +238,7 @@ CommandBufferRenderPassTestEnvironment::CommandBufferRenderPassTestEnvironment(
 
         const VkFramebufferCreateInfo framebufferCreateInfo = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
             *m_renderPass,                             // VkRenderPass renderPass;
             1,                                         // uint32_t attachmentCount;
@@ -248,7 +248,7 @@ CommandBufferRenderPassTestEnvironment::CommandBufferRenderPassTestEnvironment(
             1u,                                        // uint32_t layers;
         };
 
-        m_frameBuffer = createFramebuffer(m_vkd, m_device, &framebufferCreateInfo, DE_NULL);
+        m_frameBuffer = createFramebuffer(m_vkd, m_device, &framebufferCreateInfo, nullptr);
     }
 
     m_secCommandPool = createCommandPool(m_vkd, m_device, commandPoolCreateFlags, m_queueFamilyIndex);
@@ -256,7 +256,7 @@ CommandBufferRenderPassTestEnvironment::CommandBufferRenderPassTestEnvironment(
     {
         const VkCommandBufferAllocateInfo cmdBufferAllocateInfo = {
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType             sType;
-            DE_NULL,                                        // const void*                 pNext;
+            nullptr,                                        // const void*                 pNext;
             *m_secCommandPool,                              // VkCommandPool               commandPool;
             VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // VkCommandBufferLevel        level;
             1u                                              // uint32_t                    commandBufferCount;
@@ -282,19 +282,19 @@ void CommandBufferRenderPassTestEnvironment::beginSecondaryCommandBuffer(VkComma
                                                                          bool framebufferHint)
 {
     const VkCommandBufferInheritanceInfo commandBufferInheritanceInfo = {
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType                  sType;
-        DE_NULL,                                           // const void*                      pNext;
-        *m_renderPass,                                     // VkRenderPass                     renderPass;
-        0u,                                                // uint32_t                         subpass;
-        (framebufferHint ? *m_frameBuffer : DE_NULL),      // VkFramebuffer                    framebuffer;
-        VK_FALSE,                                          // VkBool32                         occlusionQueryEnable;
-        0u,                                                // VkQueryControlFlags              queryFlags;
-        0u                                                 // VkQueryPipelineStatisticFlags    pipelineStatistics;
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,   // VkStructureType                  sType;
+        nullptr,                                             // const void*                      pNext;
+        *m_renderPass,                                       // VkRenderPass                     renderPass;
+        0u,                                                  // uint32_t                         subpass;
+        (framebufferHint ? *m_frameBuffer : VK_NULL_HANDLE), // VkFramebuffer                    framebuffer;
+        VK_FALSE,                                            // VkBool32                         occlusionQueryEnable;
+        0u,                                                  // VkQueryControlFlags              queryFlags;
+        0u                                                   // VkQueryPipelineStatisticFlags    pipelineStatistics;
     };
 
     const VkCommandBufferBeginInfo commandBufferBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType                          sType;
-        DE_NULL,                                     // const void*                              pNext;
+        nullptr,                                     // const void*                              pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags                flags;
         &commandBufferInheritanceInfo                // const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
     };
@@ -306,19 +306,19 @@ void CommandBufferRenderPassTestEnvironment::beginNestedCommandBuffer(VkCommandB
                                                                       bool framebufferHint)
 {
     const VkCommandBufferInheritanceInfo commandBufferInheritanceInfo = {
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType                  sType;
-        DE_NULL,                                           // const void*                      pNext;
-        *m_renderPass,                                     // VkRenderPass                     renderPass;
-        0u,                                                // uint32_t                         subpass;
-        (framebufferHint ? *m_frameBuffer : DE_NULL),      // VkFramebuffer                    framebuffer;
-        VK_FALSE,                                          // VkBool32                         occlusionQueryEnable;
-        0u,                                                // VkQueryControlFlags              queryFlags;
-        0u                                                 // VkQueryPipelineStatisticFlags    pipelineStatistics;
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,   // VkStructureType                  sType;
+        nullptr,                                             // const void*                      pNext;
+        *m_renderPass,                                       // VkRenderPass                     renderPass;
+        0u,                                                  // uint32_t                         subpass;
+        (framebufferHint ? *m_frameBuffer : VK_NULL_HANDLE), // VkFramebuffer                    framebuffer;
+        VK_FALSE,                                            // VkBool32                         occlusionQueryEnable;
+        0u,                                                  // VkQueryControlFlags              queryFlags;
+        0u                                                   // VkQueryPipelineStatisticFlags    pipelineStatistics;
     };
 
     const VkCommandBufferBeginInfo commandBufferBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType                          sType;
-        DE_NULL,                                     // const void*                              pNext;
+        nullptr,                                     // const void*                              pNext;
         usageFlags,                                  // VkCommandBufferUsageFlags                flags;
         &commandBufferInheritanceInfo                // const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
     };
@@ -344,13 +344,13 @@ de::MovePtr<tcu::TextureLevel> CommandBufferRenderPassTestEnvironment::readColor
     {
         const VkBufferCreateInfo bufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                              // const void* pNext;
+            nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             pixelDataSize,                        // VkDeviceSize size;
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,     // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
-            DE_NULL                               // const uint32_t* pQueueFamilyIndices;
+            nullptr                               // const uint32_t* pQueueFamilyIndices;
         };
 
         buffer = createBuffer(m_vkd, m_device, &bufferParams);
@@ -398,7 +398,7 @@ tcu::TestStatus createPoolNonNullAllocatorTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // sType;
-        DE_NULL,                                    // pNext;
+        nullptr,                                    // pNext;
         0u,                                         // flags;
         queueFamilyIndex,                           // queueFamilyIndex;
     };
@@ -417,12 +417,12 @@ tcu::TestStatus createPoolTransientBitTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // sType;
-        DE_NULL,                                    // pNext;
+        nullptr,                                    // pNext;
         VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,       // flags;
         queueFamilyIndex,                           // queueFamilyIndex;
     };
 
-    createCommandPool(vk, vkDevice, &cmdPoolParams, DE_NULL);
+    createCommandPool(vk, vkDevice, &cmdPoolParams, nullptr);
 
     return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
@@ -435,12 +435,12 @@ tcu::TestStatus createPoolResetBitTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
-        DE_NULL,                                         // pNext;
+        nullptr,                                         // pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags;
         queueFamilyIndex,                                // queueFamilyIndex;
     };
 
-    createCommandPool(vk, vkDevice, &cmdPoolParams, DE_NULL);
+    createCommandPool(vk, vkDevice, &cmdPoolParams, nullptr);
 
     return tcu::TestStatus::pass("Command Pool allocated correctly.");
 }
@@ -454,12 +454,12 @@ tcu::TestStatus resetPoolReleaseResourcesBitTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // sType;
-        DE_NULL,                                    // pNext;
+        nullptr,                                    // pNext;
         0u,                                         // flags;
         queueFamilyIndex,                           // queueFamilyIndex;
     };
 
-    const Unique<VkCommandPool> cmdPool(createCommandPool(vk, vkDevice, &cmdPoolParams, DE_NULL));
+    const Unique<VkCommandPool> cmdPool(createCommandPool(vk, vkDevice, &cmdPoolParams, nullptr));
 
     VK_CHECK(vk.resetCommandPool(vkDevice, *cmdPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT));
 
@@ -475,12 +475,12 @@ tcu::TestStatus resetPoolNoFlagsTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // sType;
-        DE_NULL,                                    // pNext;
+        nullptr,                                    // pNext;
         0u,                                         // flags;
         queueFamilyIndex,                           // queueFamilyIndex;
     };
 
-    const Unique<VkCommandPool> cmdPool(createCommandPool(vk, vkDevice, &cmdPoolParams, DE_NULL));
+    const Unique<VkCommandPool> cmdPool(createCommandPool(vk, vkDevice, &cmdPoolParams, nullptr));
 
     VK_CHECK(vk.resetCommandPool(vkDevice, *cmdPool, 0u));
 
@@ -517,14 +517,14 @@ tcu::TestStatus resetPoolReuseTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // sType;
-        DE_NULL,                                    // pNext;
+        nullptr,                                    // pNext;
         0u,                                         // flags;
         queueFamilyIndex                            // queueFamilyIndex;
     };
-    const Unique<VkCommandPool> cmdPool(createCommandPool(vk, vkDevice, &cmdPoolParams, DE_NULL));
+    const Unique<VkCommandPool> cmdPool(createCommandPool(vk, vkDevice, &cmdPoolParams, nullptr));
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // commandPool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level;
         1u                                              // bufferCount;
@@ -569,7 +569,7 @@ tcu::TestStatus allocatePrimaryBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
-        DE_NULL,                                         // pNext;
+        nullptr,                                         // pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags;
         queueFamilyIndex,                                // queueFamilyIndex;
     };
@@ -578,7 +578,7 @@ tcu::TestStatus allocatePrimaryBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // commandPool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level;
         1u,                                             // bufferCount;
@@ -597,7 +597,7 @@ tcu::TestStatus allocateManyPrimaryBuffersTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -617,7 +617,7 @@ tcu::TestStatus allocateManyPrimaryBuffersTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         minCommandBuffer,                               // uint32_t bufferCount;
@@ -643,7 +643,7 @@ tcu::TestStatus allocateSecondaryBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
-        DE_NULL,                                         // pNext;
+        nullptr,                                         // pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags;
         queueFamilyIndex,                                // queueFamilyIndex;
     };
@@ -652,7 +652,7 @@ tcu::TestStatus allocateSecondaryBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // commandPool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // level;
         1u,                                             // bufferCount;
@@ -671,7 +671,7 @@ tcu::TestStatus allocateManySecondaryBuffersTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -691,7 +691,7 @@ tcu::TestStatus allocateManySecondaryBuffersTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // VkCommandBufferLevel level;
         minCommandBuffer,                               // uint32_t bufferCount;
@@ -718,7 +718,7 @@ tcu::TestStatus executePrimaryBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -727,7 +727,7 @@ tcu::TestStatus executePrimaryBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -775,7 +775,7 @@ tcu::TestStatus executeLargePrimaryBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -784,7 +784,7 @@ tcu::TestStatus executeLargePrimaryBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -841,7 +841,7 @@ tcu::TestStatus resetBufferImplicitlyTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
-        DE_NULL,                                         // pNext;
+        nullptr,                                         // pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags;
         queueFamilyIndex,                                // queueFamilyIndex;
     };
@@ -850,7 +850,7 @@ tcu::TestStatus resetBufferImplicitlyTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level;
         1u,                                             // bufferCount;
@@ -914,14 +914,14 @@ bool submitAndCheck(Context &context, std::vector<VkCommandBuffer> &cmdBuffers, 
 
     const VkSubmitInfo submitInfo = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO,            // sType
-        DE_NULL,                                  // pNext
+        nullptr,                                  // pNext
         0u,                                       // waitSemaphoreCount
-        DE_NULL,                                  // pWaitSemaphores
-        (const VkPipelineStageFlags *)DE_NULL,    // pWaitDstStageMask
+        nullptr,                                  // pWaitSemaphores
+        nullptr,                                  // pWaitDstStageMask
         static_cast<uint32_t>(cmdBuffers.size()), // commandBufferCount
         &cmdBuffers[0],                           // pCommandBuffers
         0u,                                       // signalSemaphoreCount
-        DE_NULL,                                  // pSignalSemaphores
+        nullptr,                                  // pSignalSemaphores
     };
 
     VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence.get()));
@@ -942,7 +942,7 @@ void createCommadBuffers(const DeviceInterface &vk, const VkDevice vkDevice, uin
 {
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         pool,                                           // VkCommandPool pool;
         cmdBufferLevel,                                 // VkCommandBufferLevel level;
         bufferCount,                                    // uint32_t bufferCount;
@@ -955,10 +955,10 @@ void addCommandsToBuffer(const DeviceInterface &vk, std::vector<VkCommandBuffer>
 {
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
@@ -966,7 +966,7 @@ void addCommandsToBuffer(const DeviceInterface &vk, std::vector<VkCommandBuffer>
 
     const VkCommandBufferBeginInfo cmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
         &secCmdBufInheritInfo,                       // pInheritanceInfo;
     };
@@ -1011,7 +1011,7 @@ tcu::TestStatus trimCommandPoolTest(Context &context, const VkCommandBufferLevel
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
-        DE_NULL,                                         // pNext;
+        nullptr,                                         // pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags;
         queueFamilyIndex,                                // queueFamilyIndex;
     };
@@ -1093,7 +1093,7 @@ tcu::TestStatus recordSinglePrimaryBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -1102,7 +1102,7 @@ tcu::TestStatus recordSinglePrimaryBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -1132,7 +1132,7 @@ tcu::TestStatus recordLargePrimaryBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -1141,7 +1141,7 @@ tcu::TestStatus recordLargePrimaryBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -1191,7 +1191,7 @@ tcu::TestStatus recordSingleSecondaryBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -1200,7 +1200,7 @@ tcu::TestStatus recordSingleSecondaryBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -1209,17 +1209,17 @@ tcu::TestStatus recordSingleSecondaryBufferTest(Context &context)
 
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
     };
     const VkCommandBufferBeginInfo secCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        DE_NULL,
+        nullptr,
         0, // flags
         &secCmdBufInheritInfo,
     };
@@ -1247,7 +1247,7 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -1256,7 +1256,7 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -1265,7 +1265,7 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
 
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *secCmdPool,                                    // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -1274,17 +1274,17 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
 
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
     };
     const VkCommandBufferBeginInfo secCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        DE_NULL,
+        nullptr,
         0, // flags
         &secCmdBufInheritInfo,
     };
@@ -1343,7 +1343,7 @@ tcu::TestStatus submitPrimaryBufferTwiceTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -1352,7 +1352,7 @@ tcu::TestStatus submitPrimaryBufferTwiceTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -1410,7 +1410,7 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -1421,7 +1421,7 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -1433,7 +1433,7 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context &context)
     // Secondary Command buffer
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *secCmdPool,                                    // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -1442,17 +1442,17 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context &context)
 
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
     };
     const VkCommandBufferBeginInfo secCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        DE_NULL,
+        nullptr,
         0u, // flags
         &secCmdBufInheritInfo,
     };
@@ -1530,7 +1530,7 @@ tcu::TestStatus oneTimeSubmitFlagPrimaryBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -1539,7 +1539,7 @@ tcu::TestStatus oneTimeSubmitFlagPrimaryBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -1605,7 +1605,7 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -1616,7 +1616,7 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -1628,7 +1628,7 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context &context)
     // Secondary Command buffer
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *secCmdPool,                                    // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -1637,17 +1637,17 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context &context)
 
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
     };
     const VkCommandBufferBeginInfo secCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        DE_NULL,
+        nullptr,
         VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, // flags
         &secCmdBufInheritInfo,
     };
@@ -1786,7 +1786,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context &cont
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -1795,7 +1795,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context &cont
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -1805,7 +1805,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context &cont
     // Secondary Command buffer params
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -1814,17 +1814,17 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context &cont
 
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        (VkRenderPass)0u,
+        nullptr,
+        VK_NULL_HANDLE,
         0u, // subpass
-        (VkFramebuffer)0u,
+        VK_NULL_HANDLE,
         VK_FALSE, // occlusionQueryEnable
         (VkQueryControlFlags)0u,
         (VkQueryPipelineStatisticFlags)0u,
     };
     const VkCommandBufferBeginInfo secCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        DE_NULL,
+        nullptr,
         VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // flags
         &secCmdBufInheritInfo,
     };
@@ -1844,12 +1844,12 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context &cont
 
     const VkPipelineLayoutCreateInfo layoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,
         numDescriptorSets,          // setLayoutCount
         &descriptorSetLayout.get(), // pSetLayouts
         0u,                         // pushConstantRangeCount
-        DE_NULL,                    // pPushConstantRanges
+        nullptr,                    // pPushConstantRanges
     };
     Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, vkDevice, &layoutCreateInfo));
 
@@ -1858,27 +1858,27 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context &cont
 
     const VkPipelineShaderStageCreateInfo shaderCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineShaderStageCreateFlags)0,
         VK_SHADER_STAGE_COMPUTE_BIT, // stage
         *computeModule,              // shader
         "main",
-        DE_NULL, // pSpecializationInfo
+        nullptr, // pSpecializationInfo
     };
 
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
-        0u,                // flags
-        shaderCreateInfo,  // cs
-        *pipelineLayout,   // layout
-        (vk::VkPipeline)0, // basePipelineHandle
-        0u,                // basePipelineIndex
+        nullptr,
+        0u,               // flags
+        shaderCreateInfo, // cs
+        *pipelineLayout,  // layout
+        VK_NULL_HANDLE,   // basePipelineHandle
+        0u,               // basePipelineIndex
     };
 
     const VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // sType
-        DE_NULL,                                 // pNext
+        nullptr,                                 // pNext
         VK_ACCESS_SHADER_WRITE_BIT,              // srcAccessMask
         VK_ACCESS_HOST_READ_BIT,                 // dstAccessMask
         VK_QUEUE_FAMILY_IGNORED,                 // srcQueueFamilyIndex
@@ -1888,7 +1888,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context &cont
         (VkDeviceSize)VK_WHOLE_SIZE,             // size
     };
 
-    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, (VkPipelineCache)0u, &pipelineCreateInfo));
+    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     // record secondary command buffer
     VK_CHECK(vk.beginCommandBuffer(*secCmdBuf, &secCmdBufBeginInfo));
@@ -1898,8 +1898,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context &cont
                                  descriptorSets, 0, 0);
         vk.cmdDispatch(*secCmdBuf, 1u, 1u, 1u);
         vk.cmdPipelineBarrier(*secCmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
     }
     // end recording of secondary buffer
     endCommandBuffer(vk, *secCmdBuf);
@@ -2059,7 +2058,7 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -2068,7 +2067,7 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -2078,7 +2077,7 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTest(Context &context)
     // Secondary Command buffer params
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -2088,17 +2087,17 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTest(Context &context)
 
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        (VkRenderPass)0u,
+        nullptr,
+        VK_NULL_HANDLE,
         0u, // subpass
-        (VkFramebuffer)0u,
+        VK_NULL_HANDLE,
         VK_FALSE, // occlusionQueryEnable
         (VkQueryControlFlags)0u,
         (VkQueryPipelineStatisticFlags)0u,
     };
     const VkCommandBufferBeginInfo secCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        DE_NULL,
+        nullptr,
         VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // flags
         &secCmdBufInheritInfo,
     };
@@ -2118,12 +2117,12 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTest(Context &context)
 
     const VkPipelineLayoutCreateInfo layoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,
         numDescriptorSets,          // setLayoutCount
         &descriptorSetLayout.get(), // pSetLayouts
         0u,                         // pushConstantRangeCount
-        DE_NULL,                    // pPushConstantRanges
+        nullptr,                    // pPushConstantRanges
     };
     Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, vkDevice, &layoutCreateInfo));
 
@@ -2132,27 +2131,27 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTest(Context &context)
 
     const VkPipelineShaderStageCreateInfo shaderCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineShaderStageCreateFlags)0,
         VK_SHADER_STAGE_COMPUTE_BIT, // stage
         *computeModule,              // shader
         "main",
-        DE_NULL, // pSpecializationInfo
+        nullptr, // pSpecializationInfo
     };
 
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
-        0u,                // flags
-        shaderCreateInfo,  // cs
-        *pipelineLayout,   // layout
-        (vk::VkPipeline)0, // basePipelineHandle
-        0u,                // basePipelineIndex
+        nullptr,
+        0u,               // flags
+        shaderCreateInfo, // cs
+        *pipelineLayout,  // layout
+        VK_NULL_HANDLE,   // basePipelineHandle
+        0u,               // basePipelineIndex
     };
 
     const VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // sType
-        DE_NULL,                                 // pNext
+        nullptr,                                 // pNext
         VK_ACCESS_SHADER_WRITE_BIT,              // srcAccessMask
         VK_ACCESS_HOST_READ_BIT,                 // dstAccessMask
         VK_QUEUE_FAMILY_IGNORED,                 // srcQueueFamilyIndex
@@ -2162,7 +2161,7 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTest(Context &context)
         (VkDeviceSize)VK_WHOLE_SIZE,             // size
     };
 
-    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, (VkPipelineCache)0u, &pipelineCreateInfo));
+    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     // record secondary command buffer
     VK_CHECK(vk.beginCommandBuffer(*secCmdBuf, &secCmdBufBeginInfo));
@@ -2172,8 +2171,7 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTest(Context &context)
                                  descriptorSets, 0, 0);
         vk.cmdDispatch(*secCmdBuf, 1u, 1u, 1u);
         vk.cmdPipelineBarrier(*secCmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
     }
     // end recording of secondary buffer
     endCommandBuffer(vk, *secCmdBuf);
@@ -2217,7 +2215,7 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTwiceTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -2226,7 +2224,7 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTwiceTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -2236,7 +2234,7 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTwiceTest(Context &context)
     // Secondary Command buffer params
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -2246,17 +2244,17 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTwiceTest(Context &context)
 
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        (VkRenderPass)0u,
+        nullptr,
+        VK_NULL_HANDLE,
         0u, // subpass
-        (VkFramebuffer)0u,
+        VK_NULL_HANDLE,
         VK_FALSE, // occlusionQueryEnable
         (VkQueryControlFlags)0u,
         (VkQueryPipelineStatisticFlags)0u,
     };
     const VkCommandBufferBeginInfo secCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        DE_NULL,
+        nullptr,
         VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // flags
         &secCmdBufInheritInfo,
     };
@@ -2276,12 +2274,12 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTwiceTest(Context &context)
 
     const VkPipelineLayoutCreateInfo layoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,
         numDescriptorSets,          // setLayoutCount
         &descriptorSetLayout.get(), // pSetLayouts
         0u,                         // pushConstantRangeCount
-        DE_NULL,                    // pPushConstantRanges
+        nullptr,                    // pPushConstantRanges
     };
     Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, vkDevice, &layoutCreateInfo));
 
@@ -2290,27 +2288,27 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTwiceTest(Context &context)
 
     const VkPipelineShaderStageCreateInfo shaderCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineShaderStageCreateFlags)0,
         VK_SHADER_STAGE_COMPUTE_BIT, // stage
         *computeModule,              // shader
         "main",
-        DE_NULL, // pSpecializationInfo
+        nullptr, // pSpecializationInfo
     };
 
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
-        0u,                // flags
-        shaderCreateInfo,  // cs
-        *pipelineLayout,   // layout
-        (vk::VkPipeline)0, // basePipelineHandle
-        0u,                // basePipelineIndex
+        nullptr,
+        0u,               // flags
+        shaderCreateInfo, // cs
+        *pipelineLayout,  // layout
+        VK_NULL_HANDLE,   // basePipelineHandle
+        0u,               // basePipelineIndex
     };
 
     const VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // sType
-        DE_NULL,                                 // pNext
+        nullptr,                                 // pNext
         VK_ACCESS_SHADER_WRITE_BIT,              // srcAccessMask
         VK_ACCESS_HOST_READ_BIT,                 // dstAccessMask
         VK_QUEUE_FAMILY_IGNORED,                 // srcQueueFamilyIndex
@@ -2320,7 +2318,7 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTwiceTest(Context &context)
         (VkDeviceSize)VK_WHOLE_SIZE,             // size
     };
 
-    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, (VkPipelineCache)0u, &pipelineCreateInfo));
+    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     // record secondary command buffer
     VK_CHECK(vk.beginCommandBuffer(*secCmdBuf, &secCmdBufBeginInfo));
@@ -2330,8 +2328,7 @@ tcu::TestStatus simultaneousUseNestedSecondaryBufferTwiceTest(Context &context)
                                  descriptorSets, 0, 0);
         vk.cmdDispatch(*secCmdBuf, 1u, 1u, 1u);
         vk.cmdPipelineBarrier(*secCmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                              (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
     }
     // end recording of secondary buffer
     endCommandBuffer(vk, *secCmdBuf);
@@ -2412,30 +2409,30 @@ tcu::TestStatus badInheritanceInfoTest(Context &context, BadInheritanceInfoCase 
 
     const VkPipelineShaderStageCreateInfo shaderCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineShaderStageCreateFlags)0,
         VK_SHADER_STAGE_COMPUTE_BIT, // stage
         *computeModule,              // shader
         "main",
-        DE_NULL, // pSpecializationInfo
+        nullptr, // pSpecializationInfo
     };
 
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
-        0u,                // flags
-        shaderCreateInfo,  // cs
-        *pipelineLayout,   // layout
-        (vk::VkPipeline)0, // basePipelineHandle
-        0u,                // basePipelineIndex
+        nullptr,
+        0u,               // flags
+        shaderCreateInfo, // cs
+        *pipelineLayout,  // layout
+        VK_NULL_HANDLE,   // basePipelineHandle
+        0u,               // basePipelineIndex
     };
 
-    const Unique<VkPipeline> pipeline(createComputePipeline(vkd, device, (VkPipelineCache)0u, &pipelineCreateInfo));
+    const Unique<VkPipeline> pipeline(createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     // Compute to host barrier to read result.
     const VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // sType
-        DE_NULL,                                 // pNext
+        nullptr,                                 // pNext
         VK_ACCESS_SHADER_WRITE_BIT,              // srcAccessMask
         VK_ACCESS_HOST_READ_BIT,                 // dstAccessMask
         VK_QUEUE_FAMILY_IGNORED,                 // srcQueueFamilyIndex
@@ -2526,8 +2523,7 @@ tcu::TestStatus badInheritanceInfoTest(Context &context, BadInheritanceInfoCase 
                                   descriptorSets, 0, 0);
         vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
         vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                               (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &bufferBarrier, 0,
-                               (const VkImageMemoryBarrier *)DE_NULL);
+                               (VkDependencyFlags)0, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
     }
     endCommandBuffer(vkd, cmdBuffer);
     submitCommandsAndWait(vkd, device, queue, cmdBuffer);
@@ -2557,7 +2553,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferTwoPrimaryBuffersTest(Context &con
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -2566,7 +2562,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferTwoPrimaryBuffersTest(Context &con
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -2582,7 +2578,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferTwoPrimaryBuffersTest(Context &con
     // Secondary Command buffer params
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -2591,24 +2587,24 @@ tcu::TestStatus simultaneousUseSecondaryBufferTwoPrimaryBuffersTest(Context &con
 
     const VkCommandBufferBeginInfo primCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        DE_NULL,
+        nullptr,
         0, // flags
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
 
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
     };
     const VkCommandBufferBeginInfo secCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        DE_NULL,
+        nullptr,
         VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // flags
         &secCmdBufInheritInfo,
     };
@@ -2628,12 +2624,12 @@ tcu::TestStatus simultaneousUseSecondaryBufferTwoPrimaryBuffersTest(Context &con
 
     const VkPipelineLayoutCreateInfo layoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,
         numDescriptorSets,          // setLayoutCount
         &descriptorSetLayout.get(), // pSetLayouts
         0u,                         // pushConstantRangeCount
-        DE_NULL,                    // pPushConstantRanges
+        nullptr,                    // pPushConstantRanges
     };
     Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, vkDevice, &layoutCreateInfo));
 
@@ -2642,25 +2638,25 @@ tcu::TestStatus simultaneousUseSecondaryBufferTwoPrimaryBuffersTest(Context &con
 
     const VkPipelineShaderStageCreateInfo shaderCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineShaderStageCreateFlags)0,
         VK_SHADER_STAGE_COMPUTE_BIT, // stage
         *computeModule,              // shader
         "main",
-        DE_NULL, // pSpecializationInfo
+        nullptr, // pSpecializationInfo
     };
 
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
-        0u,                // flags
-        shaderCreateInfo,  // cs
-        *pipelineLayout,   // layout
-        (vk::VkPipeline)0, // basePipelineHandle
-        0u,                // basePipelineIndex
+        nullptr,
+        0u,               // flags
+        shaderCreateInfo, // cs
+        *pipelineLayout,  // layout
+        VK_NULL_HANDLE,   // basePipelineHandle
+        0u,               // basePipelineIndex
     };
 
-    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, (VkPipelineCache)0u, &pipelineCreateInfo));
+    const Unique<VkPipeline> pipeline(createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     // record secondary command buffer
     VK_CHECK(vk.beginCommandBuffer(*secCmdBuf, &secCmdBufBeginInfo));
@@ -2691,15 +2687,15 @@ tcu::TestStatus simultaneousUseSecondaryBufferTwoPrimaryBuffersTest(Context &con
     const Unique<VkFence> fence(createFence(vk, vkDevice));
 
     const VkSubmitInfo submitInfo = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-        DE_NULL,                               // pNext
-        0u,                                    // waitSemaphoreCount
-        DE_NULL,                               // pWaitSemaphores
-        (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-        numPrimCmdBufs,                        // commandBufferCount
-        primCmdBufs,                           // pCommandBuffers
-        0u,                                    // signalSemaphoreCount
-        DE_NULL,                               // pSignalSemaphores
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+        nullptr,                       // pNext
+        0u,                            // waitSemaphoreCount
+        nullptr,                       // pWaitSemaphores
+        nullptr,                       // pWaitDstStageMask
+        numPrimCmdBufs,                // commandBufferCount
+        primCmdBufs,                   // pCommandBuffers
+        0u,                            // signalSemaphoreCount
+        nullptr,                       // pSignalSemaphores
     };
 
     // submit primary buffers, the secondary should be executed too
@@ -2728,7 +2724,7 @@ tcu::TestStatus recordBufferQueryPreciseWithFlagTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
-        DE_NULL,                                         // pNext;
+        nullptr,                                         // pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags;
         queueFamilyIndex,                                // queueFamilyIndex;
     };
@@ -2737,7 +2733,7 @@ tcu::TestStatus recordBufferQueryPreciseWithFlagTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo primCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level;
         1u,                                             // flags;
@@ -2747,7 +2743,7 @@ tcu::TestStatus recordBufferQueryPreciseWithFlagTest(Context &context)
     // Secondary Command buffer params
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // level;
         1u,                                             // flags;
@@ -2756,31 +2752,31 @@ tcu::TestStatus recordBufferQueryPreciseWithFlagTest(Context &context)
 
     const VkCommandBufferBeginInfo primBufferBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
 
     const VkCommandBufferInheritanceInfo secBufferInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        0u,                                // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        0u,                                // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_TRUE,                           // occlusionQueryEnable
         VK_QUERY_CONTROL_PRECISE_BIT,      // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
     };
     const VkCommandBufferBeginInfo secBufferBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
         &secBufferInheritInfo,
     };
 
     const VkQueryPoolCreateInfo queryPoolCreateInfo = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // sType
-        DE_NULL,                                  // pNext
+        nullptr,                                  // pNext
         (VkQueryPoolCreateFlags)0,                // flags
         VK_QUERY_TYPE_OCCLUSION,                  // queryType
         1u,                                       // entryCount
@@ -2817,7 +2813,7 @@ tcu::TestStatus recordBufferQueryImpreciseWithFlagTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
-        DE_NULL,                                         // pNext;
+        nullptr,                                         // pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags;
         queueFamilyIndex,                                // queueFamilyIndex;
     };
@@ -2826,7 +2822,7 @@ tcu::TestStatus recordBufferQueryImpreciseWithFlagTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo primCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level;
         1u,                                             // flags;
@@ -2836,7 +2832,7 @@ tcu::TestStatus recordBufferQueryImpreciseWithFlagTest(Context &context)
     // Secondary Command buffer params
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // level;
         1u,                                             // flags;
@@ -2845,31 +2841,31 @@ tcu::TestStatus recordBufferQueryImpreciseWithFlagTest(Context &context)
 
     const VkCommandBufferBeginInfo primBufferBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
 
     const VkCommandBufferInheritanceInfo secBufferInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        0u,                                // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        0u,                                // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_TRUE,                           // occlusionQueryEnable
         VK_QUERY_CONTROL_PRECISE_BIT,      // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
     };
     const VkCommandBufferBeginInfo secBufferBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
         &secBufferInheritInfo,
     };
 
     const VkQueryPoolCreateInfo queryPoolCreateInfo = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // sType
-        DE_NULL,                                  // pNext
+        nullptr,                                  // pNext
         0u,                                       // flags
         VK_QUERY_TYPE_OCCLUSION,                  // queryType
         1u,                                       // entryCount
@@ -2906,7 +2902,7 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
-        DE_NULL,                                         // pNext;
+        nullptr,                                         // pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags;
         queueFamilyIndex,                                // queueFamilyIndex;
     };
@@ -2915,7 +2911,7 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo primCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level;
         1u,                                             // flags;
@@ -2925,7 +2921,7 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context &context)
     // Secondary Command buffer params
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // level;
         1u,                                             // flags;
@@ -2934,31 +2930,31 @@ tcu::TestStatus recordBufferQueryImpreciseWithoutFlagTest(Context &context)
 
     const VkCommandBufferBeginInfo primBufferBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
 
     const VkCommandBufferInheritanceInfo secBufferInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        0u,                                // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        0u,                                // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_TRUE,                           // occlusionQueryEnable
         0u,                                // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
     };
     const VkCommandBufferBeginInfo secBufferBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
         &secBufferInheritInfo,
     };
 
     const VkQueryPoolCreateInfo queryPoolCreateInfo = {
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // sType
-        DE_NULL,                                  // pNext
+        nullptr,                                  // pNext
         (VkQueryPoolCreateFlags)0,
         VK_QUERY_TYPE_OCCLUSION,
         1u,
@@ -2996,7 +2992,7 @@ tcu::TestStatus submitBufferCountNonZero(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // sType;
-        DE_NULL,                                    // pNext;
+        nullptr,                                    // pNext;
         0u,                                         // flags;
         queueFamilyIndex,                           // queueFamilyIndex;
     };
@@ -3005,7 +3001,7 @@ tcu::TestStatus submitBufferCountNonZero(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level;
         BUFFER_COUNT,                                   // bufferCount;
@@ -3015,9 +3011,9 @@ tcu::TestStatus submitBufferCountNonZero(Context &context)
 
     const VkCommandBufferBeginInfo cmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
 
     std::vector<VkEventSp> events;
@@ -3043,15 +3039,15 @@ tcu::TestStatus submitBufferCountNonZero(Context &context)
     const Unique<VkFence> fence(createFence(vk, vkDevice));
 
     const VkSubmitInfo submitInfo = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-        DE_NULL,                               // pNext
-        0u,                                    // waitSemaphoreCount
-        DE_NULL,                               // pWaitSemaphores
-        (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-        BUFFER_COUNT,                          // commandBufferCount
-        cmdBufferHandles,                      // pCommandBuffers
-        0u,                                    // signalSemaphoreCount
-        DE_NULL,                               // pSignalSemaphores
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+        nullptr,                       // pNext
+        0u,                            // waitSemaphoreCount
+        nullptr,                       // pWaitSemaphores
+        nullptr,                       // pWaitDstStageMask
+        BUFFER_COUNT,                  // commandBufferCount
+        cmdBufferHandles,              // pCommandBuffers
+        0u,                            // signalSemaphoreCount
+        nullptr,                       // pSignalSemaphores
     };
 
     // Submit the alpha command buffer to the queue
@@ -3088,7 +3084,7 @@ tcu::TestStatus submitBufferCountEqualZero(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // sType;
-        DE_NULL,                                    // pNext;
+        nullptr,                                    // pNext;
         0u,                                         // flags;
         queueFamilyIndex,                           // queueFamilyIndex;
     };
@@ -3097,7 +3093,7 @@ tcu::TestStatus submitBufferCountEqualZero(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level;
         BUFFER_COUNT,                                   // bufferCount;
@@ -3107,9 +3103,9 @@ tcu::TestStatus submitBufferCountEqualZero(Context &context)
 
     const VkCommandBufferBeginInfo cmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
 
     std::vector<VkEventSp> events;
@@ -3132,28 +3128,28 @@ tcu::TestStatus submitBufferCountEqualZero(Context &context)
 
     VkCommandBuffer cmdBuf0                = cmdBuffers[0].get();
     const VkSubmitInfo submitInfoCountZero = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-        DE_NULL,                               // pNext
-        0u,                                    // waitSemaphoreCount
-        DE_NULL,                               // pWaitSemaphores
-        (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-        1u,                                    // commandBufferCount
-        &cmdBuf0,                              // pCommandBuffers
-        0u,                                    // signalSemaphoreCount
-        DE_NULL,                               // pSignalSemaphores
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+        nullptr,                       // pNext
+        0u,                            // waitSemaphoreCount
+        nullptr,                       // pWaitSemaphores
+        nullptr,                       // pWaitDstStageMask
+        1u,                            // commandBufferCount
+        &cmdBuf0,                      // pCommandBuffers
+        0u,                            // signalSemaphoreCount
+        nullptr,                       // pSignalSemaphores
     };
 
     VkCommandBuffer cmdBuf1               = cmdBuffers[1].get();
     const VkSubmitInfo submitInfoCountOne = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-        DE_NULL,                               // pNext
-        0u,                                    // waitSemaphoreCount
-        DE_NULL,                               // pWaitSemaphores
-        (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-        1u,                                    // commandBufferCount
-        &cmdBuf1,                              // pCommandBuffers
-        0u,                                    // signalSemaphoreCount
-        DE_NULL,                               // pSignalSemaphores
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+        nullptr,                       // pNext
+        0u,                            // waitSemaphoreCount
+        nullptr,                       // pWaitSemaphores
+        nullptr,                       // pWaitDstStageMask
+        1u,                            // commandBufferCount
+        &cmdBuf1,                      // pCommandBuffers
+        0u,                            // signalSemaphoreCount
+        nullptr,                       // pSignalSemaphores
     };
 
     // Submit the command buffers to the queue
@@ -3190,7 +3186,7 @@ tcu::TestStatus submitBufferWaitSingleSemaphore(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -3199,7 +3195,7 @@ tcu::TestStatus submitBufferWaitSingleSemaphore(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -3211,9 +3207,9 @@ tcu::TestStatus submitBufferWaitSingleSemaphore(Context &context)
 
     const VkCommandBufferBeginInfo primCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0,                                           // flags
-        DE_NULL                                      // const VkCommandBufferInheritanceInfo* pInheritanceInfo;
+        nullptr                                      // const VkCommandBufferInheritanceInfo* pInheritanceInfo;
     };
 
     // create two events that will be used to check if command buffers has been executed
@@ -3255,10 +3251,10 @@ tcu::TestStatus submitBufferWaitSingleSemaphore(Context &context)
     // create submit info for first buffer - signalling semaphore
     const VkSubmitInfo submitInfo1 = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
-        DE_NULL,                       // pNext
+        nullptr,                       // pNext
         0u,                            // waitSemaphoreCount
-        DE_NULL,                       // pWaitSemaphores
-        DE_NULL,                       // pWaitDstStageMask
+        nullptr,                       // pWaitSemaphores
+        nullptr,                       // pWaitDstStageMask
         1,                             // commandBufferCount
         &primCmdBuf1.get(),            // pCommandBuffers
         1u,                            // signalSemaphoreCount
@@ -3281,14 +3277,14 @@ tcu::TestStatus submitBufferWaitSingleSemaphore(Context &context)
     // create submit info for second buffer - waiting for semaphore
     const VkSubmitInfo submitInfo2 = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
-        DE_NULL,                       // pNext
+        nullptr,                       // pNext
         1u,                            // waitSemaphoreCount
         &semaphore.get(),              // pWaitSemaphores
         &waitDstStageFlags,            // pWaitDstStageMask
         1,                             // commandBufferCount
         &primCmdBuf2.get(),            // pCommandBuffers
         0u,                            // signalSemaphoreCount
-        DE_NULL,                       // pSignalSemaphores
+        nullptr,                       // pSignalSemaphores
     };
 
     // reset fence, so it can be used again
@@ -3323,7 +3319,7 @@ tcu::TestStatus submitBufferWaitManySemaphores(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -3332,7 +3328,7 @@ tcu::TestStatus submitBufferWaitManySemaphores(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -3343,9 +3339,9 @@ tcu::TestStatus submitBufferWaitManySemaphores(Context &context)
 
     const VkCommandBufferBeginInfo primCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0,                                           // flags
-        DE_NULL                                      // const VkCommandBufferInheritanceInfo* pInheritanceInfo;
+        nullptr                                      // const VkCommandBufferInheritanceInfo* pInheritanceInfo;
     };
 
     // create event that will be used to check if command buffers has been executed
@@ -3384,10 +3380,10 @@ tcu::TestStatus submitBufferWaitManySemaphores(Context &context)
         // create submit info for buffer - signal semaphores
         const VkSubmitInfo submitInfo1 = {
             VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
-            DE_NULL,                       // pNext
+            nullptr,                       // pNext
             0u,                            // waitSemaphoreCount
-            DE_NULL,                       // pWaitSemaphores
-            DE_NULL,                       // pWaitDstStageMask
+            nullptr,                       // pWaitSemaphores
+            nullptr,                       // pWaitDstStageMask
             1,                             // commandBufferCount
             &primCmdBuf.get(),             // pCommandBuffers
             numSemaphores,                 // signalSemaphoreCount
@@ -3422,14 +3418,14 @@ tcu::TestStatus submitBufferWaitManySemaphores(Context &context)
         // create submit info for buffer - waiting for semaphore
         const VkSubmitInfo submitInfo2 = {
             VK_STRUCTURE_TYPE_SUBMIT_INFO,                                              // sType
-            DE_NULL,                                                                    // pNext
+            nullptr,                                                                    // pNext
             numberOfSemaphoresToBeWaitedByOneSubmission,                                // waitSemaphoreCount
             semaphores + (numberOfSemaphoresToBeWaitedByOneSubmission * idxSubmission), // pWaitSemaphores
             waitDstStageFlags.data(),                                                   // pWaitDstStageMask
             1,                                                                          // commandBufferCount
             &primCmdBuf.get(),                                                          // pCommandBuffers
             0u,                                                                         // signalSemaphoreCount
-            DE_NULL,                                                                    // pSignalSemaphores
+            nullptr,                                                                    // pSignalSemaphores
         };
 
         // Submit the second command buffer to the queue
@@ -3465,7 +3461,7 @@ tcu::TestStatus submitBufferNullFence(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // sType;
-        DE_NULL,                                    // pNext;
+        nullptr,                                    // pNext;
         0u,                                         // flags;
         queueFamilyIndex,                           // queueFamilyIndex;
     };
@@ -3474,7 +3470,7 @@ tcu::TestStatus submitBufferNullFence(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level;
         BUFFER_COUNT,                                   // bufferCount;
@@ -3484,9 +3480,9 @@ tcu::TestStatus submitBufferNullFence(Context &context)
 
     const VkCommandBufferBeginInfo cmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
 
     std::vector<VkEventSp> events;
@@ -3508,34 +3504,34 @@ tcu::TestStatus submitBufferNullFence(Context &context)
 
     VkCommandBuffer cmdBuf0                = cmdBuffers[0].get();
     const VkSubmitInfo submitInfoNullFence = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-        DE_NULL,                               // pNext
-        0u,                                    // waitSemaphoreCount
-        DE_NULL,                               // pWaitSemaphores
-        (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-        1u,                                    // commandBufferCount
-        &cmdBuf0,                              // pCommandBuffers
-        0u,                                    // signalSemaphoreCount
-        DE_NULL,                               // pSignalSemaphores
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+        nullptr,                       // pNext
+        0u,                            // waitSemaphoreCount
+        nullptr,                       // pWaitSemaphores
+        nullptr,                       // pWaitDstStageMask
+        1u,                            // commandBufferCount
+        &cmdBuf0,                      // pCommandBuffers
+        0u,                            // signalSemaphoreCount
+        nullptr,                       // pSignalSemaphores
     };
 
     VkCommandBuffer cmdBuf1                   = cmdBuffers[1].get();
     const VkSubmitInfo submitInfoNonNullFence = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-        DE_NULL,                               // pNext
-        0u,                                    // waitSemaphoreCount
-        DE_NULL,                               // pWaitSemaphores
-        (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-        1u,                                    // commandBufferCount
-        &cmdBuf1,                              // pCommandBuffers
-        0u,                                    // signalSemaphoreCount
-        DE_NULL,                               // pSignalSemaphores
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+        nullptr,                       // pNext
+        0u,                            // waitSemaphoreCount
+        nullptr,                       // pWaitSemaphores
+        nullptr,                       // pWaitDstStageMask
+        1u,                            // commandBufferCount
+        &cmdBuf1,                      // pCommandBuffers
+        0u,                            // signalSemaphoreCount
+        nullptr,                       // pSignalSemaphores
     };
 
     // Perform two submissions - one with no fence, the other one with a valid
     // fence Hoping submitting the other buffer will give the first one time to
     // execute
-    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNullFence, DE_NULL));
+    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNullFence, VK_NULL_HANDLE));
     VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNonNullFence, fence.get()));
 
     // Wait for the queue
@@ -3568,7 +3564,7 @@ tcu::TestStatus submitTwoBuffersOneBufferNullWithFence(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
-        DE_NULL,                                         // pNext;
+        nullptr,                                         // pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags;
         queueFamilyIndex,                                // queueFamilyIndex;
     };
@@ -3576,7 +3572,7 @@ tcu::TestStatus submitTwoBuffersOneBufferNullWithFence(Context &context)
 
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level;
         BUFFER_COUNT,                                   // bufferCount;
@@ -3586,10 +3582,10 @@ tcu::TestStatus submitTwoBuffersOneBufferNullWithFence(Context &context)
     allocateCommandBuffers(vk, vkDevice, &cmdBufParams, cmdBuffers);
 
     const VkCommandBufferBeginInfo cmdBufBeginInfo = {
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,     // sType
-        DE_NULL,                                         // pNext
-        0u,                                              // flags
-        (const VkCommandBufferInheritanceInfo *)DE_NULL, // pInheritanceInfo
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
+        nullptr,                                     // pNext
+        0u,                                          // flags
+        nullptr,                                     // pInheritanceInfo
     };
 
     std::vector<VkEventSp> events;
@@ -3609,29 +3605,29 @@ tcu::TestStatus submitTwoBuffersOneBufferNullWithFence(Context &context)
     // First command buffer
     VkCommandBuffer cmdBuf0                   = cmdBuffers[0].get();
     const VkSubmitInfo submitInfoNonNullFirst = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-        DE_NULL,                               // pNext
-        0u,                                    // waitSemaphoreCount
-        DE_NULL,                               // pWaitSemaphores
-        (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-        1u,                                    // commandBufferCount
-        &cmdBuf0,                              // pCommandBuffers
-        0u,                                    // signalSemaphoreCount
-        DE_NULL,                               // pSignalSemaphores
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+        nullptr,                       // pNext
+        0u,                            // waitSemaphoreCount
+        nullptr,                       // pWaitSemaphores
+        nullptr,                       // pWaitDstStageMask
+        1u,                            // commandBufferCount
+        &cmdBuf0,                      // pCommandBuffers
+        0u,                            // signalSemaphoreCount
+        nullptr,                       // pSignalSemaphores
     };
 
     // Second command buffer
     VkCommandBuffer cmdBuf1                    = cmdBuffers[1].get();
     const VkSubmitInfo submitInfoNonNullSecond = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-        DE_NULL,                               // pNext
-        0u,                                    // waitSemaphoreCount
-        DE_NULL,                               // pWaitSemaphores
-        (const VkPipelineStageFlags *)DE_NULL, // pWaitDstStageMask
-        1u,                                    // commandBufferCount
-        &cmdBuf1,                              // pCommandBuffers
-        0u,                                    // signalSemaphoreCount
-        DE_NULL,                               // pSignalSemaphores
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+        nullptr,                       // pNext
+        0u,                            // waitSemaphoreCount
+        nullptr,                       // pWaitSemaphores
+        nullptr,                       // pWaitDstStageMask
+        1u,                            // commandBufferCount
+        &cmdBuf1,                      // pCommandBuffers
+        0u,                            // signalSemaphoreCount
+        nullptr,                       // pSignalSemaphores
     };
 
     // Fence will be submitted with the null queue
@@ -3639,9 +3635,9 @@ tcu::TestStatus submitTwoBuffersOneBufferNullWithFence(Context &context)
 
     // Perform two separate queueSubmit calls on the same queue followed
     // by a third call with no submitInfos and with a valid fence
-    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNonNullFirst, DE_NULL));
-    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNonNullSecond, DE_NULL));
-    VK_CHECK(vk.queueSubmit(queue, 0u, DE_NULL, fence.get()));
+    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNonNullFirst, VK_NULL_HANDLE));
+    VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfoNonNullSecond, VK_NULL_HANDLE));
+    VK_CHECK(vk.queueSubmit(queue, 0u, nullptr, fence.get()));
 
     // Wait for the queue
     VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), VK_TRUE, INFINITE_TIMEOUT));
@@ -3659,7 +3655,7 @@ tcu::TestStatus executeSecondaryBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
-        DE_NULL,                                         // pNext;
+        nullptr,                                         // pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags;
         queueFamilyIndex,                                // queueFamilyIndex;
     };
@@ -3668,7 +3664,7 @@ tcu::TestStatus executeSecondaryBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // commandPool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level;
         1u,                                             // bufferCount;
@@ -3678,7 +3674,7 @@ tcu::TestStatus executeSecondaryBufferTest(Context &context)
     // Secondary Command buffer
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // commandPool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // level;
         1u,                                             // bufferCount;
@@ -3687,24 +3683,24 @@ tcu::TestStatus executeSecondaryBufferTest(Context &context)
 
     const VkCommandBufferBeginInfo primCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
 
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        DE_NULL,                           // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        DE_NULL,                           // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
     };
     const VkCommandBufferBeginInfo secCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
         &secCmdBufInheritInfo,
     };
@@ -3753,7 +3749,7 @@ tcu::TestStatus executeNestedBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
-        DE_NULL,                                         // pNext;
+        nullptr,                                         // pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags;
         queueFamilyIndex,                                // queueFamilyIndex;
     };
@@ -3762,7 +3758,7 @@ tcu::TestStatus executeNestedBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // commandPool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level;
         1u,                                             // bufferCount;
@@ -3772,7 +3768,7 @@ tcu::TestStatus executeNestedBufferTest(Context &context)
     // Secondary Command buffer
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // commandPool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // level;
         1u,                                             // bufferCount;
@@ -3782,7 +3778,7 @@ tcu::TestStatus executeNestedBufferTest(Context &context)
     // Nested secondary Command buffer
     const VkCommandBufferAllocateInfo nestedCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // commandPool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // level;
         1u,                                             // bufferCount;
@@ -3791,41 +3787,41 @@ tcu::TestStatus executeNestedBufferTest(Context &context)
 
     const VkCommandBufferBeginInfo primCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
 
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        DE_NULL,                           // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        DE_NULL,                           // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
     };
     const VkCommandBufferBeginInfo secCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
         &secCmdBufInheritInfo,
     };
 
     const VkCommandBufferInheritanceInfo nestedCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        DE_NULL,                           // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        DE_NULL,                           // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
     };
     const VkCommandBufferBeginInfo nestedCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
         &nestedCmdBufInheritInfo,
     };
@@ -3884,7 +3880,7 @@ tcu::TestStatus executeMultipleLevelsNestedBufferTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType;
-        DE_NULL,                                         // pNext;
+        nullptr,                                         // pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags;
         queueFamilyIndex,                                // queueFamilyIndex;
     };
@@ -3893,7 +3889,7 @@ tcu::TestStatus executeMultipleLevelsNestedBufferTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType;
-        DE_NULL,                                        // pNext;
+        nullptr,                                        // pNext;
         *cmdPool,                                       // commandPool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level;
         1u,                                             // bufferCount;
@@ -3903,7 +3899,7 @@ tcu::TestStatus executeMultipleLevelsNestedBufferTest(Context &context)
     // Secondary Command buffers
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // VkCommandBufferLevel level;
         BUFFER_COUNT,                                   // uint32_t bufferCount;
@@ -3913,24 +3909,24 @@ tcu::TestStatus executeMultipleLevelsNestedBufferTest(Context &context)
 
     const VkCommandBufferBeginInfo primCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
 
     const VkCommandBufferInheritanceInfo nestedCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        DE_NULL,                           // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        DE_NULL,                           // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
     };
     const VkCommandBufferBeginInfo nestedCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
         &nestedCmdBufInheritInfo,
     };
@@ -3991,7 +3987,7 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolParams = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags flags;
         queueFamilyIndex,                                // uint32_t queueFamilyIndex;
     };
@@ -4000,7 +3996,7 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context &context)
     // Command buffer
     const VkCommandBufferAllocateInfo cmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
         1u,                                             // uint32_t bufferCount;
@@ -4011,7 +4007,7 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context &context)
     // Secondary Command buffers params
     const VkCommandBufferAllocateInfo secCmdBufParams = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
-        DE_NULL,                                        // const void* pNext;
+        nullptr,                                        // const void* pNext;
         *cmdPool,                                       // VkCommandPool pool;
         VK_COMMAND_BUFFER_LEVEL_SECONDARY,              // VkCommandBufferLevel level;
         BUFFER_COUNT,                                   // uint32_t bufferCount;
@@ -4021,24 +4017,24 @@ tcu::TestStatus executeSecondaryBufferTwiceTest(Context &context)
 
     const VkCommandBufferBeginInfo primCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        DE_NULL,
+        nullptr,
         0, // flags
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
 
     const VkCommandBufferInheritanceInfo secCmdBufInheritInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-        DE_NULL,
-        (VkRenderPass)0u,                  // renderPass
+        nullptr,
+        VK_NULL_HANDLE,                    // renderPass
         0u,                                // subpass
-        (VkFramebuffer)0u,                 // framebuffer
+        VK_NULL_HANDLE,                    // framebuffer
         VK_FALSE,                          // occlusionQueryEnable
         (VkQueryControlFlags)0u,           // queryFlags
         (VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
     };
     const VkCommandBufferBeginInfo secCmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        DE_NULL,
+        nullptr,
         VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // flags
         &secCmdBufInheritInfo,
     };
@@ -4191,12 +4187,12 @@ tcu::TestStatus orderBindPipelineTest(Context &context)
 
     const VkPipelineLayoutCreateInfo layoutCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                       // pNext
+        nullptr,                                       // pNext
         (VkPipelineLayoutCreateFlags)0,
         numDescriptorSets,          // setLayoutCount
         &descriptorSetLayout.get(), // pSetLayouts
         0u,                         // pushConstantRangeCount
-        DE_NULL,                    // pPushConstantRanges
+        nullptr,                    // pPushConstantRanges
     };
     Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, device, &layoutCreateInfo));
 
@@ -4207,50 +4203,50 @@ tcu::TestStatus orderBindPipelineTest(Context &context)
 
     const VkPipelineShaderStageCreateInfo shaderCreateInfoGood = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkPipelineShaderStageCreateFlags)0,
         VK_SHADER_STAGE_COMPUTE_BIT, // stage
         *computeModuleGood,          // shader
         "main",
-        DE_NULL, // pSpecializationInfo
+        nullptr, // pSpecializationInfo
     };
 
     const VkPipelineShaderStageCreateInfo shaderCreateInfoBad = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (vk::VkPipelineShaderStageCreateFlags)0,
         vk::VK_SHADER_STAGE_COMPUTE_BIT, // stage
         *computeModuleBad,               // shader
         "main",
-        DE_NULL, // pSpecializationInfo
+        nullptr, // pSpecializationInfo
     };
 
     const VkComputePipelineCreateInfo createInfoGood = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,                   // flags
         shaderCreateInfoGood, // cs
         *pipelineLayout,      // layout
-        (vk::VkPipeline)0,    // basePipelineHandle
+        VK_NULL_HANDLE,       // basePipelineHandle
         0u,                   // basePipelineIndex
     };
 
     const VkComputePipelineCreateInfo createInfoBad = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         0u,                  // flags
         shaderCreateInfoBad, // cs
         *pipelineLayout,     // descriptorSetLayout.get()
-        (VkPipeline)0,       // basePipelineHandle
+        VK_NULL_HANDLE,      // basePipelineHandle
         0u,                  // basePipelineIndex
     };
 
-    const Unique<VkPipeline> pipelineGood(createComputePipeline(vk, device, (VkPipelineCache)0u, &createInfoGood));
-    const Unique<VkPipeline> pipelineBad(createComputePipeline(vk, device, (VkPipelineCache)0u, &createInfoBad));
+    const Unique<VkPipeline> pipelineGood(createComputePipeline(vk, device, VK_NULL_HANDLE, &createInfoGood));
+    const Unique<VkPipeline> pipelineBad(createComputePipeline(vk, device, VK_NULL_HANDLE, &createInfoBad));
 
     const VkAccessFlags inputBit                 = (VK_ACCESS_UNIFORM_READ_BIT);
     const VkBufferMemoryBarrier bufferBarriers[] = {{
-                                                        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, DE_NULL,
+                                                        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, nullptr,
                                                         VK_ACCESS_HOST_WRITE_BIT,  // srcAccessMask
                                                         inputBit,                  // dstAccessMask
                                                         VK_QUEUE_FAMILY_IGNORED,   // srcQueueFamilyIndex
@@ -4260,7 +4256,7 @@ tcu::TestStatus orderBindPipelineTest(Context &context)
                                                         (VkDeviceSize)bufferSizeA, // size
                                                     },
                                                     {
-                                                        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, DE_NULL,
+                                                        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, nullptr,
                                                         VK_ACCESS_HOST_WRITE_BIT,  // srcAccessMask
                                                         inputBit,                  // dstAccessMask
                                                         VK_QUEUE_FAMILY_IGNORED,   // srcQueueFamilyIndex
@@ -4272,7 +4268,7 @@ tcu::TestStatus orderBindPipelineTest(Context &context)
 
     const uint32_t numSrcBuffers = 1u;
 
-    const uint32_t *const dynamicOffsets                = (DE_NULL);
+    const uint32_t *const dynamicOffsets                = (nullptr);
     const uint32_t numDynamicOffsets                    = (0);
     const int numPreBarriers                            = numSrcBuffers;
     const vk::VkBufferMemoryBarrier *const postBarriers = result.getResultReadBarrier();
@@ -4293,14 +4289,14 @@ tcu::TestStatus orderBindPipelineTest(Context &context)
 
     const VkCommandPoolCreateInfo cmdPoolCreateInfo = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // sType;
-        DE_NULL,                                    // pNext
+        nullptr,                                    // pNext
         VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,       // flags
         queueFamilyIndex,                           // queueFamilyIndex
     };
     const Unique<VkCommandPool> cmdPool(createCommandPool(vk, device, &cmdPoolCreateInfo));
     const VkCommandBufferAllocateInfo cmdBufCreateInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
-        DE_NULL,                                        // pNext
+        nullptr,                                        // pNext
         *cmdPool,                                       // commandPool
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level
         1u,                                             // bufferCount;
@@ -4308,9 +4304,9 @@ tcu::TestStatus orderBindPipelineTest(Context &context)
 
     const VkCommandBufferBeginInfo cmdBufBeginInfo = {
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         0u,                                          // flags
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
 
     const Unique<VkCommandBuffer> cmd(allocateCommandBuffer(vk, device, &cmdBufCreateInfo));
@@ -4324,13 +4320,11 @@ tcu::TestStatus orderBindPipelineTest(Context &context)
 
     if (numPreBarriers)
         vk.cmdPipelineBarrier(*cmd, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                              (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, numPreBarriers, bufferBarriers,
-                              0, (const VkImageMemoryBarrier *)DE_NULL);
+                              (VkDependencyFlags)0, 0, nullptr, numPreBarriers, bufferBarriers, 0, nullptr);
 
     vk.cmdDispatch(*cmd, numWorkGroups.x(), numWorkGroups.y(), numWorkGroups.z());
     vk.cmdPipelineBarrier(*cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
-                          0, (const VkMemoryBarrier *)DE_NULL, numPostBarriers, postBarriers, 0,
-                          (const VkImageMemoryBarrier *)DE_NULL);
+                          0, nullptr, numPostBarriers, postBarriers, 0, nullptr);
     endCommandBuffer(vk, *cmd);
 
     // run
@@ -4415,22 +4409,22 @@ tcu::TestStatus executeStateTransitionTest(Context &context, StateTransitionTest
         subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
         VkRenderPassCreateInfo renderPassCreateInfo{
-            VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, DE_NULL, 0, 0, DE_NULL, 1, &subpassDescription, 0, DE_NULL};
+            VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, nullptr, 0, 0, nullptr, 1, &subpassDescription, 0, nullptr};
 
         // Error here - renderpass and framebuffer were created localy
         Move<VkRenderPass> renderPass = createRenderPass(vk, vkDevice, &renderPassCreateInfo);
 
         VkFramebufferCreateInfo framebufferCreateInfo{
-            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, DE_NULL, 0, *renderPass, 0, DE_NULL, 16, 16, 1};
+            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, nullptr, 0, *renderPass, 0, nullptr, 16, 16, 1};
         Move<VkFramebuffer> framebuffer = createFramebuffer(vk, vkDevice, &framebufferCreateInfo);
 
         VkRenderPassBeginInfo renderPassBeginInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-                                                     DE_NULL,
+                                                     nullptr,
                                                      *renderPass,
                                                      *framebuffer,
                                                      {{0, 0}, {16, 16}},
                                                      0,
-                                                     DE_NULL};
+                                                     nullptr};
 
         beginCommandBuffer(vk, *cmdBuffer, 0u);
         vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -5108,8 +5102,8 @@ tcu::TestStatus ManyDrawsInstance::iterate(void)
     };
 
     const auto pipeline =
-        makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertModule.get(), DE_NULL, DE_NULL, DE_NULL,
-                             fragModule.get(), renderPass.get(), viewports, scissors,
+        makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, fragModule.get(), renderPass.get(), viewports, scissors,
                              VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &inputState, nullptr, nullptr, &dsState);
 
     // Command pool and buffers.

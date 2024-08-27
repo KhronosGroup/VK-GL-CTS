@@ -960,7 +960,7 @@ std::string getModeStr(GLenum type)
 class RectangleTest : public deqp::TestCase
 {
 public:
-    RectangleTest(deqp::Context &context, std::string &name, InternalFormat internalFormat);
+    RectangleTest(deqp::Context &context, std::string &name, InternalFormat internalFormat, PixelFormat inputFormat);
     virtual ~RectangleTest();
 
     void resetInitialStorageModes();
@@ -1155,13 +1155,17 @@ int RectangleTest::m_countGetTexImageOK = 0;
 int RectangleTest::m_countCompare       = 0;
 int RectangleTest::m_countCompareOK     = 0;
 
-RectangleTest::RectangleTest(deqp::Context &context, std::string &name, InternalFormat internalFormat)
+RectangleTest::RectangleTest(deqp::Context &context, std::string &name, InternalFormat internalFormat,
+                             PixelFormat inputFormat)
     : deqp::TestCase(context, name.c_str(), "")
     , m_internalFormat(internalFormat)
     , m_usePBO(false)
     , m_textureTarget(GL_TEXTURE_2D)
     , m_defaultFillValue(0xaa)
+    , m_inputFormat(inputFormat)
 {
+    TestCase::m_name.append("_format_" + getFormatStr(inputFormat.format).substr(3));
+    std::transform(TestCase::m_name.begin(), TestCase::m_name.end(), TestCase::m_name.begin(), tolower);
 }
 
 RectangleTest::~RectangleTest()
@@ -3803,85 +3807,75 @@ void RectangleTest::testAllFormatsAndTypes()
 
     const PixelType *types;
     int typesCount;
-    const PixelFormat *formats;
-    int formatsCount;
+
     if (glu::isContextTypeES(m_context.getRenderContext().getType()))
     {
-        types        = esTypes;
-        typesCount   = DE_LENGTH_OF_ARRAY(esTypes);
-        formats      = esFormats;
-        formatsCount = DE_LENGTH_OF_ARRAY(esFormats);
+        types      = esTypes;
+        typesCount = DE_LENGTH_OF_ARRAY(esTypes);
     }
     else
     {
-        types        = coreTypes;
-        typesCount   = DE_LENGTH_OF_ARRAY(coreTypes);
-        formats      = coreFormats;
-        formatsCount = DE_LENGTH_OF_ARRAY(coreFormats);
+        types      = coreTypes;
+        typesCount = DE_LENGTH_OF_ARRAY(coreTypes);
     }
 
-    for (int inputFormatIndex = 0; inputFormatIndex < formatsCount; inputFormatIndex++)
+    for (int inputTypeIndex = 0; inputTypeIndex < typesCount; inputTypeIndex++)
     {
-        m_inputFormat = formats[inputFormatIndex];
+        GLenum error = 0;
+        m_inputType  = types[inputTypeIndex];
 
-        for (int inputTypeIndex = 0; inputTypeIndex < typesCount; inputTypeIndex++)
+        applyInitialStorageModes();
+
+        // Create input gradient in format,type, with appropriate range
+        createGradient();
+        if (m_gradient.empty())
+            TCU_FAIL("Could not create gradient.");
+
+        if (m_unpackProperties.swapBytes)
+            swapBytes(m_inputType.size, m_gradient);
+
+        GLuint texture;
+        gl.genTextures(1, &texture);
+        gl.bindTexture(m_textureTarget, texture);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture");
+        if (m_textureTarget == GL_TEXTURE_3D)
         {
-            GLenum error = 0;
-            m_inputType  = types[inputTypeIndex];
+            gl.texImage3D(GL_TEXTURE_3D, 0, m_internalFormat.sizedFormat, GRADIENT_WIDTH, GRADIENT_HEIGHT, 1, 0,
+                          m_inputFormat.format, m_inputType.type, &m_gradient[0]);
+        }
+        else
+        {
+            gl.texImage2D(GL_TEXTURE_2D, 0, m_internalFormat.sizedFormat, GRADIENT_WIDTH, GRADIENT_HEIGHT, 0,
+                          m_inputFormat.format, m_inputType.type, &m_gradient[0]);
+        }
 
-            applyInitialStorageModes();
+        if (m_unpackProperties.swapBytes)
+            swapBytes(m_inputType.size, m_gradient);
 
-            // Create input gradient in format,type, with appropriate range
-            createGradient();
-            if (m_gradient.empty())
-                TCU_FAIL("Could not create gradient.");
-
-            if (m_unpackProperties.swapBytes)
-                swapBytes(m_inputType.size, m_gradient);
-
-            GLuint texture;
-            gl.genTextures(1, &texture);
-            gl.bindTexture(m_textureTarget, texture);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture");
-            if (m_textureTarget == GL_TEXTURE_3D)
+        error = gl.getError();
+        if (isFormatValid(m_inputFormat, m_inputType, m_internalFormat, true, false, INPUT_TEXIMAGE))
+        {
+            if (error == GL_NO_ERROR)
             {
-                gl.texImage3D(GL_TEXTURE_3D, 0, m_internalFormat.sizedFormat, GRADIENT_WIDTH, GRADIENT_HEIGHT, 1, 0,
-                              m_inputFormat.format, m_inputType.type, &m_gradient[0]);
+                if (!glu::isContextTypeES(renderContext.getType()))
+                    result &= getTexImage();
+                result &= doRead(texture);
             }
             else
             {
-                gl.texImage2D(GL_TEXTURE_2D, 0, m_internalFormat.sizedFormat, GRADIENT_WIDTH, GRADIENT_HEIGHT, 0,
-                              m_inputFormat.format, m_inputType.type, &m_gradient[0]);
-            }
-
-            if (m_unpackProperties.swapBytes)
-                swapBytes(m_inputType.size, m_gradient);
-
-            error = gl.getError();
-            if (isFormatValid(m_inputFormat, m_inputType, m_internalFormat, true, false, INPUT_TEXIMAGE))
-            {
-                if (error == GL_NO_ERROR)
-                {
-                    if (!glu::isContextTypeES(renderContext.getType()))
-                        result &= getTexImage();
-                    result &= doRead(texture);
-                }
-                else
-                {
-                    m_testCtx.getLog() << tcu::TestLog::Message << "Valid format used but glTexImage2D/3D failed"
-                                       << tcu::TestLog::EndMessage;
-                    result = false;
-                }
-            }
-            else if (error == GL_NO_ERROR)
-            {
-                m_testCtx.getLog() << tcu::TestLog::Message << "Invalid format used but glTexImage2D/3D succeeded"
+                m_testCtx.getLog() << tcu::TestLog::Message << "Valid format used but glTexImage2D/3D failed"
                                    << tcu::TestLog::EndMessage;
                 result = false;
             }
-
-            gl.deleteTextures(1, &texture);
         }
+        else if (error == GL_NO_ERROR)
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message << "Invalid format used but glTexImage2D/3D succeeded"
+                               << tcu::TestLog::EndMessage;
+            result = false;
+        }
+
+        gl.deleteTextures(1, &texture);
     }
 
     if (result)
@@ -3979,12 +3973,13 @@ tcu::TestNode::IterateResult InitialValuesTest::iterate(void)
 class PBORectangleTest : public RectangleTest
 {
 public:
-    PBORectangleTest(deqp::Context &context, std::string &name, InternalFormat internalFormat);
+    PBORectangleTest(deqp::Context &context, std::string &name, InternalFormat internalFormat, PixelFormat inputFormat);
     virtual ~PBORectangleTest();
 };
 
-PBORectangleTest::PBORectangleTest(deqp::Context &context, std::string &name, InternalFormat internalFormat)
-    : RectangleTest(context, name, internalFormat)
+PBORectangleTest::PBORectangleTest(deqp::Context &context, std::string &name, InternalFormat internalFormat,
+                                   PixelFormat inputFormat)
+    : RectangleTest(context, name, internalFormat, inputFormat)
 {
     m_usePBO = true;
 }
@@ -3996,7 +3991,8 @@ PBORectangleTest::~PBORectangleTest()
 class VariedRectangleTest : public RectangleTest
 {
 public:
-    VariedRectangleTest(deqp::Context &context, std::string &name, InternalFormat internalFormat);
+    VariedRectangleTest(deqp::Context &context, std::string &name, InternalFormat internalFormat,
+                        PixelFormat inputFormat);
     virtual ~VariedRectangleTest();
 
     tcu::TestNode::IterateResult iterate(void);
@@ -4010,8 +4006,9 @@ protected:
     };
 };
 
-VariedRectangleTest::VariedRectangleTest(deqp::Context &context, std::string &name, InternalFormat internalFormat)
-    : RectangleTest(context, name, internalFormat)
+VariedRectangleTest::VariedRectangleTest(deqp::Context &context, std::string &name, InternalFormat internalFormat,
+                                         PixelFormat inputFormat)
+    : RectangleTest(context, name, internalFormat, inputFormat)
 {
 }
 
@@ -4177,14 +4174,65 @@ void PackedPixelsTests::init(void)
         std::string name = internalFormatString.substr(3);
         std::transform(name.begin(), name.end(), name.begin(), tolower);
 
-        rectangleGroup->addChild(new RectangleTest(m_context, name, internalFormat));
-        pboRectangleGroup->addChild(new PBORectangleTest(m_context, name, internalFormat));
-        variedRectangleGroup->addChild(new VariedRectangleTest(m_context, name, internalFormat));
+        addRectangleTest(rectangleGroup, name, internalFormat);
+        addPBORectangleTest(pboRectangleGroup, name, internalFormat);
+        addVariedRectangleTest(variedRectangleGroup, name, internalFormat);
     }
 
     addChild(rectangleGroup);
     addChild(pboRectangleGroup);
     addChild(variedRectangleGroup);
+}
+
+template <class T>
+void PackedPixelsTests::addRectangleTests(TestCaseGroup *testCaseGroup, std::string &name,
+                                          const InternalFormat &internalFormat)
+{
+    const PixelFormat *formats;
+    int formatsCount;
+
+    if (glu::isContextTypeES(m_context.getRenderContext().getType()))
+    {
+        formats      = esFormats;
+        formatsCount = DE_LENGTH_OF_ARRAY(esFormats);
+    }
+    else
+    {
+        formats      = coreFormats;
+        formatsCount = DE_LENGTH_OF_ARRAY(coreFormats);
+    }
+
+    for (int inputFormatIndex = 0; inputFormatIndex < formatsCount; inputFormatIndex++)
+    {
+        testCaseGroup->addChild(new T(m_context, name, internalFormat, formats[inputFormatIndex]));
+    }
+}
+
+void PackedPixelsTests::addRectangleTest(TestCaseGroup *testCaseGroup, std::string &name,
+                                         const InternalFormat &internalFormat)
+{
+    if (testCaseGroup == nullptr)
+        return;
+
+    addRectangleTests<RectangleTest>(testCaseGroup, name, internalFormat);
+}
+
+void PackedPixelsTests::addPBORectangleTest(TestCaseGroup *testCaseGroup, std::string &name,
+                                            const InternalFormat &internalFormat)
+{
+    if (testCaseGroup == nullptr)
+        return;
+
+    addRectangleTests<PBORectangleTest>(testCaseGroup, name, internalFormat);
+}
+
+void PackedPixelsTests::addVariedRectangleTest(TestCaseGroup *testCaseGroup, std::string &name,
+                                               const InternalFormat &internalFormat)
+{
+    if (testCaseGroup == nullptr)
+        return;
+
+    addRectangleTests<VariedRectangleTest>(testCaseGroup, name, internalFormat);
 }
 
 } // namespace glcts

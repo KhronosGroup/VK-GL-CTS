@@ -76,7 +76,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const IVec3 &size, const VkFormat &
     const VkImageCreateFlags flags      = cubemap ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,  //  VkStructureType         sType;
-        DE_NULL,                              //  const void*             pNext;
+        nullptr,                              //  const void*             pNext;
         flags,                                //  VkImageCreateFlags      flags;
         VK_IMAGE_TYPE_2D,                     //  VkImageType             imageType;
         format,                               //  VkFormat                format;
@@ -88,7 +88,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const IVec3 &size, const VkFormat &
         usage,                                //  VkImageUsageFlags       usage;
         VK_SHARING_MODE_EXCLUSIVE,            //  VkSharingMode           sharingMode;
         0u,                                   //  uint32_t                queueFamilyIndexCount;
-        DE_NULL,                              //  const uint32_t*         pQueueFamilyIndices;
+        nullptr,                              //  const uint32_t*         pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,            //  VkImageLayout           initialLayout;
     };
 
@@ -99,7 +99,7 @@ Move<VkBuffer> makeVertexBuffer(const DeviceInterface &vk, const VkDevice device
 {
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType      sType;
-        DE_NULL,                              // const void*          pNext;
+        nullptr,                              // const void*          pNext;
         0u,                                   // VkBufferCreateFlags  flags;
         1024u,                                // VkDeviceSize     size;
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags   usage;
@@ -142,7 +142,7 @@ Move<VkSampler> makeSampler(const DeviceInterface &vk, const VkDevice &device)
 {
     const VkSamplerCreateInfo samplerParams = {
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType          sType;
-        DE_NULL,                                 // const void*              pNext;
+        nullptr,                                 // const void*              pNext;
         (VkSamplerCreateFlags)0,                 // VkSamplerCreateFlags     flags;
         VK_FILTER_LINEAR,                        // VkFilter                 magFilter;
         VK_FILTER_LINEAR,                        // VkFilter                 minFilter;
@@ -332,7 +332,7 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate(void)
     Move<VkRenderPass> renderPass1 = makeRenderPass(
         vk, device, m_format, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, DE_NULL);
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, nullptr);
 
     Move<VkFramebuffer> framebuffer1 =
         makeFramebuffer(vk, device, *renderPass1, cubemapImageView.get(), renderSize.width, renderSize.height);
@@ -342,10 +342,11 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate(void)
     const Move<VkShaderModule> fragmentModule1 =
         createShaderModule(vk, device, m_context.getBinaryCollection().get("frag1"), 0u);
 
-    const Move<VkPipelineLayout> pipelineLayout1 = makePipelineLayout(vk, device, 0, DE_NULL, 1, &pushConstantRange);
-    const Move<VkPipeline> graphicsPipeline1     = makeGraphicsPipeline(
-        vk, device, pipelineLayout1.get(), vertexModule1.get(), DE_NULL, DE_NULL, DE_NULL, fragmentModule1.get(),
-        renderPass1.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, DE_NULL);
+    const Move<VkPipelineLayout> pipelineLayout1 = makePipelineLayout(vk, device, 0, nullptr, 1, &pushConstantRange);
+    const Move<VkPipeline> graphicsPipeline1 =
+        makeGraphicsPipeline(vk, device, pipelineLayout1.get(), vertexModule1.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, fragmentModule1.get(), renderPass1.get(), viewports, scissors,
+                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, nullptr);
 
     Move<VkRenderPass> renderPass2 = makeRenderPass(vk, device, m_format, VK_FORMAT_UNDEFINED,
                                                     VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -374,9 +375,10 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate(void)
         vtxAttrDescriptions.data(),      // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
     };
 
-    const Move<VkPipeline> graphicsPipeline2 = makeGraphicsPipeline(
-        vk, device, pipelineLayout2.get(), vertexModule2.get(), DE_NULL, DE_NULL, DE_NULL, fragmentModule2.get(),
-        renderPass2.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputInfo);
+    const Move<VkPipeline> graphicsPipeline2 =
+        makeGraphicsPipeline(vk, device, pipelineLayout2.get(), vertexModule2.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, fragmentModule2.get(), renderPass2.get(), viewports, scissors,
+                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputInfo);
 
     // The values sampled in the second pipeline will be copied to this buffer.
     const VkBufferCreateInfo resultBufferCreateInfo =
@@ -404,7 +406,7 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate(void)
     beginCommandBuffer(vk, *cmdBuffer);
 
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout2, 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     for (int pass = 0; pass < 2; pass++)
     {
@@ -414,7 +416,7 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate(void)
         vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 
         beginRenderPass(vk, *cmdBuffer, *renderPass1, *framebuffer1, makeRect2D(0, 0, imageSize.x(), imageSize.y()), 0,
-                        DE_NULL);
+                        nullptr);
         vk.cmdDraw(*cmdBuffer, static_cast<uint32_t>(vertices.size()), 1u, 0u, 0u);
         endRenderPass(vk, *cmdBuffer);
 
@@ -424,7 +426,7 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate(void)
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, cubemapImage.get(),
                 cubemapSubresourceRange);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier);
+                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1u, &barrier);
         }
 
         // Sample the four faces around the first face.
@@ -433,7 +435,7 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate(void)
         vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &uvBuffer.get(), &uvBufferOffset);
 
         beginRenderPass(vk, *cmdBuffer, *renderPass2, *framebuffer2, makeRect2D(0, 0, imageSize.x(), imageSize.y()), 0u,
-                        DE_NULL);
+                        nullptr);
         vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
         endRenderPass(vk, *cmdBuffer);
 
@@ -443,13 +445,13 @@ tcu::TestStatus SampleDrawnCubeFaceTestInstance::iterate(void)
                 0u, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, cubemapImage.get(), cubemapSubresourceRange);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier);
+                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1u, &barrier);
 
             const auto barrier2 = makeImageMemoryBarrier(
                 0u, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, targetImage.get(), targetSubresourceRange);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1u, &barrier2);
+                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1u, &barrier2);
         }
     }
 

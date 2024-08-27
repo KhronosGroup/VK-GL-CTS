@@ -171,7 +171,7 @@ static const char *getDerivateFuncName(DerivateFunc func)
         return "fwidth";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -187,7 +187,7 @@ static const char *getDerivateFuncCaseName(DerivateFunc func)
         return "fwidth";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -1311,7 +1311,7 @@ TextureDerivateCase::TextureDerivateCase(Context &context, const char *name, con
                                          SurfaceType surfaceType, int numSamples)
     : TriangleDerivateCase(context, name, description)
     , m_func(func)
-    , m_texture(DE_NULL)
+    , m_texture(nullptr)
 {
     m_dataType       = type;
     m_precision      = precision;
@@ -1477,7 +1477,7 @@ void TextureDerivateCase::init(void)
 void TextureDerivateCase::deinit(void)
 {
     delete m_texture;
-    m_texture = DE_NULL;
+    m_texture = nullptr;
 }
 
 void TextureDerivateCase::setupRenderState(uint32_t program)

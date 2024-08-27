@@ -62,7 +62,7 @@ static int testResultSeverity(qpTestResult testResult)
     return 0;
 }
 
-ResultCollector::ResultCollector(void) : m_log(DE_NULL), m_prefix(""), m_result(QP_TEST_RESULT_LAST), m_message("Pass")
+ResultCollector::ResultCollector(void) : m_log(nullptr), m_prefix(""), m_result(QP_TEST_RESULT_LAST), m_message("Pass")
 {
 }
 
@@ -84,7 +84,7 @@ qpTestResult ResultCollector::getResult(void) const
 
 void ResultCollector::addResult(qpTestResult result, const std::string &msg)
 {
-    if (m_log != DE_NULL)
+    if (m_log != nullptr)
         (*m_log) << TestLog::Message << m_prefix << msg << TestLog::EndMessage;
 
     if (testResultSeverity(result) > testResultSeverity(m_result))

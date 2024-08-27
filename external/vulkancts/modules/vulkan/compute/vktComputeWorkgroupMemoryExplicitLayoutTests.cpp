@@ -27,12 +27,8 @@
 #include "vktComputeWorkgroupMemoryExplicitLayoutTests.hpp"
 #include "vktAmberTestCase.hpp"
 #include "vktTestCase.hpp"
-#include "vktTestCaseUtil.hpp"
-#include "vktTestGroupUtil.hpp"
 
 #include "vkBufferWithMemory.hpp"
-#include "vkImageWithMemory.hpp"
-#include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -40,14 +36,11 @@
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
 
-#include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
 
-#include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 
-#include <algorithm>
 #include <vector>
 #include <cassert>
 
@@ -91,7 +84,7 @@ void checkSupportWithParams(Context &context, const CheckSupportParams &params)
     VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR layout_features;
     deMemset(&layout_features, 0, sizeof(layout_features));
     layout_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR;
-    layout_features.pNext = DE_NULL;
+    layout_features.pNext = nullptr;
 
     VkPhysicalDeviceShaderFloat16Int8Features f16_i8_features;
     deMemset(&f16_i8_features, 0, sizeof(f16_i8_features));
@@ -201,7 +194,7 @@ tcu::TestStatus runCompute(Context &context, uint32_t workgroupSize,
 
     beginCommandBuffer(vk, *cmdBuffer, 0);
 
-    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u, DE_NULL);
+    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u, nullptr);
     pipeline.bind(*cmdBuffer);
 
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
@@ -1271,7 +1264,8 @@ void AddCopyMemoryTests(tcu::TestCaseGroup *group, vk::ComputePipelineConstructi
     group->addChild(
         CreateAmberTestCase(testCtx, "two_invocations", "copy_memory_two_invocations.amber", {}, false, shaderObject));
     group->addChild(CreateAmberTestCase(testCtx, "variable_pointers", "copy_memory_variable_pointers.amber",
-                                        {"VariablePointerFeatures.variablePointers"}, false, shaderObject));
+                                        {"VariablePointerFeatures.variablePointers", "VK_EXT_descriptor_indexing"},
+                                        false, shaderObject));
 }
 
 void AddZeroInitializeExtensionTests(tcu::TestCaseGroup *group,
@@ -1315,13 +1309,16 @@ tcu::TestCaseGroup *createWorkgroupMemoryExplicitLayoutTests(
     AddSizeTests(size, computePipelineConstructionType);
     tests->addChild(size);
 
-    tcu::TestCaseGroup *copy_memory = new tcu::TestCaseGroup(testCtx, "copy_memory");
-    AddCopyMemoryTests(copy_memory, computePipelineConstructionType);
-    tests->addChild(copy_memory);
+    if (!isComputePipelineConstructionTypeShaderObject(computePipelineConstructionType))
+    {
+        tcu::TestCaseGroup *copy_memory = new tcu::TestCaseGroup(testCtx, "copy_memory");
+        AddCopyMemoryTests(copy_memory, computePipelineConstructionType);
+        tests->addChild(copy_memory);
 
-    tcu::TestCaseGroup *zero_ext = new tcu::TestCaseGroup(testCtx, "zero_ext");
-    AddZeroInitializeExtensionTests(zero_ext, computePipelineConstructionType);
-    tests->addChild(zero_ext);
+        tcu::TestCaseGroup *zero_ext = new tcu::TestCaseGroup(testCtx, "zero_ext");
+        AddZeroInitializeExtensionTests(zero_ext, computePipelineConstructionType);
+        tests->addChild(zero_ext);
+    }
 
     return tests.release();
 }

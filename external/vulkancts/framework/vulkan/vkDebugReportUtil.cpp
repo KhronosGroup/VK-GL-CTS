@@ -162,7 +162,7 @@ Move<VkDebugUtilsMessengerEXT> DebugReportRecorder::createCallback(const Instanc
 bool isDebugUtilsSupported(const PlatformInterface &vkp)
 {
 #ifndef CTS_USES_VULKANSC
-    return isExtensionStructSupported(enumerateInstanceExtensionProperties(vkp, DE_NULL),
+    return isExtensionStructSupported(enumerateInstanceExtensionProperties(vkp, nullptr),
                                       RequiredExtension("VK_EXT_debug_utils"));
 #else  // CTS_USES_VULKANSC
     DE_UNREF(vkp);

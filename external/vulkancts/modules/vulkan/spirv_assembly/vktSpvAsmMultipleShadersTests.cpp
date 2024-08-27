@@ -147,29 +147,29 @@ tcu::TestStatus EntryPointsTest::iterate(void)
 
     const VkPipelineShaderStageCreateInfo pipelineAShaderStageParams{
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         static_cast<VkPipelineShaderStageCreateFlags>(0u),
         VK_SHADER_STAGE_COMPUTE_BIT,
         *shaderModule,
         "mainA",
-        DE_NULL,
+        nullptr,
     };
     const VkPipelineShaderStageCreateInfo pipelineBShaderStageParams{
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         static_cast<VkPipelineShaderStageCreateFlags>(0u),
         VK_SHADER_STAGE_COMPUTE_BIT,
         *shaderModule,
         "mainB",
-        DE_NULL,
+        nullptr,
     };
     VkComputePipelineCreateInfo pipelineCreateInfo{
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         static_cast<VkPipelineCreateFlags>(0u),
         pipelineBShaderStageParams,
         *pipelineLayout,
-        DE_NULL,
+        VK_NULL_HANDLE,
         0,
     };
 

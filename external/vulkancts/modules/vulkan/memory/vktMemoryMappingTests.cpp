@@ -322,7 +322,7 @@ size_t computeDeviceMemorySystemMemFootprint(const DeviceInterface &vk, VkDevice
         // 1 B allocation from memory type 0
         const VkMemoryAllocateInfo allocInfo = {
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            DE_NULL,
+            nullptr,
             1u,
             0u,
         };
@@ -365,7 +365,7 @@ Move<VkImage> makeImage(const DeviceInterface &vk, VkDevice device, VkDeviceSize
 
     const VkImageCreateInfo colorImageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                               // VkStructureType sType;
-        DE_NULL,                                                           // const void* pNext;
+        nullptr,                                                           // const void* pNext;
         0u,                                                                // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                                  // VkImageType imageType;
         format,                                                            // VkFormat format;
@@ -388,7 +388,7 @@ Move<VkBuffer> makeBuffer(const DeviceInterface &vk, VkDevice device, VkDeviceSi
 {
     const VkBufferCreateInfo bufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                // VkStructureType sType;
-        DE_NULL,                                                             // const void* pNext;
+        nullptr,                                                             // const void* pNext;
         0u,                                                                  // VkBufferCreateFlags flags;
         size,                                                                // VkDeviceSize size;
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // VkBufferUsageFlags usage;
@@ -396,19 +396,19 @@ Move<VkBuffer> makeBuffer(const DeviceInterface &vk, VkDevice device, VkDeviceSi
         1u,                                                                  // uint32_t queueFamilyCount;
         &queueFamilyIndex,                                                   // const uint32_t* pQueueFamilyIndices;
     };
-    return vk::createBuffer(vk, device, &bufferParams, (const VkAllocationCallbacks *)DE_NULL);
+    return vk::createBuffer(vk, device, &bufferParams, nullptr);
 }
 
 VkMemoryRequirements getImageMemoryRequirements(const DeviceInterface &vk, VkDevice device, Move<VkImage> &image)
 {
     VkImageMemoryRequirementsInfo2 info = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2, // VkStructureType            sType
-        DE_NULL,                                            // const void*                pNext
+        nullptr,                                            // const void*                pNext
         *image                                              // VkImage                    image
     };
     VkMemoryDedicatedRequirements dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS, // VkStructureType            sType
-        DE_NULL,                                         // const void*                pNext
+        nullptr,                                         // const void*                pNext
         VK_FALSE,                                        // VkBool32                    prefersDedicatedAllocation
         VK_FALSE                                         // VkBool32                    requiresDedicatedAllocation
     };
@@ -427,12 +427,12 @@ VkMemoryRequirements getBufferMemoryRequirements(const DeviceInterface &vk, VkDe
 {
     VkBufferMemoryRequirementsInfo2 info = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2, // VkStructureType            sType
-        DE_NULL,                                             // const void*                pNext
+        nullptr,                                             // const void*                pNext
         *buffer                                              // VkImage                    image
     };
     VkMemoryDedicatedRequirements dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS, // VkStructureType            sType
-        DE_NULL,                                         // const void*                pNext
+        nullptr,                                         // const void*                pNext
         VK_FALSE,                                        // VkBool32                    prefersDedicatedAllocation
         VK_FALSE                                         // VkBool32                    requiresDedicatedAllocation
     };
@@ -452,7 +452,7 @@ Move<VkDeviceMemory> allocMemory(const DeviceInterface &vk, VkDevice device, VkD
 {
     const VkMemoryAllocateInfo pAllocInfo = {
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        DE_NULL,
+        nullptr,
         pAllocInfo_allocationSize,
         pAllocInfo_memoryTypeIndex,
     };
@@ -469,7 +469,7 @@ VkDeviceSize findLargeAllocationSize(const DeviceInterface &vk, VkDevice device,
     {
         const VkMemoryAllocateInfo allocInfo = {
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            DE_NULL,
+            nullptr,
             size,
             memoryTypeIndex,
         };
@@ -489,20 +489,20 @@ VkDeviceSize findLargeAllocationSize(const DeviceInterface &vk, VkDevice device,
 
 Move<VkDeviceMemory> allocMemory(const DeviceInterface &vk, VkDevice device, VkDeviceSize pAllocInfo_allocationSize,
                                  uint32_t pAllocInfo_memoryTypeIndex, Move<VkImage> &image, Move<VkBuffer> &buffer,
-                                 const VkAllocationCallbacks *allocator = DE_NULL)
+                                 const VkAllocationCallbacks *allocator = nullptr)
 {
     DE_ASSERT((!image) || (!buffer));
 
     const VkMemoryDedicatedAllocateInfo dedicatedAllocateInfo = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType        sType
-        DE_NULL,                                          // const void*            pNext
+        nullptr,                                          // const void*            pNext
         *image,                                           // VkImage                image
         *buffer                                           // VkBuffer                buffer
     };
 
     const VkMemoryAllocateInfo pAllocInfo = {
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        !image && !buffer ? DE_NULL : &dedicatedAllocateInfo,
+        !image && !buffer ? nullptr : &dedicatedAllocateInfo,
         pAllocInfo_allocationSize,
         pAllocInfo_memoryTypeIndex,
     };
@@ -610,7 +610,7 @@ static Move<VkDevice> createProtectedMemoryDevice(const Context &context, const 
 
     VkDeviceQueueCreateInfo queueInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT,   // VkDeviceQueueCreateFlags flags;
         queueFamilyIndex,                           // uint32_t queueFamilyIndex;
         1u,                                         // uint32_t queueCount;
@@ -653,7 +653,7 @@ tcu::TestStatus testMemoryMapping(Context &context, const TestConfig config)
     {
         VkPhysicalDeviceProtectedMemoryFeatures protectedFeatures;
         protectedFeatures.sType           = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
-        protectedFeatures.pNext           = DE_NULL;
+        protectedFeatures.pNext           = nullptr;
         protectedFeatures.protectedMemory = VK_FALSE;
 
         VkPhysicalDeviceFeatures2 deviceFeatures2;
@@ -828,11 +828,11 @@ tcu::TestStatus testMemoryMapping(Context &context, const TestConfig config)
                 {
                     atLeastOneTestPerformed = true;
                     AllocationCallbackRecorder recorder(getSystemAllocator());
-                    const VkAllocationCallbacks *allocator = config.implicitUnmap ? recorder.getCallbacks() : DE_NULL;
+                    const VkAllocationCallbacks *allocator = config.implicitUnmap ? recorder.getCallbacks() : nullptr;
                     Move<VkDeviceMemory> memory(
                         allocMemory(vkd, device, allocationSize, memoryTypeIndex, image, buffer, allocator));
                     de::Random rng(config.seed);
-                    uint8_t *mapping = DE_NULL;
+                    uint8_t *mapping = nullptr;
 
                     {
                         void *ptr;
@@ -858,7 +858,7 @@ tcu::TestStatus testMemoryMapping(Context &context, const TestConfig config)
                         {
                             const VkMappedMemoryRange range = {
                                 VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-                                DE_NULL,
+                                nullptr,
 
                                 *memory,
                                 (config.flushMappings[ndx].offset % atomSize == 0) ?
@@ -895,7 +895,7 @@ tcu::TestStatus testMemoryMapping(Context &context, const TestConfig config)
                         {
                             const VkMappedMemoryRange range = {
                                 VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-                                DE_NULL,
+                                nullptr,
 
                                 *memory,
                                 (config.invalidateMappings[ndx].offset % atomSize == 0) ?
@@ -1045,7 +1045,7 @@ void randomRanges(de::Random &rng, vector<VkMappedMemoryRange> &ranges, size_t c
         const VkDeviceSize size   = randomSize(rng, atomSize, maxSize);
         const VkDeviceSize offset = minOffset + randomOffset(rng, atomSize, maxSize - size);
 
-        const VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, DE_NULL,
+        const VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, nullptr,
 
                                            memory, offset, size};
         ranges[rangeNdx]                = range;
@@ -1109,7 +1109,7 @@ MemoryObject::MemoryObject(const DeviceInterface &vkd, VkDevice device, VkDevice
     , m_atomSize(atomSize)
     , m_memoryUsage(memoryUsage)
     , m_referenceMemoryUsage(referenceMemoryUsage)
-    , m_mapping(DE_NULL)
+    , m_mapping(nullptr)
     , m_referenceMemory((size_t)size, (size_t)m_atomSize)
 {
     m_memory = allocMemory(m_vkd, m_device, m_size, m_memoryTypeIndex);
@@ -1140,7 +1140,7 @@ void MemoryObject::unmap(bool map2)
     unmapMemoryWrapper(m_vkd, m_device, *m_memory, map2);
 
     delete m_mapping;
-    m_mapping = DE_NULL;
+    m_mapping = nullptr;
 }
 
 void MemoryObject::randomFlush(const DeviceInterface &vkd, VkDevice device, de::Random &rng)
@@ -1154,7 +1154,7 @@ void MemoryObject::randomFlush(const DeviceInterface &vkd, VkDevice device, de::
     for (size_t rangeNdx = 0; rangeNdx < ranges.size(); rangeNdx++)
         m_referenceMemory.flush((size_t)ranges[rangeNdx].offset, (size_t)ranges[rangeNdx].size);
 
-    VK_CHECK(vkd.flushMappedMemoryRanges(device, (uint32_t)ranges.size(), ranges.empty() ? DE_NULL : &ranges[0]));
+    VK_CHECK(vkd.flushMappedMemoryRanges(device, (uint32_t)ranges.size(), ranges.empty() ? nullptr : &ranges[0]));
 }
 
 void MemoryObject::randomInvalidate(const DeviceInterface &vkd, VkDevice device, de::Random &rng)
@@ -1168,7 +1168,7 @@ void MemoryObject::randomInvalidate(const DeviceInterface &vkd, VkDevice device,
     for (size_t rangeNdx = 0; rangeNdx < ranges.size(); rangeNdx++)
         m_referenceMemory.invalidate((size_t)ranges[rangeNdx].offset, (size_t)ranges[rangeNdx].size);
 
-    VK_CHECK(vkd.invalidateMappedMemoryRanges(device, (uint32_t)ranges.size(), ranges.empty() ? DE_NULL : &ranges[0]));
+    VK_CHECK(vkd.invalidateMappedMemoryRanges(device, (uint32_t)ranges.size(), ranges.empty() ? nullptr : &ranges[0]));
 }
 
 enum

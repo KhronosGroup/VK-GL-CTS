@@ -141,7 +141,7 @@ void ScaleProgram::draw(GLuint vao, GLfloat scale, bool tf, Surface *dst)
     if (tf)
         gl.endTransformFeedback();
 
-    if (dst != DE_NULL)
+    if (dst != nullptr)
         readRectangle(m_renderCtx, viewport, *dst);
 
     gl.bindVertexArray(0);
@@ -153,7 +153,7 @@ void ScaleProgram::setPos(GLuint buffer, GLuint vao)
 
     gl.bindBuffer(GL_ARRAY_BUFFER, buffer);
     gl.bindVertexArray(vao);
-    GLU_CHECK_CALL_ERROR(gl.vertexAttribPointer(m_posLoc, NUM_COMPONENTS, GL_FLOAT, false, 0, DE_NULL), gl.getError());
+    GLU_CHECK_CALL_ERROR(gl.vertexAttribPointer(m_posLoc, NUM_COMPONENTS, GL_FLOAT, false, 0, nullptr), gl.getError());
     gl.bindVertexArray(0);
     gl.bindBuffer(GL_ARRAY_BUFFER, 0);
     GLU_CHECK_ERROR(gl.getError());
@@ -396,7 +396,7 @@ void BufferTfOutputAttacher::setupContainer(GLuint seed, GLuint tf)
     m_program.setPos(*posBuf, *vao);
 
     glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tf);
-    m_program.draw(*vao, -1.0, true, DE_NULL);
+    m_program.draw(*vao, -1.0, true, nullptr);
     log() << TestLog::Message << "// Drew an image with seed " << seed << " with transform feedback to " << tf
           << TestLog::EndMessage;
     glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
@@ -526,7 +526,7 @@ IterateResult TfDeleteActiveTest::iterate(void)
         GLU_CHECK_CALL(glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tf));
         GLU_CHECK_CALL(glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, *buf));
         GLU_CHECK_CALL(
-            glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 3 * sizeof(glw::GLfloat[4]), DE_NULL, GL_DYNAMIC_COPY));
+            glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 3 * sizeof(glw::GLfloat[4]), nullptr, GL_DYNAMIC_COPY));
 
         {
             ScopedTransformFeedbackFeedback xfb(static_cast<glu::CallLogWrapper &>(*this), GL_TRIANGLES);

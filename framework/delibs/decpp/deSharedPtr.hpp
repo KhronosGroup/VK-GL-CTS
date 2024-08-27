@@ -78,7 +78,7 @@ struct SharedPtrState : public SharedPtrStateBase
     virtual void deletePtr(void) throw()
     {
         m_deleter(m_ptr);
-        m_ptr = DE_NULL;
+        m_ptr = nullptr;
     }
 
 private:
@@ -209,8 +209,8 @@ private:
  * \brief Construct empty shared pointer.
  *//*--------------------------------------------------------------------*/
 template <typename T>
-inline SharedPtr<T>::SharedPtr(void) : m_ptr(DE_NULL)
-                                     , m_state(DE_NULL)
+inline SharedPtr<T>::SharedPtr(void) : m_ptr(nullptr)
+                                     , m_state(nullptr)
 {
 }
 
@@ -225,8 +225,8 @@ inline SharedPtr<T>::SharedPtr(void) : m_ptr(DE_NULL)
  * released.
  *//*--------------------------------------------------------------------*/
 template <typename T>
-inline SharedPtr<T>::SharedPtr(T *ptr) : m_ptr(DE_NULL)
-                                       , m_state(DE_NULL)
+inline SharedPtr<T>::SharedPtr(T *ptr) : m_ptr(nullptr)
+                                       , m_state(nullptr)
 {
     try
     {
@@ -260,8 +260,8 @@ inline SharedPtr<T>::SharedPtr(T *ptr) : m_ptr(DE_NULL)
  *//*--------------------------------------------------------------------*/
 template <typename T>
 template <typename Deleter>
-inline SharedPtr<T>::SharedPtr(T *ptr, Deleter deleter) : m_ptr(DE_NULL)
-                                                        , m_state(DE_NULL)
+inline SharedPtr<T>::SharedPtr(T *ptr, Deleter deleter) : m_ptr(nullptr)
+                                                        , m_state(nullptr)
 {
     try
     {
@@ -311,8 +311,8 @@ inline SharedPtr<T>::SharedPtr(const SharedPtr<Y> &other) : m_ptr(other.m_ptr)
  *//*--------------------------------------------------------------------*/
 template <typename T>
 template <typename Y>
-inline SharedPtr<T>::SharedPtr(const WeakPtr<Y> &other) : m_ptr(DE_NULL)
-                                                        , m_state(DE_NULL)
+inline SharedPtr<T>::SharedPtr(const WeakPtr<Y> &other) : m_ptr(nullptr)
+                                                        , m_state(nullptr)
 {
     acquireFromWeak(other);
 }
@@ -470,8 +470,8 @@ template <typename T>
 inline void SharedPtr<T>::clear(void)
 {
     release();
-    m_ptr   = DE_NULL;
-    m_state = DE_NULL;
+    m_ptr   = nullptr;
+    m_state = nullptr;
 }
 
 template <typename T>
@@ -521,14 +521,14 @@ inline void SharedPtr<T>::release(void)
     {
         if (deAtomicDecrement32(&m_state->strongRefCount) == 0)
         {
-            m_ptr = DE_NULL;
+            m_ptr = nullptr;
             m_state->deletePtr();
         }
 
         if (deAtomicDecrement32(&m_state->weakRefCount) == 0)
         {
             delete m_state;
-            m_state = DE_NULL;
+            m_state = nullptr;
         }
     }
 }
@@ -539,8 +539,8 @@ inline void SharedPtr<T>::release(void)
  * \brief Construct empty weak pointer.
  *//*--------------------------------------------------------------------*/
 template <typename T>
-inline WeakPtr<T>::WeakPtr(void) : m_ptr(DE_NULL)
-                                 , m_state(DE_NULL)
+inline WeakPtr<T>::WeakPtr(void) : m_ptr(nullptr)
+                                 , m_state(nullptr)
 {
 }
 
@@ -632,8 +632,8 @@ inline void WeakPtr<T>::release(void)
         if (deAtomicDecrement32(&m_state->weakRefCount) == 0)
         {
             delete m_state;
-            m_state = DE_NULL;
-            m_ptr   = DE_NULL;
+            m_state = nullptr;
+            m_ptr   = nullptr;
         }
     }
 }

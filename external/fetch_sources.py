@@ -252,7 +252,7 @@ class GitRepo (Source):
 
     def checkout(self, url, fullDstPath, force):
         if not os.path.exists(os.path.join(fullDstPath, '.git')):
-            execute(["git", "clone", "--no-checkout", url, fullDstPath])
+            run(["git", "clone", "--no-checkout", url, fullDstPath])
 
         pushWorkingDir(fullDstPath)
         print("Directory: " + fullDstPath)
@@ -261,15 +261,18 @@ class GitRepo (Source):
                 proc = subprocess.Popen(['git', 'tag', '-l', tag], stdout=subprocess.PIPE)
                 (stdout, stderr) = proc.communicate()
                 if len(stdout) > 0:
-                    execute(["git", "tag", "-d",tag])
+                    run(["git", "tag", "-d",tag])
             force_arg = ['--force'] if force else []
-            execute(["git", "fetch"] + force_arg + ["--tags", url, "+refs/heads/*:refs/remotes/origin/*"])
-            execute(["git", "checkout"] + force_arg + [self.revision])
+            run(["git", "fetch"] + force_arg + ["--tags", url, "+refs/heads/*:refs/remotes/origin/*"])
+            run(["git", "checkout"] + force_arg + [self.revision])
 
             if(self.patch != ""):
                 patchFile = os.path.join(EXTERNAL_DIR, self.patch)
-                execute(["git", "reset", "--hard", "HEAD"])
-                execute(["git", "apply", patchFile])
+                run(["git", "reset", "--hard", "HEAD"])
+                run(["git", "apply", patchFile])
+        except:
+            # This might be a KeyboardInterrupt or other error, propagate.
+            raise
         finally:
             popWorkingDir()
 
@@ -285,7 +288,12 @@ class GitRepo (Source):
 
         try:
             self.checkout(url, fullDstPath, force)
+        except KeyboardInterrupt:
+            # Propagate the exception to stop the process if possible.
+            raise
         except:
+            # For any other kind of exception, including subprocess errors, we
+            # try the backup URL.
             if backupUrl != None:
                 self.checkout(backupUrl, fullDstPath, force)
 
@@ -311,7 +319,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Tools.git",
         "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "148c97f6876e427efd76d2328122c3075eab4b8f",
+        "4c7e1fa5c3d988cca0e626d359d30b117b9c2822",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
@@ -322,7 +330,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Headers.git",
         "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "ff2afc3afc48dff4eec2a10f0212402a80708e38",
+        "db5a00f8cebe81146cafabf89019674a3c4bf03d",
         "spirv-headers"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Docs.git",
@@ -337,7 +345,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
-        "0f003c2785489f59cd01bb2440fcf303149100f2",
+        "6bb8b9979d12122c3ac2e627bcad965129556d12",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
@@ -389,24 +397,31 @@ def run(*popenargs, **kwargs):
 
     try:
         stdout, stderr = process.communicate(None)
+    except KeyboardInterrupt:
+        # Terminate the process, wait and propagate.
+        process.terminate()
+        process.wait()
+        raise
     except:
+        # With any other exception, we _kill_ the process and propagate.
         process.kill()
         process.wait()
         raise
-
-    retcode = process.poll()
-
-    if retcode:
-        raise subprocess.CalledProcessError(retcode, process.args, output=stdout, stderr=stderr)
-
-    return retcode, stdout, stderr
+    else:
+        # Everything good, fetch the retcode and raise exception if needed.
+        retcode = process.poll()
+        if retcode:
+            raise subprocess.CalledProcessError(retcode, process.args, output=stdout, stderr=stderr)
 
 if __name__ == "__main__":
     args = parseArgs()
     initializeLogger(args.verbose)
 
-    for pkg in PACKAGES:
-        if args.clean:
-            pkg.clean()
-        else:
-            pkg.update(args.protocol, args.force)
+    try:
+        for pkg in PACKAGES:
+            if args.clean:
+                pkg.clean()
+            else:
+                pkg.update(args.protocol, args.force)
+    except KeyboardInterrupt:
+        sys.exit("") # Returns 1.

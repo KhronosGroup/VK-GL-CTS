@@ -145,7 +145,7 @@ tcu::TestStatus BufferSuballocation::createTestBuffer(VkDeviceSize size, VkBuffe
     VkMemoryRequirements memReqs;
     const VkBufferCreateInfo bufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         size,                                 // VkDeviceSize size;
         usage,                                // VkBufferUsageFlags usage;
@@ -156,7 +156,7 @@ tcu::TestStatus BufferSuballocation::createTestBuffer(VkDeviceSize size, VkBuffe
 
     try
     {
-        testBuffer = vk::createBuffer(vk, vkDevice, &bufferParams, (const VkAllocationCallbacks *)DE_NULL);
+        testBuffer = vk::createBuffer(vk, vkDevice, &bufferParams, nullptr);
     }
     catch (const vk::Error &error)
     {
@@ -187,7 +187,7 @@ tcu::TestStatus BufferSuballocation::createTestBuffer(VkDeviceSize size, VkBuffe
 
     try
     {
-        memory = allocateMemory(vk, vkDevice, &memAlloc, (const VkAllocationCallbacks *)DE_NULL);
+        memory = allocateMemory(vk, vkDevice, &memAlloc, nullptr);
     }
     catch (const vk::Error &error)
     {
@@ -212,7 +212,7 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer(VkDeviceSize size, V
     VkPhysicalDeviceMemoryProperties memoryProperties;
     VkMemoryDedicatedRequirements dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS, // VkStructureType sType;
-        DE_NULL,                                         // const void* pNext;
+        nullptr,                                         // const void* pNext;
         false,                                           // VkBool32                prefersDedicatedAllocation
         false                                            // VkBool32                requiresDedicatedAllocation
     };
@@ -224,7 +224,7 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer(VkDeviceSize size, V
 
     const VkBufferCreateInfo bufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                              // const void* pNext;
+        nullptr,                              // const void* pNext;
         0u,                                   // VkBufferCreateFlags flags;
         size,                                 // VkDeviceSize size;
         usage,                                // VkBufferUsageFlags usage;
@@ -235,7 +235,7 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer(VkDeviceSize size, V
 
     try
     {
-        testBuffer = vk::createBuffer(vk, vkDevice, &bufferParams, (const VkAllocationCallbacks *)DE_NULL);
+        testBuffer = vk::createBuffer(vk, vkDevice, &bufferParams, nullptr);
     }
     catch (const vk::Error &error)
     {
@@ -244,7 +244,7 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer(VkDeviceSize size, V
 
     VkBufferMemoryRequirementsInfo2 info = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2, // VkStructureType        sType
-        DE_NULL,                                             // const void*            pNext
+        nullptr,                                             // const void*            pNext
         *testBuffer                                          // VkBuffer                buffer
     };
 
@@ -289,7 +289,7 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer(VkDeviceSize size, V
 
         vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
             VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType            sType
-            DE_NULL,                                          // const void*                pNext
+            nullptr,                                          // const void*                pNext
             VK_NULL_HANDLE,                                   // VkImage                    image
             *testBuffer                                       // VkBuffer                    buffer
         };
@@ -301,13 +301,13 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer(VkDeviceSize size, V
             heapTypeIndex,                          // uint32_t                    memoryTypeIndex
         };
 
-        result = vk.allocateMemory(vkDevice, &memoryAllocateInfo, (VkAllocationCallbacks *)DE_NULL, &rawMemory);
+        result = vk.allocateMemory(vkDevice, &memoryAllocateInfo, nullptr, &rawMemory);
 
         if (result != VK_SUCCESS)
             return tcu::TestStatus::fail("Unable to allocate " + de::toString(memReqs.memoryRequirements.size) +
                                          " bytes of memory");
 
-        memory = Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL));
+        memory = Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, nullptr));
     }
 
     if (vk.bindBufferMemory(vkDevice, *testBuffer, *memory, 0) != VK_SUCCESS)
@@ -349,7 +349,7 @@ tcu::TestStatus BufferViewTestInstance::iterate(void)
 
         try
         {
-            bufferView = createBufferView(vk, vkDevice, &bufferViewCreateInfo, (const VkAllocationCallbacks *)DE_NULL);
+            bufferView = createBufferView(vk, vkDevice, &bufferViewCreateInfo, nullptr);
         }
         catch (const vk::Error &error)
         {
@@ -373,8 +373,7 @@ tcu::TestStatus BufferViewTestInstance::iterate(void)
 
         try
         {
-            completeBufferView =
-                createBufferView(vk, vkDevice, &completeBufferViewCreateInfo, (const VkAllocationCallbacks *)DE_NULL);
+            completeBufferView = createBufferView(vk, vkDevice, &completeBufferViewCreateInfo, nullptr);
         }
         catch (const vk::Error &error)
         {

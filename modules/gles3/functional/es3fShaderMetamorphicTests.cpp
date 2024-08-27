@@ -193,7 +193,7 @@ ShaderMetamorphicVariant::IterateResult ShaderMetamorphicVariant::iterate(void)
     checkNondet(recipientImg, vertexSrc, recipientSrc);
     checkNondet(variantImg, vertexSrc, variantSrc);
 
-    if (m_sanityCheck != DE_NULL)
+    if (m_sanityCheck != nullptr)
     {
         bool isSane = m_sanityCheck(recipientImg.getAccess());
         if (!isSane)

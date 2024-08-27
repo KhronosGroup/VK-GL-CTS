@@ -201,7 +201,7 @@ InterInvocationTestCase::InterInvocationTestCase(Context &context, const char *n
     , m_storageBuf(0)
     , m_storageTex(0)
     , m_resultBuf(0)
-    , m_program(DE_NULL)
+    , m_program(nullptr)
 {
     DE_ASSERT(m_storage < STORAGE_LAST);
     DE_ASSERT(m_localWidth * m_localHeight <= 128); // minimum MAX_COMPUTE_WORK_GROUP_INVOCATIONS value
@@ -296,23 +296,23 @@ void InterInvocationTestCase::deinit(void)
     if (m_storageBuf)
     {
         m_context.getRenderContext().getFunctions().deleteBuffers(1, &m_storageBuf);
-        m_storageBuf = DE_NULL;
+        m_storageBuf = 0;
     }
 
     if (m_storageTex)
     {
         m_context.getRenderContext().getFunctions().deleteTextures(1, &m_storageTex);
-        m_storageTex = DE_NULL;
+        m_storageTex = 0;
     }
 
     if (m_resultBuf)
     {
         m_context.getRenderContext().getFunctions().deleteBuffers(1, &m_resultBuf);
-        m_resultBuf = DE_NULL;
+        m_resultBuf = 0;
     }
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 InterInvocationTestCase::IterateResult InterInvocationTestCase::iterate(void)
@@ -396,7 +396,7 @@ bool InterInvocationTestCase::verifyResults(void)
     const glw::Functions &gl      = m_context.getRenderContext().getFunctions();
     const int errorFloodThreshold = 5;
     int numErrorsLogged           = 0;
-    const void *mapped            = DE_NULL;
+    const void *mapped            = nullptr;
     std::vector<int32_t> results(m_workWidth * m_workHeight);
     bool error = false;
 
@@ -1236,7 +1236,7 @@ void InterCallTestCase::init(void)
 
     // generate resources and validate command list
 
-    m_operationPrograms.resize(m_cmds.size(), DE_NULL);
+    m_operationPrograms.resize(m_cmds.size(), nullptr);
     m_operationResultStorages.resize(m_cmds.size(), 0);
 
     for (int step = 0; step < (int)m_cmds.size(); ++step)
@@ -1491,7 +1491,7 @@ bool InterCallTestCase::verifyResults(void)
         if (m_operationResultStorages[step])
         {
             const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-            const void *mapped       = DE_NULL;
+            const void *mapped       = nullptr;
             std::vector<int32_t> results(m_invocationGridSize * m_invocationGridSize);
             bool error = false;
 
@@ -1841,7 +1841,7 @@ glw::GLuint InterCallTestCase::genResultStorage(void)
 
     gl.genBuffers(1, &retVal);
     gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, retVal);
-    gl.bufferData(GL_SHADER_STORAGE_BUFFER, m_invocationGridSize * m_invocationGridSize * sizeof(uint32_t), DE_NULL,
+    gl.bufferData(GL_SHADER_STORAGE_BUFFER, m_invocationGridSize * m_invocationGridSize * sizeof(uint32_t), nullptr,
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "gen buffer");
 
@@ -2351,8 +2351,8 @@ SSBOConcurrentAtomicCase::SSBOConcurrentAtomicCase(Context &context, const char 
     : TestCase(context, name, description)
     , m_numCalls(numCalls)
     , m_workSize(workSize)
-    , m_program(DE_NULL)
-    , m_bufferID(DE_NULL)
+    , m_program(nullptr)
+    , m_bufferID(0)
 {
 }
 
@@ -2406,7 +2406,7 @@ void SSBOConcurrentAtomicCase::deinit(void)
     m_intermediateResultBuffers.clear();
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 TestCase::IterateResult SSBOConcurrentAtomicCase::iterate(void)
@@ -2586,10 +2586,10 @@ ConcurrentAtomicCounterCase::ConcurrentAtomicCounterCase(Context &context, const
     : TestCase(context, name, description)
     , m_numCalls(numCalls)
     , m_workSize(workSize)
-    , m_evenProgram(DE_NULL)
-    , m_oddProgram(DE_NULL)
-    , m_counterBuffer(DE_NULL)
-    , m_intermediateResultBuffer(DE_NULL)
+    , m_evenProgram(nullptr)
+    , m_oddProgram(nullptr)
+    , m_counterBuffer(0)
+    , m_intermediateResultBuffer(0)
 {
 }
 
@@ -2651,10 +2651,10 @@ void ConcurrentAtomicCounterCase::deinit(void)
     }
 
     delete m_evenProgram;
-    m_evenProgram = DE_NULL;
+    m_evenProgram = nullptr;
 
     delete m_oddProgram;
-    m_oddProgram = DE_NULL;
+    m_oddProgram = nullptr;
 }
 
 TestCase::IterateResult ConcurrentAtomicCounterCase::iterate(void)
@@ -2810,10 +2810,10 @@ ConcurrentImageAtomicCase::ConcurrentImageAtomicCase(Context &context, const cha
     : TestCase(context, name, description)
     , m_numCalls(numCalls)
     , m_workSize(workSize)
-    , m_program(DE_NULL)
-    , m_imageReadProgram(DE_NULL)
-    , m_imageClearProgram(DE_NULL)
-    , m_imageID(DE_NULL)
+    , m_program(nullptr)
+    , m_imageReadProgram(nullptr)
+    , m_imageClearProgram(nullptr)
+    , m_imageID(0)
 {
 }
 
@@ -2896,13 +2896,13 @@ void ConcurrentImageAtomicCase::deinit(void)
     m_intermediateResultBuffers.clear();
 
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 
     delete m_imageReadProgram;
-    m_imageReadProgram = DE_NULL;
+    m_imageReadProgram = nullptr;
 
     delete m_imageClearProgram;
-    m_imageClearProgram = DE_NULL;
+    m_imageClearProgram = nullptr;
 }
 
 TestCase::IterateResult ConcurrentImageAtomicCase::iterate(void)
@@ -3188,9 +3188,9 @@ ConcurrentSSBOAtomicCounterMixedCase::ConcurrentSSBOAtomicCounterMixedCase(Conte
     : TestCase(context, name, description)
     , m_numCalls(numCalls)
     , m_workSize(workSize)
-    , m_bufferID(DE_NULL)
-    , m_ssboAtomicProgram(DE_NULL)
-    , m_atomicCounterProgram(DE_NULL)
+    , m_bufferID(0)
+    , m_ssboAtomicProgram(nullptr)
+    , m_atomicCounterProgram(nullptr)
 {
     // SSBO atomic XORs cancel out
     DE_ASSERT((workSize * numCalls) % (16 * 2) == 0);
@@ -3245,10 +3245,10 @@ void ConcurrentSSBOAtomicCounterMixedCase::deinit(void)
     }
 
     delete m_ssboAtomicProgram;
-    m_ssboAtomicProgram = DE_NULL;
+    m_ssboAtomicProgram = nullptr;
 
     delete m_atomicCounterProgram;
-    m_atomicCounterProgram = DE_NULL;
+    m_atomicCounterProgram = nullptr;
 }
 
 TestCase::IterateResult ConcurrentSSBOAtomicCounterMixedCase::iterate(void)

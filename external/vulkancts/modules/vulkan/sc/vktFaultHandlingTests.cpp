@@ -70,7 +70,7 @@ tcu::TestStatus testGetFaultData(Context &context, TestParams testParams)
     {
         faults.push_back({
             VK_STRUCTURE_TYPE_FAULT_DATA, // VkStructureType sType;
-            DE_NULL,                      // void* pNext;
+            nullptr,                      // void* pNext;
             VK_FAULT_LEVEL_UNASSIGNED,    // VkFaultLevel faultLevel;
             VK_FAULT_TYPE_UNASSIGNED,     // VkFaultType faultType;
         });
@@ -82,7 +82,7 @@ tcu::TestStatus testGetFaultData(Context &context, TestParams testParams)
     switch (testParams.faultValue)
     {
     case FHF_NULL:
-        result = vk.getFaultData(device, testParams.queryBehaviour, &unrecordedFaults, &faultCount, DE_NULL);
+        result = vk.getFaultData(device, testParams.queryBehaviour, &unrecordedFaults, &faultCount, nullptr);
 
         if (result != VK_SUCCESS)
         {
@@ -161,7 +161,7 @@ tcu::TestStatus testCreateDeviceWithFaultCallbackInfo(Context &context, FaultCal
     const VkPhysicalDevice physicalDevice =
         chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
 
-    void *pNext = DE_NULL;
+    void *pNext = nullptr;
 
     VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
                                                                  context.getResourceInterface()->getStatMax() :
@@ -183,7 +183,7 @@ tcu::TestStatus testCreateDeviceWithFaultCallbackInfo(Context &context, FaultCal
         {
             faults.push_back({
                 VK_STRUCTURE_TYPE_FAULT_DATA, // VkStructureType sType;
-                DE_NULL,                      // void* pNext;
+                nullptr,                      // void* pNext;
                 VK_FAULT_LEVEL_UNASSIGNED,    // VkFaultLevel faultLevel;
                 VK_FAULT_TYPE_UNASSIGNED,     // VkFaultType faultType;
             });
@@ -192,7 +192,7 @@ tcu::TestStatus testCreateDeviceWithFaultCallbackInfo(Context &context, FaultCal
 
     VkFaultCallbackInfo faultCallBackInfo = {
         VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO,                  // VkStructureType sType;
-        DE_NULL,                                                // void* pNext;
+        nullptr,                                                // void* pNext;
         uint32_t(faults.size()),                                // uint32_t faultCount;
         testParams.allocateFaultData ? faults.data() : nullptr, // VkFaultData* pFaults;
         testFaultCallback                                       // PFN_vkFaultCallbackFunction pfnFaultCallback;
@@ -206,7 +206,7 @@ tcu::TestStatus testCreateDeviceWithFaultCallbackInfo(Context &context, FaultCal
 
     const VkDeviceQueueCreateInfo deviceQueueCI = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // sType
-        DE_NULL,                                    // pNext
+        nullptr,                                    // pNext
         (VkDeviceQueueCreateFlags)0u,               // flags
         0,                                          //queueFamilyIndex;
         1,                                          //queueCount;
@@ -220,10 +220,10 @@ tcu::TestStatus testCreateDeviceWithFaultCallbackInfo(Context &context, FaultCal
         1,                                    // queueRecordCount;
         &deviceQueueCI,                       // pRequestedQueues;
         0,                                    // layerCount;
-        DE_NULL,                              // ppEnabledLayerNames;
+        nullptr,                              // ppEnabledLayerNames;
         0,                                    // extensionCount;
-        DE_NULL,                              // ppEnabledExtensionNames;
-        DE_NULL,                              // pEnabledFeatures;
+        nullptr,                              // ppEnabledExtensionNames;
+        nullptr,                              // pEnabledFeatures;
     };
 
     Move<VkDevice> resultingDevice =

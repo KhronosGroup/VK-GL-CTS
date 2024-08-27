@@ -583,7 +583,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
     const PlanarFormatDescription formatDescription = getPlanarFormatDescription(m_format);
 
     imageSparseInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageSparseInfo.pNext                 = DE_NULL;
+    imageSparseInfo.pNext                 = nullptr;
     imageSparseInfo.flags                 = VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
     imageSparseInfo.imageType             = mapImageType(m_imageType);
     imageSparseInfo.format                = m_format;
@@ -595,7 +595,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
     imageSparseInfo.usage                 = VK_IMAGE_USAGE_TRANSFER_DST_BIT | imageSparseUsageFlags();
     imageSparseInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
     imageSparseInfo.queueFamilyIndexCount = 0u;
-    imageSparseInfo.pQueueFamilyIndices   = DE_NULL;
+    imageSparseInfo.pQueueFamilyIndices   = nullptr;
 
     if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
     {
@@ -620,7 +620,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
 
     // Create image to store texels copied from sparse image
     imageTexelsInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageTexelsInfo.pNext                 = DE_NULL;
+    imageTexelsInfo.pNext                 = nullptr;
     imageTexelsInfo.flags                 = 0u;
     imageTexelsInfo.imageType             = imageSparseInfo.imageType;
     imageTexelsInfo.format                = imageSparseInfo.format;
@@ -633,7 +633,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
     imageTexelsInfo.usage                 = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | imageOutputUsageFlags();
     imageTexelsInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
     imageTexelsInfo.queueFamilyIndexCount = 0u;
-    imageTexelsInfo.pQueueFamilyIndices   = DE_NULL;
+    imageTexelsInfo.pQueueFamilyIndices   = nullptr;
 
     if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
     {
@@ -761,7 +761,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
 
                     deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
                         Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMemoryBind.memory),
-                                             Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
+                                             Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
 
                     imageResidencyMemoryBinds.push_back(imageMemoryBind);
                 }
@@ -777,7 +777,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
 
                     deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
                         Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory),
-                                             Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
+                                             Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
 
                     imageMipTailBinds.push_back(imageMipTailMemoryBind);
                 }
@@ -791,7 +791,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
 
                         deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
                             Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory),
-                                                 Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
+                                                 Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
 
                         imageMipTailBinds.push_back(imageMipTailMemoryBind);
                     }
@@ -824,7 +824,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
 
                 deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
                     Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory),
-                                         Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
+                                         Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
 
                 imageMipTailBinds.push_back(imageMipTailMemoryBind);
             }
@@ -832,15 +832,15 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
 
         VkBindSparseInfo bindSparseInfo = {
             VK_STRUCTURE_TYPE_BIND_SPARSE_INFO, //VkStructureType sType;
-            DE_NULL,                            //const void* pNext;
+            nullptr,                            //const void* pNext;
             0u,                                 //uint32_t waitSemaphoreCount;
-            DE_NULL,                            //const VkSemaphore* pWaitSemaphores;
+            nullptr,                            //const VkSemaphore* pWaitSemaphores;
             0u,                                 //uint32_t bufferBindCount;
-            DE_NULL,                            //const VkSparseBufferMemoryBindInfo* pBufferBinds;
+            nullptr,                            //const VkSparseBufferMemoryBindInfo* pBufferBinds;
             0u,                                 //uint32_t imageOpaqueBindCount;
-            DE_NULL,                            //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
+            nullptr,                            //const VkSparseImageOpaqueMemoryBindInfo* pImageOpaqueBinds;
             0u,                                 //uint32_t imageBindCount;
-            DE_NULL,                            //const VkSparseImageMemoryBindInfo* pImageBinds;
+            nullptr,                            //const VkSparseImageMemoryBindInfo* pImageBinds;
             1u,                                 //uint32_t signalSemaphoreCount;
             &memoryBindSemaphore.get()          //const VkSemaphore* pSignalSemaphores;
         };
@@ -869,7 +869,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
         }
 
         // Submit sparse bind commands for execution
-        VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, DE_NULL));
+        VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, VK_NULL_HANDLE));
     }
 
     const Unique<VkImage> imageTexels(createImage(deviceInterface, getDevice(), &imageTexelsInfo));
@@ -979,7 +979,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
             VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, *inputBuffer, 0u, imageSparseSizeInBytes);
 
         deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                           0u, 0u, DE_NULL, 1u, &inputBufferBarrier, 0u, DE_NULL);
+                                           0u, 0u, nullptr, 1u, &inputBufferBarrier, 0u, nullptr);
     }
 
     {
@@ -1000,7 +1000,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
                                                                                 VK_QUEUE_FAMILY_IGNORED));
         }
         deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL,
+                                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr,
                                            static_cast<uint32_t>(imageSparseTransferDstBarriers.size()),
                                            imageSparseTransferDstBarriers.data());
     }
@@ -1077,7 +1077,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
                                                                   *bufferResidency, 0u, imageResidencySizeInBytes);
 
         deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                           0u, 0u, DE_NULL, 2u, bufferOutputHostReadBarriers, 0u, DE_NULL);
+                                           0u, 0u, nullptr, 2u, bufferOutputHostReadBarriers, 0u, nullptr);
     }
 
     // End recording commands

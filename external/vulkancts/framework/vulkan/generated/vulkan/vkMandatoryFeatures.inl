@@ -457,6 +457,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceLegacyDitheringFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT physicalDeviceLegacyVertexAttributesFeaturesEXT;
+	deMemset(&physicalDeviceLegacyVertexAttributesFeaturesEXT, 0, sizeof(physicalDeviceLegacyVertexAttributesFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_legacy_vertex_attributes") )
+	{
+		physicalDeviceLegacyVertexAttributesFeaturesEXT.sType = getStructureType<VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT>();
+		*nextPtr = &physicalDeviceLegacyVertexAttributesFeaturesEXT;
+		nextPtr  = &physicalDeviceLegacyVertexAttributesFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceLineRasterizationFeaturesKHR physicalDeviceLineRasterizationFeaturesKHR;
 	deMemset(&physicalDeviceLineRasterizationFeaturesKHR, 0, sizeof(physicalDeviceLineRasterizationFeaturesKHR));
 
@@ -485,6 +495,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceMaintenance6FeaturesKHR.sType = getStructureType<VkPhysicalDeviceMaintenance6FeaturesKHR>();
 		*nextPtr = &physicalDeviceMaintenance6FeaturesKHR;
 		nextPtr  = &physicalDeviceMaintenance6FeaturesKHR.pNext;
+	}
+
+	vk::VkPhysicalDeviceMaintenance7FeaturesKHR physicalDeviceMaintenance7FeaturesKHR;
+	deMemset(&physicalDeviceMaintenance7FeaturesKHR, 0, sizeof(physicalDeviceMaintenance7FeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_maintenance7") )
+	{
+		physicalDeviceMaintenance7FeaturesKHR.sType = getStructureType<VkPhysicalDeviceMaintenance7FeaturesKHR>();
+		*nextPtr = &physicalDeviceMaintenance7FeaturesKHR;
+		nextPtr  = &physicalDeviceMaintenance7FeaturesKHR.pNext;
 	}
 
 	vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT physicalDeviceMemoryPriorityFeaturesEXT;
@@ -939,6 +959,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceShaderQuadControlFeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderQuadControlFeaturesKHR>();
 		*nextPtr = &physicalDeviceShaderQuadControlFeaturesKHR;
 		nextPtr  = &physicalDeviceShaderQuadControlFeaturesKHR.pNext;
+	}
+
+	vk::VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR;
+	deMemset(&physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR, 0, sizeof(physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_relaxed_extended_instruction") )
+	{
+		physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>();
+		*nextPtr = &physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR;
+		nextPtr  = &physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR.pNext;
 	}
 
 	vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT physicalDeviceShaderReplicatedCompositesFeaturesEXT;
@@ -1870,6 +1900,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_legacy_vertex_attributes")) )
+	{
+		if ( physicalDeviceLegacyVertexAttributesFeaturesEXT.legacyVertexAttributes == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature legacyVertexAttributes not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_memory_priority")) )
 	{
 		if ( physicalDeviceMemoryPriorityFeaturesEXT.memoryPriority == VK_FALSE )
@@ -2318,6 +2357,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_maintenance7")) )
+	{
+		if ( physicalDeviceMaintenance7FeaturesKHR.maintenance7 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature maintenance7 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_multiview")) )
 	{
 		if ( physicalDeviceMultiviewFeatures.multiview == VK_FALSE )
@@ -2502,6 +2550,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderQuadControlFeaturesKHR.shaderQuadControl == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderQuadControl not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_relaxed_extended_instruction")) )
+	{
+		if ( physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR.shaderRelaxedExtendedInstruction == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderRelaxedExtendedInstruction not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

@@ -44,7 +44,7 @@ TessellationShaderVertexOrdering::TessellationShaderVertexOrdering(Context &cont
     , m_tc_id(0)
     , m_vs_id(0)
     , m_vao_id(0)
-    , m_utils(DE_NULL)
+    , m_utils(nullptr)
 {
     /* Left blank on purpose */
 }
@@ -115,11 +115,11 @@ void TessellationShaderVertexOrdering::deinit()
     }
 
     /* Denitialize utils instance */
-    if (m_utils != DE_NULL)
+    if (m_utils != nullptr)
     {
         delete m_utils;
 
-        m_utils = DE_NULL;
+        m_utils = nullptr;
     }
 
     /* Deinitialize all test descriptors */
@@ -143,11 +143,11 @@ void TessellationShaderVertexOrdering::deinit()
  **/
 void TessellationShaderVertexOrdering::deinitTestIteration(_test_iteration &test_iteration)
 {
-    if (test_iteration.data != DE_NULL)
+    if (test_iteration.data != nullptr)
     {
         delete[] test_iteration.data;
 
-        test_iteration.data = DE_NULL;
+        test_iteration.data = nullptr;
     }
 }
 
@@ -408,7 +408,7 @@ TessellationShaderVertexOrdering::_test_iteration TessellationShaderVertexOrderi
     /* Configure the buffer object storage to hold required amount of data */
     glw::GLuint bo_size = static_cast<glw::GLuint>(test_iteration.n_vertices * 3 /* components */ * sizeof(float));
 
-    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, DE_NULL, /* data */
+    gl.bufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bo_size, nullptr, /* data */
                   GL_STATIC_DRAW);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed");
 

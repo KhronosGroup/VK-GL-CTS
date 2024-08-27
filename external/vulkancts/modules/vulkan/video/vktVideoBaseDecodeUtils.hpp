@@ -381,7 +381,7 @@ private:
         : m_refCount(0)
         , m_profile(*pVideoProfile)
         , m_devCtx(devCtx)
-        , m_videoSession(VkVideoSessionKHR(0))
+        , m_videoSession(VK_NULL_HANDLE)
     {
         deMemset(&m_createInfo, 0, sizeof(VkVideoSessionCreateInfoKHR));
         m_createInfo.sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_CREATE_INFO_KHR;

@@ -68,7 +68,7 @@ namespace eglu
 tcu::FunctionLibrary *createStaticESLibrary(void)
 {
 #if (STATIC_LIB == STATIC_LIB_NONE)
-    return new tcu::StaticFunctionLibrary(DE_NULL, 0);
+    return new tcu::StaticFunctionLibrary(nullptr, 0);
 #else
     static const tcu::StaticFunctionLibrary::Entry s_functions[] = {
 #if (STATIC_LIB == STATIC_LIB_ES32)

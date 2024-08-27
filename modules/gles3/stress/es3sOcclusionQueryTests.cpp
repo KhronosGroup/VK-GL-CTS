@@ -92,7 +92,7 @@ OcclusionQueryStressCase::OcclusionQueryStressCase(Context &ctx, const char *nam
     , m_numQueries(numQueries)
     , m_queryMode(queryMode)
     , m_renderCtx(ctx.getRenderContext())
-    , m_program(DE_NULL)
+    , m_program(nullptr)
     , m_iterNdx(0)
     , m_rnd(deStringHash(name))
 {
@@ -141,7 +141,7 @@ void OcclusionQueryStressCase::init(void)
 void OcclusionQueryStressCase::deinit(void)
 {
     delete m_program;
-    m_program = DE_NULL;
+    m_program = nullptr;
 }
 
 OcclusionQueryStressCase::IterateResult OcclusionQueryStressCase::iterate(void)

@@ -276,7 +276,7 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test3", "EGL_BAD_PARAMETER is generated if num_config is NULL");
 
-        expectFalse(eglChooseConfig(display, s_emptyAttribList, &configs[0], DE_LENGTH_OF_ARRAY(configs), DE_NULL));
+        expectFalse(eglChooseConfig(display, s_emptyAttribList, &configs[0], DE_LENGTH_OF_ARRAY(configs), nullptr));
         expectError(EGL_BAD_PARAMETER);
 
         log << TestLog::EndSection;
@@ -291,10 +291,10 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-        expectNoContext(eglCreateContext(EGL_NO_DISPLAY, DE_NULL, EGL_NO_CONTEXT, s_emptyAttribList));
+        expectNoContext(eglCreateContext(EGL_NO_DISPLAY, nullptr, EGL_NO_CONTEXT, s_emptyAttribList));
         expectError(EGL_BAD_DISPLAY);
 
-        expectNoContext(eglCreateContext((EGLDisplay)-1, DE_NULL, EGL_NO_CONTEXT, s_emptyAttribList));
+        expectNoContext(eglCreateContext((EGLDisplay)-1, nullptr, EGL_NO_CONTEXT, s_emptyAttribList));
         expectError(EGL_BAD_DISPLAY);
 
         log << TestLog::EndSection;
@@ -508,10 +508,10 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-        expectNoSurface(eglCreatePbufferFromClientBuffer(EGL_NO_DISPLAY, EGL_OPENVG_IMAGE, 0, (EGLConfig)0, DE_NULL));
+        expectNoSurface(eglCreatePbufferFromClientBuffer(EGL_NO_DISPLAY, EGL_OPENVG_IMAGE, 0, (EGLConfig)0, nullptr));
         expectError(EGL_BAD_DISPLAY);
 
-        expectNoSurface(eglCreatePbufferFromClientBuffer((EGLDisplay)-1, EGL_OPENVG_IMAGE, 0, (EGLConfig)0, DE_NULL));
+        expectNoSurface(eglCreatePbufferFromClientBuffer((EGLDisplay)-1, EGL_OPENVG_IMAGE, 0, (EGLConfig)0, nullptr));
         expectError(EGL_BAD_DISPLAY);
 
         log << TestLog::EndSection;
@@ -522,7 +522,7 @@ void NegativeApiTests::init(void)
                                              "frame buffer configuration and if buffer is not valid OpenVG image");
 
             expectNoSurface(eglCreatePbufferFromClientBuffer(display, EGL_OPENVG_IMAGE, (EGLClientBuffer)-1,
-                                                             (EGLConfig)-1, DE_NULL));
+                                                             (EGLConfig)-1, nullptr));
             expectEitherError(EGL_BAD_CONFIG, EGL_BAD_PARAMETER);
 
             log << TestLog::EndSection;
@@ -535,7 +535,7 @@ void NegativeApiTests::init(void)
 
             log << TestLog::Section("Test4", "EGL_BAD_PARAMETER is generated if buffer is not valid OpenVG image");
             expectNoSurface(
-                eglCreatePbufferFromClientBuffer(display, EGL_OPENVG_IMAGE, (EGLClientBuffer)-1, anyConfig, DE_NULL));
+                eglCreatePbufferFromClientBuffer(display, EGL_OPENVG_IMAGE, (EGLClientBuffer)-1, anyConfig, nullptr));
             expectError(EGL_BAD_PARAMETER);
 
             log << TestLog::EndSection;
@@ -592,10 +592,10 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-        expectNoSurface(eglCreatePbufferSurface(EGL_NO_DISPLAY, DE_NULL, s_emptyAttribList));
+        expectNoSurface(eglCreatePbufferSurface(EGL_NO_DISPLAY, nullptr, s_emptyAttribList));
         expectError(EGL_BAD_DISPLAY);
 
-        expectNoSurface(eglCreatePbufferSurface((EGLDisplay)-1, DE_NULL, s_emptyAttribList));
+        expectNoSurface(eglCreatePbufferSurface((EGLDisplay)-1, nullptr, s_emptyAttribList));
         expectError(EGL_BAD_DISPLAY);
 
         log << TestLog::EndSection;
@@ -716,10 +716,10 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-        expectNoSurface(eglCreatePixmapSurface(EGL_NO_DISPLAY, DE_NULL, DE_NULL, s_emptyAttribList));
+        expectNoSurface(eglCreatePixmapSurface(EGL_NO_DISPLAY, nullptr, nullptr, s_emptyAttribList));
         expectError(EGL_BAD_DISPLAY);
 
-        expectNoSurface(eglCreatePixmapSurface((EGLDisplay)-1, DE_NULL, DE_NULL, s_emptyAttribList));
+        expectNoSurface(eglCreatePixmapSurface((EGLDisplay)-1, nullptr, nullptr, s_emptyAttribList));
         expectError(EGL_BAD_DISPLAY);
 
         log << TestLog::EndSection;
@@ -727,14 +727,14 @@ void NegativeApiTests::init(void)
         log << TestLog::Section("Test2", "EGL_BAD_CONFIG or EGL_BAD_PARAMETER is generated if config is not an EGL "
                                          "frame buffer configuration or if the PixmapSurface call is not supported");
 
-        expectNoSurface(eglCreatePixmapSurface(display, (EGLConfig)-1, DE_NULL, s_emptyAttribList));
+        expectNoSurface(eglCreatePixmapSurface(display, (EGLConfig)-1, nullptr, s_emptyAttribList));
         expectEitherError(EGL_BAD_CONFIG, EGL_BAD_PARAMETER);
 
         log << TestLog::EndSection;
     });
 
     TEGL_ADD_API_CASE(create_window_surface, "eglCreateWindowSurface() negative tests", {
-        EGLConfig config = DE_NULL;
+        EGLConfig config = nullptr;
         bool gotConfig =
             getConfig(&config, FilterList() << renderable<EGL_OPENGL_ES2_BIT> << surfaceBits<EGL_WINDOW_BIT>);
 
@@ -745,7 +745,7 @@ void NegativeApiTests::init(void)
             const eglu::NativeWindowFactory &factory =
                 eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
             de::UniquePtr<eglu::NativeWindow> window(factory.createWindow(
-                &m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL,
+                &m_eglTestCtx.getNativeDisplay(), display, config, nullptr,
                 eglu::WindowParams(256, 256, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
 
             log << TestLog::Section("Test1",
@@ -769,17 +769,17 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-        expectFalse(eglDestroyContext(EGL_NO_DISPLAY, DE_NULL));
+        expectFalse(eglDestroyContext(EGL_NO_DISPLAY, nullptr));
         expectError(EGL_BAD_DISPLAY);
 
-        expectFalse(eglDestroyContext((EGLDisplay)-1, DE_NULL));
+        expectFalse(eglDestroyContext((EGLDisplay)-1, nullptr));
         expectError(EGL_BAD_DISPLAY);
 
         log << TestLog::EndSection;
 
         log << TestLog::Section("Test2", "EGL_BAD_CONTEXT is generated if context is not an EGL rendering context");
 
-        expectFalse(eglDestroyContext(display, DE_NULL));
+        expectFalse(eglDestroyContext(display, nullptr));
         expectError(EGL_BAD_CONTEXT);
 
         expectFalse(eglDestroyContext(display, (EGLContext)-1));
@@ -794,17 +794,17 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-        expectFalse(eglDestroySurface(EGL_NO_DISPLAY, DE_NULL));
+        expectFalse(eglDestroySurface(EGL_NO_DISPLAY, nullptr));
         expectError(EGL_BAD_DISPLAY);
 
-        expectFalse(eglDestroySurface((EGLDisplay)-1, DE_NULL));
+        expectFalse(eglDestroySurface((EGLDisplay)-1, nullptr));
         expectError(EGL_BAD_DISPLAY);
 
         log << TestLog::EndSection;
 
         log << TestLog::Section("Test2", "EGL_BAD_SURFACE is generated if surface is not an EGL surface");
 
-        expectFalse(eglDestroySurface(display, DE_NULL));
+        expectFalse(eglDestroySurface(display, nullptr));
         expectError(EGL_BAD_SURFACE);
 
         expectFalse(eglDestroySurface(display, (EGLSurface)-1));
@@ -820,10 +820,10 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-        expectFalse(eglGetConfigAttrib(EGL_NO_DISPLAY, DE_NULL, EGL_RED_SIZE, &value));
+        expectFalse(eglGetConfigAttrib(EGL_NO_DISPLAY, nullptr, EGL_RED_SIZE, &value));
         expectError(EGL_BAD_DISPLAY);
 
-        expectFalse(eglGetConfigAttrib((EGLDisplay)-1, DE_NULL, EGL_RED_SIZE, &value));
+        expectFalse(eglGetConfigAttrib((EGLDisplay)-1, nullptr, EGL_RED_SIZE, &value));
         expectError(EGL_BAD_DISPLAY);
 
         log << TestLog::EndSection;
@@ -837,7 +837,7 @@ void NegativeApiTests::init(void)
         log << TestLog::EndSection;
 
         // Any config.
-        EGLConfig config = DE_NULL;
+        EGLConfig config = nullptr;
         bool hasConfig   = getConfig(&config, FilterList());
 
         log << TestLog::Section(
@@ -873,7 +873,7 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test2", "EGL_BAD_PARAMETER is generated if num_config is NULL");
 
-        expectFalse(eglGetConfigs(display, &cfgs[0], DE_LENGTH_OF_ARRAY(cfgs), DE_NULL));
+        expectFalse(eglGetConfigs(display, &cfgs[0], DE_LENGTH_OF_ARRAY(cfgs), nullptr));
         expectError(EGL_BAD_PARAMETER);
 
         log << TestLog::EndSection;
@@ -901,10 +901,10 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-        expectFalse(eglMakeCurrent(EGL_NO_DISPLAY, DE_NULL, DE_NULL, DE_NULL));
+        expectFalse(eglMakeCurrent(EGL_NO_DISPLAY, nullptr, nullptr, nullptr));
         expectError(EGL_BAD_DISPLAY);
 
-        expectFalse(eglMakeCurrent((EGLDisplay)-1, DE_NULL, DE_NULL, DE_NULL));
+        expectFalse(eglMakeCurrent((EGLDisplay)-1, nullptr, nullptr, nullptr));
         expectError(EGL_BAD_DISPLAY);
 
         log << TestLog::EndSection;
@@ -1003,7 +1003,7 @@ void NegativeApiTests::init(void)
     TEGL_ADD_API_CASE(get_current_surface, "eglGetCurrentSurface() negative tests", {
         TestLog &log       = m_testCtx.getLog();
         EGLDisplay display = getDisplay();
-        EGLConfig config   = DE_NULL;
+        EGLConfig config   = nullptr;
         EGLContext context = EGL_NO_CONTEXT;
         EGLSurface surface = EGL_NO_SURFACE;
         bool gotConfig =
@@ -1056,27 +1056,27 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-        expectFalse(eglQueryContext(EGL_NO_DISPLAY, DE_NULL, EGL_CONFIG_ID, &value));
+        expectFalse(eglQueryContext(EGL_NO_DISPLAY, nullptr, EGL_CONFIG_ID, &value));
         expectError(EGL_BAD_DISPLAY);
 
-        expectFalse(eglQueryContext((EGLDisplay)-1, DE_NULL, EGL_CONFIG_ID, &value));
+        expectFalse(eglQueryContext((EGLDisplay)-1, nullptr, EGL_CONFIG_ID, &value));
         expectError(EGL_BAD_DISPLAY);
 
         log << TestLog::EndSection;
 
         log << TestLog::Section("Test2", "EGL_BAD_CONTEXT is generated if context is not an EGL rendering context");
 
-        expectFalse(eglQueryContext(display, DE_NULL, EGL_CONFIG_ID, &value));
+        expectFalse(eglQueryContext(display, nullptr, EGL_CONFIG_ID, &value));
         expectError(EGL_BAD_CONTEXT);
 
-        expectFalse(eglQueryContext(display, DE_NULL, EGL_CONFIG_ID, &value));
+        expectFalse(eglQueryContext(display, nullptr, EGL_CONFIG_ID, &value));
         expectError(EGL_BAD_CONTEXT);
 
         log << TestLog::EndSection;
 
         // Create ES2 context.
-        EGLConfig config   = DE_NULL;
-        EGLContext context = DE_NULL;
+        EGLConfig config   = nullptr;
+        EGLContext context = nullptr;
         bool gotConfig     = getConfig(&config, FilterList() << renderable<EGL_OPENGL_ES2_BIT>);
 
         if (gotConfig)
@@ -1141,17 +1141,17 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-        expectFalse(eglQuerySurface(EGL_NO_DISPLAY, DE_NULL, EGL_CONFIG_ID, &value));
+        expectFalse(eglQuerySurface(EGL_NO_DISPLAY, nullptr, EGL_CONFIG_ID, &value));
         expectError(EGL_BAD_DISPLAY);
 
-        expectFalse(eglQuerySurface((EGLDisplay)-1, DE_NULL, EGL_CONFIG_ID, &value));
+        expectFalse(eglQuerySurface((EGLDisplay)-1, nullptr, EGL_CONFIG_ID, &value));
         expectError(EGL_BAD_DISPLAY);
 
         log << TestLog::EndSection;
 
         log << TestLog::Section("Test2", "EGL_BAD_SURFACE is generated if surface is not an EGL surface");
 
-        expectFalse(eglQuerySurface(display, DE_NULL, EGL_CONFIG_ID, &value));
+        expectFalse(eglQuerySurface(display, nullptr, EGL_CONFIG_ID, &value));
         expectError(EGL_BAD_SURFACE);
 
         expectFalse(eglQuerySurface(display, (EGLSurface)-1, EGL_CONFIG_ID, &value));
@@ -1225,17 +1225,17 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-        expectFalse(eglSurfaceAttrib(EGL_NO_DISPLAY, DE_NULL, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
+        expectFalse(eglSurfaceAttrib(EGL_NO_DISPLAY, nullptr, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
         expectError(EGL_BAD_DISPLAY);
 
-        expectFalse(eglSurfaceAttrib((EGLDisplay)-1, DE_NULL, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
+        expectFalse(eglSurfaceAttrib((EGLDisplay)-1, nullptr, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
         expectError(EGL_BAD_DISPLAY);
 
         log << TestLog::EndSection;
 
         log << TestLog::Section("Test2", "EGL_BAD_SURFACE is generated if surface is not an EGL surface");
 
-        expectFalse(eglSurfaceAttrib(display, DE_NULL, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
+        expectFalse(eglSurfaceAttrib(display, nullptr, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
         expectError(EGL_BAD_SURFACE);
 
         expectFalse(eglSurfaceAttrib(display, (EGLSurface)-1, EGL_SWAP_BEHAVIOR, EGL_BUFFER_DESTROYED));
@@ -1360,17 +1360,17 @@ void NegativeApiTests::init(void)
 
         log << TestLog::Section("Test1", "EGL_BAD_DISPLAY is generated if display is not an EGL display connection");
 
-        expectFalse(eglSwapBuffers(EGL_NO_DISPLAY, DE_NULL));
+        expectFalse(eglSwapBuffers(EGL_NO_DISPLAY, nullptr));
         expectError(EGL_BAD_DISPLAY);
 
-        expectFalse(eglSwapBuffers((EGLDisplay)-1, DE_NULL));
+        expectFalse(eglSwapBuffers((EGLDisplay)-1, nullptr));
         expectError(EGL_BAD_DISPLAY);
 
         log << TestLog::EndSection;
 
         log << TestLog::Section("Test2", "EGL_BAD_SURFACE is generated if surface is not an EGL surface");
 
-        expectFalse(eglSwapBuffers(display, DE_NULL));
+        expectFalse(eglSwapBuffers(display, nullptr));
         expectError(EGL_BAD_SURFACE);
 
         expectFalse(eglSwapBuffers(display, (EGLSurface)-1));
@@ -1417,7 +1417,7 @@ void NegativeApiTests::init(void)
     });
 
     TEGL_ADD_API_CASE(wait_native, "eglWaitNative() negative tests", {
-        EGLConfig config = DE_NULL;
+        EGLConfig config = nullptr;
         bool gotConfig =
             getConfig(&config, FilterList() << renderable<EGL_OPENGL_ES2_BIT> << surfaceBits<EGL_WINDOW_BIT>);
 
@@ -1429,11 +1429,11 @@ void NegativeApiTests::init(void)
             const eglu::NativeWindowFactory &factory =
                 eglu::selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
             de::UniquePtr<eglu::NativeWindow> window(factory.createWindow(
-                &m_eglTestCtx.getNativeDisplay(), display, config, DE_NULL,
+                &m_eglTestCtx.getNativeDisplay(), display, config, nullptr,
                 eglu::WindowParams(256, 256, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
             eglu::UniqueSurface surface(
                 egl, display,
-                eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, DE_NULL));
+                eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, display, config, nullptr));
             EGLContext context = EGL_NO_CONTEXT;
 
             expectTrue(eglBindAPI(EGL_OPENGL_ES_API));

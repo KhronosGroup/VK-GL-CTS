@@ -77,7 +77,7 @@ Move<VkBuffer> makeVertexBuffer(const DeviceInterface &vk, const VkDevice device
 {
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType      sType;
-        DE_NULL,                              // const void*          pNext;
+        nullptr,                              // const void*          pNext;
         0u,                                   // VkBufferCreateFlags  flags;
         1024u,                                // VkDeviceSize         size;
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags   usage;
@@ -192,7 +192,7 @@ tcu::TestStatus DepthStencilWriteConditionsInstance::iterate(void)
     const VkImageUsageFlags colorImageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     const VkImageCreateInfo colorImageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, //  VkStructureType         sType;
-        DE_NULL,                             //  const void*             pNext;
+        nullptr,                             //  const void*             pNext;
         0,                                   //  VkImageCreateFlags      flags;
         VK_IMAGE_TYPE_2D,                    //  VkImageType             imageType;
         VK_FORMAT_R8G8B8A8_UNORM,            //  VkFormat                format;
@@ -204,7 +204,7 @@ tcu::TestStatus DepthStencilWriteConditionsInstance::iterate(void)
         colorImageUsage,                     //  VkImageUsageFlags       usage;
         VK_SHARING_MODE_EXCLUSIVE,           //  VkSharingMode           sharingMode;
         0u,                                  //  uint32_t                queueFamilyIndexCount;
-        DE_NULL,                             //  const uint32_t*         pQueueFamilyIndices;
+        nullptr,                             //  const uint32_t*         pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,           //  VkImageLayout           initialLayout;
     };
     const VkImageSubresourceRange colorSubresourceRange =
@@ -262,14 +262,14 @@ tcu::TestStatus DepthStencilWriteConditionsInstance::iterate(void)
     const Move<VkShaderModule> fragmentModule =
         createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u);
 
-    const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, DE_NULL);
+    const Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, VK_NULL_HANDLE);
 
     const VkVertexInputBindingDescription vtxBindingDescription = Vertex::getBindingDescription();
     const auto vtxAttrDescriptions                              = Vertex::getAttributeDescriptions();
 
     const VkPipelineVertexInputStateCreateInfo vtxInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags;
         1u,                     // uint32_t                                    vertexBindingDescriptionCount;
         &vtxBindingDescription, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions
@@ -300,9 +300,9 @@ tcu::TestStatus DepthStencilWriteConditionsInstance::iterate(void)
     };
 
     const Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
-        vk, device, pipelineLayout.get(), vertexModule.get(), DE_NULL, DE_NULL, DE_NULL, fragmentModule.get(),
-        renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vtxInputStateCreateInfo,
-        DE_NULL, DE_NULL, &depthStencilCreateInfo, DE_NULL, DE_NULL);
+        vk, device, pipelineLayout.get(), vertexModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        fragmentModule.get(), renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
+        &vtxInputStateCreateInfo, nullptr, nullptr, &depthStencilCreateInfo, nullptr, nullptr);
 
     const VkBufferCreateInfo resultBufferCreateInfo =
         makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
@@ -325,7 +325,7 @@ tcu::TestStatus DepthStencilWriteConditionsInstance::iterate(void)
 
     beginRenderPass(vk, *cmdBuffer, renderPass.get(), framebuffer.get(), makeRect2D(0, 0, WIDTH, HEIGHT),
                     static_cast<uint32_t>(clearColors.size()), de::dataOrNull(clearColors), VK_SUBPASS_CONTENTS_INLINE,
-                    DE_NULL);
+                    nullptr);
     vk.cmdDraw(*cmdBuffer, static_cast<uint32_t>(vertices.size()), 1u, 0u, 0u);
     endRenderPass(vk, *cmdBuffer);
 

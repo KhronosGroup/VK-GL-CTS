@@ -72,7 +72,7 @@ static ShaderEvalFunc getEvalFunc(ReturnMode mode)
         return evalReturnDynamic;
     default:
         DE_ASSERT(false);
-        return (ShaderEvalFunc)DE_NULL;
+        return nullptr;
     }
 }
 
@@ -87,7 +87,7 @@ public:
 ShaderReturnCase::ShaderReturnCase(tcu::TestContext &testCtx, const std::string &name, bool isVertexCase,
                                    const std::string &shaderSource, const ShaderEvalFunc evalFunc,
                                    const UniformSetup *uniformFunc)
-    : ShaderRenderCase(testCtx, name, isVertexCase, evalFunc, uniformFunc, DE_NULL)
+    : ShaderRenderCase(testCtx, name, isVertexCase, evalFunc, uniformFunc, nullptr)
 {
     if (isVertexCase)
     {
@@ -183,7 +183,7 @@ de::MovePtr<ShaderReturnCase> makeConditionalReturnInFuncCase(tcu::TestContext &
     }
 
     return de::MovePtr<ShaderReturnCase>(
-        new ShaderReturnCase(context, name, isVertex, tmpl.specialize(params), getEvalFunc(returnMode), DE_NULL));
+        new ShaderReturnCase(context, name, isVertex, tmpl.specialize(params), getEvalFunc(returnMode), nullptr));
 }
 
 de::MovePtr<ShaderReturnCase> makeOutputWriteReturnCase(tcu::TestContext &context, const std::string &name,
@@ -245,7 +245,7 @@ de::MovePtr<ShaderReturnCase> makeOutputWriteReturnCase(tcu::TestContext &contex
     }
 
     return de::MovePtr<ShaderReturnCase>(
-        new ShaderReturnCase(context, name, isVertex, tmpl.specialize(params), getEvalFunc(returnMode), DE_NULL));
+        new ShaderReturnCase(context, name, isVertex, tmpl.specialize(params), getEvalFunc(returnMode), nullptr));
 }
 
 de::MovePtr<ShaderReturnCase> makeReturnInLoopCase(tcu::TestContext &context, const std::string &name,
@@ -317,7 +317,7 @@ static const char *getReturnModeName(ReturnMode mode)
         return "dynamic";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -358,7 +358,7 @@ void ShaderReturnTests::init(void)
                                   "    gl_Position = a_position;\n"
                                   "    v_color = getColor();\n"
                                   "}\n",
-                                  evalReturnAlways, DE_NULL));
+                                  evalReturnAlways, nullptr));
     // Single return statement in function
     addChild(new ShaderReturnCase(m_testCtx, "single_return_fragment", false,
                                   "#version 310 es\n"
@@ -372,7 +372,7 @@ void ShaderReturnTests::init(void)
                                   "{\n"
                                   "    o_color = getColor();\n"
                                   "}\n",
-                                  evalReturnAlways, DE_NULL));
+                                  evalReturnAlways, nullptr));
 
     // Conditional return statement in function.
     for (int returnMode = 0; returnMode < RETURNMODE_LAST; returnMode++)
@@ -403,7 +403,7 @@ void ShaderReturnTests::init(void)
                                   "    gl_Position = a_position;\n"
                                   "    v_color = getColor();\n"
                                   "}\n",
-                                  evalReturnAlways, DE_NULL));
+                                  evalReturnAlways, nullptr));
     // Unconditional double return in function
     addChild(new ShaderReturnCase(m_testCtx, "double_return_fragment", false,
                                   "#version 310 es\n"
@@ -418,7 +418,7 @@ void ShaderReturnTests::init(void)
                                   "{\n"
                                   "    o_color = getColor();\n"
                                   "}\n",
-                                  evalReturnAlways, DE_NULL));
+                                  evalReturnAlways, nullptr));
 
     // Last statement in main.
     // Return as a final statement in main()
@@ -433,7 +433,7 @@ void ShaderReturnTests::init(void)
                                   "    v_color = vec4(a_coords.xyz, 1.0);\n"
                                   "    return;\n"
                                   "}\n",
-                                  evalReturnAlways, DE_NULL));
+                                  evalReturnAlways, nullptr));
     // Return as a final statement in main()
     addChild(new ShaderReturnCase(m_testCtx, "last_statement_in_main_fragment", false,
                                   "#version 310 es\n"
@@ -444,7 +444,7 @@ void ShaderReturnTests::init(void)
                                   "    o_color = vec4(v_coords.xyz, 1.0);\n"
                                   "    return;\n"
                                   "}\n",
-                                  evalReturnAlways, DE_NULL));
+                                  evalReturnAlways, nullptr));
 
     // Return between output variable writes.
     for (int inFunc = 0; inFunc < 2; inFunc++)

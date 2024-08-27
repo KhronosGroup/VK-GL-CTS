@@ -62,7 +62,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const tcu::IVec3 &size, const VkFor
                                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,  //  VkStructureType sType;
-        DE_NULL,                              //  const void* pNext;
+        nullptr,                              //  const void* pNext;
         VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,  //  VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                     //  VkImageType imageType;
         format,                               //  VkFormat format;
@@ -74,7 +74,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const tcu::IVec3 &size, const VkFor
         usage,                                //  VkImageUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,            //  VkSharingMode sharingMode;
         0u,                                   //  uint32_t queueFamilyIndexCount;
-        DE_NULL,                              //  const uint32_t* pQueueFamilyIndices;
+        nullptr,                              //  const uint32_t* pQueueFamilyIndices;
         VK_IMAGE_LAYOUT_UNDEFINED,            //  VkImageLayout initialLayout;
     };
 
@@ -237,10 +237,10 @@ tcu::TestStatus MisalignedCubeTestInstance::iterate(void)
 
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u,
-                             DE_NULL);
+                             nullptr);
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                          DE_NULL, 0u, DE_NULL, 1u, &clearBarrier);
+                          nullptr, 0u, nullptr, 1u, &clearBarrier);
 
     // Clear layers with predefined values
     for (uint32_t layerNdx = 0; layerNdx < numLayers; ++layerNdx)
@@ -260,12 +260,12 @@ tcu::TestStatus MisalignedCubeTestInstance::iterate(void)
     }
 
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u,
-                          DE_NULL, 0u, DE_NULL, 1u, &preShaderImageBarrier);
+                          nullptr, 0u, nullptr, 1u, &preShaderImageBarrier);
 
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, DE_NULL,
-                          1, &postShaderBarrier, 0, DE_NULL);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, nullptr,
+                          1, &postShaderBarrier, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 

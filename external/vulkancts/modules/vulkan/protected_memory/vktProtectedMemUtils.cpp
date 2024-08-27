@@ -54,7 +54,7 @@ typedef std::vector<vk::VkExtensionProperties> Extensions;
 CustomInstance makeProtectedMemInstance(vkt::Context &context, const std::vector<std::string> &extraExtensions)
 {
     const PlatformInterface &vkp = context.getPlatformInterface();
-    const Extensions supportedExtensions(vk::enumerateInstanceExtensionProperties(vkp, DE_NULL));
+    const Extensions supportedExtensions(vk::enumerateInstanceExtensionProperties(vkp, nullptr));
     std::vector<std::string> requiredExtensions = extraExtensions;
 
     uint32_t apiVersion = context.getUsedApiVersion();
@@ -86,7 +86,7 @@ void checkProtectedQueueSupport(Context &context)
     std::vector<vk::VkQueueFamilyProperties> properties;
     uint32_t numFamilies = 0;
 
-    vkd.getPhysicalDeviceQueueFamilyProperties(physDevice, &numFamilies, DE_NULL);
+    vkd.getPhysicalDeviceQueueFamilyProperties(physDevice, &numFamilies, nullptr);
     DE_ASSERT(numFamilies > 0);
     properties.resize(numFamilies);
 
@@ -105,7 +105,7 @@ uint32_t chooseProtectedMemQueueFamilyIndex(const vk::InstanceDriver &vkd, vk::V
     std::vector<vk::VkQueueFamilyProperties> properties;
     uint32_t numFamilies = 0;
 
-    vkd.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, DE_NULL);
+    vkd.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, nullptr);
     DE_ASSERT(numFamilies > 0);
     properties.resize(numFamilies);
 
@@ -121,7 +121,7 @@ uint32_t chooseProtectedMemQueueFamilyIndex(const vk::InstanceDriver &vkd, vk::V
     {
         vk::VkQueueFlags flags = properties[idx].queueFlags;
 
-        if (surface != DE_NULL &&
+        if (surface != VK_NULL_HANDLE &&
             vk::wsi::getPhysicalDeviceSurfaceSupport(vkd, physicalDevice, (uint32_t)idx, surface) == VK_FALSE)
             continue; // Skip the queue family index if it does not support the surface
 
@@ -141,7 +141,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, 
 #endif // CTS_USES_VULKANSC
                                               const tcu::CommandLine &cmdLine)
 {
-    const Extensions supportedExtensions(vk::enumerateDeviceExtensionProperties(vkd, physicalDevice, DE_NULL));
+    const Extensions supportedExtensions(vk::enumerateDeviceExtensionProperties(vkd, physicalDevice, nullptr));
     std::vector<std::string> requiredExtensions;
     std::vector<std::string> extensions = extraExtensions;
 
@@ -174,7 +174,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, 
 
 #ifndef CTS_USES_VULKANSC
     vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT protectedAccessFeature = {
-        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT, DE_NULL, VK_FALSE};
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT, nullptr, VK_FALSE};
 #endif
 
     vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeature = {
@@ -182,7 +182,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, 
 #ifndef CTS_USES_VULKANSC
         &protectedAccessFeature,
 #else
-        DE_NULL,
+        nullptr,
 #endif
         VK_FALSE};
     // Check if the protected memory can be enabled on the physical device.
@@ -215,7 +215,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, 
 
     const float queuePriorities[]                  = {1.0f};
     const vk::VkDeviceQueueCreateInfo queueInfos[] = {
-        {vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, DE_NULL,
+        {vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
 #ifndef NOT_PROTECTED
          (vk::VkDeviceQueueCreateFlags)vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT,
 #else
@@ -242,7 +242,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, 
         {
             pcCI = {
                 VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                DE_NULL,                                      // const void* pNext;
+                nullptr,                                      // const void* pNext;
                 VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
                     VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
                 resourceInterface->getCacheDataSize(),                    // uintptr_t initialDataSize;
@@ -268,14 +268,14 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice(const vk::PlatformInterface &vkp, 
         DE_LENGTH_OF_ARRAY(queueInfos),                         // queueCreateInfosCount
         &queueInfos[0],                                         // pQueueCreateInfos
         0u,                                                     // enabledLayerCount
-        DE_NULL,                                                // pEnabledLayerNames
+        nullptr,                                                // pEnabledLayerNames
         (uint32_t)requiredExtensions.size(),                    // enabledExtensionCount
-        requiredExtensions.empty() ? DE_NULL : &enabledExts[0], // pEnabledExtensionNames
-        DE_NULL                                                 // pEnabledFeatures
+        requiredExtensions.empty() ? nullptr : &enabledExts[0], // pEnabledExtensionNames
+        nullptr                                                 // pEnabledFeatures
     };
 
     return createCustomDevice(cmdLine.isValidationEnabled(), vkp, instance, vkd, physicalDevice, &deviceParams,
-                              DE_NULL);
+                              nullptr);
 }
 
 vk::VkQueue getProtectedQueue(const vk::DeviceInterface &vk, vk::VkDevice device, const uint32_t queueFamilyIndex,
@@ -283,7 +283,7 @@ vk::VkQueue getProtectedQueue(const vk::DeviceInterface &vk, vk::VkDevice device
 {
     const vk::VkDeviceQueueInfo2 queueInfo = {
         vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2, // sType
-        DE_NULL,                                   // pNext
+        nullptr,                                   // pNext
         vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT,  // flags
         queueFamilyIndex,                          // queueFamilyIndex
         queueIdx,                                  // queueIndex
@@ -297,7 +297,7 @@ vk::VkQueue getProtectedQueue(const vk::DeviceInterface &vk, vk::VkDevice device
         vk::getDeviceQueue(vk, device, queueFamilyIndex, 0);
 #endif
 
-    if (queue == DE_NULL)
+    if (queue == nullptr)
         TCU_THROW(TestError, "Unable to get a protected queue");
 
     return queue;
@@ -321,7 +321,7 @@ de::MovePtr<vk::ImageWithMemory> createImage2D(ProtectedContext &context, Protec
 
     const vk::VkImageCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            stype
-        DE_NULL,                                 // const void*                pNext
+        nullptr,                                 // const void*                pNext
         (vk::VkImageCreateFlags)flags,           // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         format,                                  // VkFormat                    format
@@ -368,7 +368,7 @@ de::MovePtr<vk::BufferWithMemory> makeBuffer(ProtectedContext &context, Protecti
 
     const vk::VkBufferCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
-        DE_NULL,                                  // pNext
+        nullptr,                                  // pNext
         (vk::VkBufferCreateFlags)flags,           // flags
         (vk::VkDeviceSize)size,                   // size
         usageFlags,                               // usage
@@ -384,7 +384,7 @@ vk::Move<vk::VkImageView> createImageView(ProtectedContext &context, vk::VkImage
 {
     const vk::VkImageViewCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // sType
-        DE_NULL,                                         // pNext
+        nullptr,                                         // pNext
         0u,                                              // flags
         image,                                           // image
         vk::VK_IMAGE_VIEW_TYPE_2D,                       // viewType
@@ -412,7 +412,7 @@ vk::Move<vk::VkFramebuffer> createFramebuffer(ProtectedContext &context, uint32_
 
     const vk::VkFramebufferCreateInfo framebufferParams = {
         vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-        DE_NULL,                                       // const void* pNext;
+        nullptr,                                       // const void* pNext;
         0u,                                            // VkFramebufferCreateFlags flags;
         renderPass,                                    // VkRenderPass renderPass;
         1u,                                            // uint32_t attachmentCount;
@@ -430,12 +430,12 @@ vk::Move<vk::VkPipelineLayout> createPipelineLayout(ProtectedContext &context, u
 {
     const vk::VkPipelineLayoutCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // sType
-        DE_NULL,                                           // pNext
+        nullptr,                                           // pNext
         0u,                                                // flags
         layoutCount,                                       // setLayoutCount
         setLayouts,                                        // pSetLayouts
         0u,                                                // pushConstantRangeCount
-        DE_NULL,                                           // pPushContantRanges
+        nullptr,                                           // pPushContantRanges
     };
 
     return vk::createPipelineLayout(context.getDeviceInterface(), context.getDevice(), &params);
@@ -445,12 +445,12 @@ void beginSecondaryCommandBuffer(const vk::DeviceInterface &vk, const vk::VkComm
                                  const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo)
 {
     const vk::VkCommandBufferUsageFlags flags =
-        bufferInheritanceInfo.renderPass != DE_NULL ?
+        bufferInheritanceInfo.renderPass != VK_NULL_HANDLE ?
             (vk::VkCommandBufferUsageFlags)vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT :
             (vk::VkCommandBufferUsageFlags)0u;
     const vk::VkCommandBufferBeginInfo beginInfo = {
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-        DE_NULL,                                         // pNext
+        nullptr,                                         // pNext
         flags,                                           // flags
         &bufferInheritanceInfo,                          // pInheritanceInfo
     };
@@ -465,22 +465,22 @@ vk::VkResult queueSubmit(ProtectedContext &context, ProtectionMode protectionMod
 
     // Basic submit info
     vk::VkSubmitInfo submitInfo = {
-        vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,         // sType
-        DE_NULL,                                   // pNext
-        0u,                                        // waitSemaphoreCount
-        DE_NULL,                                   // pWaitSempahores
-        (const vk::VkPipelineStageFlags *)DE_NULL, // stageFlags
-        1u,                                        // commandBufferCount
-        &cmdBuffer,                                // pCommandBuffers
-        0u,                                        // signalSemaphoreCount
-        DE_NULL,                                   // pSignalSemaphores
+        vk::VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
+        nullptr,                           // pNext
+        0u,                                // waitSemaphoreCount
+        nullptr,                           // pWaitSempahores
+        nullptr,                           // stageFlags
+        1u,                                // commandBufferCount
+        &cmdBuffer,                        // pCommandBuffers
+        0u,                                // signalSemaphoreCount
+        nullptr,                           // pSignalSemaphores
     };
 
 #ifndef NOT_PROTECTED
     // Protected extension submit info
     const vk::VkProtectedSubmitInfo protectedInfo = {
         vk::VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO, // sType
-        DE_NULL,                                     // pNext
+        nullptr,                                     // pNext
         VK_TRUE,                                     // protectedSubmit
     };
     if (protectionMode == PROTECTION_ENABLED)
@@ -498,7 +498,7 @@ vk::VkResult queueSubmit(ProtectedContext &context, ProtectionMode protectionMod
 vk::Move<vk::VkSampler> makeSampler(const vk::DeviceInterface &vk, const vk::VkDevice &device)
 {
     const vk::VkSamplerCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-                                                DE_NULL,
+                                                nullptr,
                                                 0u,
 
                                                 vk::VK_FILTER_NEAREST,
@@ -551,7 +551,7 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline(const vk::DeviceInterface &vk, con
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType;
-        DE_NULL,                                                   // const void*                                 pNext;
+        nullptr,                                                   // const void*                                 pNext;
         (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags;
         (uint32_t)vertexBindings.size(), // uint32_t                                    vertexBindingDescriptionCount;
         vertexBindings.data(),           // const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
@@ -575,12 +575,12 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline(const vk::DeviceInterface &vk, con
         0u,                          // const uint32_t                                subpass
         0u,                          // const uint32_t                                patchControlPoints
         &vertexInputStateCreateInfo, // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-        DE_NULL,                     // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-        DE_NULL,                     // const VkPipelineMultisampleStateCreateInfo* multisampleStateCreateInfo
-        DE_NULL,                     // const VkPipelineDepthStencilStateCreateInfo* depthStencilStateCreateInfo
-        DE_NULL,                     // const VkPipelineColorBlendStateCreateInfo* colorBlendStateCreateInfo
-        DE_NULL,                     // const VkPipelineDynamicStateCreateInfo* dynamicStateCreateInfo
-        DE_NULL,                     // const void* pNext
+        nullptr,                     // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+        nullptr,                     // const VkPipelineMultisampleStateCreateInfo* multisampleStateCreateInfo
+        nullptr,                     // const VkPipelineDepthStencilStateCreateInfo* depthStencilStateCreateInfo
+        nullptr,                     // const VkPipelineColorBlendStateCreateInfo* colorBlendStateCreateInfo
+        nullptr,                     // const VkPipelineDynamicStateCreateInfo* dynamicStateCreateInfo
+        nullptr,                     // const void* pNext
         flags);
 }
 
@@ -622,7 +622,7 @@ void clearImage(ProtectedContext &ctx, vk::VkImage image)
 
     const vk::VkImageMemoryBarrier preImageBarrier = {
         vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         0u,                                         // VkAccessFlags srcAccessMask;
         vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
         vk::VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
@@ -635,7 +635,7 @@ void clearImage(ProtectedContext &ctx, vk::VkImage image)
 
     const vk::VkImageMemoryBarrier postImageBarrier = {
         vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
         vk::VK_ACCESS_SHADER_WRITE_BIT,             // VkAccessFlags dstAccessMask;
         vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
@@ -648,13 +648,11 @@ void clearImage(ProtectedContext &ctx, vk::VkImage image)
 
     beginCommandBuffer(vk, *cmdBuffer);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                          (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                          (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &preImageBarrier);
+                          (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &preImageBarrier);
     vk.cmdClearColorImage(*cmdBuffer, image, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1,
                           &subresourceRange);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                          (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &postImageBarrier);
+                          (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
     endCommandBuffer(vk, *cmdBuffer);
 
     {
@@ -702,7 +700,7 @@ void uploadImage(ProtectedContext &ctx, vk::VkImage image, const tcu::Texture2D 
 
     const vk::VkImageMemoryBarrier preCopyBarrier = {
         vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         0u,                                         // VkAccessFlags srcAccessMask;
         vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
         vk::VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
@@ -715,7 +713,7 @@ void uploadImage(ProtectedContext &ctx, vk::VkImage image, const tcu::Texture2D 
 
     const vk::VkImageMemoryBarrier postCopyBarrier = {
         vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
         vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
         vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
@@ -745,14 +743,12 @@ void uploadImage(ProtectedContext &ctx, vk::VkImage image, const tcu::Texture2D 
     beginCommandBuffer(vk, *cmdBuffer);
     vk.cmdPipelineBarrier(*cmdBuffer, (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_HOST_BIT,
                           (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                          &preCopyBarrier);
+                          nullptr, 0u, nullptr, 1u, &preCopyBarrier);
     vk.cmdCopyBufferToImage(*cmdBuffer, **stagingBuffer, image, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u,
                             &copyRegion);
     vk.cmdPipelineBarrier(*cmdBuffer, (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                           (vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u,
-                          (const vk::VkMemoryBarrier *)DE_NULL, 0u, (const vk::VkBufferMemoryBarrier *)DE_NULL, 1u,
-                          &postCopyBarrier);
+                          nullptr, 0u, nullptr, 1u, &postCopyBarrier);
     endCommandBuffer(vk, *cmdBuffer);
 
     {
@@ -786,7 +782,7 @@ void copyToProtectedImage(ProtectedContext &ctx, vk::VkImage srcImage, vk::VkIma
         // source image
         {
             vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
             vk::VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags dstAccessMask;
             vk::VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout oldLayout;
@@ -799,7 +795,7 @@ void copyToProtectedImage(ProtectedContext &ctx, vk::VkImage srcImage, vk::VkIma
         // destination image
         {
             vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-            DE_NULL,                                    // const void* pNext;
+            nullptr,                                    // const void* pNext;
             0,                                          // VkAccessFlags srcAccessMask;
             vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
             vk::VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
@@ -812,7 +808,7 @@ void copyToProtectedImage(ProtectedContext &ctx, vk::VkImage srcImage, vk::VkIma
 
     const vk::VkImageMemoryBarrier postImgBarrier = {
         vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
-        DE_NULL,                                    // const void* pNext;
+        nullptr,                                    // const void* pNext;
         vk::VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
         vk::VK_ACCESS_SHADER_READ_BIT,              // VkAccessFlags dstAccessMask;
         vk::VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout oldLayout;
@@ -840,14 +836,12 @@ void copyToProtectedImage(ProtectedContext &ctx, vk::VkImage srcImage, vk::VkIma
 
     beginCommandBuffer(vk, *cmdBuffer);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                          (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                          (const vk::VkBufferMemoryBarrier *)DE_NULL, DE_LENGTH_OF_ARRAY(preImageBarriers),
+                          (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, DE_LENGTH_OF_ARRAY(preImageBarriers),
                           preImageBarriers);
     vk.cmdCopyImage(*cmdBuffer, srcImage, vk::VK_IMAGE_LAYOUT_GENERAL, dstImage, vk::VK_IMAGE_LAYOUT_GENERAL, 1u,
                     &copyImageRegion);
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier *)DE_NULL, 0,
-                          (const vk::VkBufferMemoryBarrier *)DE_NULL, 1, &postImgBarrier);
+                          (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImgBarrier);
     endCommandBuffer(vk, *cmdBuffer);
 
     {

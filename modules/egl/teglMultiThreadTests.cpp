@@ -45,6 +45,7 @@
 #include <set>
 #include <string>
 #include <sstream>
+#include <atomic>
 
 using std::ostringstream;
 using std::pair;
@@ -163,7 +164,7 @@ public:
 private:
     MultiThreadedTest &m_test;
     const int m_id;
-    ThreadStatus m_status;
+    std::atomic<ThreadStatus> m_status;
     ThreadLog m_log;
 };
 
@@ -839,7 +840,7 @@ MultiThreadedObjectTest::MultiThreadedObjectTest(EglTestContext &context, const 
                                                  uint32_t type)
     : MultiThreadedTest(context, name, description, 2,
                         20000000 /*us = 20s*/) // \todo [mika] Set timeout to something relevant to frameworks timeout?
-    , m_config(DE_NULL)
+    , m_config(nullptr)
     , m_rnd0(58204327)
     , m_rnd1(230983)
     , m_types((Type)type)
@@ -1190,16 +1191,16 @@ void MultiThreadedObjectTest::createDestroyObjects(TestThread &thread, int count
                 {
                     if (deAtomicCompareExchange32(&m_hasWindow, 0, 1) == 0)
                     {
-                        eglu::NativeWindow *window = DE_NULL;
+                        eglu::NativeWindow *window = nullptr;
                         EGLSurface surface         = EGL_NO_SURFACE;
 
                         try
                         {
                             window = windowFactory.createWindow(
-                                &m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL,
+                                &m_eglTestCtx.getNativeDisplay(), m_display, m_config, nullptr,
                                 eglu::WindowParams(64, 64, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
                             surface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, m_display,
-                                                                m_config, DE_NULL);
+                                                                m_config, nullptr);
 
                             thread.getLog() << ThreadLog::BeginMessage << surface << " = eglCreateWindowSurface()"
                                             << ThreadLog::EndMessage;
@@ -1221,16 +1222,16 @@ void MultiThreadedObjectTest::createDestroyObjects(TestThread &thread, int count
                 }
                 else
                 {
-                    eglu::NativeWindow *window = DE_NULL;
+                    eglu::NativeWindow *window = nullptr;
                     EGLSurface surface         = EGL_NO_SURFACE;
 
                     try
                     {
                         window = windowFactory.createWindow(
-                            &m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL,
+                            &m_eglTestCtx.getNativeDisplay(), m_display, m_config, nullptr,
                             eglu::WindowParams(64, 64, eglu::parseWindowVisibility(m_testCtx.getCommandLine())));
                         surface = eglu::createWindowSurface(m_eglTestCtx.getNativeDisplay(), *window, m_display,
-                                                            m_config, DE_NULL);
+                                                            m_config, nullptr);
 
                         thread.getLog() << ThreadLog::BeginMessage << surface << " = eglCreateWindowSurface()"
                                         << ThreadLog::EndMessage;
@@ -1251,15 +1252,15 @@ void MultiThreadedObjectTest::createDestroyObjects(TestThread &thread, int count
             {
                 const eglu::NativePixmapFactory &pixmapFactory =
                     eglu::selectNativePixmapFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
-                eglu::NativePixmap *pixmap = DE_NULL;
+                eglu::NativePixmap *pixmap = nullptr;
                 EGLSurface surface         = EGL_NO_SURFACE;
 
                 try
                 {
-                    pixmap  = pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, DE_NULL,
+                    pixmap  = pixmapFactory.createPixmap(&m_eglTestCtx.getNativeDisplay(), m_display, m_config, nullptr,
                                                          64, 64);
                     surface = eglu::createPixmapSurface(m_eglTestCtx.getNativeDisplay(), *pixmap, m_display, m_config,
-                                                        DE_NULL);
+                                                        nullptr);
 
                     thread.getLog() << ThreadLog::BeginMessage << surface << " = eglCreatePixmapSurface()"
                                     << ThreadLog::EndMessage;
@@ -1326,7 +1327,7 @@ void MultiThreadedObjectTest::createDestroyObjects(TestThread &thread, int count
                 EGLU_CHECK_CALL(egl, destroySurface(m_display, windows[windowNdx].second));
                 windows[windowNdx].second = EGL_NO_SURFACE;
                 delete windows[windowNdx].first;
-                windows[windowNdx].first = DE_NULL;
+                windows[windowNdx].first = nullptr;
                 windows.erase(windows.begin() + windowNdx);
 
                 if ((m_types & TYPE_SINGLE_WINDOW) != 0)
@@ -1344,7 +1345,7 @@ void MultiThreadedObjectTest::createDestroyObjects(TestThread &thread, int count
                 EGLU_CHECK_CALL(egl, destroySurface(m_display, pixmaps[pixmapNdx].second));
                 pixmaps[pixmapNdx].second = EGL_NO_SURFACE;
                 delete pixmaps[pixmapNdx].first;
-                pixmaps[pixmapNdx].first = DE_NULL;
+                pixmaps[pixmapNdx].first = nullptr;
                 pixmaps.erase(pixmaps.begin() + pixmapNdx);
 
                 break;

@@ -46,7 +46,7 @@ void verifyInfoLogQuery(tcu::ResultCollector &result, glu::CallLogWrapper &gl, i
         std::string buf(logLen + 2, 'X');
 
         buf[logLen + 1] = '\0';
-        (gl.*getInfoLog)(object, logLen, DE_NULL, &buf[0]);
+        (gl.*getInfoLog)(object, logLen, nullptr, &buf[0]);
         GLS_COLLECT_GL_ERROR(result, gl.glGetError(), getterName);
 
         if (logLen > 0 && buf[logLen - 1] != '\0')

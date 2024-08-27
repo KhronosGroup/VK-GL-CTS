@@ -272,23 +272,23 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate(void)
     if (useSecondaryCmdBuffer)
     {
         const vk::VkCommandBufferInheritanceConditionalRenderingInfoEXT conditionalRenderingInheritanceInfo = {
-            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT, DE_NULL,
+            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT, nullptr,
             (conditionalData.conditionInherited ? VK_TRUE : VK_FALSE), // conditionalRenderingEnable
         };
 
         const vk::VkCommandBufferInheritanceInfo inheritanceInfo = {
             vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
             &conditionalRenderingInheritanceInfo,
-            0u,                                    // renderPass
+            VK_NULL_HANDLE,                        // renderPass
             0u,                                    // subpass
-            0u,                                    // framebuffer
+            VK_NULL_HANDLE,                        // framebuffer
             VK_FALSE,                              // occlusionQueryEnable
             (vk::VkQueryControlFlags)0u,           // queryFlags
             (vk::VkQueryPipelineStatisticFlags)0u, // pipelineStatistics
         };
 
         const vk::VkCommandBufferBeginInfo commandBufferBeginInfo = {
-            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, DE_NULL, vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr, vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
             &inheritanceInfo};
 
         if (conditionalData.secondaryCommandBufferNested)
@@ -303,7 +303,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate(void)
 
     vk.cmdBindPipeline(targetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
     vk.cmdBindDescriptorSets(targetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
-                             &descriptorSet.get(), 0u, DE_NULL);
+                             &descriptorSet.get(), 0u, nullptr);
 
     de::SharedPtr<Draw::Buffer> conditionalBuffer =
         createConditionalRenderingBuffer(m_context, conditionalData, m_testSpec.computeQueue);
@@ -366,7 +366,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate(void)
     }
 
     const vk::VkBufferMemoryBarrier outputBufferMemoryBarrier = {vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                                                 DE_NULL,
+                                                                 nullptr,
                                                                  vk::VK_ACCESS_SHADER_WRITE_BIT,
                                                                  vk::VK_ACCESS_HOST_READ_BIT,
                                                                  VK_QUEUE_FAMILY_IGNORED,
@@ -376,7 +376,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate(void)
                                                                  VK_WHOLE_SIZE};
 
     vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                          DE_NULL, 1u, &outputBufferMemoryBarrier, 0u, DE_NULL);
+                          nullptr, 1u, &outputBufferMemoryBarrier, 0u, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 

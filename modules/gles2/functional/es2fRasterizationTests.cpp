@@ -112,7 +112,7 @@ BaseRenderingCase::BaseRenderingCase(Context &context, const char *name, const c
     , m_subpixelBits(-1)
     , m_pointSize(1.0f)
     , m_lineWidth(1.0f)
-    , m_shader(DE_NULL)
+    , m_shader(nullptr)
 {
 }
 
@@ -187,7 +187,7 @@ void BaseRenderingCase::deinit(void)
     if (m_shader)
     {
         delete m_shader;
-        m_shader = DE_NULL;
+        m_shader = nullptr;
     }
 }
 

@@ -111,7 +111,7 @@ static const char *getTextureTargetExtension(glw::GLenum target)
         return "GL_EXT_texture_cube_map_array";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -809,23 +809,23 @@ bool applyTextureGenerationSpec(glu::CallLogWrapper &gl, const TextureGeneration
         else if (!spec.immutable && !spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_2D)
             gl.glTexImage2D(spec.bindTarget, spec.levels[levelNdx].level, spec.levels[levelNdx].internalFormat,
                             spec.levels[levelNdx].width, spec.levels[levelNdx].height, 0, transferFormat.format,
-                            transferFormat.dataType, DE_NULL);
+                            transferFormat.dataType, nullptr);
         else if (!spec.immutable && !spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_3D)
             gl.glTexImage3D(spec.bindTarget, spec.levels[levelNdx].level, spec.levels[levelNdx].internalFormat,
                             spec.levels[levelNdx].width, spec.levels[levelNdx].height, spec.levels[levelNdx].depth, 0,
-                            transferFormat.format, transferFormat.dataType, DE_NULL);
+                            transferFormat.format, transferFormat.dataType, nullptr);
         else if (!spec.immutable && !spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_2D_ARRAY)
             gl.glTexImage3D(spec.bindTarget, spec.levels[levelNdx].level, spec.levels[levelNdx].internalFormat,
                             spec.levels[levelNdx].width, spec.levels[levelNdx].height, spec.levels[levelNdx].depth, 0,
-                            transferFormat.format, transferFormat.dataType, DE_NULL);
+                            transferFormat.format, transferFormat.dataType, nullptr);
         else if (!spec.immutable && !spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_CUBE_MAP)
             gl.glTexImage2D(spec.queryTarget, spec.levels[levelNdx].level, spec.levels[levelNdx].internalFormat,
                             spec.levels[levelNdx].width, spec.levels[levelNdx].height, 0, transferFormat.format,
-                            transferFormat.dataType, DE_NULL);
+                            transferFormat.dataType, nullptr);
         else if (!spec.immutable && !spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_CUBE_MAP_ARRAY)
             gl.glTexImage3D(spec.bindTarget, spec.levels[levelNdx].level, spec.levels[levelNdx].internalFormat,
                             spec.levels[levelNdx].width, spec.levels[levelNdx].height, spec.levels[levelNdx].depth, 0,
-                            transferFormat.format, transferFormat.dataType, DE_NULL);
+                            transferFormat.format, transferFormat.dataType, nullptr);
         else if (!spec.immutable && spec.levels[levelNdx].compressed && spec.bindTarget == GL_TEXTURE_2D)
         {
             DE_ASSERT(spec.levels[levelNdx].width == 32);
@@ -857,12 +857,12 @@ bool applyTextureGenerationSpec(glu::CallLogWrapper &gl, const TextureGeneration
 
             if (spec.bindWholeArray)
             {
-                gl.glBufferData(GL_TEXTURE_BUFFER, spec.texBufferDataSize, DE_NULL, GL_STATIC_DRAW);
+                gl.glBufferData(GL_TEXTURE_BUFFER, spec.texBufferDataSize, nullptr, GL_STATIC_DRAW);
                 gl.glTexBuffer(GL_TEXTURE_BUFFER, spec.levels[levelNdx].internalFormat, texBuffer);
             }
             else
             {
-                gl.glBufferData(GL_TEXTURE_BUFFER, spec.texBufferDataOffset + spec.texBufferDataSize, DE_NULL,
+                gl.glBufferData(GL_TEXTURE_BUFFER, spec.texBufferDataOffset + spec.texBufferDataSize, nullptr,
                                 GL_STATIC_DRAW);
                 gl.glTexBufferRange(GL_TEXTURE_BUFFER, spec.levels[levelNdx].internalFormat, texBuffer,
                                     spec.texBufferDataOffset, spec.texBufferDataSize);
@@ -1708,7 +1708,7 @@ static const char *getVerifierSuffix(QueryType type)
         return "_integer";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 

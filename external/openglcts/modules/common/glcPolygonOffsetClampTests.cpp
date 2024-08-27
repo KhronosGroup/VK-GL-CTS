@@ -291,7 +291,7 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions &gl)
 
     GLuint testProgramId = testProgram.getProgram();
 
-    ShaderProgram *readDepthProgram = DE_NULL;
+    ShaderProgram *readDepthProgram = nullptr;
     GLuint readDepthProgramId       = 0;
 
     // Prepare shader program for reading depth buffer indirectly

@@ -448,15 +448,15 @@ tcu::TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     }
 
     if (SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
-        return subgroups::makeVertexFrameBufferTest(context, FORMAT_R32_UINT, DE_NULL, 0, checkVertexPipelineStages);
+        return subgroups::makeVertexFrameBufferTest(context, FORMAT_R32_UINT, nullptr, 0, checkVertexPipelineStages);
     else if (SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
-        return subgroups::makeGeometryFrameBufferTest(context, FORMAT_R32_UINT, DE_NULL, 0, checkVertexPipelineStages);
+        return subgroups::makeGeometryFrameBufferTest(context, FORMAT_R32_UINT, nullptr, 0, checkVertexPipelineStages);
     else if (SHADER_STAGE_TESS_CONTROL_BIT == caseDef.shaderStage)
         return subgroups::makeTessellationEvaluationFrameBufferTest(
-            context, FORMAT_R32_UINT, DE_NULL, 0, checkVertexPipelineStages, SHADER_STAGE_TESS_CONTROL_BIT);
+            context, FORMAT_R32_UINT, nullptr, 0, checkVertexPipelineStages, SHADER_STAGE_TESS_CONTROL_BIT);
     else if (SHADER_STAGE_TESS_EVALUATION_BIT == caseDef.shaderStage)
         return subgroups::makeTessellationEvaluationFrameBufferTest(
-            context, FORMAT_R32_UINT, DE_NULL, 0, checkVertexPipelineStages, SHADER_STAGE_TESS_EVALUATION_BIT);
+            context, FORMAT_R32_UINT, nullptr, 0, checkVertexPipelineStages, SHADER_STAGE_TESS_EVALUATION_BIT);
     else
         TCU_THROW(InternalError, "Unhandled shader stage");
 }
@@ -477,7 +477,7 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
             return tcu::TestStatus::fail("Shader stage " + subgroups::getShaderStageName(caseDef.shaderStage) +
                                          " is required to support subgroup operations!");
         }
-        return subgroups::makeComputeTest(context, FORMAT_R32_UINT, DE_NULL, 0, checkComputeStage);
+        return subgroups::makeComputeTest(context, FORMAT_R32_UINT, nullptr, 0, checkComputeStage);
     }
     else
     {
@@ -496,7 +496,7 @@ tcu::TestStatus test(Context &context, const CaseDefinition caseDef)
         if ((ShaderStageFlags)0u == stages)
             TCU_THROW(NotSupportedError, "Subgroup operations are not supported for any graphic shader");
 
-        return subgroups::allStages(context, FORMAT_R32_UINT, DE_NULL, 0, checkVertexPipelineStages, stages);
+        return subgroups::allStages(context, FORMAT_R32_UINT, nullptr, 0, checkVertexPipelineStages, stages);
     }
 }
 } // namespace

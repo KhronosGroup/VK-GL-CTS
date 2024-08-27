@@ -797,7 +797,7 @@ static inline const char *gatherTypeName(GatherType type)
         return "offsets";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -815,7 +815,7 @@ static inline const char *gatherTypeDescription(GatherType type)
         return "textureGatherOffsets";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -864,7 +864,7 @@ static MovePtr<PixelOffsets> makePixelOffsetsFunctor(GatherType gatherType, cons
     else
     {
         DE_ASSERT(false);
-        return MovePtr<PixelOffsets>(DE_NULL);
+        return MovePtr<PixelOffsets>(nullptr);
     }
 }
 
@@ -1381,9 +1381,9 @@ void TextureGatherCase::deinit(void)
     if (!isContextTypeES(m_context.getRenderContext().getType()))
         m_context.getRenderContext().getFunctions().disable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-    m_program     = MovePtr<ShaderProgram>(DE_NULL);
-    m_fbo         = MovePtr<glu::Framebuffer>(DE_NULL);
-    m_colorBuffer = MovePtr<glu::Renderbuffer>(DE_NULL);
+    m_program     = MovePtr<ShaderProgram>(nullptr);
+    m_fbo         = MovePtr<glu::Framebuffer>(nullptr);
+    m_colorBuffer = MovePtr<glu::Renderbuffer>(nullptr);
 }
 
 TextureGatherCase::IterateResult TextureGatherCase::iterate(void)
@@ -2082,7 +2082,7 @@ static inline TextureGatherCase *makeTextureGatherCase(
 
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -2114,7 +2114,7 @@ static inline const char *compareModeName(tcu::Sampler::CompareMode mode)
         return "never";
     default:
         DE_ASSERT(false);
-        return DE_NULL;
+        return nullptr;
     }
 }
 
@@ -2168,12 +2168,12 @@ void TextureGatherTests::init(void)
                     new TestCaseGroup(m_context,
                                       offsetSize == OFFSETSIZE_MINIMUM_REQUIRED       ? "min_required_offset" :
                                       offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM ? "implementation_offset" :
-                                                                                        DE_NULL,
+                                                                                        nullptr,
                                       offsetSize == OFFSETSIZE_MINIMUM_REQUIRED ?
                                           "Use offsets within GL minimum required range" :
                                       offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM ?
                                           "Use offsets within the implementation range" :
-                                          DE_NULL);
+                                          nullptr);
             if (offsetSizeGroup != gatherTypeGroup)
                 gatherTypeGroup->addChild(offsetSizeGroup);
 

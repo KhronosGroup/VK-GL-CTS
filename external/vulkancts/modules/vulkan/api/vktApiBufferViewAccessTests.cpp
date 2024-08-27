@@ -222,7 +222,7 @@ BufferViewTestInstance::BufferViewTestInstance(Context &context, BufferViewCaseP
     {
         const VkImageViewCreateInfo colorAttachmentViewParams = {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,    // VkStructureType sType;
-            DE_NULL,                                     // const void* pNext;
+            nullptr,                                     // const void* pNext;
             0u,                                          // VkImageViewCreateFlags flags;
             *m_colorImage,                               // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                       // VkImageViewType viewType;
@@ -245,7 +245,7 @@ BufferViewTestInstance::BufferViewTestInstance(Context &context, BufferViewCaseP
 
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // const void* pNext;
+            nullptr,                                   // const void* pNext;
             (VkFramebufferCreateFlags)0,
             *m_renderPass,              // VkRenderPass renderPass;
             1u,                         // uint32_t attachmentCount;
@@ -266,13 +266,13 @@ BufferViewTestInstance::BufferViewTestInstance(Context &context, BufferViewCaseP
                 VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, // VkDescriptorType descriptorType;
                 1u,                                      // uint32_t arraySize;
                 VK_SHADER_STAGE_ALL,                     // VkShaderStageFlags stageFlags;
-                DE_NULL                                  // const VkSampler* pImmutableSamplers;
+                nullptr                                  // const VkSampler* pImmutableSamplers;
             },
         };
 
         const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             (VkDescriptorSetLayoutCreateFlags)0,
             DE_LENGTH_OF_ARRAY(layoutBindings), // uint32_t count;
             layoutBindings                      // const VkDescriptorSetLayoutBinding pBinding;
@@ -294,7 +294,7 @@ BufferViewTestInstance::BufferViewTestInstance(Context &context, BufferViewCaseP
 
         const VkBufferViewCreateInfo viewInfo = {
             VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // void* pNext;
+            nullptr,                                   // void* pNext;
             (VkBufferViewCreateFlags)0,
             *m_uniformBuffer,                            // VkBuffer buffer;
             m_colorFormat,                               // VkFormat format;
@@ -311,7 +311,7 @@ BufferViewTestInstance::BufferViewTestInstance(Context &context, BufferViewCaseP
 
         const VkDescriptorPoolCreateInfo descriptorPoolParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,     // VkStructureType sType;
-            DE_NULL,                                           // void* pNext;
+            nullptr,                                           // void* pNext;
             VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, // VkDescriptorPoolCreateFlags flags;
             1u,                                                // uint32_t maxSets;
             DE_LENGTH_OF_ARRAY(descriptorTypes),               // uint32_t count;
@@ -322,7 +322,7 @@ BufferViewTestInstance::BufferViewTestInstance(Context &context, BufferViewCaseP
 
         const VkDescriptorSetAllocateInfo descriptorSetParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            DE_NULL,
+            nullptr,
             *m_descriptorPool,
             1u,
             &m_descriptorSetLayout.get(),
@@ -331,30 +331,30 @@ BufferViewTestInstance::BufferViewTestInstance(Context &context, BufferViewCaseP
 
         const VkWriteDescriptorSet writeDescritporSets[] = {{
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,  // VkStructureType sType;
-            DE_NULL,                                 // const void* pNext;
+            nullptr,                                 // const void* pNext;
             *m_descriptorSet,                        // VkDescriptorSet destSet;
             0,                                       // uint32_t destBinding;
             0,                                       // uint32_t destArrayElement;
             1u,                                      // uint32_t count;
             VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, // VkDescriptorType descriptorType;
-            (const VkDescriptorImageInfo *)DE_NULL,
-            (const VkDescriptorBufferInfo *)DE_NULL,
+            nullptr,
+            nullptr,
             &m_uniformBufferView.get(),
         }};
 
-        vk.updateDescriptorSets(vkDevice, DE_LENGTH_OF_ARRAY(writeDescritporSets), writeDescritporSets, 0u, DE_NULL);
+        vk.updateDescriptorSets(vkDevice, DE_LENGTH_OF_ARRAY(writeDescritporSets), writeDescritporSets, 0u, nullptr);
     }
 
     // Create pipeline layout
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             (VkPipelineLayoutCreateFlags)0,
             1u,                      // uint32_t descriptorSetCount;
             &*m_descriptorSetLayout, // const VkDescriptorSetLayout* pSetLayouts;
             0u,                      // uint32_t pushConstantRangeCount;
-            DE_NULL                  // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                  // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -410,7 +410,7 @@ BufferViewTestInstance::BufferViewTestInstance(Context &context, BufferViewCaseP
 
         const VkImageMemoryBarrier initialImageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType;
-            DE_NULL,                                  // const void* pNext;
+            nullptr,                                  // const void* pNext;
             0,                                        // VkAccessFlags srcAccessMask;
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout;
@@ -428,9 +428,8 @@ BufferViewTestInstance::BufferViewTestInstance(Context &context, BufferViewCaseP
             }};
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0,
-                              (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                              &initialImageBarrier);
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
+                              nullptr, 1, &initialImageBarrier);
 
         beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer,
                         makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), tcu::Vec4(0.0f));
@@ -439,7 +438,7 @@ BufferViewTestInstance::BufferViewTestInstance(Context &context, BufferViewCaseP
 
         vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelines);
         vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1,
-                                 &*m_descriptorSet, 0u, DE_NULL);
+                                 &*m_descriptorSet, 0u, nullptr);
         vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), vertexBufferOffset);
         vk.cmdDraw(*m_cmdBuffer, (uint32_t)m_vertices.size(), 1, 0, 0);
         endRenderPass(vk, *m_cmdBuffer);
@@ -669,20 +668,20 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // VkDescriptorType descriptorType;
                 1u,                                // uint32_t arraySize;
                 VK_SHADER_STAGE_COMPUTE_BIT,       // VkShaderStageFlags stageFlags;
-                DE_NULL                            // const VkSampler* pImmutableSamplers;
+                nullptr                            // const VkSampler* pImmutableSamplers;
             },
             {
                 1u,                          // uint32_t binding;
                 testCase.descType,           // VkDescriptorType descriptorType;
                 1u,                          // uint32_t arraySize;
                 VK_SHADER_STAGE_COMPUTE_BIT, // VkShaderStageFlags stageFlags;
-                DE_NULL                      // const VkSampler* pImmutableSamplers;
+                nullptr                      // const VkSampler* pImmutableSamplers;
             },
         };
 
         const VkDescriptorSetLayoutCreateInfo descriptorLayoutParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                             // const void* pNext;
+            nullptr,                                             // const void* pNext;
             (VkDescriptorSetLayoutCreateFlags)0,
             DE_LENGTH_OF_ARRAY(layoutBindings), // uint32_t count;
             layoutBindings                      // const VkDescriptorSetLayoutBinding pBinding;
@@ -708,7 +707,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
 
         VkBufferViewCreateInfo viewInfo = {
             VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                   // void* pNext;
+            nullptr,                                   // void* pNext;
             (VkBufferViewCreateFlags)0,
             *m_uniformBuffer,         // VkBuffer buffer;
             m_bufferFormat,           // VkFormat format;
@@ -721,7 +720,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
         if (testCase.bindUsage != VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM)
         {
             bindUsageInfo.sType = VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR; // VkStructureType sType;
-            bindUsageInfo.pNext = DE_NULL;                                                // const void* pNext;
+            bindUsageInfo.pNext = nullptr;                                                // const void* pNext;
             bindUsageInfo.usage = testCase.bindUsage; // VkBufferUsageFlags2KHR usage;
 
             viewInfo.pNext = &bindUsageInfo;
@@ -742,7 +741,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
 
         const VkDescriptorPoolCreateInfo descriptorPoolParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,     // VkStructureType sType;
-            DE_NULL,                                           // void* pNext;
+            nullptr,                                           // void* pNext;
             VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, // VkDescriptorPoolCreateFlags flags;
             1u,                                                // uint32_t maxSets;
             DE_LENGTH_OF_ARRAY(descriptorTypes),               // uint32_t count;
@@ -753,7 +752,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
 
         const VkDescriptorSetAllocateInfo descriptorSetParams = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            DE_NULL,
+            nullptr,
             *m_descriptorPool,
             1u,
             &m_descriptorSetLayout.get(),
@@ -765,42 +764,42 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
         const VkWriteDescriptorSet writeDescritporSets[] = {
             {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
-                DE_NULL,                                // const void* pNext;
+                nullptr,                                // const void* pNext;
                 *m_descriptorSet,                       // VkDescriptorSet destSet;
                 0,                                      // uint32_t destBinding;
                 0,                                      // uint32_t destArrayElement;
                 1u,                                     // uint32_t count;
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,      // VkDescriptorType descriptorType;
-                (const VkDescriptorImageInfo *)DE_NULL,
+                nullptr,
                 &outBufferInfo,
-                (const VkBufferView *)DE_NULL,
+                nullptr,
             },
             {
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
-                DE_NULL,                                // const void* pNext;
+                nullptr,                                // const void* pNext;
                 *m_descriptorSet,                       // VkDescriptorSet destSet;
                 1,                                      // uint32_t destBinding;
                 0,                                      // uint32_t destArrayElement;
                 1u,                                     // uint32_t count;
                 testCase.descType,                      // VkDescriptorType descriptorType;
-                (const VkDescriptorImageInfo *)DE_NULL,
-                (const VkDescriptorBufferInfo *)DE_NULL,
+                nullptr,
+                nullptr,
                 &m_uniformBufferView.get(),
             }};
 
-        vk.updateDescriptorSets(vkDevice, DE_LENGTH_OF_ARRAY(writeDescritporSets), writeDescritporSets, 0u, DE_NULL);
+        vk.updateDescriptorSets(vkDevice, DE_LENGTH_OF_ARRAY(writeDescritporSets), writeDescritporSets, 0u, nullptr);
     }
 
     // Create pipeline layout
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            DE_NULL,                                       // const void* pNext;
+            nullptr,                                       // const void* pNext;
             (VkPipelineLayoutCreateFlags)0,
             1u,                      // uint32_t descriptorSetCount;
             &*m_descriptorSetLayout, // const VkDescriptorSetLayout* pSetLayouts;
             0u,                      // uint32_t pushConstantRangeCount;
-            DE_NULL                  // const VkPushConstantRange* pPushConstantRanges;
+            nullptr                  // const VkPushConstantRange* pPushConstantRanges;
         };
 
         m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -831,7 +830,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
 
         const vk::VkBufferMemoryBarrier barrier = {
             vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-            DE_NULL,
+            nullptr,
             vk::VK_ACCESS_HOST_WRITE_BIT,   // srcAccessMask
             vk::VK_ACCESS_UNIFORM_READ_BIT, // dstAccessMask
             VK_QUEUE_FAMILY_IGNORED,        // srcQueueFamilyIndex
@@ -842,7 +841,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
         };
         const vk::VkBufferMemoryBarrier bufferBarrier = {
             vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-            DE_NULL,
+            nullptr,
             vk::VK_ACCESS_SHADER_WRITE_BIT, // srcAccessMask
             vk::VK_ACCESS_HOST_READ_BIT,    // dstAccessMask
             VK_QUEUE_FAMILY_IGNORED,        // srcQueueFamilyIndex
