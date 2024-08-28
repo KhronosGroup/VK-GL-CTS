@@ -28,6 +28,7 @@ template<> const char*	getTypeName<VkQueryPool>						(void) { return "VkQueryPoo
 template<> const char*	getTypeName<VkFramebuffer>						(void) { return "VkFramebuffer";					}
 template<> const char*	getTypeName<VkRenderPass>						(void) { return "VkRenderPass";						}
 template<> const char*	getTypeName<VkPipelineCache>					(void) { return "VkPipelineCache";					}
+template<> const char*	getTypeName<VkPipelineBinaryKHR>				(void) { return "VkPipelineBinaryKHR";				}
 template<> const char*	getTypeName<VkIndirectCommandsLayoutNV>			(void) { return "VkIndirectCommandsLayoutNV";		}
 template<> const char*	getTypeName<VkDescriptorUpdateTemplate>			(void) { return "VkDescriptorUpdateTemplate";		}
 template<> const char*	getTypeName<VkSamplerYcbcrConversion>			(void) { return "VkSamplerYcbcrConversion";			}
@@ -1363,6 +1364,7 @@ const char* getResultName (VkResult value)
 {
 	switch (value)
 	{
+		case VK_ERROR_NOT_ENOUGH_SPACE_KHR:							return "VK_ERROR_NOT_ENOUGH_SPACE_KHR";
 		case VK_ERROR_COMPRESSION_EXHAUSTED_EXT:					return "VK_ERROR_COMPRESSION_EXHAUSTED_EXT";
 		case VK_ERROR_INVALID_VIDEO_STD_PARAMETERS_KHR:				return "VK_ERROR_INVALID_VIDEO_STD_PARAMETERS_KHR";
 		case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS:				return "VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS";
@@ -1410,6 +1412,7 @@ const char* getResultName (VkResult value)
 		case VK_OPERATION_NOT_DEFERRED_KHR:							return "VK_OPERATION_NOT_DEFERRED_KHR";
 		case VK_PIPELINE_COMPILE_REQUIRED:							return "VK_PIPELINE_COMPILE_REQUIRED";
 		case VK_INCOMPATIBLE_SHADER_BINARY_EXT:						return "VK_INCOMPATIBLE_SHADER_BINARY_EXT";
+		case VK_PIPELINE_BINARY_MISSING_KHR:						return "VK_PIPELINE_BINARY_MISSING_KHR";
 		default:													return nullptr;
 	}
 }
@@ -2303,10 +2306,23 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEVICE_IMAGE_SUBRESOURCE_INFO_KHR:									return "VK_STRUCTURE_TYPE_DEVICE_IMAGE_SUBRESOURCE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD";
+		case VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD:													return "VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD";
+		case VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD:										return "VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT:												return "VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_CREATE_INFO_KHR:										return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR:											return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR:												return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_RELEASE_CAPTURED_PIPELINE_DATA_INFO_KHR:								return "VK_STRUCTURE_TYPE_RELEASE_CAPTURED_PIPELINE_DATA_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_DATA_INFO_KHR:										return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_DATA_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_CREATE_INFO_KHR:											return "VK_STRUCTURE_TYPE_PIPELINE_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_DEVICE_PIPELINE_BINARY_INTERNAL_CACHE_CONTROL_KHR:					return "VK_STRUCTURE_TYPE_DEVICE_PIPELINE_BINARY_INTERNAL_CACHE_CONTROL_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_HANDLES_INFO_KHR:									return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_HANDLES_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM:												return "VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC";
@@ -2376,6 +2392,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_LIST_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_LIST_KHR";
@@ -2607,6 +2624,7 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_MICROMAP_EXT:						return "VK_OBJECT_TYPE_MICROMAP_EXT";
 		case VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV:			return "VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV";
 		case VK_OBJECT_TYPE_SHADER_EXT:							return "VK_OBJECT_TYPE_SHADER_EXT";
+		case VK_OBJECT_TYPE_PIPELINE_BINARY_KHR:				return "VK_OBJECT_TYPE_PIPELINE_BINARY_KHR";
 		default:												return nullptr;
 	}
 }
@@ -3681,6 +3699,27 @@ const char* getDirectDriverLoadingModeLUNARGName (VkDirectDriverLoadingModeLUNAR
 	}
 }
 
+const char* getAntiLagModeAMDName (VkAntiLagModeAMD value)
+{
+	switch (value)
+	{
+		case VK_ANTI_LAG_MODE_DRIVER_CONTROL_AMD:	return "VK_ANTI_LAG_MODE_DRIVER_CONTROL_AMD";
+		case VK_ANTI_LAG_MODE_ON_AMD:				return "VK_ANTI_LAG_MODE_ON_AMD";
+		case VK_ANTI_LAG_MODE_OFF_AMD:				return "VK_ANTI_LAG_MODE_OFF_AMD";
+		default:									return nullptr;
+	}
+}
+
+const char* getAntiLagStageAMDName (VkAntiLagStageAMD value)
+{
+	switch (value)
+	{
+		case VK_ANTI_LAG_STAGE_INPUT_AMD:	return "VK_ANTI_LAG_STAGE_INPUT_AMD";
+		case VK_ANTI_LAG_STAGE_PRESENT_AMD:	return "VK_ANTI_LAG_STAGE_PRESENT_AMD";
+		default:							return nullptr;
+	}
+}
+
 tcu::Format::Bitfield<64> getPipelineCreateFlags2KHRStr (VkPipelineCreateFlags2KHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -3716,6 +3755,7 @@ tcu::Format::Bitfield<64> getPipelineCreateFlags2KHRStr (VkPipelineCreateFlags2K
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_RAY_TRACING_DISPLACEMENT_MICROMAP_BIT_NV,					"VK_PIPELINE_CREATE_2_RAY_TRACING_DISPLACEMENT_MICROMAP_BIT_NV"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT,								"VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT,							"VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR,										"VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT,							"VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -6937,6 +6977,99 @@ std::ostream& operator<< (std::ostream& s, const VkPushConstantRange& value)
 	s << "\tstageFlags = " << getShaderStageFlagsStr(value.stageFlags) << '\n';
 	s << "\toffset = " << value.offset << '\n';
 	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryCreateInfoKHR& value)
+{
+	s << "VkPipelineBinaryCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpKeysAndDataInfo = " << value.pKeysAndDataInfo << '\n';
+	s << "\tpipeline = " << value.pipeline << '\n';
+	s << "\tpPipelineCreateInfo = " << value.pPipelineCreateInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryHandlesInfoKHR& value)
+{
+	s << "VkPipelineBinaryHandlesInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipelineBinaryCount = " << value.pipelineBinaryCount << '\n';
+	s << "\tpPipelineBinaries = " << value.pPipelineBinaries << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryDataKHR& value)
+{
+	s << "VkPipelineBinaryDataKHR = {\n";
+	s << "\tdataSize = " << value.dataSize << '\n';
+	s << "\tpData = " << value.pData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryKeysAndDataKHR& value)
+{
+	s << "VkPipelineBinaryKeysAndDataKHR = {\n";
+	s << "\tbinaryCount = " << value.binaryCount << '\n';
+	s << "\tpPipelineBinaryKeys = " << value.pPipelineBinaryKeys << '\n';
+	s << "\tpPipelineBinaryData = " << value.pPipelineBinaryData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryKeyKHR& value)
+{
+	s << "VkPipelineBinaryKeyKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tkeySize = " << value.keySize << '\n';
+	s << "\tkey = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.key)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.key))) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryInfoKHR& value)
+{
+	s << "VkPipelineBinaryInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbinaryCount = " << value.binaryCount << '\n';
+	s << "\tpPipelineBinaries = " << value.pPipelineBinaries << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkReleaseCapturedPipelineDataInfoKHR& value)
+{
+	s << "VkReleaseCapturedPipelineDataInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipeline = " << value.pipeline << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryDataInfoKHR& value)
+{
+	s << "VkPipelineBinaryDataInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipelineBinary = " << value.pipelineBinary << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineCreateInfoKHR& value)
+{
+	s << "VkPipelineCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
 	s << '}';
 	return s;
 }
@@ -16505,6 +16638,40 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceGraphicsPipelin
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePipelineBinaryFeaturesKHR& value)
+{
+	s << "VkPhysicalDevicePipelineBinaryFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipelineBinaries = " << value.pipelineBinaries << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDevicePipelineBinaryInternalCacheControlKHR& value)
+{
+	s << "VkDevicePipelineBinaryInternalCacheControlKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdisableInternalCache = " << value.disableInternalCache << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePipelineBinaryPropertiesKHR& value)
+{
+	s << "VkPhysicalDevicePipelineBinaryPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipelineBinaryInternalCache = " << value.pipelineBinaryInternalCache << '\n';
+	s << "\tpipelineBinaryInternalCacheControl = " << value.pipelineBinaryInternalCacheControl << '\n';
+	s << "\tpipelineBinaryPrefersInternalCache = " << value.pipelineBinaryPrefersInternalCache << '\n';
+	s << "\tpipelineBinaryPrecompiledInternalCache = " << value.pipelineBinaryPrecompiledInternalCache << '\n';
+	s << "\tpipelineBinaryCompressedData = " << value.pipelineBinaryCompressedData << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT& value)
 {
 	s << "VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT = {\n";
@@ -18074,6 +18241,39 @@ std::ostream& operator<< (std::ostream& s, const VkDispatchGraphCountInfoAMDX& v
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAntiLagFeaturesAMD& value)
+{
+	s << "VkPhysicalDeviceAntiLagFeaturesAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tantiLag = " << value.antiLag << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAntiLagDataAMD& value)
+{
+	s << "VkAntiLagDataAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmode = " << value.mode << '\n';
+	s << "\tmaxFPS = " << value.maxFPS << '\n';
+	s << "\tpPresentationInfo = " << value.pPresentationInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAntiLagPresentationInfoAMD& value)
+{
+	s << "VkAntiLagPresentationInfoAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstage = " << value.stage << '\n';
+	s << "\tframeIndex = " << value.frameIndex << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkBindMemoryStatusKHR& value)
 {
 	s << "VkBindMemoryStatusKHR = {\n";
@@ -18679,6 +18879,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRawAccessChains
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderRawAccessChains = " << value.shaderRawAccessChains << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCommandBufferInheritanceFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceCommandBufferInheritanceFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcommandBufferInheritance = " << value.commandBufferInheritance << '\n';
 	s << '}';
 	return s;
 }

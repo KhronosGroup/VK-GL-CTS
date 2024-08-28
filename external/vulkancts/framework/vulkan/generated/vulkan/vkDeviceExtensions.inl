@@ -54,6 +54,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_map_memory2",
 	"VK_KHR_multiview",
 	"VK_KHR_performance_query",
+	"VK_KHR_pipeline_binary",
 	"VK_KHR_pipeline_executable_properties",
 	"VK_KHR_pipeline_library",
 	"VK_KHR_portability_subset",
