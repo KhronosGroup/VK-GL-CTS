@@ -1061,7 +1061,7 @@ bool verifyResultData(const tcu::Vec4 *resultData, uint32_t index, bool hit, con
             }
         }
 
-        if (resultData->w() != 2.0f)
+        if (!compareFloat(resultData->w(), 2.0f))
         {
             success = false;
         }
@@ -1107,7 +1107,7 @@ bool verifyResultData(const tcu::Vec4 *resultData, uint32_t index, bool hit, con
             }
         }
 
-        if (resultData->w() != MAX_T_VALUE)
+        if (!compareFloat(resultData->w(), MAX_T_VALUE))
         {
             success = false;
         }

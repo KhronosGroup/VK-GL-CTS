@@ -231,7 +231,7 @@ float deFloatFractExp(float x, int *exponent);
 
 DE_INLINE double deSign(double x)
 {
-    return isnan(x) ? x : (double)((x > 0.0) - (x < 0.0));
+    return deDoubleIsIEEENaN(x) ? x : (double)((x > 0.0) - (x < 0.0));
 }
 DE_INLINE int deIntSign(double x)
 {
