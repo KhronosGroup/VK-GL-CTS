@@ -899,9 +899,9 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
             endCommandBuffer(vkd, **commandBuffers[i]);
 
             // Submit the command buffer
-            VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            const VkSubmitInfo submitInfo  = {
-                VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, surfaceCount, acquireSem.data(), &waitStage, 1u,
+            std::vector<VkPipelineStageFlags> waitStages(surfaceCount, VK_PIPELINE_STAGE_TRANSFER_BIT);
+            const VkSubmitInfo submitInfo = {
+                VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, surfaceCount, acquireSem.data(), waitStages.data(), 1u,
                 &**commandBuffers[i],          1u,      presentSem,
             };
             VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE));

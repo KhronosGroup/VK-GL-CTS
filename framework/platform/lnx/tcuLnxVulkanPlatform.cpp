@@ -56,7 +56,11 @@ using tcu::LibDrm;
 #endif // DEQP_SUPPORT_WAYLAND
 
 #if !defined(DEQP_VULKAN_LIBRARY_PATH)
+#ifdef CTS_USES_VULKANSC
+#define DEQP_VULKAN_LIBRARY_PATH "libvulkansc.so.1"
+#else
 #define DEQP_VULKAN_LIBRARY_PATH "libvulkan.so.1"
+#endif
 #endif
 
 namespace tcu

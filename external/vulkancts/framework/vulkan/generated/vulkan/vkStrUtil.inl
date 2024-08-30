@@ -87,6 +87,8 @@ const char*	getOpacityMicromapSpecialIndexEXTName					(VkOpacityMicromapSpecialI
 const char*	getDeviceFaultVendorBinaryHeaderVersionEXTName			(VkDeviceFaultVendorBinaryHeaderVersionEXT value);
 const char*	getDepthBiasRepresentationEXTName						(VkDepthBiasRepresentationEXT value);
 const char*	getDirectDriverLoadingModeLUNARGName					(VkDirectDriverLoadingModeLUNARG value);
+const char*	getAntiLagModeAMDName									(VkAntiLagModeAMD value);
+const char*	getAntiLagStageAMDName									(VkAntiLagStageAMD value);
 const char*	getDisplacementMicromapFormatNVName						(VkDisplacementMicromapFormatNV value);
 const char*	getShaderCodeTypeEXTName								(VkShaderCodeTypeEXT value);
 const char*	getScopeKHRName											(VkScopeKHR value);
@@ -245,6 +247,8 @@ inline tcu::Format::Enum<VkOpacityMicromapSpecialIndexEXT>					getOpacityMicroma
 inline tcu::Format::Enum<VkDeviceFaultVendorBinaryHeaderVersionEXT>			getDeviceFaultVendorBinaryHeaderVersionEXTStr		(VkDeviceFaultVendorBinaryHeaderVersionEXT value)		{ return tcu::Format::Enum<VkDeviceFaultVendorBinaryHeaderVersionEXT>(getDeviceFaultVendorBinaryHeaderVersionEXTName, value);				}
 inline tcu::Format::Enum<VkDepthBiasRepresentationEXT>						getDepthBiasRepresentationEXTStr					(VkDepthBiasRepresentationEXT value)					{ return tcu::Format::Enum<VkDepthBiasRepresentationEXT>(getDepthBiasRepresentationEXTName, value);											}
 inline tcu::Format::Enum<VkDirectDriverLoadingModeLUNARG>					getDirectDriverLoadingModeLUNARGStr					(VkDirectDriverLoadingModeLUNARG value)					{ return tcu::Format::Enum<VkDirectDriverLoadingModeLUNARG>(getDirectDriverLoadingModeLUNARGName, value);									}
+inline tcu::Format::Enum<VkAntiLagModeAMD>									getAntiLagModeAMDStr								(VkAntiLagModeAMD value)								{ return tcu::Format::Enum<VkAntiLagModeAMD>(getAntiLagModeAMDName, value);																	}
+inline tcu::Format::Enum<VkAntiLagStageAMD>									getAntiLagStageAMDStr								(VkAntiLagStageAMD value)								{ return tcu::Format::Enum<VkAntiLagStageAMD>(getAntiLagStageAMDName, value);																}
 inline tcu::Format::Enum<VkDisplacementMicromapFormatNV>					getDisplacementMicromapFormatNVStr					(VkDisplacementMicromapFormatNV value)					{ return tcu::Format::Enum<VkDisplacementMicromapFormatNV>(getDisplacementMicromapFormatNVName, value);										}
 inline tcu::Format::Enum<VkShaderCodeTypeEXT>								getShaderCodeTypeEXTStr								(VkShaderCodeTypeEXT value)								{ return tcu::Format::Enum<VkShaderCodeTypeEXT>(getShaderCodeTypeEXTName, value);															}
 inline tcu::Format::Enum<VkScopeKHR>										getScopeKHRStr										(VkScopeKHR value)										{ return tcu::Format::Enum<VkScopeKHR>(getScopeKHRName, value);																				}
@@ -403,6 +407,8 @@ inline std::ostream&	operator<<	(std::ostream& s, VkOpacityMicromapSpecialIndexE
 inline std::ostream&	operator<<	(std::ostream& s, VkDeviceFaultVendorBinaryHeaderVersionEXT value)			{ return s << getDeviceFaultVendorBinaryHeaderVersionEXTStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkDepthBiasRepresentationEXT value)						{ return s << getDepthBiasRepresentationEXTStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkDirectDriverLoadingModeLUNARG value)					{ return s << getDirectDriverLoadingModeLUNARGStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkAntiLagModeAMD value)									{ return s << getAntiLagModeAMDStr(value);									}
+inline std::ostream&	operator<<	(std::ostream& s, VkAntiLagStageAMD value)									{ return s << getAntiLagStageAMDStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkDisplacementMicromapFormatNV value)						{ return s << getDisplacementMicromapFormatNVStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkShaderCodeTypeEXT value)								{ return s << getShaderCodeTypeEXTStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, VkScopeKHR value)											{ return s << getScopeKHRStr(value);										}
@@ -754,6 +760,15 @@ std::ostream&	operator<<	(std::ostream& s, const VkGraphicsPipelineCreateInfo& v
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCacheCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCacheHeaderVersionOne& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPushConstantRange& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryHandlesInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryDataKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryKeysAndDataKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryKeyKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkReleaseCapturedPipelineDataInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryDataInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineLayoutCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCommandPoolCreateInfo& value);
@@ -1525,6 +1540,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkImageViewMinLodCreateInfoEXT&
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLinearColorAttachmentFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineBinaryFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDevicePipelineBinaryInternalCacheControlKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineBinaryPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGraphicsPipelineLibraryCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE& value);
@@ -1661,6 +1679,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineShaderStageNodeCreate
 std::ostream&	operator<<	(std::ostream& s, const VkExecutionGraphPipelineScratchSizeAMDX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDispatchGraphInfoAMDX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDispatchGraphCountInfoAMDX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAntiLagFeaturesAMD& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAntiLagDataAMD& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAntiLagPresentationInfoAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindMemoryStatus& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindDescriptorSetsInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPushConstantsInfo& value);
@@ -1716,6 +1737,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMapMemoryPlaced
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryMapPlacedInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRawAccessChainsFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCommandBufferInheritanceFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageAlignmentControlFeaturesMESA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageAlignmentControlPropertiesMESA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageAlignmentControlCreateInfoMESA& value);

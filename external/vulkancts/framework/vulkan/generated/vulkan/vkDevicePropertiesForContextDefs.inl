@@ -76,6 +76,7 @@ const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&					Context::getOpticalFlowPr
 const vk::VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&	Context::getExternalFormatResolvePropertiesANDROID	(void) const { return m_device->getExternalFormatResolvePropertiesANDROID();	}
 const vk::VkPhysicalDeviceMaintenance5Properties&					Context::getMaintenance5Properties					(void) const { return m_device->getMaintenance5Properties();					}
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				Context::getShaderObjectPropertiesEXT				(void) const { return m_device->getShaderObjectPropertiesEXT();					}
+const vk::VkPhysicalDevicePipelineBinaryPropertiesKHR&				Context::getPipelineBinaryProperties				(void) const { return m_device->getPipelineBinaryProperties();					}
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	Context::getRayTracingInvocationReorderProperties	(void) const { return m_device->getRayTracingInvocationReorderProperties();		}
 const vk::VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&	Context::getExtendedSparseAddressSpacePropertiesNV	(void) const { return m_device->getExtendedSparseAddressSpacePropertiesNV();	}
 const vk::VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&		Context::getLegacyVertexAttributesPropertiesEXT		(void) const { return m_device->getLegacyVertexAttributesPropertiesEXT();		}

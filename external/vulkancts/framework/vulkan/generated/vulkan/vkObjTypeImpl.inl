@@ -31,6 +31,7 @@ template<> inline VkObjectType	getObjectType<VkQueryPool>						(void) { return V
 template<> inline VkObjectType	getObjectType<VkFramebuffer>					(void) { return VK_OBJECT_TYPE_FRAMEBUFFER;						}
 template<> inline VkObjectType	getObjectType<VkRenderPass>						(void) { return VK_OBJECT_TYPE_RENDER_PASS;						}
 template<> inline VkObjectType	getObjectType<VkPipelineCache>					(void) { return VK_OBJECT_TYPE_PIPELINE_CACHE;					}
+template<> inline VkObjectType	getObjectType<VkPipelineBinaryKHR>				(void) { return VK_OBJECT_TYPE_PIPELINE_BINARY_KHR;				}
 template<> inline VkObjectType	getObjectType<VkIndirectCommandsLayoutNV>		(void) { return VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV;		}
 template<> inline VkObjectType	getObjectType<VkDescriptorUpdateTemplate>		(void) { return VK_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE;		}
 template<> inline VkObjectType	getObjectType<VkSamplerYcbcrConversion>			(void) { return VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION;		}

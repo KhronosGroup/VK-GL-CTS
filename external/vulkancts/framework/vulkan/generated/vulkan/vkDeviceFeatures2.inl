@@ -4168,6 +4168,43 @@ tcu::TestStatus testPhysicalDeviceFeatureGraphicsPipelineLibraryFeaturesEXT (Con
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeaturePipelineBinaryFeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+	VkPhysicalDevicePipelineBinaryFeaturesKHR	devicePipelineBinaryFeaturesKHR[count];
+	const bool									isPipelineBinaryFeaturesKHR = checkExtension(properties, "VK_KHR_pipeline_binary");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&devicePipelineBinaryFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePipelineBinaryFeaturesKHR));
+		devicePipelineBinaryFeaturesKHR[ndx].sType = isPipelineBinaryFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+		devicePipelineBinaryFeaturesKHR[ndx].pNext = nullptr;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &devicePipelineBinaryFeaturesKHR[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isPipelineBinaryFeaturesKHR)
+		log << TestLog::Message << devicePipelineBinaryFeaturesKHR[0] << TestLog::EndMessage;
+
+	if (isPipelineBinaryFeaturesKHR &&
+		(devicePipelineBinaryFeaturesKHR[0].pipelineBinaries != devicePipelineBinaryFeaturesKHR[1].pipelineBinaries))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDevicePipelineBinaryFeaturesKHR");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureNestedCommandBufferFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -5768,6 +5805,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "image_view_min_lod_features_ext", testPhysicalDeviceFeatureImageViewMinLodFeaturesEXT);
 	addFunctionCase(testGroup, "rasterization_order_attachment_access_features_ext", testPhysicalDeviceFeatureRasterizationOrderAttachmentAccessFeaturesEXT);
 	addFunctionCase(testGroup, "graphics_pipeline_library_features_ext", testPhysicalDeviceFeatureGraphicsPipelineLibraryFeaturesEXT);
+	addFunctionCase(testGroup, "pipeline_binary_features_khr", testPhysicalDeviceFeaturePipelineBinaryFeaturesKHR);
 	addFunctionCase(testGroup, "nested_command_buffer_features_ext", testPhysicalDeviceFeatureNestedCommandBufferFeaturesEXT);
 	addFunctionCase(testGroup, "shader_module_identifier_features_ext", testPhysicalDeviceFeatureShaderModuleIdentifierFeaturesEXT);
 	addFunctionCase(testGroup, "image_compression_control_features_ext", testPhysicalDeviceFeatureImageCompressionControlFeaturesEXT);

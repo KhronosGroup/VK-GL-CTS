@@ -204,7 +204,7 @@ namespace gl3cts
 
 /** @brief Vertex shader source code to test primitive restart functionality. */
 const glw::GLchar *gl3cts::PrimitiveRestartModeTestCase::m_vert_shader = R"(
-	${VERSION}
+    ${VERSION}
     uniform mat4 ModelViewProjectionMatrix;
     uniform vec4 testcolor;
 
@@ -221,19 +221,19 @@ const glw::GLchar *gl3cts::PrimitiveRestartModeTestCase::m_vert_shader = R"(
 
 /** @brief Fragment shader source code to test primitive restart functionality. */
 const glw::GLchar *gl3cts::PrimitiveRestartModeTestCase::m_frag_shader = R"(
-	${VERSION}
-	in vec4 color;
-	out vec4 frag_color;
+    ${VERSION}
+    in vec4 color;
+    out vec4 frag_color;
 
-	void main()
-	{
-	    frag_color = color;
-	}
-	)";
+    void main()
+    {
+        frag_color = color;
+    }
+    )";
 
 /** @brief Vertex shader source code to test primitive restart functionality. */
 const glw::GLchar *gl3cts::PrimitiveRestartModeTestCase::m_tess_vert_shader = R"(
-	${VERSION}
+    ${VERSION}
     uniform mat4 ModelViewProjectionMatrix;
     uniform vec4 testcolor;
 
@@ -250,7 +250,7 @@ const glw::GLchar *gl3cts::PrimitiveRestartModeTestCase::m_tess_vert_shader = R"
 
 /** @brief Control shader source code to test primitive restart functionality. */
 const glw::GLchar *gl3cts::PrimitiveRestartModeTestCase::m_tess_ctrl_shader = R"(
-	${VERSION}
+    ${VERSION}
     #extension GL_ARB_tessellation_shader : require
     #define ID gl_InvocationID
 
@@ -270,11 +270,11 @@ const glw::GLchar *gl3cts::PrimitiveRestartModeTestCase::m_tess_ctrl_shader = R"
             gl_TessLevelOuter[1] = 1;
             gl_TessLevelOuter[2] = 1;
     }
-	)";
+    )";
 
 /** @brief Evaluation shader source code to test primitive restart functionality. */
 const glw::GLchar *gl3cts::PrimitiveRestartModeTestCase::m_tess_eval_shader = R"(
-	${VERSION}
+    ${VERSION}
     #extension GL_ARB_tessellation_shader : require
 
     uniform mat4 ModelViewMatrix;

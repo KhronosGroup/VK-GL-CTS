@@ -832,6 +832,10 @@ tcu::TestCaseGroup *createMaintenance3Tests(tcu::TestContext &testCtx)
             for (const auto &extraBindings : {false, true})
                 for (const auto &useVariableSize : {false, true})
                 {
+                    if (useVariableSize && (descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
+                                            descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC))
+                        continue;
+
                     const auto extraBindingsSuffix = (extraBindings ? "_extra_bindings" : "");
                     const auto variableSizeSuffix  = (useVariableSize ? "" : "_no_variable_size");
                     const auto caseName            = "support_count_" + getDescriptorTypeShortName(descriptorType) +

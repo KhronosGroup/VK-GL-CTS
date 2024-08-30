@@ -258,6 +258,31 @@ VkResult DeviceDriver::mergePipelineCaches (VkDevice device, VkPipelineCache dst
     return m_vk.mergePipelineCaches(device, dstCache, srcCacheCount, pSrcCaches);
 }
 
+VkResult DeviceDriver::createPipelineBinariesKHR (VkDevice device, const VkPipelineBinaryCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryHandlesInfoKHR* pBinaries) const
+{
+    return m_vk.createPipelineBinariesKHR(device, pCreateInfo, pAllocator, pBinaries);
+}
+
+void DeviceDriver::destroyPipelineBinaryKHR (VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyPipelineBinaryKHR(device, pipelineBinary, pAllocator);
+}
+
+VkResult DeviceDriver::getPipelineKeyKHR (VkDevice device, const VkPipelineCreateInfoKHR* pPipelineCreateInfo, VkPipelineBinaryKeyKHR* pPipelineKey) const
+{
+    return m_vk.getPipelineKeyKHR(device, pPipelineCreateInfo, pPipelineKey);
+}
+
+VkResult DeviceDriver::getPipelineBinaryDataKHR (VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, VkPipelineBinaryKeyKHR* pPipelineBinaryKey, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData) const
+{
+    return m_vk.getPipelineBinaryDataKHR(device, pInfo, pPipelineBinaryKey, pPipelineBinaryDataSize, pPipelineBinaryData);
+}
+
+VkResult DeviceDriver::releaseCapturedPipelineDataKHR (VkDevice device, const VkReleaseCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator) const
+{
+    return m_vk.releaseCapturedPipelineDataKHR(device, pInfo, pAllocator);
+}
+
 VkResult DeviceDriver::createGraphicsPipelines (VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
@@ -1669,6 +1694,11 @@ void DeviceDriver::getPipelineIndirectMemoryRequirementsNV (VkDevice device, con
 VkDeviceAddress DeviceDriver::getPipelineIndirectDeviceAddressNV (VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo) const
 {
     return m_vk.getPipelineIndirectDeviceAddressNV(device, pInfo);
+}
+
+void DeviceDriver::antiLagUpdateAMD (VkDevice device, const VkAntiLagDataAMD* pData) const
+{
+    m_vk.antiLagUpdateAMD(device, pData);
 }
 
 void DeviceDriver::cmdSetCullMode (VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const

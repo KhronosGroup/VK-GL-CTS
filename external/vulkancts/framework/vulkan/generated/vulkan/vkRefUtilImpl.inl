@@ -73,6 +73,12 @@ void Deleter<VkPipelineCache>::operator() (VkPipelineCache obj) const
 }
 
 template<>
+void Deleter<VkPipelineBinaryKHR>::operator() (VkPipelineBinaryKHR obj) const
+{
+	m_deviceIface->destroyPipelineBinaryKHR(m_device, obj, m_allocator);
+}
+
+template<>
 void Deleter<VkPipeline>::operator() (VkPipeline obj) const
 {
 	m_deviceIface->destroyPipeline(m_device, obj, m_allocator);

@@ -1938,7 +1938,7 @@ def getConstructorFunctions (api):
 
     for function in api.functions:
         if (function.name[:8] == "vkCreate" or function.name == "vkAllocateMemory") and not "createInfoCount" in [a.name for a in function.arguments]:
-            if function.name == "vkCreateDisplayModeKHR":
+            if function.name in ["vkCreatePipelineBinariesKHR", "vkCreateDisplayModeKHR"]:
                 continue # No way to delete display modes (bug?)
 
             ifaceArgs = []
@@ -1947,9 +1947,10 @@ def getConstructorFunctions (api):
                              FunctionArgument("instance", "", "VkInstance")]
             ifaceArgs.extend(ifacesDict[function.getType()])
 
-            assert (function.arguments[-2].type == "VkAllocationCallbacks" and \
-                    "const" in function.arguments[-2].qualifiers and \
-                    function.arguments[-2].pointer == "*")
+            allocatorArg = function.arguments[-2]
+            assert (allocatorArg.type == "VkAllocationCallbacks" and \
+                    "const" in allocatorArg.qualifiers and \
+                    allocatorArg.pointer == "*")
 
             objectType = function.arguments[-1].type
             arguments = function.arguments[:-1]
@@ -2092,7 +2093,13 @@ def writeNullDriverImpl (api, filename):
             if function.arguments[-1].len != None:
                 yield "\tVK_NULL_RETURN((allocateNonDispHandleArray<%s, %s>(%s, %s)));" % (objectType[2:], objectType, argsStr, function.arguments[-1].name)
             else:
-                if getHandle(objectType).type == "VK_DEFINE_NON_DISPATCHABLE_HANDLE":
+                if function.name == "vkCreatePipelineBinariesKHR":
+                    yield "\tDE_UNREF(device);"
+                    yield "\tDE_UNREF(pCreateInfo);"
+                    yield "\tDE_UNREF(pAllocator);"
+                    yield "\tDE_UNREF(pBinaries);"
+                    yield "\treturn VK_SUCCESS;"
+                elif getHandle(objectType).type == "VK_DEFINE_NON_DISPATCHABLE_HANDLE":
                     yield "\tVK_NULL_RETURN((*%s = allocateNonDispHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
                 else:
                     yield "\tVK_NULL_RETURN((*%s = allocateHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)

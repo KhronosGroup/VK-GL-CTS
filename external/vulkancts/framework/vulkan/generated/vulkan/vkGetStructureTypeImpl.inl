@@ -183,6 +183,41 @@ template<> VkStructureType getStructureType<VkPipelineCacheCreateInfo> (void)
 	return VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 }
 
+template<> VkStructureType getStructureType<VkPipelineBinaryCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_BINARY_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineBinaryHandlesInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_BINARY_HANDLES_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineBinaryKeyKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineBinaryInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkReleaseCapturedPipelineDataInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RELEASE_CAPTURED_PIPELINE_DATA_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineBinaryDataInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_BINARY_DATA_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_CREATE_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPipelineLayoutCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -3608,6 +3643,21 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceGraphicsPipelineLibr
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelineBinaryFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDevicePipelineBinaryInternalCacheControlKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_PIPELINE_BINARY_INTERNAL_CACHE_CONTROL_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelineBinaryPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_PROPERTIES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT;
@@ -4238,6 +4288,21 @@ template<> VkStructureType getStructureType<VkExecutionGraphPipelineScratchSizeA
 	return VK_STRUCTURE_TYPE_EXECUTION_GRAPH_PIPELINE_SCRATCH_SIZE_AMDX;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceAntiLagFeaturesAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD;
+}
+
+template<> VkStructureType getStructureType<VkAntiLagDataAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD;
+}
+
+template<> VkStructureType getStructureType<VkAntiLagPresentationInfoAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD;
+}
+
 template<> VkStructureType getStructureType<VkBindMemoryStatus> (void)
 {
 	return VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS;
@@ -4511,6 +4576,11 @@ template<> VkStructureType getStructureType<VkMemoryMapPlacedInfoEXT> (void)
 template<> VkStructureType getStructureType<VkPhysicalDeviceRawAccessChainsFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCommandBufferInheritanceFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceImageAlignmentControlFeaturesMESA> (void)

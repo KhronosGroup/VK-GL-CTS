@@ -76,6 +76,7 @@ const VkPhysicalDeviceOpticalFlowPropertiesNV&					getOpticalFlowProperties					
 const VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&	getExternalFormatResolvePropertiesANDROID	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceExternalFormatResolvePropertiesANDROID>();		}
 const VkPhysicalDeviceMaintenance5Properties&					getMaintenance5Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance5Properties>();						}
 const VkPhysicalDeviceShaderObjectPropertiesEXT&				getShaderObjectPropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderObjectPropertiesEXT>();					}
+const VkPhysicalDevicePipelineBinaryPropertiesKHR&				getPipelineBinaryProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePipelineBinaryPropertiesKHR>();				}
 const VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	getRayTracingInvocationReorderProperties	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV>();	}
 const VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&	getExtendedSparseAddressSpacePropertiesNV	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV>();		}
 const VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&		getLegacyVertexAttributesPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT>();		}

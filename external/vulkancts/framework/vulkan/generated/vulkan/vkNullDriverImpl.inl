@@ -75,6 +75,16 @@ VKAPI_ATTR VkResult VKAPI_CALL createPipelineCache (VkDevice device, const VkPip
 	VK_NULL_RETURN((*pPipelineCache = allocateNonDispHandle<PipelineCache, VkPipelineCache>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createPipelineBinariesKHR (VkDevice device, const VkPipelineBinaryCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryHandlesInfoKHR* pBinaries)
+{
+	DE_UNREF(pAllocator);
+	DE_UNREF(device);
+	DE_UNREF(pCreateInfo);
+	DE_UNREF(pAllocator);
+	DE_UNREF(pBinaries);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createPipelineLayout (VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineLayout* pPipelineLayout)
 {
 	DE_UNREF(pAllocator);
@@ -407,6 +417,12 @@ VKAPI_ATTR void VKAPI_CALL destroyPipelineCache (VkDevice device, VkPipelineCach
 {
 	DE_UNREF(device);
 	freeNonDispHandle<PipelineCache, VkPipelineCache>(pipelineCache, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyPipelineBinaryKHR (VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<PipelineBinaryKHR, VkPipelineBinaryKHR>(pipelineBinary, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyPipeline (VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator)
@@ -791,6 +807,32 @@ VKAPI_ATTR VkResult VKAPI_CALL mergePipelineCaches (VkDevice device, VkPipelineC
 	DE_UNREF(dstCache);
 	DE_UNREF(srcCacheCount);
 	DE_UNREF(pSrcCaches);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPipelineKeyKHR (VkDevice device, const VkPipelineCreateInfoKHR* pPipelineCreateInfo, VkPipelineBinaryKeyKHR* pPipelineKey)
+{
+	DE_UNREF(device);
+	DE_UNREF(pPipelineCreateInfo);
+	DE_UNREF(pPipelineKey);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPipelineBinaryDataKHR (VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, VkPipelineBinaryKeyKHR* pPipelineBinaryKey, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pPipelineBinaryKey);
+	DE_UNREF(pPipelineBinaryDataSize);
+	DE_UNREF(pPipelineBinaryData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL releaseCapturedPipelineDataKHR (VkDevice device, const VkReleaseCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pAllocator);
 	return VK_SUCCESS;
 }
 
@@ -3026,6 +3068,12 @@ VKAPI_ATTR VkDeviceAddress VKAPI_CALL getPipelineIndirectDeviceAddressNV (VkDevi
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL antiLagUpdateAMD (VkDevice device, const VkAntiLagDataAMD* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(pData);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdSetCullMode (VkCommandBuffer commandBuffer, VkCullModeFlags cullMode)
 {
 	DE_UNREF(commandBuffer);
@@ -4368,6 +4416,11 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyPipelineCache,										destroyPipelineCache),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineCacheData,										getPipelineCacheData),
 	VK_NULL_FUNC_ENTRY(vkMergePipelineCaches,										mergePipelineCaches),
+	VK_NULL_FUNC_ENTRY(vkCreatePipelineBinariesKHR,									createPipelineBinariesKHR),
+	VK_NULL_FUNC_ENTRY(vkDestroyPipelineBinaryKHR,									destroyPipelineBinaryKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPipelineKeyKHR,											getPipelineKeyKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPipelineBinaryDataKHR,									getPipelineBinaryDataKHR),
+	VK_NULL_FUNC_ENTRY(vkReleaseCapturedPipelineDataKHR,							releaseCapturedPipelineDataKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateGraphicsPipelines,									createGraphicsPipelines),
 	VK_NULL_FUNC_ENTRY(vkCreateComputePipelines,									createComputePipelines),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI,				getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI),
@@ -4638,6 +4691,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDeferredOperationJoinKHR,									deferredOperationJoinKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineIndirectMemoryRequirementsNV,					getPipelineIndirectMemoryRequirementsNV),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineIndirectDeviceAddressNV,						getPipelineIndirectDeviceAddressNV),
+	VK_NULL_FUNC_ENTRY(vkAntiLagUpdateAMD,											antiLagUpdateAMD),
 	VK_NULL_FUNC_ENTRY(vkCmdSetCullMode,											cmdSetCullMode),
 	VK_NULL_FUNC_ENTRY(vkCmdSetFrontFace,											cmdSetFrontFace),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveTopology,									cmdSetPrimitiveTopology),
