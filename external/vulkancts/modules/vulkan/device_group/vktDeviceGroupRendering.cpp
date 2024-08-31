@@ -408,8 +408,14 @@ void DeviceGroupTestInstance::submitBufferAndWaitForIdle(const vk::DeviceInterfa
 
 tcu::TestStatus DeviceGroupTestInstance::iterate(void)
 {
-    const InstanceInterface &vki    = m_instanceWrapper->instance.getDriver();
-    const vk::DeviceInterface &vk   = m_context.getDeviceInterface();
+    const InstanceInterface &vki = m_instanceWrapper->instance.getDriver();
+
+    de::MovePtr<vk::DeviceDriver> deviceDriver = de::MovePtr<DeviceDriver>(
+        new DeviceDriver(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup,
+                         m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
+
+    const DeviceInterface &vk = *deviceDriver;
+
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const tcu::UVec2 renderSize(256, 256);
     const VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM;

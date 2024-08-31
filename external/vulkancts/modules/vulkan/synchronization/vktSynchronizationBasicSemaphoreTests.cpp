@@ -549,12 +549,6 @@ tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
     const VkPhysicalDevice physicalDevice      = context.getPhysicalDevice();
     bool usingTimelineSemaphores               = config.semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE;
 
-    de::MovePtr<VideoDevice> videoDevice(
-        config.videoCodecOperationFlags != 0 ?
-            getVideoDevice(context, usingTimelineSemaphores, config.videoCodecOperationFlags) :
-            DE_NULL);
-
-    const DeviceInterface &vk = getSyncDeviceInterface(videoDevice, context);
     std::vector<VkQueueFamilyVideoPropertiesKHR> videoQueueFamilyProperties2;
 #else
     const CustomInstance instance(createCustomInstanceFromContext(context));
@@ -748,9 +742,17 @@ tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
                            context.getPlatformInterface(), instance, instanceInterface, physicalDevice, &deviceInfo);
 
 #ifndef CTS_USES_VULKANSC
+    de::MovePtr<VideoDevice> videoDevice(
+        config.videoCodecOperationFlags != 0 ?
+            getVideoDevice(context, usingTimelineSemaphores, config.videoCodecOperationFlags) :
+            DE_NULL);
+
     de::MovePtr<vk::DeviceDriver> deviceDriver = de::MovePtr<DeviceDriver>(
         new DeviceDriver(context.getPlatformInterface(), instance, *logicalDevice, context.getUsedApiVersion(),
                          context.getTestContext().getCommandLine()));
+
+    const DeviceInterface &vk = (videoDevice != DE_NULL) ? getSyncDeviceInterface(videoDevice, context) : *deviceDriver;
+
 #else
     de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver =
         de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
