@@ -235,7 +235,7 @@ private:
     void startRendering(const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
                         const VkFramebuffer framebuffer, const VkRect2D &renderArea,
                         const std::vector<FBAttachmentInfo> &attachmentInfo, const uint32_t srTileWidth = 0,
-                        const uint32_t srTileHeight = 0) const;
+                        const uint32_t srTileHeight = 0, const DeviceInterface *customDevice = nullptr) const;
     void finishRendering(const VkCommandBuffer commandBuffer) const;
 
     bool verifyUsingAtomicChecks(uint32_t tileWidth, uint32_t tileHeight, uint32_t rateWidth, uint32_t rateHeight,
@@ -908,9 +908,10 @@ VkDescriptorSetAllocateInfo AttachmentRateInstance::makeDescriptorSetAllocInfo(
 void AttachmentRateInstance::startRendering(const VkCommandBuffer commandBuffer, const VkRenderPass renderPass,
                                             const VkFramebuffer framebuffer, const VkRect2D &renderArea,
                                             const std::vector<FBAttachmentInfo> &attachmentInfo,
-                                            const uint32_t srTileWidth, const uint32_t srTileHeight) const
+                                            const uint32_t srTileWidth, const uint32_t srTileHeight,
+                                            const DeviceInterface *customDevice) const
 {
-    const DeviceInterface &vk(m_context.getDeviceInterface());
+    const DeviceInterface &vk = (customDevice != nullptr) ? *customDevice : m_context.getDeviceInterface();
     std::vector<VkClearValue> clearColor(attachmentInfo.size(), makeClearValueColorU32(0, 0, 0, 0));
 
 #ifndef CTS_USES_VULKANSC
@@ -1932,7 +1933,7 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
                                   &cbImageBarrier);
 
             startRendering(*graphicsCmdBuffer, *renderPass, *framebuffer, makeRect2D(m_cbWidth, m_cbHeight),
-                           attachmentInfo, tileWidth, tileHeight);
+                           attachmentInfo, tileWidth, tileHeight, driver);
 
             // draw single triangle to cb
             vk.cmdBindDescriptorSets(*graphicsCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineLayout, 0, 1,
