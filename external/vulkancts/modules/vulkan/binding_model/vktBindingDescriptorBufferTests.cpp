@@ -206,6 +206,14 @@ enum class SubCase : uint32_t
     YCBCR_SAMPLER_ARRAY, // a more complex case with arrayed combined image samplers
 };
 
+// Indicates residency of resource on GPU memory
+enum class ResourceResidency : uint32_t
+{
+    TRADITIONAL,      // descriptor buffer resource bound to memory in traditional way
+    SPARSE_BINDING,   // descriptor buffer is sparse resource fully bound to memory
+    SPARSE_RESIDENCY, // descriptor buffer is sparse resource not fully bound to memory
+};
+
 // A simplified descriptor binding, used to define the test case behavior at a high level.
 struct SimpleBinding
 {
@@ -366,6 +374,8 @@ struct TestParams
     DescriptorMask mutableDescriptorTypes; // determines the descriptor types for VkMutableDescriptorTypeListEXT
 
     bool commands2; // Use vkCmd* commands from VK_KHR_maintenance6
+
+    ResourceResidency resourceResidency; // Create descriptor buffer as sparse resource
 
     bool isCompute() const
     {
@@ -2278,6 +2288,18 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
     // Optional
+    if ((m_params.resourceResidency == ResourceResidency::SPARSE_BINDING) &&
+        (context.getDeviceFeatures().sparseBinding == VK_FALSE))
+    {
+        TCU_THROW(NotSupportedError, "sparseBinding feature is not supported");
+    }
+
+    if ((m_params.resourceResidency == ResourceResidency::SPARSE_RESIDENCY) &&
+        ((context.getDeviceFeatures().sparseBinding == VK_FALSE) ||
+         (context.getDeviceFeatures().sparseResidencyBuffer == VK_FALSE)))
+    {
+        TCU_THROW(NotSupportedError, "sparseResidencyBuffer feature is not supported");
+    }
 
     if ((m_params.descriptor == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK) &&
         !context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
@@ -2584,6 +2606,8 @@ protected:
     MovePtr<DeviceDriver> m_deviceInterface;
     VkQueue m_queue;
     uint32_t m_queueFamilyIndex;
+    VkQueue m_sparseQueue;
+    uint32_t m_sparseQueueFamilyIndex;
     MovePtr<Allocator> m_allocatorPtr;
 
     VkPhysicalDeviceMemoryProperties m_memoryProperties;
@@ -2645,6 +2669,8 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     , m_deviceInterface()
     , m_queue()
     , m_queueFamilyIndex()
+    , m_sparseQueue()
+    , m_sparseQueueFamilyIndex()
     , m_allocatorPtr(nullptr)
     , m_memoryProperties()
     , m_descriptorBufferFeatures()
@@ -2769,16 +2795,26 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
 #undef VALIDATE_PER_STAGE_LIMIT
     }
 
-    auto &inst      = context.getInstanceInterface();
-    auto physDevice = context.getPhysicalDevice();
-    auto queueProps = getPhysicalDeviceQueueFamilyProperties(inst, physDevice);
-
-    m_queueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    auto &inst                           = context.getInstanceInterface();
+    auto physDevice                      = context.getPhysicalDevice();
+    auto queueProps                      = getPhysicalDeviceQueueFamilyProperties(inst, physDevice);
+    const bool sparseCompatibilityDevice = !(m_params.resourceResidency == ResourceResidency::TRADITIONAL);
 
     uint32_t graphicsComputeQueue = VK_QUEUE_FAMILY_IGNORED;
+    m_queueFamilyIndex            = VK_QUEUE_FAMILY_IGNORED;
+    m_sparseQueueFamilyIndex      = VK_QUEUE_FAMILY_IGNORED;
 
     for (uint32_t i = 0; i < queueProps.size(); ++i)
     {
+        // Looking for queue that supports sparse resource operations
+        if (sparseCompatibilityDevice)
+        {
+            if ((queueProps[i].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT) != 0)
+            {
+                m_sparseQueueFamilyIndex = i;
+            }
+        }
+
         if (m_params.queue == VK_QUEUE_GRAPHICS_BIT)
         {
             if ((queueProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
@@ -2815,12 +2851,10 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
         TCU_THROW(NotSupportedError, "Queue not supported");
     }
 
-    const float priority[1] = {0.5f};
-
-    VkDeviceQueueCreateInfo queueInfo = initVulkanStructure();
-    queueInfo.queueFamilyIndex        = m_queueFamilyIndex;
-    queueInfo.queueCount              = 1;
-    queueInfo.pQueuePriorities        = priority;
+    if (sparseCompatibilityDevice && m_sparseQueueFamilyIndex == VK_QUEUE_FAMILY_IGNORED)
+    {
+        TCU_THROW(NotSupportedError, "Sparse operations not supported by any queue");
+    }
 
     VkPhysicalDeviceFeatures2 features2                                            = initVulkanStructure();
     VkPhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferFeatures           = initVulkanStructure();
@@ -2837,6 +2871,26 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     VkPhysicalDeviceMaintenance4Features maintenance4Features                      = initVulkanStructure();
     VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Features                   = initVulkanStructure();
     VkPhysicalDeviceMaintenance6FeaturesKHR maintenance6Features                   = initVulkanStructure();
+
+    const float priority[1] = {0.5f};
+
+    uint32_t queueCiCnt = 1;
+    VkDeviceQueueCreateInfo
+        queueInfos[2]; // Needed when sparse binding is supported on other queue than descriptor buffer
+    queueInfos[0]                  = initVulkanStructure();
+    queueInfos[0].queueFamilyIndex = m_queueFamilyIndex;
+    queueInfos[0].queueCount       = 1;
+    queueInfos[0].pQueuePriorities = priority;
+
+    if (sparseCompatibilityDevice && m_sparseQueueFamilyIndex != m_queueFamilyIndex)
+    {
+        queueInfos[1]                  = initVulkanStructure();
+        queueInfos[1].queueFamilyIndex = m_sparseQueueFamilyIndex;
+        queueInfos[1].queueCount       = 1;
+        queueInfos[1].pQueuePriorities = priority;
+
+        ++queueCiCnt;
+    }
 
     void **nextPtr = &features2.pNext;
     addToChainVulkanStructure(&nextPtr, synchronization2Features);
@@ -3013,13 +3067,18 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     createInfo.pEnabledFeatures        = nullptr;
     createInfo.enabledExtensionCount   = u32(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
-    createInfo.queueCreateInfoCount    = 1;
-    createInfo.pQueueCreateInfos       = &queueInfo;
+    createInfo.queueCreateInfoCount    = queueCiCnt;
+    createInfo.pQueueCreateInfos       = queueInfos;
 
     m_device =
         createCustomDevice(false, context.getPlatformInterface(), context.getInstance(), inst, physDevice, &createInfo);
 
     context.getDeviceInterface().getDeviceQueue(*m_device, m_queueFamilyIndex, 0, &m_queue);
+
+    if (sparseCompatibilityDevice)
+    {
+        context.getDeviceInterface().getDeviceQueue(*m_device, m_sparseQueueFamilyIndex, 0, &m_sparseQueue);
+    }
 
     m_deviceInterface =
         newMovePtr<DeviceDriver>(context.getPlatformInterface(), context.getInstance(), *m_device,
@@ -3281,11 +3340,12 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
 {
     DE_ASSERT(m_descriptorBuffers.empty());
 
-    const uint8_t bufferInitialMemory             = 0xcc;  // descriptor buffer memory is initially set to this
+    const uint32_t bufferInitialMemory            = 0xcc;  // descriptor buffer memory is initially set to this
     bool allocateStagingBuffer                    = false; // determined after descriptors are created
     VkDeviceSize stagingBufferDescriptorSetOffset = 0;
     const uint32_t setsPerBuffer =
         m_params.subcase == SubCase::SINGLE_BUFFER ? m_params.bufferBindingCount + 1 : m_params.setsPerBuffer;
+    const bool sparseCompatibilityDevice = !(m_params.resourceResidency == ResourceResidency::TRADITIONAL);
 
     // Data tracked per buffer creation
     struct
@@ -3364,6 +3424,22 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
             vk::VkBufferCreateInfo bufferCreateInfo =
                 makeBufferCreateInfo(currentBuffer.setOffset, currentBuffer.usage);
 
+            const uint32_t queueFamilyIndices[] = {m_queueFamilyIndex, m_sparseQueueFamilyIndex};
+
+            if (sparseCompatibilityDevice)
+            {
+                bufferCreateInfo.flags |= VK_BUFFER_CREATE_SPARSE_BINDING_BIT;
+
+                // Overrides sharing mode if compute queue does not support sparse operations
+                if (m_queueFamilyIndex != m_sparseQueueFamilyIndex)
+                {
+
+                    bufferCreateInfo.sharingMode           = VK_SHARING_MODE_CONCURRENT;
+                    bufferCreateInfo.queueFamilyIndexCount = 2u;
+                    bufferCreateInfo.pQueueFamilyIndices   = queueFamilyIndices;
+                }
+            }
+
             if (bufferCreateInfo.size != 0)
             {
                 m_descriptorBuffers.emplace_back(new BufferAlloc());
@@ -3405,7 +3481,18 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
 
                     if (compatMask != 0)
                     {
-                        bufferAlloc.alloc = allocate(bufferMemReqs, memReqs, &allocFlagsInfo);
+                        if (m_params.resourceResidency == ResourceResidency::SPARSE_RESIDENCY)
+                        {
+                            bufferMemReqs.size +=
+                                bufferMemReqs
+                                    .alignment; // Allocating bigger chunk to be able to bind not a whole resource at once
+                            bufferAlloc.alloc = allocate(bufferMemReqs, memReqs, &allocFlagsInfo);
+                            bufferMemReqs.size -= bufferMemReqs.alignment;
+                        }
+                        else
+                        {
+                            bufferAlloc.alloc = allocate(bufferMemReqs, memReqs, &allocFlagsInfo);
+                        }
                     }
                     else
                     {
@@ -3441,8 +3528,43 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
                     }
                 }
 
-                VK_CHECK(m_deviceInterface->bindBufferMemory(
-                    *m_device, *bufferAlloc.buffer, bufferAlloc.alloc->getMemory(), bufferAlloc.alloc->getOffset()));
+                if (!sparseCompatibilityDevice)
+                {
+                    VK_CHECK(m_deviceInterface->bindBufferMemory(*m_device, *bufferAlloc.buffer,
+                                                                 bufferAlloc.alloc->getMemory(),
+                                                                 bufferAlloc.alloc->getOffset()));
+                }
+                else // Bind sparse
+                {
+                    // Fence to signal when sparse binding operation ends
+                    const vk::Unique<vk::VkFence> sparseBindFence(vk::createFence(*m_deviceInterface, *m_device));
+
+                    const VkSparseMemoryBind sparseMemBind = {
+                        0,                              // VkDeviceSize               resourceOffset;
+                        bufferMemReqs.size,             // VkDeviceSize               size;
+                        bufferAlloc.alloc->getMemory(), // VkDeviceMemory             memory;
+                        bufferAlloc.alloc->getOffset(), // VkDeviceSize               memoryOffset;
+                        0,                              // VkSparseMemoryBindFlags    flags;
+                    };
+
+                    const VkSparseBufferMemoryBindInfo sparseBufferMemBindInfo = {
+                        *bufferAlloc.buffer, // VkBuffer                     buffer;
+                        1,                   // uint32_t                     bindCount;
+                        &sparseMemBind,      // const VkSparseMemoryBind*    pBinds;
+                    };
+
+                    VkBindSparseInfo bindSparseInfo = initVulkanStructure();
+                    bindSparseInfo.bufferBindCount  = 1;
+                    bindSparseInfo.pBufferBinds     = &sparseBufferMemBindInfo;
+
+                    vk::VkResult res = VK_SUCCESS;
+
+                    res = m_deviceInterface->queueBindSparse(m_sparseQueue, 1, &bindSparseInfo, *sparseBindFence);
+
+                    VK_CHECK(res);
+
+                    VK_CHECK(m_deviceInterface->waitForFences(*m_device, 1u, &sparseBindFence.get(), true, ~0ull));
+                }
 
                 bufferAlloc.loadDeviceAddress(*m_deviceInterface, *m_device);
 
@@ -6078,7 +6200,7 @@ void CaptureReplyTestCase::checkSupport(Context &context) const
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
 }
 
-void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
+void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceResidency resourceResidency)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
     const uint32_t baseSeed   = static_cast<uint32_t>(testCtx.getCommandLine().getBaseSeed());
@@ -6142,6 +6264,7 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
         params.bufferBindingCount = 1;
         params.setsPerBuffer      = 1;
         params.useMaintenance5    = false;
+        params.resourceResidency  = resourceResidency;
 
         for (auto pQueue = choiceQueues; pQueue < DE_ARRAY_END(choiceQueues); ++pQueue)
             for (auto pStage = choiceStages; pStage < DE_ARRAY_END(choiceStages); ++pStage)
@@ -6226,7 +6349,8 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                     params.setsPerBuffer              = pOptions->setsPerBuffer;
                     params.descriptor =
                         VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR; // Optional, will be tested if supported
-                    params.useMaintenance5 = false;
+                    params.useMaintenance5   = false;
+                    params.resourceResidency = resourceResidency;
 
                     subGroup->addChild(
                         new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
@@ -6287,9 +6411,10 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                     params.resourceBufferBindingCount = pOptions->resourceBufferBindingCount;
                     params.bufferBindingCount =
                         pOptions->samplerBufferBindingCount + pOptions->resourceBufferBindingCount;
-                    params.setsPerBuffer   = 1;
-                    params.descriptor      = VK_DESCRIPTOR_TYPE_MAX_ENUM;
-                    params.useMaintenance5 = false;
+                    params.setsPerBuffer     = 1;
+                    params.descriptor        = VK_DESCRIPTOR_TYPE_MAX_ENUM;
+                    params.useMaintenance5   = false;
+                    params.resourceResidency = resourceResidency;
 
                     subGroup->addChild(
                         new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
@@ -6338,6 +6463,7 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                         params.embeddedImmutableSamplersPerBuffer         = pOptions->samplersPerBuffer;
                         params.descriptor                                 = VK_DESCRIPTOR_TYPE_MAX_ENUM;
                         params.useMaintenance5                            = false;
+                        params.resourceResidency                          = resourceResidency;
                         params.commands2                                  = *pCommands2;
 
                         subGroup->addChild(
@@ -6394,8 +6520,9 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                         params.pushDescriptorSetIndex     = pOptions->pushDescriptorSetIndex;
                         params.descriptor =
                             VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR; // Optional, will be tested if supported
-                        params.useMaintenance5 = false;
-                        params.commands2       = *pCommands2;
+                        params.useMaintenance5   = false;
+                        params.resourceResidency = resourceResidency;
+                        params.commands2         = *pCommands2;
 
                         subGroupPush->addChild(new DescriptorBufferTestCase(
                             testCtx, getCaseNameUpdateHash(params, subGroupPushHash), params));
@@ -6461,6 +6588,7 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                 params.bufferBindingCount = 1;
                 params.setsPerBuffer      = 1;
                 params.useMaintenance5    = false;
+                params.resourceResidency  = resourceResidency;
 
                 subGroupBuffer->addChild(
                     new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupBufferHash), params));
@@ -6534,6 +6662,7 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                     params.bufferBindingCount = 1;
                     params.setsPerBuffer      = 1;
                     params.useMaintenance5    = false;
+                    params.resourceResidency  = resourceResidency;
 
                     subGroup->addChild(
                         new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
@@ -6642,6 +6771,7 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                     params.bufferBindingCount     = 1;
                     params.setsPerBuffer          = 1;
                     params.mutableDescriptorTypes = *pMask;
+                    params.resourceResidency      = resourceResidency;
 
                     subGroup->addChild(
                         new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
@@ -6674,6 +6804,7 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
                 params.descriptor         = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 params.bufferBindingCount = 1;
                 params.setsPerBuffer      = 1;
+                params.resourceResidency  = resourceResidency;
 
                 subGroup->addChild(
                     new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
@@ -6686,6 +6817,26 @@ void populateDescriptorBufferTests(tcu::TestCaseGroup *topGroup)
 
         topGroup->addChild(subGroup.release());
     }
+}
+
+void populateDescriptorBufferTests(tcu::TestCaseGroup *testGroup)
+{
+    tcu::TestContext &testCtx = testGroup->getTestContext();
+
+    MovePtr<tcu::TestCaseGroup> traditionalGroup(
+        new tcu::TestCaseGroup(testCtx, "traditional_buffer", "Traditional descriptor buffer tests"));
+    populateDescriptorBufferTestGroup(traditionalGroup.get(), ResourceResidency::TRADITIONAL);
+    testGroup->addChild(traditionalGroup.release());
+
+    MovePtr<tcu::TestCaseGroup> sparseBindingGroup(
+        new tcu::TestCaseGroup(testCtx, "sparse_binding_buffer", "Sparse binding descriptor buffer tests"));
+    populateDescriptorBufferTestGroup(sparseBindingGroup.get(), ResourceResidency::SPARSE_BINDING);
+    testGroup->addChild(sparseBindingGroup.release());
+
+    MovePtr<tcu::TestCaseGroup> sparseResidencyGroup(
+        new tcu::TestCaseGroup(testCtx, "sparse_residency_buffer", "Sparse residency descriptor buffer tests"));
+    populateDescriptorBufferTestGroup(sparseResidencyGroup.get(), ResourceResidency::SPARSE_RESIDENCY);
+    testGroup->addChild(sparseResidencyGroup.release());
 }
 
 } // namespace
