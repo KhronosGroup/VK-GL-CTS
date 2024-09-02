@@ -153,6 +153,8 @@ set(VKUTILNOSHADER_SRCS
 	vkDeviceProperties.cpp
 	vkRayTracingUtil.hpp
 	vkRayTracingUtil.cpp
+	vkPipelineBinaryUtil.hpp
+	vkPipelineBinaryUtil.cpp
 	vkPipelineConstructionUtil.hpp
 	vkPipelineConstructionUtil.cpp
 	vkSafetyCriticalUtil.hpp

@@ -1818,6 +1818,7 @@ struct GraphicsPipelineWrapper::InternalData
 
     TessellationDomainOriginStatePtr pTessellationDomainOrigin;
     bool useViewportState;
+    bool useShaderModules;
     bool useDefaultRasterizationState;
     bool useDefaultDepthStencilState;
     bool useDefaultColorBlendState;
@@ -1825,6 +1826,14 @@ struct GraphicsPipelineWrapper::InternalData
     bool useDefaultVertexInputState;
     bool failOnCompileWhenLinking;
 
+#ifndef CTS_USES_VULKANSC
+    VkGraphicsPipelineLibraryCreateInfoEXT pipelinePartLibraryCreateInfo[4];
+    VkPipelineLibraryCreateInfoKHR finalPipelineLibraryCreateInfo;
+    VkPipelineCreateFlags2CreateInfoKHR pipelinePartFlags2CreateInfo[4];
+#endif
+    std::vector<VkDynamicState> pipelinePartDynamicStates[4];
+    VkPipelineDynamicStateCreateInfo pipelinePartDynamicStateCreateInfo[4];
+    VkGraphicsPipelineCreateInfo pipelinePartCreateInfo[4];
     bool explicitLinkPipelineLayoutSet;
     VkGraphicsPipelineCreateInfo monolithicPipelineCreateInfo;
 
@@ -1940,7 +1949,13 @@ struct GraphicsPipelineWrapper::InternalData
 #endif
 
     // initialize with most common values
-    InternalData(const InstanceInterface& instanceInterface, const DeviceInterface& vkd, VkPhysicalDevice physDevice, VkDevice vkDevice, const std::vector<std::string>& deviceExts, const PipelineConstructionType constructionType, const VkPipelineCreateFlags pipelineCreateFlags)
+    InternalData(const InstanceInterface&            instanceInterface,
+                 const DeviceInterface&                vkd,
+                 VkPhysicalDevice                    physDevice,
+                 VkDevice                            vkDevice,
+                 const std::vector<std::string>&    deviceExts,
+                 const PipelineConstructionType        constructionType,
+                 const VkPipelineCreateFlags        pipelineCreateFlags)
         : vki                        (instanceInterface)
         , vk                        (vkd)
         , physicalDevice            (physDevice)
@@ -1997,6 +2012,7 @@ struct GraphicsPipelineWrapper::InternalData
         , pPipelineRobustnessState          (nullptr)
         , pTessellationDomainOrigin        ()
         , useViewportState                (true)
+        , useShaderModules                (true)
         , useDefaultRasterizationState    (false)
         , useDefaultDepthStencilState    (false)
         , useDefaultColorBlendState        (false)
@@ -2009,6 +2025,17 @@ struct GraphicsPipelineWrapper::InternalData
         , taskShaderFeature                (false)
         , meshShaderFeature                (false)
     {
+        // we need to store create info structures in InternalData
+        // to be able to grab whole pipelinePartCreateInfo with valid pNext chain;
+        // some tests use VkGraphicsPipelineCreateInfo to create pipeline binaries
+        for (uint32_t i = 0u; i < 4u; ++i)
+        {
+#ifndef CTS_USES_VULKANSC
+            pipelinePartFlags2CreateInfo[i] = initVulkanStructure();
+#endif
+            pipelinePartDynamicStateCreateInfo[i] = initVulkanStructure();
+        }
+
         monolithicPipelineCreateInfo = initVulkanStructure();
     }
 
@@ -2394,10 +2421,21 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::disableViewportState(const boo
     return *this;
 }
 
+GraphicsPipelineWrapper &GraphicsPipelineWrapper::disableShaderModules(const bool disable)
+{
+    // First shader module is defined in pre-rasterization shader state, make sure pre-rasterization state was not setup yet
+    DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_PRE_RASTERIZATION_SHADERS));
+
+    m_internalData->useShaderModules = !disable;
+
+    return *this;
+}
+
 GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupVertexInputState(
     const VkPipelineVertexInputStateCreateInfo *vertexInputState,
     const VkPipelineInputAssemblyStateCreateInfo *inputAssemblyState, const VkPipelineCache partPipelineCache,
-    PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback, const bool useNullPtrs)
+    PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback, PipelineBinaryInfoWrapper partBinaries,
+    const bool useNullPtrs)
 {
     // make sure pipeline was not already build
     DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
@@ -2408,6 +2446,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupVertexInputState(
     // Unreference variables that are not used in Vulkan SC. No need to put this in ifdef.
     DE_UNREF(partPipelineCache);
     DE_UNREF(partCreationFeedback);
+    DE_UNREF(partBinaries);
 
     m_internalData->setupState = PSS_VERTEX_INPUT_INTERFACE;
 
@@ -2428,40 +2467,41 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupVertexInputState(
     // this section is cut out for Vulkan SC its cleaner with separate if
     if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
     {
-        auto libraryCreateInfo =
+        auto &libraryCreateInfo = m_internalData->pipelinePartLibraryCreateInfo[0];
+        libraryCreateInfo =
             makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT);
         void *firstStructInChain = reinterpret_cast<void *>(&libraryCreateInfo);
         addToChain(&firstStructInChain, partCreationFeedback.ptr);
+        addToChain(&firstStructInChain, partBinaries.ptr);
         addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
 
-        VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
-        std::vector<VkDynamicState> states;
+        auto &dynamicStates    = m_internalData->pipelinePartDynamicStates[0];
+        auto &dynamicStateInfo = m_internalData->pipelinePartDynamicStateCreateInfo[0];
 
         if (m_internalData->pDynamicState)
         {
-            states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+            dynamicStates = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
 
-            pickedDynamicStateInfo.pDynamicStates    = states.data();
-            pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+            dynamicStateInfo.pDynamicStates    = dynamicStates.data();
+            dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
         }
 
-        VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
-        pipelinePartCreateInfo.pNext                        = firstStructInChain;
+        auto &pipelinePartCreateInfo = m_internalData->pipelinePartCreateInfo[0];
+        pipelinePartCreateInfo       = initVulkanStructure(firstStructInChain);
         pipelinePartCreateInfo.flags =
             (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
         pipelinePartCreateInfo.pVertexInputState   = pVertexInputState;
         pipelinePartCreateInfo.pInputAssemblyState = pInputAssemblyState;
-        pipelinePartCreateInfo.pDynamicState       = &pickedDynamicStateInfo;
+        pipelinePartCreateInfo.pDynamicState       = &dynamicStateInfo;
 
         if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
             pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
-        VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
         if (m_internalData->pipelineFlags2)
         {
-            pipelineFlags2CreateInfo.flags =
-                m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
-            addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+            auto &flags2CreateInfo = m_internalData->pipelinePartFlags2CreateInfo[0];
+            flags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+            addToChain(&firstStructInChain, &flags2CreateInfo);
             pipelinePartCreateInfo.flags = 0u;
         }
 
@@ -2525,7 +2565,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     const VkSpecializationInfo *teseSpecializationInfo, const VkSpecializationInfo *geomSpecializationInfo,
     VkPipelineFragmentShadingRateStateCreateInfoKHR *fragmentShadingRateState,
     PipelineRenderingCreateInfoWrapper rendering, const VkPipelineCache partPipelineCache,
-    PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback)
+    PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback, PipelineBinaryInfoWrapper partBinaries)
 {
     // make sure pipeline was not already build
     DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
@@ -2540,6 +2580,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     DE_UNREF(tescShaderModuleId);
     DE_UNREF(teseShaderModuleId);
     DE_UNREF(geomShaderModuleId);
+    DE_UNREF(partBinaries);
 
     m_internalData->setupState |= PSS_PRE_RASTERIZATION_SHADERS;
     m_internalData->pFragmentShadingRateState = fragmentShadingRateState;
@@ -2549,21 +2590,28 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     const bool hasTese = (tessellationEvalShader.isSet() || teseShaderModuleId.ptr);
     const bool hasGeom = (geometryShader.isSet() || geomShaderModuleId.ptr);
 
+    // if patch list topology was set in VertexInputState then tessellation state should be used;
+    // we can't use hasTesc for that because pipeline binaries tests don't need to provide shader modules
+    auto &pInputAssemblyState = m_internalData->monolithicPipelineCreateInfo.pInputAssemblyState;
+    if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
+        pInputAssemblyState = m_internalData->pipelinePartCreateInfo[0].pInputAssemblyState;
+    const bool forceNullTessState =
+        m_internalData->tessellationState.patchControlPoints == std::numeric_limits<uint32_t>::max();
+    const bool useTessState = !forceNullTessState && pInputAssemblyState &&
+                              (pInputAssemblyState->topology == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
+
     const auto pRasterizationState =
         rasterizationState ?
             rasterizationState :
             (m_internalData->useDefaultRasterizationState ? &m_internalData->defaultRasterizationState : nullptr);
-    const bool forceNullTessState =
-        (m_internalData->tessellationState.patchControlPoints == std::numeric_limits<uint32_t>::max());
-    const auto pTessellationState =
-        ((hasTesc || hasTese) && !forceNullTessState) ? &m_internalData->tessellationState : nullptr;
-    const auto pViewportState = m_internalData->useViewportState ? &m_internalData->viewportState : nullptr;
+    const auto pTessellationState = useTessState ? &m_internalData->tessellationState : nullptr;
+    const auto pViewportState     = m_internalData->useViewportState ? &m_internalData->viewportState : nullptr;
 
     VkPipelineCreateFlags shaderModuleIdFlags = 0u;
 
     m_internalData->vertexShader = vertexShader;
     m_internalData->vertexShader.setLayoutAndSpecialization(&layout, vertSpecializationInfo);
-    if (!isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
+    if (m_internalData->useShaderModules && !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
         m_internalData->vertexShader.createModule();
 
     // reserve space for all stages including fragment - this is needed when we create monolithic pipeline
@@ -2597,7 +2645,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     {
         m_internalData->tessellationControlShader = tessellationControlShader;
         m_internalData->tessellationControlShader.setLayoutAndSpecialization(&layout, tescSpecializationInfo);
-        if (!isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
+        if (m_internalData->useShaderModules &&
+            !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
             m_internalData->tessellationControlShader.createModule();
 
         currStage->stage               = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
@@ -2623,7 +2672,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     {
         m_internalData->tessellationEvaluationShader = tessellationEvalShader;
         m_internalData->tessellationEvaluationShader.setLayoutAndSpecialization(&layout, teseSpecializationInfo);
-        if (!isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
+        if (m_internalData->useShaderModules &&
+            !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
             m_internalData->tessellationEvaluationShader.createModule();
 
         currStage->stage               = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
@@ -2649,7 +2699,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     {
         m_internalData->geometryShader = geometryShader;
         m_internalData->geometryShader.setLayoutAndSpecialization(&layout, geomSpecializationInfo);
-        if (!isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
+        if (m_internalData->useShaderModules &&
+            !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
             m_internalData->geometryShader.createModule();
 
         currStage->stage               = VK_SHADER_STAGE_GEOMETRY_BIT;
@@ -2705,27 +2756,29 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     // this section is cut out for Vulkan SC its cleaner with separate if
     if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
     {
-        auto libraryCreateInfo =
+        auto &libraryCreateInfo = m_internalData->pipelinePartLibraryCreateInfo[1];
+        libraryCreateInfo =
             makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
         void *firstStructInChain = reinterpret_cast<void *>(&libraryCreateInfo);
         addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
         addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
         addToChain(&firstStructInChain, partCreationFeedback.ptr);
+        addToChain(&firstStructInChain, partBinaries.ptr);
         addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
 
-        VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
-        std::vector<VkDynamicState> states;
+        auto &dynamicStates    = m_internalData->pipelinePartDynamicStates[1];
+        auto &dynamicStateInfo = m_internalData->pipelinePartDynamicStateCreateInfo[1];
 
         if (m_internalData->pDynamicState)
         {
-            states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+            dynamicStates = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
 
-            pickedDynamicStateInfo.pDynamicStates    = states.data();
-            pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+            dynamicStateInfo.pDynamicStates    = dynamicStates.data();
+            dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
         }
 
-        VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
-        pipelinePartCreateInfo.pNext                        = firstStructInChain;
+        auto &pipelinePartCreateInfo = m_internalData->pipelinePartCreateInfo[1];
+        pipelinePartCreateInfo       = initVulkanStructure(firstStructInChain);
         pipelinePartCreateInfo.flags =
             (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | shaderModuleIdFlags) &
             ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
@@ -2737,7 +2790,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
         pipelinePartCreateInfo.stageCount          = 1u + hasTesc + hasTese + hasGeom;
         pipelinePartCreateInfo.pStages             = m_internalData->pipelineShaderStages.data();
         pipelinePartCreateInfo.pTessellationState  = pTessellationState;
-        pipelinePartCreateInfo.pDynamicState       = &pickedDynamicStateInfo;
+        pipelinePartCreateInfo.pDynamicState       = &dynamicStateInfo;
 
         if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
             pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
@@ -2745,12 +2798,11 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
         if ((shaderModuleIdFlags & VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT) != 0)
             m_internalData->failOnCompileWhenLinking = true;
 
-        VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
         if (m_internalData->pipelineFlags2)
         {
-            pipelineFlags2CreateInfo.flags =
-                m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
-            addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+            auto &flags2CreateInfo = m_internalData->pipelinePartFlags2CreateInfo[1];
+            flags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+            addToChain(&firstStructInChain, &flags2CreateInfo);
             pipelinePartCreateInfo.flags = 0u;
         }
 
@@ -2811,7 +2863,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
     {
         m_internalData->meshShader = meshShader;
         m_internalData->meshShader.setLayoutAndSpecialization(&layout, meshSpecializationInfo);
-        if (!isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
+        if (m_internalData->useShaderModules &&
+            !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
             m_internalData->meshShader.createModule();
 
         auto &stageInfo = *currStage;
@@ -2827,7 +2880,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
     {
         m_internalData->taskShader = taskShader;
         m_internalData->taskShader.setLayoutAndSpecialization(&layout, taskSpecializationInfo);
-        if (!isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
+        if (m_internalData->useShaderModules &&
+            !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
             m_internalData->taskShader.createModule();
 
         auto &stageInfo = *currStage;
@@ -2870,7 +2924,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
     }
     else
     {
-        auto libraryCreateInfo =
+        auto &libraryCreateInfo = m_internalData->pipelinePartLibraryCreateInfo[1];
+        libraryCreateInfo =
             makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
         void *firstStructInChain = reinterpret_cast<void *>(&libraryCreateInfo);
         addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
@@ -2878,19 +2933,19 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
         addToChain(&firstStructInChain, partCreationFeedback);
         addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
 
-        VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
-        std::vector<VkDynamicState> states;
+        auto &dynamicStates    = m_internalData->pipelinePartDynamicStates[1];
+        auto &dynamicStateInfo = m_internalData->pipelinePartDynamicStateCreateInfo[1];
 
         if (m_internalData->pDynamicState)
         {
-            states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+            dynamicStates = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
 
-            pickedDynamicStateInfo.pDynamicStates    = states.data();
-            pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+            dynamicStateInfo.pDynamicStates    = dynamicStates.data();
+            dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
         }
 
-        VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
-        pipelinePartCreateInfo.pNext                        = firstStructInChain;
+        auto &pipelinePartCreateInfo               = m_internalData->pipelinePartCreateInfo[1];
+        pipelinePartCreateInfo                     = initVulkanStructure(firstStructInChain);
         pipelinePartCreateInfo.flags               = m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
         pipelinePartCreateInfo.layout              = *layout;
         pipelinePartCreateInfo.renderPass          = renderPass;
@@ -2900,17 +2955,16 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
         pipelinePartCreateInfo.stageCount          = 1u + taskShaderCount;
         pipelinePartCreateInfo.pStages             = m_internalData->pipelineShaderStages.data();
         pipelinePartCreateInfo.pTessellationState  = pTessellationState;
-        pipelinePartCreateInfo.pDynamicState       = &pickedDynamicStateInfo;
+        pipelinePartCreateInfo.pDynamicState       = &dynamicStateInfo;
 
         if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
             pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
-        VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
         if (m_internalData->pipelineFlags2)
         {
-            pipelineFlags2CreateInfo.flags =
-                m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
-            addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+            auto &flags2CreateInfo = m_internalData->pipelinePartFlags2CreateInfo[1];
+            flags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+            addToChain(&firstStructInChain, &flags2CreateInfo);
             pipelinePartCreateInfo.flags = 0u;
         }
 
@@ -2941,7 +2995,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
     const VkPipelineDepthStencilStateCreateInfo *depthStencilState,
     const VkPipelineMultisampleStateCreateInfo *multisampleState, const VkSpecializationInfo *specializationInfo,
     const VkPipelineCache partPipelineCache, PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback,
-    RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo)
+    RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo, PipelineBinaryInfoWrapper partBinaries)
 {
     // make sure pipeline was not already build
     DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
@@ -2957,6 +3011,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
     DE_UNREF(partPipelineCache);
     DE_UNREF(partCreationFeedback);
     DE_UNREF(fragmentShaderModuleId);
+    DE_UNREF(partBinaries);
 
     m_internalData->setupState |= PSS_FRAGMENT_SHADER;
     m_internalData->pRenderingInputAttachmentIndex.ptr = renderingInputAttachmentIndexInfo.ptr;
@@ -2981,7 +3036,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
             {
                 m_internalData->fragmentShader = fragmentShader;
                 m_internalData->fragmentShader.setLayoutAndSpecialization(&layout, specializationInfo);
-                if (!isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
+                if (m_internalData->useShaderModules &&
+                    !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
                     m_internalData->fragmentShader.createModule();
 
                 m_internalData->pipelineShaderStages[stageIndex].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -3017,29 +3073,30 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
     // this section is cut out for Vulkan SC its cleaner with separate if
     if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
     {
-        auto libraryCreateInfo =
-            makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT);
+        auto &libraryCreateInfo = m_internalData->pipelinePartLibraryCreateInfo[2];
+        libraryCreateInfo = makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT);
         void *firstStructInChain = reinterpret_cast<void *>(&libraryCreateInfo);
         addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
         addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
         addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
         addToChain(&firstStructInChain, partCreationFeedback.ptr);
         addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
+        addToChain(&firstStructInChain, partBinaries.ptr);
         addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
 
-        VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
-        std::vector<VkDynamicState> states;
+        auto &dynamicStates    = m_internalData->pipelinePartDynamicStates[2];
+        auto &dynamicStateInfo = m_internalData->pipelinePartDynamicStateCreateInfo[2];
 
         if (m_internalData->pDynamicState)
         {
-            states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+            dynamicStates = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
 
-            pickedDynamicStateInfo.pDynamicStates    = states.data();
-            pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+            dynamicStateInfo.pDynamicStates    = dynamicStates.data();
+            dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
         }
 
-        VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
-        pipelinePartCreateInfo.pNext                        = firstStructInChain;
+        auto &pipelinePartCreateInfo = m_internalData->pipelinePartCreateInfo[2];
+        pipelinePartCreateInfo       = initVulkanStructure(firstStructInChain);
         pipelinePartCreateInfo.flags =
             (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | shaderModuleIdFlags) &
             ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
@@ -3050,7 +3107,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
         pipelinePartCreateInfo.pMultisampleState  = pMultisampleState;
         pipelinePartCreateInfo.stageCount         = hasFrag;
         pipelinePartCreateInfo.pStages       = hasFrag ? &m_internalData->pipelineShaderStages[stageIndex] : nullptr;
-        pipelinePartCreateInfo.pDynamicState = &pickedDynamicStateInfo;
+        pipelinePartCreateInfo.pDynamicState = &dynamicStateInfo;
 
         if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
             pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
@@ -3058,12 +3115,11 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
         if ((shaderModuleIdFlags & VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT) != 0)
             m_internalData->failOnCompileWhenLinking = true;
 
-        VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
         if (m_internalData->pipelineFlags2)
         {
-            pipelineFlags2CreateInfo.flags =
-                m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
-            addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+            auto &flags2CreateInfo = m_internalData->pipelinePartFlags2CreateInfo[2];
+            flags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+            addToChain(&firstStructInChain, &flags2CreateInfo);
             pipelinePartCreateInfo.flags = 0u;
         }
 
@@ -3079,7 +3135,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
     const VkRenderPass renderPass, const uint32_t subpass, const VkPipelineColorBlendStateCreateInfo *colorBlendState,
     const VkPipelineMultisampleStateCreateInfo *multisampleState, const VkPipelineCache partPipelineCache,
     PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback,
-    RenderingAttachmentLocationInfoWrapper renderingAttachmentLocationInfo)
+    RenderingAttachmentLocationInfoWrapper renderingAttachmentLocationInfo, PipelineBinaryInfoWrapper partBinaries)
 {
     // make sure pipeline was not already build
     DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
@@ -3095,9 +3151,9 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
     DE_UNREF(subpass);
     DE_UNREF(partPipelineCache);
     DE_UNREF(partCreationFeedback);
+    DE_UNREF(partBinaries);
 
-    void *firstStructInChain = nullptr;
-    addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
+    void *firstStructInChain = m_internalData->pFragmentShadingRateState;
 
 #ifndef CTS_USES_VULKANSC
     addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
@@ -3112,7 +3168,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
 
     if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
     {
-        m_internalData->monolithicPipelineCreateInfo.pNext = firstStructInChain;
+        void *pNextPtr = &m_internalData->monolithicPipelineCreateInfo;
+        addToChain(&pNextPtr, firstStructInChain);
         m_internalData->monolithicPipelineCreateInfo.flags |= m_internalData->pipelineFlags;
         m_internalData->monolithicPipelineCreateInfo.pColorBlendState  = pColorBlendState;
         m_internalData->monolithicPipelineCreateInfo.pMultisampleState = pMultisampleState;
@@ -3123,43 +3180,44 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
     // this section is cut out for Vulkan SC its cleaner with separate if
     if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
     {
-        auto libraryCreateInfo =
+        auto &libraryCreateInfo = m_internalData->pipelinePartLibraryCreateInfo[3];
+        libraryCreateInfo =
             makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT);
         addToChain(&firstStructInChain, &libraryCreateInfo);
         addToChain(&firstStructInChain, partCreationFeedback.ptr);
+        addToChain(&firstStructInChain, partBinaries.ptr);
         addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
         addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
 
-        VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
-        std::vector<VkDynamicState> states;
+        auto &dynamicStates    = m_internalData->pipelinePartDynamicStates[3];
+        auto &dynamicStateInfo = m_internalData->pipelinePartDynamicStateCreateInfo[3];
 
         if (m_internalData->pDynamicState)
         {
-            states = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
+            dynamicStates = getDynamicStates(m_internalData->pDynamicState, m_internalData->setupState);
 
-            pickedDynamicStateInfo.pDynamicStates    = states.data();
-            pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
+            dynamicStateInfo.pDynamicStates    = dynamicStates.data();
+            dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
         }
 
-        VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
-        pipelinePartCreateInfo.pNext                        = firstStructInChain;
+        auto &pipelinePartCreateInfo = m_internalData->pipelinePartCreateInfo[3];
+        pipelinePartCreateInfo       = initVulkanStructure(firstStructInChain);
         pipelinePartCreateInfo.flags =
             (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
         pipelinePartCreateInfo.renderPass        = renderPass;
         pipelinePartCreateInfo.subpass           = subpass;
         pipelinePartCreateInfo.pColorBlendState  = pColorBlendState;
         pipelinePartCreateInfo.pMultisampleState = pMultisampleState;
-        pipelinePartCreateInfo.pDynamicState     = &pickedDynamicStateInfo;
+        pipelinePartCreateInfo.pDynamicState     = &dynamicStateInfo;
 
         if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
             pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
-        VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
         if (m_internalData->pipelineFlags2)
         {
-            pipelineFlags2CreateInfo.flags =
-                m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
-            addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+            auto &flags2CreateInfo = m_internalData->pipelinePartFlags2CreateInfo[3];
+            flags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+            addToChain(&firstStructInChain, &flags2CreateInfo);
             pipelinePartCreateInfo.flags = 0u;
         }
 
@@ -3367,7 +3425,7 @@ void GraphicsPipelineWrapper::createShaders(bool linked, bool binary)
 
 void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache, const VkPipeline basePipelineHandle,
                                             const int32_t basePipelineIndex,
-                                            PipelineCreationFeedbackCreateInfoWrapper creationFeedback)
+                                            PipelineCreationFeedbackCreateInfoWrapper creationFeedback, void *pNext)
 {
     // make sure we are not trying to build pipeline second time
     DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
@@ -3379,6 +3437,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
 
     // Unreference variables that are not used in Vulkan SC. No need to put this in ifdef.
     DE_UNREF(creationFeedback);
+    DE_UNREF(pNext);
 
     VkGraphicsPipelineCreateInfo *pointerToCreateInfo = &m_internalData->monolithicPipelineCreateInfo;
 
@@ -3968,15 +4027,15 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
             addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
             addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
             addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
+            addToChain(&firstStructInChain, pNext);
         }
 
-        VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
         if (m_internalData->pipelineFlags2)
         {
             void *firstStructInChain = static_cast<void *>(pointerToCreateInfo);
-            pipelineFlags2CreateInfo.flags =
-                m_internalData->pipelineFlags2 | translateCreateFlag(pointerToCreateInfo->flags);
-            addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+            auto &flags2CreateInfo   = m_internalData->pipelinePartFlags2CreateInfo[0];
+            flags2CreateInfo.flags   = m_internalData->pipelineFlags2 | translateCreateFlag(pointerToCreateInfo->flags);
+            addToChain(&firstStructInChain, &flags2CreateInfo);
             pointerToCreateInfo->flags = 0u;
         }
 #endif // CTS_USES_VULKANSC
@@ -4501,6 +4560,24 @@ VkPipeline GraphicsPipelineWrapper::getPipeline(void) const
 {
     DE_ASSERT(m_pipelineFinal.get() != VK_NULL_HANDLE);
     return m_pipelineFinal.get();
+}
+
+vk::VkPipeline GraphicsPipelineWrapper::getPartialPipeline(uint32_t part) const
+{
+    DE_ASSERT(part < 4u);
+    DE_ASSERT(m_pipelineParts[part].get() != VK_NULL_HANDLE);
+    return m_pipelineParts[part].get();
+}
+const VkGraphicsPipelineCreateInfo &GraphicsPipelineWrapper::getPipelineCreateInfo(void) const
+{
+    DE_ASSERT(m_internalData);
+    return m_internalData->monolithicPipelineCreateInfo;
+}
+const VkGraphicsPipelineCreateInfo &GraphicsPipelineWrapper::getPartialPipelineCreateInfo(uint32_t part) const
+{
+    DE_ASSERT(part < 4u);
+    DE_ASSERT(m_internalData);
+    return m_internalData->pipelinePartCreateInfo[part];
 }
 
 void GraphicsPipelineWrapper::destroyPipeline(void)

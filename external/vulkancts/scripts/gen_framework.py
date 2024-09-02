@@ -359,7 +359,7 @@ class ExtensionType:
 class ExtensionRequirements:
     def __init__ (self, depends, extendedEnums, newCommands, newTypes):
         self.depends = depends                      # None when requirement apply to all implementations of extension or string with dependencies
-        # string with extension name when requirements apply to implementations that also support given extension
+                                                    # string with extension name when requirements apply to implementations that also support given extension
         self.extendedEnums = extendedEnums          # list of ExtensionEnumerator objects
         self.newCommands = newCommands              # list of ExtensionCommand objects
         self.newTypes = newTypes                    # list of ExtensionType objects
