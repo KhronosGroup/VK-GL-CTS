@@ -1,24 +1,21 @@
 {
-    "register_extension":
-        {
-            "type": "device",
-            "core": ""
-        },
-    "mandatory_features":
-        {
-            "VkPhysicalDeviceShaderExpectAssumeFeaturesKHR":
-                [
-                    {
-                        "features": [
-                            "shaderExpectAssume"
-                        ],
-                        "requirements": [
-                            "VK_KHR_shader_expect_assume"
-                        ],
-                        "mandatory_variant": [
-                            "vulkan"
-                        ]
-                    }
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceShaderExpectAssumeFeaturesKHR": [
+            {
+                "features": [
+                    "shaderExpectAssume"
+                ],
+                "requirements": [
+                    "VK_KHR_shader_expect_assume"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
                 ]
-        }
+            }
+        ]
+    }
 }

@@ -1,29 +1,26 @@
 {
-    "register_extension":
-        {
-            "type": "device",
-            "core": ""
-        },
-    "mandatory_features":
-        {
-            "VkPhysicalDeviceAccelerationStructureFeaturesKHR":
-                [
-                    {
-                        "features": [
-                            "accelerationStructure"
-                        ],
-                        "requirements": [
-                            "VK_KHR_acceleration_structure"
-                        ]
-                    },
-                    {
-                        "features": [
-                            "descriptorBindingAccelerationStructureUpdateAfterBind"
-                        ],
-                        "requirements": [
-                            "VK_KHR_acceleration_structure"
-                        ]
-                    }
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceAccelerationStructureFeaturesKHR": [
+            {
+                "features": [
+                    "accelerationStructure"
+                ],
+                "requirements": [
+                    "VK_KHR_acceleration_structure"
                 ]
-        }
+            },
+            {
+                "features": [
+                    "descriptorBindingAccelerationStructureUpdateAfterBind"
+                ],
+                "requirements": [
+                    "VK_KHR_acceleration_structure"
+                ]
+            }
+        ]
+    }
 }

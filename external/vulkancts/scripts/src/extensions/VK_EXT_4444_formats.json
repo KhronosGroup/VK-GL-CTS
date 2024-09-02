@@ -1,21 +1,18 @@
 {
-    "register_extension":
-        {
-            "type": "device",
-            "core": ""
-        },
-    "mandatory_features":
-        {
-            "VkPhysicalDevice4444FormatsFeaturesEXT":
-                [
-                    {
-                        "features": [
-                            "formatA4R4G4B4"
-                        ],
-                        "requirements": [
-                            "VK_EXT_4444_formats"
-                        ]
-                    }
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDevice4444FormatsFeaturesEXT": [
+            {
+                "features": [
+                    "formatA4R4G4B4"
+                ],
+                "requirements": [
+                    "VK_EXT_4444_formats"
                 ]
-        }
+            }
+        ]
+    }
 }

@@ -1,21 +1,18 @@
 {
-    "register_extension":
-        {
-            "type": "device",
-            "core": ""
-        },
-    "mandatory_features":
-        {
-            "VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT":
-                [
-                    {
-                        "features": [
-                            "textureCompressionASTC_HDR"
-                        ],
-                        "requirements": [
-                            "VK_EXT_texture_compression_astc_hdr"
-                        ]
-                    }
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT": [
+            {
+                "features": [
+                    "textureCompressionASTC_HDR"
+                ],
+                "requirements": [
+                    "VK_EXT_texture_compression_astc_hdr"
                 ]
-        }
+            }
+        ]
+    }
 }

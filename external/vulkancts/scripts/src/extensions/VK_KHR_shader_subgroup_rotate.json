@@ -1,21 +1,18 @@
 {
-    "register_extension":
-        {
-            "type": "device",
-            "core": ""
-        },
-    "mandatory_features":
-        {
-            "VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR":
-                [
-                    {
-                        "features": [
-                            "shaderSubgroupRotate"
-                        ],
-                        "requirements": [
-                            "VK_KHR_shader_subgroup_rotate"
-                        ]
-                    }
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR": [
+            {
+                "features": [
+                    "shaderSubgroupRotate"
+                ],
+                "requirements": [
+                    "VK_KHR_shader_subgroup_rotate"
                 ]
-        }
+            }
+        ]
+    }
 }

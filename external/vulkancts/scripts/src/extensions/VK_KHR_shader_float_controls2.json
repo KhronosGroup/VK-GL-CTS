@@ -1,21 +1,18 @@
 {
-    "register_extension":
-        {
-            "type": "device",
-            "core": ""
-        },
-    "mandatory_features":
-        {
-            "VkPhysicalDeviceShaderFloatControls2FeaturesKHR":
-                [
-                    {
-                        "features": [
-                            "shaderFloatControls2"
-                        ],
-                        "requirements": [
-                            "VK_KHR_shader_float_controls2"
-                        ]
-                    }
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceShaderFloatControls2FeaturesKHR": [
+            {
+                "features": [
+                    "shaderFloatControls2"
+                ],
+                "requirements": [
+                    "VK_KHR_shader_float_controls2"
                 ]
-        }
+            }
+        ]
+    }
 }

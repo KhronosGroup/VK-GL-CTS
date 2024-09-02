@@ -400,6 +400,8 @@ class API:
             fileContent = readFile(fileName)
             try:
                 additionalExtensionData[extensionName] = json.loads(fileContent)
+                with open(fileName, 'w') as file:
+                    file.write(json.dumps(additionalExtensionData[extensionName], indent=4))
             except ValueError as err:
                 print("Error in %s: %s" % (os.path.basename(fileName), str(err)))
                 sys.exit(-1)
