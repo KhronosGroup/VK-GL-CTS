@@ -800,7 +800,10 @@ void BinaryAtomicEndResultCase::initPrograms(SourceCollections &sourceCollection
     const string type             = getComponentTypeStr(componentWidth, intFormat, uintFormat, floatFormat);
     const string vec4Type         = getVec4TypeStr(componentWidth, intFormat, uintFormat, floatFormat);
 
-    AddFillReadShader(sourceCollections, m_imageType, m_format, type, vec4Type);
+    if (!m_useTransfer)
+    {
+        AddFillReadShader(sourceCollections, m_imageType, m_format, type, vec4Type);
+    }
 
     if (isSpirvAtomicOperation(m_operation))
     {
@@ -931,7 +934,10 @@ void BinaryAtomicIntermValuesCase::initPrograms(SourceCollections &sourceCollect
     const string type             = getComponentTypeStr(componentWidth, intFormat, uintFormat, floatFormat);
     const string vec4Type         = getVec4TypeStr(componentWidth, intFormat, uintFormat, floatFormat);
 
-    AddFillReadShader(sourceCollections, m_imageType, m_format, type, vec4Type);
+    if (!m_useTransfer)
+    {
+        AddFillReadShader(sourceCollections, m_imageType, m_format, type, vec4Type);
+    }
 
     if (isSpirvAtomicOperation(m_operation))
     {
