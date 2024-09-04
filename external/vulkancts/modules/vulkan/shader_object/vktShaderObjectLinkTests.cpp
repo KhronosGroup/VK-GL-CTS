@@ -1139,63 +1139,14 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
     de::MovePtr<tcu::TestCaseGroup> linkGroup(new tcu::TestCaseGroup(testCtx, "link"));
 
     const Shaders shaderTests[] = {
-        {
-            LINKED,
-            LINKED,
-            UNLINKED,
-            UNUSED,
-            UNLINKED,
-        },
-        {
-            LINKED,
-            LINKED,
-            LINKED,
-            UNUSED,
-            UNLINKED,
-        },
-        {
-            LINKED,
-            LINKED,
-            LINKED,
-            LINKED,
-            UNLINKED,
-        },
-        {
-            LINKED,
-            LINKED,
-            LINKED,
-            LINKED,
-            LINKED,
-        },
-        {
-            LINKED,
-            UNUSED,
-            UNUSED,
-            LINKED,
-            UNLINKED,
-        },
-        {
-            LINKED,
-            UNUSED,
-            UNUSED,
-            LINKED,
-            LINKED,
-        },
-        {
-            LINKED,
-            UNUSED,
-            UNUSED,
-            UNUSED,
-            LINKED,
-        },
-        {UNLINKED, UNLINKED, UNLINKED, UNUSED, UNLINKED},
-        {UNLINKED, UNUSED, UNUSED, UNLINKED, UNLINKED},
-        {UNLINKED, UNUSED, UNUSED, UNUSED, UNLINKED},
-        {UNLINKED, LINKED, LINKED, UNUSED, UNLINKED},
-        {UNLINKED, LINKED, LINKED, LINKED, UNLINKED},
-        {UNLINKED, LINKED, LINKED, UNUSED, LINKED},
-        {UNLINKED, LINKED, LINKED, LINKED, LINKED},
-        {UNLINKED, UNUSED, UNUSED, LINKED, LINKED},
+        {LINKED, LINKED, UNLINKED, UNUSED, UNLINKED},     {LINKED, LINKED, LINKED, UNUSED, UNLINKED},
+        {LINKED, LINKED, LINKED, UNLINKED, UNLINKED},     {LINKED, LINKED, LINKED, LINKED, UNLINKED},
+        {LINKED, LINKED, LINKED, LINKED, LINKED},         {LINKED, UNUSED, UNUSED, LINKED, UNLINKED},
+        {LINKED, UNUSED, UNUSED, LINKED, LINKED},         {LINKED, UNUSED, UNUSED, UNUSED, LINKED},
+        {UNLINKED, UNLINKED, UNLINKED, UNUSED, UNLINKED}, {UNLINKED, UNUSED, UNUSED, UNLINKED, UNLINKED},
+        {UNLINKED, UNUSED, UNUSED, UNUSED, UNLINKED},     {UNLINKED, LINKED, LINKED, UNUSED, UNLINKED},
+        {UNLINKED, LINKED, LINKED, LINKED, UNLINKED},     {UNLINKED, LINKED, LINKED, UNUSED, LINKED},
+        {UNLINKED, LINKED, LINKED, LINKED, LINKED},       {UNLINKED, UNUSED, UNUSED, LINKED, LINKED},
     };
 
     const bool randomOrderTests[] = {
@@ -1399,31 +1350,8 @@ tcu::TestCaseGroup *createShaderObjectLinkTests(tcu::TestContext &testCtx)
     linkGroup->addChild(nextStageGroup.release());
 
     const MeshShaders meshShaderTests[] = {
-        {
-            UNLINKED,
-            UNLINKED,
-            UNLINKED,
-        },
-        {
-            UNLINKED,
-            UNLINKED,
-            UNUSED,
-        },
-        {
-            LINKED,
-            LINKED,
-            UNLINKED,
-        },
-        {
-            UNLINKED,
-            LINKED,
-            LINKED,
-        },
-        {
-            LINKED,
-            LINKED,
-            LINKED,
-        },
+        {UNLINKED, UNLINKED, UNLINKED}, {UNLINKED, UNLINKED, UNUSED}, {LINKED, LINKED, UNLINKED},
+        {UNLINKED, LINKED, LINKED},     {LINKED, LINKED, LINKED},
     };
 
     for (const auto &meshShaders : meshShaderTests)
