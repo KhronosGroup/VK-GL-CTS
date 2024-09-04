@@ -643,7 +643,6 @@ protected:
     decltype(glw::Functions::primitiveBoundingBox) m_boundingBoxFunc;
 
 private:
-    std::vector<IterationConfig> m_iterationConfigs;
     int m_iteration;
 };
 
@@ -691,10 +690,6 @@ BBoxRenderCase::~BBoxRenderCase(void)
 void BBoxRenderCase::init(void)
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-    const tcu::IVec2 renderTargetSize =
-        (m_renderTarget == RENDERTARGET_DEFAULT) ?
-            (tcu::IVec2(m_context.getRenderTarget().getWidth(), m_context.getRenderTarget().getHeight())) :
-            (tcu::IVec2(FBO_SIZE, FBO_SIZE));
     const bool hasES32OrGL45 = supportsES32OrGL45(m_context);
 
     // requirements
@@ -706,10 +701,6 @@ void BBoxRenderCase::init(void)
     if (!hasES32OrGL45 && m_hasGeometryStage &&
         !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
         throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
-    if (m_renderTarget == RENDERTARGET_DEFAULT &&
-        (renderTargetSize.x() < RENDER_TARGET_MIN_SIZE || renderTargetSize.y() < RENDER_TARGET_MIN_SIZE))
-        throw tcu::NotSupportedError(std::string() + "Test requires " + de::toString<int>(RENDER_TARGET_MIN_SIZE) +
-                                     "x" + de::toString<int>(RENDER_TARGET_MIN_SIZE) + " default framebuffer");
 
     // log case specifics
     m_testCtx.getLog() << tcu::TestLog::Message << "Setting primitive bounding box "
@@ -789,10 +780,6 @@ void BBoxRenderCase::init(void)
         gl.bufferData(GL_ARRAY_BUFFER, (int)(data.size() * sizeof(tcu::Vec4)), &data[0], GL_STATIC_DRAW);
         GLU_EXPECT_NO_ERROR(gl.getError(), "create vbo");
     }
-
-    // Iterations
-    for (int iterationNdx = 0; iterationNdx < m_numIterations; ++iterationNdx)
-        m_iterationConfigs.push_back(generateConfig(iterationNdx, renderTargetSize));
 }
 
 void BBoxRenderCase::deinit(void)
@@ -810,11 +797,18 @@ void BBoxRenderCase::deinit(void)
 
 BBoxRenderCase::IterateResult BBoxRenderCase::iterate(void)
 {
-    const tcu::ScopedLogSection section(m_testCtx.getLog(),
-                                        std::string() + "Iteration" + de::toString((int)m_iteration),
-                                        std::string() + "Iteration " + de::toString((int)m_iteration + 1) + "/" +
-                                            de::toString((int)m_iterationConfigs.size()));
-    const IterationConfig &config = m_iterationConfigs[m_iteration];
+    const tcu::ScopedLogSection section(
+        m_testCtx.getLog(), std::string() + "Iteration" + de::toString((int)m_iteration),
+        std::string() + "Iteration " + de::toString((int)m_iteration + 1) + "/" + de::toString(m_numIterations));
+    const tcu::IVec2 renderTargetSize =
+        (m_renderTarget == RENDERTARGET_DEFAULT) ?
+            (tcu::IVec2(m_context.getRenderTarget().getWidth(), m_context.getRenderTarget().getHeight())) :
+            (tcu::IVec2(FBO_SIZE, FBO_SIZE));
+    if (m_renderTarget == RENDERTARGET_DEFAULT &&
+        (renderTargetSize.x() < RENDER_TARGET_MIN_SIZE || renderTargetSize.y() < RENDER_TARGET_MIN_SIZE))
+        throw tcu::NotSupportedError(std::string() + "Test requires " + de::toString<int>(RENDER_TARGET_MIN_SIZE) +
+                                     "x" + de::toString<int>(RENDER_TARGET_MIN_SIZE) + " default framebuffer");
+    const IterationConfig &config = generateConfig(m_iteration, renderTargetSize);
 
     // default
     if (m_iteration == 0)
@@ -823,7 +817,7 @@ BBoxRenderCase::IterateResult BBoxRenderCase::iterate(void)
     renderTestPattern(config);
     verifyRenderResult(config);
 
-    if (++m_iteration < (int)m_iterationConfigs.size())
+    if (++m_iteration < m_numIterations)
         return CONTINUE;
 
     return STOP;
