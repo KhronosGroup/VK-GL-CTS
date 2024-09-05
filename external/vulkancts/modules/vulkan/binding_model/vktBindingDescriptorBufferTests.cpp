@@ -2510,6 +2510,7 @@ public:
 
     // Descriptor size is used to determine the stride of a descriptor array (for bindings with multiple descriptors).
     VkDeviceSize getDescriptorSize(const Binding &binding) const;
+    VkDeviceSize getDescriptorTypeSize(VkDescriptorType descriptorType) const;
 
     uint32_t addDescriptorSetLayout()
     {
@@ -3138,6 +3139,58 @@ VkDeviceSize DescriptorBufferTestInstance::getDescriptorSize(const Binding &bind
     }
 
     return maxSize;
+}
+
+VkDeviceSize DescriptorBufferTestInstance::getDescriptorTypeSize(VkDescriptorType descriptorType) const
+{
+    const auto isRobustBufferAccess = (m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS);
+
+    switch (descriptorType)
+    {
+    case VK_DESCRIPTOR_TYPE_SAMPLER:
+        return m_descriptorBufferProperties.samplerDescriptorSize;
+
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+        return m_descriptorBufferProperties.combinedImageSamplerDescriptorSize * m_combinedImageSamplerDescriptorCount;
+
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+        return m_descriptorBufferProperties.sampledImageDescriptorSize;
+
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+        return m_descriptorBufferProperties.storageImageDescriptorSize;
+
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+        return isRobustBufferAccess ? m_descriptorBufferProperties.robustUniformTexelBufferDescriptorSize :
+                                      m_descriptorBufferProperties.uniformTexelBufferDescriptorSize;
+
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+        return isRobustBufferAccess ? m_descriptorBufferProperties.robustStorageTexelBufferDescriptorSize :
+                                      m_descriptorBufferProperties.storageTexelBufferDescriptorSize;
+
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+        return isRobustBufferAccess ? m_descriptorBufferProperties.robustUniformBufferDescriptorSize :
+                                      m_descriptorBufferProperties.uniformBufferDescriptorSize;
+
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+        return isRobustBufferAccess ? m_descriptorBufferProperties.robustStorageBufferDescriptorSize :
+                                      m_descriptorBufferProperties.storageBufferDescriptorSize;
+
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+        return m_descriptorBufferProperties.inputAttachmentDescriptorSize;
+
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+        return m_descriptorBufferProperties.accelerationStructureDescriptorSize;
+
+    case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:
+        // Inline uniform block has no associated size. This is OK, because it can't be arrayed.
+        break;
+
+    default:
+        DE_ASSERT(0);
+        break;
+    }
+
+    return 0;
 }
 
 void DescriptorBufferTestInstance::createDescriptorSetLayouts()
@@ -4588,7 +4641,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                 // Copy it and compare after obtaining the new descriptor.
                 //
                 auto descriptorPtr        = offsetPtr(bindingHostPtr, arrayOffset);
-                const auto descriptorSize = static_cast<size_t>(getDescriptorSize(binding));
+                const auto descriptorSize = static_cast<size_t>(getDescriptorTypeSize(descGetInfo.type));
 
                 std::vector<uint8_t> reference(descriptorSize);
                 deMemcpy(reference.data(), descriptorPtr, descriptorSize);
@@ -4604,7 +4657,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
             else
             {
                 auto descriptorPtr        = offsetPtr(bindingHostPtr, arrayOffset);
-                const auto descriptorSize = static_cast<size_t>(getDescriptorSize(binding));
+                const auto descriptorSize = static_cast<size_t>(getDescriptorTypeSize(descGetInfo.type));
                 m_deviceInterface->getDescriptorEXT(*m_device, &descGetInfo, descriptorSize, descriptorPtr);
             }
 
