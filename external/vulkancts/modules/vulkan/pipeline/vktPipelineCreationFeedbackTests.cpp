@@ -800,9 +800,6 @@ void GraphicsTestInstance::preparePipelineWrapper(
         }
     }
 
-    if (monolithicBinaryInfo)
-        pipelineCreationFeedbackWrapper[4].ptr->pNext = monolithicBinaryInfo;
-
     // pipelineCreationIsHeavy element 0 and 3 intentionally left false,
     // because these relate to vertex input and fragment output stages, which may be
     // created in nearly zero time.
@@ -825,7 +822,7 @@ void GraphicsTestInstance::preparePipelineWrapper(
         .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams, nullptr, *m_cache,
                                   pipelineCreationFeedbackWrapper[3], nullptr, fragmentOutputBinaryInfo)
         .buildPipeline(*m_cache, basePipelineHandle, basePipelineHandle != VK_NULL_HANDLE ? -1 : 0,
-                       pipelineCreationFeedbackWrapper[4]);
+                       pipelineCreationFeedbackWrapper[4], monolithicBinaryInfo);
 }
 
 tcu::TestStatus GraphicsTestInstance::verifyTestResult(void)
