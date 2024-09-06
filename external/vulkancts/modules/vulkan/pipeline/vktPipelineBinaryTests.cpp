@@ -748,25 +748,9 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
         {
             pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_LIBRARY_BIT_KHR;
             binaryInfo.pNext               = &pipelineFlags2CreateInfo;
-
-            // create raytracing pipeline library from pipeline library
-            pipelineLibrary =
-                createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
-
-            // create raytracing pipeline from pipeline library
-            libraryInfo.libraryCount = 1u;
-            libraryInfo.pLibraries   = &*pipelineLibrary;
-
-            pipelineCreateInfo.pNext        = nullptr;
-            pipelineCreateInfo.stageCount   = 0;
-            pipelineCreateInfo.pStages      = nullptr;
-            pipelineCreateInfo.groupCount   = 0;
-            pipelineCreateInfo.pGroups      = nullptr;
-            pipelineCreateInfo.groupCount   = 0;
-            pipelineCreateInfo.pLibraryInfo = &libraryInfo;
         }
     }
-    else if (binariesStatus == BinariesStatus::INVALID)
+    else
     {
         for (uint32_t index = 0; index < shaderCount; ++index)
         {
@@ -777,6 +761,22 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
             shaderCreateInfo.module               = *m_shaderModules[index];
         }
         pipelineCreateInfo.pStages = m_shaderCreateInfoVect.data();
+    }
+
+    if (usePipelineLibrary)
+    {
+        // create raytracing pipeline library from pipeline library
+        pipelineLibrary = createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+        // create raytracing pipeline from pipeline library
+        libraryInfo.libraryCount = 1u;
+        libraryInfo.pLibraries   = &*pipelineLibrary;
+
+        pipelineCreateInfo                              = initVulkanStructure();
+        pipelineCreateInfo.maxPipelineRayRecursionDepth = 1u;
+        pipelineCreateInfo.pLibraryInterface            = pLibraryInterface;
+        pipelineCreateInfo.layout                       = *pipelineLayout;
+        pipelineCreateInfo.pLibraryInfo                 = &libraryInfo;
     }
 
     m_pipeline = createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);

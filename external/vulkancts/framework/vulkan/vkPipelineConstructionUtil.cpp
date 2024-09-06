@@ -2616,20 +2616,21 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 
     m_internalData->vertexShader = vertexShader;
     m_internalData->vertexShader.setLayoutAndSpecialization(&layout, vertSpecializationInfo);
+    VkShaderModule shaderModule = VK_NULL_HANDLE;
     if (m_internalData->useShaderModules && !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
-        m_internalData->vertexShader.createModule();
+        shaderModule = m_internalData->vertexShader.getModule();
 
     // reserve space for all stages including fragment - this is needed when we create monolithic pipeline
     m_internalData->pipelineShaderStages = std::vector<VkPipelineShaderStageCreateInfo>(
         2u + hasTesc + hasTese + hasGeom,
         {
-            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                        sType
-            nullptr,                                             // const void*                            pNext
-            0u,                                                  // VkPipelineShaderStageCreateFlags        flags
-            VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits                stage
-            m_internalData->vertexShader.getModule(),            // VkShaderModule                        module
-            "main",                                              // const char*                            pName
-            vertSpecializationInfo // const VkSpecializationInfo*            pSpecializationInfo
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                  sType
+            nullptr,                                             // const void*                      pNext
+            0u,                                                  // VkPipelineShaderStageCreateFlags flags
+            VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits            stage
+            shaderModule,                                        // VkShaderModule                   module
+            "main",                                              // const char*                      pName
+            vertSpecializationInfo                               // const VkSpecializationInfo*      pSpecializationInfo
         });
 
 #ifndef CTS_USES_VULKANSC
@@ -2650,12 +2651,14 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     {
         m_internalData->tessellationControlShader = tessellationControlShader;
         m_internalData->tessellationControlShader.setLayoutAndSpecialization(&layout, tescSpecializationInfo);
+
+        shaderModule = VK_NULL_HANDLE;
         if (m_internalData->useShaderModules &&
             !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
-            m_internalData->tessellationControlShader.createModule();
+            shaderModule = m_internalData->tessellationControlShader.getModule();
 
         currStage->stage               = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-        currStage->module              = m_internalData->tessellationControlShader.getModule();
+        currStage->module              = shaderModule;
         currStage->pSpecializationInfo = tescSpecializationInfo;
 
 #ifndef CTS_USES_VULKANSC
@@ -2677,12 +2680,14 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     {
         m_internalData->tessellationEvaluationShader = tessellationEvalShader;
         m_internalData->tessellationEvaluationShader.setLayoutAndSpecialization(&layout, teseSpecializationInfo);
+
+        shaderModule = VK_NULL_HANDLE;
         if (m_internalData->useShaderModules &&
             !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
-            m_internalData->tessellationEvaluationShader.createModule();
+            shaderModule = m_internalData->tessellationEvaluationShader.getModule();
 
         currStage->stage               = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-        currStage->module              = m_internalData->tessellationEvaluationShader.getModule();
+        currStage->module              = shaderModule;
         currStage->pSpecializationInfo = teseSpecializationInfo;
 
 #ifndef CTS_USES_VULKANSC
@@ -2704,12 +2709,14 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     {
         m_internalData->geometryShader = geometryShader;
         m_internalData->geometryShader.setLayoutAndSpecialization(&layout, geomSpecializationInfo);
+
+        shaderModule = VK_NULL_HANDLE;
         if (m_internalData->useShaderModules &&
             !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
-            m_internalData->geometryShader.createModule();
+            shaderModule = m_internalData->geometryShader.getModule();
 
         currStage->stage               = VK_SHADER_STAGE_GEOMETRY_BIT;
-        currStage->module              = m_internalData->geometryShader.getModule();
+        currStage->module              = shaderModule;
         currStage->pSpecializationInfo = geomSpecializationInfo;
 
 #ifndef CTS_USES_VULKANSC
@@ -2868,14 +2875,16 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
     {
         m_internalData->meshShader = meshShader;
         m_internalData->meshShader.setLayoutAndSpecialization(&layout, meshSpecializationInfo);
+
+        VkShaderModule shaderModule = VK_NULL_HANDLE;
         if (m_internalData->useShaderModules &&
             !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
-            m_internalData->meshShader.createModule();
+            shaderModule = m_internalData->meshShader.getModule();
 
         auto &stageInfo = *currStage;
 
         stageInfo.stage               = VK_SHADER_STAGE_MESH_BIT_EXT;
-        stageInfo.module              = m_internalData->meshShader.getModule();
+        stageInfo.module              = shaderModule;
         stageInfo.pSpecializationInfo = meshSpecializationInfo;
 
         ++currStage;
@@ -2885,14 +2894,16 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
     {
         m_internalData->taskShader = taskShader;
         m_internalData->taskShader.setLayoutAndSpecialization(&layout, taskSpecializationInfo);
+
+        VkShaderModule shaderModule = VK_NULL_HANDLE;
         if (m_internalData->useShaderModules &&
             !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
-            m_internalData->taskShader.createModule();
+            shaderModule = m_internalData->taskShader.getModule();
 
         auto &stageInfo = *currStage;
 
         stageInfo.stage               = VK_SHADER_STAGE_TASK_BIT_EXT;
-        stageInfo.module              = m_internalData->taskShader.getModule();
+        stageInfo.module              = shaderModule;
         stageInfo.pSpecializationInfo = taskSpecializationInfo;
 
         ++currStage;
@@ -3041,12 +3052,14 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
             {
                 m_internalData->fragmentShader = fragmentShader;
                 m_internalData->fragmentShader.setLayoutAndSpecialization(&layout, specializationInfo);
+
+                VkShaderModule shaderModule = VK_NULL_HANDLE;
                 if (m_internalData->useShaderModules &&
                     !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
-                    m_internalData->fragmentShader.createModule();
+                    shaderModule = m_internalData->fragmentShader.getModule();
 
-                m_internalData->pipelineShaderStages[stageIndex].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-                m_internalData->pipelineShaderStages[stageIndex].module = m_internalData->fragmentShader.getModule();
+                m_internalData->pipelineShaderStages[stageIndex].stage               = VK_SHADER_STAGE_FRAGMENT_BIT;
+                m_internalData->pipelineShaderStages[stageIndex].module              = shaderModule;
                 m_internalData->pipelineShaderStages[stageIndex].pSpecializationInfo = specializationInfo;
 #ifndef CTS_USES_VULKANSC
                 if (fragmentShaderModuleId.ptr)

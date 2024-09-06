@@ -838,7 +838,7 @@ void GraphicsTestInstance::preparePipelinesForBinaries(bool createFromBlobs = fa
 
     preparePipelineWrapper(*m_pipeline[PIPELINE_NDX_NO_BLOBS], VK_NULL_HANDLE, false, true);
 
-    if (m_param->getPipelineConstructionType() != PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
+    if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
     {
         VkPipeline pipeline = m_pipeline[PIPELINE_NDX_NO_BLOBS]->getPipeline();
         m_binaries[0].createPipelineBinariesFromPipeline(pipeline);
@@ -902,8 +902,8 @@ void GraphicsTestInstance::preparePipelinesForBinaries(bool createFromBlobs = fa
         {
             if (m_binaries[i].getBinariesCount() == 0)
                 continue;
-            m_binaries[i].preparePipelineBinaryInfo();
-            binaryInfoPtr[i] = &pipelinePartsBinaryInfo[i];
+            pipelinePartsBinaryInfo[i] = m_binaries[i].preparePipelineBinaryInfo();
+            binaryInfoPtr[i]           = &pipelinePartsBinaryInfo[i];
         };
 
         preparePipelineWrapper(*m_pipeline[PIPELINE_NDX_USE_BLOBS], VK_NULL_HANDLE, false, false, DE_NULL,
