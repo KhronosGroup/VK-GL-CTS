@@ -102,6 +102,7 @@ typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT>
     PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV>
     PipelineRepresentativeFragmentTestCreateInfoWrapper;
+typedef PointerWrapper<VkPipelineBinaryInfoKHR> PipelineBinaryInfoWrapper;
 typedef VkPipelineCreateFlags2KHR PipelineCreateFlags2;
 typedef PointerWrapper<VkPipelineRobustnessCreateInfoEXT> PipelineRobustnessCreateInfoWrapper;
 #else
@@ -112,6 +113,7 @@ typedef PointerWrapper<void> RenderingInputAttachmentIndexInfoWrapper;
 typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
+typedef PointerWrapper<void> PipelineBinaryInfoWrapper;
 typedef uint64_t PipelineCreateFlags2;
 typedef PointerWrapper<void> PipelineRobustnessCreateInfoWrapper;
 #endif
@@ -428,6 +430,10 @@ public:
     // By default dynamic state has to be specified before specifying other CreateInfo structures
     GraphicsPipelineWrapper &setDynamicState(const VkPipelineDynamicStateCreateInfo *dynamicState);
 
+    // When this wrapper is used with functionality provided by VK_KHR_pipeline_binary
+    // then we need to be able to set binaries for individual pipeline parts as well as for monolithic pipeline.
+    GraphicsPipelineWrapper &setMonolithicPipelineBinaries(PipelineBinaryInfoWrapper binaries);
+
     // Specify the representative fragment test state.
     GraphicsPipelineWrapper &setRepresentativeFragmentTestState(
         PipelineRepresentativeFragmentTestCreateInfoWrapper representativeFragmentTestState);
@@ -489,7 +495,11 @@ public:
         const VkPipelineInputAssemblyStateCreateInfo *inputAssemblyState = nullptr,
         const VkPipelineCache partPipelineCache                          = VK_NULL_HANDLE,
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback   = PipelineCreationFeedbackCreateInfoWrapper(),
-        const bool useNullPtrs                                           = false);
+        PipelineBinaryInfoWrapper partBinaries = PipelineBinaryInfoWrapper(), const bool useNullPtrs = false);
+
+    // When disableShaderModules is used module attributes in VkPipelineShaderStageCreateInfo will be set to NULL.
+    // This is needed for VK_KHR_pipeline_binary tests where we need to construct a pipeline from pipeline binaries without using modules.
+    GraphicsPipelineWrapper &disableShaderModules(const bool disable = true);
 
     // Setup pre-rasterization shader state.
     GraphicsPipelineWrapper &setupPreRasterizationShaderState(
@@ -546,7 +556,8 @@ public:
         VkPipelineFragmentShadingRateStateCreateInfoKHR *fragmentShadingRateState = nullptr,
         PipelineRenderingCreateInfoWrapper rendering                   = PipelineRenderingCreateInfoWrapper(),
         const VkPipelineCache partPipelineCache                        = VK_NULL_HANDLE,
-        PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+        PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
+        PipelineBinaryInfoWrapper partBinaries                         = PipelineBinaryInfoWrapper());
 
 #ifndef CTS_USES_VULKANSC
     // Setup pre-rasterization shader state, mesh shading version.
@@ -587,7 +598,8 @@ public:
         const VkPipelineCache partPipelineCache                        = VK_NULL_HANDLE,
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
         RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo =
-            RenderingInputAttachmentIndexInfoWrapper());
+            RenderingInputAttachmentIndexInfoWrapper(),
+        PipelineBinaryInfoWrapper partBinaries = PipelineBinaryInfoWrapper());
 
     // Setup fragment output state.
     GraphicsPipelineWrapper &setupFragmentOutputState(
@@ -597,13 +609,15 @@ public:
         const VkPipelineCache partPipelineCache                        = VK_NULL_HANDLE,
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
         RenderingAttachmentLocationInfoWrapper renderingAttachmentLocationInfo =
-            RenderingAttachmentLocationInfoWrapper());
+            RenderingAttachmentLocationInfoWrapper(),
+        PipelineBinaryInfoWrapper partBinaries = PipelineBinaryInfoWrapper());
 
     // Build pipeline object out of provided state.
     void buildPipeline(
         const VkPipelineCache pipelineCache = VK_NULL_HANDLE, const VkPipeline basePipelineHandle = VK_NULL_HANDLE,
         const int32_t basePipelineIndex                            = 0,
-        PipelineCreationFeedbackCreateInfoWrapper creationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+        PipelineCreationFeedbackCreateInfoWrapper creationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
+        void *pNext                                                = nullptr);
     // Create shader objects if used
 #ifndef CTS_USES_VULKANSC
     vk::VkShaderStageFlags getNextStages(vk::VkShaderStageFlagBits shaderStage, bool tessellationShaders,
@@ -623,6 +637,15 @@ public:
 
     // Get compleate pipeline. GraphicsPipelineWrapper preserves ovnership and will destroy pipeline in its destructor.
     vk::VkPipeline getPipeline(void) const;
+
+    // Get partial pipeline. GraphicsPipelineWrapper preserves ovnership and will desroy pipeline in its destructor.
+    vk::VkPipeline getPartialPipeline(uint32_t part) const;
+
+    // Get compleate pipeline create info.
+    const VkGraphicsPipelineCreateInfo &getPipelineCreateInfo(void) const;
+
+    // Get partial pipeline create info.
+    const VkGraphicsPipelineCreateInfo &getPartialPipelineCreateInfo(uint32_t part) const;
 
     // Destroy compleate pipeline - pipeline parts are not destroyed.
     void destroyPipeline(void);

@@ -212,7 +212,7 @@ const GLchar *ApiCoverageTestCase::m_frag_shader =
     in vec3 texCoords;
     out vec4 frag_color;
     void main() {
-        frag_color = texture2D(tex0, texCoords.xy);
+        frag_color = texture(tex0, texCoords.xy);
     }
     )";
 
@@ -800,7 +800,6 @@ void ApiCoverageTestCase::init()
             funcs_map.insert({ "glDrawRangeElements",          &ApiCoverageTestCase::TestCoverageGLCallDrawRangeElements });
             funcs_map.insert({ "glTexImage3D",                 &ApiCoverageTestCase::TestCoverageGLCallTexImage3D });
             funcs_map.insert({ "glTexSubImage3D",              &ApiCoverageTestCase::TestCoverageGLCallTexSubImage3D });
-            funcs_map.insert({ "glCopyTexSubImage3D",          &ApiCoverageTestCase::TestCoverageGLCallCopyTexSubImage3D });
             funcs_map.insert({ "glCompressedTexImage3D",       &ApiCoverageTestCase::TestCoverageGLCallCompressedTexImage3D });
             funcs_map.insert({ "glCompressedTexSubImage3D",    &ApiCoverageTestCase::TestCoverageGLCallCompressedTexSubImage3D });
             funcs_map.insert({ "glGenQueries",                 &ApiCoverageTestCase::TestCoverageGLCallGenQueries });
@@ -1030,7 +1029,6 @@ void ApiCoverageTestCase::init()
             funcs_map.insert({ "glMapBufferOES",               &ApiCoverageTestCase::TestCoverageGLCallMapBufferOES });
             funcs_map.insert({ "glTexImage3DOES",              &ApiCoverageTestCase::TestCoverageGLCallTexImage3DOES });
             funcs_map.insert({ "glTexSubImage3DOES",           &ApiCoverageTestCase::TestCoverageGLCallTexSubImage3DOES });
-            funcs_map.insert({ "glCopyTexSubImage3DOES",       &ApiCoverageTestCase::TestCoverageGLCallCopyTexSubImage3DOES });
             funcs_map.insert({ "glCompressedTexImage3DOES",    &ApiCoverageTestCase::TestCoverageGLCallCompressedTexImage3DOES });
             funcs_map.insert({ "glCompressedTexSubImage3DOES", &ApiCoverageTestCase::TestCoverageGLCallCompressedTexSubImage3DOES });
             funcs_map.insert({ "glShaderBinary",               &ApiCoverageTestCase::TestCoverageGLCallShaderBinary });
@@ -5915,53 +5913,6 @@ bool ApiCoverageTestCase::TestCoverageGLCallTexSubImage3DOES(void)
             {
                 tcu_fail_msg("ApiCoverageTestCase::CallTexSubImage3D", "Invalid enums : (%s, %s)",
                              ea_TextureFormat[i].name, ea_TextureType[i].name);
-                success = false;
-            }
-        }
-    }
-
-    return success;
-}
-
-bool ApiCoverageTestCase::TestCoverageGLCallCopyTexSubImage3DOES(void)
-{
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-    bool success             = true;
-
-    if (m_context.getContextInfo().isExtensionSupported("GL_OES_texture_3D"))
-    {
-        GLubyte buf[1000];
-        GLint i;
-        GLenum colorBufferFormat, targetFormats[5];
-        GLsizei numTargetFormats;
-
-        colorBufferFormat = TestCoverageGLGuessColorBufferFormat();
-        numTargetFormats  = TestCoverageGLCalcTargetFormats(colorBufferFormat, targetFormats);
-
-        memset(buf, 0, sizeof(GLubyte) * 100);
-
-        for (i = 0; i != numTargetFormats; i++)
-        {
-            gl.texImage3DOES(GL_TEXTURE_2D, 0, targetFormats[i], 1, 1, 1, 0, targetFormats[i], GL_UNSIGNED_BYTE, buf);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "texImage3DOES");
-            gl.copyTexSubImage3DOES(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 0, 1, 1);
-
-            if (gl.getError() == GL_INVALID_ENUM)
-            {
-                const char *invalidEnum = glu::getTextureFormatName(targetFormats[i]);
-                tcu_fail_msg("ApiCoverageTestCase::CallCopyTexSubImage3D", "Invalid enum : %s", invalidEnum);
-                success = false;
-            }
-
-            gl.texImage3DOES(GL_TEXTURE_2D, 0, targetFormats[i], 1, 1, 1, 0, targetFormats[i], GL_UNSIGNED_BYTE,
-                             (const void *)NULL);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "texImage3DOES");
-            gl.copyTexSubImage3DOES(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 0, 1, 1);
-
-            if (gl.getError() == GL_INVALID_ENUM)
-            {
-                const char *invalidEnum = glu::getTextureFormatName(targetFormats[i]);
-                tcu_fail_msg("ApiCoverageTestCase::CallCopyTexSubImage3D", "Invalid enum : %s", invalidEnum);
                 success = false;
             }
         }

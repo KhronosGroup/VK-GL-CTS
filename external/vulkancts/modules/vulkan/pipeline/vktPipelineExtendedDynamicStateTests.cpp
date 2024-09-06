@@ -6262,7 +6262,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate(void)
             graphicsPipeline
                 .setupVertexInputState(staticVertexInputStateCreateInfo, staticInputAssemblyStateCreateInfo,
                                        VK_NULL_HANDLE, vk::PipelineCreationFeedbackCreateInfoWrapper(),
-                                       m_testConfig.favorStaticNullPointers)
+                                       vk::PipelineBinaryInfoWrapper(), m_testConfig.favorStaticNullPointers)
                 .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPassFramebuffers[0], 0u,
                                                   dynamicVertModule, staticRasterizationStateCreateInfo, tescModule,
                                                   teseModule, geomModule);
@@ -6271,7 +6271,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate(void)
                 extraDynPipeline
                     .setupVertexInputState(&emptyVertexInputStateCreateInfo, staticInputAssemblyStateCreateInfo,
                                            VK_NULL_HANDLE, vk::PipelineCreationFeedbackCreateInfoWrapper(),
-                                           m_testConfig.favorStaticNullPointers)
+                                           vk::PipelineBinaryInfoWrapper(), m_testConfig.favorStaticNullPointers)
                     .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPassFramebuffers[0],
                                                       0u, vertDPCPModule, staticRasterizationStateCreateInfo);
         }

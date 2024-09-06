@@ -621,7 +621,7 @@ tcu::TestStatus createImageModifierExplicitCase(Context &context, const VkFormat
             VK_EXTERNAL_MEMORY_FEATURE_FLAG_BITS_MAX_ENUM, imgFormatProperties);
         if (isCompatible)
         {
-            const ExplicitModifier modifier = {
+            const ExplicitModifier modifier{
                 modProps.drmFormatModifier,           // modifier
                 modProps.drmFormatModifierPlaneCount, // modifierPlaneCount
                 nullptr,                              // pPlaneLayouts

@@ -2557,8 +2557,11 @@ tcu::TestCaseGroup *createImageAtomicOperationTests(tcu::TestContext &testCtx)
                                 const std::string formatName = getShaderImageFormatQualifier(format);
                                 const char *suffix = (s_tilings[tilingNdx] == VK_IMAGE_TILING_OPTIMAL) ? "" : "_linear";
 
-                                // Need SPIRV programs in vktImageAtomicSpirvShaders.cpp
-                                if (imageType == IMAGE_TYPE_BUFFER && (format.type != tcu::TextureFormat::FLOAT))
+                                // Need SPIRV programs in vktImageAtomicSpirvShaders.cpp for linear tiling case
+                                if (imageType == IMAGE_TYPE_BUFFER &&
+                                    ((format.type != tcu::TextureFormat::FLOAT) &&
+                                     (format.type != tcu::TextureFormat::HALF_FLOAT)) &&
+                                    (s_tilings[tilingNdx] == VK_IMAGE_TILING_LINEAR))
                                 {
                                     continue;
                                 }

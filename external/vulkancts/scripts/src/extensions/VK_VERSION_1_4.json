@@ -1,112 +1,110 @@
 {
-    "mandatory_features":
-        {
-            "VkPhysicalDeviceVulkan14Features":
-                [
-                    {
-                        "features": [
-                            "globalPriorityQuery"
-                        ],
-                        "requirements": [
-                            "ApiVersion(0, 1, 4, 0)"
-                        ],
-                        "mandatory_variant": [
-                            "vulkan"
-                        ]
-                    },
-                    {
-                        "features": [
-                            "indexTypeUint8"
-                        ],
-                        "requirements": [
-                            "ApiVersion(0, 1, 4, 0)"
-                        ],
-                        "mandatory_variant": [
-                            "vulkan"
-                        ]
-                    },
-                    {
-                        "features": [
-                            "vertexAttributeInstanceRateDivisor"
-                        ],
-                        "requirements": [
-                            "ApiVersion(0, 1, 4, 0)"
-                        ],
-                        "mandatory_variant": [
-                            "vulkan"
-                        ]
-                    },
-                    {
-                        "features": [
-                            "rectangularLines",
-                            "bresenhamLines",
-                            "smoothLines",
-                            "stippledRectangularLines",
-                            "stippledBresenhamLines",
-                            "stippledSmoothLines"
-                        ],
-                        "requirements": [
-                            "ApiVersion(0, 1, 4, 0)"
-                        ],
-                        "mandatory_variant": [
-                            "vulkan"
-                        ]
-                    },
-                    {
-                        "features": [
-                            "pipelineProtectedAccess"
-                        ],
-                        "requirements": [
-                            "ApiVersion(0, 1, 4, 0)"
-                        ],
-                        "mandatory_variant": [
-                            "vulkan"
-                        ]
-                    },
-                    {
-                        "features": [
-                            "hostImageCopy"
-                        ],
-                        "requirements": [
-                            "ApiVersion(0, 1, 4, 0)"
-                        ],
-                        "mandatory_variant": [
-                            "vulkan"
-                        ]
-                    },
-                    {
-                        "features": [
-                            "maintenance5"
-                        ],
-                        "requirements": [
-                            "ApiVersion(0, 1, 4, 0)"
-                        ],
-                        "mandatory_variant": [
-                            "vulkan"
-                        ]
-                    },
-                    {
-                        "features": [
-                            "maintenance6"
-                        ],
-                        "requirements": [
-                            "ApiVersion(0, 1, 4, 0)"
-                        ],
-                        "mandatory_variant": [
-                            "vulkan"
-                        ]
-                    },
-                    {
-                        "features": [
-                            "pipelineRobustness"
-                        ],
-                        "requirements": [
-                            "ApiVersion(0, 1, 4, 0)"
-                        ],
-                        "mandatory_variant": [
-                            "vulkan"
-                        ]
-                    }
+    "mandatory_features": {
+        "VkPhysicalDeviceVulkan14Features": [
+            {
+                "features": [
+                    "globalPriorityQuery"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
                 ]
-        }
+            },
+            {
+                "features": [
+                    "indexTypeUint8"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "vertexAttributeInstanceRateDivisor"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "rectangularLines",
+                    "bresenhamLines",
+                    "smoothLines",
+                    "stippledRectangularLines",
+                    "stippledBresenhamLines",
+                    "stippledSmoothLines"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "pipelineProtectedAccess"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "hostImageCopy"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "maintenance5"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "maintenance6"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "pipelineRobustness"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ]
+    }
 }

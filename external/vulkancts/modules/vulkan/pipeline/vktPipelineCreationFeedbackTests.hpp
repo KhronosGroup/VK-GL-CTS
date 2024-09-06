@@ -34,6 +34,9 @@ namespace pipeline
 
 tcu::TestCaseGroup *createCreationFeedbackTests(tcu::TestContext &testCtx,
                                                 vk::PipelineConstructionType pipelineConstructionType);
+de::MovePtr<tcu::TestCaseGroup> addPipelineBinaryCreationFeedbackTests(
+    tcu::TestContext &testCtx, vk::PipelineConstructionType pipelineConstructionType,
+    de::MovePtr<tcu::TestCaseGroup> binaryGroup);
 
 } // namespace pipeline
 } // namespace vkt

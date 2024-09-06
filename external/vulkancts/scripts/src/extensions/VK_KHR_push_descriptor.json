@@ -1,7 +1,6 @@
 {
-    "register_extension":
-        {
-            "type": "device",
-            "core": "0.1.4.0"
-        }
+    "register_extension": {
+        "type": "device",
+        "core": "0.1.4.0"
+    }
 }
