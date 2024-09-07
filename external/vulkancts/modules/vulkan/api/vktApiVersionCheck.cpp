@@ -622,6 +622,10 @@ public:
         // create custom instance for each api version
         for (const auto &testedApiVersion : functionsPerVersion)
         {
+            // VK_KHR_maintenance5 requires at least Vulkan 1.1
+            if (testedApiVersion.first == VK_API_VERSION_1_0)
+                continue;
+
             // we cant test api versions that are higher then api version support by this device
             if (testedApiVersion.first > supportedApiVersion)
                 break;
@@ -663,9 +667,14 @@ public:
             deviceCreateInfo.pQueueCreateInfos    = &deviceQueueCreateInfo;
 
 #ifndef CTS_USES_VULKANSC
-            char const *extensionName                = "VK_KHR_maintenance5";
-            deviceCreateInfo.enabledExtensionCount   = 1u;
-            deviceCreateInfo.ppEnabledExtensionNames = &extensionName;
+            std::vector<const char *> extensions = {"VK_KHR_maintenance5", "VK_KHR_dynamic_rendering"};
+            if (testedApiVersion.first < VK_API_VERSION_1_2)
+            {
+                extensions.push_back("VK_KHR_depth_stencil_resolve");
+                extensions.push_back("VK_KHR_create_renderpass2");
+            }
+            deviceCreateInfo.enabledExtensionCount   = (uint32_t)extensions.size();
+            deviceCreateInfo.ppEnabledExtensionNames = extensions.data();
 
             vk::VkPhysicalDeviceMaintenance5FeaturesKHR maint5 = initVulkanStructure();
             vk::VkPhysicalDeviceFeatures2 features2            = initVulkanStructure(&maint5);
