@@ -871,6 +871,7 @@ KHR-GL41.buffer_objects.multi_texture
 KHR-GL41.buffer_objects.sub_data
 KHR-GL41.transform_feedback2.transform_feedback2_states
 KHR-GL41.api.coverage
+KHR-GL41.get_uniform_tests.get_uniform
 KHR-GL41.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL41.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL41.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp

@@ -952,6 +952,7 @@ cc_library_static {
         "external/openglcts/modules/gl/gl3cCommonBugsTests.cpp",
         "external/openglcts/modules/gl/gl3cGLSLnoperspectiveTests.cpp",
         "external/openglcts/modules/gl/gl3cGPUShader5Tests.cpp",
+        "external/openglcts/modules/gl/gl3cGetUniform.cpp",
         "external/openglcts/modules/gl/gl3cPrimitiveRestart.cpp",
         "external/openglcts/modules/gl/gl3cTestPackages.cpp",
         "external/openglcts/modules/gl/gl3cTextureSizePromotion.cpp",
