@@ -116,7 +116,8 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
 Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance instance, const InstanceInterface &vki,
                                    VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
                                    const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator,
-                                   bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool validationEnabled)
+                                   bool requireSwapchainMaintenance1, bool enableSwapchainMaintenance1Feature,
+                                   bool requireDeviceGroup, bool validationEnabled)
 {
     const float queuePriorities[]              = {1.0f};
     const VkDeviceQueueCreateInfo queueInfos[] = {{
@@ -146,9 +147,21 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
 
     checkAllSupported(supportedExtensions, extensions);
 
+    VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenance1Features{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT, // VkStructureType	sType;
+        nullptr,                                                                // void*			pNext;
+        VK_TRUE,                                                                // VkBool32		swapchainMaintenance1;
+    };
+
+    VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();
+    features2.features                  = features;
+
+    if (enableSwapchainMaintenance1Feature)
+        features2.pNext = &swapchainMaintenance1Features;
+
     VkDeviceCreateInfo deviceParams = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        nullptr,
+        &features2,
         (VkDeviceCreateFlags)0,
         DE_LENGTH_OF_ARRAY(queueInfos),
         &queueInfos[0],
@@ -156,7 +169,7 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
         nullptr, // ppEnabledLayerNames
         (uint32_t)extensions.size(),
         extensions.empty() ? nullptr : &extensions[0],
-        &features,
+        nullptr,
     };
 
     return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
@@ -186,13 +199,14 @@ struct DeviceHelper
     const VkQueue queue;
 
     DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
-                 bool requireSwapchainMaintenance1, bool requireDeviceGroup,
+                 bool requireSwapchainMaintenance1, bool enableSwapchainMaintenance1Feature, bool requireDeviceGroup,
                  const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
                                      enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
-                                     pAllocator, requireSwapchainMaintenance1, requireDeviceGroup,
+                                     pAllocator, requireSwapchainMaintenance1, enableSwapchainMaintenance1Feature,
+                                     requireDeviceGroup,
                                      context.getTestContext().getCommandLine().isValidationEnabled()))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
@@ -420,12 +434,14 @@ typedef de::SharedPtr<Unique<VkFence>> FenceSp;
 typedef de::SharedPtr<Unique<VkSemaphore>> SemaphoreSp;
 typedef de::SharedPtr<Unique<VkImage>> ImageSp;
 
-std::vector<FenceSp> createFences(const DeviceInterface &vkd, const VkDevice device, size_t numFences)
+std::vector<FenceSp> createFences(const DeviceInterface &vkd, const VkDevice device, size_t numFences, bool nullHandles,
+                                  de::Random &rng)
 {
     std::vector<FenceSp> fences(numFences);
 
     for (size_t ndx = 0; ndx < numFences; ++ndx)
-        fences[ndx] = FenceSp(new Unique<VkFence>(createFence(vkd, device)));
+        if (!nullHandles || rng.getUint32() % 4 != 0)
+            fences[ndx] = FenceSp(new Unique<VkFence>(createFence(vkd, device)));
 
     return fences;
 }
@@ -517,6 +533,8 @@ struct PresentFenceTestConfig
     bool bindImageMemory;
     bool changePresentModes;
     bool verifyFenceOrdering;
+    bool nullHandles;
+    bool swapchainMaintenance1;
 };
 
 bool canDoMultiSwapchainPresent(vk::wsi::Type wsiType)
@@ -692,7 +710,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
     }
 
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surfaces[0], true,
-                                 testParams.bindImageMemory);
+                                 testParams.swapchainMaintenance1, testParams.bindImageMemory);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
 
@@ -791,8 +809,15 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
 
     const uint32_t iterations = getIterations(testParams.modes, compatiblePresentModes, false);
 
+    const uint32_t configHash =
+        (uint32_t)testParams.wsiType | (uint32_t)testParams.modes[0] << 4 |
+        (uint32_t)testParams.deferMemoryAllocation << 28 | (uint32_t)testParams.bindImageMemory << 29 |
+        (uint32_t)testParams.changePresentModes << 30 | (uint32_t)testParams.verifyFenceOrdering << 31;
+    de::Random rng(0x53A4C8A1u ^ configHash);
+
     // Do iterations presents, each with an associated fence.  Destroy the wait semaphores as soon as the corresponding fence signals.
-    const std::vector<FenceSp> presentFences(createFences(vkd, device, iterations * surfaceCount));
+    const std::vector<FenceSp> presentFences(
+        createFences(vkd, device, iterations * surfaceCount, testParams.nullHandles, rng));
     const std::vector<SemaphoreSp> acquireSems(createSemaphores(vkd, device, iterations * surfaceCount));
     std::vector<SemaphoreSp> presentSems(createSemaphores(vkd, device, iterations));
 
@@ -804,12 +829,6 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
     };
-
-    const uint32_t configHash =
-        (uint32_t)testParams.wsiType | (uint32_t)testParams.modes[0] << 4 |
-        (uint32_t)testParams.deferMemoryAllocation << 28 | (uint32_t)testParams.bindImageMemory << 29 |
-        (uint32_t)testParams.changePresentModes << 30 | (uint32_t)testParams.verifyFenceOrdering << 31;
-    de::Random rng(0x53A4C8A1u ^ configHash);
 
     try
     {
@@ -840,7 +859,10 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
             for (uint32_t j = 0; j < surfaceCount; ++j)
             {
                 acquireSem.push_back(**acquireSems[i * surfaceCount + j]);
-                presentFence.push_back(**presentFences[i * surfaceCount + j]);
+                if (presentFences[i * surfaceCount + j])
+                    presentFence.push_back(**presentFences[i * surfaceCount + j]);
+                else
+                    presentFence.push_back(VK_NULL_HANDLE);
 
                 VK_CHECK(vkd.acquireNextImageKHR(device, *swapchains[j], foreverNs, acquireSem[j], VK_NULL_HANDLE,
                                                  &imageIndex[j]));
@@ -957,8 +979,8 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
                 // Check previous presents; if any is signaled, immediatey destroy its wait semaphore
                 while (nextUnfinishedPresent[j] < i)
                 {
-                    if (vkd.getFenceStatus(device, **presentFences[nextUnfinishedPresent[j] * surfaceCount + j]) ==
-                        VK_NOT_READY)
+                    const auto &fence = presentFences[nextUnfinishedPresent[j] * surfaceCount + j];
+                    if (fence && vkd.getFenceStatus(device, **fence) == VK_NOT_READY)
                         break;
 
                     presentSems[nextUnfinishedPresent[j]].clear();
@@ -980,8 +1002,11 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
 
             while (nextUnfinishedPresent[j] < iterations)
             {
-                VK_CHECK(vkd.waitForFences(device, 1u, &**presentFences[nextUnfinishedPresent[j] * surfaceCount + j],
-                                           VK_TRUE, kMaxFenceWaitTimeout));
+                const auto &fence = presentFences[nextUnfinishedPresent[j] * surfaceCount + j];
+                if (fence)
+                {
+                    VK_CHECK(vkd.waitForFences(device, 1u, &**fence, VK_TRUE, kMaxFenceWaitTimeout));
+                }
                 presentSems[nextUnfinishedPresent[j]].clear();
                 ++nextUnfinishedPresent[j];
             }
@@ -1029,6 +1054,8 @@ void populatePresentFenceGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         config.bindImageMemory       = false;
         config.changePresentModes    = false;
         config.verifyFenceOrdering   = false;
+        config.nullHandles           = false;
+        config.swapchainMaintenance1 = true;
 
         // Basic present fence test
         addFunctionCase(&*presentModeGroup, "basic", presentFenceTest, config);
@@ -1047,7 +1074,17 @@ void populatePresentFenceGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
             config.verifyFenceOrdering = true;
             // Test ordering guarantee of present fence signals with multiple swapchains
             addFunctionCase(&*presentModeGroup, "mult_swapchain_ordering", presentFenceTest, config);
+
+            config.modes               = std::vector<VkPresentModeKHR>(5, presentModes[presentModeNdx].mode);
+            config.verifyFenceOrdering = false;
+            config.nullHandles         = true;
+            addFunctionCase(&*presentModeGroup, "null_handles", presentFenceTest, config);
         }
+
+        config.modes                 = std::vector<VkPresentModeKHR>(1, presentModes[presentModeNdx].mode);
+        config.nullHandles           = false;
+        config.swapchainMaintenance1 = false;
+        addFunctionCase(&*presentModeGroup, "maintenance1_disabled", presentFenceTest, config);
 
         testGroup->addChild(presentModeGroup.release());
     }
@@ -1103,7 +1140,7 @@ tcu::TestStatus presentModesQueryTest(Context &context, const PresentModesTestCo
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1257,6 +1294,8 @@ void populatePresentModesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
             config.bindImageMemory       = false;
             config.changePresentModes    = true;
             config.verifyFenceOrdering   = false;
+            config.nullHandles           = false;
+            config.swapchainMaintenance1 = true;
 
             // Switch between compatible modes
             addFunctionCase(&*presentModeGroup, "change_modes", presentFenceTest, config);
@@ -1313,6 +1352,8 @@ void populatePresentModesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
                     config.bindImageMemory       = false;
                     config.changePresentModes    = true;
                     config.verifyFenceOrdering   = false;
+                    config.nullHandles           = false;
+                    config.swapchainMaintenance1 = true;
 
                     addFunctionCase(&*heterogenousGroup, testName, presentFenceTest, config);
                 }
@@ -1362,7 +1403,7 @@ tcu::TestStatus scalingQueryTest(Context &context, const ScalingQueryTestConfig 
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1397,7 +1438,7 @@ tcu::TestStatus scalingQueryCompatibleModesTest(Context &context, const ScalingQ
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1465,7 +1506,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, true, false);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
     SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
@@ -1892,6 +1933,8 @@ void populateDeferredAllocGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         config.bindImageMemory       = false;
         config.changePresentModes    = false;
         config.verifyFenceOrdering   = false;
+        config.nullHandles           = false;
+        config.swapchainMaintenance1 = true;
 
         // Basic deferred allocation test
         addFunctionCase(&*presentModeGroup, "basic", presentFenceTest, config);
@@ -1942,7 +1985,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, true, false);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
 
