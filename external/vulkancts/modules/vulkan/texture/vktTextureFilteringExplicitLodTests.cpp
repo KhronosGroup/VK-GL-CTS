@@ -621,6 +621,7 @@ TestStatus TextureFilteringTestInstance::verify(void)
 
     for (uint32_t sampleNdx = 0; sampleNdx < m_numSamples; ++sampleNdx)
     {
+        m_context.getTestContext().touchWatchdog(); // touchWatchdog as this test can take a long time to run
         bool compareOK = verifier.verifySample(m_sampleArguments[sampleNdx], m_resultSamples[sampleNdx]);
         if (compareOK)
             continue;
