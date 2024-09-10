@@ -861,7 +861,8 @@ KHR-GL41.ext_texture_shadow_lod.texturelod.samplercubeshadow_fragment
 KHR-GL41.ext_texture_shadow_lod.texturelod.samplercubearrayshadow_fragment
 KHR-GL41.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_vertex
 KHR-GL41.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_fragment
-KHR-GL41.framebuffer_blit.framebuffer_blit_functionality_multisampled_to_singlesampled_blit
+KHR-GL41.framebuffer_blit.multisampled_to_singlesampled_blit
+KHR-GL41.framebuffer_blit.scissor_blit
 KHR-GL41.texture_lod_bias.texture_lod_bias_all
 KHR-GL41.buffer_objects.gen_buffers
 KHR-GL41.buffer_objects.triangles
