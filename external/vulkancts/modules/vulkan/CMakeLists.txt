@@ -267,7 +267,3 @@ if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
 	add_executable(vk-build-programs vktBuildPrograms.cpp)
 	target_link_libraries(vk-build-programs deqp-vk${MODULE_LIB_TARGET_POSTFIX})
 endif ()
-
-if(DE_OS_IS_ANDROID)
-	add_definitions(-DDEQP_EXCLUDE_VK_VIDEO_TESTS)
-endif()
