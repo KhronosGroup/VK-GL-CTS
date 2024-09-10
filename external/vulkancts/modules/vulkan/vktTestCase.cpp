@@ -1469,9 +1469,13 @@ void Context::resetCommandPoolForVKSC(const VkDevice device, const VkCommandPool
 
 ContextCommonData Context::getContextCommonData()
 {
-    return ContextCommonData{getInstanceInterface(), getDevice(),           getDeviceInterface(),
-                             getPhysicalDevice(),    getDefaultAllocator(), getUniversalQueueFamilyIndex(),
-                             getUniversalQueue()};
+    return ContextCommonData{
+        getPlatformInterface(), getInstanceInterface(),
+        getDeviceInterface(),   getInstance(),
+        getPhysicalDevice(),    getDevice(),
+        getDefaultAllocator(),  getUniversalQueueFamilyIndex(),
+        getUniversalQueue(),
+    };
 }
 
 #ifdef CTS_USES_VULKANSC

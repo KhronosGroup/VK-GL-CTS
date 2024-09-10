@@ -2837,6 +2837,24 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
     PipelineRenderingCreateInfoWrapper rendering, const VkPipelineCache partPipelineCache,
     VkPipelineCreationFeedbackCreateInfoEXT *partCreationFeedback)
 {
+    return setupPreRasterizationMeshShaderState2(
+        viewports, scissors, layout, renderPass, subpass, taskShader,
+        PipelineShaderStageModuleIdentifierCreateInfoWrapper(), meshShader,
+        PipelineShaderStageModuleIdentifierCreateInfoWrapper(), rasterizationState, taskSpecializationInfo,
+        meshSpecializationInfo, fragmentShadingRateState, rendering, partPipelineCache, partCreationFeedback);
+}
+
+GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShaderState2(
+    const std::vector<VkViewport> &viewports, const std::vector<VkRect2D> &scissors,
+    const PipelineLayoutWrapper &layout, const VkRenderPass renderPass, const uint32_t subpass,
+    const ShaderWrapper taskShader, PipelineShaderStageModuleIdentifierCreateInfoWrapper taskShaderModuleId,
+    const ShaderWrapper meshShader, PipelineShaderStageModuleIdentifierCreateInfoWrapper meshShaderModuleId,
+    const VkPipelineRasterizationStateCreateInfo *rasterizationState,
+    const VkSpecializationInfo *taskSpecializationInfo, const VkSpecializationInfo *meshSpecializationInfo,
+    VkPipelineFragmentShadingRateStateCreateInfoKHR *fragmentShadingRateState,
+    PipelineRenderingCreateInfoWrapper rendering, const VkPipelineCache partPipelineCache,
+    VkPipelineCreationFeedbackCreateInfoEXT *partCreationFeedback)
+{
     // Make sure pipeline was not already built.
     DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
 
@@ -2848,7 +2866,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
     m_internalData->pFragmentShadingRateState = fragmentShadingRateState;
     m_internalData->pRenderingState           = rendering;
 
-    const bool hasTask         = (taskShader.isSet());
+    const bool hasTask         = (taskShader.isSet() || taskShaderModuleId.ptr);
     const auto taskShaderCount = static_cast<uint32_t>(hasTask);
     const auto pRasterizationState =
         rasterizationState ?
@@ -2870,6 +2888,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
             nullptr, // const VkSpecializationInfo*            pSpecializationInfo
         });
 
+    VkPipelineCreateFlags shaderModuleIdFlags = 0u;
+
     // Mesh shader.
     auto currStage = m_internalData->pipelineShaderStages.begin();
     {
@@ -2886,6 +2906,16 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
         stageInfo.stage               = VK_SHADER_STAGE_MESH_BIT_EXT;
         stageInfo.module              = shaderModule;
         stageInfo.pSpecializationInfo = meshSpecializationInfo;
+
+        if (meshShaderModuleId.ptr)
+        {
+            m_internalData->pipelineShaderIdentifiers.emplace_back(
+                new PipelineShaderStageModuleIdentifierCreateInfoWrapper(meshShaderModuleId.ptr));
+            currStage->pNext = m_internalData->pipelineShaderIdentifiers.back().get()->ptr;
+
+            if (!meshShader.isSet())
+                shaderModuleIdFlags |= VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT;
+        }
 
         ++currStage;
     }
@@ -2905,6 +2935,16 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
         stageInfo.stage               = VK_SHADER_STAGE_TASK_BIT_EXT;
         stageInfo.module              = shaderModule;
         stageInfo.pSpecializationInfo = taskSpecializationInfo;
+
+        if (taskShaderModuleId.ptr)
+        {
+            m_internalData->pipelineShaderIdentifiers.emplace_back(
+                new PipelineShaderStageModuleIdentifierCreateInfoWrapper(taskShaderModuleId.ptr));
+            currStage->pNext = m_internalData->pipelineShaderIdentifiers.back().get()->ptr;
+
+            if (!taskShader.isSet())
+                shaderModuleIdFlags |= VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT;
+        }
 
         ++currStage;
     }
@@ -2937,6 +2977,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
         m_internalData->monolithicPipelineCreateInfo.stageCount          = 1u + taskShaderCount;
         m_internalData->monolithicPipelineCreateInfo.pStages             = m_internalData->pipelineShaderStages.data();
         m_internalData->monolithicPipelineCreateInfo.pTessellationState  = pTessellationState;
+        m_internalData->monolithicPipelineCreateInfo.flags |= shaderModuleIdFlags;
     }
     else
     {
@@ -2960,9 +3001,13 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
             dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
         }
 
-        auto &pipelinePartCreateInfo               = m_internalData->pipelinePartCreateInfo[1];
-        pipelinePartCreateInfo                     = initVulkanStructure(firstStructInChain);
-        pipelinePartCreateInfo.flags               = m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+        auto &pipelinePartCreateInfo = m_internalData->pipelinePartCreateInfo[1];
+        pipelinePartCreateInfo       = initVulkanStructure(firstStructInChain);
+
+        pipelinePartCreateInfo.flags =
+            (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | shaderModuleIdFlags);
+        // Remove VK_PIPELINE_CREATE_DERIVATIVE_BIT?
+
         pipelinePartCreateInfo.layout              = *layout;
         pipelinePartCreateInfo.renderPass          = renderPass;
         pipelinePartCreateInfo.subpass             = subpass;
@@ -2976,6 +3021,9 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
         if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
             pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
+        if ((shaderModuleIdFlags & VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT) != 0)
+            m_internalData->failOnCompileWhenLinking = true;
+
         if (m_internalData->pipelineFlags2)
         {
             auto &flags2CreateInfo = m_internalData->pipelinePartFlags2CreateInfo[1];
@@ -2984,8 +3032,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
             pipelinePartCreateInfo.flags = 0u;
         }
 
-        m_pipelineParts[1] = createGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache,
-                                                    &pipelinePartCreateInfo);
+        m_pipelineParts[1] = makeGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache,
+                                                  &pipelinePartCreateInfo);
     }
 
     return *this;

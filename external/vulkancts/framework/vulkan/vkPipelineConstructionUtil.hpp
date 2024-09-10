@@ -572,6 +572,19 @@ public:
         PipelineRenderingCreateInfoWrapper rendering                  = PipelineRenderingCreateInfoWrapper(),
         const VkPipelineCache partPipelineCache                       = VK_NULL_HANDLE,
         VkPipelineCreationFeedbackCreateInfoEXT *partCreationFeedback = nullptr);
+
+    GraphicsPipelineWrapper &setupPreRasterizationMeshShaderState2(
+        const std::vector<VkViewport> &viewports, const std::vector<VkRect2D> &scissors,
+        const PipelineLayoutWrapper &layout, const VkRenderPass renderPass, const uint32_t subpass,
+        const ShaderWrapper taskShader, PipelineShaderStageModuleIdentifierCreateInfoWrapper taskShaderModuleId,
+        const ShaderWrapper meshShader, PipelineShaderStageModuleIdentifierCreateInfoWrapper meshShaderModuleId,
+        const VkPipelineRasterizationStateCreateInfo *rasterizationState          = nullptr,
+        const VkSpecializationInfo *taskSpecializationInfo                        = nullptr,
+        const VkSpecializationInfo *meshSpecializationInfo                        = nullptr,
+        VkPipelineFragmentShadingRateStateCreateInfoKHR *fragmentShadingRateState = nullptr,
+        PipelineRenderingCreateInfoWrapper rendering                  = PipelineRenderingCreateInfoWrapper(),
+        const VkPipelineCache partPipelineCache                       = VK_NULL_HANDLE,
+        VkPipelineCreationFeedbackCreateInfoEXT *partCreationFeedback = nullptr);
 #endif // CTS_USES_VULKANSC
 
     // Setup fragment shader state.
