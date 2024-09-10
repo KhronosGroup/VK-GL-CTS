@@ -234,7 +234,7 @@ void addToChain(void **structThatStartsChain, void *structToAddAtTheEnd)
     // structure for multiple instances of GraphicsPipelineWrapper
     structToAddAtTheEndCasted->pNext = nullptr;
 
-    uint32_t safetyCouter = 10u;
+    uint32_t safetyCouter = 15u;
     void **structInChain  = structThatStartsChain;
 
     do
@@ -244,6 +244,11 @@ void addToChain(void **structThatStartsChain, void *structToAddAtTheEnd)
         {
             // attach new structure at the end
             *structInChain = structToAddAtTheEndCasted;
+            return;
+        }
+        else if (*structInChain == structToAddAtTheEnd)
+        {
+            // struct is already in the chain
             return;
         }
 
@@ -3153,12 +3158,6 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
     DE_UNREF(partCreationFeedback);
     DE_UNREF(partBinaries);
 
-    void *firstStructInChain = m_internalData->pFragmentShadingRateState;
-
-#ifndef CTS_USES_VULKANSC
-    addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
-#endif // CTS_USES_VULKANSC
-
     const auto pColorBlendState = colorBlendState ?
                                       colorBlendState :
                                       (m_internalData->useDefaultColorBlendState ? &defaultColorBlendState : nullptr);
@@ -3168,8 +3167,6 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
 
     if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
     {
-        void *pNextPtr = &m_internalData->monolithicPipelineCreateInfo;
-        addToChain(&pNextPtr, firstStructInChain);
         m_internalData->monolithicPipelineCreateInfo.flags |= m_internalData->pipelineFlags;
         m_internalData->monolithicPipelineCreateInfo.pColorBlendState  = pColorBlendState;
         m_internalData->monolithicPipelineCreateInfo.pMultisampleState = pMultisampleState;
@@ -3183,6 +3180,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
         auto &libraryCreateInfo = m_internalData->pipelinePartLibraryCreateInfo[3];
         libraryCreateInfo =
             makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT);
+        void *firstStructInChain = m_internalData->pFragmentShadingRateState;
+        addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
         addToChain(&firstStructInChain, &libraryCreateInfo);
         addToChain(&firstStructInChain, partCreationFeedback.ptr);
         addToChain(&firstStructInChain, partBinaries.ptr);
@@ -3929,8 +3928,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
         {
             state->representativeFragmentTestEnable = representativeFragment->representativeFragmentTestEnable;
         }
-        const auto fragmentShadingRate =
-            findStructure<VkPipelineFragmentShadingRateStateCreateInfoKHR>(pointerToCreateInfo->pNext);
+        const auto fragmentShadingRate = m_internalData->pFragmentShadingRateState;
         if (fragmentShadingRate)
         {
             state->fragmentShadingRateSize = fragmentShadingRate->fragmentSize;
@@ -4023,7 +4021,9 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
             // note: there might be other structures in the chain already
             void *firstStructInChain = static_cast<void *>(pointerToCreateInfo);
             addToChain(&firstStructInChain, creationFeedback.ptr);
+            addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
             addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
+            addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
             addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
             addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
             addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
