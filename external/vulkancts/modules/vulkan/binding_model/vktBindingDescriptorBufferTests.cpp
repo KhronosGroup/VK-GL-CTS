@@ -2285,10 +2285,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "VK_EXT_inline_uniform_block is not supported");
     }
 
-    const auto &descriptorBufferFeatures =
-        *findStructure<VkPhysicalDeviceDescriptorBufferFeaturesEXT>(&context.getDeviceFeatures2());
-    const auto &descriptorBufferProps =
-        *findStructure<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(&context.getDeviceProperties2());
+    const auto &descriptorBufferFeatures = context.getDescriptorBufferFeaturesEXT();
+    const auto &descriptorBufferProps    = context.getDescriptorBufferPropertiesEXT();
 
     if (!descriptorBufferFeatures.descriptorBuffer)
     {
@@ -3005,8 +3003,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     m_descriptorBufferFeatures       = descriptorBufferFeatures;
     m_descriptorBufferFeatures.pNext = nullptr;
 
-    m_descriptorBufferProperties =
-        *findStructure<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(&context.getDeviceProperties2());
+    m_descriptorBufferProperties       = context.getDescriptorBufferPropertiesEXT();
     m_descriptorBufferProperties.pNext = nullptr;
 
     VkDeviceCreateInfo createInfo      = initVulkanStructure(&features2);
@@ -5696,11 +5693,9 @@ tcu::TestStatus testLimits(Context &context)
 
     if (context.isDeviceFunctionalitySupported("VK_EXT_descriptor_buffer"))
     {
-        const auto &features =
-            *findStructure<VkPhysicalDeviceDescriptorBufferFeaturesEXT>(&context.getDeviceFeatures2());
-        const auto &props =
-            *findStructure<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(&context.getDeviceProperties2());
-        const bool hasRT = context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline") ||
+        const auto &features = context.getDescriptorBufferFeaturesEXT();
+        const auto &props    = context.getDescriptorBufferPropertiesEXT();
+        const bool hasRT     = context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline") ||
                            context.isDeviceFunctionalitySupported("VK_KHR_ray_query");
         const size_t maxResourceDescriptorSize = std::max(
             props.storageImageDescriptorSize,

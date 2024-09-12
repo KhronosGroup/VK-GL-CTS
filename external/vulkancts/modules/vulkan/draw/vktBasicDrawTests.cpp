@@ -799,8 +799,7 @@ void DrawTestCase<T>::checkSupport(Context &context) const
     if (m_data.groupParams.nestedSecondaryCmdBuffer)
     {
         context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
-        const auto &features =
-            *vk::findStructure<vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+        const auto &features = context.getNestedCommandBufferFeaturesEXT();
         if (!features.nestedCommandBuffer)
             TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
         if (!features.nestedCommandBufferRendering)

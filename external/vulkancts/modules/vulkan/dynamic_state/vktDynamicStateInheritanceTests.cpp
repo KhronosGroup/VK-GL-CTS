@@ -1168,8 +1168,7 @@ public:
         {
             context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
 #ifndef CTS_USES_VULKANSC
-            const auto &features =
-                *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+            const auto &features = context.getNestedCommandBufferFeaturesEXT();
             if (!features.nestedCommandBuffer)
 #endif // CTS_USES_VULKANSC
                 TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
