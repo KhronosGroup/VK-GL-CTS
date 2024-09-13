@@ -6676,7 +6676,7 @@ KHR-GL45.gpu_shader5.texture_gather_offset_color_clamp_to_edge
 KHR-GL45.gpu_shader5.texture_gather_offset_depth_clamp_border
 KHR-GL45.gpu_shader5.texture_gather_offset_depth_clamp_edge
 KHR-GL45.tessellation_shader.vertex.vertex_ordering
-KHR-GL45.tessellation_shader.vertex.vertex_spacing
+KHR-GL45.tessellation_shader.vertex.vertex_spacing*
 KHR-GL45.tessellation_shader.single.default_values_of_context_wide_properties
 KHR-GL45.tessellation_shader.single.isolines_tessellation
 KHR-GL45.tessellation_shader.single.ext_program_interface_query_dependency
