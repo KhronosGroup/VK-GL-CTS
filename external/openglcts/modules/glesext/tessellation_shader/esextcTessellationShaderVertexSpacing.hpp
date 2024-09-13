@@ -74,7 +74,10 @@ class TessellationShaderVertexSpacing : public TestCaseBase
 {
 public:
     /* Public methods */
-    TessellationShaderVertexSpacing(Context &context, const ExtParameters &extParams);
+    TessellationShaderVertexSpacing(Context &context, const ExtParameters &extParams,
+                                    _tessellation_primitive_mode primitive_mode,
+                                    _tessellation_shader_vertex_spacing vs_mode, _tessellation_levels tess_levels,
+                                    size_t test_index);
 
     virtual ~TessellationShaderVertexSpacing(void)
     {
@@ -346,6 +349,10 @@ private:
     glw::GLuint m_vao_id;
     _runs m_runs;
     TessellationShaderUtils *m_utils;
+
+    _tessellation_primitive_mode m_primitive_mode;
+    _tessellation_shader_vertex_spacing m_vs_mode;
+    _tessellation_levels m_tess_levels;
 };
 
 } // namespace glcts
