@@ -35,7 +35,6 @@ const vk::VkPhysicalDevice8BitStorageFeatures&								Context::get8BitStorageFea
 const vk::VkPhysicalDeviceShaderAtomicInt64Features&						Context::getShaderAtomicInt64Features						(void) const { return m_device->getShaderAtomicInt64Features();						}
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&							Context::getShaderClockFeatures								(void) const { return m_device->getShaderClockFeatures();							}
 const vk::VkPhysicalDeviceGlobalPriorityQueryFeatures&						Context::getGlobalPriorityQueryFeatures						(void) const { return m_device->getGlobalPriorityQueryFeatures();					}
-const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesNV&				Context::getComputeShaderDerivativesFeatures				(void) const { return m_device->getComputeShaderDerivativesFeatures();				}
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&								Context::getMeshShaderFeatures								(void) const { return m_device->getMeshShaderFeatures();							}
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&					Context::getShaderImageFootprintFeatures					(void) const { return m_device->getShaderImageFootprintFeatures();					}
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&						Context::getExclusiveScissorFeatures						(void) const { return m_device->getExclusiveScissorFeatures();						}
@@ -170,6 +169,7 @@ const vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT&			Context::get
 const vk::VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT&		Context::getDynamicRenderingUnusedAttachmentsFeaturesEXT	(void) const { return m_device->getDynamicRenderingUnusedAttachmentsFeaturesEXT();	}
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR&						Context::getCooperativeMatrixFeatures						(void) const { return m_device->getCooperativeMatrixFeatures();						}
 const vk::VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&			Context::getMultiviewPerViewRenderAreasFeaturesQCOM			(void) const { return m_device->getMultiviewPerViewRenderAreasFeaturesQCOM();		}
+const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR&				Context::getComputeShaderDerivativesFeatures				(void) const { return m_device->getComputeShaderDerivativesFeatures();				}
 const vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR&						Context::getVideoMaintenance1Features						(void) const { return m_device->getVideoMaintenance1Features();						}
 const vk::VkPhysicalDevicePerStageDescriptorSetFeaturesNV&					Context::getPerStageDescriptorSetFeaturesNV					(void) const { return m_device->getPerStageDescriptorSetFeaturesNV();				}
 const vk::VkPhysicalDeviceImageProcessing2FeaturesQCOM&						Context::getImageProcessing2FeaturesQCOM					(void) const { return m_device->getImageProcessing2FeaturesQCOM();					}

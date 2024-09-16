@@ -35,7 +35,6 @@ const vk::VkPhysicalDevice8BitStorageFeatures&								get8BitStorageFeatures				
 const vk::VkPhysicalDeviceShaderAtomicInt64Features&						getShaderAtomicInt64Features						(void) const;
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&							getShaderClockFeatures								(void) const;
 const vk::VkPhysicalDeviceGlobalPriorityQueryFeatures&						getGlobalPriorityQueryFeatures						(void) const;
-const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesNV&				getComputeShaderDerivativesFeatures					(void) const;
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&								getMeshShaderFeatures								(void) const;
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&					getShaderImageFootprintFeatures						(void) const;
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&						getExclusiveScissorFeatures							(void) const;
@@ -170,6 +169,7 @@ const vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT&			getPipelineL
 const vk::VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT&		getDynamicRenderingUnusedAttachmentsFeaturesEXT		(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR&						getCooperativeMatrixFeatures						(void) const;
 const vk::VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&			getMultiviewPerViewRenderAreasFeaturesQCOM			(void) const;
+const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR&				getComputeShaderDerivativesFeatures					(void) const;
 const vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR&						getVideoMaintenance1Features						(void) const;
 const vk::VkPhysicalDevicePerStageDescriptorSetFeaturesNV&					getPerStageDescriptorSetFeaturesNV					(void) const;
 const vk::VkPhysicalDeviceImageProcessing2FeaturesQCOM&						getImageProcessing2FeaturesQCOM						(void) const;

@@ -82,6 +82,7 @@ const VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&	getExtendedSparseA
 const VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&		getLegacyVertexAttributesPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT>();		}
 const VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			getShaderCoreBuiltinsPropertiesARM			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM>();			}
 const VkPhysicalDeviceCooperativeMatrixPropertiesKHR&			getCooperativeMatrixProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCooperativeMatrixPropertiesKHR>();				}
+const VkPhysicalDeviceComputeShaderDerivativesPropertiesKHR&	getComputeShaderDerivativesProperties		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceComputeShaderDerivativesPropertiesKHR>();		}
 const VkPhysicalDeviceImageProcessing2PropertiesQCOM&			getImageProcessing2PropertiesQCOM			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceImageProcessing2PropertiesQCOM>();				}
 const VkPhysicalDeviceVertexAttributeDivisorProperties&			getVertexAttributeDivisorProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceVertexAttributeDivisorProperties>();			}
 const VkPhysicalDeviceLayeredDriverPropertiesMSFT&				getLayeredDriverPropertiesMSFT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLayeredDriverPropertiesMSFT>();				}
