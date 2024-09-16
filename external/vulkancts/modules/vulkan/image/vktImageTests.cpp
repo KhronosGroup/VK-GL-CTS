@@ -88,6 +88,7 @@ void createChildren(tcu::TestCaseGroup *imageTests)
     imageTests->addChild(createImageHostImageCopyTests(testCtx));
 #endif // CTS_USES_VULKANSC
     imageTests->addChild(createImageDepthStencilSeparateTests(testCtx));
+    imageTests->addChild(createImageDeviceScopeAccessTests(testCtx));
 }
 
 } // namespace
