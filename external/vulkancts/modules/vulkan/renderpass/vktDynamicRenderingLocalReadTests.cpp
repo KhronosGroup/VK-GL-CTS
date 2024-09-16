@@ -29,6 +29,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuStringTemplate.hpp"
 
 #include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
@@ -1676,6 +1677,7 @@ void LocalReadTestCase::checkSupport(Context &context) const
     {
         if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||
             (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX) ||
+            (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX) ||
             (m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT))
             TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadDepthStencilAttachments not supported");
     }
@@ -1941,106 +1943,116 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
         //    "}\n");
         //glslSources.add("frag1") << glu::FragmentSource(fragSrc);
 
-        programCollection.spirvAsmSources.add("frag1") << "OpCapability Shader\n"
-                                                          "OpCapability InputAttachment\n"
-                                                          "%1 = OpExtInstImport \"GLSL.std.450\"\n"
-                                                          "OpMemoryModel Logical GLSL450\n"
-                                                          "OpEntryPoint Fragment %4 \"main\" %13\n"
-                                                          "OpExecutionMode %4 OriginUpperLeft\n"
-                                                          "OpDecorate %13 BuiltIn FragCoord\n"
-                                                          "OpDecorate %23 DescriptorSet 0\n"
-                                                          "OpDecorate %23 Binding 0\n"
-                                                          "OpDecorate %23 InputAttachmentIndex 0\n"
-                                                          "OpDecorate %34 DescriptorSet 0\n"
-                                                          "OpDecorate %34 Binding 1\n"
-                                                          "OpDecorate %34 InputAttachmentIndex 1\n"
-                                                          "OpDecorate %41 DescriptorSet 0\n"
-                                                          "OpDecorate %41 Binding 2\n"
-                                                          "OpDecorate %41 InputAttachmentIndex 2\n"
-                                                          "OpDecorate %47 ArrayStride 4\n"
-                                                          "OpMemberDecorate %48 0 NonReadable\n"
-                                                          "OpMemberDecorate %48 0 Offset 0\n"
-                                                          "OpDecorate %48 BufferBlock\n"
-                                                          "OpDecorate %50 DescriptorSet 1\n"
-                                                          "OpDecorate %50 Binding 0\n"
-                                                          "OpDecorate %62 DescriptorSet 0\n"
-                                                          "OpDecorate %62 Binding 3\n"
-                                                          //"OpDecorate %62 InputAttachmentIndex 3\n"
-                                                          "%2 = OpTypeVoid\n"
-                                                          "%3 = OpTypeFunction %2\n"
-                                                          "%6 = OpTypeInt 32 0\n"
-                                                          "%7 = OpTypeVector %6 2\n"
-                                                          "%8 = OpTypePointer Function %7\n"
-                                                          "%10 = OpTypeFloat 32\n"
-                                                          "%11 = OpTypeVector %10 4\n"
-                                                          "%12 = OpTypePointer Input %11\n"
-                                                          "%13 = OpVariable %12 Input\n"
-                                                          "%14 = OpTypeVector %10 2\n"
-                                                          "%19 = OpTypePointer Function %6\n"
-                                                          "%21 = OpTypeImage %6 SubpassData 0 0 0 2 Unknown\n"
-                                                          "%22 = OpTypePointer UniformConstant %21\n"
-                                                          "%23 = OpVariable %22 UniformConstant\n"
-                                                          "%25 = OpTypeInt 32 1\n"
-                                                          "%26 = OpConstant %25 0\n"
-                                                          "%27 = OpTypeVector %25 2\n"
-                                                          "%28 = OpConstantComposite %27 %26 %26\n"
-                                                          "%29 = OpTypeVector %6 4\n"
-                                                          "%31 = OpConstant %6 0\n"
-                                                          "%33 = OpConstant %6 2\n"
-                                                          "%34 = OpVariable %22 UniformConstant\n"
-                                                          "%40 = OpConstant %6 3\n"
-                                                          "%41 = OpVariable %22 UniformConstant\n"
-                                                          "%47 = OpTypeRuntimeArray %6\n"
-                                                          "%48 = OpTypeStruct %47\n"
-                                                          "%49 = OpTypePointer Uniform %48\n"
-                                                          "%50 = OpVariable %49 Uniform\n"
-                                                          "%53 = OpConstant %6 1\n"
-                                                          "%56 = OpConstant %6 16\n"
-                                                          "%60 = OpTypeImage %10 SubpassData 0 0 0 2 Unknown\n"
-                                                          "%61 = OpTypePointer UniformConstant %60\n"
-                                                          "%62 = OpVariable %61 UniformConstant\n"
-                                                          "%66 = OpConstant %10 1000\n"
-                                                          "%70 = OpTypePointer Uniform %6\n"
-                                                          "%4 = OpFunction %2 None %3\n"
-                                                          "%5 = OpLabel\n"
-                                                          "%9 = OpVariable %8 Function\n"
-                                                          "%20 = OpVariable %19 Function\n"
-                                                          "%15 = OpLoad %11 %13\n"
-                                                          "%16 = OpVectorShuffle %14 %15 %15 0 1\n"
-                                                          "%17 = OpExtInst %14 %1 Trunc %16\n"
-                                                          "%18 = OpConvertFToU %7 %17\n"
-                                                          "OpStore %9 %18\n"
-                                                          "%24 = OpLoad %21 %23\n"
-                                                          "%30 = OpImageRead %29 %24 %28\n"
-                                                          "%32 = OpCompositeExtract %6 %30 0\n"
-                                                          "%35 = OpLoad %21 %34\n"
-                                                          "%36 = OpImageRead %29 %35 %28\n"
-                                                          "%37 = OpCompositeExtract %6 %36 0\n"
-                                                          "%38 = OpIMul %6 %33 %37\n"
-                                                          "%39 = OpIAdd %6 %32 %38\n"
-                                                          "%42 = OpLoad %21 %41\n"
-                                                          "%43 = OpImageRead %29 %42 %28\n"
-                                                          "%44 = OpCompositeExtract %6 %43 0\n"
-                                                          "%45 = OpIMul %6 %40 %44\n"
-                                                          "%46 = OpIAdd %6 %39 %45\n"
-                                                          "OpStore %20 %46\n"
-                                                          "%51 = OpAccessChain %19 %9 %31\n"
-                                                          "%52 = OpLoad %6 %51\n"
-                                                          "%54 = OpAccessChain %19 %9 %53\n"
-                                                          "%55 = OpLoad %6 %54\n"
-                                                          "%57 = OpIMul %6 %55 %56\n"
-                                                          "%58 = OpIAdd %6 %52 %57\n"
-                                                          "%59 = OpLoad %6 %20\n"
-                                                          "%63 = OpLoad %60 %62\n"
-                                                          "%64 = OpImageRead %11 %63 %28\n"
-                                                          "%65 = OpCompositeExtract %10 %64 0\n"
-                                                          "%67 = OpFMul %10 %65 %66\n"
-                                                          "%68 = OpConvertFToU %6 %67\n"
-                                                          "%69 = OpIAdd %6 %59 %68\n"
-                                                          "%71 = OpAccessChain %70 %50 %26 %58\n"
-                                                          "OpStore %71 %69\n"
-                                                          "OpReturn\n"
-                                                          "OpFunctionEnd\n";
+        tcu::StringTemplate fragTemplate(R"(OpCapability Shader
+                                            OpCapability InputAttachment
+                                           %1 = OpExtInstImport "GLSL.std.450"
+                                           OpMemoryModel Logical GLSL450
+                                           OpEntryPoint Fragment %4 "main" %13
+                                           OpExecutionMode %4 OriginUpperLeft
+                                           OpDecorate %13 BuiltIn FragCoord
+                                           OpDecorate %23 DescriptorSet 0
+                                           OpDecorate %23 Binding 0
+                                           OpDecorate %23 InputAttachmentIndex 0
+                                           OpDecorate %34 DescriptorSet 0
+                                           OpDecorate %34 Binding 1
+                                           OpDecorate %34 InputAttachmentIndex 1
+                                           OpDecorate %41 DescriptorSet 0
+                                           OpDecorate %41 Binding 2
+                                           OpDecorate %41 InputAttachmentIndex 2
+                                           OpDecorate %47 ArrayStride 4
+                                           OpMemberDecorate %48 0 NonReadable
+                                           OpMemberDecorate %48 0 Offset 0
+                                           OpDecorate %48 BufferBlock
+                                           OpDecorate %50 DescriptorSet 1
+                                           OpDecorate %50 Binding 0
+                                           ${DECORATIONS:default=}
+                                           %2 = OpTypeVoid
+                                           %3 = OpTypeFunction %2
+                                           %6 = OpTypeInt 32 0
+                                           %7 = OpTypeVector %6 2
+                                           %8 = OpTypePointer Function %7
+                                           %10 = OpTypeFloat 32
+                                           %11 = OpTypeVector %10 4
+                                           %12 = OpTypePointer Input %11
+                                           %13 = OpVariable %12 Input
+                                           %14 = OpTypeVector %10 2
+                                           %19 = OpTypePointer Function %6
+                                           %21 = OpTypeImage %6 SubpassData 0 0 0 2 Unknown
+                                           %22 = OpTypePointer UniformConstant %21
+                                           %23 = OpVariable %22 UniformConstant
+                                           %25 = OpTypeInt 32 1
+                                           %26 = OpConstant %25 0
+                                           %27 = OpTypeVector %25 2
+                                           %28 = OpConstantComposite %27 %26 %26
+                                           %29 = OpTypeVector %6 4
+                                           %31 = OpConstant %6 0
+                                           %33 = OpConstant %6 2
+                                           %34 = OpVariable %22 UniformConstant
+                                           %40 = OpConstant %6 3
+                                           %41 = OpVariable %22 UniformConstant
+                                           %47 = OpTypeRuntimeArray %6
+                                           %48 = OpTypeStruct %47
+                                           %49 = OpTypePointer Uniform %48
+                                           %50 = OpVariable %49 Uniform
+                                           %53 = OpConstant %6 1
+                                           %56 = OpConstant %6 16
+                                           ${DECLARATIONS:default=}
+                                           %70 = OpTypePointer Uniform %6
+                                           %4 = OpFunction %2 None %3
+                                           %5 = OpLabel
+                                           %9 = OpVariable %8 Function
+                                           %20 = OpVariable %19 Function
+                                           %15 = OpLoad %11 %13
+                                           %16 = OpVectorShuffle %14 %15 %15 0 1
+                                           %17 = OpExtInst %14 %1 Trunc %16
+                                           %18 = OpConvertFToU %7 %17
+                                           OpStore %9 %18
+                                           %24 = OpLoad %21 %23
+                                           %30 = OpImageRead %29 %24 %28
+                                           %32 = OpCompositeExtract %6 %30 0
+                                           %35 = OpLoad %21 %34
+                                           %36 = OpImageRead %29 %35 %28
+                                           %37 = OpCompositeExtract %6 %36 0
+                                           %38 = OpIMul %6 %33 %37
+                                           %39 = OpIAdd %6 %32 %38
+                                           %42 = OpLoad %21 %41
+                                           %43 = OpImageRead %29 %42 %28
+                                           %44 = OpCompositeExtract %6 %43 0
+                                           %45 = OpIMul %6 %40 %44
+                                           %46 = OpIAdd %6 %39 %45
+                                           OpStore %20 %46
+                                           %51 = OpAccessChain %19 %9 %31
+                                           %52 = OpLoad %6 %51
+                                           %54 = OpAccessChain %19 %9 %53
+                                           %55 = OpLoad %6 %54
+                                           %57 = OpIMul %6 %55 %56
+                                           %58 = OpIAdd %6 %52 %57
+                                           %59 = OpLoad %6 %20
+                                           ${OPERATIONS:default=}
+                                           %71 = OpAccessChain %70 %50 %26 %58
+                                           OpStore %71 ${RESULT_ID:default=%59}
+                                           OpReturn
+                                           OpFunctionEnd)");
+
+        using SpecMap = std::map<std::string, std::string>;
+        const SpecMap specializationMap{{"DECORATIONS", "OpDecorate %62 DescriptorSet 0\n"
+                                                        "OpDecorate %62 Binding 3\n"},
+                                        {"DECLARATIONS", "%60 = OpTypeImage %10 SubpassData 0 0 0 2 Unknown\n"
+                                                         "%61 = OpTypePointer UniformConstant %60\n"
+                                                         "%62 = OpVariable %61 UniformConstant\n"
+                                                         "%66 = OpConstant %10 1000\n"},
+                                        {"OPERATIONS", "%63 = OpLoad %60 %62\n"
+                                                       "%64 = OpImageRead %11 %63 %28\n"
+                                                       "%65 = OpCompositeExtract %10 %64 0\n"
+                                                       "%67 = OpFMul %10 %65 %66\n"
+                                                       "%68 = OpConvertFToU %6 %67\n"
+                                                       "%69 = OpIAdd %6 %59 %68\n"},
+                                        {"RESULT_ID", "%69"}};
+        const SpecMap noDepthSpecializationMap; // use default values
+
+        auto &spirv = programCollection.spirvAsmSources;
+        spirv.add("frag1") << fragTemplate.specialize(specializationMap);
+        spirv.add("frag1_no_ds") << fragTemplate.specialize(noDepthSpecializationMap);
     }
     else if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||
              (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX))
