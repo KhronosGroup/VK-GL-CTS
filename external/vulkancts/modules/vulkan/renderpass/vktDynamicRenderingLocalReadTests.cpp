@@ -1805,7 +1805,15 @@ void LocalReadTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
 
-    if (m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE)
+    if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX)
+    {
+        const InstanceInterface &vki    = context.getInstanceInterface();
+        VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+        const auto &limits              = getPhysicalDeviceProperties(vki, physicalDevice).limits;
+        if (limits.maxPerStageDescriptorInputAttachments < 21)
+            TCU_THROW(NotSupportedError, "maxPerStageDescriptorInputAttachments is too small");
+    }
+    else if (m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE)
         context.requireDeviceFunctionality("VK_EXT_color_write_enable");
     else if (m_testType == TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY)
         context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
