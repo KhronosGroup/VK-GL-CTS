@@ -1078,6 +1078,80 @@ tcu::TestStatus validateLimits12(Context &context)
 
 #ifndef CTS_USES_VULKANSC
 
+tcu::TestStatus validateLimits14(Context &context)
+{
+    TestLog &log  = context.getTestContext().getLog();
+    bool limitsOk = true;
+
+    const auto &features2 = context.getDeviceFeatures2();
+    const auto &features  = features2.features;
+
+    const auto vk11Properties = context.getDeviceVulkan11Properties();
+    const auto vk12Properties = context.getDeviceVulkan12Properties();
+    const auto &properties2   = context.getDeviceProperties2();
+    const auto &limits        = properties2.properties.limits;
+
+    const VkBool32 checkAlways         = VK_TRUE;
+    const bool checkShaderSZINPreserve = vk11Properties.subgroupSize > 1;
+
+    VkShaderStageFlags subgroupSupportedStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkSubgroupFeatureFlags subgroupFeatureFlags =
+        VK_SUBGROUP_FEATURE_BASIC_BIT | VK_SUBGROUP_FEATURE_VOTE_BIT | VK_SUBGROUP_FEATURE_ARITHMETIC_BIT |
+        VK_SUBGROUP_FEATURE_BALLOT_BIT | VK_SUBGROUP_FEATURE_SHUFFLE_BIT | VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT;
+    if (vk11Properties.subgroupSize > 3)
+        subgroupFeatureFlags |= VK_SUBGROUP_FEATURE_QUAD_BIT;
+
+    FeatureLimitTableItem featureLimitTable[] = {
+        {PN(checkAlways), PN(limits.maxImageDimension1D), LIM_MIN_UINT32(8192)},
+        {PN(checkAlways), PN(limits.maxImageDimension2D), LIM_MIN_UINT32(8192)},
+        {PN(checkAlways), PN(limits.maxImageDimension3D), LIM_MIN_UINT32(512)},
+        {PN(checkAlways), PN(limits.maxImageDimensionCube), LIM_MIN_UINT32(8192)},
+        {PN(checkAlways), PN(limits.maxImageArrayLayers), LIM_MIN_UINT32(2048)},
+        {PN(checkAlways), PN(limits.maxUniformBufferRange), LIM_MIN_UINT32(65536)},
+        {PN(checkAlways), PN(limits.maxPushConstantsSize), LIM_MIN_UINT32(256)},
+        {PN(checkAlways), PN(limits.bufferImageGranularity), LIM_MIN_DEVSIZE(1)},
+        {PN(checkAlways), PN(limits.bufferImageGranularity), LIM_MAX_DEVSIZE(4096)},
+        {PN(checkAlways), PN(limits.maxBoundDescriptorSets), LIM_MIN_UINT32(7)},
+        {PN(checkAlways), PN(limits.maxPerStageDescriptorUniformBuffers), LIM_MIN_UINT32(15)},
+        {PN(checkAlways), PN(limits.maxPerStageResources), LIM_MIN_UINT32(200)},
+        {PN(checkAlways), PN(limits.maxDescriptorSetUniformBuffers), LIM_MIN_UINT32(90)},
+        {PN(checkAlways), PN(limits.maxDescriptorSetStorageBuffers), LIM_MIN_UINT32(96)},
+        {PN(checkAlways), PN(limits.maxDescriptorSetStorageImages), LIM_MIN_UINT32(144)},
+        {PN(checkAlways), PN(limits.maxFragmentCombinedOutputResources), LIM_MIN_UINT32(16)},
+        {PN(checkAlways), PN(limits.maxComputeWorkGroupInvocations), LIM_MIN_UINT32(256)},
+        {PN(checkAlways), PN(limits.maxComputeWorkGroupSize[0]), LIM_MIN_UINT32(256)},
+        {PN(checkAlways), PN(limits.maxComputeWorkGroupSize[1]), LIM_MIN_UINT32(256)},
+        {PN(checkAlways), PN(limits.maxComputeWorkGroupSize[2]), LIM_MIN_UINT32(64)},
+        {PN(checkAlways), PN(limits.subTexelPrecisionBits), LIM_MIN_UINT32(8)},
+        {PN(checkAlways), PN(limits.mipmapPrecisionBits), LIM_MIN_UINT32(6)},
+        {PN(checkAlways), PN(limits.maxSamplerLodBias), LIM_MIN_FLOAT(14.0f)},
+        {PN(checkAlways), PN(limits.maxColorAttachments), LIM_MIN_UINT32(8)},
+        {PN(checkAlways), PN(limits.timestampComputeAndGraphics), LIM_MIN_UINT32(1)},
+        {PN(checkAlways), PN(limits.standardSampleLocations), LIM_MIN_UINT32(1)},
+        {PN(features.largePoints), PN(limits.pointSizeRange[0]), LIM_MIN_FLOAT(0.0f)},
+        {PN(features.largePoints), PN(limits.pointSizeRange[0]), LIM_MAX_FLOAT(1.0f)},
+        {PN(features.largePoints), PN(limits.pointSizeRange[1]), LIM_MIN_FLOAT(256.0f - limits.pointSizeGranularity)},
+        {PN(features.largePoints), PN(limits.pointSizeGranularity), LIM_MIN_FLOAT(0.0f)},
+        {PN(features.largePoints), PN(limits.pointSizeGranularity), LIM_MAX_FLOAT(0.125f)},
+        {PN(features.wideLines), PN(limits.lineWidthGranularity), LIM_MIN_FLOAT(0.0f)},
+        {PN(features.wideLines), PN(limits.lineWidthGranularity), LIM_MAX_FLOAT(0.5f)},
+        {PN(checkAlways), PN(vk11Properties.subgroupSupportedStages), LIM_MIN_UINT32(subgroupSupportedStages)},
+        {PN(checkAlways), PN(vk11Properties.subgroupSupportedOperations), LIM_MIN_UINT32(subgroupFeatureFlags)},
+        {PN(checkShaderSZINPreserve), PN(vk12Properties.shaderSignedZeroInfNanPreserveFloat16), LIM_MIN_UINT32(1)},
+        {PN(checkShaderSZINPreserve), PN(vk12Properties.shaderSignedZeroInfNanPreserveFloat32), LIM_MIN_UINT32(1)},
+    };
+
+    log << TestLog::Message << limits << TestLog::EndMessage;
+
+    for (uint32_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+        limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+    if (limitsOk)
+        return tcu::TestStatus::pass("pass");
+
+    return tcu::TestStatus::fail("fail");
+}
+
 void checkSupportKhrPushDescriptor(Context &context)
 {
     context.requireDeviceFunctionality("VK_KHR_push_descriptor");
@@ -8385,6 +8459,17 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
                         validateLimitsKhrMaintenance4);
         addFunctionCase(limitsValidationTests.get(), "max_inline_uniform_total_size", checkApiVersionSupport<1, 3>,
                         validateLimitsMaxInlineUniformTotalSize);
+#endif // CTS_USES_VULKANSC
+
+        infoTests->addChild(limitsValidationTests.release());
+    }
+
+    {
+        de::MovePtr<tcu::TestCaseGroup> limitsValidationTests(
+            new tcu::TestCaseGroup(testCtx, "vulkan1p4_limits_validation"));
+
+#ifndef CTS_USES_VULKANSC
+        addFunctionCase(limitsValidationTests.get(), "general", checkApiVersionSupport<1, 4>, validateLimits14);
 #endif // CTS_USES_VULKANSC
 
         infoTests->addChild(limitsValidationTests.release());
