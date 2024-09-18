@@ -855,7 +855,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *readPipelineLayout, 0u, 2u,
                                  descriptorSets, 0u, nullptr);
 
-        if (m_useMapping && m_colorAttachmentInputIndices[pipelineIndex].size() > 0)
+        if (m_useMapping)
             vk.cmdSetRenderingInputAttachmentIndices(cmdBuffer, &renderingInputAttachmentIndexInfo);
 
         vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
