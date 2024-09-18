@@ -46,6 +46,8 @@ set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesTestsUtil.hpp
 	vktSparseResourcesTransferQueueTests.cpp
 	vktSparseResourcesTransferQueueTests.hpp
+	vktSparseResourcesMultisampledImageSparseBinding.cpp
+	vktSparseResourcesMultisampledImageSparseBinding.hpp
 	)
 
 PCH(DEQP_VK_SPARSE_RESOURCES_SRCS ../pch.cpp)

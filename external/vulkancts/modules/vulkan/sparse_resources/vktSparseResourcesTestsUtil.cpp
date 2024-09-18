@@ -859,6 +859,8 @@ std::string getImageFormatID(VkFormat format)
         return "r8";
     case VK_FORMAT_R16_UNORM:
         return "r16";
+    case VK_FORMAT_R32_SFLOAT:
+        return "r32f";
 
     case VK_FORMAT_R8G8_SINT:
         return "rg8i";
@@ -901,6 +903,10 @@ std::string getImageFormatID(VkFormat format)
         return "rgba8";
     case VK_FORMAT_R16G16B16A16_UNORM:
         return "rgba16";
+    case VK_FORMAT_R16G16B16A16_SFLOAT:
+        return "rgba16f";
+    case VK_FORMAT_R32G32B32A32_SFLOAT:
+        return "rgba32f";
 
     case VK_FORMAT_G8B8G8R8_422_UNORM:
     case VK_FORMAT_B8G8R8G8_422_UNORM:

@@ -27,6 +27,7 @@
 #include "vktSparseResourcesImageAlignedMipSize.hpp"
 #include "vktSparseResourcesImageBlockShapes.hpp"
 #include "vktSparseResourcesMipmapSparseResidency.hpp"
+#include "vktSparseResourcesMultisampledImageSparseBinding.hpp"
 #include "vktSparseResourcesImageMemoryAliasing.hpp"
 #include "vktSparseResourcesShaderIntrinsics.hpp"
 #include "vktSparseResourcesImageRebind.hpp"
@@ -53,6 +54,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     sparseTests->addChild(createDeviceGroupImageSparseResidencyTests(testCtx));
     sparseTests->addChild(createMipmapSparseResidencyTests(testCtx));
     sparseTests->addChild(createDeviceGroupMipmapSparseResidencyTests(testCtx));
+    sparseTests->addChild(createSparseResourcesMultisampledImageSparseBindingTests(testCtx));
     sparseTests->addChild(createImageSparseMemoryAliasingTests(testCtx));
     sparseTests->addChild(createDeviceGroupImageSparseMemoryAliasingTests(testCtx));
     sparseTests->addChild(createSparseResourcesShaderIntrinsicsTests(testCtx));
