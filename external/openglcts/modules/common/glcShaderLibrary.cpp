@@ -44,12 +44,6 @@ using std::vector;
 
 using namespace glu;
 
-#if 0
-#define PARSE_DBG(X) printf X
-#else
-#define PARSE_DBG(X) DE_NULL_STATEMENT
-#endif
-
 namespace deqp
 {
 namespace sl
@@ -804,8 +798,6 @@ void ShaderParser::parseValueElement(DataType expectedDataType, ShaderCase::Valu
 
 void ShaderParser::parseValue(ShaderCase::ValueBlock &valueBlock)
 {
-    PARSE_DBG(("      parseValue()\n"));
-
     // Parsed results.
     ShaderCase::Value result;
 
@@ -878,7 +870,6 @@ void ShaderParser::parseValue(ShaderCase::ValueBlock &valueBlock)
 
 void ShaderParser::parseValueBlock(ShaderCase::ValueBlock &valueBlock)
 {
-    PARSE_DBG(("    parseValueBlock()\n"));
     advanceToken(TOKEN_VALUES);
     advanceToken(TOKEN_LEFT_BRACE);
 
@@ -911,7 +902,6 @@ void ShaderParser::parseValueBlock(ShaderCase::ValueBlock &valueBlock)
 void ShaderParser::parseShaderCase(vector<tcu::TestNode *> &shaderNodeList)
 {
     // Parse 'case'.
-    PARSE_DBG(("  parseShaderCase()\n"));
     advanceToken(TOKEN_CASE);
 
     // Parse case name.
@@ -1059,7 +1049,6 @@ void ShaderParser::parseShaderCase(vector<tcu::TestNode *> &shaderNodeList)
 void ShaderParser::parseShaderGroup(vector<tcu::TestNode *> &shaderNodeList)
 {
     // Parse 'case'.
-    PARSE_DBG(("  parseShaderGroup()\n"));
     advanceToken(TOKEN_GROUP);
 
     // Parse case name.
@@ -1105,7 +1094,6 @@ vector<tcu::TestNode *> ShaderParser::parse(const char *input)
     vector<tcu::TestNode *> nodeList;
 
     // Parse all cases.
-    PARSE_DBG(("parse()\n"));
     for (;;)
     {
         if (m_curToken == TOKEN_CASE)

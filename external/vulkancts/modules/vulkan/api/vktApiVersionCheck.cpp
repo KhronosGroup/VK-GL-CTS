@@ -502,8 +502,8 @@ private:
         const uint32_t startingQuantity = failsQuantity;
         for (uint32_t ndx = 0u; ndx < testsArr.size(); ++ndx)
         {
-            if (deStringEqual(testsArr[ndx].first, "vkGetInstanceProcAddr") ||
-                deStringEqual(testsArr[ndx].first, "vkEnumerateInstanceVersion"))
+            if (strcmp(testsArr[ndx].first, "vkGetInstanceProcAddr") == 0 ||
+                strcmp(testsArr[ndx].first, "vkEnumerateInstanceVersion") == 0)
                 continue;
 
             const char *functionName    = testsArr[ndx].first;
@@ -547,14 +547,14 @@ private:
             const auto &funcType  = testsArr[ndx].second;
             const auto apiVersion = m_context.getUsedApiVersion();
 
-            if (deStringEqual(funcName, "vkGetInstanceProcAddr") && apiVersion < VK_API_VERSION_1_2)
+            if (strcmp(funcName, "vkGetInstanceProcAddr") == 0 && apiVersion < VK_API_VERSION_1_2)
                 continue;
 
             // VK_KHR_draw_indirect_count was promoted to core in Vulkan 1.2, but these entrypoints are not mandatory unless the
             // device supports the extension. In that case, the drawIndirectCount feature bit will also be true. Any of the two
             // checks is valid. We use the extension name for convenience here.
-            if ((deStringEqual(funcName, "vkCmdDrawIndirectCount") ||
-                 deStringEqual(funcName, "vkCmdDrawIndexedIndirectCount")) &&
+            if ((strcmp(funcName, "vkCmdDrawIndirectCount") == 0 ||
+                 strcmp(funcName, "vkCmdDrawIndexedIndirectCount") == 0) &&
                 !isSupportedDeviceExt("VK_KHR_draw_indirect_count", apiVersion))
                 continue;
 
@@ -562,7 +562,7 @@ private:
             // - VK_KHR_push_descriptor is supported AND
             //   - API >= VK_VERSION_1_1 OR
             //   - VK_KHR_descriptor_update_template is supported
-            if (deStringEqual(funcName, "vkCmdPushDescriptorSetWithTemplateKHR") &&
+            if (strcmp(funcName, "vkCmdPushDescriptorSetWithTemplateKHR") == 0 &&
                 (!isSupportedDeviceExt("VK_KHR_push_descriptor", apiVersion) ||
                  (apiVersion < VK_API_VERSION_1_1 &&
                   !isSupportedDeviceExt("VK_KHR_descriptor_update_template", apiVersion))))

@@ -198,7 +198,7 @@ void verifyDriverSupport(const uint32_t apiVersion, const vk::VkPhysicalDeviceFe
         {
             for (size_t requiredExtNdx = 0; requiredExtNdx < extensionNames.size(); requiredExtNdx++)
             {
-                if (deStringEqual(deviceExtensions[deviceExtNdx].c_str(), extensionNames[requiredExtNdx].c_str()))
+                if (deviceExtensions[deviceExtNdx] == extensionNames[requiredExtNdx])
                 {
                     --numExtensionsNeeded;
                     break;

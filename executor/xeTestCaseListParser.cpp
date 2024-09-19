@@ -44,7 +44,7 @@ static TestCaseType getTestCaseType(const char *caseType)
 
     for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_caseTypeMap); ndx++)
     {
-        if (deStringEqual(caseType, s_caseTypeMap[ndx].name))
+        if (strcmp(caseType, s_caseTypeMap[ndx].name) == 0)
             return s_caseTypeMap[ndx].caseType;
     }
 
@@ -89,7 +89,7 @@ void TestCaseListParser::parse(const uint8_t *bytes, int numBytes)
             bool isStart         = element == xml::ELEMENT_START;
             const char *elemName = m_xmlParser.getElementName();
 
-            if (deStringEqual(elemName, "TestCase"))
+            if (strcmp(elemName, "TestCase") == 0)
             {
                 if (isStart)
                 {
@@ -106,7 +106,7 @@ void TestCaseListParser::parse(const uint8_t *bytes, int numBytes)
                     XE_CHECK_MSG(parent->getNodeType() == TESTNODETYPE_GROUP,
                                  "Only TestGroups are allowed to have child nodes");
 
-                    bool isGroup = deStringEqual(caseType, "TestGroup") == true;
+                    bool isGroup = strcmp(caseType, "TestGroup") == 0;
                     TestNode *node =
                         isGroup ? static_cast<TestNode *>(static_cast<TestGroup *>(parent)->createGroup(name)) :
                                   static_cast<TestNode *>(
@@ -120,7 +120,7 @@ void TestCaseListParser::parse(const uint8_t *bytes, int numBytes)
                     m_nodeStack.pop_back();
                 }
             }
-            else if (deStringEqual(elemName, "TestCaseList"))
+            else if (strcmp(elemName, "TestCaseList") == 0)
             {
                 if (isStart)
                 {

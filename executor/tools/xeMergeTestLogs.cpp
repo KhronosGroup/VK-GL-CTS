@@ -191,9 +191,9 @@ static bool parseCommandLine(CommandLine &cmdLine, int argc, const char *const *
                 return false;
             cmdLine.dstFilename = arg + 6;
         }
-        else if (deStringEqual(arg, "--info=first"))
+        else if (strcmp(arg, "--info=first") == 0)
             cmdLine.flags &= ~FLAG_USE_LAST_INFO;
-        else if (deStringEqual(arg, "--info=last"))
+        else if (strcmp(arg, "--info=last") == 0)
             cmdLine.flags |= FLAG_USE_LAST_INFO;
         else
             return false;

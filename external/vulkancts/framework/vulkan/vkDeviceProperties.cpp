@@ -175,7 +175,7 @@ bool DeviceProperties::contains(const std::string &property, bool throwIfNotExis
 {
     for (const auto f : m_properties)
     {
-        if (deStringEqual(f->getPropertyDesc().name, property.c_str()))
+        if (strcmp(f->getPropertyDesc().name, property.c_str()) == 0)
             return true;
     }
 

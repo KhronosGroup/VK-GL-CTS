@@ -111,7 +111,7 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
 
     for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
     {
-        if (deStringEqual(extensions[extNdx].extensionName, "VK_KHR_buffer_device_address"))
+        if (strcmp(extensions[extNdx].extensionName, "VK_KHR_buffer_device_address") == 0)
         {
             khrBufferDeviceAddress = true;
             break;
@@ -125,12 +125,12 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         excludeExtension = false;
 
         // VK_EXT_buffer_device_address is deprecated and must not be enabled if VK_KHR_buffer_device_address is enabled
-        if (khrBufferDeviceAddress && deStringEqual(extName, "VK_EXT_buffer_device_address"))
+        if (khrBufferDeviceAddress && strcmp(extName, "VK_EXT_buffer_device_address") == 0)
             continue;
 
         for (int exclusionsNdx = 0; exclusionsNdx < DE_LENGTH_OF_ARRAY(exclusions); exclusionsNdx++)
         {
-            if (deStringEqual(extName, exclusions[exclusionsNdx]))
+            if (strcmp(extName, exclusions[exclusionsNdx]) == 0)
             {
                 excludeExtension = true;
                 break;

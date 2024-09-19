@@ -266,22 +266,22 @@ static const char *qpLookupString(const qpKeyStringMap *keyMap, int keyMapSize, 
 
 DE_INLINE void int32ToString(int val, char buf[32])
 {
-    deSprintf(&buf[0], 32, "%d", val);
+    snprintf(&buf[0], 32, "%d", val);
 }
 
 DE_INLINE void int64ToString(int64_t val, char buf[32])
 {
-    deSprintf(&buf[0], 32, "%lld", (long long int)val);
+    snprintf(&buf[0], 32, "%lld", (long long int)val);
 }
 
 DE_INLINE void floatToString(float value, char *buf, size_t bufSize)
 {
-    deSprintf(buf, bufSize, "%f", value);
+    snprintf(buf, bufSize, "%f", value);
 }
 
 DE_INLINE void doubleToString(double value, char *buf, size_t bufSize)
 {
-    deSprintf(buf, bufSize, "%f", value);
+    snprintf(buf, bufSize, "%f", value);
 }
 
 static bool endSession(qpTestLog *log)

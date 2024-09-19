@@ -341,15 +341,6 @@ extern "C"
 #define DE_BREAKPOINT() DE_FATAL("Software breakpoint encountered!")
 #endif
 
-/** Swap two values. */
-#define DE_SWAP(TYPE, A, B) \
-    do                      \
-    {                       \
-        TYPE _tmp_ = (A);   \
-        (A)        = (B);   \
-        (B)        = _tmp_; \
-    } while (false)
-
 /** Used in enum to easify declarations for struct serialization. Declares 'NAME'_OFFSET, 'NAME'_SIZE, and offsets counter for next enum value by SIZE. */
 #define DE_SERIALIZED_FIELD(NAME, SIZE) NAME##_OFFSET, NAME##_SIZE = (SIZE), _DE_TMP_##NAME = NAME##_OFFSET + (SIZE)-1
 
@@ -390,16 +381,6 @@ extern "C"
 #else
 #define DE_BEGIN_EXTERN_C
 #define DE_END_EXTERN_C
-#endif
-
-/** DE_NULL_STATEMENT */
-#if defined(DE_DEBUG)
-#define DE_NULL_STATEMENT \
-    do                    \
-    {                     \
-    } while (false)
-#else
-#define DE_NULL_STATEMENT (void)0
 #endif
 
 /** GCC format string attributes */

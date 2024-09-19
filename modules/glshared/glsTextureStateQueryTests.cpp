@@ -215,7 +215,7 @@ private:
 void RequiredExtensions::add(const char *ext)
 {
     for (int ndx = 0; ndx < (int)m_extensions.size(); ++ndx)
-        if (deStringEqual(m_extensions[ndx], ext) == true)
+        if (strcmp(m_extensions[ndx], ext) == 0)
             return;
     m_extensions.push_back(ext);
 }

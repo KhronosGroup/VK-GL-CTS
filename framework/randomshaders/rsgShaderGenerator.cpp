@@ -83,7 +83,7 @@ const ValueEntry *findByName(VariableManager &varManager, const char *name)
     for (; iter != end; iter++)
     {
         const ValueEntry *entry = *iter;
-        if (deStringEqual(entry->getVariable()->getName(), name))
+        if (strcmp(entry->getVariable()->getName(), name) == 0)
             return entry;
     }
     return nullptr;

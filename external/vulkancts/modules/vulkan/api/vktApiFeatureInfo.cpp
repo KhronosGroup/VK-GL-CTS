@@ -3061,7 +3061,7 @@ tcu::TestStatus deviceProperties(Context &context)
     }
 
     // Check if deviceName string is properly terminated.
-    if (deStrnlen(props->deviceName, VK_MAX_PHYSICAL_DEVICE_NAME_SIZE) == VK_MAX_PHYSICAL_DEVICE_NAME_SIZE)
+    if (memchr(props->deviceName, '\0', VK_MAX_PHYSICAL_DEVICE_NAME_SIZE) == nullptr)
     {
         log << TestLog::Message << "deviceProperties - VkPhysicalDeviceProperties deviceName not properly initialized"
             << TestLog::EndMessage;

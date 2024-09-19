@@ -697,7 +697,7 @@ static void genCompareOp(ostringstream &output, const char *dstVec4Var, const Sh
         if (val.storageType == ShaderCase::Value::STORAGE_OUTPUT)
         {
             // Check if we're only interested in one variable (then skip if not the right one).
-            if (checkVarName && !deStringEqual(valueName, checkVarName))
+            if (checkVarName && strcmp(valueName, checkVarName) != 0)
                 continue;
 
             // Prefix.

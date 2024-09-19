@@ -49,7 +49,7 @@ enum TestType
 
 DE_INLINE bool isNullTerminated(const char *str, const uint32_t maxSize)
 {
-    return deStrnlen(str, maxSize) < maxSize;
+    return memchr(str, '\0', maxSize) != nullptr;
 }
 
 DE_INLINE bool operator==(const VkConformanceVersion &a, const VkConformanceVersion &b)

@@ -58,7 +58,7 @@ static inline int64_t toInt64(const char *str)
 
 static inline bool toBool(const char *str)
 {
-    return deStringEqual(str, "OK") || deStringEqual(str, "True");
+    return strcmp(str, "OK") == 0 || strcmp(str, "True") == 0;
 }
 
 static const char *stripLeadingWhitespace(const char *str)
@@ -200,7 +200,7 @@ static inline int getEnumValue(const char *enumName, const EnumMapEntry *entries
 
     for (int ndx = 0; ndx < numEntries; ndx++)
     {
-        if (entries[ndx].hash == hash && deStringEqual(entries[ndx].name, name))
+        if (entries[ndx].hash == hash && strcmp(entries[ndx].name, name) == 0)
             return entries[ndx].value;
     }
 
@@ -449,7 +449,7 @@ void TestResultParser::handleElementStart(void)
     if (m_state == STATE_INITIALIZED)
     {
         // Expect TestCaseResult.
-        if (!deStringEqual(elemName, "TestCaseResult"))
+        if (strcmp(elemName, "TestCaseResult") != 0)
             throw TestResultParseError(string("Expected <TestCaseResult>, got <") + elemName + ">");
 
         const char *version = getAttribute("Version");
@@ -732,7 +732,7 @@ void TestResultParser::handleElementEnd(void)
     if (m_state != STATE_IN_TEST_CASE_RESULT)
         throw TestResultParseError(string("Unexpected </") + elemName + "> outside of <TestCaseResult>");
 
-    if (deStringEqual(elemName, "TestCaseResult"))
+    if (strcmp(elemName, "TestCaseResult") == 0)
     {
         // Logs from buggy test cases may contain invalid XML.
         // DE_ASSERT(getCurrentItem() == nullptr);

@@ -5860,7 +5860,7 @@ static void addProgramInputOutputResourceListCase(Context &context,
 {
     ResourceListTestCase *const resourceListCase = new ResourceListTestCase(context, parentStructure, programInterface);
 
-    DE_ASSERT(deStringEqual(name, resourceListCase->getName()));
+    DE_ASSERT(strcmp(name, resourceListCase->getName()) == 0);
     DE_UNREF(name);
     targetGroup->addChild(resourceListCase);
 }
@@ -5931,7 +5931,7 @@ static void generateProgramInputLocationBlockContents(Context &context,
                            (parentStructure);
     const glu::ShaderType firstStage = getShaderMaskFirstStage(presentShadersMask);
 
-    const bool inBlockArray = true == deStringEqual("block_array", targetGroup->getName());
+    const bool inBlockArray = strcmp("block_array", targetGroup->getName()) == 0;
 
     if (firstStage == glu::SHADERTYPE_VERTEX)
     {
@@ -6172,7 +6172,7 @@ static void generateProgramOutputLocationBlockContents(Context &context,
                            (parentStructure);
     const glu::ShaderType lastStage = getShaderMaskLastStage(presentShadersMask);
 
-    const bool inBlockArray = true == deStringEqual("block_array", targetGroup->getName());
+    const bool inBlockArray = strcmp("block_array", targetGroup->getName()) == 0;
 
     if (lastStage == glu::SHADERTYPE_VERTEX || lastStage == glu::SHADERTYPE_GEOMETRY ||
         lastStage == glu::SHADERTYPE_TESSELLATION_EVALUATION || !inDefaultBlock)

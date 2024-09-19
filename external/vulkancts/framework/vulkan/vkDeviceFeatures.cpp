@@ -279,11 +279,11 @@ bool DeviceFeatures::verifyFeatureAddCriteria(const FeatureStructCreationData &i
                                               const std::vector<VkExtensionProperties> &properties)
 {
 #ifndef CTS_USES_VULKANSC
-    if (deStringEqual(item.name, VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME))
+    if (strcmp(item.name, VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME) == 0)
     {
         for (const auto &property : properties)
         {
-            if (deStringEqual(property.extensionName, item.name))
+            if (strcmp(property.extensionName, item.name) == 0)
                 return (property.specVersion == item.specVersion);
         }
     }
@@ -299,7 +299,7 @@ bool DeviceFeatures::contains(const std::string &feature, bool throwIfNotExists)
 {
     for (const auto f : m_features)
     {
-        if (deStringEqual(f->getFeatureDesc().name, feature.c_str()))
+        if (strcmp(f->getFeatureDesc().name, feature.c_str()) == 0)
             return true;
     }
 
