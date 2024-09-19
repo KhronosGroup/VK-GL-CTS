@@ -494,7 +494,18 @@ public:
     virtual void setDynamicState(void)
     {
         vk::VkRect2D scissor = vk::makeRect2D(tcu::UVec2(WIDTH, HEIGHT));
-        m_vk.cmdSetScissor(*m_cmdBuffer, 0, 1, &scissor);
+        if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
+        {
+#ifndef CTS_USES_VULKANSC
+            m_vk.cmdSetScissorWithCount(*m_cmdBuffer, 1, &scissor);
+#else
+            m_vk.cmdSetScissorWithCountEXT(*m_cmdBuffer, 1, &scissor);
+#endif
+        }
+        else
+        {
+            m_vk.cmdSetScissor(*m_cmdBuffer, 0, 1, &scissor);
+        }
     }
 
     virtual tcu::TestStatus verifyResults(void)

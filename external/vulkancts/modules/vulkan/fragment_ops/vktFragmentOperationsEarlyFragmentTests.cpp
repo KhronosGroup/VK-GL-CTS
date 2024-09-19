@@ -2732,6 +2732,9 @@ void EarlyFragmentSampleCountTest::checkSupport(Context &context) const
     if ((formatProperties.sampleCounts & m_testParams.sampleCount) == 0)
         TCU_THROW(NotSupportedError, "Format does not support this number of samples for depth format");
 
+    if (!context.getDeviceFeatures().occlusionQueryPrecise)
+        TCU_THROW(NotSupportedError, "Precise occlusion queries are not supported");
+
 #ifndef CTS_USES_VULKANSC
     if (m_testParams.earlyAndLate)
     {
