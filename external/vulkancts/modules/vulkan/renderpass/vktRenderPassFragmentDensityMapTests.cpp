@@ -2608,11 +2608,6 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             inheritanceRenderingInfo.rasterizationSamples    = m_testParams.colorSamples;
             vk.beginCommandBuffer(*m_subsampledImageSecCmdBuffer, &commandBufBeginParams);
             drawSubsampledImage(*m_subsampledImageSecCmdBuffer);
-            if (m_testParams.makeCopy)
-            {
-                remapingBeforeCopySubsampledImage(*m_subsampledImageSecCmdBuffer);
-                drawCopySubsampledImage(*m_subsampledImageSecCmdBuffer);
-            }
             endCommandBuffer(vk, *m_subsampledImageSecCmdBuffer);
 
             if (m_testParams.subsampledLoads)
@@ -2923,6 +2918,11 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
         de::MovePtr<tcu::TestCaseGroup> viewGroup(new tcu::TestCaseGroup(testCtx, view.name.c_str()));
         for (const auto &render : renders)
         {
+            if ((groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) && render.makeCopy &&
+                groupParams->useSecondaryCmdBuffer &&
+                (groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass == false))
+                continue;
+
             de::MovePtr<tcu::TestCaseGroup> renderGroup(new tcu::TestCaseGroup(testCtx, render.name.c_str()));
             for (const auto &size : sizes)
             {
