@@ -7007,7 +7007,6 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan14(Context &context)
         {{"shaderExpectAssume"}, vulkan14Features.shaderExpectAssume},
         {{"bresenhamLines"}, vulkan14Features.bresenhamLines},
         {{"vertexAttributeInstanceRateDivisor"}, vulkan14Features.vertexAttributeInstanceRateDivisor},
-        {{"vertexAttributeInstanceRateZeroDivisor"}, vulkan14Features.vertexAttributeInstanceRateZeroDivisor},
         {{"indexTypeUint8"}, vulkan14Features.indexTypeUint8},
         {{"dynamicRenderingLocalRead"}, vulkan14Features.dynamicRenderingLocalRead},
         {{"maintenance5"}, vulkan14Features.maintenance5},
