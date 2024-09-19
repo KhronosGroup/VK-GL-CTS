@@ -211,7 +211,7 @@ void RayQueryStressCase::initPrograms(vk::SourceCollections &programCollection) 
                "gl_RayQueryCandidateIntersectionAABBEXT)\n"
                "       {\n"
                "           float t = rayQueryGetIntersectionPrimitiveIndexEXT(rayQuery, false) - index + 0.5f;\n"
-               "           if (t < rayQueryGetIntersectionTEXT(rayQuery, true))"
+               "           if (t > 0 && t < rayQueryGetIntersectionTEXT(rayQuery, true))"
                "           {\n"
                "                rayQueryGenerateIntersectionEXT(rayQuery, t);\n"
                "           }\n"
