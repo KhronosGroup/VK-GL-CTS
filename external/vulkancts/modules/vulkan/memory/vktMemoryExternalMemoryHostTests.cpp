@@ -162,7 +162,6 @@ public:
 
 protected:
     virtual tcu::TestStatus iterate(void);
-    void prepareBufferForHostAccess(VkDeviceSize size);
     void copyResultBuffertoBuffer(VkDeviceSize size);
     void submitCommands(VkCommandBuffer commandBuffer, VkFence fence);
     Move<VkBuffer> createDataBuffer(VkDeviceSize size, VkBufferUsageFlags usage);
@@ -862,7 +861,6 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate()
     //record first command buffer
     beginCommandBuffer(m_vkd, *m_cmdBuffer);
     fillBuffer(dataBufferSize);
-    prepareBufferForHostAccess(dataBufferSize);
     endCommandBuffer(m_vkd, *m_cmdBuffer);
 
     //record second command buffer
@@ -943,13 +941,13 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
-void ExternalMemoryHostSynchronizationTestInstance::prepareBufferForHostAccess(VkDeviceSize size)
+void ExternalMemoryHostSynchronizationTestInstance::copyResultBuffertoBuffer(VkDeviceSize size)
 {
-    const VkBufferMemoryBarrier bufferBarrier = {
+    VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
         DE_NULL,                                 // const void* pNext;
-        VK_ACCESS_TRANSFER_WRITE_BIT,            // VkAccessFlags srcAccessMask;
-        VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags dstAccessMask;
+        VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags srcAccessMask;
+        VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                 // uint32_t dstQueueFamilyIndex;
         *m_dataBuffer,                           // VkBuffer buffer;
@@ -957,12 +955,9 @@ void ExternalMemoryHostSynchronizationTestInstance::prepareBufferForHostAccess(V
         size                                     // VkDeviceSize size;
     };
 
-    m_vkd.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, false, 0u,
-                             DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
-}
+    m_vkd.cmdPipelineBarrier(*m_cmdBufferCopy, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, false, 0u,
+                             nullptr, 1u, &bufferBarrier, 0u, nullptr);
 
-void ExternalMemoryHostSynchronizationTestInstance::copyResultBuffertoBuffer(VkDeviceSize size)
-{
     const VkBufferCopy region_all = {
         0,   //VkDeviceSize srcOffset;
         0,   //VkDeviceSize dstOffset;
@@ -970,6 +965,13 @@ void ExternalMemoryHostSynchronizationTestInstance::copyResultBuffertoBuffer(VkD
     };
 
     m_vkd.cmdCopyBuffer(*m_cmdBufferCopy, *m_dataBuffer, *m_resultBuffer, 1, &region_all);
+
+    bufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    bufferBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+    bufferBarrier.buffer        = *m_resultBuffer;
+
+    m_vkd.cmdPipelineBarrier(*m_cmdBufferCopy, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, false, 0u,
+                             nullptr, 1u, &bufferBarrier, 0u, nullptr);
 }
 
 void ExternalMemoryHostSynchronizationTestInstance::submitCommands(VkCommandBuffer commandBuffer, VkFence fence)
@@ -1011,7 +1013,7 @@ Move<VkBuffer> ExternalMemoryHostSynchronizationTestInstance::createDataBuffer(V
 
 void ExternalMemoryHostSynchronizationTestInstance::fillBuffer(VkDeviceSize size)
 {
-    const VkBufferMemoryBarrier bufferBarrier = {
+    VkBufferMemoryBarrier bufferBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
         DE_NULL,                                 // const void* pNext;
         0u,                                      // VkAccessFlags srcAccessMask;
@@ -1025,7 +1027,14 @@ void ExternalMemoryHostSynchronizationTestInstance::fillBuffer(VkDeviceSize size
 
     m_vkd.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, false, 0u,
                              DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+
     m_vkd.cmdFillBuffer(*m_cmdBuffer, *m_dataBuffer, 0, size, 0xFFFFFFFF);
+
+    bufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    bufferBarrier.dstAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+
+    m_vkd.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, false, 0u,
+                             nullptr, 1u, &bufferBarrier, 0u, nullptr);
 }
 
 void ExternalMemoryHostSynchronizationTestInstance::verifyBufferProperties(VkBufferUsageFlags usage)
