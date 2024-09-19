@@ -104,6 +104,17 @@
                 "mandatory_variant": [
                     "vulkan"
                 ]
+            },
+            {
+                "features": [
+                    "pushDescriptor"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
             }
         ]
     }

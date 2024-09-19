@@ -171,11 +171,13 @@ void verifyDriverSupport(const uint32_t apiVersion, const vk::VkPhysicalDeviceFe
     switch (updateMethod)
     {
     case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH:
-        extensionNames.push_back("VK_KHR_push_descriptor");
+        if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_push_descriptor"))
+            extensionNames.push_back("VK_KHR_push_descriptor");
         break;
 
     case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE:
-        extensionNames.push_back("VK_KHR_push_descriptor");
+        if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_push_descriptor"))
+            extensionNames.push_back("VK_KHR_push_descriptor");
     // Fallthrough
     case DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE:
         if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_descriptor_update_template"))

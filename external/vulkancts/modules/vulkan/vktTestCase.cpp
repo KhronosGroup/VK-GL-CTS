@@ -1012,6 +1012,8 @@ bool Context::isDeviceFunctionalitySupported(const std::string &extension) const
                 return !!vk14Features.pipelineProtectedAccess;
             if (extension == "VK_EXT_pipeline_robustness")
                 return !!vk14Features.pipelineRobustness;
+            if (extension == "VK_KHR_push_descriptor")
+                return !!vk14Features.pushDescriptor;
 #endif // CTS_USES_VULKANSC
 
 #ifdef CTS_USES_VULKANSC
