@@ -82,6 +82,7 @@ const vk::VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&	Context::getEx
 const vk::VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&		Context::getLegacyVertexAttributesPropertiesEXT		(void) const { return m_device->getLegacyVertexAttributesPropertiesEXT();		}
 const vk::VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			Context::getShaderCoreBuiltinsPropertiesARM			(void) const { return m_device->getShaderCoreBuiltinsPropertiesARM();			}
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesKHR&			Context::getCooperativeMatrixProperties				(void) const { return m_device->getCooperativeMatrixProperties();				}
+const vk::VkPhysicalDeviceComputeShaderDerivativesPropertiesKHR&	Context::getComputeShaderDerivativesProperties		(void) const { return m_device->getComputeShaderDerivativesProperties();		}
 const vk::VkPhysicalDeviceImageProcessing2PropertiesQCOM&			Context::getImageProcessing2PropertiesQCOM			(void) const { return m_device->getImageProcessing2PropertiesQCOM();			}
 const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&		Context::getVertexAttributeDivisorProperties		(void) const { return m_device->getVertexAttributeDivisorProperties();			}
 const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&				Context::getLayeredDriverPropertiesMSFT				(void) const { return m_device->getLayeredDriverPropertiesMSFT();				}

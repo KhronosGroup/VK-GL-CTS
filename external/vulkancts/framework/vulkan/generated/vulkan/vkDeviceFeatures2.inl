@@ -1244,6 +1244,44 @@ tcu::TestStatus testPhysicalDeviceFeatureTransformFeedbackFeaturesEXT (Context& 
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureComputeShaderDerivativesFeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+	VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR	deviceComputeShaderDerivativesFeaturesKHR[count];
+	const bool											isComputeShaderDerivativesFeaturesKHR = checkExtension(properties, "VK_KHR_compute_shader_derivatives");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceComputeShaderDerivativesFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR));
+		deviceComputeShaderDerivativesFeaturesKHR[ndx].sType = isComputeShaderDerivativesFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceComputeShaderDerivativesFeaturesKHR[ndx].pNext = nullptr;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceComputeShaderDerivativesFeaturesKHR[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isComputeShaderDerivativesFeaturesKHR)
+		log << TestLog::Message << deviceComputeShaderDerivativesFeaturesKHR[0] << TestLog::EndMessage;
+
+	if (isComputeShaderDerivativesFeaturesKHR &&
+		(deviceComputeShaderDerivativesFeaturesKHR[0].computeDerivativeGroupQuads != deviceComputeShaderDerivativesFeaturesKHR[1].computeDerivativeGroupQuads ||
+		 deviceComputeShaderDerivativesFeaturesKHR[0].computeDerivativeGroupLinear != deviceComputeShaderDerivativesFeaturesKHR[1].computeDerivativeGroupLinear))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureMeshShaderFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -5609,6 +5647,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "vertex_attribute_divisor_features_khr", testPhysicalDeviceFeatureVertexAttributeDivisorFeaturesKHR);
 	addFunctionCase(testGroup, "astc_decode_features_ext", testPhysicalDeviceFeatureASTCDecodeFeaturesEXT);
 	addFunctionCase(testGroup, "transform_feedback_features_ext", testPhysicalDeviceFeatureTransformFeedbackFeaturesEXT);
+	addFunctionCase(testGroup, "compute_shader_derivatives_features_khr", testPhysicalDeviceFeatureComputeShaderDerivativesFeaturesKHR);
 	addFunctionCase(testGroup, "mesh_shader_features_ext", testPhysicalDeviceFeatureMeshShaderFeaturesEXT);
 	addFunctionCase(testGroup, "acceleration_structure_features_khr", testPhysicalDeviceFeatureAccelerationStructureFeaturesKHR);
 	addFunctionCase(testGroup, "ray_tracing_pipeline_features_khr", testPhysicalDeviceFeatureRayTracingPipelineFeaturesKHR);
