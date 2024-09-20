@@ -1706,6 +1706,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsm8bitStorageTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmCompositeInsertTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmComputeShaderCase.cpp",
+        "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmComputeShaderDerivativesTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmComputeShaderTestUtil.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmConditionalBranchTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmCrossStageInterfaceTests.cpp",
