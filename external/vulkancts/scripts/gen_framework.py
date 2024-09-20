@@ -2558,6 +2558,9 @@ def writeDeviceFeatures2(api, filename):
 
     existingStructures = list(filter(structInAPI, testedStructures)) # remove features not found in API ( important for Vulkan SC )
     testedStructureDetail = [StructureDetail(struct) for struct in existingStructures]
+    # list of partially promoted extensions that are not marked in vk.xml as partially promoted in extension definition
+    # note: for VK_EXT_host_image_copy there is a comment in require section for vk1.4
+    partiallyPromotedExtensions = ['VK_EXT_pipeline_protected_access', 'VK_EXT_host_image_copy']
     # iterate over all searched structures and find extensions that enabled them
     for structureDetail in testedStructureDetail:
         try:
@@ -2567,8 +2570,8 @@ def writeDeviceFeatures2(api, filename):
                     for extensionStructure in requirement.newTypes:
                         if extensionStructure.name in structureDetail.nameList:
                             structureDetail.extension = extension.name
-                            if extension.promotedto is not None and extension.partiallyPromoted is False:
-                                # check if extension was promoted to vulkan version or other extension
+                            if extension.promotedto is not None and extension.partiallyPromoted is False and extension.name not in partiallyPromotedExtensions:
+                                # check if extension was promoted to vulkan version or other extension;
                                 if 'VK_VERSION' in extension.promotedto:
                                     versionSplit = extension.promotedto.split('_')
                                     structureDetail.api = 0 if api.apiName == "vulkan" else 1
@@ -2581,7 +2584,7 @@ def writeDeviceFeatures2(api, filename):
             continue
     structureDetailToRemove = []
     for structureDetail in testedStructureDetail:
-        if structureDetail.major is not None:
+        if structureDetail.major is not None or structureDetail.extension in partiallyPromotedExtensions:
             continue
         # if structure was not added with extension then check if
         # it was added directly with one of vulkan versions
@@ -3368,7 +3371,7 @@ def writeMandatoryFeatures(api, filename):
                    '\t\t\t|| isCoreDeviceExtension(usedApiVersion, extension));',
                    '}',
                    '',
-                   'bool checkMandatoryFeatures(const vkt::Context& context)\n{',
+                   'bool checkBasicMandatoryFeatures(const vkt::Context& context)\n{',
                    '\tif (!context.isInstanceFunctionalitySupported("VK_KHR_get_physical_device_properties2"))',
                    '\t\tTCU_THROW(NotSupportedError, "Extension VK_KHR_get_physical_device_properties2 is not present");',
                    '',

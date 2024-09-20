@@ -9,7 +9,7 @@ bool canUseFeaturesStruct (const vector<VkExtensionProperties>& deviceExtensions
 			|| isCoreDeviceExtension(usedApiVersion, extension));
 }
 
-bool checkMandatoryFeatures(const vkt::Context& context)
+bool checkBasicMandatoryFeatures(const vkt::Context& context)
 {
 	if (!context.isInstanceFunctionalitySupported("VK_KHR_get_physical_device_properties2"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_get_physical_device_properties2 is not present");

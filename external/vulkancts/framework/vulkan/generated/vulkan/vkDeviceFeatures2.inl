@@ -3618,7 +3618,7 @@ tcu::TestStatus testPhysicalDeviceFeatureHostImageCopyFeatures (Context& context
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
 	VkPhysicalDeviceHostImageCopyFeatures	deviceHostImageCopyFeatures[count];
-	const bool								isHostImageCopyFeatures = checkExtension(properties, "VK_EXT_host_image_copy") || context.contextSupports(vk::ApiVersion(0, 1, 4, 0));
+	const bool								isHostImageCopyFeatures = checkExtension(properties, "VK_EXT_host_image_copy");
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -3768,7 +3768,7 @@ tcu::TestStatus testPhysicalDeviceFeaturePipelineProtectedAccessFeatures (Contex
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
 	VkPhysicalDevicePipelineProtectedAccessFeatures	devicePipelineProtectedAccessFeatures[count];
-	const bool										isPipelineProtectedAccessFeatures = checkExtension(properties, "VK_EXT_pipeline_protected_access") || context.contextSupports(vk::ApiVersion(0, 1, 4, 0));
+	const bool										isPipelineProtectedAccessFeatures = checkExtension(properties, "VK_EXT_pipeline_protected_access");
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{

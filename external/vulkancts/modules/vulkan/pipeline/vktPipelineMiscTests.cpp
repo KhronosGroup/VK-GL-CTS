@@ -1868,14 +1868,14 @@ tcu::TestStatus PipelineNoRenderingTestInstance::iterate()
         (VkPipelineRasterizationStateCreateFlags)0,                 // VkPipelineRasterizationStateCreateFlags  flags;
         VK_FALSE,                // VkBool32                                 depthClampEnable;
         VK_FALSE,                // VkBool32                                 rasterizerDiscardEnable;
-        VK_POLYGON_MODE_FILL,    // VkPolygonMode							polygonMode;
-        VK_CULL_MODE_NONE,       // VkCullModeFlags							cullMode;
-        VK_FRONT_FACE_CLOCKWISE, // VkFrontFace								frontFace;
-        VK_FALSE,                // VkBool32									depthBiasEnable;
-        0.0f,                    // float									depthBiasConstantFactor;
-        0.0f,                    // float									depthBiasClamp;
-        0.0f,                    // float									depthBiasSlopeFactor;
-        1.0f,                    // float									lineWidth;
+        VK_POLYGON_MODE_FILL,    // VkPolygonMode polygonMode;
+        VK_CULL_MODE_NONE,       // VkCullModeFlags cullMode;
+        VK_FRONT_FACE_CLOCKWISE, // VkFrontFace frontFace;
+        VK_FALSE,                // VkBool32 depthBiasEnable;
+        0.0f,                    // float depthBiasConstantFactor;
+        0.0f,                    // float depthBiasClamp;
+        0.0f,                    // float depthBiasSlopeFactor;
+        1.0f,                    // float lineWidth;
     };
 
     const auto &binaries  = m_context.getBinaryCollection();

@@ -8611,8 +8611,7 @@ tcu::TestStatus DepthStencilMSAA::iterate(void)
                     subResourceRange);                                // VkImageSubresourceRange    subresourceRange
 
                 vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStages, (VkDependencyFlags)0, 0,
-                                      nullptr, 0, nullptr, 1,
-                                      &postClearBarrier);
+                                      nullptr, 0, nullptr, 1, &postClearBarrier);
 
                 beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer,
                                 makeRect2D(0, 0, m_srcImage.extent.width, m_srcImage.extent.height), 1u,

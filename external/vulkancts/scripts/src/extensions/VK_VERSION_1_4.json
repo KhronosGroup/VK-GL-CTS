@@ -52,28 +52,6 @@
             },
             {
                 "features": [
-                    "pipelineProtectedAccess"
-                ],
-                "requirements": [
-                    "ApiVersion(0, 1, 4, 0)"
-                ],
-                "mandatory_variant": [
-                    "vulkan"
-                ]
-            },
-            {
-                "features": [
-                    "hostImageCopy"
-                ],
-                "requirements": [
-                    "ApiVersion(0, 1, 4, 0)"
-                ],
-                "mandatory_variant": [
-                    "vulkan"
-                ]
-            },
-            {
-                "features": [
                     "maintenance5"
                 ],
                 "requirements": [

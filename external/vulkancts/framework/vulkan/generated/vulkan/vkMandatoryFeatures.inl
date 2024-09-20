@@ -9,7 +9,7 @@ bool canUseFeaturesStruct (const vector<VkExtensionProperties>& deviceExtensions
 			|| isCoreDeviceExtension(usedApiVersion, extension));
 }
 
-bool checkMandatoryFeatures(const vkt::Context& context)
+bool checkBasicMandatoryFeatures(const vkt::Context& context)
 {
 	if (!context.isInstanceFunctionalitySupported("VK_KHR_get_physical_device_properties2"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_get_physical_device_properties2 is not present");
@@ -3415,28 +3415,6 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( ( physicalDeviceVulkan14Features.rectangularLines == VK_FALSE ) && ( physicalDeviceVulkan14Features.bresenhamLines == VK_FALSE ) && ( physicalDeviceVulkan14Features.smoothLines == VK_FALSE ) && ( physicalDeviceVulkan14Features.stippledRectangularLines == VK_FALSE ) && ( physicalDeviceVulkan14Features.stippledBresenhamLines == VK_FALSE ) && ( physicalDeviceVulkan14Features.stippledSmoothLines == VK_FALSE ) )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature rectangularLines or bresenhamLines or smoothLines or stippledRectangularLines or stippledBresenhamLines or stippledSmoothLines not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-#endif // defined(CTS_USES_VULKAN)
-
-#if defined(CTS_USES_VULKAN)
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
-	{
-		if ( physicalDeviceVulkan14Features.pipelineProtectedAccess == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature pipelineProtectedAccess not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-#endif // defined(CTS_USES_VULKAN)
-
-#if defined(CTS_USES_VULKAN)
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
-	{
-		if ( physicalDeviceVulkan14Features.hostImageCopy == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature hostImageCopy not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
