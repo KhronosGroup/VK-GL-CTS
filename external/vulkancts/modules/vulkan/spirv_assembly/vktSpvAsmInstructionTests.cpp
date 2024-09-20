@@ -90,6 +90,7 @@
 #ifndef CTS_USES_VULKANSC
 #include "vktSpvAsmFloatControls2Tests.hpp"
 #include "vktSpvAsmIntegerDotProductTests.hpp"
+#include "vktSpvAsmComputeShaderDerivativesTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktSpvAsmPhysicalStorageBufferPointerTests.hpp"
 #include "vktSpvAsmRawAccessChainTests.hpp"
@@ -21276,6 +21277,7 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     computeTests->addChild(create64bitCompareComputeGroup(testCtx));
 #ifndef CTS_USES_VULKANSC
     computeTests->addChild(createOpArrayLengthComputeGroup(testCtx));
+    computeTests->addChild(createComputeShaderDerivativesTests(testCtx));
 #endif // CTS_USES_VULKANSC
     computeTests->addChild(createPhysicalStorageBufferTestGroup(testCtx));
     computeTests->addChild(createOpMulExtendedGroup(testCtx));

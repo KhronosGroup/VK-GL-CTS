@@ -11,6 +11,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_bind_memory2",
 	"VK_KHR_buffer_device_address",
 	"VK_KHR_calibrated_timestamps",
+	"VK_KHR_compute_shader_derivatives",
 	"VK_KHR_cooperative_matrix",
 	"VK_KHR_copy_commands2",
 	"VK_KHR_create_renderpass2",
