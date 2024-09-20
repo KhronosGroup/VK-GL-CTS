@@ -133,7 +133,14 @@ uint32_t minVulkanAPIVersion(uint32_t lhs, uint32_t rhs)
     for (auto it = begin(commonPredecessors); it != end(commonPredecessors); ++it)
         if (isApiVersionPredecessor(rhs, *it) && isApiVersionPredecessor(lhs, *it))
             return *it;
-    return 0;
+
+#ifndef CTS_USES_VULKANSC
+    // If we got to this point, it means we are dealing with an unknown version.
+    // We assume it to be valid, and we default to VK_API_MAX_FRAMEWORK_VERSION which is generated from the spec.
+    return VK_API_MAX_FRAMEWORK_VERSION;
+#else
+    return VKSC_API_MAX_FRAMEWORK_VERSION;
+#endif
 }
 
 } // namespace vk

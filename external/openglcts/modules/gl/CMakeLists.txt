@@ -5,6 +5,8 @@ set(GLCTS_GL_SRCS
 	gl3cCommonBugsTests.hpp
 	gl3cTestPackages.cpp
 	gl3cTestPackages.hpp
+	gl3cGetUniform.cpp
+	gl3cGetUniform.hpp
 	gl3cGPUShader5Tests.cpp
 	gl3cGPUShader5Tests.hpp
 	gl3cGLSLnoperspectiveTests.cpp

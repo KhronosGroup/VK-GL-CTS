@@ -861,7 +861,8 @@ KHR-GL44.ext_texture_shadow_lod.texturelod.samplercubeshadow_fragment
 KHR-GL44.ext_texture_shadow_lod.texturelod.samplercubearrayshadow_fragment
 KHR-GL44.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_vertex
 KHR-GL44.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_fragment
-KHR-GL44.framebuffer_blit.framebuffer_blit_functionality_multisampled_to_singlesampled_blit
+KHR-GL44.framebuffer_blit.multisampled_to_singlesampled_blit
+KHR-GL44.framebuffer_blit.scissor_blit
 KHR-GL44.texture_lod_bias.texture_lod_bias_all
 KHR-GL44.buffer_objects.gen_buffers
 KHR-GL44.buffer_objects.triangles
@@ -870,6 +871,7 @@ KHR-GL44.buffer_objects.multi_texture
 KHR-GL44.buffer_objects.sub_data
 KHR-GL44.transform_feedback2.transform_feedback2_states
 KHR-GL44.api.coverage
+KHR-GL44.get_uniform_tests.get_uniform
 KHR-GL44.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL44.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL44.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp

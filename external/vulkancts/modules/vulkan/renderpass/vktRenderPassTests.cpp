@@ -4631,7 +4631,7 @@ bool logAndVerifyImages(TestLog &log, const DeviceInterface &vk, VkDevice device
         if (!attachmentIsLazy[attachmentNdx])
         {
             bool attachmentOK               = true;
-            const Attachment attachment     = renderPassInfo.getAttachments()[attachmentNdx];
+            const Attachment &attachment    = renderPassInfo.getAttachments()[attachmentNdx];
             const tcu::TextureFormat format = mapVkFormat(attachment.getFormat());
 
             if (tcu::hasDepthComponent(format.order) && tcu::hasStencilComponent(format.order))
@@ -4658,15 +4658,14 @@ bool logAndVerifyImages(TestLog &log, const DeviceInterface &vk, VkDevice device
                         tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), targetSize.x(),
                         targetSize.y());
 
-                    if (renderPassInfo.getAttachments()[attachmentNdx].getStoreOp() == VK_ATTACHMENT_STORE_OP_STORE &&
+                    if (attachment.getStoreOp() == VK_ATTACHMENT_STORE_OP_STORE &&
                         !verifyDepthAttachment(referenceValues[attachmentNdx], depthAccess, depthErrorImage.getAccess(),
                                                config.depthValues, requiredDepthEpsilon(attachment.getFormat())))
                     {
                         depthOK = false;
                     }
 
-                    if (renderPassInfo.getAttachments()[attachmentNdx].getStencilStoreOp() ==
-                            VK_ATTACHMENT_STORE_OP_STORE &&
+                    if (attachment.getStencilStoreOp() == VK_ATTACHMENT_STORE_OP_STORE &&
                         !verifyStencilAttachment(referenceValues[attachmentNdx], stencilAccess,
                                                  stencilErrorImage.getAccess()))
                     {
@@ -4723,9 +4722,8 @@ bool logAndVerifyImages(TestLog &log, const DeviceInterface &vk, VkDevice device
 
                 if (tcu::hasDepthComponent(format.order))
                 {
-                    if ((renderPassInfo.getAttachments()[attachmentNdx].getStoreOp() == VK_ATTACHMENT_STORE_OP_STORE ||
-                         renderPassInfo.getAttachments()[attachmentNdx].getStencilStoreOp() ==
-                             VK_ATTACHMENT_STORE_OP_STORE) &&
+                    if ((attachment.getStoreOp() == VK_ATTACHMENT_STORE_OP_STORE ||
+                         attachment.getStencilStoreOp() == VK_ATTACHMENT_STORE_OP_STORE) &&
                         !verifyDepthAttachment(referenceValues[attachmentNdx], access, errorImage.getAccess(),
                                                config.depthValues, requiredDepthEpsilon(attachment.getFormat())))
                     {
@@ -4734,9 +4732,8 @@ bool logAndVerifyImages(TestLog &log, const DeviceInterface &vk, VkDevice device
                 }
                 else if (tcu::hasStencilComponent(format.order))
                 {
-                    if ((renderPassInfo.getAttachments()[attachmentNdx].getStoreOp() == VK_ATTACHMENT_STORE_OP_STORE ||
-                         renderPassInfo.getAttachments()[attachmentNdx].getStencilStoreOp() ==
-                             VK_ATTACHMENT_STORE_OP_STORE) &&
+                    if ((attachment.getStoreOp() == VK_ATTACHMENT_STORE_OP_STORE ||
+                         attachment.getStencilStoreOp() == VK_ATTACHMENT_STORE_OP_STORE) &&
                         !verifyStencilAttachment(referenceValues[attachmentNdx], access, errorImage.getAccess()))
                     {
                         stencilOK = false;
@@ -4744,9 +4741,7 @@ bool logAndVerifyImages(TestLog &log, const DeviceInterface &vk, VkDevice device
                 }
                 else
                 {
-                    if ((renderPassInfo.getAttachments()[attachmentNdx].getStoreOp() == VK_ATTACHMENT_STORE_OP_STORE ||
-                         renderPassInfo.getAttachments()[attachmentNdx].getStencilStoreOp() ==
-                             VK_ATTACHMENT_STORE_OP_STORE) &&
+                    if ((attachment.getStoreOp() == VK_ATTACHMENT_STORE_OP_STORE) &&
                         !verifyColorAttachment(referenceValues[attachmentNdx], access, errorImage.getAccess(),
                                                config.useFormatCompCount))
                     {
@@ -6637,7 +6632,16 @@ void addAttachmentAllocationTests(tcu::TestCaseGroup *group, const TestConfigExt
     for (size_t allocationTypeNdx = 0; allocationTypeNdx < DE_LENGTH_OF_ARRAY(allocationTypes); allocationTypeNdx++)
     {
         const AllocationType allocationType = allocationTypes[allocationTypeNdx];
-        const size_t testCaseCount          = 100;
+
+        // all generated cases for input_output_chain and input_output groups have at least
+        // one attachment that has storeop/loadop=DONTCARE;
+        // for dynamic rendering we need to skip all those cases because this permits to
+        // store random data to unused attachment and this is the case on tiling GPUs
+        if (testConfigExternal.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING &&
+            ((allocationType == ALLOCATIONTYPE_IO_CHAIN) || (allocationType == ALLOCATIONTYPE_IO_GENERIC)))
+            continue;
+
+        const size_t testCaseCount = 100;
         de::MovePtr<tcu::TestCaseGroup> allocationTypeGroup(
             new tcu::TestCaseGroup(testCtx, allocationTypeStr[allocationTypeNdx]));
 
@@ -7552,6 +7556,13 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
 
                 for (size_t storeOpNdx = 0; storeOpNdx < DE_LENGTH_OF_ARRAY(storeOps); storeOpNdx++)
                 {
+                    // for dynamic rendering we need to skip all STORE_OP_DONT_CARE cases because
+                    // storeop=DONTCARE permits to store random data to unused attachment and this
+                    // is the case on tiling GPUs
+                    if ((testConfigExternal.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) &&
+                        (storeOps[storeOpNdx].op == VK_ATTACHMENT_STORE_OP_DONT_CARE))
+                        continue;
+
                     const VkImageAspectFlags inputAttachmentAspectMask =
                         (testConfigExternal.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2) ?
                             static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_COLOR_BIT) :

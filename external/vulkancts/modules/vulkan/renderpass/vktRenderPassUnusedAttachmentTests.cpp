@@ -966,10 +966,10 @@ void UnusedAttachmentTestInstance::createCommandBufferDynamicRendering(const Dev
     VkRenderingInputAttachmentIndexInfoKHR renderingInputAttachmentIndexInfo{
         VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR,
         nullptr,
-        3u,                                  // uint32_t                    colorAttachmentCount
+        3u,                                  // uint32_t                   colorAttachmentCount
         colorAttachmentInputIndicesSubpass1, // const uint32_t*            pColorAttachmentInputIndices
-        nullptr,                             // uint32_t                    depthInputAttachmentIndex
-        nullptr,                             // uint32_t                    stencilInputAttachmentIndex
+        nullptr,                             // uint32_t                   depthInputAttachmentIndex
+        nullptr,                             // uint32_t                   stencilInputAttachmentIndex
     };
 
     std::vector<VkRenderingAttachmentInfo> colorAttachments(
@@ -1153,23 +1153,13 @@ tcu::TestStatus UnusedAttachmentTestInstance::verifyImage(void)
         << tcu::TestLog::Image("Rendered", "Rendered image", resultAccess)
         << tcu::TestLog::Image("Unused", "Unused image", unusedAccess) << tcu::TestLog::EndImageSet;
 
+    // With renderpass object there could be attachment that is not listed as color attachment
+    // for any subpass and in that case it would not be cleared even when op load clear is specified
+    // in dynamic renderpass load operation will be done for all specified color attachments because we dont
+    // know at vkCmdBeginRendering which color attachments are going to be used and which will be left unused
     if ((m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) &&
-        (m_testParams.loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR))
-    {
-        // With renderpass object there could be attachment that is not listed as color attachment
-        // for any subpass and in that case it would not be cleared even when op load clear is specified
-        // in dynamic renderpass load operation will be done for all specified color attachments because we dont
-        // know at vkCmdBeginRendering which color attachments are going to be used and which will be left unused
-        if (m_testParams.storeOp == VK_ATTACHMENT_STORE_OP_STORE)
-            refColor = tcu::Vec4(0.5f, 0.5f, 0.5f, 1.0f);
-        else if (m_testParams.storeOp == VK_ATTACHMENT_STORE_OP_DONT_CARE)
-        {
-            // Unused attachment was cleared but we dont care if we store it or not and now two colors are valid.
-            // If color at pixel (0, 0) is not refColor then we also should use clear color for verification.
-            if (!isColorValid(unusedAccess.getPixel(0, 0), refColor))
-                refColor = tcu::Vec4(0.5f, 0.5f, 0.5f, 1.0f);
-        }
-    }
+        (m_testParams.loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR) && (m_testParams.storeOp == VK_ATTACHMENT_STORE_OP_STORE))
+        refColor = tcu::Vec4(0.5f, 0.5f, 0.5f, 1.0f);
 
     // Check the unused image data.
     for (int y = 0; y < unusedAccess.getHeight(); y++)
@@ -1246,13 +1236,15 @@ tcu::TestCaseGroup *createRenderPassUnusedAttachmentTests(tcu::TestContext &test
 
         for (uint32_t storeOpIdx = 0; storeOpIdx < DE_LENGTH_OF_ARRAY(storeOps); storeOpIdx++)
         {
-            // for dynamic rendering we need to skip LOAD_OP_DONT_CARE+STORE_OP_STORE case
-            // because some implementations in that case will write random data to unused attachments
-            if ((groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) &&
-                (loadOps[loadOpIdx] == VK_ATTACHMENT_LOAD_OP_DONT_CARE) &&
-                (storeOps[storeOpIdx] == VK_ATTACHMENT_STORE_OP_STORE))
+            if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
             {
-                continue;
+                // for dynamic rendering we need to skip all LOAD_OP_DONT_CARE and STORE_OP_DONT_CARE cases
+                // because load/store ops are not affected by remapping, thus loadop=DONTCARE
+                // permits to initialize unused attachment with random data and storeop=DONTCARE
+                // permits to store random data to unused attachment and this is the case on tiling GPUs
+                if ((loadOps[loadOpIdx] == VK_ATTACHMENT_LOAD_OP_DONT_CARE) ||
+                    (storeOps[storeOpIdx] == VK_ATTACHMENT_STORE_OP_DONT_CARE))
+                    continue;
             }
 
             de::MovePtr<tcu::TestCaseGroup> storeOpGroup(new tcu::TestCaseGroup(

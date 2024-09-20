@@ -1357,56 +1357,52 @@ template <class API>
 void SizedDeclarationsPrimitive<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    for (size_t var_type_index = 0; var_type_index < API::n_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(API::var_types[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(API::var_types[var_type_index]);
-
-        if (var_iterator != supported_variable_types_map.end())
+        /* Loop round for each var_types ("int", "uint", "float", etc.)
+         * We are testing a[][] to a [][][][][][][][], so start counter at 2. */
+        for (size_t max_dimension_limit = 2; max_dimension_limit <= API::MAX_ARRAY_DIMENSIONS; max_dimension_limit++)
         {
-            /* Loop round for each var_types ("int", "uint", "float", etc.)
-             * We are testing a[][] to a [][][][][][][][], so start counter at 2. */
-            for (size_t max_dimension_limit = 2; max_dimension_limit <= API::MAX_ARRAY_DIMENSIONS;
-                 max_dimension_limit++)
+            // Record the base varTypeModifier + varType
+            std::string base_var_type        = var_iterator->second.type;
+            std::string base_variable_string = base_var_type;
+
+            for (size_t base_sub_script_index = 0; base_sub_script_index <= max_dimension_limit;
+                 base_sub_script_index++)
             {
-                // Record the base varTypeModifier + varType
-                std::string base_var_type        = var_iterator->second.type;
-                std::string base_variable_string = base_var_type;
+                std::string shader_source = "";
 
-                for (size_t base_sub_script_index = 0; base_sub_script_index <= max_dimension_limit;
-                     base_sub_script_index++)
+                // Add the shader body start, and the base varTypeModifier + varType + variable name.
+                shader_source += shader_start + "    " + base_variable_string + " a";
+
+                for (size_t remaining_sub_script_index = base_sub_script_index;
+                     remaining_sub_script_index < max_dimension_limit; remaining_sub_script_index++)
                 {
-                    std::string shader_source = "";
+                    /* Add as many array sub_scripts as we can, up to the current dimension limit. */
+                    shader_source += "[2]";
+                }
 
-                    // Add the shader body start, and the base varTypeModifier + varType + variable name.
-                    shader_source += shader_start + "    " + base_variable_string + " a";
+                /* End line */
+                shader_source += ";\n";
 
-                    for (size_t remaining_sub_script_index = base_sub_script_index;
-                         remaining_sub_script_index < max_dimension_limit; remaining_sub_script_index++)
-                    {
-                        /* Add as many array sub_scripts as we can, up to the current dimension limit. */
-                        shader_source += "[2]";
-                    }
+                /* End main */
+                DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-                    /* End line */
-                    shader_source += ";\n";
+                /* Execute test */
+                EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
 
-                    /* End main */
-                    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-                    /* Execute test */
-                    EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-
-                    /* From now on, we'll have an extra sub_script each time. */
-                    base_variable_string += "[2]";
-                } /* for (int base_sub_script_index = 0; ...) */
-            }     /* for (int max_dimension_limit = 2; ...) */
-        }         /* if var_type iterator found */
-        else
-        {
-            TCU_FAIL("Type not found.");
-        }
-    } /* for (int var_type_index = 0; ...) */
+                /* From now on, we'll have an extra sub_script each time. */
+                base_variable_string += "[2]";
+            } /* for (int base_sub_script_index = 0; ...) */
+        }     /* for (int max_dimension_limit = 2; ...) */
+    }         /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /* Generates the shader source code for the SizedDeclarationsStructTypes1
@@ -1428,26 +1424,22 @@ void SizedDeclarationsStructTypes1<API>::test_shader_compilation(
                                "};\n\n");
     std::string shader_source;
 
-    for (size_t max_dimension_index = 1; max_dimension_index < API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
+    shader_source = example_struct;
+    shader_source += shader_start;
+    shader_source += "    light[2]";
+
+    for (size_t temp_dimension_index = 0; temp_dimension_index < m_max_dimension_index; temp_dimension_index++)
     {
-        shader_source = example_struct;
-        shader_source += shader_start;
-        shader_source += "    light[2]";
+        shader_source += "[2]";
+    }
 
-        for (size_t temp_dimension_index = 0; temp_dimension_index < max_dimension_index; temp_dimension_index++)
-        {
-            shader_source += "[2]";
-        }
+    shader_source += " x;\n";
 
-        shader_source += " x;\n";
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-        /* Execute test */
-        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-
-    } /* for (int max_dimension_index = 1; ...) */
+    /* Execute test */
+    EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
 }
 
 /* Generates the shader source code for the SizedDeclarationsStructTypes2
@@ -1503,19 +1495,16 @@ void SizedDeclarationsStructTypes3<API>::test_shader_compilation(
                                "};\n");
     std::string shader_source;
 
-    for (size_t max_dimension_index = 1; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
-    {
-        shader_source = example_struct;
-        shader_source += shader_start;
-        shader_source += this->extend_string("    light my_light_object", "[2]", max_dimension_index);
-        shader_source += ";\n";
+    shader_source = example_struct;
+    shader_source += shader_start;
+    shader_source += this->extend_string("    light my_light_object", "[2]", m_max_dimension_index);
+    shader_source += ";\n";
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* Execute test */
-        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-    } /* for (int max_dimension_index = 1; ...) */
+    /* Execute test */
+    EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
 }
 
 /* Generates the shader source code for the SizedDeclarationsStructTypes4
@@ -1537,23 +1526,20 @@ void SizedDeclarationsStructTypes4<API>::test_shader_compilation(
                                "} lightVar[2]");
     std::string shader_source;
 
-    for (size_t max_dimension_index = 1; max_dimension_index < API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
+    shader_source = example_struct;
+
+    for (size_t temp_dimension_index = 0; temp_dimension_index < m_max_dimension_index; temp_dimension_index++)
     {
-        shader_source = example_struct;
+        shader_source += "[2]";
+    }
+    shader_source += ";\n\n";
+    shader_source += shader_start;
 
-        for (size_t temp_dimension_index = 0; temp_dimension_index < max_dimension_index; temp_dimension_index++)
-        {
-            shader_source += "[2]";
-        }
-        shader_source += ";\n\n";
-        shader_source += shader_start;
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-        /* Execute test */
-        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-    } /* for (int max_dimension_index = 1; ...) */
+    /* Execute test */
+    EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
 }
 
 /* Generates the shader source code for the SizedDeclarationsTypenameStyle1
@@ -1569,20 +1555,17 @@ template <class API>
 void SizedDeclarationsTypenameStyle1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    for (size_t max_dimension_index = 1; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
-    {
-        std::string shader_source = shader_start;
+    std::string shader_source = shader_start;
 
-        shader_source += this->extend_string("    float", "[2]", max_dimension_index);
-        shader_source += this->extend_string(" x", "[2]", API::MAX_ARRAY_DIMENSIONS - max_dimension_index);
-        shader_source += ";\n";
+    shader_source += this->extend_string("    float", "[2]", m_max_dimension_index);
+    shader_source += this->extend_string(" x", "[2]", API::MAX_ARRAY_DIMENSIONS - m_max_dimension_index);
+    shader_source += ";\n";
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* Execute test */
-        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-    } /* for (int max_dimension_index = 1; ...) */
+    /* Execute test */
+    EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
 }
 
 /* Generates the shader source code for the SizedDeclarationsTypenameStyle2
@@ -1677,22 +1660,19 @@ void SizedDeclarationsTypenameStyle4<API>::test_shader_compilation(
     std::string example_struct_begin("struct light {\n");
     std::string example_struct_end("};\n\n");
 
-    for (size_t max_dimension_index = 1; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
-    {
-        std::string shader_source = example_struct_begin;
+    std::string shader_source = example_struct_begin;
 
-        shader_source += this->extend_string("    float", "[2]", max_dimension_index);
-        shader_source += this->extend_string(" x", "[2]", API::MAX_ARRAY_DIMENSIONS - max_dimension_index);
-        shader_source += ";\n";
-        shader_source += example_struct_end;
-        shader_source += shader_start;
+    shader_source += this->extend_string("    float", "[2]", m_max_dimension_index);
+    shader_source += this->extend_string(" x", "[2]", API::MAX_ARRAY_DIMENSIONS - m_max_dimension_index);
+    shader_source += ";\n";
+    shader_source += example_struct_end;
+    shader_source += shader_start;
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* Execute test */
-        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-    } /* for (int max_dimension_index = 1; ...) */
+    /* Execute test */
+    EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
 }
 
 /* Generates the shader source code for the SizedDeclarationsTypenameStyle5
@@ -1861,30 +1841,27 @@ void SizedDeclarationsFunctionParams<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string sized_declarations_invalid_sizes1_invalid_declarations[] = {
+    "float x[2][2][2][0];\n", "float x[2][2][0][2];\n", "float x[2][0][2][2];\n", "float x[0][2][2][2];\n",
+    "float x[2][2][0][0];\n", "float x[2][0][2][0];\n", "float x[0][2][2][0];\n", "float x[2][0][0][2];\n",
+    "float x[0][2][0][2];\n", "float x[0][0][2][2];\n", "float x[2][0][0][0];\n", "float x[0][2][0][0];\n",
+    "float x[0][0][2][0];\n", "float x[0][0][0][2];\n", "float x[0][0][0][0];\n"};
+
 template <class API>
 void sized_declarations_invalid_sizes1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    std::string invalid_declarations[] = {"float x[2][2][2][0];\n", "float x[2][2][0][2];\n", "float x[2][0][2][2];\n",
-                                          "float x[0][2][2][2];\n", "float x[2][2][0][0];\n", "float x[2][0][2][0];\n",
-                                          "float x[0][2][2][0];\n", "float x[2][0][0][2];\n", "float x[0][2][0][2];\n",
-                                          "float x[0][0][2][2];\n", "float x[2][0][0][0];\n", "float x[0][2][0][0];\n",
-                                          "float x[0][0][2][0];\n", "float x[0][0][0][2];\n", "float x[0][0][0][0];\n"};
+    std::string shader_source;
 
-    for (size_t invalid_declarations_index = 0; invalid_declarations_index < DE_LENGTH_OF_ARRAY(invalid_declarations);
-         invalid_declarations_index++)
-    {
-        std::string shader_source;
+    shader_source = shader_start;
+    shader_source += sized_declarations_invalid_sizes1_invalid_declarations[m_invalid_declarations_index];
 
-        shader_source = shader_start;
-        shader_source += invalid_declarations[invalid_declarations_index];
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-        /* Execute test */
-        this->execute_negative_test(tested_shader_type, shader_source);
-    } /* for (int invalid_declarations_index = 0; ...) */
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the sized_declarations_invalid_sizes2
@@ -1896,31 +1873,28 @@ void sized_declarations_invalid_sizes1<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string sized_declarations_invalid_sizes2_invalid_declarations[] = {
+    "    float x[2][2][2][-1];\n",   "    float x[2][2][-1][2];\n",   "    float x[2][-1][2][2];\n",
+    "    float x[-1][2][2][2];\n",   "    float x[2][2][-1][-1];\n",  "    float x[2][-1][2][-1];\n",
+    "    float x[-1][2][2][-1];\n",  "    float x[2][-1][-1][2];\n",  "    float x[-1][2][-1][2];\n",
+    "    float x[-1][-1][2][2];\n",  "    float x[2][-1][-1][-1];\n", "    float x[-1][2][-1][-1];\n",
+    "    float x[-1][-1][2][-1];\n", "    float x[-1][-1][-1][2];\n", "    float x[-1][-1][-1][-1];\n"};
+
 template <class API>
 void sized_declarations_invalid_sizes2<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    std::string invalid_declarations[] = {
-        "    float x[2][2][2][-1];\n",   "    float x[2][2][-1][2];\n",   "    float x[2][-1][2][2];\n",
-        "    float x[-1][2][2][2];\n",   "    float x[2][2][-1][-1];\n",  "    float x[2][-1][2][-1];\n",
-        "    float x[-1][2][2][-1];\n",  "    float x[2][-1][-1][2];\n",  "    float x[-1][2][-1][2];\n",
-        "    float x[-1][-1][2][2];\n",  "    float x[2][-1][-1][-1];\n", "    float x[-1][2][-1][-1];\n",
-        "    float x[-1][-1][2][-1];\n", "    float x[-1][-1][-1][2];\n", "    float x[-1][-1][-1][-1];\n"};
+    std::string shader_source;
 
-    for (size_t invalid_declarations_index = 0; invalid_declarations_index < DE_LENGTH_OF_ARRAY(invalid_declarations);
-         invalid_declarations_index++)
-    {
-        std::string shader_source;
+    shader_source = shader_start;
+    shader_source += sized_declarations_invalid_sizes2_invalid_declarations[m_invalid_declarations_index];
 
-        shader_source = shader_start;
-        shader_source += invalid_declarations[invalid_declarations_index];
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-        /* Execute test */
-        this->execute_negative_test(tested_shader_type, shader_source);
-    } /* for (int invalid_declarations_index = 0; ...) */
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the sized_declarations_invalid_sizes3
@@ -1932,33 +1906,30 @@ void sized_declarations_invalid_sizes2<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string sized_declarations_invalid_sizes3_invalid_declarations[] = {
+    "    float x[2][2][2][a];\n", "    float x[2][2][a][2];\n", "    float x[2][a][2][2];\n",
+    "    float x[a][2][2][2];\n", "    float x[2][2][a][a];\n", "    float x[2][a][2][a];\n",
+    "    float x[a][2][2][a];\n", "    float x[2][a][a][2];\n", "    float x[a][2][a][2];\n",
+    "    float x[a][a][2][2];\n", "    float x[2][a][a][a];\n", "    float x[a][2][a][a];\n",
+    "    float x[a][a][2][a];\n", "    float x[a][a][a][2];\n", "    float x[a][a][a][a];\n"};
+
 template <class API>
 void sized_declarations_invalid_sizes3<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    std::string invalid_declarations[] = {
-        "    float x[2][2][2][a];\n", "    float x[2][2][a][2];\n", "    float x[2][a][2][2];\n",
-        "    float x[a][2][2][2];\n", "    float x[2][2][a][a];\n", "    float x[2][a][2][a];\n",
-        "    float x[a][2][2][a];\n", "    float x[2][a][a][2];\n", "    float x[a][2][a][2];\n",
-        "    float x[a][a][2][2];\n", "    float x[2][a][a][a];\n", "    float x[a][2][a][a];\n",
-        "    float x[a][a][2][a];\n", "    float x[a][a][a][2];\n", "    float x[a][a][a][a];\n"};
     std::string non_constant_variable_declaration = "    uint a = 2u;\n";
+    std::string shader_source;
 
-    for (size_t invalid_declarations_index = 0; invalid_declarations_index < DE_LENGTH_OF_ARRAY(invalid_declarations);
-         invalid_declarations_index++)
-    {
-        std::string shader_source;
+    shader_source = shader_start;
+    shader_source += non_constant_variable_declaration;
+    shader_source += sized_declarations_invalid_sizes3_invalid_declarations[m_invalid_declarations_index];
 
-        shader_source = shader_start;
-        shader_source += non_constant_variable_declaration;
-        shader_source += invalid_declarations[invalid_declarations_index];
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-        /* Execute test */
-        this->execute_negative_test(tested_shader_type, shader_source);
-    } /* for (int invalid_declarations_index = 0; ...) */
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the sized_declarations_invalid_sizes4
@@ -1970,26 +1941,25 @@ void sized_declarations_invalid_sizes3<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string sized_declarations_invalid_sizes4_input_strings[] = {
+    "    float x[2,2][2][2];\n", "    float x[2][2,2][2];\n", "    float x[2][2][2,2];\n",
+    "    float x[2,2,2][2];\n",  "    float x[2][2,2,2];\n",  "    float x[2,2,2,2];\n"};
+
 template <class API>
 void sized_declarations_invalid_sizes4<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    std::string input[] = {"    float x[2,2][2][2];\n", "    float x[2][2,2][2];\n", "    float x[2][2][2,2];\n",
-                           "    float x[2,2,2][2];\n",  "    float x[2][2,2,2];\n",  "    float x[2,2,2,2];\n"};
+    std::string shader_source;
 
-    for (size_t string_index = 0; string_index < sizeof(input) / sizeof(input[0]); string_index++)
-    {
-        std::string shader_source;
+    shader_source += shader_start;
+    shader_source += sized_declarations_invalid_sizes4_input_strings[m_string_index];
 
-        shader_source += shader_start;
-        shader_source += input[string_index];
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-        /* Execute test */
-        this->execute_negative_test(tested_shader_type, shader_source);
-    } /* for (int string_index = 0; ...) */
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Constructs a suitable constructor for the specified number of dimensions.
@@ -2052,12 +2022,10 @@ void ConstructorsAndUnsizedDeclConstructors1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
     //vec4 color = vec4(0.0, 1.0, 0.0, 1.0);
-    int num_var_types = API::n_var_types;
 
-    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
     {
         _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(API::var_types[var_type_index]);
+            supported_variable_types_map.find(API::var_types[m_var_type_index]);
 
         if (var_iterator != supported_variable_types_map.end())
         {
@@ -2086,10 +2054,9 @@ void ConstructorsAndUnsizedDeclConstructors1<API>::test_shader_compilation(
         }
     } /* for (int var_type_index = 0; ...) */
 
-    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
     {
         _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(API::var_types[var_type_index]);
+            supported_variable_types_map.find(API::var_types[m_var_type_index]);
 
         if (var_iterator != supported_variable_types_map.end())
         {
@@ -2169,6 +2136,12 @@ void ConstructorsAndUnsizedDeclConstructors2<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string ConstructorsAndUnsizedDeclUnsizedConstructors_input[] = {
+    "float a[2][1][2][]", "float a[2][1][][1]", "float a[2][1][][]",  "float a[2][][2][1]", "float a[2][][2][]",
+    "float a[2][][][1]",  "float a[2][][][]",   "float a[][1][2][1]", "float a[][1][2][]",  "float a[][1][][1]",
+    "float a[][1][][]",   "float a[][][2][1]",  "float a[][][2][]",   "float a[][][][1]",   "float a[][][][]"};
+
 template <class API>
 void ConstructorsAndUnsizedDeclUnsizedConstructors<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
@@ -2186,21 +2159,15 @@ void ConstructorsAndUnsizedDeclUnsizedConstructors<API>::test_shader_compilation
                                                "        )\n"
                                                "    );\n\n";
 
-    std::string input[] = {"float a[2][1][2][]", "float a[2][1][][1]", "float a[2][1][][]", "float a[2][][2][1]",
-                           "float a[2][][2][]",  "float a[2][][][1]",  "float a[2][][][]",  "float a[][1][2][1]",
-                           "float a[][1][2][]",  "float a[][1][][1]",  "float a[][1][][]",  "float a[][][2][1]",
-                           "float a[][][2][]",   "float a[][][][1]",   "float a[][][][]"};
+    std::string shader_source = shader_start + "    " +
+                                ConstructorsAndUnsizedDeclUnsizedConstructors_input[m_string_index] +
+                                shader_variable_declarations;
 
-    for (size_t string_index = 0; string_index < sizeof(input) / sizeof(input[0]); string_index++)
-    {
-        std::string shader_source = shader_start + "    " + input[string_index] + shader_variable_declarations;
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-        /* Execute test */
-        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-    } /* for (int string_index = 0; ...) */
+    /* Execute test */
+    EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
 }
 
 /* Generates the shader source code for the ConstructorsAndUnsizedDeclConst
@@ -2239,37 +2206,31 @@ template <class API>
 void ConstructorsAndUnsizedDeclInvalidConstructors1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    int num_var_types = sizeof(opaque_var_types) / sizeof(opaque_var_types[0]);
+    _supported_variable_types_map_const_iterator var_iterator = supported_variable_types_map.find(m_opaque_var_type);
 
-    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(opaque_var_types[var_type_index]);
+        std::string base_variable_string =
+            "uniform " + var_iterator->second.precision + " " + var_iterator->second.type + " my_sampler1;\n" +
+            "uniform " + var_iterator->second.precision + " " + var_iterator->second.type + " my_sampler2;\n" +
+            "uniform " + var_iterator->second.precision + " " + var_iterator->second.type + " my_sampler3;\n" +
+            "uniform " + var_iterator->second.precision + " " + var_iterator->second.type + " my_sampler4;\n\n";
 
-        if (var_iterator != supported_variable_types_map.end())
-        {
-            std::string base_variable_string =
-                "uniform " + var_iterator->second.precision + " " + var_iterator->second.type + " my_sampler1;\n" +
-                "uniform " + var_iterator->second.precision + " " + var_iterator->second.type + " my_sampler2;\n" +
-                "uniform " + var_iterator->second.precision + " " + var_iterator->second.type + " my_sampler3;\n" +
-                "uniform " + var_iterator->second.precision + " " + var_iterator->second.type + " my_sampler4;\n\n";
+        std::string shader_source = base_variable_string + shader_start;
+        shader_source += "    const " + var_iterator->second.type + "[2][2] x = " + var_iterator->second.type +
+                         "[2][2](" + var_iterator->second.type + "[2](my_sampler1, my_sampler2), " +
+                         var_iterator->second.type + "[2](my_sampler3, my_sampler4));\n\n";
 
-            std::string shader_source = base_variable_string + shader_start;
-            shader_source += "    const " + var_iterator->second.type + "[2][2] x = " + var_iterator->second.type +
-                             "[2][2](" + var_iterator->second.type + "[2](my_sampler1, my_sampler2), " +
-                             var_iterator->second.type + "[2](my_sampler3, my_sampler4));\n\n";
+        /* End main */
+        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-            /* End main */
-            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-            /* Execute test */
-            this->execute_negative_test(tested_shader_type, shader_source);
-        } /* if var_type iterator found */
-        else
-        {
-            TCU_FAIL("Type not found.");
-        }
-    } /* for (int var_type_index = 0; ...) */
+        /* Execute test */
+        this->execute_negative_test(tested_shader_type, shader_source);
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /* Generates the shader source code for the ConstructorsAndUnsizedDeclInvalidConstructors2
@@ -2281,29 +2242,25 @@ void ConstructorsAndUnsizedDeclInvalidConstructors1<API>::test_shader_compilatio
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string ConstructorsAndUnsizedDeclInvalidConstructors2_invalid_initializers[] = {
+    "    int x[2][2][0]; \n", "    int x[2][0][2]; \n", "    int x[0][2][2]; \n", "    int x[2][0][0]; \n",
+    "    int x[0][2][0]; \n", "    int x[0][0][2]; \n", "    int x[0][0][0]; \n"};
+
 template <class API>
 void ConstructorsAndUnsizedDeclInvalidConstructors2<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    std::string invalid_initializers[] = {"    int x[2][2][0]; \n", "    int x[2][0][2]; \n", "    int x[0][2][2]; \n",
-                                          "    int x[2][0][0]; \n", "    int x[0][2][0]; \n", "    int x[0][0][2]; \n",
-                                          "    int x[0][0][0]; \n"};
+    std::string shader_source;
 
-    for (size_t invalid_initializers_index = 0;
-         invalid_initializers_index < sizeof(invalid_initializers) / sizeof(invalid_initializers[0]);
-         invalid_initializers_index++)
-    {
-        std::string shader_source;
+    shader_source = shader_start;
+    shader_source += ConstructorsAndUnsizedDeclInvalidConstructors2_invalid_initializers[m_invalid_initializer_index];
 
-        shader_source = shader_start;
-        shader_source += invalid_initializers[invalid_initializers_index];
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-        /* Execute test */
-        this->execute_negative_test(tested_shader_type, shader_source);
-    } /* for (int invalid_initializers_index = 0; ...) */
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the ConstructorsAndUnsizedDeclInvalidConstructors3
@@ -2315,29 +2272,25 @@ void ConstructorsAndUnsizedDeclInvalidConstructors2<API>::test_shader_compilatio
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string ConstructorsAndUnsizedDeclInvalidConstructors3_invalid_initializers[] = {
+    "    int x[2][2][-1]; \n",  "    int x[2][-1][2]; \n",  "    int x[-1][2][2]; \n",  "    int x[2][-1][-1]; \n",
+    "    int x[-1][2][-1]; \n", "    int x[-1][-1][2]; \n", "    int x[-1][-1][-1]; \n"};
+
 template <class API>
 void ConstructorsAndUnsizedDeclInvalidConstructors3<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    std::string invalid_initializers[] = {
-        "    int x[2][2][-1]; \n",  "    int x[2][-1][2]; \n",  "    int x[-1][2][2]; \n",  "    int x[2][-1][-1]; \n",
-        "    int x[-1][2][-1]; \n", "    int x[-1][-1][2]; \n", "    int x[-1][-1][-1]; \n"};
+    std::string shader_source;
 
-    for (size_t invalid_initializers_index = 0;
-         invalid_initializers_index < sizeof(invalid_initializers) / sizeof(invalid_initializers[0]);
-         invalid_initializers_index++)
-    {
-        std::string shader_source;
+    shader_source = shader_start;
+    shader_source += ConstructorsAndUnsizedDeclInvalidConstructors3_invalid_initializers[m_invalid_initializer_index];
 
-        shader_source = shader_start;
-        shader_source += invalid_initializers[invalid_initializers_index];
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-        /* Execute test */
-        this->execute_negative_test(tested_shader_type, shader_source);
-    } /* for (int invalid_initializers_index = 0; ...) */
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the ConstructorsAndUnsizedDeclInvalidConstructors4
@@ -2349,31 +2302,28 @@ void ConstructorsAndUnsizedDeclInvalidConstructors3<API>::test_shader_compilatio
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string ConstructorsAndUnsizedDeclInvalidConstructors4_invalid_initializers[] = {
+    "    int x[2][2][a]; \n", "    int x[2][a][2]; \n", "    int x[a][2][2]; \n", "    int x[2][a][a]; \n",
+    "    int x[a][2][a]; \n", "    int x[a][a][2]; \n", "    int x[a][a][a]; \n"};
+
 template <class API>
 void ConstructorsAndUnsizedDeclInvalidConstructors4<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    std::string invalid_initializers[] = {"    int x[2][2][a]; \n", "    int x[2][a][2]; \n", "    int x[a][2][2]; \n",
-                                          "    int x[2][a][a]; \n", "    int x[a][2][a]; \n", "    int x[a][a][2]; \n",
-                                          "    int x[a][a][a]; \n"};
     std::string non_constant_variable_init = "    uint a = 2u;\n";
 
-    for (size_t invalid_initializers_index = 0;
-         invalid_initializers_index < sizeof(invalid_initializers) / sizeof(invalid_initializers[0]);
-         invalid_initializers_index++)
-    {
-        std::string shader_source;
+    std::string shader_source;
 
-        shader_source = shader_start;
-        shader_source += non_constant_variable_init;
-        shader_source += invalid_initializers[invalid_initializers_index];
+    shader_source = shader_start;
+    shader_source += non_constant_variable_init;
+    shader_source += ConstructorsAndUnsizedDeclInvalidConstructors4_invalid_initializers[m_invalid_initializer_index];
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* Execute test */
-        this->execute_negative_test(tested_shader_type, shader_source);
-    } /* for (int invalid_initializers_index = 0; ...) */
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the ConstructorsAndUnsizedDeclConstructorSizing1
@@ -2385,6 +2335,7 @@ void ConstructorsAndUnsizedDeclInvalidConstructors4<API>::test_shader_compilatio
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
 template <class API>
 void ConstructorsAndUnsizedDeclConstructorSizing1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
@@ -2393,39 +2344,36 @@ void ConstructorsAndUnsizedDeclConstructorSizing1<API>::test_shader_compilation(
                                              "[1][][1][]",  "[][1][1][]",  "[1][][][1]",  "[][1][][1]",  "[][][1][1]",
                                              "[1][][][]",   "[][1][][]",   "[][][1][]",   "[][][][1]",   "[][][][]"};
 
-    for (size_t var_type_index = 0; var_type_index < API::n_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(API::var_types[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(API::var_types[var_type_index]);
-
-        if (var_iterator != supported_variable_types_map.end())
+        for (size_t valid_size_initializers_index = 0;
+             valid_size_initializers_index < sizeof(valid_size_initializers) / sizeof(valid_size_initializers[0]);
+             valid_size_initializers_index++)
         {
-            for (size_t valid_size_initializers_index = 0;
-                 valid_size_initializers_index < sizeof(valid_size_initializers) / sizeof(valid_size_initializers[0]);
-                 valid_size_initializers_index++)
-            {
-                std::string shader_source;
-                std::string variable_constructor =
-                    "    " + var_iterator->second.type + " x" + valid_size_initializers[valid_size_initializers_index] +
-                    " = " + var_iterator->second.type + "[1][1][1][1](" + var_iterator->second.type + "[1][1][1](" +
-                    var_iterator->second.type + "[1][1](" + var_iterator->second.type + "[1](" +
-                    var_iterator->second.initializer_with_zeroes + "))));\n";
+            std::string shader_source;
+            std::string variable_constructor =
+                "    " + var_iterator->second.type + " x" + valid_size_initializers[valid_size_initializers_index] +
+                " = " + var_iterator->second.type + "[1][1][1][1](" + var_iterator->second.type + "[1][1][1](" +
+                var_iterator->second.type + "[1][1](" + var_iterator->second.type + "[1](" +
+                var_iterator->second.initializer_with_zeroes + "))));\n";
 
-                shader_source = shader_start;
-                shader_source += variable_constructor;
+            shader_source = shader_start;
+            shader_source += variable_constructor;
 
-                /* End main */
-                DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+            /* End main */
+            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-                /* Execute test */
-                EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-            } /* for (int valid_size_initializers_index = 0; ...) */
-        }     /* if var_type iterator found */
-        else
-        {
-            TCU_FAIL("Type not found.");
-        }
-    } /* for (int var_type_index = 0; ...) */
+            /* Execute test */
+            EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
+        } /* for (int valid_size_initializers_index = 0; ...) */
+    }     /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /* Generates the shader source code for the ConstructorsAndUnsizedDeclConstructorSizing2
@@ -2624,21 +2572,18 @@ void ConstructorsAndUnsizedDeclStructConstructors<API>::test_shader_compilation(
                                              "};\n");
     std::string example_structure_object("    light my_light_variable");
 
-    for (size_t max_dimension_index = 2; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
-    {
-        std::string base_variable_string = this->extend_string(example_structure_object, "[]", max_dimension_index);
-        base_variable_string += " = ";
-        base_variable_string += recursively_initialise("light", max_dimension_index, "1.0, 2");
-        base_variable_string += ";\n\n";
+    std::string base_variable_string = this->extend_string(example_structure_object, "[]", m_max_dimension_index);
+    base_variable_string += " = ";
+    base_variable_string += recursively_initialise("light", m_max_dimension_index, "1.0, 2");
+    base_variable_string += ";\n\n";
 
-        std::string shader_source = example_structure_definition + shader_start + base_variable_string;
+    std::string shader_source = example_structure_definition + shader_start + base_variable_string;
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* Execute test */
-        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-    } /* for (int max_dimension_index = 2; ...) */
+    /* Execute test */
+    EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
 }
 
 /* Generates the shader source code for the ConstructorsAndUnsizedDeclUnsizedArrays1
@@ -2656,19 +2601,16 @@ void ConstructorsAndUnsizedDeclUnsizedArrays1<API>::test_shader_compilation(
 {
     std::string base_variable_string;
 
-    for (size_t max_dimension_index = 2; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
-    {
-        base_variable_string = this->extend_string("    int x", "[]", max_dimension_index);
-        base_variable_string += ";\n\n";
+    base_variable_string = this->extend_string("    int x", "[]", m_max_dimension_index);
+    base_variable_string += ";\n\n";
 
-        std::string shader_source = shader_start + base_variable_string;
+    std::string shader_source = shader_start + base_variable_string;
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* Execute test */
-        this->execute_negative_test(tested_shader_type, shader_source);
-    } /* for (int max_dimension_index = 2; ...) */
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the ConstructorsAndUnsizedDeclUnsizedArrays2
@@ -2680,25 +2622,23 @@ void ConstructorsAndUnsizedDeclUnsizedArrays1<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string ConstructorsAndUnsizedDeclUnsizedArrays2_input[] = {"    float [] x = float[](1), y;\n\n"};
+
 template <class API>
 void ConstructorsAndUnsizedDeclUnsizedArrays2<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    std::string input[] = {"    float [] x = float[](1), y;\n\n"};
+    std::string shader_source;
 
-    for (size_t string_index = 0; string_index < sizeof(input) / sizeof(input[0]); string_index++)
-    {
-        std::string shader_source;
+    shader_source += shader_start;
+    shader_source += ConstructorsAndUnsizedDeclUnsizedArrays2_input[m_string_index];
 
-        shader_source += shader_start;
-        shader_source += input[string_index];
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-        /* Execute test */
-        EXECUTE_SHADER_TEST(API::ALLOW_UNSIZED_DECLARATION, tested_shader_type, shader_source);
-    } /* for (int string_index = 0; ...) */
+    /* Execute test */
+    EXECUTE_SHADER_TEST(API::ALLOW_UNSIZED_DECLARATION, tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the ConstructorsAndUnsizedDeclUnsizedArrays3
@@ -2808,30 +2748,27 @@ std::string ExpressionsAssignment1<API>::recursively_initialise(std::string var_
 template <class API>
 void ExpressionsAssignment1<API>::test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    for (size_t max_dimension_index = 2; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
-    {
-        std::string prefix = "(";
-        std::string base_variable_string;
+    std::string prefix = "(";
+    std::string base_variable_string;
 
-        base_variable_string += this->extend_string("    float x", "[2]", max_dimension_index);
-        base_variable_string += " = ";
-        base_variable_string += recursively_initialise("float", max_dimension_index, "4.0, 6.0");
-        base_variable_string += ";\n";
-        base_variable_string += this->extend_string("    float y", "[2]", max_dimension_index);
-        base_variable_string += " = ";
-        base_variable_string += recursively_initialise("float", max_dimension_index, "1.0, 2.0");
-        base_variable_string += ";\n\n";
+    base_variable_string += this->extend_string("    float x", "[2]", m_max_dimension_index);
+    base_variable_string += " = ";
+    base_variable_string += recursively_initialise("float", m_max_dimension_index, "4.0, 6.0");
+    base_variable_string += ";\n";
+    base_variable_string += this->extend_string("    float y", "[2]", m_max_dimension_index);
+    base_variable_string += " = ";
+    base_variable_string += recursively_initialise("float", m_max_dimension_index, "1.0, 2.0");
+    base_variable_string += ";\n\n";
 
-        std::string shader_source = shader_start + base_variable_string;
+    std::string shader_source = shader_start + base_variable_string;
 
-        shader_source += "    x = y;\n";
+    shader_source += "    x = y;\n";
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* Execute test */
-        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-    } /* for (int max_dimension_index = 2; ...) */
+    /* Execute test */
+    EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
 }
 
 /* Generates the shader source code for the ExpressionsAssignment2
@@ -2843,6 +2780,9 @@ void ExpressionsAssignment1<API>::test_shader_compilation(typename TestCaseBase<
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string ExpressionsAssignment2_variable_basenames[] = {"a", "b", "c", "d"};
+
 template <class API>
 void ExpressionsAssignment2<API>::test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
@@ -2859,29 +2799,17 @@ void ExpressionsAssignment2<API>::test_shader_compilation(typename TestCaseBase<
                             "float[][](float[](1.0, 2.0), float[](1.0, 2.0)), "
                             "float[][](float[](1.0, 2.0), float[](1.0, 2.0))));\n\n");
 
-    std::string variable_basenames[] = {"a", "b", "c", "d"};
-    int number_of_elements           = sizeof(variable_basenames) / sizeof(variable_basenames[0]);
+    std::string shader_source = shader_start + shader_body;
 
-    for (int variable_index = 0; variable_index < number_of_elements; variable_index++)
-    {
-        for (int value_index = variable_index; value_index < number_of_elements; value_index++)
-        {
-            std::string shader_source = shader_start + shader_body;
+    shader_source += "    " + ExpressionsAssignment2_variable_basenames[m_variable_index] + " = " +
+                     ExpressionsAssignment2_variable_basenames[m_value_index];
+    shader_source += ";\n";
 
-            /* Avoid the situation when a variable is assign to itself. */
-            if (variable_index != value_index)
-            {
-                shader_source += "    " + variable_basenames[variable_index] + " = " + variable_basenames[value_index];
-                shader_source += ";\n";
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-                /* End main */
-                DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-                /* Execute test */
-                this->execute_negative_test(tested_shader_type, shader_source);
-            } /* if(variable_index != value_index) */
-        }     /* for (int value_index = variable_index; ...) */
-    }         /* for (int variable_index = 0; ...) */
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the ExpressionsAssignment3
@@ -2908,37 +2836,31 @@ void ExpressionsAssignment3<API>::test_shader_compilation(typename TestCaseBase<
 
     prefix += "    float b";
 
-    for (int permutation = 0; permutation < (1 << test_array_dimensions); permutation++)
+    base_variable_string = prefix;
+
+    for (int sub_script_index = test_array_dimensions - 1; sub_script_index >= 0; sub_script_index--)
     {
-        base_variable_string = prefix;
-
-        for (int sub_script_index = test_array_dimensions - 1; sub_script_index >= 0; sub_script_index--)
+        if (m_permutation & (1 << sub_script_index))
         {
-            if (permutation & (1 << sub_script_index))
-            {
-                base_variable_string += "[1]";
-            }
-            else
-            {
-                base_variable_string += "[2]";
-            }
+            base_variable_string += "[1]";
         }
-
-        base_variable_string += ";\n\n";
-
-        if (permutation != (1 << test_array_dimensions) - 1)
+        else
         {
-            std::string shader_source = shader_start + base_variable_string;
+            base_variable_string += "[2]";
+        }
+    }
 
-            shader_source += "    b = a;\n";
+    base_variable_string += ";\n\n";
 
-            /* End main */
-            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+    std::string shader_source = shader_start + base_variable_string;
 
-            /* Execute test */
-            this->execute_negative_test(tested_shader_type, shader_source);
-        } /* if (permutation != (1 << test_array_dimensions) - 1) */
-    }     /* for (int permutation = 0; ...) */
+    shader_source += "    b = a;\n";
+
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the ExpressionsTypeRestrictions1
@@ -2954,35 +2876,30 @@ template <class API>
 void ExpressionsTypeRestrictions1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    int num_var_types = sizeof(opaque_var_types) / sizeof(opaque_var_types[0]);
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(opaque_var_types[m_var_type_index]);
 
-    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(opaque_var_types[var_type_index]);
+        std::string shader_source = "uniform " + var_iterator->second.precision + " " + var_iterator->second.type +
+                                    " var1[2][2];\n"
+                                    "uniform " +
+                                    var_iterator->second.precision + " " + var_iterator->second.type +
+                                    " var2[2][2];\n\n";
+        shader_source += shader_start;
 
-        if (var_iterator != supported_variable_types_map.end())
-        {
-            std::string shader_source = "uniform " + var_iterator->second.precision + " " + var_iterator->second.type +
-                                        " var1[2][2];\n"
-                                        "uniform " +
-                                        var_iterator->second.precision + " " + var_iterator->second.type +
-                                        " var2[2][2];\n\n";
-            shader_source += shader_start;
+        shader_source += "    var1 = var2;\n";
 
-            shader_source += "    var1 = var2;\n";
+        /* End main */
+        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-            /* End main */
-            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-            /* Execute test */
-            this->execute_negative_test(tested_shader_type, shader_source);
-        } /* if var_type iterator found */
-        else
-        {
-            TCU_FAIL("Type not found.");
-        }
-    } /* for (int var_type_index = 0; ...) */
+        /* Execute test */
+        this->execute_negative_test(tested_shader_type, shader_source);
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /* Generates the shader source code for the ExpressionsTypeRestrictions2
@@ -2998,49 +2915,43 @@ template <class API>
 void ExpressionsTypeRestrictions2<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    int num_var_types = sizeof(opaque_var_types) / sizeof(opaque_var_types[0]);
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(opaque_var_types[m_var_type_index]);
 
-    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(opaque_var_types[var_type_index]);
+        std::string shader_source = "uniform " + var_iterator->second.precision + " " + var_iterator->second.type +
+                                    " sampler1;\n"
+                                    "uniform " +
+                                    var_iterator->second.precision + " " + var_iterator->second.type +
+                                    " sampler2;\n"
+                                    "uniform " +
+                                    var_iterator->second.precision + " " + var_iterator->second.type +
+                                    " sampler3;\n"
+                                    "uniform " +
+                                    var_iterator->second.precision + " " + var_iterator->second.type +
+                                    " sampler4;\n"
+                                    "struct light1 {\n"
+                                    "    " +
+                                    var_iterator->second.type +
+                                    " var1[2][2];\n"
+                                    "};\n\n";
+        shader_source += shader_start;
 
-        if (var_iterator != supported_variable_types_map.end())
-        {
-            std::string shader_source = "uniform " + var_iterator->second.precision + " " + var_iterator->second.type +
-                                        " sampler1;\n"
-                                        "uniform " +
-                                        var_iterator->second.precision + " " + var_iterator->second.type +
-                                        " sampler2;\n"
-                                        "uniform " +
-                                        var_iterator->second.precision + " " + var_iterator->second.type +
-                                        " sampler3;\n"
-                                        "uniform " +
-                                        var_iterator->second.precision + " " + var_iterator->second.type +
-                                        " sampler4;\n"
-                                        "struct light1 {\n"
-                                        "    " +
-                                        var_iterator->second.type +
-                                        " var1[2][2];\n"
-                                        "};\n\n";
-            shader_source += shader_start;
+        shader_source += ("    light1 x = light1(" + var_iterator->second.type + "[][](" + var_iterator->second.type +
+                          "[](sampler1, sampler2), " + var_iterator->second.type + "[](sampler3, sampler4)));\n");
+        shader_source += "    light1 y = x;\n\n";
 
-            shader_source +=
-                ("    light1 x = light1(" + var_iterator->second.type + "[][](" + var_iterator->second.type +
-                 "[](sampler1, sampler2), " + var_iterator->second.type + "[](sampler3, sampler4)));\n");
-            shader_source += "    light1 y = x;\n\n";
+        /* End main */
+        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-            /* End main */
-            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-            /* Execute test */
-            this->execute_negative_test(tested_shader_type, shader_source);
-        } /* if var_type iterator found */
-        else
-        {
-            TCU_FAIL("Type not found.");
-        }
-    } /* for (int var_type_index = 0; ...) */
+        /* Execute test */
+        this->execute_negative_test(tested_shader_type, shader_source);
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /* Generates the shader source code for the ExpressionsIndexingScalar1
@@ -3056,33 +2967,30 @@ template <class API>
 void ExpressionsIndexingScalar1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    for (size_t var_type_index = 0; var_type_index < API::n_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(API::var_types[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(API::var_types[var_type_index]);
+        std::string shader_source = shader_start + "    " + var_iterator->second.type + " x[1][2][3][4];\n\n";
 
-        if (var_iterator != supported_variable_types_map.end())
-        {
-            std::string shader_source = shader_start + "    " + var_iterator->second.type + " x[1][2][3][4];\n\n";
+        shader_source += "    for (uint i = 0u; i < 2u; i++) {\n";
+        shader_source += "        for (uint j = 0u; j < 3u; j++) {\n";
+        shader_source += "            for (uint k = 0u; k < 4u; k++) {\n";
+        shader_source += "                x[0][i][j][k] = " + var_iterator->second.initializer_with_ones + ";\n";
+        shader_source += "            }\n";
+        shader_source += "        }\n";
+        shader_source += "    }\n";
 
-            shader_source += "    for (uint i = 0u; i < 2u; i++) {\n";
-            shader_source += "        for (uint j = 0u; j < 3u; j++) {\n";
-            shader_source += "            for (uint k = 0u; k < 4u; k++) {\n";
-            shader_source += "                x[0][i][j][k] = " + var_iterator->second.initializer_with_ones + ";\n";
-            shader_source += "            }\n";
-            shader_source += "        }\n";
-            shader_source += "    }\n";
+        /* End main */
+        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-            /* End main */
-            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-            /* Execute test */
-            EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-        } /* if var_type iterator found */
-        else
-        {
-            TCU_FAIL("Type not found.");
-        }
+        /* Execute test */
+        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
     }
 }
 
@@ -3109,36 +3017,30 @@ void ExpressionsIndexingScalar2<API>::test_shader_compilation(
     base_shader_string += shader_start;
 
     // There are 16 permutations, so loop 4x4 times.
-    for (int permutation = 0; permutation < (1 << test_array_dimensions); permutation++)
+    shader_source = base_shader_string + "    a"; // a var called 'a'
+
+    for (int sub_script_index = test_array_dimensions - 1; sub_script_index >= 0; sub_script_index--)
     {
-        shader_source = base_shader_string + "    a"; // a var called 'a'
-
-        for (int sub_script_index = test_array_dimensions - 1; sub_script_index >= 0; sub_script_index--)
+        /* If any bit is set for a particular number then add
+         * a valid array sub_script at that place, otherwise
+         * add an invalid array sub_script. */
+        if (m_permutation & (1 << sub_script_index))
         {
-            /* If any bit is set for a particular number then add
-             * a valid array sub_script at that place, otherwise
-             * add an invalid array sub_script. */
-            if (permutation & (1 << sub_script_index))
-            {
-                shader_source += "[0]";
-            }
-            else
-            {
-                shader_source += "[-1]";
-            }
+            shader_source += "[0]";
         }
-
-        shader_source += " = b;\n";
-
-        if (permutation != (1 << test_array_dimensions) - 1)
+        else
         {
-            /* End main */
-            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+            shader_source += "[-1]";
+        }
+    }
 
-            /* Execute test */
-            this->execute_negative_test(tested_shader_type, shader_source);
-        } /* if (permutation != (1 << test_array_dimensions) - 1) */
-    }     /* for (int permutation = 0; ...) */
+    shader_source += " = b;\n";
+
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the ExpressionsIndexingScalar3
@@ -3162,33 +3064,27 @@ void ExpressionsIndexingScalar3<API>::test_shader_compilation(
     base_shader_string += "float b = 2.0;\n\n";
     base_shader_string += shader_start;
 
-    for (int permutation = 0; permutation < (1 << test_array_dimensions); permutation++)
+    shader_source = base_shader_string + "    a";
+
+    for (int sub_script_index = test_array_dimensions - 1; sub_script_index >= 0; sub_script_index--)
     {
-        shader_source = base_shader_string + "    a";
-
-        for (int sub_script_index = test_array_dimensions - 1; sub_script_index >= 0; sub_script_index--)
+        if (m_permutation & (1 << sub_script_index))
         {
-            if (permutation & (1 << sub_script_index))
-            {
-                shader_source += "[0]";
-            }
-            else
-            {
-                shader_source += "[4]";
-            }
+            shader_source += "[0]";
         }
-
-        shader_source += " = b;\n";
-
-        if (permutation != (1 << test_array_dimensions) - 1)
+        else
         {
-            /* End main */
-            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+            shader_source += "[4]";
+        }
+    }
 
-            /* Execute test */
-            this->execute_negative_test(tested_shader_type, shader_source);
-        } /* if (permutation != (1 << test_array_dimensions) - 1) */
-    }     /* for (int permutation = 0; ...) */
+    shader_source += " = b;\n";
+
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the ExpressionsIndexingScalar4
@@ -3213,33 +3109,27 @@ void ExpressionsIndexingScalar4<API>::test_shader_compilation(
     base_shader_string += "float b = 2.0;\n\n";
     base_shader_string += shader_start;
 
-    for (int permutation = 0; permutation < (1 << test_array_dimensions); permutation++)
+    shader_source = base_shader_string + "    a";
+
+    for (int sub_script_index = test_array_dimensions - 1; sub_script_index >= 0; sub_script_index--)
     {
-        shader_source = base_shader_string + "    a";
-
-        for (int sub_script_index = test_array_dimensions - 1; sub_script_index >= 0; sub_script_index--)
+        if (m_permutation & (1 << sub_script_index))
         {
-            if (permutation & (1 << sub_script_index))
-            {
-                shader_source += "[0]";
-            }
-            else
-            {
-                shader_source += "[]";
-            }
+            shader_source += "[0]";
         }
-
-        shader_source += " = b;\n";
-
-        if (permutation != (1 << test_array_dimensions) - 1)
+        else
         {
-            /* End main */
-            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+            shader_source += "[]";
+        }
+    }
 
-            /* Execute test */
-            this->execute_negative_test(tested_shader_type, shader_source);
-        } /* if (permutation != (1 << test_array_dimensions) - 1) */
-    }     /* for (int permutation = 0; ...) */
+    shader_source += " = b;\n";
+
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the ExpressionsIndexingArray1
@@ -3251,6 +3141,22 @@ void ExpressionsIndexingScalar4<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string ExpressionsIndexingArray1_variable_initializations[] = {
+    "x[0]                      = float[1][1][1][1][1][1][1]("
+    "float[1][1][1][1][1][1](float[1][1][1][1][1](float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0)))))));"
+    "\n",
+    "x[0][0]                   = "
+    "float[1][1][1][1][1][1](float[1][1][1][1][1](float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0))))));"
+    "\n",
+    "x[0][0][0]                = "
+    "float[1][1][1][1][1](float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0)))));\n",
+    "x[0][0][0][0]             = float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0))));\n",
+    "x[0][0][0][0][0]          = float[1][1][1](float[1][1](float[1](1.0)));\n",
+    "x[0][0][0][0][0][0]       = float[1][1](float[1](1.0));\n",
+    "x[0][0][0][0][0][0][0]    = float[1](1.0);\n",
+    "x[0][0][0][0][0][0][0][0] = 1.0;\n"};
+
 template <class API>
 void ExpressionsIndexingArray1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
@@ -3258,33 +3164,14 @@ void ExpressionsIndexingArray1<API>::test_shader_compilation(
     std::string shader_source;
     std::string variable_declaration = "float x[1][1][1][1][1][1][1][1];\n\n";
 
-    std::string variable_initializations[] = {
-        "x[0]                      = float[1][1][1][1][1][1][1]("
-        "float[1][1][1][1][1][1](float[1][1][1][1][1](float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0)))))));"
-        "\n",
-        "x[0][0]                   = "
-        "float[1][1][1][1][1][1](float[1][1][1][1][1](float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0))))));"
-        "\n",
-        "x[0][0][0]                = "
-        "float[1][1][1][1][1](float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0)))));\n",
-        "x[0][0][0][0]             = float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0))));\n",
-        "x[0][0][0][0][0]          = float[1][1][1](float[1][1](float[1](1.0)));\n",
-        "x[0][0][0][0][0][0]       = float[1][1](float[1](1.0));\n",
-        "x[0][0][0][0][0][0][0]    = float[1](1.0);\n",
-        "x[0][0][0][0][0][0][0][0] = 1.0;\n"};
+    shader_source = variable_declaration + shader_start;
+    shader_source += "    " + ExpressionsIndexingArray1_variable_initializations[m_string_index];
 
-    for (size_t string_index = 0; string_index < sizeof(variable_initializations) / sizeof(variable_initializations[0]);
-         string_index++)
-    {
-        shader_source = variable_declaration + shader_start;
-        shader_source += "    " + variable_initializations[string_index];
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-        /* Execute test */
-        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-    } /* for (int string_index = 0; ...) */
+    /* Execute test */
+    EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
 }
 
 /* Constructs a suitable constructor for the specified number of dimensions.
@@ -3355,23 +3242,20 @@ void ExpressionsIndexingArray2<API>::test_shader_compilation(
 
     std::string shader_code_common_part = shader_start + x_variable_initializaton + y_variable_initializaton;
 
-    for (size_t max_dimension_index = 1; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
-    {
-        std::string iteration_specific_shader_code_part;
+    std::string iteration_specific_shader_code_part;
 
-        iteration_specific_shader_code_part += this->extend_string("    x", "[0]", max_dimension_index);
-        iteration_specific_shader_code_part += " = ";
-        iteration_specific_shader_code_part += this->extend_string("y", "[0]", max_dimension_index);
-        iteration_specific_shader_code_part += ";\n";
+    iteration_specific_shader_code_part += this->extend_string("    x", "[0]", m_max_dimension_index);
+    iteration_specific_shader_code_part += " = ";
+    iteration_specific_shader_code_part += this->extend_string("y", "[0]", m_max_dimension_index);
+    iteration_specific_shader_code_part += ";\n";
 
-        std::string shader_source = shader_code_common_part + iteration_specific_shader_code_part;
+    std::string shader_source = shader_code_common_part + iteration_specific_shader_code_part;
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* Execute test */
-        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-    }
+    /* Execute test */
+    EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
 }
 
 /* Generates the shader source code for the ExpressionsIndexingArray3
@@ -3383,23 +3267,22 @@ void ExpressionsIndexingArray2<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string ExpressionsIndexingArray3_input[] = {
+    "    x[ivec2(0)] = 1.0;\n\n", "    x[ivec3(0)] = 1.0;\n\n", "    x[ivec4(0)] = 1.0;\n\n"};
+
 template <class API>
 void ExpressionsIndexingArray3<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    std::string input[] = {"    x[ivec2(0)] = 1.0;\n\n", "    x[ivec3(0)] = 1.0;\n\n", "    x[ivec4(0)] = 1.0;\n\n"};
+    std::string shader_source = shader_start + this->extend_string("    float x", "[2]", (int)m_string_index + 2) +
+                                ";\n\n" + ExpressionsIndexingArray3_input[m_string_index];
 
-    for (size_t string_index = 0; string_index < sizeof(input) / sizeof(input[0]); string_index++)
-    {
-        std::string shader_source = shader_start + this->extend_string("    float x", "[2]", (int)string_index + 2) +
-                                    ";\n\n" + input[string_index];
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-        /* End main */
-        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-        /* Execute test */
-        this->execute_negative_test(tested_shader_type, shader_source);
-    } /* for (int string_index = 0; ...) */
+    /* Execute test */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the ExpressionsDynamicIndexing1
@@ -3411,6 +3294,9 @@ void ExpressionsIndexingArray3<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string ExpressionsDynamicIndexing1_expressions[] = {"a", "b", "c", "0 + 1"};
+
 template <class API>
 void ExpressionsDynamicIndexing1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
@@ -3420,28 +3306,21 @@ void ExpressionsDynamicIndexing1<API>::test_shader_compilation(
                                                "int c = 0;\n"
                                                "float x[2][2];\n";
 
-    std::string expressions[] = {"a", "b", "c", "0 + 1"};
     std::string shader_source;
 
-    for (size_t write_index = 0; write_index < sizeof(expressions) / sizeof(expressions[0]); write_index++)
-    {
-        for (size_t read_index = 0; read_index < sizeof(expressions) / sizeof(expressions[0]); read_index++)
-        {
-            shader_source = expression_type_declarations;
-            shader_source += shader_start;
-            shader_source += "    x[";
-            shader_source += expressions[write_index];
-            shader_source += "][";
-            shader_source += expressions[read_index];
-            shader_source += "] = 1.0;\n\n";
+    shader_source = expression_type_declarations;
+    shader_source += shader_start;
+    shader_source += "    x[";
+    shader_source += ExpressionsDynamicIndexing1_expressions[m_write_index];
+    shader_source += "][";
+    shader_source += ExpressionsDynamicIndexing1_expressions[m_read_index];
+    shader_source += "] = 1.0;\n\n";
 
-            /* End main */
-            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+    /* End main */
+    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-            /* Execute test */
-            EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-        } /* for (int read_index = 0; ...) */
-    }     /* for (int write_index = 0; ...) */
+    /* Execute test */
+    EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
 }
 
 /* Generates the shader source code for the ExpressionsDynamicIndexing2
@@ -3457,7 +3336,6 @@ template <class API>
 void ExpressionsDynamicIndexing2<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    int num_var_types                             = sizeof(opaque_var_types) / sizeof(opaque_var_types[0]);
     const std::string invalid_size_declarations[] = {"[0][0][0][y]", "[0][0][y][0]", "[0][y][0][0]", "[y][0][0][0]",
                                                      "[0][0][y][y]", "[0][y][0][y]", "[y][0][0][y]", "[0][y][y][0]",
                                                      "[y][0][y][0]", "[y][y][0][0]", "[0][y][y][y]", "[y][0][y][y]",
@@ -3471,46 +3349,42 @@ void ExpressionsDynamicIndexing2<API>::test_shader_compilation(
         dynamic_indexing_supported = true;
     }
 
-    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(opaque_var_types[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(opaque_var_types[var_type_index]);
+        int num_invalid_size_declarations = sizeof(invalid_size_declarations) / sizeof(invalid_size_declarations[0]);
 
-        if (var_iterator != supported_variable_types_map.end())
+        for (int invalid_size_index = 0; invalid_size_index < num_invalid_size_declarations; invalid_size_index++)
         {
-            int num_invalid_size_declarations =
-                sizeof(invalid_size_declarations) / sizeof(invalid_size_declarations[0]);
+            std::string shader_source = "int y = 1;\n";
 
-            for (int invalid_size_index = 0; invalid_size_index < num_invalid_size_declarations; invalid_size_index++)
+            shader_source +=
+                "uniform " + var_iterator->second.precision + " " + var_iterator->second.type + " x[2][2][2][2];\n\n";
+            shader_source += "void main()\n";
+            shader_source += "{\n";
+            shader_source += ("    " + var_iterator->second.type_of_result_of_texture_function + " color = texture(x" +
+                              invalid_size_declarations[invalid_size_index] + ", " +
+                              var_iterator->second.coord_param_for_texture_function + ");\n");
+
+            /* End main */
+            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+
+            if (dynamic_indexing_supported)
             {
-                std::string shader_source = "int y = 1;\n";
-
-                shader_source += "uniform " + var_iterator->second.precision + " " + var_iterator->second.type +
-                                 " x[2][2][2][2];\n\n";
-                shader_source += "void main()\n";
-                shader_source += "{\n";
-                shader_source += ("    " + var_iterator->second.type_of_result_of_texture_function +
-                                  " color = texture(x" + invalid_size_declarations[invalid_size_index] + ", " +
-                                  var_iterator->second.coord_param_for_texture_function + ");\n");
-
-                /* End main */
-                DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-                if (dynamic_indexing_supported)
-                {
-                    EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, true);
-                }
-                else
-                {
-                    this->execute_negative_test(tested_shader_type, shader_source);
-                }
-            } /* for (int invalid_size_index = 0; ...) */
-        }     /* if var_type iterator found */
-        else
-        {
-            TCU_FAIL("Type not found.");
-        }
-    } /* for (int var_type_index = 0; ...) */
+                EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, true);
+            }
+            else
+            {
+                this->execute_negative_test(tested_shader_type, shader_source);
+            }
+        } /* for (int invalid_size_index = 0; ...) */
+    }     /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /* Generates the shader source code for the ExpressionsEquality1
@@ -3525,71 +3399,66 @@ void ExpressionsDynamicIndexing2<API>::test_shader_compilation(
 template <class API>
 void ExpressionsEquality1<API>::test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    int num_var_types = API::n_var_types;
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(API::var_types[m_var_type_index]);
 
-    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(API::var_types[var_type_index]);
+        std::string shader_source = shader_start;
 
-        if (var_iterator != supported_variable_types_map.end())
-        {
-            std::string shader_source = shader_start;
+        shader_source += "    ";
+        shader_source += var_iterator->second.type;
+        shader_source += "[][] x = ";
+        shader_source += var_iterator->second.type;
+        shader_source += "[][](";
+        shader_source += var_iterator->second.type;
+        shader_source += "[](";
+        shader_source += var_iterator->second.initializer_with_zeroes;
+        shader_source += ",";
+        shader_source += var_iterator->second.initializer_with_zeroes;
+        shader_source += "),";
+        shader_source += var_iterator->second.type;
+        shader_source += "[](";
+        shader_source += var_iterator->second.initializer_with_zeroes;
+        shader_source += ",";
+        shader_source += var_iterator->second.initializer_with_zeroes;
+        shader_source += "));\n";
+        shader_source += "    ";
+        shader_source += var_iterator->second.type;
+        shader_source += "[][] y = ";
+        shader_source += var_iterator->second.type;
+        shader_source += "[][](";
+        shader_source += var_iterator->second.type;
+        shader_source += "[](";
+        shader_source += var_iterator->second.initializer_with_zeroes;
+        shader_source += ",";
+        shader_source += var_iterator->second.initializer_with_zeroes;
+        shader_source += "),";
+        shader_source += var_iterator->second.type;
+        shader_source += "[](";
+        shader_source += var_iterator->second.initializer_with_zeroes;
+        shader_source += ",";
+        shader_source += var_iterator->second.initializer_with_zeroes;
+        shader_source += "));\n\n";
+        shader_source += "    float result = 0.0;\n\n";
+        shader_source += "    if (x == y)\n";
+        shader_source += "    {\n";
+        shader_source += "        result = 1.0;\n";
+        shader_source += "    }\n";
+        shader_source += "    if (y != x)\n";
+        shader_source += "    {\n";
+        shader_source += "        result = 2.0;\n";
+        shader_source += "    }\n";
 
-            shader_source += "    ";
-            shader_source += var_iterator->second.type;
-            shader_source += "[][] x = ";
-            shader_source += var_iterator->second.type;
-            shader_source += "[][](";
-            shader_source += var_iterator->second.type;
-            shader_source += "[](";
-            shader_source += var_iterator->second.initializer_with_zeroes;
-            shader_source += ",";
-            shader_source += var_iterator->second.initializer_with_zeroes;
-            shader_source += "),";
-            shader_source += var_iterator->second.type;
-            shader_source += "[](";
-            shader_source += var_iterator->second.initializer_with_zeroes;
-            shader_source += ",";
-            shader_source += var_iterator->second.initializer_with_zeroes;
-            shader_source += "));\n";
-            shader_source += "    ";
-            shader_source += var_iterator->second.type;
-            shader_source += "[][] y = ";
-            shader_source += var_iterator->second.type;
-            shader_source += "[][](";
-            shader_source += var_iterator->second.type;
-            shader_source += "[](";
-            shader_source += var_iterator->second.initializer_with_zeroes;
-            shader_source += ",";
-            shader_source += var_iterator->second.initializer_with_zeroes;
-            shader_source += "),";
-            shader_source += var_iterator->second.type;
-            shader_source += "[](";
-            shader_source += var_iterator->second.initializer_with_zeroes;
-            shader_source += ",";
-            shader_source += var_iterator->second.initializer_with_zeroes;
-            shader_source += "));\n\n";
-            shader_source += "    float result = 0.0;\n\n";
-            shader_source += "    if (x == y)\n";
-            shader_source += "    {\n";
-            shader_source += "        result = 1.0;\n";
-            shader_source += "    }\n";
-            shader_source += "    if (y != x)\n";
-            shader_source += "    {\n";
-            shader_source += "        result = 2.0;\n";
-            shader_source += "    }\n";
+        /* End main */
+        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-            /* End main */
-            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-            /* Execute test */
-            EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-        } /* if var_type iterator found */
-        else
-        {
-            TCU_FAIL("Type not found.");
-        }
+        /* Execute test */
+        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
     }
 }
 
@@ -3605,76 +3474,71 @@ void ExpressionsEquality1<API>::test_shader_compilation(typename TestCaseBase<AP
 template <class API>
 void ExpressionsEquality2<API>::test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    int num_var_types = API::n_var_types;
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(API::var_types[m_var_type_index]);
 
-    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(API::var_types[var_type_index]);
+        std::string shader_source = "struct light {\n    float intensity;\n    int position;\n};\n\n";
 
-        if (var_iterator != supported_variable_types_map.end())
+        shader_source += shader_start;
+        shader_source += "    light[][] x =";
+        shader_source += "light";
+        shader_source += "[][](";
+        shader_source += "light";
+        shader_source += "[](light(1.0, 1)),";
+        shader_source += "light";
+        shader_source += "[](light(2.0, 2)));\n\n";
+        shader_source += "    light[][] y =";
+        shader_source += "light";
+        shader_source += "[][](";
+        shader_source += "light";
+        shader_source += "[](light(3.0, 3)),";
+        shader_source += "light";
+        shader_source += "[](light(4.0, 4)));\n\n";
+        shader_source += "    float result = 0.0;\n\n";
+        shader_source += "    if (x == y)\n";
+        shader_source += "    {\n";
+        shader_source += "        result = 1.0;\n";
+        shader_source += "    }\n";
+        shader_source += "    if (y != x)\n";
+        shader_source += "    {\n";
+        shader_source += "        result = 2.0;\n";
+        shader_source += "    }\n";
+
+        /* Apply stage specific stuff */
+        switch (tested_shader_type)
         {
-            std::string shader_source = "struct light {\n    float intensity;\n    int position;\n};\n\n";
-
-            shader_source += shader_start;
-            shader_source += "    light[][] x =";
-            shader_source += "light";
-            shader_source += "[][](";
-            shader_source += "light";
-            shader_source += "[](light(1.0, 1)),";
-            shader_source += "light";
-            shader_source += "[](light(2.0, 2)));\n\n";
-            shader_source += "    light[][] y =";
-            shader_source += "light";
-            shader_source += "[][](";
-            shader_source += "light";
-            shader_source += "[](light(3.0, 3)),";
-            shader_source += "light";
-            shader_source += "[](light(4.0, 4)));\n\n";
-            shader_source += "    float result = 0.0;\n\n";
-            shader_source += "    if (x == y)\n";
-            shader_source += "    {\n";
-            shader_source += "        result = 1.0;\n";
-            shader_source += "    }\n";
-            shader_source += "    if (y != x)\n";
-            shader_source += "    {\n";
-            shader_source += "        result = 2.0;\n";
-            shader_source += "    }\n";
-
-            /* Apply stage specific stuff */
-            switch (tested_shader_type)
-            {
-            case TestCaseBase<API>::VERTEX_SHADER_TYPE:
-                shader_source += "\n    gl_Position = vec4(0.0,0.0,0.0,1.0);\n";
-                break;
-            case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
-                shader_source += "\n    gl_FragDepth = result;\n";
-                break;
-            case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
-                break;
-            case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
-                shader_source += emit_quad;
-                break;
-            case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE:
-                shader_source += set_tesseation;
-                break;
-            case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
-                break;
-            default:
-                TCU_FAIL("Unrecognized shader type.");
-                break;
-            }
-
-            /* End main function */
-            shader_source += shader_end;
-
-            /* Execute test */
-            EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-        } /* if var_type iterator found */
-        else
-        {
-            TCU_FAIL("Type not found.");
+        case TestCaseBase<API>::VERTEX_SHADER_TYPE:
+            shader_source += "\n    gl_Position = vec4(0.0,0.0,0.0,1.0);\n";
+            break;
+        case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
+            shader_source += "\n    gl_FragDepth = result;\n";
+            break;
+        case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
+            break;
+        case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
+            shader_source += emit_quad;
+            break;
+        case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE:
+            shader_source += set_tesseation;
+            break;
+        case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
+            break;
+        default:
+            TCU_FAIL("Unrecognized shader type.");
+            break;
         }
+
+        /* End main function */
+        shader_source += shader_end;
+
+        /* Execute test */
+        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
     }
 }
 
@@ -3687,38 +3551,36 @@ void ExpressionsEquality2<API>::test_shader_compilation(typename TestCaseBase<AP
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string ExpressionsLength1_case_specific_string[] = {"    if (x.length() != 4) {\n"
+                                                                      "        result = 0.0f;\n    }\n",
+                                                                      "    if (x[0].length() != 3) {\n"
+                                                                      "        result = 0.0f;\n    }\n",
+                                                                      "    if (x[0][0].length() != 2) {\n"
+                                                                      "        result = 0.0f;\n    }\n",
+                                                                      "    if (x[0][0][0].length() != 1) {\n"
+                                                                      "        result = 0.0f;\n    }\n"};
+
 template <class API>
 void ExpressionsLength1<API>::test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    std::string array_declaration      = "    int x[4][3][2][1];\n\n";
-    std::string case_specific_string[] = {"    if (x.length() != 4) {\n"
-                                          "        result = 0.0f;\n    }\n",
-                                          "    if (x[0].length() != 3) {\n"
-                                          "        result = 0.0f;\n    }\n",
-                                          "    if (x[0][0].length() != 2) {\n"
-                                          "        result = 0.0f;\n    }\n",
-                                          "    if (x[0][0][0].length() != 1) {\n"
-                                          "        result = 0.0f;\n    }\n"};
-    const bool test_compute            = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
+    std::string array_declaration = "    int x[4][3][2][1];\n\n";
 
-    for (size_t case_specific_string_index = 0;
-         case_specific_string_index < sizeof(case_specific_string) / sizeof(case_specific_string[0]);
-         case_specific_string_index++)
+    const bool test_compute = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
+
+    const std::string &test_snippet = ExpressionsLength1_case_specific_string[m_case_specific_string_index];
+
+    if (false == test_compute)
     {
-        const std::string &test_snippet = case_specific_string[case_specific_string_index];
+        execute_draw_test(tested_shader_type, array_declaration, test_snippet);
+    }
+    else
+    {
+        execute_dispatch_test(tested_shader_type, array_declaration, test_snippet);
+    }
 
-        if (false == test_compute)
-        {
-            execute_draw_test(tested_shader_type, array_declaration, test_snippet);
-        }
-        else
-        {
-            execute_dispatch_test(tested_shader_type, array_declaration, test_snippet);
-        }
-
-        /* Deallocate any resources used. */
-        this->delete_objects();
-    } /* for (int case_specific_string_index = 0; ...) */
+    /* Deallocate any resources used. */
+    this->delete_objects();
 }
 
 /** Executes test for compute program
@@ -4312,38 +4174,36 @@ std::string ExpressionsLength1<API>::prepare_vertex_shader(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string ExpressionsLength2_case_specific_string[] = {"    if (x.length() != 1) {\n"
+                                                                      "        result = 0.0f;\n    }\n",
+                                                                      "    if (x[0].length() != 2) {\n"
+                                                                      "        result = 0.0f;\n    }\n",
+                                                                      "    if (x[0][0].length() != 3) {\n"
+                                                                      "        result = 0.0f;\n    }\n",
+                                                                      "    if (x[0][0][0].length() != 4) {\n"
+                                                                      "        result = 0.0f;\n    }\n"};
+
 template <class API>
 void ExpressionsLength2<API>::test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    std::string array_declaration      = "    int x[1][2][3][4];\n\n";
-    std::string case_specific_string[] = {"    if (x.length() != 1) {\n"
-                                          "        result = 0.0f;\n    }\n",
-                                          "    if (x[0].length() != 2) {\n"
-                                          "        result = 0.0f;\n    }\n",
-                                          "    if (x[0][0].length() != 3) {\n"
-                                          "        result = 0.0f;\n    }\n",
-                                          "    if (x[0][0][0].length() != 4) {\n"
-                                          "        result = 0.0f;\n    }\n"};
-    const bool test_compute            = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
+    std::string array_declaration = "    int x[1][2][3][4];\n\n";
 
-    for (size_t case_specific_string_index = 0;
-         case_specific_string_index < sizeof(case_specific_string) / sizeof(case_specific_string[0]);
-         case_specific_string_index++)
+    const bool test_compute = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
+
+    const std::string &test_snippet = ExpressionsLength2_case_specific_string[m_case_specific_string_index];
+
+    if (false == test_compute)
     {
-        const std::string &test_snippet = case_specific_string[case_specific_string_index];
+        this->execute_draw_test(tested_shader_type, array_declaration, test_snippet);
+    }
+    else
+    {
+        this->execute_dispatch_test(tested_shader_type, array_declaration, test_snippet);
+    }
 
-        if (false == test_compute)
-        {
-            this->execute_draw_test(tested_shader_type, array_declaration, test_snippet);
-        }
-        else
-        {
-            this->execute_dispatch_test(tested_shader_type, array_declaration, test_snippet);
-        }
-
-        /* Deallocate any resources used. */
-        this->delete_objects();
-    } /* for (int case_specific_string_index = 0; ...) */
+    /* Deallocate any resources used. */
+    this->delete_objects();
 }
 
 /* Generates the shader source code for the ExpressionsLength3
@@ -4355,55 +4215,54 @@ void ExpressionsLength2<API>::test_shader_compilation(typename TestCaseBase<API>
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const std::string ExpressionsLength3_input[] = {"    if (x[].length() != 2) {\n"
+                                                       "        result = 0.0f;\n    }\n",
+                                                       "    if (x[][].length() != 2)  {\n"
+                                                       "        result = 0.0f;\n    }\n",
+                                                       "    if (x[][][].length() != 2)  {\n"
+                                                       "        result = 0.0f;\n    }\n"};
+
 template <class API>
 void ExpressionsLength3<API>::test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
     std::string array_declaration = "    int x[1][1][1][1];\n\n";
-    std::string input[]           = {"    if (x[].length() != 2) {\n"
-                                               "        result = 0.0f;\n    }\n",
-                                     "    if (x[][].length() != 2)  {\n"
-                                               "        result = 0.0f;\n    }\n",
-                                     "    if (x[][][].length() != 2)  {\n"
-                                               "        result = 0.0f;\n    }\n"};
 
-    for (size_t string_index = 0; string_index < sizeof(input) / sizeof(input[0]); string_index++)
+    std::string shader_source;
+    const std::string &test_snippet = ExpressionsLength3_input[m_string_index];
+
+    switch (tested_shader_type)
     {
-        std::string shader_source;
-        const std::string &test_snippet = input[string_index];
+    case TestCaseBase<API>::VERTEX_SHADER_TYPE:
+        shader_source = this->prepare_vertex_shader(tested_shader_type, array_declaration, test_snippet);
+        break;
 
-        switch (tested_shader_type)
-        {
-        case TestCaseBase<API>::VERTEX_SHADER_TYPE:
-            shader_source = this->prepare_vertex_shader(tested_shader_type, array_declaration, test_snippet);
-            break;
+    case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
+        shader_source = this->prepare_fragment_shader(tested_shader_type, array_declaration, test_snippet);
+        break;
 
-        case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
-            shader_source = this->prepare_fragment_shader(tested_shader_type, array_declaration, test_snippet);
-            break;
+    case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
+        shader_source = this->prepare_compute_shader(tested_shader_type, array_declaration, test_snippet);
+        break;
 
-        case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
-            shader_source = this->prepare_compute_shader(tested_shader_type, array_declaration, test_snippet);
-            break;
+    case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
+        shader_source = this->prepare_geometry_shader(tested_shader_type, array_declaration, test_snippet);
+        break;
 
-        case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
-            shader_source = this->prepare_geometry_shader(tested_shader_type, array_declaration, test_snippet);
-            break;
+    case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE:
+        shader_source = this->prepare_tess_ctrl_shader(tested_shader_type, array_declaration, test_snippet);
+        break;
 
-        case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE:
-            shader_source = this->prepare_tess_ctrl_shader(tested_shader_type, array_declaration, test_snippet);
-            break;
+    case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
+        shader_source = this->prepare_tess_eval_shader(tested_shader_type, array_declaration, test_snippet);
+        break;
 
-        case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
-            shader_source = this->prepare_tess_eval_shader(tested_shader_type, array_declaration, test_snippet);
-            break;
+    default:
+        TCU_FAIL("Unrecognized shader type.");
+        break;
+    } /* switch (tested_shader_type) */
 
-        default:
-            TCU_FAIL("Unrecognized shader type.");
-            break;
-        } /* switch (tested_shader_type) */
-
-        this->execute_negative_test(tested_shader_type, shader_source);
-    } /* for (int string_index = 0; ...) */
+    this->execute_negative_test(tested_shader_type, shader_source);
 }
 
 /* Generates the shader source code for the ExpressionsInvalid1
@@ -4453,74 +4312,71 @@ void ExpressionsInvalid2<API>::test_shader_compilation(typename TestCaseBase<API
     std::string valid_relation_opeartors =
         "    float result = 0.0;\n\n    if(x == y)\n    {\n        result = 1.0;\n    }\n\n\n";
 
-    for (size_t var_type_index = 0; var_type_index < API::n_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(API::var_types[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(API::var_types[var_type_index]);
+        std::string base_variable_string;
 
-        if (var_iterator != supported_variable_types_map.end())
+        for (size_t variable_declaration_index = 0;
+             variable_declaration_index <
+             sizeof(shader_variable_declarations) / sizeof(shader_variable_declarations[0]);
+             variable_declaration_index++)
         {
-            std::string base_variable_string;
+            base_variable_string += var_iterator->second.type;
+            base_variable_string += shader_variable_declarations[variable_declaration_index];
 
-            for (size_t variable_declaration_index = 0;
-                 variable_declaration_index <
-                 sizeof(shader_variable_declarations) / sizeof(shader_variable_declarations[0]);
-                 variable_declaration_index++)
+            base_variable_string += "[1][1][1][1][1][1][1][1] = ";
+
+            for (size_t sub_script_index = 0; sub_script_index < API::MAX_ARRAY_DIMENSIONS; sub_script_index++)
             {
-                base_variable_string += var_iterator->second.type;
-                base_variable_string += shader_variable_declarations[variable_declaration_index];
-
-                base_variable_string += "[1][1][1][1][1][1][1][1] = ";
-
-                for (size_t sub_script_index = 0; sub_script_index < API::MAX_ARRAY_DIMENSIONS; sub_script_index++)
-                {
-                    base_variable_string += this->extend_string(var_iterator->second.type, "[1]",
-                                                                API::MAX_ARRAY_DIMENSIONS - sub_script_index);
-                    base_variable_string += "(";
-                }
-
-                base_variable_string += var_iterator->second.initializer_with_ones;
-
-                for (size_t sub_script_index = 0; sub_script_index < API::MAX_ARRAY_DIMENSIONS; sub_script_index++)
-                {
-                    base_variable_string += ")";
-                }
-
-                base_variable_string += ";\n";
-            } /* for (int variable_declaration_index = 0; ...) */
-
-            /* Run positive case */
-            {
-                std::string shader_source;
-
-                shader_source = base_variable_string + "\n";
-                shader_source += shader_start + valid_relation_opeartors;
-
-                DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-                EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
+                base_variable_string +=
+                    this->extend_string(var_iterator->second.type, "[1]", API::MAX_ARRAY_DIMENSIONS - sub_script_index);
+                base_variable_string += "(";
             }
 
-            /* Run negative cases */
-            for (size_t string_index = 0;
-                 string_index < sizeof(variable_relation_opeartors) / sizeof(variable_relation_opeartors[0]);
-                 string_index++)
+            base_variable_string += var_iterator->second.initializer_with_ones;
+
+            for (size_t sub_script_index = 0; sub_script_index < API::MAX_ARRAY_DIMENSIONS; sub_script_index++)
             {
-                std::string shader_source;
+                base_variable_string += ")";
+            }
 
-                shader_source = base_variable_string + "\n";
-                shader_source += shader_start + variable_relation_opeartors[string_index];
+            base_variable_string += ";\n";
+        } /* for (int variable_declaration_index = 0; ...) */
 
-                DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-                this->execute_negative_test(tested_shader_type, shader_source);
-            } /* for (int string_index = 0; ...) */
-        }     /* if var_type iterator found */
-        else
+        /* Run positive case */
         {
-            TCU_FAIL("Type not found.");
+            std::string shader_source;
+
+            shader_source = base_variable_string + "\n";
+            shader_source += shader_start + valid_relation_opeartors;
+
+            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+
+            EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
         }
-    } /* for (int var_type_index = 0; ...) */
+
+        /* Run negative cases */
+        for (size_t string_index = 0;
+             string_index < sizeof(variable_relation_opeartors) / sizeof(variable_relation_opeartors[0]);
+             string_index++)
+        {
+            std::string shader_source;
+
+            shader_source = base_variable_string + "\n";
+            shader_source += shader_start + variable_relation_opeartors[string_index];
+
+            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+
+            this->execute_negative_test(tested_shader_type, shader_source);
+        } /* for (int string_index = 0; ...) */
+    }     /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /* Generates the shader source code for the InteractionFunctionCalls1
@@ -4532,21 +4388,20 @@ void ExpressionsInvalid2<API>::test_shader_compilation(typename TestCaseBase<API
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionFunctionCalls1_var_types_set_es[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
+    VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
+
+static const glcts::test_var_type InteractionFunctionCalls1_var_types_set_gl[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
+    VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
+    VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
+
 template <class API>
 void InteractionFunctionCalls1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
-        VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
-    static const size_t num_var_types_es = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
-        VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
-        VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -4559,75 +4414,70 @@ void InteractionFunctionCalls1<API>::test_shader_compilation(
                                                 "            {\n"
                                                 "                for (uint d = 0u; d < 2u; d++)\n"
                                                 "                {\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionFunctionCalls1_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionFunctionCalls1_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string iterator_declaration = "    " + var_iterator->second.iterator_type +
+                                           " iterator = " + var_iterator->second.iterator_initialization + ";\n";
 
-        if (var_iterator != supported_variable_types_map.end())
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
+
+        function_definition = "void my_function(out ";
+        function_definition += var_iterator->second.type;
+        function_definition += " output_array[2][2][2][2]) {\n";
+        function_definition += iterator_declaration;
+        function_definition += iteration_loop_start;
+        function_definition += "                                   output_array[a][b][c][d] = " +
+                               var_iterator->second.variable_type_initializer1 + ";\n";
+        function_definition +=
+            "                                   iterator += " + var_iterator->second.iterator_type + "(1);\n";
+        function_definition += iteration_loop_end;
+        function_definition += "}";
+
+        function_use = "    " + var_iterator->second.type + " my_array[2][2][2][2];\n";
+        function_use += "    my_function(my_array);";
+
+        verification = iterator_declaration;
+        verification += "    float result = 1.0;\n";
+        verification += iteration_loop_start;
+        verification += "                                   if (my_array[a][b][c][d] " +
+                        var_iterator->second.specific_element +
+                        " != iterator)\n"
+                        "                                   {\n"
+                        "                                       result = 0.0;\n"
+                        "                                   }\n"
+                        "                                   iterator += " +
+                        var_iterator->second.iterator_type + "(1);\n";
+        verification += iteration_loop_end;
+
+        if (false == test_compute)
         {
-            std::string iterator_declaration = "    " + var_iterator->second.iterator_type +
-                                               " iterator = " + var_iterator->second.iterator_initialization + ";\n";
-
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
-
-            function_definition = "void my_function(out ";
-            function_definition += var_iterator->second.type;
-            function_definition += " output_array[2][2][2][2]) {\n";
-            function_definition += iterator_declaration;
-            function_definition += iteration_loop_start;
-            function_definition += "                                   output_array[a][b][c][d] = " +
-                                   var_iterator->second.variable_type_initializer1 + ";\n";
-            function_definition +=
-                "                                   iterator += " + var_iterator->second.iterator_type + "(1);\n";
-            function_definition += iteration_loop_end;
-            function_definition += "}";
-
-            function_use = "    " + var_iterator->second.type + " my_array[2][2][2][2];\n";
-            function_use += "    my_function(my_array);";
-
-            verification = iterator_declaration;
-            verification += "    float result = 1.0;\n";
-            verification += iteration_loop_start;
-            verification += "                                   if (my_array[a][b][c][d] " +
-                            var_iterator->second.specific_element +
-                            " != iterator)\n"
-                            "                                   {\n"
-                            "                                       result = 0.0;\n"
-                            "                                   }\n"
-                            "                                   iterator += " +
-                            var_iterator->second.iterator_type + "(1);\n";
-            verification += iteration_loop_end;
-
-            if (false == test_compute)
-            {
-                execute_draw_test(tested_shader_type, function_definition, function_use, verification);
-            }
-            else
-            {
-                execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
-            }
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+            execute_draw_test(tested_shader_type, function_definition, function_use, verification);
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
         }
-    } /* for (int var_type_index = 0; ...) */
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /** Executes test for compute program
@@ -5265,21 +5115,20 @@ std::string InteractionFunctionCalls1<API>::prepare_vertex_shader(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionFunctionCalls2_var_types_set_es[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
+    VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
+
+static const glcts::test_var_type InteractionFunctionCalls2_var_types_set_gl[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
+    VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
+    VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
+
 template <class API>
 void InteractionFunctionCalls2<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
-        VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
-    static const size_t num_var_types_es = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
-        VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
-        VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -5301,76 +5150,71 @@ void InteractionFunctionCalls2<API>::test_shader_compilation(
                                                 "                                     61, 62, 63, 64, 65, 66, 67, 68,\n"
                                                 "                                     71, 72, 73, 74, 75, 76, 77, 78,\n"
                                                 "                                     81, 82, 83, 84, 85, 86, 87, 88);\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionFunctionCalls2_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionFunctionCalls2_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
 
-        if (var_iterator != supported_variable_types_map.end())
+        function_definition += multiplier_array;
+        function_definition += "void my_function(inout ";
+        function_definition += var_iterator->second.type;
+        function_definition += " inout_array[2][2][2][2]) {\n"
+                               "    uint i = 0u;\n";
+        function_definition += iteration_loop_start;
+        function_definition +=
+            "                                   inout_array[a][b][c][d] *= " + var_iterator->second.iterator_type +
+            "(multiplier_array[i % 64u]);\n";
+        function_definition += "                                   i+= 1u;\n";
+        function_definition += iteration_loop_end;
+        function_definition += "}";
+
+        function_use += "    float result = 1.0;\n";
+        function_use += "    uint iterator = 0u;\n";
+        function_use += "    " + var_iterator->second.type + " my_array[2][2][2][2];\n";
+        function_use += iteration_loop_start;
+        function_use += "                                   my_array[a][b][c][d] = " +
+                        var_iterator->second.variable_type_initializer2 + ";\n";
+        function_use += iteration_loop_end;
+        function_use += "    my_function(my_array);";
+
+        verification += iteration_loop_start;
+        verification += "                                   if (my_array[a][b][c][d] " +
+                        var_iterator->second.specific_element + "!= " + var_iterator->second.iterator_type +
+                        "(multiplier_array[iterator % 64u]))\n"
+                        "                                   {\n"
+                        "                                       result = 0.0;\n"
+                        "                                   }\n"
+                        "                                   iterator += 1u;\n";
+        verification += iteration_loop_end;
+
+        if (false == test_compute)
         {
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
-
-            function_definition += multiplier_array;
-            function_definition += "void my_function(inout ";
-            function_definition += var_iterator->second.type;
-            function_definition += " inout_array[2][2][2][2]) {\n"
-                                   "    uint i = 0u;\n";
-            function_definition += iteration_loop_start;
-            function_definition +=
-                "                                   inout_array[a][b][c][d] *= " + var_iterator->second.iterator_type +
-                "(multiplier_array[i % 64u]);\n";
-            function_definition += "                                   i+= 1u;\n";
-            function_definition += iteration_loop_end;
-            function_definition += "}";
-
-            function_use += "    float result = 1.0;\n";
-            function_use += "    uint iterator = 0u;\n";
-            function_use += "    " + var_iterator->second.type + " my_array[2][2][2][2];\n";
-            function_use += iteration_loop_start;
-            function_use += "                                   my_array[a][b][c][d] = " +
-                            var_iterator->second.variable_type_initializer2 + ";\n";
-            function_use += iteration_loop_end;
-            function_use += "    my_function(my_array);";
-
-            verification += iteration_loop_start;
-            verification += "                                   if (my_array[a][b][c][d] " +
-                            var_iterator->second.specific_element + "!= " + var_iterator->second.iterator_type +
-                            "(multiplier_array[iterator % 64u]))\n"
-                            "                                   {\n"
-                            "                                       result = 0.0;\n"
-                            "                                   }\n"
-                            "                                   iterator += 1u;\n";
-            verification += iteration_loop_end;
-
-            if (false == test_compute)
-            {
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
-            }
-            else
-            {
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
-            }
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
         }
-    } /* for (int var_type_index = 0; ...) */
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /* Generates the shader source code for the InteractionArgumentAliasing1
@@ -5382,17 +5226,17 @@ void InteractionFunctionCalls2<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionArgumentAliasing1_var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT,
+                                                                                     VAR_TYPE_MAT4};
+
+static const glcts::test_var_type InteractionArgumentAliasing1_var_types_set_gl[] = {
+    VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
+
 template <class API>
 void InteractionArgumentAliasing1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4,
-                                                            VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -5405,92 +5249,87 @@ void InteractionArgumentAliasing1<API>::test_shader_compilation(
                                                 "            {\n"
                                                 "                for (uint d = 0u; d < 2u; d++)\n"
                                                 "                {\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionArgumentAliasing1_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionArgumentAliasing1_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string array_declaration = var_iterator->second.type + " z[2][2][2][2];\n\n";
 
-        if (var_iterator != supported_variable_types_map.end())
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
+
+        function_definition += "bool gfunc(" + var_iterator->second.type + " x[2][2][2][2], ";
+        function_definition += var_iterator->second.type + " y[2][2][2][2])\n";
+        function_definition += "{\n";
+        function_definition += "    " + iteration_loop_start;
+        function_definition +=
+            "                               x[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
+        function_definition += "    " + iteration_loop_end;
+        function_definition += "\n";
+        function_definition += "    " + iteration_loop_start;
+        function_definition += "                                   if(y[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
         {
-            std::string array_declaration = var_iterator->second.type + " z[2][2][2][2];\n\n";
-
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
-
-            function_definition += "bool gfunc(" + var_iterator->second.type + " x[2][2][2][2], ";
-            function_definition += var_iterator->second.type + " y[2][2][2][2])\n";
-            function_definition += "{\n";
-            function_definition += "    " + iteration_loop_start;
-            function_definition +=
-                "                               x[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
-            function_definition += "    " + iteration_loop_end;
-            function_definition += "\n";
-            function_definition += "    " + iteration_loop_start;
-            function_definition += "                                   if(y[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += "    " + iteration_loop_end;
-            function_definition += "  return true;\n";
-            function_definition += "}";
-
-            function_use += "    " + array_declaration;
-            function_use += "    " + iteration_loop_start;
-            function_use += "                                   z[a][b][c][d] = ";
-            function_use += var_iterator->second.type;
-            function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
-            function_use += "    " + iteration_loop_end;
-
-            verification += "    float result = 0.0;\n";
-            verification += "    if(gfunc(z, z) == true)\n";
-            verification += "    {\n";
-            verification += "        result = 1.0;\n\n";
-            verification += "    }\n";
-            verification += "    else\n";
-            verification += "    {\n";
-            verification += "        result = 0.0;\n\n";
-            verification += "    }\n";
-
-            if (false == test_compute)
-            {
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
-            }
-            else
-            {
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
-            }
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
         }
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += "    " + iteration_loop_end;
+        function_definition += "  return true;\n";
+        function_definition += "}";
+
+        function_use += "    " + array_declaration;
+        function_use += "    " + iteration_loop_start;
+        function_use += "                                   z[a][b][c][d] = ";
+        function_use += var_iterator->second.type;
+        function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
+        function_use += "    " + iteration_loop_end;
+
+        verification += "    float result = 0.0;\n";
+        verification += "    if(gfunc(z, z) == true)\n";
+        verification += "    {\n";
+        verification += "        result = 1.0;\n\n";
+        verification += "    }\n";
+        verification += "    else\n";
+        verification += "    {\n";
+        verification += "        result = 0.0;\n\n";
+        verification += "    }\n";
+
+        if (false == test_compute)
+        {
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
+        }
+        else
+        {
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
+        }
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
     }
 }
 
@@ -5503,17 +5342,16 @@ void InteractionArgumentAliasing1<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionArgumentAliasing2_var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT,
+                                                                                     VAR_TYPE_MAT4};
+static const glcts::test_var_type InteractionArgumentAliasing2_var_types_set_gl[] = {
+    VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
+
 template <class API>
 void InteractionArgumentAliasing2<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4,
-                                                            VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -5526,92 +5364,86 @@ void InteractionArgumentAliasing2<API>::test_shader_compilation(
                                                 "            {\n"
                                                 "                for (uint d = 0u; d < 2u; d++)\n"
                                                 "                {\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionArgumentAliasing2_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionArgumentAliasing2_var_types_set_gl;
     }
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string array_declaration = var_iterator->second.type + " z[2][2][2][2];\n\n";
 
-        if (var_iterator != supported_variable_types_map.end())
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
+
+        function_definition += "bool gfunc(" + var_iterator->second.type + " x[2][2][2][2], ";
+        function_definition += var_iterator->second.type + " y[2][2][2][2])\n";
+        function_definition += "{\n";
+        function_definition += "    " + iteration_loop_start;
+        function_definition +=
+            "                                   y[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
+        function_definition += "    " + iteration_loop_end;
+        function_definition += "\n";
+        function_definition += "    " + iteration_loop_start;
+        function_definition += "                                   if(x[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
         {
-            std::string array_declaration = var_iterator->second.type + " z[2][2][2][2];\n\n";
-
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
-
-            function_definition += "bool gfunc(" + var_iterator->second.type + " x[2][2][2][2], ";
-            function_definition += var_iterator->second.type + " y[2][2][2][2])\n";
-            function_definition += "{\n";
-            function_definition += "    " + iteration_loop_start;
-            function_definition +=
-                "                                   y[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
-            function_definition += "    " + iteration_loop_end;
-            function_definition += "\n";
-            function_definition += "    " + iteration_loop_start;
-            function_definition += "                                   if(x[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += "    " + iteration_loop_end;
-            function_definition += "  return true;\n";
-            function_definition += "}";
-
-            function_use += "    " + array_declaration;
-            function_use += "    " + iteration_loop_start;
-            function_use += "                                   z[a][b][c][d] = ";
-            function_use += var_iterator->second.type;
-            function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
-            function_use += "    " + iteration_loop_end;
-
-            verification += "    float result = 0.0;\n";
-            verification += "    if(gfunc(z, z) == true)\n";
-            verification += "    {\n";
-            verification += "        result = 1.0;\n\n";
-            verification += "    }\n";
-            verification += "    else\n";
-            verification += "    {\n";
-            verification += "        result = 0.0;\n\n";
-            verification += "    }\n";
-
-            if (false == test_compute)
-            {
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
-            }
-            else
-            {
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
-            }
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
         }
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += "    " + iteration_loop_end;
+        function_definition += "  return true;\n";
+        function_definition += "}";
+
+        function_use += "    " + array_declaration;
+        function_use += "    " + iteration_loop_start;
+        function_use += "                                   z[a][b][c][d] = ";
+        function_use += var_iterator->second.type;
+        function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
+        function_use += "    " + iteration_loop_end;
+
+        verification += "    float result = 0.0;\n";
+        verification += "    if(gfunc(z, z) == true)\n";
+        verification += "    {\n";
+        verification += "        result = 1.0;\n\n";
+        verification += "    }\n";
+        verification += "    else\n";
+        verification += "    {\n";
+        verification += "        result = 0.0;\n\n";
+        verification += "    }\n";
+
+        if (false == test_compute)
+        {
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
+        }
+        else
+        {
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
+        }
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
     }
 }
 
@@ -5624,17 +5456,16 @@ void InteractionArgumentAliasing2<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionArgumentAliasing3_var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT,
+                                                                                     VAR_TYPE_MAT4};
+static const glcts::test_var_type InteractionArgumentAliasing3_var_types_set_gl[] = {
+    VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
+
 template <class API>
 void InteractionArgumentAliasing3<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4,
-                                                            VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -5647,92 +5478,87 @@ void InteractionArgumentAliasing3<API>::test_shader_compilation(
                                                 "            {\n"
                                                 "                for (uint d = 0u; d < 2u; d++)\n"
                                                 "                {\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionArgumentAliasing3_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionArgumentAliasing3_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string array_declaration = var_iterator->second.type + " z[2][2][2][2];\n\n";
 
-        if (var_iterator != supported_variable_types_map.end())
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
+
+        function_definition += "bool gfunc(out " + var_iterator->second.type + " x[2][2][2][2], ";
+        function_definition += var_iterator->second.type + " y[2][2][2][2])\n";
+        function_definition += "{\n";
+        function_definition += "    " + iteration_loop_start;
+        function_definition +=
+            "                                   x[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
+        function_definition += "    " + iteration_loop_end;
+        function_definition += "\n";
+        function_definition += "    " + iteration_loop_start;
+        function_definition += "                                   if(y[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
         {
-            std::string array_declaration = var_iterator->second.type + " z[2][2][2][2];\n\n";
-
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
-
-            function_definition += "bool gfunc(out " + var_iterator->second.type + " x[2][2][2][2], ";
-            function_definition += var_iterator->second.type + " y[2][2][2][2])\n";
-            function_definition += "{\n";
-            function_definition += "    " + iteration_loop_start;
-            function_definition +=
-                "                                   x[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
-            function_definition += "    " + iteration_loop_end;
-            function_definition += "\n";
-            function_definition += "    " + iteration_loop_start;
-            function_definition += "                                   if(y[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += "    " + iteration_loop_end;
-            function_definition += "  return true;\n";
-            function_definition += "}\n\n";
-
-            function_use += "    " + array_declaration;
-            function_use += "    " + iteration_loop_start;
-            function_use += "                                   z[a][b][c][d] = ";
-            function_use += var_iterator->second.type;
-            function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
-            function_use += "    " + iteration_loop_end;
-
-            verification += "    float result = 0.0;\n";
-            verification += "    if(gfunc(z, z) == true)\n";
-            verification += "    {\n";
-            verification += "        result = 1.0;\n\n";
-            verification += "    }\n";
-            verification += "    else\n";
-            verification += "    {\n";
-            verification += "        result = 0.0;\n\n";
-            verification += "    }\n";
-
-            if (false == test_compute)
-            {
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
-            }
-            else
-            {
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
-            }
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
         }
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += "    " + iteration_loop_end;
+        function_definition += "  return true;\n";
+        function_definition += "}\n\n";
+
+        function_use += "    " + array_declaration;
+        function_use += "    " + iteration_loop_start;
+        function_use += "                                   z[a][b][c][d] = ";
+        function_use += var_iterator->second.type;
+        function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
+        function_use += "    " + iteration_loop_end;
+
+        verification += "    float result = 0.0;\n";
+        verification += "    if(gfunc(z, z) == true)\n";
+        verification += "    {\n";
+        verification += "        result = 1.0;\n\n";
+        verification += "    }\n";
+        verification += "    else\n";
+        verification += "    {\n";
+        verification += "        result = 0.0;\n\n";
+        verification += "    }\n";
+
+        if (false == test_compute)
+        {
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
+        }
+        else
+        {
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
+        }
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
     }
 }
 
@@ -5745,17 +5571,16 @@ void InteractionArgumentAliasing3<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionArgumentAliasing4_var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT,
+                                                                                     VAR_TYPE_MAT4};
+static const glcts::test_var_type InteractionArgumentAliasing4_var_types_set_gl[] = {
+    VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
+
 template <class API>
 void InteractionArgumentAliasing4<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4,
-                                                            VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -5768,92 +5593,87 @@ void InteractionArgumentAliasing4<API>::test_shader_compilation(
                                                 "            {\n"
                                                 "                for (uint d = 0u; d < 2u; d++)\n"
                                                 "                {\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionArgumentAliasing4_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionArgumentAliasing4_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string array_declaration = var_iterator->second.type + "[2][2][2][2] z;\n\n";
 
-        if (var_iterator != supported_variable_types_map.end())
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
+
+        function_definition += "bool gfunc(" + var_iterator->second.type + " x[2][2][2][2], ";
+        function_definition += "out " + var_iterator->second.type + " y[2][2][2][2])\n";
+        function_definition += "{\n";
+        function_definition += "    " + iteration_loop_start;
+        function_definition +=
+            "                                   y[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
+        function_definition += "    " + iteration_loop_end;
+        function_definition += "\n";
+        function_definition += "    " + iteration_loop_start;
+        function_definition += "                                   if(x[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
         {
-            std::string array_declaration = var_iterator->second.type + "[2][2][2][2] z;\n\n";
-
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
-
-            function_definition += "bool gfunc(" + var_iterator->second.type + " x[2][2][2][2], ";
-            function_definition += "out " + var_iterator->second.type + " y[2][2][2][2])\n";
-            function_definition += "{\n";
-            function_definition += "    " + iteration_loop_start;
-            function_definition +=
-                "                                   y[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
-            function_definition += "    " + iteration_loop_end;
-            function_definition += "\n";
-            function_definition += "    " + iteration_loop_start;
-            function_definition += "                                   if(x[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += "    " + iteration_loop_end;
-            function_definition += "  return true;\n";
-            function_definition += "}\n\n";
-
-            function_use += "    " + array_declaration;
-            function_use += "    " + iteration_loop_start;
-            function_use += "                                   z[a][b][c][d] = ";
-            function_use += var_iterator->second.type;
-            function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
-            function_use += "    " + iteration_loop_end;
-
-            verification += "    float result = 0.0;\n";
-            verification += "    if(gfunc(z, z) == true)\n";
-            verification += "    {\n";
-            verification += "        result = 1.0;\n\n";
-            verification += "    }\n";
-            verification += "    else\n";
-            verification += "    {\n";
-            verification += "        result = 0.0;\n\n";
-            verification += "    }\n";
-
-            if (false == test_compute)
-            {
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
-            }
-            else
-            {
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
-            }
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
         }
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += "    " + iteration_loop_end;
+        function_definition += "  return true;\n";
+        function_definition += "}\n\n";
+
+        function_use += "    " + array_declaration;
+        function_use += "    " + iteration_loop_start;
+        function_use += "                                   z[a][b][c][d] = ";
+        function_use += var_iterator->second.type;
+        function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
+        function_use += "    " + iteration_loop_end;
+
+        verification += "    float result = 0.0;\n";
+        verification += "    if(gfunc(z, z) == true)\n";
+        verification += "    {\n";
+        verification += "        result = 1.0;\n\n";
+        verification += "    }\n";
+        verification += "    else\n";
+        verification += "    {\n";
+        verification += "        result = 0.0;\n\n";
+        verification += "    }\n";
+
+        if (false == test_compute)
+        {
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
+        }
+        else
+        {
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
+        }
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
     }
 }
 
@@ -5866,17 +5686,16 @@ void InteractionArgumentAliasing4<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionArgumentAliasing5_var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT,
+                                                                                     VAR_TYPE_MAT4};
+static const glcts::test_var_type InteractionArgumentAliasing5_var_types_set_gl[] = {
+    VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
+
 template <class API>
 void InteractionArgumentAliasing5<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4,
-                                                            VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -5889,92 +5708,87 @@ void InteractionArgumentAliasing5<API>::test_shader_compilation(
                                                 "            {\n"
                                                 "                for (uint d = 0u; d < 2u; d++)\n"
                                                 "                {\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionArgumentAliasing5_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionArgumentAliasing5_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string array_declaration = var_iterator->second.type + "[2][2][2][2] z;\n\n";
 
-        if (var_iterator != supported_variable_types_map.end())
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
+
+        function_definition += "bool gfunc(inout " + var_iterator->second.type + " x[2][2][2][2], ";
+        function_definition += var_iterator->second.type + " y[2][2][2][2])\n";
+        function_definition += "{\n";
+        function_definition += "    " + iteration_loop_start;
+        function_definition +=
+            "                                   x[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
+        function_definition += "    " + iteration_loop_end;
+        function_definition += "\n";
+        function_definition += "    " + iteration_loop_start;
+        function_definition += "                                   if(y[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
         {
-            std::string array_declaration = var_iterator->second.type + "[2][2][2][2] z;\n\n";
-
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
-
-            function_definition += "bool gfunc(inout " + var_iterator->second.type + " x[2][2][2][2], ";
-            function_definition += var_iterator->second.type + " y[2][2][2][2])\n";
-            function_definition += "{\n";
-            function_definition += "    " + iteration_loop_start;
-            function_definition +=
-                "                                   x[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
-            function_definition += "    " + iteration_loop_end;
-            function_definition += "\n";
-            function_definition += "    " + iteration_loop_start;
-            function_definition += "                                   if(y[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += "    " + iteration_loop_end;
-            function_definition += "  return true;\n";
-            function_definition += "}\n\n";
-
-            function_use += "    " + array_declaration;
-            function_use += "    " + iteration_loop_start;
-            function_use += "                                   z[a][b][c][d] = ";
-            function_use += var_iterator->second.type;
-            function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
-            function_use += "    " + iteration_loop_end;
-
-            verification += "    float result = 0.0;\n";
-            verification += "    if(gfunc(z, z) == true)\n";
-            verification += "    {\n";
-            verification += "        result = 1.0;\n\n";
-            verification += "    }\n";
-            verification += "    else\n";
-            verification += "    {\n";
-            verification += "        result = 0.0;\n\n";
-            verification += "    }\n";
-
-            if (false == test_compute)
-            {
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
-            }
-            else
-            {
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
-            }
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
         }
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += "    " + iteration_loop_end;
+        function_definition += "  return true;\n";
+        function_definition += "}\n\n";
+
+        function_use += "    " + array_declaration;
+        function_use += "    " + iteration_loop_start;
+        function_use += "                                   z[a][b][c][d] = ";
+        function_use += var_iterator->second.type;
+        function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
+        function_use += "    " + iteration_loop_end;
+
+        verification += "    float result = 0.0;\n";
+        verification += "    if(gfunc(z, z) == true)\n";
+        verification += "    {\n";
+        verification += "        result = 1.0;\n\n";
+        verification += "    }\n";
+        verification += "    else\n";
+        verification += "    {\n";
+        verification += "        result = 0.0;\n\n";
+        verification += "    }\n";
+
+        if (false == test_compute)
+        {
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
+        }
+        else
+        {
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
+        }
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
     }
 }
 
@@ -5987,17 +5801,16 @@ void InteractionArgumentAliasing5<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionArgumentAliasing6_var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT,
+                                                                                     VAR_TYPE_MAT4};
+static const glcts::test_var_type InteractionArgumentAliasing6_var_types_set_gl[] = {
+    VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
+
 template <class API>
 void InteractionArgumentAliasing6<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4,
-                                                            VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -6010,92 +5823,87 @@ void InteractionArgumentAliasing6<API>::test_shader_compilation(
                                                 "            {\n"
                                                 "                for (uint d = 0u; d < 2u; d++)\n"
                                                 "                {\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionArgumentAliasing6_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionArgumentAliasing6_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string array_declaration = var_iterator->second.type + "[2][2][2][2] z;\n\n";
 
-        if (var_iterator != supported_variable_types_map.end())
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
+
+        function_definition += "bool gfunc(" + var_iterator->second.type + " x[2][2][2][2], ";
+        function_definition += "inout " + var_iterator->second.type + " y[2][2][2][2])\n";
+        function_definition += "{\n";
+        function_definition += "    " + iteration_loop_start;
+        function_definition +=
+            "                                   y[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
+        function_definition += "    " + iteration_loop_end;
+        function_definition += "\n";
+        function_definition += "    " + iteration_loop_start;
+        function_definition += "                                   if(x[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
         {
-            std::string array_declaration = var_iterator->second.type + "[2][2][2][2] z;\n\n";
-
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
-
-            function_definition += "bool gfunc(" + var_iterator->second.type + " x[2][2][2][2], ";
-            function_definition += "inout " + var_iterator->second.type + " y[2][2][2][2])\n";
-            function_definition += "{\n";
-            function_definition += "    " + iteration_loop_start;
-            function_definition +=
-                "                                   y[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
-            function_definition += "    " + iteration_loop_end;
-            function_definition += "\n";
-            function_definition += "    " + iteration_loop_start;
-            function_definition += "                                   if(x[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += "    " + iteration_loop_end;
-            function_definition += "  return true;\n";
-            function_definition += "}\n\n";
-
-            function_use += "    " + array_declaration;
-            function_use += "    " + iteration_loop_start;
-            function_use += "                                   z[a][b][c][d] = ";
-            function_use += var_iterator->second.type;
-            function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
-            function_use += "    " + iteration_loop_end;
-
-            verification += "    float result = 0.0;\n";
-            verification += "    if(gfunc(z, z) == true)\n";
-            verification += "    {\n";
-            verification += "        result = 1.0;\n\n";
-            verification += "    }\n";
-            verification += "    else\n";
-            verification += "    {\n";
-            verification += "        result = 0.0;\n\n";
-            verification += "    }\n";
-
-            if (false == test_compute)
-            {
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
-            }
-            else
-            {
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
-            }
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
         }
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += "    " + iteration_loop_end;
+        function_definition += "  return true;\n";
+        function_definition += "}\n\n";
+
+        function_use += "    " + array_declaration;
+        function_use += "    " + iteration_loop_start;
+        function_use += "                                   z[a][b][c][d] = ";
+        function_use += var_iterator->second.type;
+        function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
+        function_use += "    " + iteration_loop_end;
+
+        verification += "    float result = 0.0;\n";
+        verification += "    if(gfunc(z, z) == true)\n";
+        verification += "    {\n";
+        verification += "        result = 1.0;\n\n";
+        verification += "    }\n";
+        verification += "    else\n";
+        verification += "    {\n";
+        verification += "        result = 0.0;\n\n";
+        verification += "    }\n";
+
+        if (false == test_compute)
+        {
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification);
+        }
+        else
+        {
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification);
+        }
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
     }
 }
 
@@ -6108,159 +5916,153 @@ void InteractionArgumentAliasing6<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionUniforms1_var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                             VAR_TYPE_UINT};
+static const glcts::test_var_type InteractionUniforms1_var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                             VAR_TYPE_UINT, VAR_TYPE_DOUBLE};
+
 template <class API>
 void InteractionUniforms1<API>::test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT,
-                                                            VAR_TYPE_DOUBLE};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const glw::Functions &gl                  = this->context_id.getRenderContext().getFunctions();
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionUniforms1_var_types_set_es;
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionUniforms1_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string uniform_definition;
+        std::string uniform_use;
 
-        if (var_iterator != supported_variable_types_map.end())
+        uniform_definition += "uniform ";
+        uniform_definition += var_iterator->second.precision;
+        uniform_definition += " ";
+        uniform_definition += var_iterator->second.type;
+        uniform_definition += " my_uniform_1[1][1][1][1];\n\n";
+
+        uniform_use = "    float result = float(my_uniform_1[0][0][0][0]);\n";
+
+        if (API::USE_ALL_SHADER_STAGES)
         {
-            std::string uniform_definition;
-            std::string uniform_use;
+            const std::string &compute_shader_source =
+                this->prepare_compute_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &fragment_shader_source =
+                this->prepare_fragment_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &geometry_shader_source =
+                this->prepare_geometry_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &tess_ctrl_shader_source =
+                this->prepare_tess_ctrl_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &tess_eval_shader_source =
+                this->prepare_tess_eval_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &vertex_shader_source =
+                this->prepare_vertex_shader(tested_shader_type, uniform_definition, uniform_use);
 
-            uniform_definition += "uniform ";
-            uniform_definition += var_iterator->second.precision;
-            uniform_definition += " ";
-            uniform_definition += var_iterator->second.type;
-            uniform_definition += " my_uniform_1[1][1][1][1];\n\n";
-
-            uniform_use = "    float result = float(my_uniform_1[0][0][0][0]);\n";
-
-            if (API::USE_ALL_SHADER_STAGES)
+            switch (tested_shader_type)
             {
-                const std::string &compute_shader_source =
-                    this->prepare_compute_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &fragment_shader_source =
-                    this->prepare_fragment_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &geometry_shader_source =
-                    this->prepare_geometry_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &tess_ctrl_shader_source =
-                    this->prepare_tess_ctrl_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &tess_eval_shader_source =
-                    this->prepare_tess_eval_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &vertex_shader_source =
-                    this->prepare_vertex_shader(tested_shader_type, uniform_definition, uniform_use);
-
-                switch (tested_shader_type)
-                {
-                case TestCaseBase<API>::VERTEX_SHADER_TYPE: /* Fall through */
-                case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
-                    this->execute_positive_test(vertex_shader_source, fragment_shader_source, false, false);
-                    break;
-
-                case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
-                case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
-                case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE: /* Fall through */
-                case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
-                    this->execute_positive_test(vertex_shader_source, tess_ctrl_shader_source, tess_eval_shader_source,
-                                                geometry_shader_source, fragment_shader_source, compute_shader_source,
-                                                false, false);
-                    break;
-
-                default:
-                    TCU_FAIL("Invalid enum");
-                    break;
-                }
-            }
-            else
-            {
-                const std::string &fragment_shader_source =
-                    this->prepare_fragment_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &vertex_shader_source =
-                    this->prepare_vertex_shader(tested_shader_type, uniform_definition, uniform_use);
-
+            case TestCaseBase<API>::VERTEX_SHADER_TYPE: /* Fall through */
+            case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
                 this->execute_positive_test(vertex_shader_source, fragment_shader_source, false, false);
-            }
-
-            glw::GLint uniform_location = -1;
-
-            /* Make program object active. */
-            gl.useProgram(this->program_object_id);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() failed.");
-
-            /* Get uniform location. */
-            uniform_location = gl.getUniformLocation(this->program_object_id, "my_uniform_1[0][0][0][0]");
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glGetUniformLocation() failed.");
-
-            if (uniform_location == -1)
-            {
-                TCU_FAIL("Uniform is not found or is considered as not active.");
-            }
-
-            switch (var_type_index)
-            {
-            case 0: //float type of uniform is considered
-            {
-                glw::GLfloat uniform_value = 1.0f;
-
-                gl.uniform1f(uniform_location, uniform_value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1f() failed.");
-
                 break;
-            }
-            case 1: //int type of uniform is considered
-            {
-                glw::GLint uniform_value = 1;
 
-                gl.uniform1i(uniform_location, uniform_value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i() failed.");
-
+            case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
+            case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
+            case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE: /* Fall through */
+            case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
+                this->execute_positive_test(vertex_shader_source, tess_ctrl_shader_source, tess_eval_shader_source,
+                                            geometry_shader_source, fragment_shader_source, compute_shader_source,
+                                            false, false);
                 break;
-            }
-            case 2: //uint type of uniform is considered
-            {
-                glw::GLuint uniform_value = 1;
 
-                gl.uniform1ui(uniform_location, uniform_value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1ui() failed.");
-
-                break;
-            }
-            case 3: //double type of uniform is considered
-            {
-                glw::GLdouble uniform_value = 1.0;
-
-                gl.uniform1d(uniform_location, uniform_value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1d() failed.");
-
-                break;
-            }
             default:
-            {
-                TCU_FAIL("Invalid variable-type index.");
-
+                TCU_FAIL("Invalid enum");
                 break;
             }
-            } /* switch (var_type_index) */
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            const std::string &fragment_shader_source =
+                this->prepare_fragment_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &vertex_shader_source =
+                this->prepare_vertex_shader(tested_shader_type, uniform_definition, uniform_use);
+
+            this->execute_positive_test(vertex_shader_source, fragment_shader_source, false, false);
         }
-    } /* for (int var_type_index = 0; ...) */
+
+        glw::GLint uniform_location = -1;
+
+        /* Make program object active. */
+        gl.useProgram(this->program_object_id);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() failed.");
+
+        /* Get uniform location. */
+        uniform_location = gl.getUniformLocation(this->program_object_id, "my_uniform_1[0][0][0][0]");
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glGetUniformLocation() failed.");
+
+        if (uniform_location == -1)
+        {
+            TCU_FAIL("Uniform is not found or is considered as not active.");
+        }
+
+        switch (m_var_type_index)
+        {
+        case 0: //float type of uniform is considered
+        {
+            glw::GLfloat uniform_value = 1.0f;
+
+            gl.uniform1f(uniform_location, uniform_value);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1f() failed.");
+
+            break;
+        }
+        case 1: //int type of uniform is considered
+        {
+            glw::GLint uniform_value = 1;
+
+            gl.uniform1i(uniform_location, uniform_value);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i() failed.");
+
+            break;
+        }
+        case 2: //uint type of uniform is considered
+        {
+            glw::GLuint uniform_value = 1;
+
+            gl.uniform1ui(uniform_location, uniform_value);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1ui() failed.");
+
+            break;
+        }
+        case 3: //double type of uniform is considered
+        {
+            glw::GLdouble uniform_value = 1.0;
+
+            gl.uniform1d(uniform_location, uniform_value);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1d() failed.");
+
+            break;
+        }
+        default:
+        {
+            TCU_FAIL("Invalid variable-type index.");
+
+            break;
+        }
+        } /* switch (var_type_index) */
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /** Prepare shader
@@ -6620,16 +6422,15 @@ std::string InteractionUniforms1<API>::prepare_vertex_shader(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionUniforms2_var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT,
+                                                                             VAR_TYPE_MAT4};
+static const glcts::test_var_type InteractionUniforms2_var_types_set_gl[] = {
+    VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
+
 template <class API>
 void InteractionUniforms2<API>::test_shader_compilation(typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_INT, VAR_TYPE_FLOAT, VAR_TYPE_MAT4,
-                                                            VAR_TYPE_DOUBLE, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string array_initializers[] = {"int[2][2][2][2](\n"
                                               "    int[2][2][2](\n"
                                               "        int[2][2](\n"
@@ -6739,82 +6540,77 @@ void InteractionUniforms2<API>::test_shader_compilation(typename TestCaseBase<AP
                                               "    )\n"
                                               ")"};
 
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionUniforms2_var_types_set_es;
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionUniforms2_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string base_variable_string;
 
-        if (var_iterator != supported_variable_types_map.end())
+        for (int initialiser_selector = 1; initialiser_selector >= 0; initialiser_selector--)
         {
-            std::string base_variable_string;
-
-            for (int initialiser_selector = 1; initialiser_selector >= 0; initialiser_selector--)
+            // We normally do all 16 possible permutations of [4][4][4][4] items (15..0).
+            // However, in this case we will skip the case that will work,
+            // so we'll merely process permutations 14..0
+            for (int permutation_index = 14; permutation_index >= 0; permutation_index--)
             {
-                // We normally do all 16 possible permutations of [4][4][4][4] items (15..0).
-                // However, in this case we will skip the case that will work,
-                // so we'll merely process permutations 14..0
-                for (int permutation_index = 14; permutation_index >= 0; permutation_index--)
+                base_variable_string =
+                    "uniform " + var_iterator->second.precision + " " + var_iterator->second.type + " x";
+
+                // for all 4 possible sub_script entries
+                for (int sub_script_entry_index = 3; sub_script_entry_index >= 0; sub_script_entry_index--)
                 {
-                    base_variable_string =
-                        "uniform " + var_iterator->second.precision + " " + var_iterator->second.type + " x";
-
-                    // for all 4 possible sub_script entries
-                    for (int sub_script_entry_index = 3; sub_script_entry_index >= 0; sub_script_entry_index--)
+                    if (permutation_index & (1 << sub_script_entry_index))
                     {
-                        if (permutation_index & (1 << sub_script_entry_index))
-                        {
-                            // In this case, we'll use a valid sub_script
-                            base_variable_string += "[2]";
-                        }
-                        else
-                        {
-                            // In this case, we'll use an invalid sub_script
-                            base_variable_string += "[]";
-                        }
+                        // In this case, we'll use a valid sub_script
+                        base_variable_string += "[2]";
                     }
-
-                    if (initialiser_selector == 0)
+                    else
                     {
-                        // We'll use an initialiser
-                        base_variable_string += " = " + array_initializers[var_type_index];
+                        // In this case, we'll use an invalid sub_script
+                        base_variable_string += "[]";
                     }
+                }
 
-                    base_variable_string += ";\n\n";
+                if (initialiser_selector == 0)
+                {
+                    // We'll use an initialiser
+                    base_variable_string += " = " + array_initializers[m_var_type_index];
+                }
 
-                    std::string shader_source = base_variable_string + shader_start;
+                base_variable_string += ";\n\n";
 
-                    /* End main */
-                    DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+                std::string shader_source = base_variable_string + shader_start;
 
-                    /* Execute test:
-                     *
-                     * This will succeed in case of allowed unsized
-                     * declarations and when at least one of these is
-                     * true:
-                     *   1. There is an initialiser.
-                     *   2. Only the outermost dimension is unsized,
-                     *      as in [][2][2][2].
-                     */
-                    EXECUTE_SHADER_TEST(API::ALLOW_UNSIZED_DECLARATION &&
-                                            (initialiser_selector == 0 || permutation_index == 7),
-                                        tested_shader_type, shader_source);
-                } /* for (int permutation_index = 14; ...) */
-            }     /* for (int initialiser_selector  = 1; ...) */
-        }         /* if var_type iterator found */
-        else
-        {
-            TCU_FAIL("Type not found.");
-        }
-    } /* for (int var_type_index = 0; ...) */
+                /* End main */
+                DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
+
+                /* Execute test:
+                 *
+                 * This will succeed in case of allowed unsized
+                 * declarations and when at least one of these is
+                 * true:
+                 *   1. There is an initialiser.
+                 *   2. Only the outermost dimension is unsized,
+                 *      as in [][2][2][2].
+                 */
+                EXECUTE_SHADER_TEST(API::ALLOW_UNSIZED_DECLARATION &&
+                                        (initialiser_selector == 0 || permutation_index == 7),
+                                    tested_shader_type, shader_source);
+            } /* for (int permutation_index = 14; ...) */
+        }     /* for (int initialiser_selector  = 1; ...) */
+    }         /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /* Generates the shader source code for the InteractionUniformBuffers1
@@ -6826,50 +6622,44 @@ void InteractionUniforms2<API>::test_shader_compilation(typename TestCaseBase<AP
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionUniformBuffers1_var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                                   VAR_TYPE_UINT};
+static const glcts::test_var_type InteractionUniformBuffers1_var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                                   VAR_TYPE_UINT, VAR_TYPE_DOUBLE};
+
 template <class API>
 void InteractionUniformBuffers1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT,
-                                                            VAR_TYPE_DOUBLE};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionUniformBuffers1_var_types_set_es;
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionUniformBuffers1_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string shader_source;
 
-        if (var_iterator != supported_variable_types_map.end())
-        {
-            std::string shader_source;
+        shader_source += "uniform uBlocka {\n";
+        shader_source += "    " + var_iterator->second.type + " x[1][1][1][1][1][1];\n";
+        shader_source += "};\n\n";
+        shader_source += shader_start;
 
-            shader_source += "uniform uBlocka {\n";
-            shader_source += "    " + var_iterator->second.type + " x[1][1][1][1][1][1];\n";
-            shader_source += "};\n\n";
-            shader_source += shader_start;
+        /* End main */
+        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-            /* End main */
-            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-            /* Execute test */
-            EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-        } /* if var_type iterator found */
-        else
-        {
-            TCU_FAIL("Type not found.");
-        }
+        /* Execute test */
+        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
     }
 }
 
@@ -6882,186 +6672,180 @@ void InteractionUniformBuffers1<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionUniformBuffers2_var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                                   VAR_TYPE_UINT};
+static const glcts::test_var_type InteractionUniformBuffers2_var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                                   VAR_TYPE_UINT, VAR_TYPE_DOUBLE};
+
 template <class API>
 void InteractionUniformBuffers2<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT,
-                                                            VAR_TYPE_DOUBLE};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const glw::Functions &gl                  = this->context_id.getRenderContext().getFunctions();
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionUniformBuffers2_var_types_set_es;
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionUniformBuffers2_var_types_set_gl;
     }
 
     /* Iterate through float / int / uint values. */
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string uniform_definition;
+        std::string uniform_use;
 
-        if (var_iterator != supported_variable_types_map.end())
+        uniform_definition += "layout (std140) uniform uniform_block_name\n"
+                              "{\n";
+        uniform_definition += "    ";
+        uniform_definition += var_iterator->second.type;
+        uniform_definition += " my_uniform_1[1][1][1][1];\n"
+                              "};\n";
+
+        uniform_use = "    float result = float(my_uniform_1[0][0][0][0]);\n";
+
+        if (API::USE_ALL_SHADER_STAGES)
         {
-            std::string uniform_definition;
-            std::string uniform_use;
+            const std::string &compute_shader_source =
+                this->prepare_compute_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &fragment_shader_source =
+                this->prepare_fragment_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &geometry_shader_source =
+                this->prepare_geometry_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &tess_ctrl_shader_source =
+                this->prepare_tess_ctrl_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &tess_eval_shader_source =
+                this->prepare_tess_eval_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &vertex_shader_source =
+                this->prepare_vertex_shader(tested_shader_type, uniform_definition, uniform_use);
 
-            uniform_definition += "layout (std140) uniform uniform_block_name\n"
-                                  "{\n";
-            uniform_definition += "    ";
-            uniform_definition += var_iterator->second.type;
-            uniform_definition += " my_uniform_1[1][1][1][1];\n"
-                                  "};\n";
-
-            uniform_use = "    float result = float(my_uniform_1[0][0][0][0]);\n";
-
-            if (API::USE_ALL_SHADER_STAGES)
+            switch (tested_shader_type)
             {
-                const std::string &compute_shader_source =
-                    this->prepare_compute_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &fragment_shader_source =
-                    this->prepare_fragment_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &geometry_shader_source =
-                    this->prepare_geometry_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &tess_ctrl_shader_source =
-                    this->prepare_tess_ctrl_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &tess_eval_shader_source =
-                    this->prepare_tess_eval_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &vertex_shader_source =
-                    this->prepare_vertex_shader(tested_shader_type, uniform_definition, uniform_use);
-
-                switch (tested_shader_type)
-                {
-                case TestCaseBase<API>::VERTEX_SHADER_TYPE: /* Fall through */
-                case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
-                    this->execute_positive_test(vertex_shader_source, fragment_shader_source, false, false);
-                    break;
-
-                case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
-                case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
-                case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE: /* Fall through */
-                case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
-                    this->execute_positive_test(vertex_shader_source, tess_ctrl_shader_source, tess_eval_shader_source,
-                                                geometry_shader_source, fragment_shader_source, compute_shader_source,
-                                                false, false);
-                    break;
-
-                default:
-                    TCU_FAIL("Invalid enum");
-                    break;
-                }
-            }
-            else
-            {
-                const std::string &fragment_shader_source =
-                    this->prepare_fragment_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &vertex_shader_source =
-                    this->prepare_vertex_shader(tested_shader_type, uniform_definition, uniform_use);
-
+            case TestCaseBase<API>::VERTEX_SHADER_TYPE: /* Fall through */
+            case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
                 this->execute_positive_test(vertex_shader_source, fragment_shader_source, false, false);
-            }
-
-            glw::GLuint buffer_object_id      = 0;
-            glw::GLint my_uniform_block_index = GL_INVALID_INDEX;
-
-            gl.useProgram(this->program_object_id);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() failed.");
-
-            my_uniform_block_index = gl.getUniformBlockIndex(this->program_object_id, "uniform_block_name");
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glGetUniformBlockIndex() failed.");
-
-            if ((unsigned)my_uniform_block_index == GL_INVALID_INDEX)
-            {
-                TCU_FAIL("Uniform block not found or is considered as not active.");
-            }
-
-            gl.genBuffers(1, &buffer_object_id);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glGenBuffers() failed.");
-
-            gl.bindBuffer(GL_UNIFORM_BUFFER, buffer_object_id);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() failed.");
-
-            switch (var_type_index)
-            {
-            case 0: //float type of uniform is considered
-            {
-                glw::GLfloat buffer_data[] = {0.0f, 1.0f, 2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,
-                                              8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f};
-
-                gl.bufferData(GL_UNIFORM_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
-
                 break;
-            }       /* float case */
-            case 1: //int type of uniform is considered
-            {
 
-                glw::GLint buffer_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-
-                gl.bufferData(GL_UNIFORM_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
-
+            case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
+            case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
+            case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE: /* Fall through */
+            case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
+                this->execute_positive_test(vertex_shader_source, tess_ctrl_shader_source, tess_eval_shader_source,
+                                            geometry_shader_source, fragment_shader_source, compute_shader_source,
+                                            false, false);
                 break;
-            }       /* int case */
-            case 2: //uint type of uniform is considered
-            {
-                glw::GLuint buffer_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
-                gl.bufferData(GL_UNIFORM_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
-
-                break;
-            }       /* uint case */
-            case 3: //double type of uniform is considered
-            {
-                glw::GLdouble buffer_data[] = {0.0, 1.0, 2.0,  3.0,  4.0,  5.0,  6.0,  7.0,
-                                               8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
-
-                gl.bufferData(GL_UNIFORM_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
-
-                break;
-            } /* double case */
             default:
-            {
-                TCU_FAIL("Invalid variable-type index.");
-
+                TCU_FAIL("Invalid enum");
                 break;
             }
-            } /* switch (var_type_index) */
-
-            gl.uniformBlockBinding(this->program_object_id, my_uniform_block_index, 0);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glUniformBlockBinding() failed.");
-
-            gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, buffer_object_id);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBufferBase() failed.");
-
-            if (TestCaseBase<API>::COMPUTE_SHADER_TYPE != tested_shader_type)
-            {
-                execute_draw_test(tested_shader_type);
-            }
-            else
-            {
-                execute_dispatch_test();
-            }
-
-            /* Deallocate any resources used. */
-            gl.deleteBuffers(1, &buffer_object_id);
-            this->delete_objects();
-        } /* if var_type iterator found */
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            const std::string &fragment_shader_source =
+                this->prepare_fragment_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &vertex_shader_source =
+                this->prepare_vertex_shader(tested_shader_type, uniform_definition, uniform_use);
+
+            this->execute_positive_test(vertex_shader_source, fragment_shader_source, false, false);
         }
-    } /* for (int var_type_index = 0; ...) */
+
+        glw::GLuint buffer_object_id      = 0;
+        glw::GLint my_uniform_block_index = GL_INVALID_INDEX;
+
+        gl.useProgram(this->program_object_id);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() failed.");
+
+        my_uniform_block_index = gl.getUniformBlockIndex(this->program_object_id, "uniform_block_name");
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glGetUniformBlockIndex() failed.");
+
+        if ((unsigned)my_uniform_block_index == GL_INVALID_INDEX)
+        {
+            TCU_FAIL("Uniform block not found or is considered as not active.");
+        }
+
+        gl.genBuffers(1, &buffer_object_id);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glGenBuffers() failed.");
+
+        gl.bindBuffer(GL_UNIFORM_BUFFER, buffer_object_id);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() failed.");
+
+        switch (m_var_type_index)
+        {
+        case 0: //float type of uniform is considered
+        {
+            glw::GLfloat buffer_data[] = {0.0f, 1.0f, 2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,
+                                          8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f};
+
+            gl.bufferData(GL_UNIFORM_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
+
+            break;
+        }       /* float case */
+        case 1: //int type of uniform is considered
+        {
+
+            glw::GLint buffer_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+
+            gl.bufferData(GL_UNIFORM_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
+
+            break;
+        }       /* int case */
+        case 2: //uint type of uniform is considered
+        {
+            glw::GLuint buffer_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+
+            gl.bufferData(GL_UNIFORM_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
+
+            break;
+        }       /* uint case */
+        case 3: //double type of uniform is considered
+        {
+            glw::GLdouble buffer_data[] = {0.0, 1.0, 2.0,  3.0,  4.0,  5.0,  6.0,  7.0,
+                                           8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
+
+            gl.bufferData(GL_UNIFORM_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
+
+            break;
+        } /* double case */
+        default:
+        {
+            TCU_FAIL("Invalid variable-type index.");
+
+            break;
+        }
+        } /* switch (var_type_index) */
+
+        gl.uniformBlockBinding(this->program_object_id, my_uniform_block_index, 0);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glUniformBlockBinding() failed.");
+
+        gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, buffer_object_id);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBufferBase() failed.");
+
+        if (TestCaseBase<API>::COMPUTE_SHADER_TYPE != tested_shader_type)
+        {
+            execute_draw_test(tested_shader_type);
+        }
+        else
+        {
+            execute_dispatch_test();
+        }
+
+        /* Deallocate any resources used. */
+        gl.deleteBuffers(1, &buffer_object_id);
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /** Executes test for compute program
@@ -7133,17 +6917,16 @@ void InteractionUniformBuffers2<API>::execute_draw_test(typename TestCaseBase<AP
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionUniformBuffers3_var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                                   VAR_TYPE_UINT};
+static const glcts::test_var_type InteractionUniformBuffers3_var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                                   VAR_TYPE_UINT, VAR_TYPE_DOUBLE};
+
 template <class API>
 void InteractionUniformBuffers3<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT,
-                                                            VAR_TYPE_DOUBLE};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string invalid_size_declarations[] = {"[2][2][2][]", "[2][2][][2]", "[2][][2][2]", "[][2][2][2]",
                                                      "[2][2][][]",  "[2][][2][]",  "[][2][2][]",  "[2][][][2]",
                                                      "[][2][][2]",  "[][][2][2]",  "[2][][][]",   "[][2][][]",
@@ -7184,22 +6967,19 @@ void InteractionUniformBuffers3<API>::test_shader_compilation(
                                                     "double[2](3.1, 4.1)),"
                                                     "double[2][2](double[2](5.1, 6.1),"
                                                     "double[2](7.1, 8.1))));\n"};
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionUniformBuffers3_var_types_set_es;
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionUniformBuffers3_var_types_set_gl;
     }
 
     /* Iterate through float/ int/ uint types.
      * Case: without initializer.
      */
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
     {
         _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+            supported_variable_types_map.find(var_types_set[m_var_type_index]);
 
         if (var_iterator != supported_variable_types_map.end())
         {
@@ -7228,15 +7008,13 @@ void InteractionUniformBuffers3<API>::test_shader_compilation(
         {
             TCU_FAIL("Type not found.");
         }
-    } /* for (int var_type_index = 0; ...) */
-
+    }
     /* Iterate through float/ int/ uint types.
      * Case: with initializer.
      */
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
     {
         _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+            supported_variable_types_map.find(var_types_set[m_var_type_index]);
 
         if (var_iterator != supported_variable_types_map.end())
         {
@@ -7250,7 +7028,7 @@ void InteractionUniformBuffers3<API>::test_shader_compilation(
                 shader_source = "layout (std140) uniform MyUniform {\n";
                 shader_source += "    " + var_iterator->second.type +
                                  invalid_size_declarations[invalid_size_declarations_index] +
-                                 " my_variable = " + array_initializers[var_type_index];
+                                 " my_variable = " + array_initializers[m_var_type_index];
                 shader_source += "};\n\n";
                 shader_source += shader_start;
 
@@ -7277,50 +7055,44 @@ void InteractionUniformBuffers3<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionStorageBuffers1_var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                                   VAR_TYPE_UINT};
+static const glcts::test_var_type InteractionStorageBuffers1_var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                                   VAR_TYPE_UINT, VAR_TYPE_DOUBLE};
+
 template <class API>
 void InteractionStorageBuffers1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT,
-                                                            VAR_TYPE_DOUBLE};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionStorageBuffers1_var_types_set_es;
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionStorageBuffers1_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string shader_source;
 
-        if (var_iterator != supported_variable_types_map.end())
-        {
-            std::string shader_source;
+        shader_source += "buffer uBlocka {\n";
+        shader_source += "    " + var_iterator->second.type + " x[1][1][1][1][1][1];\n";
+        shader_source += "};\n\n";
+        shader_source += shader_start;
 
-            shader_source += "buffer uBlocka {\n";
-            shader_source += "    " + var_iterator->second.type + " x[1][1][1][1][1][1];\n";
-            shader_source += "};\n\n";
-            shader_source += shader_start;
+        /* End main */
+        DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
 
-            /* End main */
-            DEFAULT_MAIN_ENDING(tested_shader_type, shader_source);
-
-            /* Execute test */
-            EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
-        } /* if var_type iterator found */
-        else
-        {
-            TCU_FAIL("Type not found.");
-        }
+        /* Execute test */
+        EXECUTE_POSITIVE_TEST(tested_shader_type, shader_source, true, false);
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
     }
 }
 
@@ -7333,187 +7105,181 @@ void InteractionStorageBuffers1<API>::test_shader_compilation(
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionStorageBuffers2_var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                                   VAR_TYPE_UINT};
+static const glcts::test_var_type InteractionStorageBuffers2_var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                                   VAR_TYPE_UINT, VAR_TYPE_DOUBLE};
+
 template <class API>
 void InteractionStorageBuffers2<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT,
-                                                            VAR_TYPE_DOUBLE};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const glw::Functions &gl                  = this->context_id.getRenderContext().getFunctions();
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = InteractionStorageBuffers2_var_types_set_es;
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionStorageBuffers2_var_types_set_gl;
     }
 
     /* Iterate through float / int / uint values. */
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string uniform_definition;
+        std::string uniform_use;
 
-        if (var_iterator != supported_variable_types_map.end())
+        uniform_definition += "layout (std140) buffer storage_block_name\n"
+                              "{\n";
+        uniform_definition += "    ";
+        uniform_definition += var_iterator->second.type;
+        uniform_definition += " my_storage_1[1][1][1][1];\n"
+                              "};\n";
+
+        uniform_use = "    float result = float(my_storage_1[0][0][0][0]);\n";
+
+        if (API::USE_ALL_SHADER_STAGES)
         {
-            std::string uniform_definition;
-            std::string uniform_use;
+            const std::string &compute_shader_source =
+                this->prepare_compute_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &fragment_shader_source =
+                this->prepare_fragment_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &geometry_shader_source =
+                this->prepare_geometry_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &tess_ctrl_shader_source =
+                this->prepare_tess_ctrl_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &tess_eval_shader_source =
+                this->prepare_tess_eval_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &vertex_shader_source =
+                this->prepare_vertex_shader(tested_shader_type, uniform_definition, uniform_use);
 
-            uniform_definition += "layout (std140) buffer storage_block_name\n"
-                                  "{\n";
-            uniform_definition += "    ";
-            uniform_definition += var_iterator->second.type;
-            uniform_definition += " my_storage_1[1][1][1][1];\n"
-                                  "};\n";
-
-            uniform_use = "    float result = float(my_storage_1[0][0][0][0]);\n";
-
-            if (API::USE_ALL_SHADER_STAGES)
+            switch (tested_shader_type)
             {
-                const std::string &compute_shader_source =
-                    this->prepare_compute_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &fragment_shader_source =
-                    this->prepare_fragment_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &geometry_shader_source =
-                    this->prepare_geometry_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &tess_ctrl_shader_source =
-                    this->prepare_tess_ctrl_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &tess_eval_shader_source =
-                    this->prepare_tess_eval_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &vertex_shader_source =
-                    this->prepare_vertex_shader(tested_shader_type, uniform_definition, uniform_use);
-
-                switch (tested_shader_type)
-                {
-                case TestCaseBase<API>::VERTEX_SHADER_TYPE: /* Fall through */
-                case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
-                    this->execute_positive_test(vertex_shader_source, fragment_shader_source, false, false);
-                    break;
-
-                case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
-                case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
-                case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE: /* Fall through */
-                case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
-                    this->execute_positive_test(vertex_shader_source, tess_ctrl_shader_source, tess_eval_shader_source,
-                                                geometry_shader_source, fragment_shader_source, compute_shader_source,
-                                                false, false);
-                    break;
-
-                default:
-                    TCU_FAIL("Invalid enum");
-                    break;
-                }
-            }
-            else
-            {
-                const std::string &fragment_shader_source =
-                    this->prepare_fragment_shader(tested_shader_type, uniform_definition, uniform_use);
-                const std::string &vertex_shader_source =
-                    this->prepare_vertex_shader(tested_shader_type, uniform_definition, uniform_use);
-
+            case TestCaseBase<API>::VERTEX_SHADER_TYPE: /* Fall through */
+            case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:
                 this->execute_positive_test(vertex_shader_source, fragment_shader_source, false, false);
-            }
-
-            glw::GLuint buffer_object_id      = 0;
-            glw::GLint my_storage_block_index = GL_INVALID_INDEX;
-
-            gl.useProgram(this->program_object_id);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() failed.");
-
-            my_storage_block_index =
-                gl.getProgramResourceIndex(this->program_object_id, GL_SHADER_STORAGE_BLOCK, "storage_block_name");
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramResourceIndex() failed.");
-
-            if ((unsigned)my_storage_block_index == GL_INVALID_INDEX)
-            {
-                TCU_FAIL("Uniform block not found or is considered as not active.");
-            }
-
-            gl.genBuffers(1, &buffer_object_id);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glGenBuffers() failed.");
-
-            gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, buffer_object_id);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() failed.");
-
-            switch (var_type_index)
-            {
-            case 0: //float type of uniform is considered
-            {
-                glw::GLfloat buffer_data[] = {0.0f, 1.0f, 2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,
-                                              8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f};
-
-                gl.bufferData(GL_SHADER_STORAGE_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
-
                 break;
-            }       /* float case */
-            case 1: //int type of uniform is considered
-            {
 
-                glw::GLint buffer_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-
-                gl.bufferData(GL_SHADER_STORAGE_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
-
+            case TestCaseBase<API>::COMPUTE_SHADER_TYPE:
+            case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:
+            case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE: /* Fall through */
+            case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:
+                this->execute_positive_test(vertex_shader_source, tess_ctrl_shader_source, tess_eval_shader_source,
+                                            geometry_shader_source, fragment_shader_source, compute_shader_source,
+                                            false, false);
                 break;
-            }       /* int case */
-            case 2: //uint type of uniform is considered
-            {
-                glw::GLuint buffer_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
-                gl.bufferData(GL_SHADER_STORAGE_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
-
-                break;
-            }       /* uint case */
-            case 3: //double type of uniform is considered
-            {
-                glw::GLdouble buffer_data[] = {0.0, 1.0, 2.0,  3.0,  4.0,  5.0,  6.0,  7.0,
-                                               8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
-
-                gl.bufferData(GL_SHADER_STORAGE_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
-
-                break;
-            } /* double case */
             default:
-            {
-                TCU_FAIL("Invalid variable-type index.");
-
+                TCU_FAIL("Invalid enum");
                 break;
             }
-            } /* switch (var_type_index) */
-
-            gl.shaderStorageBlockBinding(this->program_object_id, my_storage_block_index, 0);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glUniformBlockBinding() failed.");
-
-            gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer_object_id);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBufferBase() failed.");
-
-            if (TestCaseBase<API>::COMPUTE_SHADER_TYPE != tested_shader_type)
-            {
-                execute_draw_test(tested_shader_type);
-            }
-            else
-            {
-                execute_dispatch_test();
-            }
-
-            /* Deallocate any resources used. */
-            gl.deleteBuffers(1, &buffer_object_id);
-            this->delete_objects();
-        } /* if var_type iterator found */
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            const std::string &fragment_shader_source =
+                this->prepare_fragment_shader(tested_shader_type, uniform_definition, uniform_use);
+            const std::string &vertex_shader_source =
+                this->prepare_vertex_shader(tested_shader_type, uniform_definition, uniform_use);
+
+            this->execute_positive_test(vertex_shader_source, fragment_shader_source, false, false);
         }
-    } /* for (int var_type_index = 0; ...) */
+
+        glw::GLuint buffer_object_id      = 0;
+        glw::GLint my_storage_block_index = GL_INVALID_INDEX;
+
+        gl.useProgram(this->program_object_id);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram() failed.");
+
+        my_storage_block_index =
+            gl.getProgramResourceIndex(this->program_object_id, GL_SHADER_STORAGE_BLOCK, "storage_block_name");
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glGetProgramResourceIndex() failed.");
+
+        if ((unsigned)my_storage_block_index == GL_INVALID_INDEX)
+        {
+            TCU_FAIL("Uniform block not found or is considered as not active.");
+        }
+
+        gl.genBuffers(1, &buffer_object_id);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glGenBuffers() failed.");
+
+        gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, buffer_object_id);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() failed.");
+
+        switch (m_var_type_index)
+        {
+        case 0: //float type of uniform is considered
+        {
+            glw::GLfloat buffer_data[] = {0.0f, 1.0f, 2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,
+                                          8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f};
+
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
+
+            break;
+        }       /* float case */
+        case 1: //int type of uniform is considered
+        {
+
+            glw::GLint buffer_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
+
+            break;
+        }       /* int case */
+        case 2: //uint type of uniform is considered
+        {
+            glw::GLuint buffer_data[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
+
+            break;
+        }       /* uint case */
+        case 3: //double type of uniform is considered
+        {
+            glw::GLdouble buffer_data[] = {0.0, 1.0, 2.0,  3.0,  4.0,  5.0,  6.0,  7.0,
+                                           8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0};
+
+            gl.bufferData(GL_SHADER_STORAGE_BUFFER, sizeof(buffer_data), buffer_data, GL_STATIC_DRAW);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed.");
+
+            break;
+        } /* double case */
+        default:
+        {
+            TCU_FAIL("Invalid variable-type index.");
+
+            break;
+        }
+        } /* switch (var_type_index) */
+
+        gl.shaderStorageBlockBinding(this->program_object_id, my_storage_block_index, 0);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glUniformBlockBinding() failed.");
+
+        gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer_object_id);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBufferBase() failed.");
+
+        if (TestCaseBase<API>::COMPUTE_SHADER_TYPE != tested_shader_type)
+        {
+            execute_draw_test(tested_shader_type);
+        }
+        else
+        {
+            execute_dispatch_test();
+        }
+
+        /* Deallocate any resources used. */
+        gl.deleteBuffers(1, &buffer_object_id);
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /** Executes test for compute program
@@ -7585,17 +7351,16 @@ void InteractionStorageBuffers2<API>::execute_draw_test(typename TestCaseBase<AP
  * @param tested_shader_type The type of shader that is being tested
  *                           (either TestCaseBase<API>::VERTEX_SHADER_TYPE or TestCaseBase<API>::FRAGMENT_SHADER_TYPE).
  */
+
+static const glcts::test_var_type InteractionStorageBuffers3_var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                                   VAR_TYPE_UINT};
+static const glcts::test_var_type InteractionStorageBuffers3_var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT,
+                                                                                   VAR_TYPE_UINT, VAR_TYPE_DOUBLE};
+
 template <class API>
 void InteractionStorageBuffers3<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT};
-    static const size_t num_var_types_es                 = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {VAR_TYPE_FLOAT, VAR_TYPE_INT, VAR_TYPE_UINT,
-                                                            VAR_TYPE_DOUBLE};
-    static const size_t num_var_types_gl                 = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string invalid_size_declarations[] = {"[2][2][2][]", "[2][2][][2]", "[2][][2][2]", "[][2][2][2]",
                                                      "[2][2][][]",  "[2][][2][]",  "[][2][2][]",  "[2][][][2]",
                                                      "[][2][][2]",  "[][][2][2]",  "[2][][][]",   "[][2][][]",
@@ -7635,22 +7400,19 @@ void InteractionStorageBuffers3<API>::test_shader_compilation(
                                                             "double[2](3.1, 4.1)),"
                                                             "double[2][2](double[2](5.1, 6.1),"
                                                             "double[2](7.1, 8.1))));\n"};
-    const glcts::test_var_type *var_types_set     = var_types_set_es;
-    size_t num_var_types                          = num_var_types_es;
+    const glcts::test_var_type *var_types_set     = InteractionStorageBuffers3_var_types_set_es;
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = InteractionStorageBuffers3_var_types_set_gl;
     }
 
     /* Iterate through float/ int/ uint types.
      * Case: without initializer.
      */
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
     {
         _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+            supported_variable_types_map.find(var_types_set[m_var_type_index]);
 
         if (var_iterator != supported_variable_types_map.end())
         {
@@ -7684,10 +7446,9 @@ void InteractionStorageBuffers3<API>::test_shader_compilation(
     /* Iterate through float/ int/ uint types.
      * Case: with initializer.
      */
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
     {
         _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+            supported_variable_types_map.find(var_types_set[m_var_type_index]);
 
         if (var_iterator != supported_variable_types_map.end())
         {
@@ -7701,7 +7462,7 @@ void InteractionStorageBuffers3<API>::test_shader_compilation(
                 shader_source = "layout (std140) buffer MyStorage {\n";
                 shader_source += "    " + var_iterator->second.type +
                                  invalid_size_declarations[invalid_size_declarations_index] +
-                                 " my_variable = " + array_initializers[var_type_index];
+                                 " my_variable = " + array_initializers[m_var_type_index];
                 shader_source += "};\n\n";
                 shader_source += shader_start;
 
@@ -9022,21 +8783,19 @@ void AtomicUsageTest<API>::execute(typename TestCaseBase<API>::TestShaderType te
  *
  * @param tested_shader_type The type of shader that is being tested
  */
+
+static const glcts::test_var_type SubroutineFunctionCalls1_var_types_set_es[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
+    VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
+static const glcts::test_var_type SubroutineFunctionCalls1_var_types_set_gl[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
+    VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
+    VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
+
 template <class API>
 void SubroutineFunctionCalls1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
-        VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
-    static const size_t num_var_types_es = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
-        VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
-        VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -9049,95 +8808,90 @@ void SubroutineFunctionCalls1<API>::test_shader_compilation(
                                                 "            {\n"
                                                 "                for (uint d = 0u; d < 2u; d++)\n"
                                                 "                {\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = SubroutineFunctionCalls1_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = SubroutineFunctionCalls1_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string iterator_declaration = "    " + var_iterator->second.iterator_type +
+                                           " iterator = " + var_iterator->second.iterator_initialization + ";\n";
 
-        if (var_iterator != supported_variable_types_map.end())
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
+
+        function_definition += "// Subroutine types\n"
+                               "subroutine void out_routine_type(out ";
+        function_definition += var_iterator->second.type;
+        function_definition += " output_array[2][2][2][2]);\n\n"
+                               "// Subroutine definitions\n"
+                               "subroutine(out_routine_type) void original_routine(out ";
+        function_definition += var_iterator->second.type;
+        function_definition += " output_array[2][2][2][2]) {\n";
+        function_definition += iterator_declaration;
+        function_definition += iteration_loop_start;
+        function_definition += "                                   output_array[a][b][c][d] = " +
+                               var_iterator->second.variable_type_initializer1 + ";\n";
+        function_definition +=
+            "                                   iterator += " + var_iterator->second.iterator_type + "(1);\n";
+        function_definition += iteration_loop_end;
+        function_definition += "}\n\n";
+        function_definition += "subroutine(out_routine_type) void new_routine(out ";
+        function_definition += var_iterator->second.type;
+        function_definition += " output_array[2][2][2][2]) {\n";
+        function_definition += iterator_declaration;
+        function_definition += iteration_loop_start;
+        function_definition += "                                   output_array[a][b][c][d] = " +
+                               var_iterator->second.variable_type_initializer1 + ";\n";
+        function_definition +=
+            "                                   iterator -= " + var_iterator->second.iterator_type + "(1);\n";
+        function_definition += iteration_loop_end;
+        function_definition += "}\n\n"
+                               "// Subroutine uniform\n"
+                               "subroutine uniform out_routine_type routine;\n";
+
+        function_use = "    " + var_iterator->second.type + " my_array[2][2][2][2];\n";
+        function_use += "    routine(my_array);";
+
+        verification = iterator_declaration;
+        verification += "    float result = 1.0;\n";
+        verification += iteration_loop_start;
+        verification += "                                   if (my_array[a][b][c][d] " +
+                        var_iterator->second.specific_element +
+                        " != iterator)\n"
+                        "                                   {\n"
+                        "                                       result = 0.0;\n"
+                        "                                   }\n"
+                        "                                   iterator += " +
+                        var_iterator->second.iterator_type + "(1);\n";
+        verification += iteration_loop_end;
+
+        if (false == test_compute)
         {
-            std::string iterator_declaration = "    " + var_iterator->second.iterator_type +
-                                               " iterator = " + var_iterator->second.iterator_initialization + ";\n";
-
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
-
-            function_definition += "// Subroutine types\n"
-                                   "subroutine void out_routine_type(out ";
-            function_definition += var_iterator->second.type;
-            function_definition += " output_array[2][2][2][2]);\n\n"
-                                   "// Subroutine definitions\n"
-                                   "subroutine(out_routine_type) void original_routine(out ";
-            function_definition += var_iterator->second.type;
-            function_definition += " output_array[2][2][2][2]) {\n";
-            function_definition += iterator_declaration;
-            function_definition += iteration_loop_start;
-            function_definition += "                                   output_array[a][b][c][d] = " +
-                                   var_iterator->second.variable_type_initializer1 + ";\n";
-            function_definition +=
-                "                                   iterator += " + var_iterator->second.iterator_type + "(1);\n";
-            function_definition += iteration_loop_end;
-            function_definition += "}\n\n";
-            function_definition += "subroutine(out_routine_type) void new_routine(out ";
-            function_definition += var_iterator->second.type;
-            function_definition += " output_array[2][2][2][2]) {\n";
-            function_definition += iterator_declaration;
-            function_definition += iteration_loop_start;
-            function_definition += "                                   output_array[a][b][c][d] = " +
-                                   var_iterator->second.variable_type_initializer1 + ";\n";
-            function_definition +=
-                "                                   iterator -= " + var_iterator->second.iterator_type + "(1);\n";
-            function_definition += iteration_loop_end;
-            function_definition += "}\n\n"
-                                   "// Subroutine uniform\n"
-                                   "subroutine uniform out_routine_type routine;\n";
-
-            function_use = "    " + var_iterator->second.type + " my_array[2][2][2][2];\n";
-            function_use += "    routine(my_array);";
-
-            verification = iterator_declaration;
-            verification += "    float result = 1.0;\n";
-            verification += iteration_loop_start;
-            verification += "                                   if (my_array[a][b][c][d] " +
-                            var_iterator->second.specific_element +
-                            " != iterator)\n"
-                            "                                   {\n"
-                            "                                       result = 0.0;\n"
-                            "                                   }\n"
-                            "                                   iterator += " +
-                            var_iterator->second.iterator_type + "(1);\n";
-            verification += iteration_loop_end;
-
-            if (false == test_compute)
-            {
-                execute_draw_test(tested_shader_type, function_definition, function_use, verification, false, true);
-                execute_draw_test(tested_shader_type, function_definition, function_use, verification, true, false);
-            }
-            else
-            {
-                execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, false, true);
-                execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, true, false);
-            }
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+            execute_draw_test(tested_shader_type, function_definition, function_use, verification, false, true);
+            execute_draw_test(tested_shader_type, function_definition, function_use, verification, true, false);
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, false, true);
+            execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, true, false);
         }
-    } /* for (int var_type_index = 0; ...) */
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /** Executes test for compute program
@@ -9875,21 +9629,19 @@ std::string SubroutineFunctionCalls1<API>::prepare_vertex_shader(
  *
  * @param tested_shader_type The type of shader that is being tested
  */
+
+static const glcts::test_var_type SubroutineFunctionCalls2_var_types_set_es[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
+    VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
+static const glcts::test_var_type SubroutineFunctionCalls2_var_types_set_gl[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
+    VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
+    VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
+
 template <class API>
 void SubroutineFunctionCalls2<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
-        VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
-    static const size_t num_var_types_es = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
-        VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
-        VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -9911,101 +9663,94 @@ void SubroutineFunctionCalls2<API>::test_shader_compilation(
                                                 "                                     61, 62, 63, 64, 65, 66, 67, 68,\n"
                                                 "                                     71, 72, 73, 74, 75, 76, 77, 78,\n"
                                                 "                                     81, 82, 83, 84, 85, 86, 87, 88);\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = SubroutineFunctionCalls2_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = SubroutineFunctionCalls2_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
 
-        if (var_iterator != supported_variable_types_map.end())
+        function_definition += multiplier_array;
+
+        function_definition += "// Subroutine types\n"
+                               "subroutine void inout_routine_type(inout ";
+        function_definition += var_iterator->second.type;
+        function_definition += " inout_array[2][2][2][2]);\n\n"
+                               "// Subroutine definitions\n"
+                               "subroutine(inout_routine_type) void original_routine(inout ";
+        function_definition += var_iterator->second.type;
+        function_definition += " inout_array[2][2][2][2]) {\n"
+                               "    uint i = 0u;\n";
+        function_definition += iteration_loop_start;
+        function_definition +=
+            "                                   inout_array[a][b][c][d] *= " + var_iterator->second.iterator_type +
+            "(multiplier_array[i % 64u]);\n";
+        function_definition += "                                   i+= 1u;\n";
+        function_definition += iteration_loop_end;
+        function_definition += "}\n\n"
+                               "subroutine(inout_routine_type) void new_routine(inout ";
+        function_definition += var_iterator->second.type;
+        function_definition += " inout_array[2][2][2][2]) {\n"
+                               "    uint i = 0u;\n";
+        function_definition += iteration_loop_start;
+        function_definition +=
+            "                                   inout_array[a][b][c][d] /= " + var_iterator->second.iterator_type +
+            "(multiplier_array[i % 64u]);\n";
+        function_definition += "                                   i+= 1u;\n";
+        function_definition += iteration_loop_end;
+        function_definition += "}\n\n"
+                               "// Subroutine uniform\n"
+                               "subroutine uniform inout_routine_type routine;\n";
+
+        function_use += "    float result = 1.0;\n";
+        function_use += "    uint iterator = 0u;\n";
+        function_use += "    " + var_iterator->second.type + " my_array[2][2][2][2];\n";
+        function_use += iteration_loop_start;
+        function_use += "                                   my_array[a][b][c][d] = " +
+                        var_iterator->second.variable_type_initializer2 + ";\n";
+        function_use += iteration_loop_end;
+        function_use += "    routine(my_array);";
+
+        verification += iteration_loop_start;
+        verification += "                                   if (my_array[a][b][c][d] " +
+                        var_iterator->second.specific_element + "!= " + var_iterator->second.iterator_type +
+                        "(multiplier_array[iterator % 64u]))\n"
+                        "                                   {\n"
+                        "                                       result = 0.0;\n"
+                        "                                   }\n"
+                        "                                   iterator += 1u;\n";
+        verification += iteration_loop_end;
+
+        if (false == test_compute)
         {
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
-
-            function_definition += multiplier_array;
-
-            function_definition += "// Subroutine types\n"
-                                   "subroutine void inout_routine_type(inout ";
-            function_definition += var_iterator->second.type;
-            function_definition += " inout_array[2][2][2][2]);\n\n"
-                                   "// Subroutine definitions\n"
-                                   "subroutine(inout_routine_type) void original_routine(inout ";
-            function_definition += var_iterator->second.type;
-            function_definition += " inout_array[2][2][2][2]) {\n"
-                                   "    uint i = 0u;\n";
-            function_definition += iteration_loop_start;
-            function_definition +=
-                "                                   inout_array[a][b][c][d] *= " + var_iterator->second.iterator_type +
-                "(multiplier_array[i % 64u]);\n";
-            function_definition += "                                   i+= 1u;\n";
-            function_definition += iteration_loop_end;
-            function_definition += "}\n\n"
-                                   "subroutine(inout_routine_type) void new_routine(inout ";
-            function_definition += var_iterator->second.type;
-            function_definition += " inout_array[2][2][2][2]) {\n"
-                                   "    uint i = 0u;\n";
-            function_definition += iteration_loop_start;
-            function_definition +=
-                "                                   inout_array[a][b][c][d] /= " + var_iterator->second.iterator_type +
-                "(multiplier_array[i % 64u]);\n";
-            function_definition += "                                   i+= 1u;\n";
-            function_definition += iteration_loop_end;
-            function_definition += "}\n\n"
-                                   "// Subroutine uniform\n"
-                                   "subroutine uniform inout_routine_type routine;\n";
-
-            function_use += "    float result = 1.0;\n";
-            function_use += "    uint iterator = 0u;\n";
-            function_use += "    " + var_iterator->second.type + " my_array[2][2][2][2];\n";
-            function_use += iteration_loop_start;
-            function_use += "                                   my_array[a][b][c][d] = " +
-                            var_iterator->second.variable_type_initializer2 + ";\n";
-            function_use += iteration_loop_end;
-            function_use += "    routine(my_array);";
-
-            verification += iteration_loop_start;
-            verification += "                                   if (my_array[a][b][c][d] " +
-                            var_iterator->second.specific_element + "!= " + var_iterator->second.iterator_type +
-                            "(multiplier_array[iterator % 64u]))\n"
-                            "                                   {\n"
-                            "                                       result = 0.0;\n"
-                            "                                   }\n"
-                            "                                   iterator += 1u;\n";
-            verification += iteration_loop_end;
-
-            if (false == test_compute)
-            {
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, false,
-                                        true);
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, true,
-                                        false);
-            }
-            else
-            {
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, false,
-                                            true);
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, true,
-                                            false);
-            }
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, false, true);
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, true, false);
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, false,
+                                        true);
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, true,
+                                        false);
         }
-    } /* for (int var_type_index = 0; ...) */
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /* Generates the shader source code for the SubroutineArgumentAliasing1
@@ -10015,21 +9760,19 @@ void SubroutineFunctionCalls2<API>::test_shader_compilation(
  *
  * @param tested_shader_type The type of shader that is being tested
  */
+
+static const glcts::test_var_type SubroutineArgumentAliasing1_var_types_set_es[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
+    VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
+static const glcts::test_var_type SubroutineArgumentAliasing1_var_types_set_gl[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
+    VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
+    VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
+
 template <class API>
 void SubroutineArgumentAliasing1<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
-        VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
-    static const size_t num_var_types_es = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
-        VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
-        VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -10042,139 +9785,132 @@ void SubroutineArgumentAliasing1<API>::test_shader_compilation(
                                                 "            {\n"
                                                 "                for (uint d = 0u; d < 2u; d++)\n"
                                                 "                {\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = SubroutineArgumentAliasing1_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = SubroutineArgumentAliasing1_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
 
-        if (var_iterator != supported_variable_types_map.end())
+        function_definition += "// Subroutine types\n"
+                               "subroutine bool in_routine_type(";
+        function_definition += var_iterator->second.type;
+        function_definition += " x[2][2][2][2], ";
+        function_definition += var_iterator->second.type;
+        function_definition += " y[2][2][2][2]);\n\n"
+                               "// Subroutine definitions\n"
+                               "subroutine(in_routine_type) bool original_routine(";
+        function_definition += var_iterator->second.type;
+        function_definition += " x[2][2][2][2], ";
+        function_definition += var_iterator->second.type;
+        function_definition += " y[2][2][2][2])\n{\n";
+        function_definition += iteration_loop_start;
+        function_definition +=
+            "                                   x[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n";
+        function_definition += iteration_loop_start;
+        function_definition += "                                   if(y[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
         {
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
-
-            function_definition += "// Subroutine types\n"
-                                   "subroutine bool in_routine_type(";
-            function_definition += var_iterator->second.type;
-            function_definition += " x[2][2][2][2], ";
-            function_definition += var_iterator->second.type;
-            function_definition += " y[2][2][2][2]);\n\n"
-                                   "// Subroutine definitions\n"
-                                   "subroutine(in_routine_type) bool original_routine(";
-            function_definition += var_iterator->second.type;
-            function_definition += " x[2][2][2][2], ";
-            function_definition += var_iterator->second.type;
-            function_definition += " y[2][2][2][2])\n{\n";
-            function_definition += iteration_loop_start;
-            function_definition +=
-                "                                   x[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n";
-            function_definition += iteration_loop_start;
-            function_definition += "                                   if(y[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n    return true;\n";
-            function_definition += "}\n\n"
-                                   "subroutine(in_routine_type) bool new_routine(";
-            function_definition += var_iterator->second.type;
-            function_definition += " x[2][2][2][2], ";
-            function_definition += var_iterator->second.type;
-            function_definition += " y[2][2][2][2])\n{\n";
-            function_definition += iteration_loop_start;
-            function_definition +=
-                "                                   y[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n";
-            function_definition += iteration_loop_start;
-            function_definition += "                                   if(x[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n    return true;\n";
-            function_definition += "}\n\n"
-                                   "// Subroutine uniform\n"
-                                   "subroutine uniform in_routine_type routine;\n";
-
-            function_use += "    " + var_iterator->second.type + " z[2][2][2][2];\n";
-            function_use += iteration_loop_start;
-            function_use += "                                   z[a][b][c][d] = ";
-            function_use += var_iterator->second.type;
-            function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
-            function_use += iteration_loop_end;
-
-            verification = "    float result = 0.0;\n"
-                           "    if(routine(z, z) == true)\n"
-                           "    {\n"
-                           "        result = 1.0;\n"
-                           "    }\n"
-                           "    else\n"
-                           "    {\n"
-                           "        result = 0.5;\n"
-                           "    }\n";
-
-            if (false == test_compute)
-            {
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, false,
-                                        false);
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, true,
-                                        false);
-            }
-            else
-            {
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, false,
-                                            false);
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, true,
-                                            false);
-            }
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
         }
-    } /* for (int var_type_index = 0; ...) */
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n    return true;\n";
+        function_definition += "}\n\n"
+                               "subroutine(in_routine_type) bool new_routine(";
+        function_definition += var_iterator->second.type;
+        function_definition += " x[2][2][2][2], ";
+        function_definition += var_iterator->second.type;
+        function_definition += " y[2][2][2][2])\n{\n";
+        function_definition += iteration_loop_start;
+        function_definition +=
+            "                                   y[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n";
+        function_definition += iteration_loop_start;
+        function_definition += "                                   if(x[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
+        else
+        {
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
+        }
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n    return true;\n";
+        function_definition += "}\n\n"
+                               "// Subroutine uniform\n"
+                               "subroutine uniform in_routine_type routine;\n";
+
+        function_use += "    " + var_iterator->second.type + " z[2][2][2][2];\n";
+        function_use += iteration_loop_start;
+        function_use += "                                   z[a][b][c][d] = ";
+        function_use += var_iterator->second.type;
+        function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
+        function_use += iteration_loop_end;
+
+        verification = "    float result = 0.0;\n"
+                       "    if(routine(z, z) == true)\n"
+                       "    {\n"
+                       "        result = 1.0;\n"
+                       "    }\n"
+                       "    else\n"
+                       "    {\n"
+                       "        result = 0.5;\n"
+                       "    }\n";
+
+        if (false == test_compute)
+        {
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, false, false);
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, true, false);
+        }
+        else
+        {
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, false,
+                                        false);
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, true,
+                                        false);
+        }
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /* Generates the shader source code for the SubroutineArgumentAliasing1
@@ -10184,21 +9920,19 @@ void SubroutineArgumentAliasing1<API>::test_shader_compilation(
  *
  * @param tested_shader_type The type of shader that is being tested
  */
+
+static const glcts::test_var_type SubroutineArgumentAliasing2_var_types_set_es[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
+    VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
+static const glcts::test_var_type SubroutineArgumentAliasing2_var_types_set_gl[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
+    VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
+    VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
+
 template <class API>
 void SubroutineArgumentAliasing2<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
-        VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
-    static const size_t num_var_types_es = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
-        VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
-        VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -10211,139 +9945,132 @@ void SubroutineArgumentAliasing2<API>::test_shader_compilation(
                                                 "            {\n"
                                                 "                for (uint d = 0u; d < 2u; d++)\n"
                                                 "                {\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = SubroutineArgumentAliasing2_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = SubroutineArgumentAliasing2_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
 
-        if (var_iterator != supported_variable_types_map.end())
+        function_definition += "// Subroutine types\n"
+                               "subroutine bool inout_routine_type(inout ";
+        function_definition += var_iterator->second.type;
+        function_definition += " x[2][2][2][2], inout ";
+        function_definition += var_iterator->second.type;
+        function_definition += " y[2][2][2][2]);\n\n"
+                               "// Subroutine definitions\n"
+                               "subroutine(inout_routine_type) bool original_routine(inout ";
+        function_definition += var_iterator->second.type;
+        function_definition += " x[2][2][2][2], inout ";
+        function_definition += var_iterator->second.type;
+        function_definition += " y[2][2][2][2])\n{\n";
+        function_definition += iteration_loop_start;
+        function_definition +=
+            "                                   x[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n";
+        function_definition += iteration_loop_start;
+        function_definition += "                                   if(y[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
         {
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
-
-            function_definition += "// Subroutine types\n"
-                                   "subroutine bool inout_routine_type(inout ";
-            function_definition += var_iterator->second.type;
-            function_definition += " x[2][2][2][2], inout ";
-            function_definition += var_iterator->second.type;
-            function_definition += " y[2][2][2][2]);\n\n"
-                                   "// Subroutine definitions\n"
-                                   "subroutine(inout_routine_type) bool original_routine(inout ";
-            function_definition += var_iterator->second.type;
-            function_definition += " x[2][2][2][2], inout ";
-            function_definition += var_iterator->second.type;
-            function_definition += " y[2][2][2][2])\n{\n";
-            function_definition += iteration_loop_start;
-            function_definition +=
-                "                                   x[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n";
-            function_definition += iteration_loop_start;
-            function_definition += "                                   if(y[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n    return true;\n";
-            function_definition += "}\n\n"
-                                   "subroutine(inout_routine_type) bool new_routine(inout ";
-            function_definition += var_iterator->second.type;
-            function_definition += " x[2][2][2][2], inout ";
-            function_definition += var_iterator->second.type;
-            function_definition += " y[2][2][2][2])\n{\n";
-            function_definition += iteration_loop_start;
-            function_definition +=
-                "                                   y[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n";
-            function_definition += iteration_loop_start;
-            function_definition += "                                   if(x[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n    return true;\n";
-            function_definition += "}\n\n"
-                                   "// Subroutine uniform\n"
-                                   "subroutine uniform inout_routine_type routine;\n";
-
-            function_use += "    " + var_iterator->second.type + " z[2][2][2][2];\n";
-            function_use += iteration_loop_start;
-            function_use += "                                   z[a][b][c][d] = ";
-            function_use += var_iterator->second.type;
-            function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
-            function_use += iteration_loop_end;
-
-            verification = "    float result = 0.0;\n"
-                           "    if(routine(z, z) == true)\n"
-                           "    {\n"
-                           "        result = 1.0;\n"
-                           "    }\n"
-                           "    else\n"
-                           "    {\n"
-                           "        result = 0.5;\n"
-                           "    }\n";
-
-            if (false == test_compute)
-            {
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, false,
-                                        false);
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, true,
-                                        false);
-            }
-            else
-            {
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, false,
-                                            false);
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, true,
-                                            false);
-            }
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
         }
-    } /* for (int var_type_index = 0; ...) */
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n    return true;\n";
+        function_definition += "}\n\n"
+                               "subroutine(inout_routine_type) bool new_routine(inout ";
+        function_definition += var_iterator->second.type;
+        function_definition += " x[2][2][2][2], inout ";
+        function_definition += var_iterator->second.type;
+        function_definition += " y[2][2][2][2])\n{\n";
+        function_definition += iteration_loop_start;
+        function_definition +=
+            "                                   y[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n";
+        function_definition += iteration_loop_start;
+        function_definition += "                                   if(x[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
+        else
+        {
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
+        }
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n    return true;\n";
+        function_definition += "}\n\n"
+                               "// Subroutine uniform\n"
+                               "subroutine uniform inout_routine_type routine;\n";
+
+        function_use += "    " + var_iterator->second.type + " z[2][2][2][2];\n";
+        function_use += iteration_loop_start;
+        function_use += "                                   z[a][b][c][d] = ";
+        function_use += var_iterator->second.type;
+        function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
+        function_use += iteration_loop_end;
+
+        verification = "    float result = 0.0;\n"
+                       "    if(routine(z, z) == true)\n"
+                       "    {\n"
+                       "        result = 1.0;\n"
+                       "    }\n"
+                       "    else\n"
+                       "    {\n"
+                       "        result = 0.5;\n"
+                       "    }\n";
+
+        if (false == test_compute)
+        {
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, false, false);
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, true, false);
+        }
+        else
+        {
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, false,
+                                        false);
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, true,
+                                        false);
+        }
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /* Generates the shader source code for the SubroutineArgumentAliasing1
@@ -10353,21 +10080,19 @@ void SubroutineArgumentAliasing2<API>::test_shader_compilation(
  *
  * @param tested_shader_type The type of shader that is being tested
  */
+
+static const glcts::test_var_type SubroutineArgumentAliasing3_var_types_set_es[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
+    VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
+static const glcts::test_var_type SubroutineArgumentAliasing3_var_types_set_gl[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
+    VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
+    VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
+
 template <class API>
 void SubroutineArgumentAliasing3<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
-        VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
-    static const size_t num_var_types_es = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
-        VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
-        VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -10380,139 +10105,132 @@ void SubroutineArgumentAliasing3<API>::test_shader_compilation(
                                                 "            {\n"
                                                 "                for (uint d = 0u; d < 2u; d++)\n"
                                                 "                {\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = SubroutineArgumentAliasing3_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
-        num_var_types = num_var_types_gl;
+        var_types_set = SubroutineArgumentAliasing3_var_types_set_gl;
     }
 
-    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
 
-        if (var_iterator != supported_variable_types_map.end())
+        function_definition += "// Subroutine types\n"
+                               "subroutine bool out_routine_type(out ";
+        function_definition += var_iterator->second.type;
+        function_definition += " x[2][2][2][2], ";
+        function_definition += var_iterator->second.type;
+        function_definition += " y[2][2][2][2]);\n\n"
+                               "// Subroutine definitions\n"
+                               "subroutine(out_routine_type) bool original_routine(out ";
+        function_definition += var_iterator->second.type;
+        function_definition += " x[2][2][2][2], ";
+        function_definition += var_iterator->second.type;
+        function_definition += " y[2][2][2][2])\n{\n";
+        function_definition += iteration_loop_start;
+        function_definition +=
+            "                                   x[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n";
+        function_definition += iteration_loop_start;
+        function_definition += "                                   if(y[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
         {
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
-
-            function_definition += "// Subroutine types\n"
-                                   "subroutine bool out_routine_type(out ";
-            function_definition += var_iterator->second.type;
-            function_definition += " x[2][2][2][2], ";
-            function_definition += var_iterator->second.type;
-            function_definition += " y[2][2][2][2]);\n\n"
-                                   "// Subroutine definitions\n"
-                                   "subroutine(out_routine_type) bool original_routine(out ";
-            function_definition += var_iterator->second.type;
-            function_definition += " x[2][2][2][2], ";
-            function_definition += var_iterator->second.type;
-            function_definition += " y[2][2][2][2])\n{\n";
-            function_definition += iteration_loop_start;
-            function_definition +=
-                "                                   x[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n";
-            function_definition += iteration_loop_start;
-            function_definition += "                                   if(y[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n    return true;\n";
-            function_definition += "}\n\n"
-                                   "subroutine(out_routine_type) bool new_routine(out ";
-            function_definition += var_iterator->second.type;
-            function_definition += " x[2][2][2][2], ";
-            function_definition += var_iterator->second.type;
-            function_definition += " y[2][2][2][2])\n{\n";
-            function_definition += iteration_loop_start;
-            function_definition +=
-                "                                   x[a][b][c][d] = " + var_iterator->second.type + "(321);\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n";
-            function_definition += iteration_loop_start;
-            function_definition += "                                   if(y[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n    return true;\n";
-            function_definition += "}\n\n"
-                                   "// Subroutine uniform\n"
-                                   "subroutine uniform out_routine_type routine;\n";
-
-            function_use += "    " + var_iterator->second.type + " z[2][2][2][2];\n";
-            function_use += iteration_loop_start;
-            function_use += "                                   z[a][b][c][d] = ";
-            function_use += var_iterator->second.type;
-            function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
-            function_use += iteration_loop_end;
-
-            verification = "    float result = 0.0;\n"
-                           "    if(routine(z, z) == true)\n"
-                           "    {\n"
-                           "        result = 1.0;\n"
-                           "    }\n"
-                           "    else\n"
-                           "    {\n"
-                           "        result = 0.5;\n"
-                           "    }\n";
-
-            if (false == test_compute)
-            {
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, false,
-                                        false);
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, true,
-                                        false);
-            }
-            else
-            {
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, false,
-                                            false);
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, true,
-                                            false);
-            }
-
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
         else
         {
-            TCU_FAIL("Type not found.");
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
         }
-    } /* for (int var_type_index = 0; ...) */
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n    return true;\n";
+        function_definition += "}\n\n"
+                               "subroutine(out_routine_type) bool new_routine(out ";
+        function_definition += var_iterator->second.type;
+        function_definition += " x[2][2][2][2], ";
+        function_definition += var_iterator->second.type;
+        function_definition += " y[2][2][2][2])\n{\n";
+        function_definition += iteration_loop_start;
+        function_definition +=
+            "                                   x[a][b][c][d] = " + var_iterator->second.type + "(321);\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n";
+        function_definition += iteration_loop_start;
+        function_definition += "                                   if(y[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
+        else
+        {
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
+        }
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n    return true;\n";
+        function_definition += "}\n\n"
+                               "// Subroutine uniform\n"
+                               "subroutine uniform out_routine_type routine;\n";
+
+        function_use += "    " + var_iterator->second.type + " z[2][2][2][2];\n";
+        function_use += iteration_loop_start;
+        function_use += "                                   z[a][b][c][d] = ";
+        function_use += var_iterator->second.type;
+        function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
+        function_use += iteration_loop_end;
+
+        verification = "    float result = 0.0;\n"
+                       "    if(routine(z, z) == true)\n"
+                       "    {\n"
+                       "        result = 1.0;\n"
+                       "    }\n"
+                       "    else\n"
+                       "    {\n"
+                       "        result = 0.5;\n"
+                       "    }\n";
+
+        if (false == test_compute)
+        {
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, false, false);
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, true, false);
+        }
+        else
+        {
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, false,
+                                        false);
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, true,
+                                        false);
+        }
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
 }
 
 /* Generates the shader source code for the SubroutineArgumentAliasing1
@@ -10522,21 +10240,19 @@ void SubroutineArgumentAliasing3<API>::test_shader_compilation(
  *
  * @param tested_shader_type The type of shader that is being tested
  */
+
+static const glcts::test_var_type SubroutineArgumentAliasing4_var_types_set_es[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
+    VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
+static const glcts::test_var_type SubroutineArgumentAliasing4_var_types_set_gl[] = {
+    VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
+    VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
+    VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
+
 template <class API>
 void SubroutineArgumentAliasing4<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType tested_shader_type)
 {
-    static const glcts::test_var_type var_types_set_es[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT, VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4, VAR_TYPE_VEC2,
-        VAR_TYPE_VEC3, VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,  VAR_TYPE_MAT4};
-    static const size_t num_var_types_es = sizeof(var_types_set_es) / sizeof(var_types_set_es[0]);
-
-    static const glcts::test_var_type var_types_set_gl[] = {
-        VAR_TYPE_INT,  VAR_TYPE_FLOAT,  VAR_TYPE_IVEC2, VAR_TYPE_IVEC3, VAR_TYPE_IVEC4,
-        VAR_TYPE_VEC2, VAR_TYPE_VEC3,   VAR_TYPE_VEC4,  VAR_TYPE_MAT2,  VAR_TYPE_MAT3,
-        VAR_TYPE_MAT4, VAR_TYPE_DOUBLE, VAR_TYPE_DMAT2, VAR_TYPE_DMAT3, VAR_TYPE_DMAT4};
-    static const size_t num_var_types_gl = sizeof(var_types_set_gl) / sizeof(var_types_set_gl[0]);
-
     const std::string iteration_loop_end      = "                }\n"
                                                 "            }\n"
                                                 "        }\n"
@@ -10549,139 +10265,1055 @@ void SubroutineArgumentAliasing4<API>::test_shader_compilation(
                                                 "            {\n"
                                                 "                for (uint d = 0u; d < 2u; d++)\n"
                                                 "                {\n";
-    const glcts::test_var_type *var_types_set = var_types_set_es;
-    size_t num_var_types                      = num_var_types_es;
+    const glcts::test_var_type *var_types_set = SubroutineArgumentAliasing4_var_types_set_es;
     const bool test_compute                   = (TestCaseBase<API>::COMPUTE_SHADER_TYPE == tested_shader_type);
 
     if (API::USE_DOUBLE)
     {
-        var_types_set = var_types_set_gl;
+        var_types_set = SubroutineArgumentAliasing4_var_types_set_gl;
+    }
+
+    _supported_variable_types_map_const_iterator var_iterator =
+        supported_variable_types_map.find(var_types_set[m_var_type_index]);
+
+    if (var_iterator != supported_variable_types_map.end())
+    {
+        std::string function_definition;
+        std::string function_use;
+        std::string verification;
+
+        function_definition += "// Subroutine types\n"
+                               "subroutine bool out_routine_type(";
+        function_definition += var_iterator->second.type;
+        function_definition += " x[2][2][2][2], out ";
+        function_definition += var_iterator->second.type;
+        function_definition += " y[2][2][2][2]);\n\n"
+                               "// Subroutine definitions\n"
+                               "subroutine(out_routine_type) bool original_routine(";
+        function_definition += var_iterator->second.type;
+        function_definition += " x[2][2][2][2], out ";
+        function_definition += var_iterator->second.type;
+        function_definition += " y[2][2][2][2])\n{\n";
+        function_definition += iteration_loop_start;
+        function_definition +=
+            "                                   y[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n";
+        function_definition += iteration_loop_start;
+        function_definition += "                                   if(x[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
+        else
+        {
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
+        }
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n    return true;\n";
+        function_definition += "}\n\n"
+                               "subroutine(out_routine_type) bool new_routine(";
+        function_definition += var_iterator->second.type;
+        function_definition += " x[2][2][2][2], out ";
+        function_definition += var_iterator->second.type;
+        function_definition += " y[2][2][2][2])\n{\n";
+        function_definition += iteration_loop_start;
+        function_definition +=
+            "                                   y[a][b][c][d] = " + var_iterator->second.type + "(321);\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n";
+        function_definition += iteration_loop_start;
+        function_definition += "                                   if(x[a][b][c][d]";
+        if (var_iterator->second.type == "mat4") // mat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != float";
+        }
+        else if (var_iterator->second.type == "dmat4") // dmat4 comparison
+        {
+            function_definition += "[0][0]";
+            function_definition += " != double";
+        }
+        else
+        {
+            function_definition += " != ";
+            function_definition += var_iterator->second.type;
+        }
+        function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
+        function_definition += iteration_loop_end;
+        function_definition += "\n    return true;\n";
+        function_definition += "}\n\n"
+                               "// Subroutine uniform\n"
+                               "subroutine uniform out_routine_type routine;\n";
+
+        function_use += "    " + var_iterator->second.type + " z[2][2][2][2];\n";
+        function_use += iteration_loop_start;
+        function_use += "                                   z[a][b][c][d] = ";
+        function_use += var_iterator->second.type;
+        function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
+        function_use += iteration_loop_end;
+
+        verification = "    float result = 0.0;\n"
+                       "    if(routine(z, z) == true)\n"
+                       "    {\n"
+                       "        result = 1.0;\n"
+                       "    }\n"
+                       "    else\n"
+                       "    {\n"
+                       "        result = 0.5;\n"
+                       "    }\n";
+
+        if (false == test_compute)
+        {
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, false, false);
+            this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, true, false);
+        }
+        else
+        {
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, false,
+                                        false);
+            this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, true,
+                                        false);
+        }
+
+        /* Deallocate any resources used. */
+        this->delete_objects();
+    } /* if var_type iterator found */
+    else
+    {
+        TCU_FAIL("Type not found.");
+    }
+}
+
+template <class API>
+void addSizedDeclarationsPrimitive(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t var_type_index = 0; var_type_index < API::n_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsPrimitive<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addSizedDeclarationsStructTypes1(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t max_dimension_index = 1; max_dimension_index < API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsStructTypes1<API>(context, max_dimension_index));
+    }
+}
+
+template <class API>
+void addSizedDeclarationsStructTypes3(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t max_dimension_index = 1; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsStructTypes3<API>(context, max_dimension_index));
+    }
+}
+
+template <class API>
+void addSizedDeclarationsStructTypes4(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t max_dimension_index = 1; max_dimension_index < API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsStructTypes4<API>(context, max_dimension_index));
+    }
+}
+
+template <class API>
+void addSizedDeclarationsTypenameStyle1(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t max_dimension_index = 1; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsTypenameStyle1<API>(context, max_dimension_index));
+    }
+}
+
+template <class API>
+void addSizedDeclarationsTypenameStyle4(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t max_dimension_index = 1; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsTypenameStyle4<API>(context, max_dimension_index));
+    }
+}
+
+template <class API>
+void addSized_declarations_invalid_sizes1(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t invalid_declarations_index = 0;
+         invalid_declarations_index < DE_LENGTH_OF_ARRAY(sized_declarations_invalid_sizes1_invalid_declarations);
+         invalid_declarations_index++)
+    {
+        group.addChild(
+            new glcts::ArraysOfArrays::sized_declarations_invalid_sizes1<API>(context, invalid_declarations_index));
+    }
+}
+
+template <class API>
+void addSized_declarations_invalid_sizes2(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t invalid_declarations_index = 0;
+         invalid_declarations_index < DE_LENGTH_OF_ARRAY(sized_declarations_invalid_sizes2_invalid_declarations);
+         invalid_declarations_index++)
+    {
+        group.addChild(
+            new glcts::ArraysOfArrays::sized_declarations_invalid_sizes2<API>(context, invalid_declarations_index));
+    }
+}
+
+template <class API>
+void addSized_declarations_invalid_sizes3(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t invalid_declarations_index = 0;
+         invalid_declarations_index < DE_LENGTH_OF_ARRAY(sized_declarations_invalid_sizes3_invalid_declarations);
+         invalid_declarations_index++)
+    {
+        group.addChild(
+            new glcts::ArraysOfArrays::sized_declarations_invalid_sizes3<API>(context, invalid_declarations_index));
+    }
+}
+
+template <class API>
+void addSized_declarations_invalid_sizes4(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t string_index = 0; string_index < sizeof(sized_declarations_invalid_sizes4_input_strings) /
+                                                     sizeof(sized_declarations_invalid_sizes4_input_strings[0]);
+         string_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::sized_declarations_invalid_sizes4<API>(context, string_index));
+    }
+}
+
+template <class API>
+void addConstructorsAndUnsizedDeclConstructors1(TestCaseGroup &group, glcts::Context &context)
+{
+    int num_var_types = API::n_var_types;
+
+    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(
+            new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclConstructors1<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addConstructorsAndUnsizedDeclUnsizedConstructors(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t string_index = 0; string_index < sizeof(ConstructorsAndUnsizedDeclUnsizedConstructors_input) /
+                                                     sizeof(ConstructorsAndUnsizedDeclUnsizedConstructors_input[0]);
+         string_index++)
+
+    {
+        group.addChild(
+            new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclUnsizedConstructors<API>(context, string_index));
+    }
+}
+
+template <class API>
+void addConstructorsAndUnsizedDeclInvalidConstructors1(TestCaseGroup &group, glcts::Context &context)
+{
+    int num_var_types = sizeof(opaque_var_types) / sizeof(opaque_var_types[0]);
+
+    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclInvalidConstructors1<API>(
+            context, opaque_var_types[var_type_index]));
+    }
+}
+
+template <class API>
+void addConstructorsAndUnsizedDeclInvalidConstructors2(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t invalid_initializers_index = 0;
+         invalid_initializers_index <
+         sizeof(ConstructorsAndUnsizedDeclInvalidConstructors2_invalid_initializers) /
+             sizeof(ConstructorsAndUnsizedDeclInvalidConstructors2_invalid_initializers[0]);
+         invalid_initializers_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclInvalidConstructors2<API>(
+            context, invalid_initializers_index));
+    }
+}
+
+template <class API>
+void addConstructorsAndUnsizedDeclInvalidConstructors3(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t invalid_initializers_index = 0;
+         invalid_initializers_index <
+         sizeof(ConstructorsAndUnsizedDeclInvalidConstructors3_invalid_initializers) /
+             sizeof(ConstructorsAndUnsizedDeclInvalidConstructors3_invalid_initializers[0]);
+         invalid_initializers_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclInvalidConstructors3<API>(
+            context, invalid_initializers_index));
+    }
+}
+
+template <class API>
+void addConstructorsAndUnsizedDeclInvalidConstructors4(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t invalid_initializers_index = 0;
+         invalid_initializers_index <
+         sizeof(ConstructorsAndUnsizedDeclInvalidConstructors4_invalid_initializers) /
+             sizeof(ConstructorsAndUnsizedDeclInvalidConstructors4_invalid_initializers[0]);
+         invalid_initializers_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclInvalidConstructors4<API>(
+            context, invalid_initializers_index));
+    }
+}
+
+template <class API>
+void addConstructorsAndUnsizedDeclConstructorSizing1(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t var_type_index = 0; var_type_index < API::n_var_types; var_type_index++)
+    {
+        group.addChild(
+            new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclConstructorSizing1<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addConstructorsAndUnsizedDeclStructConstructors(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t max_dimension_index = 2; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
+    {
+        group.addChild(
+            new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclStructConstructors<API>(context, max_dimension_index));
+    }
+}
+
+template <class API>
+void addConstructorsAndUnsizedDeclUnsizedArrays1(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t max_dimension_index = 2; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
+    {
+        group.addChild(
+            new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclUnsizedArrays1<API>(context, max_dimension_index));
+    }
+}
+
+template <class API>
+void addConstructorsAndUnsizedDeclUnsizedArrays2(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t string_index = 0; string_index < sizeof(ConstructorsAndUnsizedDeclUnsizedArrays2_input) /
+                                                     sizeof(ConstructorsAndUnsizedDeclUnsizedArrays2_input[0]);
+         string_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclUnsizedArrays2<API>(context, string_index));
+    }
+}
+
+template <class API>
+void addExpressionsAssignment1(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t max_dimension_index = 2; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsAssignment1<API>(context, max_dimension_index));
+    }
+}
+
+template <class API>
+void addExpressionsAssignment2(TestCaseGroup &group, glcts::Context &context)
+{
+    int number_of_elements =
+        sizeof(ExpressionsAssignment2_variable_basenames) / sizeof(ExpressionsAssignment2_variable_basenames[0]);
+
+    for (int variable_index = 0; variable_index < number_of_elements; variable_index++)
+    {
+        for (int value_index = variable_index; value_index < number_of_elements; value_index++)
+        {
+            /* Avoid the situation when a variable is assign to itself. */
+            if (variable_index != value_index)
+            {
+                group.addChild(
+                    new glcts::ArraysOfArrays::ExpressionsAssignment2<API>(context, variable_index, value_index));
+            }
+        }
+    }
+}
+
+template <class API>
+void addExpressionsAssignment3(TestCaseGroup &group, glcts::Context &context)
+{
+    const int test_array_dimensions = 4;
+
+    for (int permutation = 0; permutation < (1 << test_array_dimensions); permutation++)
+    {
+        if (permutation != (1 << test_array_dimensions) - 1)
+        {
+            group.addChild(new glcts::ArraysOfArrays::ExpressionsAssignment3<API>(context, permutation));
+        }
+    }
+}
+
+template <class API>
+void addExpressionsTypeRestrictions1(TestCaseGroup &group, glcts::Context &context)
+{
+    int num_var_types = sizeof(opaque_var_types) / sizeof(opaque_var_types[0]);
+
+    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsTypeRestrictions1<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addExpressionsTypeRestrictions2(TestCaseGroup &group, glcts::Context &context)
+{
+    int num_var_types = sizeof(opaque_var_types) / sizeof(opaque_var_types[0]);
+
+    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsTypeRestrictions2<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addExpressionsIndexingScalar1(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t var_type_index = 0; var_type_index < API::n_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingScalar1<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addExpressionsIndexingScalar2(TestCaseGroup &group, glcts::Context &context)
+{
+    const int test_array_dimensions = 4;
+
+    for (int permutation = 0; permutation < (1 << test_array_dimensions); permutation++)
+    {
+        if (permutation != (1 << test_array_dimensions) - 1)
+        {
+            group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingScalar2<API>(context, permutation));
+        }
+    }
+}
+
+template <class API>
+void addExpressionsIndexingScalar3(TestCaseGroup &group, glcts::Context &context)
+{
+    const int test_array_dimensions = 4;
+
+    for (int permutation = 0; permutation < (1 << test_array_dimensions); permutation++)
+    {
+        if (permutation != (1 << test_array_dimensions) - 1)
+        {
+            group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingScalar3<API>(context, permutation));
+        }
+    }
+}
+
+template <class API>
+void addExpressionsIndexingScalar4(TestCaseGroup &group, glcts::Context &context)
+{
+    const int test_array_dimensions = 4;
+
+    for (int permutation = 0; permutation < (1 << test_array_dimensions); permutation++)
+    {
+        if (permutation != (1 << test_array_dimensions) - 1)
+        {
+            group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingScalar4<API>(context, permutation));
+        }
+    }
+}
+
+template <class API>
+void addExpressionsIndexingArray1(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t string_index = 0; string_index < sizeof(ExpressionsIndexingArray1_variable_initializations) /
+                                                     sizeof(ExpressionsIndexingArray1_variable_initializations[0]);
+         string_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingArray1<API>(context, string_index));
+    }
+}
+
+template <class API>
+void addExpressionsIndexingArray2(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t max_dimension_index = 1; max_dimension_index <= API::MAX_ARRAY_DIMENSIONS; max_dimension_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingArray2<API>(context, max_dimension_index));
+    }
+}
+
+template <class API>
+void addExpressionsIndexingArray3(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t string_index = 0;
+         string_index < sizeof(ExpressionsIndexingArray3_input) / sizeof(ExpressionsIndexingArray3_input[0]);
+         string_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingArray3<API>(context, string_index));
+    }
+}
+
+template <class API>
+void addExpressionsDynamicIndexing1(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t write_index = 0; write_index < sizeof(ExpressionsDynamicIndexing1_expressions) /
+                                                   sizeof(ExpressionsDynamicIndexing1_expressions[0]);
+         write_index++)
+    {
+        for (size_t read_index = 0; read_index < sizeof(ExpressionsDynamicIndexing1_expressions) /
+                                                     sizeof(ExpressionsDynamicIndexing1_expressions[0]);
+             read_index++)
+        {
+            group.addChild(
+                new glcts::ArraysOfArrays::ExpressionsDynamicIndexing1<API>(context, write_index, read_index));
+        }
+    }
+}
+
+template <class API>
+void addExpressionsDynamicIndexing2(TestCaseGroup &group, glcts::Context &context)
+{
+    int num_var_types = sizeof(opaque_var_types) / sizeof(opaque_var_types[0]);
+
+    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsDynamicIndexing2<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addExpressionsEquality1(TestCaseGroup &group, glcts::Context &context)
+{
+    int num_var_types = API::n_var_types;
+
+    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsEquality1<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addExpressionsEquality2(TestCaseGroup &group, glcts::Context &context)
+{
+    int num_var_types = API::n_var_types;
+
+    for (int var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsEquality2<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addExpressionsLength1(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t case_specific_string_index = 0;
+         case_specific_string_index <
+         sizeof(ExpressionsLength1_case_specific_string) / sizeof(ExpressionsLength1_case_specific_string[0]);
+         case_specific_string_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsLength1<API>(context, case_specific_string_index));
+    }
+}
+
+template <class API>
+void addExpressionsLength2(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t case_specific_string_index = 0;
+         case_specific_string_index <
+         sizeof(ExpressionsLength2_case_specific_string) / sizeof(ExpressionsLength2_case_specific_string[0]);
+         case_specific_string_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsLength2<API>(context, case_specific_string_index));
+    }
+}
+
+template <class API>
+void addExpressionsLength3(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t string_index = 0; string_index < sizeof(ExpressionsLength3_input) / sizeof(ExpressionsLength3_input[0]);
+         string_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsLength3<API>(context, string_index));
+    }
+}
+
+template <class API>
+void addExpressionsInvalid2(TestCaseGroup &group, glcts::Context &context)
+{
+    for (size_t var_type_index = 0; var_type_index < API::n_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::ExpressionsInvalid2<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionFunctionCalls1(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(InteractionFunctionCalls1_var_types_set_es) / sizeof(InteractionFunctionCalls1_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(InteractionFunctionCalls1_var_types_set_gl) / sizeof(InteractionFunctionCalls1_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionFunctionCalls1<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionFunctionCalls2(TestCaseGroup &group, glcts::Context &context)
+{
+
+    static const size_t num_var_types_es =
+        sizeof(InteractionFunctionCalls2_var_types_set_es) / sizeof(InteractionFunctionCalls2_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(InteractionFunctionCalls2_var_types_set_gl) / sizeof(InteractionFunctionCalls2_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
         num_var_types = num_var_types_gl;
     }
 
     for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
     {
-        _supported_variable_types_map_const_iterator var_iterator =
-            supported_variable_types_map.find(var_types_set[var_type_index]);
+        group.addChild(new glcts::ArraysOfArrays::InteractionFunctionCalls2<API>(context, var_type_index));
+    }
+}
 
-        if (var_iterator != supported_variable_types_map.end())
-        {
-            std::string function_definition;
-            std::string function_use;
-            std::string verification;
+template <class API>
+void addInteractionArgumentAliasing1(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es = sizeof(InteractionArgumentAliasing1_var_types_set_es) /
+                                           sizeof(InteractionArgumentAliasing1_var_types_set_es[0]);
 
-            function_definition += "// Subroutine types\n"
-                                   "subroutine bool out_routine_type(";
-            function_definition += var_iterator->second.type;
-            function_definition += " x[2][2][2][2], out ";
-            function_definition += var_iterator->second.type;
-            function_definition += " y[2][2][2][2]);\n\n"
-                                   "// Subroutine definitions\n"
-                                   "subroutine(out_routine_type) bool original_routine(";
-            function_definition += var_iterator->second.type;
-            function_definition += " x[2][2][2][2], out ";
-            function_definition += var_iterator->second.type;
-            function_definition += " y[2][2][2][2])\n{\n";
-            function_definition += iteration_loop_start;
-            function_definition +=
-                "                                   y[a][b][c][d] = " + var_iterator->second.type + "(123);\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n";
-            function_definition += iteration_loop_start;
-            function_definition += "                                   if(x[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n    return true;\n";
-            function_definition += "}\n\n"
-                                   "subroutine(out_routine_type) bool new_routine(";
-            function_definition += var_iterator->second.type;
-            function_definition += " x[2][2][2][2], out ";
-            function_definition += var_iterator->second.type;
-            function_definition += " y[2][2][2][2])\n{\n";
-            function_definition += iteration_loop_start;
-            function_definition +=
-                "                                   y[a][b][c][d] = " + var_iterator->second.type + "(321);\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n";
-            function_definition += iteration_loop_start;
-            function_definition += "                                   if(x[a][b][c][d]";
-            if (var_iterator->second.type == "mat4") // mat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != float";
-            }
-            else if (var_iterator->second.type == "dmat4") // dmat4 comparison
-            {
-                function_definition += "[0][0]";
-                function_definition += " != double";
-            }
-            else
-            {
-                function_definition += " != ";
-                function_definition += var_iterator->second.type;
-            }
-            function_definition += "(((a*8u)+(b*4u)+(c*2u)+d))) {return false;}\n";
-            function_definition += iteration_loop_end;
-            function_definition += "\n    return true;\n";
-            function_definition += "}\n\n"
-                                   "// Subroutine uniform\n"
-                                   "subroutine uniform out_routine_type routine;\n";
+    static const size_t num_var_types_gl = sizeof(InteractionArgumentAliasing1_var_types_set_gl) /
+                                           sizeof(InteractionArgumentAliasing1_var_types_set_gl[0]);
 
-            function_use += "    " + var_iterator->second.type + " z[2][2][2][2];\n";
-            function_use += iteration_loop_start;
-            function_use += "                                   z[a][b][c][d] = ";
-            function_use += var_iterator->second.type;
-            function_use += "(((a*8u)+(b*4u)+(c*2u)+d));\n";
-            function_use += iteration_loop_end;
+    size_t num_var_types = num_var_types_es;
 
-            verification = "    float result = 0.0;\n"
-                           "    if(routine(z, z) == true)\n"
-                           "    {\n"
-                           "        result = 1.0;\n"
-                           "    }\n"
-                           "    else\n"
-                           "    {\n"
-                           "        result = 0.5;\n"
-                           "    }\n";
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
 
-            if (false == test_compute)
-            {
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, false,
-                                        false);
-                this->execute_draw_test(tested_shader_type, function_definition, function_use, verification, true,
-                                        false);
-            }
-            else
-            {
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, false,
-                                            false);
-                this->execute_dispatch_test(tested_shader_type, function_definition, function_use, verification, true,
-                                            false);
-            }
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionArgumentAliasing1<API>(context, var_type_index));
+    }
+}
 
-            /* Deallocate any resources used. */
-            this->delete_objects();
-        } /* if var_type iterator found */
-        else
-        {
-            TCU_FAIL("Type not found.");
-        }
-    } /* for (int var_type_index = 0; ...) */
+template <class API>
+void addInteractionArgumentAliasing2(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es = sizeof(InteractionArgumentAliasing2_var_types_set_es) /
+                                           sizeof(InteractionArgumentAliasing2_var_types_set_es[0]);
+    static const size_t num_var_types_gl = sizeof(InteractionArgumentAliasing2_var_types_set_gl) /
+                                           sizeof(InteractionArgumentAliasing2_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionArgumentAliasing2<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionArgumentAliasing3(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es = sizeof(InteractionArgumentAliasing3_var_types_set_es) /
+                                           sizeof(InteractionArgumentAliasing3_var_types_set_es[0]);
+    static const size_t num_var_types_gl = sizeof(InteractionArgumentAliasing3_var_types_set_gl) /
+                                           sizeof(InteractionArgumentAliasing3_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionArgumentAliasing3<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionArgumentAliasing4(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es = sizeof(InteractionArgumentAliasing4_var_types_set_es) /
+                                           sizeof(InteractionArgumentAliasing4_var_types_set_es[0]);
+    static const size_t num_var_types_gl = sizeof(InteractionArgumentAliasing4_var_types_set_gl) /
+                                           sizeof(InteractionArgumentAliasing4_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionArgumentAliasing4<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionArgumentAliasing5(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es = sizeof(InteractionArgumentAliasing5_var_types_set_es) /
+                                           sizeof(InteractionArgumentAliasing5_var_types_set_es[0]);
+    static const size_t num_var_types_gl = sizeof(InteractionArgumentAliasing5_var_types_set_gl) /
+                                           sizeof(InteractionArgumentAliasing5_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionArgumentAliasing5<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionArgumentAliasing6(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es = sizeof(InteractionArgumentAliasing6_var_types_set_es) /
+                                           sizeof(InteractionArgumentAliasing6_var_types_set_es[0]);
+    static const size_t num_var_types_gl = sizeof(InteractionArgumentAliasing6_var_types_set_gl) /
+                                           sizeof(InteractionArgumentAliasing6_var_types_set_gl[0]);
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionArgumentAliasing6<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionUniforms1(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(InteractionUniforms1_var_types_set_es) / sizeof(InteractionUniforms1_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(InteractionUniforms1_var_types_set_gl) / sizeof(InteractionUniforms1_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionUniforms1<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionUniforms2(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(InteractionUniforms2_var_types_set_es) / sizeof(InteractionUniforms2_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(InteractionUniforms2_var_types_set_gl) / sizeof(InteractionUniforms2_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionUniforms2<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionUniformBuffers1(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(InteractionUniformBuffers1_var_types_set_es) / sizeof(InteractionUniformBuffers1_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(InteractionUniformBuffers1_var_types_set_gl) / sizeof(InteractionUniformBuffers1_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionUniformBuffers1<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionUniformBuffers2(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(InteractionUniformBuffers2_var_types_set_es) / sizeof(InteractionUniformBuffers2_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(InteractionUniformBuffers2_var_types_set_gl) / sizeof(InteractionUniformBuffers2_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionUniformBuffers2<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionUniformBuffers3(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(InteractionUniformBuffers3_var_types_set_es) / sizeof(InteractionUniformBuffers3_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(InteractionUniformBuffers3_var_types_set_gl) / sizeof(InteractionUniformBuffers3_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionUniformBuffers3<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionStorageBuffers1(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(InteractionStorageBuffers1_var_types_set_es) / sizeof(InteractionStorageBuffers1_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(InteractionStorageBuffers1_var_types_set_gl) / sizeof(InteractionStorageBuffers1_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionStorageBuffers1<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionStorageBuffers2(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(InteractionStorageBuffers2_var_types_set_es) / sizeof(InteractionStorageBuffers2_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(InteractionStorageBuffers2_var_types_set_gl) / sizeof(InteractionStorageBuffers2_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionStorageBuffers2<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addInteractionStorageBuffers3(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(InteractionStorageBuffers3_var_types_set_es) / sizeof(InteractionStorageBuffers3_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(InteractionStorageBuffers3_var_types_set_gl) / sizeof(InteractionStorageBuffers3_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::InteractionStorageBuffers3<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addSubroutineFunctionCalls1(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(SubroutineFunctionCalls1_var_types_set_es) / sizeof(SubroutineFunctionCalls1_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(SubroutineFunctionCalls1_var_types_set_gl) / sizeof(SubroutineFunctionCalls1_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::SubroutineFunctionCalls1<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addSubroutineFunctionCalls2(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(SubroutineFunctionCalls2_var_types_set_es) / sizeof(SubroutineFunctionCalls2_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(SubroutineFunctionCalls2_var_types_set_gl) / sizeof(SubroutineFunctionCalls2_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::SubroutineFunctionCalls2<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addSubroutineArgumentAliasing1(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(SubroutineArgumentAliasing1_var_types_set_es) / sizeof(SubroutineArgumentAliasing1_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(SubroutineArgumentAliasing1_var_types_set_gl) / sizeof(SubroutineArgumentAliasing1_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::SubroutineArgumentAliasing1<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addSubroutineArgumentAliasing2(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(SubroutineArgumentAliasing2_var_types_set_es) / sizeof(SubroutineArgumentAliasing2_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(SubroutineArgumentAliasing2_var_types_set_gl) / sizeof(SubroutineArgumentAliasing2_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::SubroutineArgumentAliasing2<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addSubroutineArgumentAliasing3(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(SubroutineArgumentAliasing3_var_types_set_es) / sizeof(SubroutineArgumentAliasing3_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(SubroutineArgumentAliasing3_var_types_set_gl) / sizeof(SubroutineArgumentAliasing3_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::SubroutineArgumentAliasing3<API>(context, var_type_index));
+    }
+}
+
+template <class API>
+void addSubroutineArgumentAliasing4(TestCaseGroup &group, glcts::Context &context)
+{
+    static const size_t num_var_types_es =
+        sizeof(SubroutineArgumentAliasing4_var_types_set_es) / sizeof(SubroutineArgumentAliasing4_var_types_set_es[0]);
+    static const size_t num_var_types_gl =
+        sizeof(SubroutineArgumentAliasing4_var_types_set_gl) / sizeof(SubroutineArgumentAliasing4_var_types_set_gl[0]);
+
+    size_t num_var_types = num_var_types_es;
+
+    if (API::USE_DOUBLE)
+    {
+        num_var_types = num_var_types_gl;
+    }
+
+    for (size_t var_type_index = 0; var_type_index < num_var_types; var_type_index++)
+    {
+        group.addChild(new glcts::ArraysOfArrays::SubroutineArgumentAliasing4<API>(context, var_type_index));
+    }
 }
 
 /** Instantiates all tests and adds them as children to the node
@@ -10696,73 +11328,72 @@ void initTests(TestCaseGroup &group, glcts::Context &context)
     // Set up the map
     ArraysOfArrays::initializeMap<API>();
 
-    group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsPrimitive<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsStructTypes1<API>(context));
+    addSizedDeclarationsPrimitive<API>(group, context);
+    addSizedDeclarationsStructTypes1<API>(group, context);
     group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsStructTypes2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsStructTypes3<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsStructTypes4<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsTypenameStyle1<API>(context));
+    addSizedDeclarationsStructTypes3<API>(group, context);
+    addSizedDeclarationsStructTypes4<API>(group, context);
+    addSizedDeclarationsTypenameStyle1<API>(group, context);
     group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsTypenameStyle2<API>(context));
     group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsTypenameStyle3<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsTypenameStyle4<API>(context));
+    addSizedDeclarationsTypenameStyle4<API>(group, context);
     group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsTypenameStyle5<API>(context));
     group.addChild(new glcts::ArraysOfArrays::SizedDeclarationsFunctionParams<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::sized_declarations_invalid_sizes1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::sized_declarations_invalid_sizes2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::sized_declarations_invalid_sizes3<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::sized_declarations_invalid_sizes4<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclConstructors1<API>(context));
+    addSized_declarations_invalid_sizes1<API>(group, context);
+    addSized_declarations_invalid_sizes2<API>(group, context);
+    addSized_declarations_invalid_sizes3<API>(group, context);
+    addSized_declarations_invalid_sizes4<API>(group, context);
+    addConstructorsAndUnsizedDeclConstructors1<API>(group, context);
     group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclConstructors2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclUnsizedConstructors<API>(context));
+    addConstructorsAndUnsizedDeclUnsizedConstructors<API>(group, context);
     group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclConst<API>(context));
-
-    group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclInvalidConstructors1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclInvalidConstructors2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclInvalidConstructors3<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclInvalidConstructors4<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclConstructorSizing1<API>(context));
+    addConstructorsAndUnsizedDeclInvalidConstructors1<API>(group, context);
+    addConstructorsAndUnsizedDeclInvalidConstructors2<API>(group, context);
+    addConstructorsAndUnsizedDeclInvalidConstructors3<API>(group, context);
+    addConstructorsAndUnsizedDeclInvalidConstructors4<API>(group, context);
+    addConstructorsAndUnsizedDeclConstructorSizing1<API>(group, context);
     group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclConstructorSizing2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclStructConstructors<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclUnsizedArrays1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclUnsizedArrays2<API>(context));
+    addConstructorsAndUnsizedDeclStructConstructors<API>(group, context);
+    addConstructorsAndUnsizedDeclUnsizedArrays1<API>(group, context);
+    addConstructorsAndUnsizedDeclUnsizedArrays2<API>(group, context);
     group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclUnsizedArrays3<API>(context));
     group.addChild(new glcts::ArraysOfArrays::ConstructorsAndUnsizedDeclUnsizedArrays4<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsAssignment1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsAssignment2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsAssignment3<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsTypeRestrictions1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsTypeRestrictions2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingScalar1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingScalar2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingScalar3<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingScalar4<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingArray1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingArray2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsIndexingArray3<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsDynamicIndexing1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsDynamicIndexing2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsEquality1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsEquality2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsLength1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsLength2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsLength3<API>(context));
+    addExpressionsAssignment1<API>(group, context);
+    addExpressionsAssignment2<API>(group, context);
+    addExpressionsAssignment3<API>(group, context);
+    addExpressionsTypeRestrictions1<API>(group, context);
+    addExpressionsTypeRestrictions2<API>(group, context);
+    addExpressionsIndexingScalar1<API>(group, context);
+    addExpressionsIndexingScalar2<API>(group, context);
+    addExpressionsIndexingScalar3<API>(group, context);
+    addExpressionsIndexingScalar4<API>(group, context);
+    addExpressionsIndexingArray1<API>(group, context);
+    addExpressionsIndexingArray2<API>(group, context);
+    addExpressionsIndexingArray3<API>(group, context);
+    addExpressionsDynamicIndexing1<API>(group, context);
+    addExpressionsDynamicIndexing2<API>(group, context);
+    addExpressionsEquality1<API>(group, context);
+    addExpressionsEquality2<API>(group, context);
+    addExpressionsLength1<API>(group, context);
+    addExpressionsLength2<API>(group, context);
+    addExpressionsLength3<API>(group, context);
     group.addChild(new glcts::ArraysOfArrays::ExpressionsInvalid1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::ExpressionsInvalid2<API>(context));
+    addExpressionsInvalid2<API>(group, context);
+    addInteractionFunctionCalls1<API>(group, context);
+    addInteractionFunctionCalls2<API>(group, context);
+    addInteractionArgumentAliasing1<API>(group, context);
+    addInteractionArgumentAliasing2<API>(group, context);
+    addInteractionArgumentAliasing3<API>(group, context);
+    addInteractionArgumentAliasing4<API>(group, context);
+    addInteractionArgumentAliasing5<API>(group, context);
+    addInteractionArgumentAliasing6<API>(group, context);
 
-    group.addChild(new glcts::ArraysOfArrays::InteractionFunctionCalls1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::InteractionFunctionCalls2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::InteractionArgumentAliasing1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::InteractionArgumentAliasing2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::InteractionArgumentAliasing3<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::InteractionArgumentAliasing4<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::InteractionArgumentAliasing5<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::InteractionArgumentAliasing6<API>(context));
+    addInteractionUniforms1<API>(group, context);
+    addInteractionUniforms2<API>(group, context);
 
-    group.addChild(new glcts::ArraysOfArrays::InteractionUniforms1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::InteractionUniforms2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::InteractionUniformBuffers1<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::InteractionUniformBuffers2<API>(context));
-    group.addChild(new glcts::ArraysOfArrays::InteractionUniformBuffers3<API>(context));
+    addInteractionUniformBuffers1<API>(group, context);
+    addInteractionUniformBuffers2<API>(group, context);
+    addInteractionUniformBuffers3<API>(group, context);
     group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays1<API>(context));
     group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays2<API>(context));
     group.addChild(new glcts::ArraysOfArrays::InteractionInterfaceArrays3<API>(context));
@@ -10770,9 +11401,9 @@ void initTests(TestCaseGroup &group, glcts::Context &context)
 
     if (API::USE_STORAGE_BLOCK)
     {
-        group.addChild(new glcts::ArraysOfArrays::InteractionStorageBuffers1<API>(context));
-        group.addChild(new glcts::ArraysOfArrays::InteractionStorageBuffers2<API>(context));
-        group.addChild(new glcts::ArraysOfArrays::InteractionStorageBuffers3<API>(context));
+        addInteractionStorageBuffers1<API>(group, context);
+        addInteractionStorageBuffers2<API>(group, context);
+        addInteractionStorageBuffers3<API>(group, context);
     }
 
     if (API::USE_ATOMIC)
@@ -10783,12 +11414,12 @@ void initTests(TestCaseGroup &group, glcts::Context &context)
 
     if (API::USE_SUBROUTINE)
     {
-        group.addChild(new glcts::ArraysOfArrays::SubroutineFunctionCalls1<API>(context));
-        group.addChild(new glcts::ArraysOfArrays::SubroutineFunctionCalls2<API>(context));
-        group.addChild(new glcts::ArraysOfArrays::SubroutineArgumentAliasing1<API>(context));
-        group.addChild(new glcts::ArraysOfArrays::SubroutineArgumentAliasing2<API>(context));
-        group.addChild(new glcts::ArraysOfArrays::SubroutineArgumentAliasing3<API>(context));
-        group.addChild(new glcts::ArraysOfArrays::SubroutineArgumentAliasing4<API>(context));
+        addSubroutineFunctionCalls1<API>(group, context);
+        addSubroutineFunctionCalls2<API>(group, context);
+        addSubroutineArgumentAliasing1<API>(group, context);
+        addSubroutineArgumentAliasing2<API>(group, context);
+        addSubroutineArgumentAliasing3<API>(group, context);
+        addSubroutineArgumentAliasing4<API>(group, context);
     }
 }
 } /* namespace ArraysOfArrays */
