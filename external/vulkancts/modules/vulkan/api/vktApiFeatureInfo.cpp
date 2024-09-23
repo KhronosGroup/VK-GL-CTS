@@ -596,7 +596,7 @@ void checkApiVersionSupport(Context &context)
 
 typedef struct FeatureLimitTableItem_
 {
-    const void *cond;
+    const VkBool32 *cond;
     const char *condName;
     const void *ptr;
     const char *name;
@@ -665,10 +665,10 @@ bool validateBitmaskLimit(const T limitToCheck, const T reportedValue, const Lim
 
 bool validateLimit(FeatureLimitTableItem limit, TestLog &log)
 {
-    if (*((VkBool32 *)limit.cond) == false)
+    if (*limit.cond == VK_FALSE)
     {
         log << TestLog::Message << "Limit validation skipped '" << limit.name << "' due to " << limit.condName
-            << " == false'" << TestLog::EndMessage;
+            << " == VK_FALSE'" << TestLog::EndMessage;
 
         return true;
     }
@@ -1089,11 +1089,13 @@ tcu::TestStatus validateLimits14(Context &context)
 
     const auto vk11Properties = context.getDeviceVulkan11Properties();
     const auto vk12Properties = context.getDeviceVulkan12Properties();
+    const auto vk12Features   = context.getDeviceVulkan12Features();
     const auto &properties2   = context.getDeviceProperties2();
     const auto &limits        = properties2.properties.limits;
 
-    const VkBool32 checkAlways         = VK_TRUE;
-    const bool checkShaderSZINPreserve = vk11Properties.subgroupSize > 1;
+    const VkBool32 checkAlways                = VK_TRUE;
+    const VkBool32 checkShaderSZINPreserve    = vk11Properties.subgroupSize > 1;
+    const VkBool32 checkShaderSZINPreserveF16 = (checkShaderSZINPreserve && vk12Features.shaderFloat16);
 
     VkShaderStageFlags subgroupSupportedStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     VkSubgroupFeatureFlags subgroupFeatureFlags =
@@ -1138,14 +1140,17 @@ tcu::TestStatus validateLimits14(Context &context)
         {PN(features.wideLines), PN(limits.lineWidthGranularity), LIM_MAX_FLOAT(0.5f)},
         {PN(checkAlways), PN(vk11Properties.subgroupSupportedStages), LIM_MIN_UINT32(subgroupSupportedStages)},
         {PN(checkAlways), PN(vk11Properties.subgroupSupportedOperations), LIM_MIN_UINT32(subgroupFeatureFlags)},
-        {PN(checkShaderSZINPreserve), PN(vk12Properties.shaderSignedZeroInfNanPreserveFloat16), LIM_MIN_UINT32(1)},
+        {PN(checkShaderSZINPreserveF16), PN(vk12Properties.shaderSignedZeroInfNanPreserveFloat16), LIM_MIN_UINT32(1)},
         {PN(checkShaderSZINPreserve), PN(vk12Properties.shaderSignedZeroInfNanPreserveFloat32), LIM_MIN_UINT32(1)},
     };
 
     log << TestLog::Message << limits << TestLog::EndMessage;
 
     for (uint32_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
-        limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+    {
+        if (!validateLimit(featureLimitTable[ndx], log))
+            limitsOk = false;
+    }
 
     if (limitsOk)
         return tcu::TestStatus::pass("pass");
