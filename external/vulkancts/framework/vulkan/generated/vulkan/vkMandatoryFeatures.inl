@@ -1002,6 +1002,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 
 #if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceShaderUntypedPointersFeaturesKHR physicalDeviceShaderUntypedPointersFeaturesKHR;
+	deMemset(&physicalDeviceShaderUntypedPointersFeaturesKHR, 0, sizeof(physicalDeviceShaderUntypedPointersFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_untyped_pointers") )
+	{
+		physicalDeviceShaderUntypedPointersFeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderUntypedPointersFeaturesKHR>();
+		*nextPtr = &physicalDeviceShaderUntypedPointersFeaturesKHR;
+		nextPtr  = &physicalDeviceShaderUntypedPointersFeaturesKHR.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceShadingRateImageFeaturesNV physicalDeviceShadingRateImageFeaturesNV;
 	deMemset(&physicalDeviceShadingRateImageFeaturesNV, 0, sizeof(physicalDeviceShadingRateImageFeaturesNV));
 
@@ -2560,6 +2572,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_untyped_pointers")) )
+	{
+		if ( physicalDeviceShaderUntypedPointersFeaturesKHR.shaderUntypedPointers == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderUntypedPointers not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_synchronization2")) )
 	{
