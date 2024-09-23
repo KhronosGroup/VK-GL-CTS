@@ -1032,7 +1032,7 @@ bool GLESImageApi::RenderYUVTexture::invokeGLES(GLESImageApi &api, MovePtr<Uniqu
                 gl, clearColor(colorValues[ndx].x(), colorValues[ndx].y(), colorValues[ndx].z(), colorValues[ndx].w()));
             GLU_CHECK_GLW_CALL(gl, clear(GL_COLOR_BUFFER_BIT));
             GLU_CHECK_GLW_CALL(gl, finish());
-            char tmp[4] = {"0"};
+            uint8_t tmp[4] = {"0"};
             GLU_CHECK_GLW_CALL(gl, readPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, (void *)tmp));
             tcu::clear(tcu::getSubregion(reference.getLevel(0), 0, 0, size.x(), size.y()),
                        tcu::Vec4(tmp[0] / (255.0f), tmp[1] / (255.0f), tmp[2] / (255.0f), tmp[3] / (255.0f)));
