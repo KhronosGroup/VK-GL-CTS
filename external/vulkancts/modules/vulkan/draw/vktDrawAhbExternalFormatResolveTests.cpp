@@ -246,8 +246,11 @@ tcu::TestStatus AhbExternalFormatResolveTestInstance::iterate(void)
         tcu::TextureLevel reference(textureFormat, m_width, m_height, m_layers);
         const bool alphaMismatch =
             !AndroidHardwareBufferInstance::hasFormatAlpha(m_format) && hasAlphaChannel(textureFormat.order);
-        const bool isYuvFormat = AndroidHardwareBufferInstance::isFormatYuv(m_format);
-        buildReferenceImage(reference, isYuvFormat, alphaMismatch);
+        // In test cases where input attachment usage is being tested with an implementation that does not support
+        // nullColorAttachment the color image is read directly for comparison without any YUV sub/up sampling.
+        const bool performDownsample =
+            AndroidHardwareBufferInstance::isFormatYuv(m_format) && (!m_isInputAttachment || m_nullColorAttachment);
+        buildReferenceImage(reference, performDownsample, alphaMismatch);
         const tcu::ConstPixelBufferAccess referenceAccess = reference.getAccess();
         const char *name                                  = "Render validation";
         const char *description = "Validate output image was rendered according to expectation (if YUV and input test, "
@@ -1564,7 +1567,7 @@ void AhbExternalFormatResolveTestCase::initPrograms(SourceCollections &programCo
 
                << "const " << possibleTypes[i].first << "vec4 reference_colors[] =\n"
                << "{\n"
-               << "    " << possibleTypes[i].first << "vec4(0.0f, 0.0f, 0.0f, 0.0f),\n"
+               << "    " << possibleTypes[i].first << "vec4(0.0f, 0.0f, 0.0f, " << possibleTypes[i].second << "),\n"
                << "    " << possibleTypes[i].first << "vec4(" << possibleTypes[i].second << ", 0.0f, 0.0f, "
                << possibleTypes[i].second << "),\n"
                << "    " << possibleTypes[i].first << "vec4(0.0f, " << possibleTypes[i].second << ", 0.0f, "
