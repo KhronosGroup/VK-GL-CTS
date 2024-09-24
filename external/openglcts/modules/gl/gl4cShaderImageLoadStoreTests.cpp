@@ -9209,7 +9209,7 @@ private:
             "\n"
             "precision highp float;\n"
             "\n"
-            "layout(quads, equal_spacing, ccw) in;\n"
+            "layout(isolines) in;\n"
             "\n"
             "void main()\n"
             "{\n"
@@ -9489,8 +9489,10 @@ private:
             break;
 
         case tesselationEvalutaionShaderStage:
-            stage_specific_layout = "layout(quads, equal_spacing, ccw) in;\n"
+            stage_specific_layout = "layout(isolines) in;\n"
                                     "\n";
+            // Execute exactly once, given isolines with min tess factor
+            stage_specific_predicate = "gl_TessCoord.x < 0.5";
             break;
 
         case vertexShaderStage:
