@@ -81,7 +81,7 @@ const GLfloat cullQuad[] = {
 // clang-format off
 /** @brief Vertex shader source code for default fragment coord conventions testing. */
 const glw::GLchar* default_shader_vert =
-	R"(${VERSION}
+    R"(${VERSION}
     ${EXTENSION}
 
     layout (location = 0) in vec4 pos;
@@ -97,13 +97,13 @@ const glw::GLchar* default_shader_vert =
       gl_Position = pos;
       i = vec4((pos.x+1.0)*0.5*windowWidth, (pos.y+1.0)*0.5*windowHeight, (f-n)*0.5*pos.z + (f+n)*0.5, pos.w);
     }
-	)";
+    )";
 
 /** @brief Fragment shader source code for default fragment coord conventions testing. */
 const glw::GLchar* default_shader_frag =
-	R"(${VERSION}
+    R"(${VERSION}
     ${EXTENSION}
-	${PRECISION}
+    ${PRECISION}
 
     in vec4 i;
 
@@ -116,16 +116,16 @@ const glw::GLchar* default_shader_frag =
         w*=w;
         myColor = i * vec4(gl_SamplePosition.x*w, gl_SamplePosition.y*w, 1.0, 1.0);
     }
-	)";
+    )";
 
 
 
 /** @brief Fragment shader source code to test changed frag coord convention. */
 // from no_origin_upper_left_pixel_integer_center_multisample_shader.frag
 const glw::GLchar* multisample_shader_frag =
-	R"(${VERSION}
+    R"(${VERSION}
     ${EXTENSION}
-	${PRECISION}
+    ${PRECISION}
 
     in vec4 i;
 
@@ -137,7 +137,7 @@ const glw::GLchar* multisample_shader_frag =
         w*=w;
         myColor = i * vec4(gl_SamplePosition.x*w, gl_SamplePosition.y*w, 1.0, 1.0);
     }
-	)";
+    )";
 // clang-format on
 
 } // namespace

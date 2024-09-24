@@ -5187,16 +5187,16 @@ tcu::TestStatus AhbExternalFormatResolveApiInstance::iterate(void)
     };
 
     vk::VkAndroidHardwareBufferFormatProperties2ANDROID formatProperties2 = {
-        vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_2_ANDROID, // VkStructureType					sType;
-        &formatResolveProperties,                                                  // void*							pNext;
-        vk::VK_FORMAT_UNDEFINED,                                                   // VkFormat						format;
-        0u,                                                                        // uint64_t						externalFormat;
-        0u,                                                 // VkFormatFeatureFlags2			formatFeatures;
-        vk::VkComponentMapping(),                           // VkComponentMapping				samplerYcbcrConversionComponents;
-        vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY, // VkSamplerYcbcrModelConversion	suggestedYcbcrModel;
-        vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL,                // VkSamplerYcbcrRange				suggestedYcbcrRange;
-        vk::VK_CHROMA_LOCATION_COSITED_EVEN,                // VkChromaLocation				suggestedXChromaOffset;
-        vk::VK_CHROMA_LOCATION_COSITED_EVEN,                // VkChromaLocation				suggestedYChromaOffset;
+        vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_2_ANDROID, // VkStructureType sType;
+        &formatResolveProperties,                                                  // void* pNext;
+        vk::VK_FORMAT_UNDEFINED,                                                   // VkFormat format;
+        0u,                                                                        // uint64_t externalFormat;
+        0u,                                                 // VkFormatFeatureFlags2 formatFeatures;
+        vk::VkComponentMapping(),                           // VkComponentMapping samplerYcbcrConversionComponents;
+        vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY, // VkSamplerYcbcrModelConversion suggestedYcbcrModel;
+        vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL,                // VkSamplerYcbcrRange suggestedYcbcrRange;
+        vk::VK_CHROMA_LOCATION_COSITED_EVEN,                // VkChromaLocation suggestedXChromaOffset;
+        vk::VK_CHROMA_LOCATION_COSITED_EVEN,                // VkChromaLocation suggestedYChromaOffset;
     };
 
     vk::VkAndroidHardwareBufferFormatPropertiesANDROID formatProperties = {

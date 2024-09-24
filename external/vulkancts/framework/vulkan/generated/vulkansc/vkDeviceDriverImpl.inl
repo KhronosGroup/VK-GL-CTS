@@ -1071,33 +1071,33 @@ void DeviceDriver::cmdSetPrimitiveRestartEnableEXT (VkCommandBuffer commandBuffe
     m_vk.cmdSetPrimitiveRestartEnableEXT(commandBuffer, primitiveRestartEnable);
 }
 
-void DeviceDriver::cmdCopyBuffer2KHR (VkCommandBuffer commandBuffer, const VkCopyBufferInfo2KHR* pCopyBufferInfo) const
+void DeviceDriver::cmdCopyBuffer2KHR (VkCommandBuffer commandBuffer, const VkCopyBufferInfo2* pCopyBufferInfo) const
 {
     m_vk.cmdCopyBuffer2KHR(commandBuffer, pCopyBufferInfo);
 }
 
-void DeviceDriver::cmdCopyImage2KHR (VkCommandBuffer commandBuffer, const VkCopyImageInfo2KHR* pCopyImageInfo) const
+void DeviceDriver::cmdCopyImage2KHR (VkCommandBuffer commandBuffer, const VkCopyImageInfo2* pCopyImageInfo) const
 {
     m_vk.cmdCopyImage2KHR(commandBuffer, pCopyImageInfo);
 }
 
-void DeviceDriver::cmdBlitImage2KHR (VkCommandBuffer commandBuffer, const VkBlitImageInfo2KHR* pBlitImageInfo) const
+void DeviceDriver::cmdBlitImage2KHR (VkCommandBuffer commandBuffer, const VkBlitImageInfo2* pBlitImageInfo) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdBlitImage2KHR(commandBuffer, pBlitImageInfo);
 }
 
-void DeviceDriver::cmdCopyBufferToImage2KHR (VkCommandBuffer commandBuffer, const VkCopyBufferToImageInfo2KHR* pCopyBufferToImageInfo) const
+void DeviceDriver::cmdCopyBufferToImage2KHR (VkCommandBuffer commandBuffer, const VkCopyBufferToImageInfo2* pCopyBufferToImageInfo) const
 {
     m_vk.cmdCopyBufferToImage2KHR(commandBuffer, pCopyBufferToImageInfo);
 }
 
-void DeviceDriver::cmdCopyImageToBuffer2KHR (VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2KHR* pCopyImageToBufferInfo) const
+void DeviceDriver::cmdCopyImageToBuffer2KHR (VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2* pCopyImageToBufferInfo) const
 {
     m_vk.cmdCopyImageToBuffer2KHR(commandBuffer, pCopyImageToBufferInfo);
 }
 
-void DeviceDriver::cmdResolveImage2KHR (VkCommandBuffer commandBuffer, const VkResolveImageInfo2KHR* pResolveImageInfo) const
+void DeviceDriver::cmdResolveImage2KHR (VkCommandBuffer commandBuffer, const VkResolveImageInfo2* pResolveImageInfo) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdResolveImage2KHR(commandBuffer, pResolveImageInfo);
@@ -1126,7 +1126,7 @@ void DeviceDriver::cmdSetColorWriteEnableEXT (VkCommandBuffer commandBuffer, uin
     m_vk.cmdSetColorWriteEnableEXT(commandBuffer, attachmentCount, pColorWriteEnables);
 }
 
-void DeviceDriver::cmdSetEvent2KHR (VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfoKHR* pDependencyInfo) const
+void DeviceDriver::cmdSetEvent2KHR (VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfo* pDependencyInfo) const
 {
     m_vk.cmdSetEvent2KHR(commandBuffer, event, pDependencyInfo);
 }
@@ -1136,17 +1136,17 @@ void DeviceDriver::cmdResetEvent2KHR (VkCommandBuffer commandBuffer, VkEvent eve
     m_vk.cmdResetEvent2KHR(commandBuffer, event, stageMask);
 }
 
-void DeviceDriver::cmdWaitEvents2KHR (VkCommandBuffer commandBuffer, uint32_t eventCount, const VkEvent* pEvents, const VkDependencyInfoKHR* pDependencyInfos) const
+void DeviceDriver::cmdWaitEvents2KHR (VkCommandBuffer commandBuffer, uint32_t eventCount, const VkEvent* pEvents, const VkDependencyInfo* pDependencyInfos) const
 {
     m_vk.cmdWaitEvents2KHR(commandBuffer, eventCount, pEvents, pDependencyInfos);
 }
 
-void DeviceDriver::cmdPipelineBarrier2KHR (VkCommandBuffer commandBuffer, const VkDependencyInfoKHR* pDependencyInfo) const
+void DeviceDriver::cmdPipelineBarrier2KHR (VkCommandBuffer commandBuffer, const VkDependencyInfo* pDependencyInfo) const
 {
     m_vk.cmdPipelineBarrier2KHR(commandBuffer, pDependencyInfo);
 }
 
-VkResult DeviceDriver::queueSubmit2KHR (VkQueue queue, uint32_t submitCount, const VkSubmitInfo2KHR* pSubmits, VkFence fence) const
+VkResult DeviceDriver::queueSubmit2KHR (VkQueue queue, uint32_t submitCount, const VkSubmitInfo2* pSubmits, VkFence fence) const
 {
     return m_vk.queueSubmit2KHR(queue, submitCount, pSubmits, fence);
 }

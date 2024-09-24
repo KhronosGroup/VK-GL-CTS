@@ -10,9 +10,9 @@ const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				Context::getSampleLoc
 const vk::VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&		Context::getBlendOperationAdvancedPropertiesEXT		(void) const { return m_device->getBlendOperationAdvancedPropertiesEXT();		}
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			Context::getExternalMemoryHostPropertiesEXT			(void) const { return m_device->getExternalMemoryHostPropertiesEXT();			}
 const vk::VkPhysicalDevicePCIBusInfoPropertiesEXT&					Context::getPCIBusInfoPropertiesEXT					(void) const { return m_device->getPCIBusInfoPropertiesEXT();					}
-const vk::VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			Context::getSubgroupSizeControlProperties			(void) const { return m_device->getSubgroupSizeControlProperties();				}
+const vk::VkPhysicalDeviceSubgroupSizeControlProperties&			Context::getSubgroupSizeControlProperties			(void) const { return m_device->getSubgroupSizeControlProperties();				}
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			Context::getFragmentShadingRateProperties			(void) const { return m_device->getFragmentShadingRateProperties();				}
-const vk::VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&		Context::getTexelBufferAlignmentProperties			(void) const { return m_device->getTexelBufferAlignmentProperties();			}
+const vk::VkPhysicalDeviceTexelBufferAlignmentProperties&			Context::getTexelBufferAlignmentProperties			(void) const { return m_device->getTexelBufferAlignmentProperties();			}
 const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					Context::getRobustness2PropertiesEXT				(void) const { return m_device->getRobustness2PropertiesEXT();					}
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			Context::getCustomBorderColorPropertiesEXT			(void) const { return m_device->getCustomBorderColorPropertiesEXT();			}
 const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&		Context::getVertexAttributeDivisorProperties		(void) const { return m_device->getVertexAttributeDivisorProperties();			}

@@ -839,9 +839,9 @@ class API:
                 if not any(x.name == ext.promotedto for x in self.extensions):
                     ext.promotedto = None
 
-        # temporary workaround for extensions that are marked only for vulkan api in xml while
-        # they are need by vulkan_json_data.hpp and vulkan_json_parser.hpp in vulkansc
         if self.apiName == "vulkansc":
+            # temporary workaround for extensions that are marked only for vulkan api in xml while
+            # they are need by vulkan_json_data.hpp and vulkan_json_parser.hpp in vulkansc
             workAroundList = [
                     "VK_NV_device_diagnostic_checkpoints",
                     "VK_KHR_format_feature_flags2",
@@ -855,7 +855,14 @@ class API:
                     extData = extData[0]
                     self.extensions.append(extData)
                     self.notSupportedExtensions.remove(extData)
-
+            # temporary workaround for enums needed by vulkan_json_parser.hpp that are marked only for vulkan api in xml
+            scFeatures = [f for f in self.features if f.api == "vulkansc"][0]
+            for enum in self.enums:
+                if enum.name == "VkPipelineLayoutCreateFlagBits":
+                    self.addEnumerator(enum, "VK_PIPELINE_LAYOUT_CREATE_RESERVED_0_BIT_AMD", None, None, None, 0, None)
+                    self.addEnumerator(enum, "VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT", None, None, None, 1, None)
+                    scFeatures.requirementsList[0].typeList.append(enum.name)
+                    break
         # add new enumerators that were added by extensions to api.enums
         # we have to do it at the end for SC because some enums are dependent from extensions/api versions
         # and those dependencies can be checked only after all extensions were read
@@ -981,14 +988,13 @@ class API:
             scFeatures = [f for f in self.features if f.api == "vulkansc"][0]
             for featureRequirement in scFeatures.requirementsList:
                 if featureRequirement.operation == "remove":
-                    for removeFun in featureRequirement.commandList:
-                        # find function in the list of all functions
-                        for fun in self.functions:
-                            if removeFun == fun.name:
-                                functionsToRemove.append(fun)
-                                break
+                    # find function in the list of all functions
+                    for fun in self.functions:
+                        if fun.name in featureRequirement.commandList:
+                            functionsToRemove.append(fun)
             for fun in functionsToRemove:
                 self.functions.remove(fun)
+
             # sc is based on vk1.2 so we need to check features of vk1.3+
             # and rename functions and structures that were promoted in
             # those versions to their previous names (aliases)
@@ -999,6 +1005,24 @@ class API:
                     continue
                 # iterate over all requirements and enums/commands/structs added in them
                 for featureRequirement in feature.requirementsList:
+                    renamedFunctionsList = []
+                    # find promotedFun in list of all functions
+                    for fun in self.functions:
+                        if fun.name not in featureRequirement.commandList:
+                            continue
+                        # replace function name with its last alias
+                        fun.name = fun.aliasList[-1]
+                        fun.aliasList = fun.aliasList[:-1]
+                        # memorize renamed functions
+                        renamedFunctionsList.append(fun)
+                    # skip renaming enums and structures for extensions that are available for SC
+                    if featureRequirement.comment is not None:
+                        matchedExtension = re.search(r'Promoted from (\w+) ', featureRequirement.comment, re.IGNORECASE)
+                        if matchedExtension is not None:
+                            promotedExtensionName = matchedExtension.group(1)
+                            extensionList = [e for e in self.extensions if e.name == promotedExtensionName]
+                            if len(extensionList) > 0:
+                                continue
                     for promotedEnumerator in featureRequirement.enumList:
                         # iterate over all enums and find one that was extended
                         for enum in self.enums:
@@ -1023,38 +1047,33 @@ class API:
                                 break
                             if enumeratorReplaced:
                                 break
-                    renamedFunctionsList = []
-                    for promotedFun in featureRequirement.commandList:
-                        # find promotedFun in list of all functions
-                        for fun in self.functions:
-                            if fun.name != promotedFun:
-                                continue
-                            # replace function name with its last alias
-                            fun.name = fun.aliasList[-1]
-                            fun.aliasList = fun.aliasList[:-1]
-                            # memorize renamed functions
-                            renamedFunctionsList.append(fun)
-                            break
-                    for promotedStruct in featureRequirement.typeList:
-                        # find promotedStruct in list of all structures
-                        for struct in self.compositeTypes:
-                            if struct.name != promotedStruct:
-                                continue
-                            # skip structures without alias
-                            if len(struct.aliasList) == 0:
-                                break
-                            # replace struct name with its last alias
-                            struct.notSupportedAlias = struct.name
-                            struct.name = struct.aliasList[-1]
-                            struct.aliasList = struct.aliasList[:-1]
-                            # memorize all renamed structures
-                            renamedStructuresDict[promotedStruct] = struct
-                            # check all renamed functions and make sure that argument types are also renamed
-                            for renamedFun in renamedFunctionsList:
-                                for arg in renamedFun.arguments:
-                                    if arg.type == promotedStruct:
-                                        arg.type = struct.name
-                            break
+                    structsToRemove = []
+                    # find promotedStruct in list of all structures
+                    for struct in self.compositeTypes:
+                        promotedStruct = struct.name
+                        if promotedStruct not in featureRequirement.typeList:
+                            continue
+                        # skip structures without alias
+                        if len(struct.aliasList) == 0:
+                            # remove VkPhysicalDeviceVulkan13Features/Properties
+                            if "VkPhysicalDeviceVulkan" in promotedStruct:
+                                structsToRemove.append(struct)
+                            continue
+                        # replace struct name with its last alias
+                        struct.notSupportedAlias = struct.name
+                        struct.name = struct.aliasList[-1]
+                        struct.aliasList = struct.aliasList[:-1]
+                        # memorize all renamed structures
+                        renamedStructuresDict[promotedStruct] = struct
+                        # check all renamed functions and make sure that argument types are also renamed
+                        for renamedFun in renamedFunctionsList:
+                            for arg in renamedFun.arguments:
+                                if arg.type == promotedStruct:
+                                    arg.type = struct.name
+                    # remove structures that were marked for removal
+                    for st in structsToRemove:
+                        self.compositeTypes.remove(st)
+
             # iterate over all renamed structures and make sure that all their attributes are also renamed
             for newName in renamedStructuresDict:
                 for member in renamedStructuresDict[newName].members:

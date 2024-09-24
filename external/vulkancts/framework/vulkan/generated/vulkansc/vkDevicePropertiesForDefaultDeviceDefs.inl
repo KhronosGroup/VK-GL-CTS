@@ -10,9 +10,9 @@ const VkPhysicalDeviceSampleLocationsPropertiesEXT&				getSampleLocationsPropert
 const VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&		getBlendOperationAdvancedPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT>();	}
 const VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			getExternalMemoryHostPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceExternalMemoryHostPropertiesEXT>();		}
 const VkPhysicalDevicePCIBusInfoPropertiesEXT&					getPCIBusInfoPropertiesEXT					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePCIBusInfoPropertiesEXT>();				}
-const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			getSubgroupSizeControlProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubgroupSizeControlPropertiesEXT>();		}
+const VkPhysicalDeviceSubgroupSizeControlProperties&			getSubgroupSizeControlProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubgroupSizeControlProperties>();			}
 const VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>();		}
-const VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&		getTexelBufferAlignmentProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT>();		}
+const VkPhysicalDeviceTexelBufferAlignmentProperties&			getTexelBufferAlignmentProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceTexelBufferAlignmentProperties>();			}
 const VkPhysicalDeviceRobustness2PropertiesEXT&					getRobustness2PropertiesEXT					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceRobustness2PropertiesEXT>();				}
 const VkPhysicalDeviceCustomBorderColorPropertiesEXT&			getCustomBorderColorPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCustomBorderColorPropertiesEXT>();			}
 const VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&		getVertexAttributeDivisorProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR>();	}
