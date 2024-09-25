@@ -345,7 +345,7 @@ PACKAGES = [
     GitRepo(
         "https://gitlab.khronos.org/spirv/amber.git",
         "git@gitlab.khronos.org:spirv/amber.git",
-        "daa9c5924b189244cef2e9117c1edaa1af954d14",
+        "6f0251977e51c26609a5ceed3339537639741abf",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
