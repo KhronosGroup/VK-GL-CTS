@@ -2889,6 +2889,16 @@ tcu::Format::Bitfield<32> getMicromapCreateFlagsEXTStr (VkMicromapCreateFlagsEXT
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
+tcu::Format::Bitfield<32> getIndirectCommandsLayoutUsageFlagsEXTStr (VkIndirectCommandsLayoutUsageFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getIndirectCommandsInputModeFlagsEXTStr (VkIndirectCommandsInputModeFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
 tcu::Format::Bitfield<32> getDirectDriverLoadingFlagsLUNARGStr (VkDirectDriverLoadingFlagsLUNARG value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);

@@ -192,6 +192,8 @@ const vk::VkPhysicalDeviceMaintenance7FeaturesKHR&							getMaintenance7Features
 const vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&				getShaderAtomicFloat16VectorFeaturesNV				(void) const;
 const vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT&			getShaderReplicatedCompositesFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceRayTracingValidationFeaturesNV&					getRayTracingValidationFeaturesNV					(void) const;
+const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT&				getDeviceGeneratedCommandsFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceImageAlignmentControlFeaturesMESA&				getImageAlignmentControlFeaturesMESA				(void) const;
+const vk::VkPhysicalDeviceDepthClampControlFeaturesEXT&						getDepthClampControlFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;

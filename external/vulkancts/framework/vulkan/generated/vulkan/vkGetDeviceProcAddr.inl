@@ -557,6 +557,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdSetShadingRateImageEnableNV",
 		"vkCmdSetRepresentativeFragmentTestEnableNV",
 		"vkCmdSetCoverageReductionModeNV",
+		"vkCmdSetDepthClampRangeEXT",
 		"vkCreatePipelineBinariesKHR",
 		"vkDestroyPipelineBinaryKHR",
 		"vkGetPipelineKeyKHR",
@@ -581,6 +582,16 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdPushDescriptorSetWithTemplate2KHR",
 		"vkCmdSetDescriptorBufferOffsets2EXT",
 		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
+		"vkGetGeneratedCommandsMemoryRequirementsEXT",
+		"vkCmdPreprocessGeneratedCommandsEXT",
+		"vkCmdExecuteGeneratedCommandsEXT",
+		"vkCreateIndirectCommandsLayoutEXT",
+		"vkDestroyIndirectCommandsLayoutEXT",
+		"vkCreateIndirectExecutionSetEXT",
+		"vkDestroyIndirectExecutionSetEXT",
+		"vkUpdateIndirectExecutionSetPipelineEXT",
+		"vkUpdateIndirectExecutionSetShaderEXT",
+		"vkCmdSetDepthClampRangeEXT",
     };
 
     bool fail = false;

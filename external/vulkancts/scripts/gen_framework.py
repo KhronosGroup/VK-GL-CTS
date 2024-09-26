@@ -1133,7 +1133,7 @@ class API:
                 continue
             functionsToRemove.append(fun)
         for fun in functionsToRemove:
-            logging.debug("Removing function %s because not used" % (fun.name))
+            logging.debug("Removing function %s because not used in API %s" % (fun.name, self.apiName))
             self.functions.remove(fun)
 
         # remove handles that are not part of any vulkan command or structure
@@ -1154,6 +1154,7 @@ class API:
                 continue
             handlesToRemove.append(h)
         for h in handlesToRemove:
+            logging.debug("Removing unused handle %s from API %s" % (h.name, self.apiName))
             self.handles.remove(h)
 
         # sort enumerators in enums
@@ -1351,15 +1352,17 @@ def genHandlesSrc (handles):
 def writeBasicTypes (api, filename):
 
     def gen ():
-
+        yield "// Defines"
         for line in genDefinesSrc("SC" if api.apiName == "vulkansc" else "", api.defines):
             yield line
         yield ""
 
+        yield "// Handles"
         for line in genHandlesSrc(api.handles):
             yield line
         yield ""
 
+        yield "// Enums"
         for enum in api.enums:
             # skip empty enums only for vulkan
             # vulkan_json_data.hpp and vulkan_json_parser.hpp in SC need many empty enums
@@ -1379,6 +1382,7 @@ def writeBasicTypes (api, filename):
                 yield f"typedef {enum.name} {enum.alias};"
             yield ""
 
+        yield "// Bitmasks"
         for bitmask in api.bitmasks:
             plainType = api.basetypes[bitmask.type]
             yield f"typedef {plainType} {bitmask.name};\n"
@@ -1390,6 +1394,7 @@ def writeBasicTypes (api, filename):
             yield line
         yield ""
 
+        yield "// Extensions"
         for ext in api.extensions:
             firstRequirementEnums = ext.requirementsList[0].extendedEnums
             for e in firstRequirementEnums:
