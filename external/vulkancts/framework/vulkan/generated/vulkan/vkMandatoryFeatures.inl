@@ -187,6 +187,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	vk::VkPhysicalDeviceDepthClampControlFeaturesEXT physicalDeviceDepthClampControlFeaturesEXT;
+	deMemset(&physicalDeviceDepthClampControlFeaturesEXT, 0, sizeof(physicalDeviceDepthClampControlFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_depth_clamp_control") )
+	{
+		physicalDeviceDepthClampControlFeaturesEXT.sType = getStructureType<VkPhysicalDeviceDepthClampControlFeaturesEXT>();
+		*nextPtr = &physicalDeviceDepthClampControlFeaturesEXT;
+		nextPtr  = &physicalDeviceDepthClampControlFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceDepthClampZeroOneFeaturesEXT physicalDeviceDepthClampZeroOneFeaturesEXT;
 	deMemset(&physicalDeviceDepthClampZeroOneFeaturesEXT, 0, sizeof(physicalDeviceDepthClampZeroOneFeaturesEXT));
 
@@ -1343,6 +1353,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clamp_control")) )
+	{
+		if ( physicalDeviceDepthClampControlFeaturesEXT.depthClampControl == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature depthClampControl not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clamp_zero_one")) )
 	{
