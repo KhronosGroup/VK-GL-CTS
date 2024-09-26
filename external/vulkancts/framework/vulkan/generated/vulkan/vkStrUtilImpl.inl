@@ -30,6 +30,8 @@ template<> const char*	getTypeName<VkRenderPass>						(void) { return "VkRenderP
 template<> const char*	getTypeName<VkPipelineCache>					(void) { return "VkPipelineCache";					}
 template<> const char*	getTypeName<VkPipelineBinaryKHR>				(void) { return "VkPipelineBinaryKHR";				}
 template<> const char*	getTypeName<VkIndirectCommandsLayoutNV>			(void) { return "VkIndirectCommandsLayoutNV";		}
+template<> const char*	getTypeName<VkIndirectCommandsLayoutEXT>		(void) { return "VkIndirectCommandsLayoutEXT";		}
+template<> const char*	getTypeName<VkIndirectExecutionSetEXT>			(void) { return "VkIndirectExecutionSetEXT";		}
 template<> const char*	getTypeName<VkDescriptorUpdateTemplate>			(void) { return "VkDescriptorUpdateTemplate";		}
 template<> const char*	getTypeName<VkSamplerYcbcrConversion>			(void) { return "VkSamplerYcbcrConversion";			}
 template<> const char*	getTypeName<VkValidationCacheEXT>				(void) { return "VkValidationCacheEXT";				}
@@ -567,6 +569,7 @@ const char* getDynamicStateName (VkDynamicState value)
 		case VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV:	return "VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV";
 		case VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV:				return "VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV";
 		case VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT:		return "VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT";
+		case VK_DYNAMIC_STATE_DEPTH_CLAMP_RANGE_EXT:					return "VK_DYNAMIC_STATE_DEPTH_CLAMP_RANGE_EXT";
 		default:														return nullptr;
 	}
 }
@@ -1067,6 +1070,29 @@ const char* getImageViewTypeName (VkImageViewType value)
 		case VK_IMAGE_VIEW_TYPE_2D_ARRAY:	return "VK_IMAGE_VIEW_TYPE_2D_ARRAY";
 		case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:	return "VK_IMAGE_VIEW_TYPE_CUBE_ARRAY";
 		default:							return nullptr;
+	}
+}
+
+const char* getIndirectCommandsTokenTypeEXTName (VkIndirectCommandsTokenTypeEXT value)
+{
+	switch (value)
+	{
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_EXECUTION_SET_EXT:				return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_EXECUTION_SET_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_EXT:				return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT:			return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_EXT:				return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_EXT:				return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_INDEXED_EXT:				return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_INDEXED_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_EXT:						return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_INDEXED_COUNT_EXT:		return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_INDEXED_COUNT_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_COUNT_EXT:				return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_COUNT_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DISPATCH_EXT:					return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DISPATCH_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_NV_EXT:		return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_NV_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_COUNT_NV_EXT:	return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_COUNT_NV_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_EXT:			return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_COUNT_EXT:		return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_MESH_TASKS_COUNT_EXT";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_TRACE_RAYS2_EXT:				return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_TRACE_RAYS2_EXT";
+		default:															return nullptr;
 	}
 }
 
@@ -2404,9 +2430,25 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_GENERATED_COMMANDS_MEMORY_REQUIREMENTS_INFO_EXT:						return "VK_STRUCTURE_TYPE_GENERATED_COMMANDS_MEMORY_REQUIREMENTS_INFO_EXT";
+		case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_GENERATED_COMMANDS_INFO_EXT:											return "VK_STRUCTURE_TYPE_GENERATED_COMMANDS_INFO_EXT";
+		case VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_TOKEN_EXT:									return "VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_TOKEN_EXT";
+		case VK_STRUCTURE_TYPE_WRITE_INDIRECT_EXECUTION_SET_PIPELINE_EXT:							return "VK_STRUCTURE_TYPE_WRITE_INDIRECT_EXECUTION_SET_PIPELINE_EXT";
+		case VK_STRUCTURE_TYPE_WRITE_INDIRECT_EXECUTION_SET_SHADER_EXT:								return "VK_STRUCTURE_TYPE_WRITE_INDIRECT_EXECUTION_SET_SHADER_EXT";
+		case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_PIPELINE_INFO_EXT:							return "VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_PIPELINE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_INFO_EXT:								return "VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_INFO_EXT";
+		case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_LAYOUT_INFO_EXT:						return "VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_LAYOUT_INFO_EXT";
+		case VK_STRUCTURE_TYPE_GENERATED_COMMANDS_PIPELINE_INFO_EXT:								return "VK_STRUCTURE_TYPE_GENERATED_COMMANDS_PIPELINE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_GENERATED_COMMANDS_SHADER_INFO_EXT:									return "VK_STRUCTURE_TYPE_GENERATED_COMMANDS_SHADER_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA";
 		case VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA:							return "VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_CONTROL_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_CONTROL_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLAMP_CONTROL_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLAMP_CONTROL_CREATE_INFO_EXT";
 		default:																					return nullptr;
 	}
 }
@@ -2628,6 +2670,8 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV:			return "VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV";
 		case VK_OBJECT_TYPE_SHADER_EXT:							return "VK_OBJECT_TYPE_SHADER_EXT";
 		case VK_OBJECT_TYPE_PIPELINE_BINARY_KHR:				return "VK_OBJECT_TYPE_PIPELINE_BINARY_KHR";
+		case VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_EXT:		return "VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_EXT";
+		case VK_OBJECT_TYPE_INDIRECT_EXECUTION_SET_EXT:			return "VK_OBJECT_TYPE_INDIRECT_EXECUTION_SET_EXT";
 		default:												return nullptr;
 	}
 }
@@ -3663,6 +3707,36 @@ const char* getDeviceFaultVendorBinaryHeaderVersionEXTName (VkDeviceFaultVendorB
 	}
 }
 
+tcu::Format::Bitfield<32> getIndirectCommandsLayoutUsageFlagsEXTStr (VkIndirectCommandsLayoutUsageFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_EXPLICIT_PREPROCESS_BIT_EXT,	"VK_INDIRECT_COMMANDS_LAYOUT_USAGE_EXPLICIT_PREPROCESS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_UNORDERED_SEQUENCES_BIT_EXT,	"VK_INDIRECT_COMMANDS_LAYOUT_USAGE_UNORDERED_SEQUENCES_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+const char* getIndirectExecutionSetInfoTypeEXTName (VkIndirectExecutionSetInfoTypeEXT value)
+{
+	switch (value)
+	{
+		case VK_INDIRECT_EXECUTION_SET_INFO_TYPE_PIPELINES_EXT:			return "VK_INDIRECT_EXECUTION_SET_INFO_TYPE_PIPELINES_EXT";
+		case VK_INDIRECT_EXECUTION_SET_INFO_TYPE_SHADER_OBJECTS_EXT:	return "VK_INDIRECT_EXECUTION_SET_INFO_TYPE_SHADER_OBJECTS_EXT";
+		default:														return nullptr;
+	}
+}
+
+tcu::Format::Bitfield<32> getIndirectCommandsInputModeFlagsEXTStr (VkIndirectCommandsInputModeFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_INPUT_MODE_VULKAN_INDEX_BUFFER_EXT,	"VK_INDIRECT_COMMANDS_INPUT_MODE_VULKAN_INDEX_BUFFER_EXT"),
+		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_INPUT_MODE_DXGI_INDEX_BUFFER_EXT,		"VK_INDIRECT_COMMANDS_INPUT_MODE_DXGI_INDEX_BUFFER_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getFrameBoundaryFlagsEXTStr (VkFrameBoundaryFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -3739,6 +3813,7 @@ tcu::Format::Bitfield<64> getPipelineCreateFlags2Str (VkPipelineCreateFlags2 val
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT,							"VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR,										"VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT,							"VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT,								"VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3773,6 +3848,7 @@ tcu::Format::Bitfield<64> getBufferUsageFlags2Str (VkBufferUsageFlags2 value)
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_2_MICROMAP_STORAGE_BIT_EXT,								"VK_BUFFER_USAGE_2_MICROMAP_STORAGE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_2_EXECUTION_GRAPH_SCRATCH_BIT_AMDX,						"VK_BUFFER_USAGE_2_EXECUTION_GRAPH_SCRATCH_BIT_AMDX"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_2_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT,				"VK_BUFFER_USAGE_2_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_2_PREPROCESS_BUFFER_BIT_EXT,								"VK_BUFFER_USAGE_2_PREPROCESS_BUFFER_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3820,6 +3896,7 @@ tcu::Format::Bitfield<32> getShaderCreateFlagsEXTStr (VkShaderCreateFlagsEXT val
 		tcu::Format::BitDesc(VK_SHADER_CREATE_DISPATCH_BASE_BIT_EXT,					"VK_SHADER_CREATE_DISPATCH_BASE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SHADER_CREATE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_EXT,	"VK_SHADER_CREATE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SHADER_CREATE_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT,	"VK_SHADER_CREATE_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SHADER_CREATE_INDIRECT_BINDABLE_BIT_EXT,				"VK_SHADER_CREATE_INDIRECT_BINDABLE_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3906,6 +3983,16 @@ const char* getPhysicalDeviceLayeredApiKHRName (VkPhysicalDeviceLayeredApiKHR va
 		case VK_PHYSICAL_DEVICE_LAYERED_API_METAL_KHR:		return "VK_PHYSICAL_DEVICE_LAYERED_API_METAL_KHR";
 		case VK_PHYSICAL_DEVICE_LAYERED_API_OPENGL_KHR:		return "VK_PHYSICAL_DEVICE_LAYERED_API_OPENGL_KHR";
 		case VK_PHYSICAL_DEVICE_LAYERED_API_OPENGLES_KHR:	return "VK_PHYSICAL_DEVICE_LAYERED_API_OPENGLES_KHR";
+		default:											return nullptr;
+	}
+}
+
+const char* getDepthClampModeEXTName (VkDepthClampModeEXT value)
+{
+	switch (value)
+	{
+		case VK_DEPTH_CLAMP_MODE_VIEWPORT_RANGE_EXT:		return "VK_DEPTH_CLAMP_MODE_VIEWPORT_RANGE_EXT";
+		case VK_DEPTH_CLAMP_MODE_USER_DEFINED_RANGE_EXT:	return "VK_DEPTH_CLAMP_MODE_USER_DEFINED_RANGE_EXT";
 		default:											return nullptr;
 	}
 }
@@ -14373,12 +14460,298 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDepthClipContro
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceGeneratedCommands = " << value.deviceGeneratedCommands << '\n';
+	s << "\tdynamicGeneratedPipelineLayout = " << value.dynamicGeneratedPipelineLayout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxIndirectPipelineCount = " << value.maxIndirectPipelineCount << '\n';
+	s << "\tmaxIndirectShaderObjectCount = " << value.maxIndirectShaderObjectCount << '\n';
+	s << "\tmaxIndirectSequenceCount = " << value.maxIndirectSequenceCount << '\n';
+	s << "\tmaxIndirectCommandsTokenCount = " << value.maxIndirectCommandsTokenCount << '\n';
+	s << "\tmaxIndirectCommandsTokenOffset = " << value.maxIndirectCommandsTokenOffset << '\n';
+	s << "\tmaxIndirectCommandsIndirectStride = " << value.maxIndirectCommandsIndirectStride << '\n';
+	s << "\tsupportedIndirectCommandsInputModes = " << getIndirectCommandsInputModeFlagsEXTStr(value.supportedIndirectCommandsInputModes) << '\n';
+	s << "\tsupportedIndirectCommandsShaderStages = " << getShaderStageFlagsStr(value.supportedIndirectCommandsShaderStages) << '\n';
+	s << "\tsupportedIndirectCommandsShaderStagesPipelineBinding = " << getShaderStageFlagsStr(value.supportedIndirectCommandsShaderStagesPipelineBinding) << '\n';
+	s << "\tsupportedIndirectCommandsShaderStagesShaderBinding = " << getShaderStageFlagsStr(value.supportedIndirectCommandsShaderStagesShaderBinding) << '\n';
+	s << "\tdeviceGeneratedCommandsTransformFeedback = " << value.deviceGeneratedCommandsTransformFeedback << '\n';
+	s << "\tdeviceGeneratedCommandsMultiDrawIndirectCount = " << value.deviceGeneratedCommandsMultiDrawIndirectCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkGeneratedCommandsPipelineInfoEXT& value)
+{
+	s << "VkGeneratedCommandsPipelineInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipeline = " << value.pipeline << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkGeneratedCommandsShaderInfoEXT& value)
+{
+	s << "VkGeneratedCommandsShaderInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderCount = " << value.shaderCount << '\n';
+	s << "\tpShaders = " << value.pShaders << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkGeneratedCommandsMemoryRequirementsInfoEXT& value)
+{
+	s << "VkGeneratedCommandsMemoryRequirementsInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tindirectExecutionSet = " << value.indirectExecutionSet << '\n';
+	s << "\tindirectCommandsLayout = " << value.indirectCommandsLayout << '\n';
+	s << "\tmaxSequenceCount = " << value.maxSequenceCount << '\n';
+	s << "\tmaxDrawCount = " << value.maxDrawCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectExecutionSetPipelineInfoEXT& value)
+{
+	s << "VkIndirectExecutionSetPipelineInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tinitialPipeline = " << value.initialPipeline << '\n';
+	s << "\tmaxPipelineCount = " << value.maxPipelineCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectExecutionSetShaderLayoutInfoEXT& value)
+{
+	s << "VkIndirectExecutionSetShaderLayoutInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsetLayoutCount = " << value.setLayoutCount << '\n';
+	s << "\tpSetLayouts = " << value.pSetLayouts << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectExecutionSetShaderInfoEXT& value)
+{
+	s << "VkIndirectExecutionSetShaderInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderCount = " << value.shaderCount << '\n';
+	s << "\tpInitialShaders = " << value.pInitialShaders << '\n';
+	s << "\tpSetLayoutInfos = " << value.pSetLayoutInfos << '\n';
+	s << "\tmaxShaderCount = " << value.maxShaderCount << '\n';
+	s << "\tpushConstantRangeCount = " << value.pushConstantRangeCount << '\n';
+	s << "\tpPushConstantRanges = " << value.pPushConstantRanges << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectExecutionSetInfoEXT& value)
+{
+	s << "VkIndirectExecutionSetInfoEXT = {\n";
+	s << "\tpPipelineInfo = " << value.pPipelineInfo << '\n';
+	s << "\tpShaderInfo = " << value.pShaderInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectExecutionSetCreateInfoEXT& value)
+{
+	s << "VkIndirectExecutionSetCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttype = " << value.type << '\n';
+	s << "\tinfo = " << value.info << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkGeneratedCommandsInfoEXT& value)
+{
+	s << "VkGeneratedCommandsInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderStages = " << getShaderStageFlagsStr(value.shaderStages) << '\n';
+	s << "\tindirectExecutionSet = " << value.indirectExecutionSet << '\n';
+	s << "\tindirectCommandsLayout = " << value.indirectCommandsLayout << '\n';
+	s << "\tindirectAddress = " << value.indirectAddress << '\n';
+	s << "\tindirectAddressSize = " << value.indirectAddressSize << '\n';
+	s << "\tpreprocessAddress = " << value.preprocessAddress << '\n';
+	s << "\tpreprocessSize = " << value.preprocessSize << '\n';
+	s << "\tmaxSequenceCount = " << value.maxSequenceCount << '\n';
+	s << "\tsequenceCountAddress = " << value.sequenceCountAddress << '\n';
+	s << "\tmaxDrawCount = " << value.maxDrawCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkWriteIndirectExecutionSetPipelineEXT& value)
+{
+	s << "VkWriteIndirectExecutionSetPipelineEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tindex = " << value.index << '\n';
+	s << "\tpipeline = " << value.pipeline << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkWriteIndirectExecutionSetShaderEXT& value)
+{
+	s << "VkWriteIndirectExecutionSetShaderEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tindex = " << value.index << '\n';
+	s << "\tshader = " << value.shader << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectCommandsLayoutCreateInfoEXT& value)
+{
+	s << "VkIndirectCommandsLayoutCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getIndirectCommandsLayoutUsageFlagsEXTStr(value.flags) << '\n';
+	s << "\tshaderStages = " << getShaderStageFlagsStr(value.shaderStages) << '\n';
+	s << "\tindirectStride = " << value.indirectStride << '\n';
+	s << "\tpipelineLayout = " << value.pipelineLayout << '\n';
+	s << "\ttokenCount = " << value.tokenCount << '\n';
+	s << "\tpTokens = " << value.pTokens << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectCommandsLayoutTokenEXT& value)
+{
+	s << "VkIndirectCommandsLayoutTokenEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttype = " << value.type << '\n';
+	s << "\tdata = " << value.data << '\n';
+	s << "\toffset = " << value.offset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDrawIndirectCountIndirectCommandEXT& value)
+{
+	s << "VkDrawIndirectCountIndirectCommandEXT = {\n";
+	s << "\tbufferAddress = " << value.bufferAddress << '\n';
+	s << "\tstride = " << value.stride << '\n';
+	s << "\tcommandCount = " << value.commandCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectCommandsVertexBufferTokenEXT& value)
+{
+	s << "VkIndirectCommandsVertexBufferTokenEXT = {\n";
+	s << "\tvertexBindingUnit = " << value.vertexBindingUnit << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBindVertexBufferIndirectCommandEXT& value)
+{
+	s << "VkBindVertexBufferIndirectCommandEXT = {\n";
+	s << "\tbufferAddress = " << value.bufferAddress << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << "\tstride = " << value.stride << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectCommandsIndexBufferTokenEXT& value)
+{
+	s << "VkIndirectCommandsIndexBufferTokenEXT = {\n";
+	s << "\tmode = " << value.mode << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBindIndexBufferIndirectCommandEXT& value)
+{
+	s << "VkBindIndexBufferIndirectCommandEXT = {\n";
+	s << "\tbufferAddress = " << value.bufferAddress << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << "\tindexType = " << value.indexType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectCommandsPushConstantTokenEXT& value)
+{
+	s << "VkIndirectCommandsPushConstantTokenEXT = {\n";
+	s << "\tupdateRange = " << value.updateRange << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectCommandsExecutionSetTokenEXT& value)
+{
+	s << "VkIndirectCommandsExecutionSetTokenEXT = {\n";
+	s << "\ttype = " << value.type << '\n';
+	s << "\tshaderStages = " << getShaderStageFlagsStr(value.shaderStages) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkIndirectCommandsTokenDataEXT& value)
+{
+	s << "VkIndirectCommandsTokenDataEXT = {\n";
+	s << "\tpPushConstant = " << value.pPushConstant << '\n';
+	s << "\tpVertexBuffer = " << value.pVertexBuffer << '\n';
+	s << "\tpIndexBuffer = " << value.pIndexBuffer << '\n';
+	s << "\tpExecutionSet = " << value.pExecutionSet << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPipelineViewportDepthClipControlCreateInfoEXT& value)
 {
 	s << "VkPipelineViewportDepthClipControlCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tnegativeOneToOne = " << value.negativeOneToOne << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDepthClampControlFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceDepthClampControlFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthClampControl = " << value.depthClampControl << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineViewportDepthClampControlCreateInfoEXT& value)
+{
+	s << "VkPipelineViewportDepthClampControlCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthClampMode = " << value.depthClampMode << '\n';
+	s << "\tpDepthClampRange = " << value.pDepthClampRange << '\n';
 	s << '}';
 	return s;
 }
@@ -19006,6 +19379,15 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderReplicate
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderReplicatedComposites = " << value.shaderReplicatedComposites << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDepthClampRangeEXT& value)
+{
+	s << "VkDepthClampRangeEXT = {\n";
+	s << "\tminDepthClamp = " << value.minDepthClamp << '\n';
+	s << "\tmaxDepthClamp = " << value.maxDepthClamp << '\n';
 	s << '}';
 	return s;
 }

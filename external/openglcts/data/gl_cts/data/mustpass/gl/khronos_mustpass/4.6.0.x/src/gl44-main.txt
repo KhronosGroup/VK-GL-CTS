@@ -6675,7 +6675,7 @@ KHR-GL44.gpu_shader5.texture_gather_offset_color_clamp_to_edge
 KHR-GL44.gpu_shader5.texture_gather_offset_depth_clamp_border
 KHR-GL44.gpu_shader5.texture_gather_offset_depth_clamp_edge
 KHR-GL44.tessellation_shader.vertex.vertex_ordering
-KHR-GL44.tessellation_shader.vertex.vertex_spacing
+KHR-GL44.tessellation_shader.vertex.vertex_spacing*
 KHR-GL44.tessellation_shader.single.default_values_of_context_wide_properties
 KHR-GL44.tessellation_shader.single.isolines_tessellation
 KHR-GL44.tessellation_shader.single.ext_program_interface_query_dependency

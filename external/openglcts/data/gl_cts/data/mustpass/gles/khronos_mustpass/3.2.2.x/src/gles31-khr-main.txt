@@ -1471,7 +1471,7 @@ KHR-GLES31.core.gpu_shader5.texture_gather_offset_color_clamp_to_edge
 KHR-GLES31.core.gpu_shader5.texture_gather_offset_depth_clamp_border
 KHR-GLES31.core.gpu_shader5.texture_gather_offset_depth_clamp_edge
 KHR-GLES31.core.tessellation_shader.vertex.vertex_ordering
-KHR-GLES31.core.tessellation_shader.vertex.vertex_spacing
+KHR-GLES31.core.tessellation_shader.vertex.vertex_spacing*
 KHR-GLES31.core.tessellation_shader.single.default_values_of_context_wide_properties
 KHR-GLES31.core.tessellation_shader.single.isolines_tessellation
 KHR-GLES31.core.tessellation_shader.single.ext_program_interface_query_dependency

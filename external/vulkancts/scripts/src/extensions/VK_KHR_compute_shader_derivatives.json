@@ -11,9 +11,6 @@
                 ],
                 "requirements": [
                     "VK_KHR_compute_shader_derivatives"
-                ],
-                "mandatory_variant": [
-                    "vulkan"
                 ]
             }
         ]

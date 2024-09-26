@@ -161,6 +161,15 @@ virtual void				cmdBindPipelineShaderGroupNV							(VkCommandBuffer commandBuffe
 virtual void				getGeneratedCommandsMemoryRequirementsNV				(VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2* pMemoryRequirements) const = 0;
 virtual VkResult			createIndirectCommandsLayoutNV							(VkDevice device, const VkIndirectCommandsLayoutCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout) const = 0;
 virtual void				destroyIndirectCommandsLayoutNV							(VkDevice device, VkIndirectCommandsLayoutNV indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const = 0;
+virtual void				cmdExecuteGeneratedCommandsEXT							(VkCommandBuffer commandBuffer, VkBool32 isPreprocessed, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo) const = 0;
+virtual void				cmdPreprocessGeneratedCommandsEXT						(VkCommandBuffer commandBuffer, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo, VkCommandBuffer stateCommandBuffer) const = 0;
+virtual void				getGeneratedCommandsMemoryRequirementsEXT				(VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoEXT* pInfo, VkMemoryRequirements2* pMemoryRequirements) const = 0;
+virtual VkResult			createIndirectCommandsLayoutEXT							(VkDevice device, const VkIndirectCommandsLayoutCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutEXT* pIndirectCommandsLayout) const = 0;
+virtual void				destroyIndirectCommandsLayoutEXT						(VkDevice device, VkIndirectCommandsLayoutEXT indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const = 0;
+virtual VkResult			createIndirectExecutionSetEXT							(VkDevice device, const VkIndirectExecutionSetCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectExecutionSetEXT* pIndirectExecutionSet) const = 0;
+virtual void				destroyIndirectExecutionSetEXT							(VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, const VkAllocationCallbacks* pAllocator) const = 0;
+virtual void				updateIndirectExecutionSetPipelineEXT					(VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetPipelineEXT* pExecutionSetWrites) const = 0;
+virtual void				updateIndirectExecutionSetShaderEXT						(VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetShaderEXT* pExecutionSetWrites) const = 0;
 virtual void				cmdPushDescriptorSet									(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites) const = 0;
 virtual void				trimCommandPool											(VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlags flags) const = 0;
 virtual VkResult			getMemoryWin32HandleKHR									(VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const = 0;
@@ -509,3 +518,4 @@ virtual void				getLatencyTimingsNV										(VkDevice device, VkSwapchainKHR sw
 virtual void				queueNotifyOutOfBandNV									(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const = 0;
 virtual void				cmdSetRenderingAttachmentLocations						(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfo* pLocationInfo) const = 0;
 virtual void				cmdSetRenderingInputAttachmentIndices					(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfo* pInputAttachmentIndexInfo) const = 0;
+virtual void				cmdSetDepthClampRangeEXT								(VkCommandBuffer commandBuffer, VkDepthClampModeEXT depthClampMode, const VkDepthClampRangeEXT* pDepthClampRange) const = 0;

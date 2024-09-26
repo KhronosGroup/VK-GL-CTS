@@ -3252,6 +3252,8 @@ void testGenerator(tcu::TestCaseGroup *group)
         using FormatPair = std::pair<VkFormat, VkFormat>; // .first = sampled, .second = output
 
         const std::vector<FormatPair> formatCases{
+            std::make_pair(VK_FORMAT_R8_UNORM, VK_FORMAT_R8_UNORM),
+            std::make_pair(VK_FORMAT_R16_UNORM, VK_FORMAT_R16_UNORM),
             std::make_pair(VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM),
             std::make_pair(VK_FORMAT_R8G8_UNORM, VK_FORMAT_R8G8_UNORM),
             std::make_pair(VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32_SFLOAT),

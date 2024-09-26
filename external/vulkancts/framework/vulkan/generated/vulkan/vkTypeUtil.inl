@@ -766,6 +766,55 @@ inline VkMutableDescriptorTypeListEXT makeMutableDescriptorTypeListEXT (uint32_t
 	return res;
 }
 
+inline VkDrawIndirectCountIndirectCommandEXT makeDrawIndirectCountIndirectCommandEXT (VkDeviceAddress bufferAddress, uint32_t stride, uint32_t commandCount)
+{
+	VkDrawIndirectCountIndirectCommandEXT res;
+	res.bufferAddress	= bufferAddress;
+	res.stride			= stride;
+	res.commandCount	= commandCount;
+	return res;
+}
+
+inline VkIndirectCommandsVertexBufferTokenEXT makeIndirectCommandsVertexBufferTokenEXT (uint32_t vertexBindingUnit)
+{
+	VkIndirectCommandsVertexBufferTokenEXT res;
+	res.vertexBindingUnit	= vertexBindingUnit;
+	return res;
+}
+
+inline VkBindVertexBufferIndirectCommandEXT makeBindVertexBufferIndirectCommandEXT (VkDeviceAddress bufferAddress, uint32_t size, uint32_t stride)
+{
+	VkBindVertexBufferIndirectCommandEXT res;
+	res.bufferAddress	= bufferAddress;
+	res.size			= size;
+	res.stride			= stride;
+	return res;
+}
+
+inline VkIndirectCommandsIndexBufferTokenEXT makeIndirectCommandsIndexBufferTokenEXT (VkIndirectCommandsInputModeFlagBitsEXT mode)
+{
+	VkIndirectCommandsIndexBufferTokenEXT res;
+	res.mode	= mode;
+	return res;
+}
+
+inline VkBindIndexBufferIndirectCommandEXT makeBindIndexBufferIndirectCommandEXT (VkDeviceAddress bufferAddress, uint32_t size, VkIndexType indexType)
+{
+	VkBindIndexBufferIndirectCommandEXT res;
+	res.bufferAddress	= bufferAddress;
+	res.size			= size;
+	res.indexType		= indexType;
+	return res;
+}
+
+inline VkIndirectCommandsExecutionSetTokenEXT makeIndirectCommandsExecutionSetTokenEXT (VkIndirectExecutionSetInfoTypeEXT type, VkShaderStageFlags shaderStages)
+{
+	VkIndirectCommandsExecutionSetTokenEXT res;
+	res.type			= type;
+	res.shaderStages	= shaderStages;
+	return res;
+}
+
 inline VkVideoEncodeH264QpKHR makeVideoEncodeH264QpKHR (int32_t qpI, int32_t qpP, int32_t qpB)
 {
 	VkVideoEncodeH264QpKHR res;
@@ -875,6 +924,14 @@ inline VkDecompressMemoryRegionNV makeDecompressMemoryRegionNV (VkDeviceAddress 
 	res.compressedSize		= compressedSize;
 	res.decompressedSize	= decompressedSize;
 	res.decompressionMethod	= decompressionMethod;
+	return res;
+}
+
+inline VkDepthClampRangeEXT makeDepthClampRangeEXT (float minDepthClamp, float maxDepthClamp)
+{
+	VkDepthClampRangeEXT res;
+	res.minDepthClamp	= minDepthClamp;
+	res.maxDepthClamp	= maxDepthClamp;
 	return res;
 }
 

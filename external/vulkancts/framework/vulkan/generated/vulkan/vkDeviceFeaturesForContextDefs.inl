@@ -192,6 +192,8 @@ const vk::VkPhysicalDeviceMaintenance7FeaturesKHR&							Context::getMaintenance
 const vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&				Context::getShaderAtomicFloat16VectorFeaturesNV				(void) const { return m_device->getShaderAtomicFloat16VectorFeaturesNV();			}
 const vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT&			Context::getShaderReplicatedCompositesFeaturesEXT			(void) const { return m_device->getShaderReplicatedCompositesFeaturesEXT();			}
 const vk::VkPhysicalDeviceRayTracingValidationFeaturesNV&					Context::getRayTracingValidationFeaturesNV					(void) const { return m_device->getRayTracingValidationFeaturesNV();				}
+const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT&				Context::getDeviceGeneratedCommandsFeaturesEXT				(void) const { return m_device->getDeviceGeneratedCommandsFeaturesEXT();			}
 const vk::VkPhysicalDeviceImageAlignmentControlFeaturesMESA&				Context::getImageAlignmentControlFeaturesMESA				(void) const { return m_device->getImageAlignmentControlFeaturesMESA();				}
+const vk::VkPhysicalDeviceDepthClampControlFeaturesEXT&						Context::getDepthClampControlFeaturesEXT					(void) const { return m_device->getDepthClampControlFeaturesEXT();					}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							Context::getProtectedMemoryFeatures							(void) const { return m_device->getProtectedMemoryFeatures();						}
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						Context::getShaderDrawParametersFeatures					(void) const { return m_device->getShaderDrawParametersFeatures();					}

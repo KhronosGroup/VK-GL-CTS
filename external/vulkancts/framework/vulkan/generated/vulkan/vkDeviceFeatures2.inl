@@ -3459,6 +3459,81 @@ tcu::TestStatus testPhysicalDeviceFeatureDepthClipControlFeaturesEXT (Context& c
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureDeviceGeneratedCommandsFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+	VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT	deviceDeviceGeneratedCommandsFeaturesEXT[count];
+	const bool											isDeviceGeneratedCommandsFeaturesEXT = checkExtension(properties, "VK_EXT_device_generated_commands");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceDeviceGeneratedCommandsFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT));
+		deviceDeviceGeneratedCommandsFeaturesEXT[ndx].sType = isDeviceGeneratedCommandsFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceDeviceGeneratedCommandsFeaturesEXT[ndx].pNext = nullptr;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceDeviceGeneratedCommandsFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isDeviceGeneratedCommandsFeaturesEXT)
+		log << TestLog::Message << deviceDeviceGeneratedCommandsFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isDeviceGeneratedCommandsFeaturesEXT &&
+		(deviceDeviceGeneratedCommandsFeaturesEXT[0].deviceGeneratedCommands != deviceDeviceGeneratedCommandsFeaturesEXT[1].deviceGeneratedCommands ||
+		 deviceDeviceGeneratedCommandsFeaturesEXT[0].dynamicGeneratedPipelineLayout != deviceDeviceGeneratedCommandsFeaturesEXT[1].dynamicGeneratedPipelineLayout))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureDepthClampControlFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+	VkPhysicalDeviceDepthClampControlFeaturesEXT	deviceDepthClampControlFeaturesEXT[count];
+	const bool										isDepthClampControlFeaturesEXT = checkExtension(properties, "VK_EXT_depth_clamp_control");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceDepthClampControlFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceDepthClampControlFeaturesEXT));
+		deviceDepthClampControlFeaturesEXT[ndx].sType = isDepthClampControlFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_CONTROL_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceDepthClampControlFeaturesEXT[ndx].pNext = nullptr;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceDepthClampControlFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isDepthClampControlFeaturesEXT)
+		log << TestLog::Message << deviceDepthClampControlFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isDepthClampControlFeaturesEXT &&
+		(deviceDepthClampControlFeaturesEXT[0].depthClampControl != deviceDepthClampControlFeaturesEXT[1].depthClampControl))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceDepthClampControlFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureVertexInputDynamicStateFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -5825,6 +5900,8 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "legacy_vertex_attributes_features_ext", testPhysicalDeviceFeatureLegacyVertexAttributesFeaturesEXT);
 	addFunctionCase(testGroup, "mutable_descriptor_type_features_ext", testPhysicalDeviceFeatureMutableDescriptorTypeFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clip_control_features_ext", testPhysicalDeviceFeatureDepthClipControlFeaturesEXT);
+	addFunctionCase(testGroup, "device_generated_commands_features_ext", testPhysicalDeviceFeatureDeviceGeneratedCommandsFeaturesEXT);
+	addFunctionCase(testGroup, "depth_clamp_control_features_ext", testPhysicalDeviceFeatureDepthClampControlFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", testPhysicalDeviceFeatureVertexInputDynamicStateFeaturesEXT);
 	addFunctionCase(testGroup, "shader_relaxed_extended_instruction_features_khr", testPhysicalDeviceFeatureShaderRelaxedExtendedInstructionFeaturesKHR);
 	addFunctionCase(testGroup, "color_write_enable_features_ext", testPhysicalDeviceFeatureColorWriteEnableFeaturesEXT);

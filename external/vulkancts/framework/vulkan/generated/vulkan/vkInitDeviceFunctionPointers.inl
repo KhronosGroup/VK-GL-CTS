@@ -288,6 +288,15 @@ m_vk.cmdBindPipelineShaderGroupNV = (CmdBindPipelineShaderGroupNVFunc) GET_PROC_
 m_vk.getGeneratedCommandsMemoryRequirementsNV = (GetGeneratedCommandsMemoryRequirementsNVFunc) GET_PROC_ADDR("vkGetGeneratedCommandsMemoryRequirementsNV");
 m_vk.createIndirectCommandsLayoutNV = (CreateIndirectCommandsLayoutNVFunc) GET_PROC_ADDR("vkCreateIndirectCommandsLayoutNV");
 m_vk.destroyIndirectCommandsLayoutNV = (DestroyIndirectCommandsLayoutNVFunc) GET_PROC_ADDR("vkDestroyIndirectCommandsLayoutNV");
+m_vk.cmdExecuteGeneratedCommandsEXT = (CmdExecuteGeneratedCommandsEXTFunc) GET_PROC_ADDR("vkCmdExecuteGeneratedCommandsEXT");
+m_vk.cmdPreprocessGeneratedCommandsEXT = (CmdPreprocessGeneratedCommandsEXTFunc) GET_PROC_ADDR("vkCmdPreprocessGeneratedCommandsEXT");
+m_vk.getGeneratedCommandsMemoryRequirementsEXT = (GetGeneratedCommandsMemoryRequirementsEXTFunc) GET_PROC_ADDR("vkGetGeneratedCommandsMemoryRequirementsEXT");
+m_vk.createIndirectCommandsLayoutEXT = (CreateIndirectCommandsLayoutEXTFunc) GET_PROC_ADDR("vkCreateIndirectCommandsLayoutEXT");
+m_vk.destroyIndirectCommandsLayoutEXT = (DestroyIndirectCommandsLayoutEXTFunc) GET_PROC_ADDR("vkDestroyIndirectCommandsLayoutEXT");
+m_vk.createIndirectExecutionSetEXT = (CreateIndirectExecutionSetEXTFunc) GET_PROC_ADDR("vkCreateIndirectExecutionSetEXT");
+m_vk.destroyIndirectExecutionSetEXT = (DestroyIndirectExecutionSetEXTFunc) GET_PROC_ADDR("vkDestroyIndirectExecutionSetEXT");
+m_vk.updateIndirectExecutionSetPipelineEXT = (UpdateIndirectExecutionSetPipelineEXTFunc) GET_PROC_ADDR("vkUpdateIndirectExecutionSetPipelineEXT");
+m_vk.updateIndirectExecutionSetShaderEXT = (UpdateIndirectExecutionSetShaderEXTFunc) GET_PROC_ADDR("vkUpdateIndirectExecutionSetShaderEXT");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
     m_vk.cmdPushDescriptorSet = (CmdPushDescriptorSetFunc) GET_PROC_ADDR("vkCmdPushDescriptorSet");
 if (!m_vk.cmdPushDescriptorSet)
@@ -894,3 +903,4 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
     m_vk.cmdSetRenderingInputAttachmentIndices = (CmdSetRenderingInputAttachmentIndicesFunc) GET_PROC_ADDR("vkCmdSetRenderingInputAttachmentIndices");
 if (!m_vk.cmdSetRenderingInputAttachmentIndices)
     m_vk.cmdSetRenderingInputAttachmentIndices = (CmdSetRenderingInputAttachmentIndicesFunc) GET_PROC_ADDR("vkCmdSetRenderingInputAttachmentIndicesKHR");
+m_vk.cmdSetDepthClampRangeEXT = (CmdSetDepthClampRangeEXTFunc) GET_PROC_ADDR("vkCmdSetDepthClampRangeEXT");

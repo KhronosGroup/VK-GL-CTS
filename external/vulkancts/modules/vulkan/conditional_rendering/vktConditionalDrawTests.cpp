@@ -210,7 +210,8 @@ void ConditionalDraw::createRenderPassWithClear(void)
 
     // Framebuffer.
     std::vector<vk::VkImageView> colorAttachments{*m_colorTargetView};
-    const Draw::FramebufferCreateInfo framebufferCreateInfo(*m_rpWithClear, colorAttachments, WIDTH, HEIGHT, 1);
+    const Draw::FramebufferCreateInfo framebufferCreateInfo(*m_rpWithClear, colorAttachments, m_renderWidth,
+                                                            m_renderHeight, 1);
 
     m_fbWithClear = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
 }
@@ -393,8 +394,8 @@ tcu::TestStatus ConditionalDraw::iterate(void)
     {
         // When clearing in the render pass we want to check the render pass clear is executed properly.
         beginConditionalRendering(m_vk, *m_cmdBuffer, *m_conditionalBuffer, m_conditionalData);
-        vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_rpWithClear, *m_fbWithClear, vk::makeRect2D(WIDTH, HEIGHT),
-                            clearColor, subpassContents);
+        vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_rpWithClear, *m_fbWithClear,
+                            vk::makeRect2D(m_renderWidth, m_renderHeight), clearColor, subpassContents);
     }
     else
     {
@@ -552,8 +553,9 @@ tcu::TestStatus ConditionalDraw::iterate(void)
     submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
     // Validation
-    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)),
-                                  (int)(0.5f + static_cast<float>(HEIGHT)));
+    tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat),
+                                  (int)(0.5f + static_cast<float>(m_renderWidth)),
+                                  (int)(0.5f + static_cast<float>(m_renderHeight)));
     referenceFrame.allocLevel(0);
 
     const int32_t frameWidth  = referenceFrame.getWidth();
@@ -583,7 +585,7 @@ tcu::TestStatus ConditionalDraw::iterate(void)
     const vk::VkOffset3D zeroOffset = {0, 0, 0};
     const tcu::ConstPixelBufferAccess renderedFrame =
         m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(), vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset,
-                                        WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+                                        m_renderWidth, m_renderHeight, vk::VK_IMAGE_ASPECT_COLOR_BIT);
 
     qpTestResult res = QP_TEST_RESULT_PASS;
 

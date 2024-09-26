@@ -93,6 +93,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmFloatControls2Tests.hpp
 	vktSpvAsmIntegerDotProductTests.cpp
 	vktSpvAsmIntegerDotProductTests.hpp
+	vktSpvAsmComputeShaderDerivativesTests.cpp
+	vktSpvAsmComputeShaderDerivativesTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS

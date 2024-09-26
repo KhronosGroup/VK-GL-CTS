@@ -100,10 +100,11 @@ public:
     DrawTestsBaseClass(Context &context, const char *vertexShaderName, const char *fragmentShaderName,
                        const SharedGroupParams groupParams,
                        vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-                       const uint32_t layers            = 1u);
+                       const uint32_t layers = 1u, const uint32_t renderWidth = 256u,
+                       const uint32_t renderHeight = 256u);
 
 protected:
-    void initialize(void);
+    virtual void initialize(void);
     virtual void initPipeline(const vk::VkDevice device);
     void preRenderBarriers(void);
     void beginLegacyRender(vk::VkCommandBuffer cmdBuffer,
@@ -121,11 +122,8 @@ protected:
 #endif // CTS_USES_VULKANSC
     virtual uint32_t getDefaultViewMask(void) const;
 
-    enum
-    {
-        WIDTH  = 256,
-        HEIGHT = 256
-    };
+    const uint32_t m_renderWidth;
+    const uint32_t m_renderHeight;
 
     vk::VkFormat m_colorAttachmentFormat;
 

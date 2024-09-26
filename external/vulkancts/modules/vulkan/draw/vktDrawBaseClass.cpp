@@ -34,8 +34,10 @@ namespace Draw
 
 DrawTestsBaseClass::DrawTestsBaseClass(Context &context, const char *vertexShaderName, const char *fragmentShaderName,
                                        const SharedGroupParams groupParams, vk::VkPrimitiveTopology topology,
-                                       const uint32_t layers)
+                                       const uint32_t layers, const uint32_t renderWidth, const uint32_t renderHeight)
     : TestInstance(context)
+    , m_renderWidth(renderWidth)
+    , m_renderHeight(renderHeight)
     , m_colorAttachmentFormat(vk::VK_FORMAT_R8G8B8A8_UNORM)
     , m_groupParams(groupParams)
     , m_topology(topology)
@@ -56,7 +58,7 @@ void DrawTestsBaseClass::initialize(void)
     const PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
     m_pipelineLayout = vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
 
-    const vk::VkExtent3D targetImageExtent = {WIDTH, HEIGHT, 1};
+    const vk::VkExtent3D targetImageExtent = {m_renderWidth, m_renderHeight, 1};
     const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, targetImageExtent, 1,
                                                 m_layers, vk::VK_SAMPLE_COUNT_1_BIT, vk::VK_IMAGE_TILING_OPTIMAL,
                                                 vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
@@ -107,7 +109,8 @@ void DrawTestsBaseClass::initialize(void)
 
         // create framebuffer
         std::vector<vk::VkImageView> colorAttachments{*m_colorTargetView};
-        const FramebufferCreateInfo framebufferCreateInfo(*m_renderPass, colorAttachments, WIDTH, HEIGHT, 1);
+        const FramebufferCreateInfo framebufferCreateInfo(*m_renderPass, colorAttachments, m_renderWidth,
+                                                          m_renderHeight, 1);
         m_framebuffer = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
     }
 
@@ -158,8 +161,8 @@ void DrawTestsBaseClass::initPipeline(const vk::VkDevice device)
 
     const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
 
-    vk::VkViewport viewport = vk::makeViewport(WIDTH, HEIGHT);
-    vk::VkRect2D scissor    = vk::makeRect2D(WIDTH, HEIGHT);
+    vk::VkViewport viewport = vk::makeViewport(m_renderWidth, m_renderHeight);
+    vk::VkRect2D scissor    = vk::makeRect2D(m_renderWidth, m_renderHeight);
 
     PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
     pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
@@ -214,7 +217,7 @@ void DrawTestsBaseClass::preRenderBarriers(void)
 
 void DrawTestsBaseClass::beginLegacyRender(vk::VkCommandBuffer cmdBuffer, const vk::VkSubpassContents content)
 {
-    const vk::VkRect2D renderArea = vk::makeRect2D(WIDTH, HEIGHT);
+    const vk::VkRect2D renderArea = vk::makeRect2D(m_renderWidth, m_renderHeight);
 
     vk::beginRenderPass(m_vk, cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, content);
 }
@@ -257,7 +260,7 @@ void DrawTestsBaseClass::beginSecondaryCmdBuffer(const vk::DeviceInterface &vk,
 void DrawTestsBaseClass::beginDynamicRender(vk::VkCommandBuffer cmdBuffer, const vk::VkRenderingFlagsKHR renderingFlags)
 {
     const vk::VkClearValue clearColor{{{0.0f, 0.0f, 0.0f, 1.0f}}};
-    const vk::VkRect2D renderArea = vk::makeRect2D(WIDTH, HEIGHT);
+    const vk::VkRect2D renderArea = vk::makeRect2D(m_renderWidth, m_renderHeight);
 
     vk::beginRendering(m_vk, cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL,
                        vk::VK_ATTACHMENT_LOAD_OP_LOAD, renderingFlags, m_layers, getDefaultViewMask());

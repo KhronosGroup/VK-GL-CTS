@@ -205,6 +205,18 @@ VKAPI_ATTR VkResult VKAPI_CALL createIndirectCommandsLayoutNV (VkDevice device, 
 	VK_NULL_RETURN((*pIndirectCommandsLayout = allocateNonDispHandle<IndirectCommandsLayoutNV, VkIndirectCommandsLayoutNV>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createIndirectCommandsLayoutEXT (VkDevice device, const VkIndirectCommandsLayoutCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutEXT* pIndirectCommandsLayout)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pIndirectCommandsLayout = allocateNonDispHandle<IndirectCommandsLayoutEXT, VkIndirectCommandsLayoutEXT>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createIndirectExecutionSetEXT (VkDevice device, const VkIndirectExecutionSetCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectExecutionSetEXT* pIndirectExecutionSet)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pIndirectExecutionSet = allocateNonDispHandle<IndirectExecutionSetEXT, VkIndirectExecutionSetEXT>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createDescriptorUpdateTemplate (VkDevice device, const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorUpdateTemplate* pDescriptorUpdateTemplate)
 {
 	DE_UNREF(pAllocator);
@@ -495,6 +507,18 @@ VKAPI_ATTR void VKAPI_CALL destroyIndirectCommandsLayoutNV (VkDevice device, VkI
 {
 	DE_UNREF(device);
 	freeNonDispHandle<IndirectCommandsLayoutNV, VkIndirectCommandsLayoutNV>(indirectCommandsLayout, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyIndirectCommandsLayoutEXT (VkDevice device, VkIndirectCommandsLayoutEXT indirectCommandsLayout, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<IndirectCommandsLayoutEXT, VkIndirectCommandsLayoutEXT>(indirectCommandsLayout, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyIndirectExecutionSetEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<IndirectExecutionSetEXT, VkIndirectExecutionSetEXT>(indirectExecutionSet, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyDescriptorUpdateTemplate (VkDevice device, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const VkAllocationCallbacks* pAllocator)
@@ -1599,6 +1623,43 @@ VKAPI_ATTR void VKAPI_CALL getGeneratedCommandsMemoryRequirementsNV (VkDevice de
 	DE_UNREF(device);
 	DE_UNREF(pInfo);
 	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdExecuteGeneratedCommandsEXT (VkCommandBuffer commandBuffer, VkBool32 isPreprocessed, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(isPreprocessed);
+	DE_UNREF(pGeneratedCommandsInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdPreprocessGeneratedCommandsEXT (VkCommandBuffer commandBuffer, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo, VkCommandBuffer stateCommandBuffer)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pGeneratedCommandsInfo);
+	DE_UNREF(stateCommandBuffer);
+}
+
+VKAPI_ATTR void VKAPI_CALL getGeneratedCommandsMemoryRequirementsEXT (VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoEXT* pInfo, VkMemoryRequirements2* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL updateIndirectExecutionSetPipelineEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetPipelineEXT* pExecutionSetWrites)
+{
+	DE_UNREF(device);
+	DE_UNREF(indirectExecutionSet);
+	DE_UNREF(executionSetWriteCount);
+	DE_UNREF(pExecutionSetWrites);
+}
+
+VKAPI_ATTR void VKAPI_CALL updateIndirectExecutionSetShaderEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetShaderEXT* pExecutionSetWrites)
+{
+	DE_UNREF(device);
+	DE_UNREF(indirectExecutionSet);
+	DE_UNREF(executionSetWriteCount);
+	DE_UNREF(pExecutionSetWrites);
 }
 
 VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFeatures2 (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2* pFeatures)
@@ -4262,6 +4323,13 @@ VKAPI_ATTR void VKAPI_CALL cmdSetRenderingInputAttachmentIndices (VkCommandBuffe
 	DE_UNREF(pInputAttachmentIndexInfo);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdSetDepthClampRangeEXT (VkCommandBuffer commandBuffer, VkDepthClampModeEXT depthClampMode, const VkDepthClampRangeEXT* pDepthClampRange)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(depthClampMode);
+	DE_UNREF(pDepthClampRange);
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -4524,6 +4592,15 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetGeneratedCommandsMemoryRequirementsNV,					getGeneratedCommandsMemoryRequirementsNV),
 	VK_NULL_FUNC_ENTRY(vkCreateIndirectCommandsLayoutNV,							createIndirectCommandsLayoutNV),
 	VK_NULL_FUNC_ENTRY(vkDestroyIndirectCommandsLayoutNV,							destroyIndirectCommandsLayoutNV),
+	VK_NULL_FUNC_ENTRY(vkCmdExecuteGeneratedCommandsEXT,							cmdExecuteGeneratedCommandsEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdPreprocessGeneratedCommandsEXT,							cmdPreprocessGeneratedCommandsEXT),
+	VK_NULL_FUNC_ENTRY(vkGetGeneratedCommandsMemoryRequirementsEXT,					getGeneratedCommandsMemoryRequirementsEXT),
+	VK_NULL_FUNC_ENTRY(vkCreateIndirectCommandsLayoutEXT,							createIndirectCommandsLayoutEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyIndirectCommandsLayoutEXT,							destroyIndirectCommandsLayoutEXT),
+	VK_NULL_FUNC_ENTRY(vkCreateIndirectExecutionSetEXT,								createIndirectExecutionSetEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyIndirectExecutionSetEXT,							destroyIndirectExecutionSetEXT),
+	VK_NULL_FUNC_ENTRY(vkUpdateIndirectExecutionSetPipelineEXT,						updateIndirectExecutionSetPipelineEXT),
+	VK_NULL_FUNC_ENTRY(vkUpdateIndirectExecutionSetShaderEXT,						updateIndirectExecutionSetShaderEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSet,										cmdPushDescriptorSet),
 	VK_NULL_FUNC_ENTRY(vkTrimCommandPool,											trimCommandPool),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHR,									getMemoryWin32HandleKHR),
@@ -4872,5 +4949,6 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkQueueNotifyOutOfBandNV,									queueNotifyOutOfBandNV),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRenderingAttachmentLocations,						cmdSetRenderingAttachmentLocations),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRenderingInputAttachmentIndices,						cmdSetRenderingInputAttachmentIndices),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthClampRangeEXT,									cmdSetDepthClampRangeEXT),
 };
 
