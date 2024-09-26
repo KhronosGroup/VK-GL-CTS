@@ -2479,6 +2479,9 @@ def writeCoreFunctionalities(api, filename):
         apiVersion = "VK_API_VERSION_" + feature.number.replace('.', '_')
         functionNamesPerApiVersionDict[apiVersion] = []
         for r in feature.requirementsList:
+            # skip optional promotions like for VK_EXT_host_image_copy
+            if float(feature.number) > 1.35 and r.comment is not None and 'Promoted from ' not in r.comment:
+                continue
             functionNamesPerApiVersionDict[apiVersion].extend(r.commandList)
 
     lines = [
@@ -2502,6 +2505,7 @@ def writeCoreFunctionalities(api, filename):
     apiVersions = []
     functionLines = []
     for apiVersion in functionNamesPerApiVersionDict:
+        lines += [f'\tapis[{apiVersion}] = {{']
         # iterate over names of functions added with api
         for functionName in functionNamesPerApiVersionDict[apiVersion]:
             # search for data of this function in all functions list
@@ -2516,11 +2520,9 @@ def writeCoreFunctionalities(api, filename):
                 # something went wrong, for "vulkan" functionData should always be found
                 assert(False)
             # add line coresponding to this function
-            functionLines.append('\tapis[{0}].push_back(FunctionInfo("' + functionName + '",\t' + functionOriginValues[functionData.getType()] + '));')
-        # functions for every api version should also include all functions from previous versions
-        specializedLines = [line.format(apiVersion) for line in functionLines]
+            functionLines.append('\t\t{"' + functionName + '",\t' + functionOriginValues[functionData.getType()] + '},')
         # indent all functions of specified api and add them to main list
-        lines = lines + [line for line in indentLines(specializedLines)] + [""]
+        lines = lines + [line for line in indentLines(functionLines)] + ["\t};"]
 
     lines = lines + ["}"]
     writeInlFile(filename, INL_HEADER, lines)
