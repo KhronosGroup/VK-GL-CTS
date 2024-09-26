@@ -1318,6 +1318,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceLayeredApiVulkanProp
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance8FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_8_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkRenderingAreaInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_RENDERING_AREA_INFO_KHR;
@@ -2896,6 +2901,11 @@ template<> VkStructureType getStructureType<VkImageMemoryBarrier2> (void)
 template<> VkStructureType getStructureType<VkBufferMemoryBarrier2> (void)
 {
 	return VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+}
+
+template<> VkStructureType getStructureType<VkMemoryBarrierAccessFlags3KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_BARRIER_ACCESS_FLAGS_3_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDependencyInfo> (void)

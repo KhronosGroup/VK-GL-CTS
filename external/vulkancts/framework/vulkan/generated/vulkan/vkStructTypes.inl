@@ -3315,6 +3315,13 @@ struct VkPhysicalDeviceLayeredApiVulkanPropertiesKHR
 	VkPhysicalDeviceProperties2	properties;
 };
 
+struct VkPhysicalDeviceMaintenance8FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance8;
+};
+
 struct VkRenderingAreaInfoKHR
 {
 	VkStructureType	sType;
@@ -6672,6 +6679,14 @@ struct VkBufferMemoryBarrier2
 	VkBuffer				buffer;
 	VkDeviceSize			offset;
 	VkDeviceSize			size;
+};
+
+struct VkMemoryBarrierAccessFlags3KHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkAccessFlags3KHR	srcAccessMask3;
+	VkAccessFlags3KHR	dstAccessMask3;
 };
 
 struct VkDependencyInfo

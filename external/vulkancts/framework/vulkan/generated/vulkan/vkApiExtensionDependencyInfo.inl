@@ -3589,6 +3589,18 @@ bool check_VK_EXT_device_generated_commands(const tcu::UVec2& v, const ExtPropVe
 	return (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_buffer_device_address")) && isSupported(vDEP, "VK_KHR_maintenance5");
 }
 
+bool check_VK_KHR_maintenance8(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_maintenance8"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
 bool check_VK_MESA_image_alignment_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3874,6 +3886,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_NV_descriptor_pool_overallocation",					&check_VK_NV_descriptor_pool_overallocation),
 	std::make_pair("VK_KHR_maintenance7",									&check_VK_KHR_maintenance7),
 	std::make_pair("VK_EXT_device_generated_commands",						&check_VK_EXT_device_generated_commands),
+	std::make_pair("VK_KHR_maintenance8",									&check_VK_KHR_maintenance8),
 	std::make_pair("VK_MESA_image_alignment_control",						&check_VK_MESA_image_alignment_control),
 	std::make_pair("VK_EXT_depth_clamp_control",							&check_VK_EXT_depth_clamp_control),
 };
@@ -4266,6 +4279,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_shader_replicated_composites"),
 	std::make_tuple(1, 0, "VK_NV_ray_tracing_validation"),
 	std::make_tuple(1, 0, "VK_EXT_device_generated_commands"),
+	std::make_tuple(1, 0, "VK_KHR_maintenance8"),
 	std::make_tuple(1, 0, "VK_MESA_image_alignment_control"),
 	std::make_tuple(1, 0, "VK_EXT_depth_clamp_control"),
 };

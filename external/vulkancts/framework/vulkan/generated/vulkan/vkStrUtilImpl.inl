@@ -266,7 +266,8 @@ tcu::Format::Bitfield<32> getPipelineCacheCreateFlagsStr (VkPipelineCacheCreateF
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT,	"VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT,				"VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CACHE_CREATE_INTERNALLY_SYNCHRONIZED_MERGE_BIT_KHR,	"VK_PIPELINE_CACHE_CREATE_INTERNALLY_SYNCHRONIZED_MERGE_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2442,6 +2443,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_LAYOUT_INFO_EXT:						return "VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_LAYOUT_INFO_EXT";
 		case VK_STRUCTURE_TYPE_GENERATED_COMMANDS_PIPELINE_INFO_EXT:								return "VK_STRUCTURE_TYPE_GENERATED_COMMANDS_PIPELINE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_GENERATED_COMMANDS_SHADER_INFO_EXT:									return "VK_STRUCTURE_TYPE_GENERATED_COMMANDS_SHADER_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_8_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_8_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_8_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_8_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_BARRIER_ACCESS_FLAGS_3_KHR:									return "VK_STRUCTURE_TYPE_MEMORY_BARRIER_ACCESS_FLAGS_3_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA";
 		case VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA:							return "VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA";
@@ -2604,10 +2608,11 @@ tcu::Format::Bitfield<32> getDependencyFlagsStr (VkDependencyFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_DEPENDENCY_BY_REGION_BIT,			"VK_DEPENDENCY_BY_REGION_BIT"),
-		tcu::Format::BitDesc(VK_DEPENDENCY_VIEW_LOCAL_BIT,			"VK_DEPENDENCY_VIEW_LOCAL_BIT"),
-		tcu::Format::BitDesc(VK_DEPENDENCY_DEVICE_GROUP_BIT,		"VK_DEPENDENCY_DEVICE_GROUP_BIT"),
-		tcu::Format::BitDesc(VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT,	"VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_BY_REGION_BIT,											"VK_DEPENDENCY_BY_REGION_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_VIEW_LOCAL_BIT,											"VK_DEPENDENCY_VIEW_LOCAL_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_DEVICE_GROUP_BIT,										"VK_DEPENDENCY_DEVICE_GROUP_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT,									"VK_DEPENDENCY_FEEDBACK_LOOP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_QUEUE_FAMILY_OWNERSHIP_TRANSFER_USE_ALL_STAGES_BIT_KHR,	"VK_DEPENDENCY_QUEUE_FAMILY_OWNERSHIP_TRANSFER_USE_ALL_STAGES_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -5169,6 +5174,15 @@ tcu::Format::Bitfield<32> getVideoEncodeH265TransformBlockSizeFlagsKHRStr (VkVid
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_32_BIT_KHR,	"VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_32_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<64> getAccessFlags3KHRStr (VkAccessFlags3KHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_ACCESS_3_NONE_KHR,	"VK_ACCESS_3_NONE_KHR"),
+	};
+	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
 const char* getAccelerationStructureMotionInstanceTypeNVName (VkAccelerationStructureMotionInstanceTypeNV value)
@@ -10386,6 +10400,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLayeredApiVulka
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance8FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceMaintenance8FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaintenance8 = " << value.maintenance8 << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkRenderingAreaInfoKHR& value)
 {
 	s << "VkRenderingAreaInfoKHR = {\n";
@@ -14813,6 +14837,17 @@ std::ostream& operator<< (std::ostream& s, const VkBufferMemoryBarrier2& value)
 	s << "\tbuffer = " << value.buffer << '\n';
 	s << "\toffset = " << value.offset << '\n';
 	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryBarrierAccessFlags3KHR& value)
+{
+	s << "VkMemoryBarrierAccessFlags3KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcAccessMask3 = " << getAccessFlags3KHRStr(value.srcAccessMask3) << '\n';
+	s << "\tdstAccessMask3 = " << getAccessFlags3KHRStr(value.dstAccessMask3) << '\n';
 	s << '}';
 	return s;
 }

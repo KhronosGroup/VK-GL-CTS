@@ -1626,6 +1626,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_maintenance8")
+	{
+		return;
+	}
 	if (extName == "VK_MESA_image_alignment_control")
 	{
 		return;
@@ -3779,6 +3783,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkUpdateIndirectExecutionSetShaderEXT");
 		return;
 	}
+	if (extName == "VK_KHR_maintenance8")
+	{
+		return;
+	}
 	if (extName == "VK_MESA_image_alignment_control")
 	{
 		return;
@@ -4211,6 +4219,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_shader_replicated_composites",
 	"VK_NV_ray_tracing_validation",
 	"VK_EXT_device_generated_commands",
+	"VK_KHR_maintenance8",
 	"VK_MESA_image_alignment_control",
 	"VK_EXT_depth_clamp_control",
 };

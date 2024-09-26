@@ -3309,6 +3309,11 @@ tcu::Format::Bitfield<32> getVideoEncodeH265TransformBlockSizeFlagsKHRStr (VkVid
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
+tcu::Format::Bitfield<64> getAccessFlags3KHRStr (VkAccessFlags3KHR value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
 std::ostream& operator<< (std::ostream& s, const VkBaseOutStructure& value)
 {
 	s << "VkBaseOutStructure = {\n";

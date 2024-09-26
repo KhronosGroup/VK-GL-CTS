@@ -683,6 +683,7 @@ tcu::Format::Bitfield<32>	getVideoEncodeH265StdFlagsKHRStr							(VkVideoEncodeH
 tcu::Format::Bitfield<32>	getVideoEncodeH265RateControlFlagsKHRStr					(VkVideoEncodeH265RateControlFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeH265CtbSizeFlagsKHRStr						(VkVideoEncodeH265CtbSizeFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeH265TransformBlockSizeFlagsKHRStr				(VkVideoEncodeH265TransformBlockSizeFlagsKHR value);
+tcu::Format::Bitfield<64>	getAccessFlags3KHRStr										(VkAccessFlags3KHR value);
 
 std::ostream&	operator<<	(std::ostream& s, const VkBaseOutStructure& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBaseInStructure& value);
@@ -1046,6 +1047,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance7Pro
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesListKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiVulkanPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance8FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingAreaInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetLayoutSupport& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderDrawParametersFeatures& value);
@@ -1400,6 +1402,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineColorWriteCreateInfoE
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryBarrier2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageMemoryBarrier2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferMemoryBarrier2& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryBarrierAccessFlags3KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDependencyInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreSubmitInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCommandBufferSubmitInfo& value);

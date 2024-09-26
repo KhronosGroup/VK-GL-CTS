@@ -410,6 +410,7 @@ tcu::Format::Bitfield<32>	getVideoEncodeH265StdFlagsKHRStr							(VkVideoEncodeH
 tcu::Format::Bitfield<32>	getVideoEncodeH265RateControlFlagsKHRStr					(VkVideoEncodeH265RateControlFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeH265CtbSizeFlagsKHRStr						(VkVideoEncodeH265CtbSizeFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeH265TransformBlockSizeFlagsKHRStr				(VkVideoEncodeH265TransformBlockSizeFlagsKHR value);
+tcu::Format::Bitfield<64>	getAccessFlags3KHRStr										(VkAccessFlags3KHR value);
 
 std::ostream&	operator<<	(std::ostream& s, const VkBaseOutStructure& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBaseInStructure& value);
