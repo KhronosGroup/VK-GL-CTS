@@ -142,8 +142,6 @@ public:
     virtual void deinit() override;
     virtual void init() override;
 
-    bool GetBits(const glw::GLenum target, const glw::GLenum bits, glw::GLint *value);
-
     bool GetDefaultFramebufferBlitFormat(bool *noDepth, bool *noStencil);
 
     bool GetDrawbuffer32DepthComponentType(glw::GLint *value);

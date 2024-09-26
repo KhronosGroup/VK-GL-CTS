@@ -37,6 +37,8 @@ set(GLCTS_COMMON_SRCS
 	glcCullDistance.hpp
 	glcExposedExtensionsTests.cpp
 	glcExposedExtensionsTests.hpp
+    glcFragCoordConventionsTests.cpp
+    glcFragCoordConventionsTests.hpp
 	glcFragDepthTests.cpp
 	glcFragDepthTests.hpp
 	glcFramebufferBlitTests.cpp

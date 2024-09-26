@@ -872,6 +872,7 @@ KHR-GL31.buffer_objects.sub_data
 KHR-GL31.transform_feedback2.transform_feedback2_states
 KHR-GL31.api.coverage
 KHR-GL31.get_uniform_tests.get_uniform
+KHR-GL31.frag_coord_conventions.multisample
 KHR-GL31.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL31.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL31.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp

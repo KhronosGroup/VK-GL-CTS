@@ -883,6 +883,7 @@ cc_library_static {
         "external/openglcts/modules/common/glcCullDistance.cpp",
         "external/openglcts/modules/common/glcExposedExtensionsTests.cpp",
         "external/openglcts/modules/common/glcExtTokens.cpp",
+        "external/openglcts/modules/common/glcFragCoordConventionsTests.cpp",
         "external/openglcts/modules/common/glcFragDepthTests.cpp",
         "external/openglcts/modules/common/glcFramebufferBlitTests.cpp",
         "external/openglcts/modules/common/glcFramebufferCompleteness.cpp",

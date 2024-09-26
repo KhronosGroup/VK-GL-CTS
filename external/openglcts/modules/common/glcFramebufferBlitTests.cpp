@@ -30,6 +30,7 @@
 #include "deMath.h"
 
 #include "glcFramebufferBlitTests.hpp"
+#include "glcMisc.hpp"
 #include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
 #include "gluTextureUtil.hpp"
@@ -442,8 +443,8 @@ bool FramebufferBlitBaseTestCase::GetDefaultFramebufferBlitFormat(bool *noDepth,
     gl.bindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
     GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
 
-    GetBits(GL_DRAW_FRAMEBUFFER, GL_DEPTH_BITS, &depthBits);
-    GetBits(GL_DRAW_FRAMEBUFFER, GL_STENCIL_BITS, &stencilBits);
+    getBits(gl, m_isContextES, GL_DRAW_FRAMEBUFFER, GL_DEPTH_BITS, &depthBits);
+    getBits(gl, m_isContextES, GL_DRAW_FRAMEBUFFER, GL_STENCIL_BITS, &stencilBits);
 
     m_depth_internalFormat = 0;
     m_depth_type           = 0;
@@ -527,115 +528,6 @@ bool FramebufferBlitBaseTestCase::GetDefaultFramebufferBlitFormat(bool *noDepth,
     }
 
     return false;
-}
-
-bool FramebufferBlitBaseTestCase::GetBits(GLenum target, GLenum bits, GLint *value)
-{
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-    if (!m_isContextES)
-    {
-        GLint colorAttachment    = 0;
-        GLenum depthAttachment   = GL_DEPTH;
-        GLenum stencilAttachment = GL_STENCIL;
-        GLint fbo                = 0;
-        if (target == GL_READ_FRAMEBUFFER)
-        {
-            gl.getIntegerv(GL_READ_FRAMEBUFFER_BINDING, &fbo);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-        else
-        {
-            gl.getIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-
-        if (fbo)
-        {
-            depthAttachment   = GL_DEPTH_ATTACHMENT;
-            stencilAttachment = GL_STENCIL_ATTACHMENT;
-        }
-        if (target == GL_READ_FRAMEBUFFER)
-        {
-            gl.getIntegerv(GL_READ_BUFFER, &colorAttachment);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-        else
-        {
-            gl.getIntegerv(GL_DRAW_BUFFER, &colorAttachment);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-
-        if (colorAttachment == GL_BACK)
-            colorAttachment = GL_BACK_LEFT;
-        else if (colorAttachment == GL_FRONT)
-            colorAttachment = GL_FRONT_LEFT;
-
-        switch (bits)
-        {
-        case GL_RED_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_GREEN_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE,
-                                                   value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_BLUE_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_ALPHA_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE,
-                                                   value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_DEPTH_BITS:
-        case GL_STENCIL_BITS:
-            /*
-             * OPENGL SPECS 4.5: Paragraph  9.2. BINDING AND MANAGING FRAMEBUFFER OBJECTS p.335
-             * If the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE, then either no framebuffer is bound to target;
-             * or a default framebuffer is queried, attachment is GL_DEPTH or GL_STENCIL,
-             * and the number of depth or stencil bits, respectively, is zero....
-             * and all other queries will generate an INVALID_OPERATION error.
-             * */
-            if (fbo == 0)
-            { //default framebuffer
-                gl.getFramebufferAttachmentParameteriv(target, (bits == GL_DEPTH_BITS ? GL_DEPTH : GL_STENCIL),
-                                                       GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-                if (*value == GL_NONE)
-                {
-                    *value = 0;
-                    break;
-                }
-            }
-            switch (bits)
-            {
-            case GL_DEPTH_BITS:
-                gl.getFramebufferAttachmentParameteriv(target, depthAttachment, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
-                                                       value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-                break;
-            case GL_STENCIL_BITS:
-                gl.getFramebufferAttachmentParameteriv(target, stencilAttachment,
-                                                       GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE, value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-                break;
-            }
-            break;
-        default:
-            gl.getIntegerv(bits, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-            break;
-        }
-    }
-    else
-    {
-        gl.getIntegerv(bits, value);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-    }
-    return true;
 }
 
 bool FramebufferBlitBaseTestCase::GetDrawbuffer32DepthComponentType(glw::GLint *value)
@@ -2534,12 +2426,12 @@ bool FramebufferBlitMultiToSingleSampledTestCase::testDepthBlitConfig(const tcu:
                 if (buf_config.src_type)
                     srcPreBits = GetDepthPrecisionBits(depth_config.internal_format);
                 else
-                    GetBits(GL_READ_FRAMEBUFFER, GL_DEPTH_BITS, &srcPreBits);
+                    getBits(gl, m_isContextES, GL_READ_FRAMEBUFFER, GL_DEPTH_BITS, &srcPreBits);
 
                 if (buf_config.dst_type)
                     dstPreBits = GetDepthPrecisionBits(depth_config.internal_format);
                 else
-                    GetBits(GL_READ_FRAMEBUFFER, GL_DEPTH_BITS, &dstPreBits);
+                    getBits(gl, m_isContextES, GL_READ_FRAMEBUFFER, GL_DEPTH_BITS, &dstPreBits);
 
                 getDepth(m_setup.ul_coord, &tmp_depth, &resultPreBits,
                          buf_config.dst_type == 0 ? m_defaultFBO : *buf_config.dst_fbo, depth_config.internal_format,

@@ -29,6 +29,7 @@
 
 #include "deMath.h"
 #include "deUniquePtr.hpp"
+#include "glcMisc.hpp"
 #include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
 #include "gluStateReset.hpp"
@@ -1627,134 +1628,6 @@ void ApiCoverageTestCase::tcu_msg(const std::string &msg0, const std::string &ms
     m_testCtx.getLog() << tcu::TestLog::Message << msg0.c_str() << " : " << msg1.c_str() << tcu::TestLog::EndMessage;
 }
 
-bool ApiCoverageTestCase::GetBits(GLenum target, GLenum bits, GLint *value)
-{
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-
-    if (!m_is_context_ES)
-    {
-        GLint colorAttachment;
-        GLenum depthAttachment   = GL_DEPTH;
-        GLenum stencilAttachment = GL_STENCIL;
-        GLint fbo                = 0;
-        if (target == GL_READ_FRAMEBUFFER)
-        {
-            gl.getIntegerv(GL_READ_FRAMEBUFFER_BINDING, &fbo);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-        else
-        {
-            gl.getIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-
-        if (fbo)
-        {
-            depthAttachment   = GL_DEPTH_ATTACHMENT;
-            stencilAttachment = GL_STENCIL_ATTACHMENT;
-        }
-        if (target == GL_READ_FRAMEBUFFER)
-        {
-            gl.getIntegerv(GL_READ_BUFFER, &colorAttachment);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-        else
-        {
-            gl.getIntegerv(GL_DRAW_BUFFER, &colorAttachment);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-        }
-        if (colorAttachment == GL_BACK)
-            colorAttachment = GL_BACK_LEFT;
-        else if (colorAttachment == GL_FRONT)
-            colorAttachment = GL_FRONT_LEFT;
-
-        switch (bits)
-        {
-        case GL_RED_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_GREEN_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE,
-                                                   value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_BLUE_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_ALPHA_BITS:
-            gl.getFramebufferAttachmentParameteriv(target, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE,
-                                                   value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-            break;
-        case GL_DEPTH_BITS:
-        case GL_STENCIL_BITS:
-            /*
-             * OPENGL SPECS 4.5: Paragraph  9.2. BINDING AND MANAGING FRAMEBUFFER OBJECTS p.335
-             * If the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE, then either no framebuffer is bound to target;
-             * or a default framebuffer is queried, attachment is GL_DEPTH or GL_STENCIL,
-             * and the number of depth or stencil bits, respectively, is zero....
-             * and all other queries will generate an INVALID_OPERATION error.
-             * */
-            if (fbo == 0)
-            { //default framebuffer
-                gl.getFramebufferAttachmentParameteriv(target, (bits == GL_DEPTH_BITS ? GL_DEPTH : GL_STENCIL),
-                                                       GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-
-                if (*value == GL_NONE)
-                {
-                    *value = 0;
-                    break;
-                }
-            }
-            switch (bits)
-            {
-            case GL_DEPTH_BITS:
-                gl.getFramebufferAttachmentParameteriv(target, depthAttachment, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
-                                                       value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-                break;
-            case GL_STENCIL_BITS:
-                gl.getFramebufferAttachmentParameteriv(target, stencilAttachment,
-                                                       GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE, value);
-                GLU_EXPECT_NO_ERROR(gl.getError(), "getFramebufferAttachmentParameteriv");
-                break;
-            }
-            break;
-        default:
-            gl.getIntegerv(bits, value);
-            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-            break;
-        }
-    }
-    else
-    {
-        gl.getIntegerv(bits, value);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-    }
-
-    const GLenum error = gl.getError();
-    if (error == GL_NO_ERROR)
-        return true;
-
-    m_testCtx.getLog() << tcu::TestLog::Message << "ApiCoverageTestCase::GetBits: " << glu::getErrorName(error)
-                       << tcu::TestLog::EndMessage;
-
-    return false;
-}
-
-bool ApiCoverageTestCase::GetReadbufferBits(GLenum bits, GLint *value)
-{
-    return GetBits(GL_READ_FRAMEBUFFER, bits, value);
-}
-
-bool ApiCoverageTestCase::GetDrawbufferBits(GLenum bits, GLint *value)
-{
-    return GetBits(GL_DRAW_FRAMEBUFFER, bits, value);
-}
-
 GLint ApiCoverageTestCase::createDefaultProgram(int mode)
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
@@ -2556,10 +2429,12 @@ GLenum ApiCoverageTestCase::TestCoverageGLGuessColorBufferFormat(void)
 {
     GLsizei colorBits[4];
 
-    GetReadbufferBits(GL_RED_BITS, &colorBits[0]);
-    GetReadbufferBits(GL_GREEN_BITS, &colorBits[1]);
-    GetReadbufferBits(GL_BLUE_BITS, &colorBits[2]);
-    GetReadbufferBits(GL_ALPHA_BITS, &colorBits[3]);
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+    getReadbufferBits(gl, m_is_context_ES, GL_RED_BITS, &colorBits[0]);
+    getReadbufferBits(gl, m_is_context_ES, GL_GREEN_BITS, &colorBits[1]);
+    getReadbufferBits(gl, m_is_context_ES, GL_BLUE_BITS, &colorBits[2]);
+    getReadbufferBits(gl, m_is_context_ES, GL_ALPHA_BITS, &colorBits[3]);
 
     if (m_is_context_ES)
     {

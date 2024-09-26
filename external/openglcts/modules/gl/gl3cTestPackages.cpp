@@ -38,6 +38,7 @@
 #include "glcClipDistance.hpp"
 #include "glcCullDistance.hpp"
 #include "glcBufferObjectsTests.hpp"
+#include "glcFragCoordConventionsTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcFramebufferBlitTests.hpp"
 #include "glcGLSLVectorConstructorTests.hpp"
@@ -193,6 +194,7 @@ void GL30TestPackage::init(void)
         addChild(new glcts::TransformFeedbackTests(getContext()));
         addChild(new glcts::ApiCoverageTests(getContext()));
         addChild(new gl3cts::GetUniformTests(getContext()));
+        addChild(new glcts::FragCoordConventionsTests(getContext()));
     }
     catch (...)
     {

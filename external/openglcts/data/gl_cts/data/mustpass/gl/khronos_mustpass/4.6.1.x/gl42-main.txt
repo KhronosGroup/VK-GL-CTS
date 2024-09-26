@@ -872,6 +872,7 @@ KHR-GL42.buffer_objects.sub_data
 KHR-GL42.transform_feedback2.transform_feedback2_states
 KHR-GL42.api.coverage
 KHR-GL42.get_uniform_tests.get_uniform
+KHR-GL42.frag_coord_conventions.multisample
 KHR-GL42.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL42.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL42.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp

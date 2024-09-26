@@ -44,6 +44,7 @@
 #include "es31cVertexAttribBindingTests.hpp"
 #include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcBlendEquationAdvancedTests.hpp"
+#include "glcFragCoordConventionsTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcInternalformatTests.hpp"
 #include "glcLayoutLocationTests.hpp"
@@ -219,6 +220,7 @@ void ES31TestPackage::init(void)
         coreGroup->addChild(new glcts::NearestEdgeCases(getContext()));
         coreGroup->addChild(new glcts::FramebufferCompletenessTests(getContext()));
         coreGroup->addChild(new glcts::CompressedFormatTests(getContext()));
+        coreGroup->addChild(new glcts::FragCoordConventionsTests(getContext()));
 
         glcts::ExtParameters extParams(glu::GLSL_VERSION_310_ES, glcts::EXTENSIONTYPE_OES);
         coreGroup->addChild(new glcts::GeometryShaderTests(getContext(), extParams));
