@@ -209,6 +209,15 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindPipelineShaderGroupNVFunc)						
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetGeneratedCommandsMemoryRequirementsNVFunc)							(VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2* pMemoryRequirements);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateIndirectCommandsLayoutNVFunc)									(VkDevice device, const VkIndirectCommandsLayoutCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyIndirectCommandsLayoutNVFunc)									(VkDevice device, VkIndirectCommandsLayoutNV indirectCommandsLayout, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdExecuteGeneratedCommandsEXTFunc)									(VkCommandBuffer commandBuffer, VkBool32 isPreprocessed, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPreprocessGeneratedCommandsEXTFunc)									(VkCommandBuffer commandBuffer, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo, VkCommandBuffer stateCommandBuffer);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetGeneratedCommandsMemoryRequirementsEXTFunc)							(VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoEXT* pInfo, VkMemoryRequirements2* pMemoryRequirements);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateIndirectCommandsLayoutEXTFunc)									(VkDevice device, const VkIndirectCommandsLayoutCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutEXT* pIndirectCommandsLayout);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyIndirectCommandsLayoutEXTFunc)									(VkDevice device, VkIndirectCommandsLayoutEXT indirectCommandsLayout, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateIndirectExecutionSetEXTFunc)										(VkDevice device, const VkIndirectExecutionSetCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectExecutionSetEXT* pIndirectExecutionSet);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyIndirectExecutionSetEXTFunc)									(VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* UpdateIndirectExecutionSetPipelineEXTFunc)								(VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetPipelineEXT* pExecutionSetWrites);
+typedef VKAPI_ATTR void					(VKAPI_CALL* UpdateIndirectExecutionSetShaderEXTFunc)								(VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetShaderEXT* pExecutionSetWrites);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceFeatures2Func)										(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2* pFeatures);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceFeatures2KHRFunc)										(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2* pFeatures);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceProperties2Func)										(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2* pProperties);
@@ -687,3 +696,4 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* GetLatencyTimingsNVFunc)												(Vk
 typedef VKAPI_ATTR void					(VKAPI_CALL* QueueNotifyOutOfBandNVFunc)											(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRenderingAttachmentLocationsKHRFunc)								(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRenderingInputAttachmentIndicesKHRFunc)							(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pInputAttachmentIndexInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthClampRangeEXTFunc)											(VkCommandBuffer commandBuffer, VkDepthClampModeEXT depthClampMode, const VkDepthClampRangeEXT* pDepthClampRange);

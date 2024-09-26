@@ -139,6 +139,18 @@ void Deleter<VkIndirectCommandsLayoutNV>::operator() (VkIndirectCommandsLayoutNV
 }
 
 template<>
+void Deleter<VkIndirectCommandsLayoutEXT>::operator() (VkIndirectCommandsLayoutEXT obj) const
+{
+	m_deviceIface->destroyIndirectCommandsLayoutEXT(m_device, obj, m_allocator);
+}
+
+template<>
+void Deleter<VkIndirectExecutionSetEXT>::operator() (VkIndirectExecutionSetEXT obj) const
+{
+	m_deviceIface->destroyIndirectExecutionSetEXT(m_device, obj, m_allocator);
+}
+
+template<>
 void Deleter<VkDescriptorUpdateTemplate>::operator() (VkDescriptorUpdateTemplate obj) const
 {
 	m_deviceIface->destroyDescriptorUpdateTemplate(m_device, obj, m_allocator);
@@ -478,6 +490,20 @@ Move<VkIndirectCommandsLayoutNV> createIndirectCommandsLayoutNV (const DeviceInt
 	VkIndirectCommandsLayoutNV object = VK_NULL_HANDLE;
 	VK_CHECK(vk.createIndirectCommandsLayoutNV(device, pCreateInfo, pAllocator, &object));
 	return Move<VkIndirectCommandsLayoutNV>(check<VkIndirectCommandsLayoutNV>(object), Deleter<VkIndirectCommandsLayoutNV>(vk, device, pAllocator));
+}
+
+Move<VkIndirectCommandsLayoutEXT> createIndirectCommandsLayoutEXT (const DeviceInterface& vk, VkDevice device, const VkIndirectCommandsLayoutCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkIndirectCommandsLayoutEXT object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createIndirectCommandsLayoutEXT(device, pCreateInfo, pAllocator, &object));
+	return Move<VkIndirectCommandsLayoutEXT>(check<VkIndirectCommandsLayoutEXT>(object), Deleter<VkIndirectCommandsLayoutEXT>(vk, device, pAllocator));
+}
+
+Move<VkIndirectExecutionSetEXT> createIndirectExecutionSetEXT (const DeviceInterface& vk, VkDevice device, const VkIndirectExecutionSetCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkIndirectExecutionSetEXT object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createIndirectExecutionSetEXT(device, pCreateInfo, pAllocator, &object));
+	return Move<VkIndirectExecutionSetEXT>(check<VkIndirectExecutionSetEXT>(object), Deleter<VkIndirectExecutionSetEXT>(vk, device, pAllocator));
 }
 
 Move<VkDescriptorUpdateTemplate> createDescriptorUpdateTemplate (const DeviceInterface& vk, VkDevice device, const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)

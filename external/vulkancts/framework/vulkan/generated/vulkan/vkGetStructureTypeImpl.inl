@@ -2763,9 +2763,89 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClipControlFeat
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_CONTROL_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkGeneratedCommandsPipelineInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_GENERATED_COMMANDS_PIPELINE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkGeneratedCommandsShaderInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_GENERATED_COMMANDS_SHADER_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkGeneratedCommandsMemoryRequirementsInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_GENERATED_COMMANDS_MEMORY_REQUIREMENTS_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkIndirectExecutionSetPipelineInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_PIPELINE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkIndirectExecutionSetShaderLayoutInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_LAYOUT_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkIndirectExecutionSetShaderInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkIndirectExecutionSetCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkGeneratedCommandsInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_GENERATED_COMMANDS_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkWriteIndirectExecutionSetPipelineEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_WRITE_INDIRECT_EXECUTION_SET_PIPELINE_EXT;
+}
+
+template<> VkStructureType getStructureType<VkWriteIndirectExecutionSetShaderEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_WRITE_INDIRECT_EXECUTION_SET_SHADER_EXT;
+}
+
+template<> VkStructureType getStructureType<VkIndirectCommandsLayoutCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkIndirectCommandsLayoutTokenEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_TOKEN_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPipelineViewportDepthClipControlCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClampControlFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_CONTROL_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPipelineViewportDepthClampControlCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLAMP_CONTROL_CREATE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT> (void)

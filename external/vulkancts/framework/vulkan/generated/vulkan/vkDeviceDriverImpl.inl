@@ -834,6 +834,51 @@ void DeviceDriver::destroyIndirectCommandsLayoutNV (VkDevice device, VkIndirectC
     m_vk.destroyIndirectCommandsLayoutNV(device, indirectCommandsLayout, pAllocator);
 }
 
+void DeviceDriver::cmdExecuteGeneratedCommandsEXT (VkCommandBuffer commandBuffer, VkBool32 isPreprocessed, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo) const
+{
+    m_vk.cmdExecuteGeneratedCommandsEXT(commandBuffer, isPreprocessed, pGeneratedCommandsInfo);
+}
+
+void DeviceDriver::cmdPreprocessGeneratedCommandsEXT (VkCommandBuffer commandBuffer, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo, VkCommandBuffer stateCommandBuffer) const
+{
+    m_vk.cmdPreprocessGeneratedCommandsEXT(commandBuffer, pGeneratedCommandsInfo, stateCommandBuffer);
+}
+
+void DeviceDriver::getGeneratedCommandsMemoryRequirementsEXT (VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoEXT* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+    m_vk.getGeneratedCommandsMemoryRequirementsEXT(device, pInfo, pMemoryRequirements);
+}
+
+VkResult DeviceDriver::createIndirectCommandsLayoutEXT (VkDevice device, const VkIndirectCommandsLayoutCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutEXT* pIndirectCommandsLayout) const
+{
+    return m_vk.createIndirectCommandsLayoutEXT(device, pCreateInfo, pAllocator, pIndirectCommandsLayout);
+}
+
+void DeviceDriver::destroyIndirectCommandsLayoutEXT (VkDevice device, VkIndirectCommandsLayoutEXT indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyIndirectCommandsLayoutEXT(device, indirectCommandsLayout, pAllocator);
+}
+
+VkResult DeviceDriver::createIndirectExecutionSetEXT (VkDevice device, const VkIndirectExecutionSetCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectExecutionSetEXT* pIndirectExecutionSet) const
+{
+    return m_vk.createIndirectExecutionSetEXT(device, pCreateInfo, pAllocator, pIndirectExecutionSet);
+}
+
+void DeviceDriver::destroyIndirectExecutionSetEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyIndirectExecutionSetEXT(device, indirectExecutionSet, pAllocator);
+}
+
+void DeviceDriver::updateIndirectExecutionSetPipelineEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetPipelineEXT* pExecutionSetWrites) const
+{
+    m_vk.updateIndirectExecutionSetPipelineEXT(device, indirectExecutionSet, executionSetWriteCount, pExecutionSetWrites);
+}
+
+void DeviceDriver::updateIndirectExecutionSetShaderEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetShaderEXT* pExecutionSetWrites) const
+{
+    m_vk.updateIndirectExecutionSetShaderEXT(device, indirectExecutionSet, executionSetWriteCount, pExecutionSetWrites);
+}
+
 void DeviceDriver::cmdPushDescriptorSetKHR (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites) const
 {
     m_vk.cmdPushDescriptorSetKHR(commandBuffer, pipelineBindPoint, layout, set, descriptorWriteCount, pDescriptorWrites);
@@ -2659,4 +2704,10 @@ void DeviceDriver::cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer com
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetRenderingInputAttachmentIndicesKHR(commandBuffer, pInputAttachmentIndexInfo);
+}
+
+void DeviceDriver::cmdSetDepthClampRangeEXT (VkCommandBuffer commandBuffer, VkDepthClampModeEXT depthClampMode, const VkDepthClampRangeEXT* pDepthClampRange) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDepthClampRangeEXT(commandBuffer, depthClampMode, pDepthClampRange);
 }

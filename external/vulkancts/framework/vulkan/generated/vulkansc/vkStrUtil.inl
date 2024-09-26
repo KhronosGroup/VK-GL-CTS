@@ -304,6 +304,8 @@ tcu::Format::Bitfield<32>	getRenderingFlagsStr										(VkRenderingFlags value)
 tcu::Format::Bitfield<64>	getMemoryDecompressionMethodFlagsNVStr						(VkMemoryDecompressionMethodFlagsNV value);
 tcu::Format::Bitfield<32>	getBuildMicromapFlagsEXTStr									(VkBuildMicromapFlagsEXT value);
 tcu::Format::Bitfield<32>	getMicromapCreateFlagsEXTStr								(VkMicromapCreateFlagsEXT value);
+tcu::Format::Bitfield<32>	getIndirectCommandsLayoutUsageFlagsEXTStr					(VkIndirectCommandsLayoutUsageFlagsEXT value);
+tcu::Format::Bitfield<32>	getIndirectCommandsInputModeFlagsEXTStr						(VkIndirectCommandsInputModeFlagsEXT value);
 tcu::Format::Bitfield<32>	getDirectDriverLoadingFlagsLUNARGStr						(VkDirectDriverLoadingFlagsLUNARG value);
 tcu::Format::Bitfield<64>	getPipelineCreateFlags2KHRStr								(VkPipelineCreateFlags2KHR value);
 tcu::Format::Bitfield<64>	getBufferUsageFlags2KHRStr									(VkBufferUsageFlags2KHR value);

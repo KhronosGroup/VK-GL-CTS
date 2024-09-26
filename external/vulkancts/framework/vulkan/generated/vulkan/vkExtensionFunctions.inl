@@ -1622,7 +1622,15 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_device_generated_commands")
+	{
+		return;
+	}
 	if (extName == "VK_MESA_image_alignment_control")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_depth_clamp_control")
 	{
 		return;
 	}
@@ -3556,6 +3564,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		if (extensionIsSupported(vDEP, "VK_NV_coverage_reduction_mode")) {
 			functions.push_back("vkCmdSetCoverageReductionModeNV");
 		}
+		// Dependencies: VK_EXT_depth_clamp_control
+		if (extensionIsSupported(vDEP, "VK_EXT_depth_clamp_control")) {
+			functions.push_back("vkCmdSetDepthClampRangeEXT");
+		}
 		return;
 	}
 	if (extName == "VK_KHR_pipeline_binary")
@@ -3754,8 +3766,26 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_device_generated_commands")
+	{
+		functions.push_back("vkGetGeneratedCommandsMemoryRequirementsEXT");
+		functions.push_back("vkCmdPreprocessGeneratedCommandsEXT");
+		functions.push_back("vkCmdExecuteGeneratedCommandsEXT");
+		functions.push_back("vkCreateIndirectCommandsLayoutEXT");
+		functions.push_back("vkDestroyIndirectCommandsLayoutEXT");
+		functions.push_back("vkCreateIndirectExecutionSetEXT");
+		functions.push_back("vkDestroyIndirectExecutionSetEXT");
+		functions.push_back("vkUpdateIndirectExecutionSetPipelineEXT");
+		functions.push_back("vkUpdateIndirectExecutionSetShaderEXT");
+		return;
+	}
 	if (extName == "VK_MESA_image_alignment_control")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_depth_clamp_control")
+	{
+		functions.push_back("vkCmdSetDepthClampRangeEXT");
 		return;
 	}
 	if (extName == "vulkan_video_codecs_common")
@@ -4180,5 +4210,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_shader_atomic_float16_vector",
 	"VK_EXT_shader_replicated_composites",
 	"VK_NV_ray_tracing_validation",
+	"VK_EXT_device_generated_commands",
 	"VK_MESA_image_alignment_control",
+	"VK_EXT_depth_clamp_control",
 };
