@@ -6453,7 +6453,9 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context &context)
     log << TestLog::Message << vulkan11Features << TestLog::EndMessage;
     log << TestLog::Message << vulkan12Features << TestLog::EndMessage;
 
-    // Validate if proper VkPhysicalDeviceVulkanXXFeatures fields are set when corresponding extensions are present
+    // Where promoted extensions didn't originally have feature structs, validate that the feature bits are set
+    // when the extension is supported. (These checks could go in the extension's mandatory_features check, but
+    // they're checked here because the extensions came first, so adding the extra dependency there seems odd.
     std::pair<std::pair<const char *, const char *>, VkBool32> extensions2validate[] = {
         {{"VK_KHR_sampler_mirror_clamp_to_edge", "VkPhysicalDeviceVulkan12Features.samplerMirrorClampToEdge"},
          vulkan12Features.samplerMirrorClampToEdge},
@@ -6534,6 +6536,7 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context &context)
         log << TestLog::Message << bufferDeviceAddressFeatures << TestLog::EndMessage;
         log << TestLog::Message << vulkanMemoryModelFeatures << TestLog::EndMessage;
 
+        // First verify the 1.1 feature struct consistency because that struct is newly added in 1.2
         if ((device16BitStorageFeatures.storageBuffer16BitAccess != vulkan11Features.storageBuffer16BitAccess ||
              device16BitStorageFeatures.uniformAndStorageBuffer16BitAccess !=
                  vulkan11Features.uniformAndStorageBuffer16BitAccess ||
@@ -6573,6 +6576,7 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context &context)
             TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointersFeatures and VkPhysicalDeviceVulkan11Features");
         }
 
+        // Now check the consistency of the 1.2 feature struct
         if ((device8BitStorageFeatures.storageBuffer8BitAccess != vulkan12Features.storageBuffer8BitAccess ||
              device8BitStorageFeatures.uniformAndStorageBuffer8BitAccess !=
                  vulkan12Features.uniformAndStorageBuffer8BitAccess ||
@@ -6593,46 +6597,45 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context &context)
             TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFloat16Int8Features and VkPhysicalDeviceVulkan12Features");
         }
 
-        if ((vulkan12Features.descriptorIndexing) &&
-            (descriptorIndexingFeatures.shaderInputAttachmentArrayDynamicIndexing !=
-                 vulkan12Features.shaderInputAttachmentArrayDynamicIndexing ||
-             descriptorIndexingFeatures.shaderUniformTexelBufferArrayDynamicIndexing !=
-                 vulkan12Features.shaderUniformTexelBufferArrayDynamicIndexing ||
-             descriptorIndexingFeatures.shaderStorageTexelBufferArrayDynamicIndexing !=
-                 vulkan12Features.shaderStorageTexelBufferArrayDynamicIndexing ||
-             descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing !=
-                 vulkan12Features.shaderUniformBufferArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing !=
-                 vulkan12Features.shaderSampledImageArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing !=
-                 vulkan12Features.shaderStorageBufferArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.shaderStorageImageArrayNonUniformIndexing !=
-                 vulkan12Features.shaderStorageImageArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.shaderInputAttachmentArrayNonUniformIndexing !=
-                 vulkan12Features.shaderInputAttachmentArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing !=
-                 vulkan12Features.shaderUniformTexelBufferArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.shaderStorageTexelBufferArrayNonUniformIndexing !=
-                 vulkan12Features.shaderStorageTexelBufferArrayNonUniformIndexing ||
-             descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind !=
-                 vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind ||
-             descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind !=
-                 vulkan12Features.descriptorBindingSampledImageUpdateAfterBind ||
-             descriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind !=
-                 vulkan12Features.descriptorBindingStorageImageUpdateAfterBind ||
-             descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind !=
-                 vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind ||
-             descriptorIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind !=
-                 vulkan12Features.descriptorBindingUniformTexelBufferUpdateAfterBind ||
-             descriptorIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind !=
-                 vulkan12Features.descriptorBindingStorageTexelBufferUpdateAfterBind ||
-             descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending !=
-                 vulkan12Features.descriptorBindingUpdateUnusedWhilePending ||
-             descriptorIndexingFeatures.descriptorBindingPartiallyBound !=
-                 vulkan12Features.descriptorBindingPartiallyBound ||
-             descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount !=
-                 vulkan12Features.descriptorBindingVariableDescriptorCount ||
-             descriptorIndexingFeatures.runtimeDescriptorArray != vulkan12Features.runtimeDescriptorArray))
+        if (descriptorIndexingFeatures.shaderInputAttachmentArrayDynamicIndexing !=
+                vulkan12Features.shaderInputAttachmentArrayDynamicIndexing ||
+            descriptorIndexingFeatures.shaderUniformTexelBufferArrayDynamicIndexing !=
+                vulkan12Features.shaderUniformTexelBufferArrayDynamicIndexing ||
+            descriptorIndexingFeatures.shaderStorageTexelBufferArrayDynamicIndexing !=
+                vulkan12Features.shaderStorageTexelBufferArrayDynamicIndexing ||
+            descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing !=
+                vulkan12Features.shaderUniformBufferArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing !=
+                vulkan12Features.shaderSampledImageArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing !=
+                vulkan12Features.shaderStorageBufferArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.shaderStorageImageArrayNonUniformIndexing !=
+                vulkan12Features.shaderStorageImageArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.shaderInputAttachmentArrayNonUniformIndexing !=
+                vulkan12Features.shaderInputAttachmentArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing !=
+                vulkan12Features.shaderUniformTexelBufferArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.shaderStorageTexelBufferArrayNonUniformIndexing !=
+                vulkan12Features.shaderStorageTexelBufferArrayNonUniformIndexing ||
+            descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind !=
+                vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind ||
+            descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind !=
+                vulkan12Features.descriptorBindingSampledImageUpdateAfterBind ||
+            descriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind !=
+                vulkan12Features.descriptorBindingStorageImageUpdateAfterBind ||
+            descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind !=
+                vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind ||
+            descriptorIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind !=
+                vulkan12Features.descriptorBindingUniformTexelBufferUpdateAfterBind ||
+            descriptorIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind !=
+                vulkan12Features.descriptorBindingStorageTexelBufferUpdateAfterBind ||
+            descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending !=
+                vulkan12Features.descriptorBindingUpdateUnusedWhilePending ||
+            descriptorIndexingFeatures.descriptorBindingPartiallyBound !=
+                vulkan12Features.descriptorBindingPartiallyBound ||
+            descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount !=
+                vulkan12Features.descriptorBindingVariableDescriptorCount ||
+            descriptorIndexingFeatures.runtimeDescriptorArray != vulkan12Features.runtimeDescriptorArray)
         {
             TCU_FAIL(
                 "Mismatch between VkPhysicalDeviceDescriptorIndexingFeatures and VkPhysicalDeviceVulkan12Features");
@@ -6721,31 +6724,6 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
 
     log << TestLog::Message << vulkan13Features << TestLog::EndMessage;
 
-    // Validate if required VkPhysicalDeviceVulkan13Features fields are set
-    std::pair<const char *, VkBool32> features2validate[]{
-        {{"VkPhysicalDeviceVulkan13Features.robustImageAccess"}, vulkan13Features.robustImageAccess},
-        {{"VkPhysicalDeviceVulkan13Features.inlineUniformBlock"}, vulkan13Features.inlineUniformBlock},
-        {{"VkPhysicalDeviceVulkan13Features.pipelineCreationCacheControl"},
-         vulkan13Features.pipelineCreationCacheControl},
-        {{"VkPhysicalDeviceVulkan13Features.privateData"}, vulkan13Features.privateData},
-        {{"VkPhysicalDeviceVulkan13Features.shaderDemoteToHelperInvocation"},
-         vulkan13Features.shaderDemoteToHelperInvocation},
-        {{"VkPhysicalDeviceVulkan13Features.shaderTerminateInvocation"}, vulkan13Features.shaderTerminateInvocation},
-        {{"VkPhysicalDeviceVulkan13Features.subgroupSizeControl"}, vulkan13Features.subgroupSizeControl},
-        {{"VkPhysicalDeviceVulkan13Features.computeFullSubgroups"}, vulkan13Features.computeFullSubgroups},
-        {{"VkPhysicalDeviceVulkan13Features.synchronization2"}, vulkan13Features.synchronization2},
-        {{"VkPhysicalDeviceVulkan13Features.shaderZeroInitializeWorkgroupMemory"},
-         vulkan13Features.shaderZeroInitializeWorkgroupMemory},
-        {{"VkPhysicalDeviceVulkan13Features.dynamicRendering"}, vulkan13Features.dynamicRendering},
-        {{"VkPhysicalDeviceVulkan13Features.shaderIntegerDotProduct"}, vulkan13Features.shaderIntegerDotProduct},
-        {{"VkPhysicalDeviceVulkan13Features.maintenance4"}, vulkan13Features.maintenance4},
-    };
-    for (const auto &feature : features2validate)
-    {
-        if (!feature.second)
-            TCU_FAIL(string("Required feature ") + feature.first + " is not set");
-    }
-
     // collect all extension features
     {
         VkPhysicalDeviceImageRobustnessFeatures imageRobustnessFeatures = initVulkanStructure();
@@ -6763,8 +6741,10 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
             initVulkanStructure(&shaderTerminateInvocationFeatures);
         VkPhysicalDeviceSynchronization2Features synchronization2Features =
             initVulkanStructure(&subgroupSizeControlFeatures);
-        VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures zeroInitializeWorkgroupMemoryFeatures =
+        VkPhysicalDeviceTextureCompressionASTCHDRFeatures textureCompressionASTCHDRFeatures =
             initVulkanStructure(&synchronization2Features);
+        VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures zeroInitializeWorkgroupMemoryFeatures =
+            initVulkanStructure(&textureCompressionASTCHDRFeatures);
         VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures =
             initVulkanStructure(&zeroInitializeWorkgroupMemoryFeatures);
         VkPhysicalDeviceShaderIntegerDotProductFeatures shaderIntegerDotProductFeatures =
@@ -6772,13 +6752,7 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
         VkPhysicalDeviceMaintenance4Features maintenance4Features =
             initVulkanStructure(&shaderIntegerDotProductFeatures);
 
-        // those two structures are part of extensions promoted in vk1.2 but now in 1.3 have required features
-        VkPhysicalDeviceVulkanMemoryModelFeatures vulkanMemoryModelFeatures =
-            initVulkanStructure(&maintenance4Features);
-        VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures =
-            initVulkanStructure(&vulkanMemoryModelFeatures);
-
-        extFeatures = initVulkanStructure(&bufferDeviceAddressFeatures);
+        extFeatures = initVulkanStructure(&maintenance4Features);
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
 
@@ -6791,6 +6765,7 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
         log << TestLog::Message << shaderTerminateInvocationFeatures << TestLog::EndMessage;
         log << TestLog::Message << subgroupSizeControlFeatures << TestLog::EndMessage;
         log << TestLog::Message << synchronization2Features << TestLog::EndMessage;
+        log << TestLog::Message << textureCompressionASTCHDRFeatures << TestLog::EndMessage;
         log << TestLog::Message << zeroInitializeWorkgroupMemoryFeatures << TestLog::EndMessage;
         log << TestLog::Message << dynamicRenderingFeatures << TestLog::EndMessage;
         log << TestLog::Message << shaderIntegerDotProductFeatures << TestLog::EndMessage;
@@ -6834,6 +6809,10 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
         if (synchronization2Features.synchronization2 != vulkan13Features.synchronization2)
             TCU_FAIL("Mismatch between VkPhysicalDeviceSynchronization2Features and VkPhysicalDeviceVulkan13Features");
 
+        if (textureCompressionASTCHDRFeatures.textureCompressionASTC_HDR != vulkan13Features.textureCompressionASTC_HDR)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceTextureCompressionASTCHDRFeatures and "
+                     "VkPhysicalDeviceVulkan13Features");
+
         if (zeroInitializeWorkgroupMemoryFeatures.shaderZeroInitializeWorkgroupMemory !=
             vulkan13Features.shaderZeroInitializeWorkgroupMemory)
             TCU_FAIL("Mismatch between VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeatures and "
@@ -6848,14 +6827,6 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
 
         if (maintenance4Features.maintenance4 != vulkan13Features.maintenance4)
             TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance4Features and VkPhysicalDeviceVulkan13Features");
-
-        // check required features from extensions that were promoted in earlier vulkan version
-        if (!vulkanMemoryModelFeatures.vulkanMemoryModel)
-            TCU_FAIL("vulkanMemoryModel feature from VkPhysicalDeviceVulkanMemoryModelFeatures is required");
-        if (!vulkanMemoryModelFeatures.vulkanMemoryModelDeviceScope)
-            TCU_FAIL("vulkanMemoryModelDeviceScope feature from VkPhysicalDeviceVulkanMemoryModelFeatures is required");
-        if (!bufferDeviceAddressFeatures.bufferDeviceAddress)
-            TCU_FAIL("bufferDeviceAddress feature from VkPhysicalDeviceBufferDeviceAddressFeatures is required");
     }
 
     return tcu::TestStatus::pass("Vulkan 1.3 device features are consistent with extensions");

@@ -1167,18 +1167,6 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVertexInputDynamicStateFeaturesEXT.pNext;
 	}
 
-#if defined(CTS_USES_VULKAN)
-	vk::VkPhysicalDeviceVulkan11Features physicalDeviceVulkan11Features;
-	deMemset(&physicalDeviceVulkan11Features, 0, sizeof(physicalDeviceVulkan11Features));
-
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		physicalDeviceVulkan11Features.sType = getStructureType<VkPhysicalDeviceVulkan11Features>();
-		*nextPtr = &physicalDeviceVulkan11Features;
-		nextPtr  = &physicalDeviceVulkan11Features.pNext;
-	}
-#endif // defined(CTS_USES_VULKAN)
-
 	vk::VkPhysicalDeviceVulkan12Features physicalDeviceVulkan12Features;
 	deMemset(&physicalDeviceVulkan12Features, 0, sizeof(physicalDeviceVulkan12Features));
 
@@ -2841,17 +2829,6 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
-
-#if defined(CTS_USES_VULKAN)
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		if ( physicalDeviceVulkan11Features.multiview == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature multiview not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-#endif // defined(CTS_USES_VULKAN)
 
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
 	{
