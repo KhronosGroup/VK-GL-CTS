@@ -265,6 +265,7 @@ class GitRepo (Source):
 			force_arg = ['--force'] if force else []
 			execute(["git", "fetch"] + force_arg + ["--tags", url, "+refs/heads/*:refs/remotes/origin/*"])
 			execute(["git", "checkout"] + force_arg + [self.revision])
+			execute(["git", "submodule", "update", "--init", "--recursive"])
 
 			if(self.patch != ""):
 				patchFile = os.path.join(EXTERNAL_DIR, self.patch)
