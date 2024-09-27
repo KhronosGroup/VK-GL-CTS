@@ -3687,68 +3687,57 @@ namespace
 
 tcu::TestStatus deviceMandatoryFeatures(Context &context)
 {
-    const auto failDescription("Not all mandatory features are supported ( see: vkspec.html#features-requirements )");
-    const bool checkOnlyBasicCases(context.getUsedApiVersion() < VK_API_VERSION_1_4);
-
-    if (checkBasicMandatoryFeatures(context))
-    {
-        if (checkOnlyBasicCases)
-            return tcu::TestStatus::pass("Passed");
-        // move to complex cases
-    }
-    else if (checkOnlyBasicCases)
-        return tcu::TestStatus::fail(failDescription);
+    bool result = checkBasicMandatoryFeatures(context);
 
 #if defined(CTS_USES_VULKAN)
-
     // for vulkan 1.4+ we need to check complex cases that were not generated in vkMandatoryFeatures.inl
-
-    const InstanceInterface &vki    = context.getInstanceInterface();
-    VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
-    const auto &cmdLine             = context.getTestContext().getCommandLine();
-    const auto &vulkan11Features    = context.getDeviceVulkan11Features();
-    const auto &vulkan14Features    = context.getDeviceVulkan14Features();
-    tcu::TestLog &log               = context.getTestContext().getLog();
-    bool result                     = true;
-
-    if (!cmdLine.isComputeOnly() && (vulkan14Features.hostImageCopy == VK_FALSE))
+    if (context.contextSupports(vk::ApiVersion(0, 1, 4, 0)))
     {
-        // find graphics and transfer queues
-        std::optional<size_t> graphicsQueueNdx;
-        std::optional<size_t> transferQueueNdx;
-        const auto queuePropsVect = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
-        for (size_t queueNdx = 0; queueNdx < queuePropsVect.size(); queueNdx++)
+        const InstanceInterface &vki    = context.getInstanceInterface();
+        VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+        const auto &cmdLine             = context.getTestContext().getCommandLine();
+        const auto &vulkan11Features    = context.getDeviceVulkan11Features();
+        const auto &vulkan14Features    = context.getDeviceVulkan14Features();
+        tcu::TestLog &log               = context.getTestContext().getLog();
+
+        if (!cmdLine.isComputeOnly() && (vulkan14Features.hostImageCopy == VK_FALSE))
         {
-            uint32_t queueFlags = queuePropsVect[queueNdx].queueFlags;
-            if ((queueFlags & VK_QUEUE_GRAPHICS_BIT) && !graphicsQueueNdx.has_value())
-                graphicsQueueNdx = (uint32_t)queueNdx;
-            else if ((queueFlags & VK_QUEUE_TRANSFER_BIT) && !transferQueueNdx.has_value())
-                transferQueueNdx = (uint32_t)queueNdx;
+            // find graphics and transfer queues
+            std::optional<size_t> graphicsQueueNdx;
+            std::optional<size_t> transferQueueNdx;
+            const auto queuePropsVect = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
+            for (size_t queueNdx = 0; queueNdx < queuePropsVect.size(); queueNdx++)
+            {
+                uint32_t queueFlags = queuePropsVect[queueNdx].queueFlags;
+                if ((queueFlags & VK_QUEUE_GRAPHICS_BIT) && !graphicsQueueNdx.has_value())
+                    graphicsQueueNdx = (uint32_t)queueNdx;
+                else if ((queueFlags & VK_QUEUE_TRANSFER_BIT) && !transferQueueNdx.has_value())
+                    transferQueueNdx = (uint32_t)queueNdx;
+            }
+
+            if (!graphicsQueueNdx.has_value() || !transferQueueNdx.has_value())
+            {
+                log << tcu::TestLog::Message
+                    << "Implementation that has a VK_QUEUE_GRAPHICS_BIT queue must support "
+                       "either the hostImageCopy feature or an additional queue that supports VK_QUEUE_TRANSFER_BIT"
+                    << tcu::TestLog::EndMessage;
+                result = false;
+            }
         }
 
-        if (!graphicsQueueNdx.has_value() || !transferQueueNdx.has_value())
+        if (vulkan11Features.protectedMemory && !vulkan14Features.pipelineProtectedAccess)
         {
-            log << tcu::TestLog::Message
-                << "Implementation that has a VK_QUEUE_GRAPHICS_BIT queue must support "
-                   "either the hostImageCopy feature or an additional queue that supports VK_QUEUE_TRANSFER_BIT"
+            log << tcu::TestLog::Message << "pipelineProtectedAccess is required when protectedMemory is supported"
                 << tcu::TestLog::EndMessage;
             result = false;
         }
     }
-
-    if (vulkan11Features.protectedMemory && !vulkan14Features.pipelineProtectedAccess)
-    {
-        log << tcu::TestLog::Message << "pipelineProtectedAccess is required when protectedMemory is supported"
-            << tcu::TestLog::EndMessage;
-        result = false;
-    }
+#endif // defined(CTS_USES_VULKAN)
 
     if (result)
         return tcu::TestStatus::pass("Passed");
 
-#endif // defined(CTS_USES_VULKAN)
-
-    return tcu::TestStatus::fail(failDescription);
+    return tcu::TestStatus::fail("Not all mandatory features are supported ( see: vkspec.html#features-requirements )");
 }
 
 VkFormatFeatureFlags getBaseRequiredOptimalTilingFeatures(VkFormat format)
