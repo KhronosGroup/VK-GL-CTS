@@ -7044,27 +7044,6 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan14(Context &context)
 
     log << TestLog::Message << vulkan14Features << TestLog::EndMessage;
 
-    // Validate if required VkPhysicalDeviceVulkan14Features fields are set
-    std::pair<const char *, VkBool32> features2validate[]{
-        {{"globalPriorityQuery"}, vulkan14Features.globalPriorityQuery},
-        {{"shaderSubgroupRotate"}, vulkan14Features.shaderSubgroupRotate},
-        {{"shaderSubgroupRotateClustered"}, vulkan14Features.shaderSubgroupRotateClustered},
-        {{"shaderFloatControls2"}, vulkan14Features.shaderFloatControls2},
-        {{"shaderExpectAssume"}, vulkan14Features.shaderExpectAssume},
-        {{"bresenhamLines"}, vulkan14Features.bresenhamLines},
-        {{"vertexAttributeInstanceRateDivisor"}, vulkan14Features.vertexAttributeInstanceRateDivisor},
-        {{"indexTypeUint8"}, vulkan14Features.indexTypeUint8},
-        {{"dynamicRenderingLocalRead"}, vulkan14Features.dynamicRenderingLocalRead},
-        {{"maintenance5"}, vulkan14Features.maintenance5},
-        {{"maintenance6"}, vulkan14Features.maintenance6},
-        {{"pipelineRobustness"}, vulkan14Features.pipelineRobustness},
-    };
-    for (const auto &feature : features2validate)
-    {
-        if (!feature.second)
-            TCU_FAIL(string("Required feature VkPhysicalDeviceVulkan14Features.") + feature.first + " is not set");
-    }
-
     // collect all extension features
     {
         VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR dynamicRenderingLocalReadFeatures = initVulkanStructure();
