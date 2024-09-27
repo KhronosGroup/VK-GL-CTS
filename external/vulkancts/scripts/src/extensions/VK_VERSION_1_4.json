@@ -1,5 +1,308 @@
 {
     "mandatory_features": {
+        "VkPhysicalDeviceFeatures": [
+            {
+                "features": [
+                    "fullDrawIndexUint32"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "imageCubeArray"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "independentBlend"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "sampleRateShading"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "drawIndirectFirstInstance"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "depthClamp"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "depthBiasClamp"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "largePoints"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "samplerAnisotropy"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "fragmentStoresAndAtomics"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "shaderImageGatherExtended"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "shaderStorageImageExtendedFormats"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "shaderUniformBufferArrayDynamicIndexing"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "shaderSampledImageArrayDynamicIndexing"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "shaderStorageBufferArrayDynamicIndexing"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "shaderStorageImageArrayDynamicIndexing"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "shaderInt16"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ],
+        "VkPhysicalDeviceVulkan11Features": [
+            {
+                "features": [
+                    "storageBuffer16BitAccess"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "variablePointersStorageBuffer"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "variablePointers"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "samplerYcbcrConversion"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ],
+        "VkPhysicalDeviceVulkan12Features": [
+            {
+                "features": [
+                    "samplerMirrorClampToEdge"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "storageBuffer8BitAccess"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "shaderInt8"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "shaderUniformTexelBufferArrayDynamicIndexing"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "shaderStorageTexelBufferArrayDynamicIndexing"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "scalarBlockLayout"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ],
         "VkPhysicalDeviceVulkan14Features": [
             {
                 "features": [
@@ -14,7 +317,56 @@
             },
             {
                 "features": [
-                    "indexTypeUint8"
+                    "shaderSubgroupRotate"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "shaderSubgroupRotateClustered"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "shaderFloatControls2"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "shaderExpectAssume"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "rectangularLines",
+                    "bresenhamLines",
+                    "smoothLines",
+                    "stippledRectangularLines",
+                    "stippledBresenhamLines",
+                    "stippledSmoothLines"
                 ],
                 "requirements": [
                     "ApiVersion(0, 1, 4, 0)"
@@ -36,12 +388,18 @@
             },
             {
                 "features": [
-                    "rectangularLines",
-                    "bresenhamLines",
-                    "smoothLines",
-                    "stippledRectangularLines",
-                    "stippledBresenhamLines",
-                    "stippledSmoothLines"
+                    "indexTypeUint8"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "dynamicRenderingLocalRead"
                 ],
                 "requirements": [
                     "ApiVersion(0, 1, 4, 0)"
