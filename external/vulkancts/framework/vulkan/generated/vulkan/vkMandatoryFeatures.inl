@@ -3833,6 +3833,17 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 #endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) && physicalDeviceVulkan11Features.protectedMemory )
+	{
+		if ( physicalDeviceVulkan14Features.pipelineProtectedAccess == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature pipelineProtectedAccess not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
 		if ( physicalDeviceVulkan14Features.pipelineRobustness == VK_FALSE )

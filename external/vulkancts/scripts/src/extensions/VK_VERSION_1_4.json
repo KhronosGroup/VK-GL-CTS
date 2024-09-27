@@ -432,6 +432,18 @@
             },
             {
                 "features": [
+                    "pipelineProtectedAccess"
+                ],
+                "requirements": [
+                    "ApiVersion(0, 1, 4, 0)",
+                    "physicalDeviceVulkan11Features.protectedMemory"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
                     "pipelineRobustness"
                 ],
                 "requirements": [

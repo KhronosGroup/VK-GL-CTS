@@ -3696,7 +3696,6 @@ tcu::TestStatus deviceMandatoryFeatures(Context &context)
         const InstanceInterface &vki    = context.getInstanceInterface();
         VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
         const auto &cmdLine             = context.getTestContext().getCommandLine();
-        const auto &vulkan11Features    = context.getDeviceVulkan11Features();
         const auto &vulkan14Features    = context.getDeviceVulkan14Features();
         tcu::TestLog &log               = context.getTestContext().getLog();
 
@@ -3723,13 +3722,6 @@ tcu::TestStatus deviceMandatoryFeatures(Context &context)
                     << tcu::TestLog::EndMessage;
                 result = false;
             }
-        }
-
-        if (vulkan11Features.protectedMemory && !vulkan14Features.pipelineProtectedAccess)
-        {
-            log << tcu::TestLog::Message << "pipelineProtectedAccess is required when protectedMemory is supported"
-                << tcu::TestLog::EndMessage;
-            result = false;
         }
     }
 #endif // defined(CTS_USES_VULKAN)
