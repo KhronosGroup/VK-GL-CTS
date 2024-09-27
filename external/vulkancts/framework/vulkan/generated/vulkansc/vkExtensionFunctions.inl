@@ -372,6 +372,19 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_vertex_attribute_divisor")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_global_priority")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_calibrated_timestamps")
+	{
+		functions.push_back("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
+		return;
+	}
 	DE_FATAL("Extension name not found");
 }
 
@@ -777,6 +790,19 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_vertex_attribute_divisor")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_global_priority")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_calibrated_timestamps")
+	{
+		functions.push_back("vkGetCalibratedTimestampsEXT");
+		return;
+	}
 	DE_FATAL("Extension name not found");
 }
 
@@ -862,4 +888,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_calibrated_timestamps",
 	"VK_NV_device_diagnostic_checkpoints",
 	"VK_KHR_format_feature_flags2",
+	"VK_EXT_vertex_attribute_divisor",
+	"VK_EXT_global_priority",
+	"VK_EXT_calibrated_timestamps",
 };

@@ -5485,24 +5485,24 @@ void TransformFeedbackTestCase::initPrograms(SourceCollections &programCollectio
 //   * In some cases, we must switch to using a custom device when running the
 //     test.
 //
-//  Point List        PointSize Wanted    Using Tess/Geom        Feature Available    Outcome
+//  Point List   PointSize Wanted   Using Tess/Geom   Feature Available    Outcome
 //  -------------------------------------------------------------------------------------------
-//  0                0                    0                    0                    OK
-//  0                0                    0                    1                    OK
-//  0                0                    1                    0                    OK
-//  0                0                    1                    1                    OK
-//  0                1                    0                    0                    OK, In Vertex Shader
-//  0                1                    0                    1                    OK, In Vertex Shader
-//  0                1                    1                    0                    Nope, cannot use PointSize (checkSupport)
-//  0                1                    1                    1                    OK
-//  1                0                    0                    0                    Nope, must write to it In Vertex Shader (avoid generating these variants)
-//  1                0                    0                    1                    Nope, must write to it In Vertex Shader (avoid generating these variants)
-//  1                0                    1                    0                    OK, implicit 1.0 in Tess/Geom
-//  1                0                    1                    1                    OK, but we must disable the feature with a Custom Device (test runtime)
-//  1                1                    0                    0                    OK
-//  1                1                    0                    1                    OK
-//  1                1                    1                    0                    Nope, cannot use PointSize (checkSupport)
-//  1                1                    1                    1                    OK
+//  0            0                  0                 0                    OK
+//  0            0                  0                 1                    OK
+//  0            0                  1                 0                    OK
+//  0            0                  1                 1                    OK
+//  0            1                  0                 0                    OK, In Vertex Shader
+//  0            1                  0                 1                    OK, In Vertex Shader
+//  0            1                  1                 0                    Nope, cannot use PointSize (checkSupport)
+//  0            1                  1                 1                    OK
+//  1            0                  0                 0                    Nope, must write to it In Vertex Shader (avoid generating these variants)
+//  1            0                  0                 1                    Nope, must write to it In Vertex Shader (avoid generating these variants)
+//  1            0                  1                 0                    OK, implicit 1.0 in Tess/Geom
+//  1            0                  1                 1                    OK, but we must disable the feature with a Custom Device (test runtime)
+//  1            1                  0                 0                    OK
+//  1            1                  0                 1                    OK
+//  1            1                  1                 0                    Nope, cannot use PointSize (checkSupport)
+//  1            1                  1                 1                    OK
 //
 void addTransformFeedbackTestCaseVariants(tcu::TestCaseGroup *group, const std::string &name,
                                           const TestParameters &parameters)

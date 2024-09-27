@@ -851,6 +851,30 @@ bool check_VK_KHR_format_feature_flags2(const tcu::UVec2& v, const ExtPropVect& 
 	return true;
 }
 
+bool check_VK_EXT_vertex_attribute_divisor(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_vertex_attribute_divisor"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return true;
+}
+
+bool check_VK_EXT_calibrated_timestamps(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_calibrated_timestamps"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return true;
+}
+
 static const DependencyCheckVect deviceExtensionDependencies
 {
 	std::make_pair("VK_KHR_swapchain",								&check_VK_KHR_swapchain),
@@ -912,6 +936,8 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_calibrated_timestamps",					&check_VK_KHR_calibrated_timestamps),
 	std::make_pair("VK_NV_device_diagnostic_checkpoints",			&check_VK_NV_device_diagnostic_checkpoints),
 	std::make_pair("VK_KHR_format_feature_flags2",					&check_VK_KHR_format_feature_flags2),
+	std::make_pair("VK_EXT_vertex_attribute_divisor",				&check_VK_EXT_vertex_attribute_divisor),
+	std::make_pair("VK_EXT_calibrated_timestamps",					&check_VK_EXT_calibrated_timestamps),
 };
 
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
@@ -1000,4 +1026,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_calibrated_timestamps"),
 	std::make_tuple(1, 0, "VK_NV_device_diagnostic_checkpoints"),
 	std::make_tuple(1, 0, "VK_KHR_format_feature_flags2"),
+	std::make_tuple(1, 0, "VK_EXT_vertex_attribute_divisor"),
+	std::make_tuple(1, 0, "VK_EXT_global_priority"),
+	std::make_tuple(1, 0, "VK_EXT_calibrated_timestamps"),
 };

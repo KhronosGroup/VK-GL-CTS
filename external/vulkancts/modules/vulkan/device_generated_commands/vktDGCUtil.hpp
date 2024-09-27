@@ -50,9 +50,6 @@ vk::VkMemoryRequirements getPipelineIndirectMemoryRequirementsNV(const vk::Devic
 vk::VkMemoryRequirements getGeneratedCommandsMemoryRequirementsNV(
     const vk::DeviceInterface &, vk::VkDevice, const vk::VkGeneratedCommandsMemoryRequirementsInfoNV *);
 
-// Returns true if the two memory requirements structures are equal.
-bool equalMemoryRequirements(const vk::VkMemoryRequirements &, const vk::VkMemoryRequirements &);
-
 // Insert a memory barrier from the preprocessing stage to the execution stage.
 void preprocessToExecuteBarrier(const vk::DeviceInterface &, vk::VkCommandBuffer);
 
@@ -222,22 +219,6 @@ protected:
     vk::Move<vk::VkBuffer> m_buffer;
     de::MovePtr<vk::Allocation> m_bufferAllocation;
     vk::VkMemoryRequirements m_memReqs;
-};
-
-// Push back a device address onto an std::vector (of uint8_t, uint32_t, etc).
-// This is helpful to push a pipeline address when preparing the command stream data.
-template <typename T>
-void pushBackDeviceAddress(std::vector<T> &out, vk::VkDeviceAddress address)
-{
-    constexpr auto vecItemSize = sizeof(T);
-    constexpr auto addressSize = sizeof(vk::VkDeviceAddress);
-    constexpr auto neededItems = (addressSize + vecItemSize - 1u) / vecItemSize;
-
-    DE_ASSERT(neededItems > 0u);
-    const auto prevSize = out.size();
-    out.resize(prevSize + neededItems);
-    const auto basePtr = &out.at(prevSize); // Important to take this after resizing, not before.
-    deMemcpy(basePtr, &address, sizeof(address));
 };
 
 } // namespace DGC

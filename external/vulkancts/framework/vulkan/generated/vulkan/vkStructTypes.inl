@@ -796,6 +796,72 @@ struct VkPushConstantRange
 	uint32_t			size;
 };
 
+struct VkPipelineBinaryHandlesInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	uint32_t				pipelineBinaryCount;
+	VkPipelineBinaryKHR*	pPipelineBinaries;
+};
+
+struct VkPipelineBinaryDataKHR
+{
+	size_t	dataSize;
+	void*	pData;
+};
+
+struct VkPipelineBinaryKeyKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		keySize;
+	uint8_t			key[VK_MAX_PIPELINE_BINARY_KEY_SIZE_KHR];
+};
+
+struct VkPipelineBinaryKeysAndDataKHR
+{
+	uint32_t						binaryCount;
+	const VkPipelineBinaryKeyKHR*	pPipelineBinaryKeys;
+	const VkPipelineBinaryDataKHR*	pPipelineBinaryData;
+};
+
+struct VkPipelineBinaryInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	uint32_t					binaryCount;
+	const VkPipelineBinaryKHR*	pPipelineBinaries;
+};
+
+struct VkReleaseCapturedPipelineDataInfoKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkPipeline		pipeline;
+};
+
+struct VkPipelineBinaryDataInfoKHR
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkPipelineBinaryKHR	pipelineBinary;
+};
+
+struct VkPipelineCreateInfoKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+};
+
+struct VkPipelineBinaryCreateInfoKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	const VkPipelineBinaryKeysAndDataKHR*	pKeysAndDataInfo;
+	VkPipeline								pipeline;
+	const VkPipelineCreateInfoKHR*			pPipelineCreateInfo;
+};
+
 struct VkPipelineLayoutCreateInfo
 {
 	VkStructureType					sType;
@@ -4020,12 +4086,19 @@ struct VkPhysicalDeviceCornerSampledImageFeaturesNV
 	VkBool32		cornerSampledImage;
 };
 
-struct VkPhysicalDeviceComputeShaderDerivativesFeaturesNV
+struct VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		computeDerivativeGroupQuads;
 	VkBool32		computeDerivativeGroupLinear;
+};
+
+struct VkPhysicalDeviceComputeShaderDerivativesPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		meshAndTaskShaderDerivatives;
 };
 
 struct VkPhysicalDeviceShaderImageFootprintFeaturesNV
@@ -6294,11 +6367,207 @@ struct VkPhysicalDeviceDepthClipControlFeaturesEXT
 	VkBool32		depthClipControl;
 };
 
+struct VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceGeneratedCommands;
+	VkBool32		dynamicGeneratedPipelineLayout;
+};
+
+struct VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT
+{
+	VkStructureType						sType;
+	void*								pNext;
+	uint32_t							maxIndirectPipelineCount;
+	uint32_t							maxIndirectShaderObjectCount;
+	uint32_t							maxIndirectSequenceCount;
+	uint32_t							maxIndirectCommandsTokenCount;
+	uint32_t							maxIndirectCommandsTokenOffset;
+	uint32_t							maxIndirectCommandsIndirectStride;
+	VkIndirectCommandsInputModeFlagsEXT	supportedIndirectCommandsInputModes;
+	VkShaderStageFlags					supportedIndirectCommandsShaderStages;
+	VkShaderStageFlags					supportedIndirectCommandsShaderStagesPipelineBinding;
+	VkShaderStageFlags					supportedIndirectCommandsShaderStagesShaderBinding;
+	VkBool32							deviceGeneratedCommandsTransformFeedback;
+	VkBool32							deviceGeneratedCommandsMultiDrawIndirectCount;
+};
+
+struct VkGeneratedCommandsPipelineInfoEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkPipeline		pipeline;
+};
+
+struct VkGeneratedCommandsShaderInfoEXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	uint32_t			shaderCount;
+	const VkShaderEXT*	pShaders;
+};
+
+struct VkGeneratedCommandsMemoryRequirementsInfoEXT
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkIndirectExecutionSetEXT	indirectExecutionSet;
+	VkIndirectCommandsLayoutEXT	indirectCommandsLayout;
+	uint32_t					maxSequenceCount;
+	uint32_t					maxDrawCount;
+};
+
+struct VkIndirectExecutionSetPipelineInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkPipeline		initialPipeline;
+	uint32_t		maxPipelineCount;
+};
+
+struct VkIndirectExecutionSetShaderLayoutInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	uint32_t						setLayoutCount;
+	const VkDescriptorSetLayout*	pSetLayouts;
+};
+
+struct VkIndirectExecutionSetShaderInfoEXT
+{
+	VkStructureType										sType;
+	const void*											pNext;
+	uint32_t											shaderCount;
+	const VkShaderEXT*									pInitialShaders;
+	const VkIndirectExecutionSetShaderLayoutInfoEXT*	pSetLayoutInfos;
+	uint32_t											maxShaderCount;
+	uint32_t											pushConstantRangeCount;
+	const VkPushConstantRange*							pPushConstantRanges;
+};
+
+union VkIndirectExecutionSetInfoEXT
+{
+	const VkIndirectExecutionSetPipelineInfoEXT*	pPipelineInfo;
+	const VkIndirectExecutionSetShaderInfoEXT*		pShaderInfo;
+};
+
+struct VkIndirectExecutionSetCreateInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkIndirectExecutionSetInfoTypeEXT	type;
+	VkIndirectExecutionSetInfoEXT		info;
+};
+
+struct VkGeneratedCommandsInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkShaderStageFlags			shaderStages;
+	VkIndirectExecutionSetEXT	indirectExecutionSet;
+	VkIndirectCommandsLayoutEXT	indirectCommandsLayout;
+	VkDeviceAddress				indirectAddress;
+	VkDeviceSize				indirectAddressSize;
+	VkDeviceAddress				preprocessAddress;
+	VkDeviceSize				preprocessSize;
+	uint32_t					maxSequenceCount;
+	VkDeviceAddress				sequenceCountAddress;
+	uint32_t					maxDrawCount;
+};
+
+struct VkWriteIndirectExecutionSetPipelineEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		index;
+	VkPipeline		pipeline;
+};
+
+struct VkWriteIndirectExecutionSetShaderEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		index;
+	VkShaderEXT		shader;
+};
+
+struct VkDrawIndirectCountIndirectCommandEXT
+{
+	VkDeviceAddress	bufferAddress;
+	uint32_t		stride;
+	uint32_t		commandCount;
+};
+
+struct VkIndirectCommandsVertexBufferTokenEXT
+{
+	uint32_t	vertexBindingUnit;
+};
+
+struct VkBindVertexBufferIndirectCommandEXT
+{
+	VkDeviceAddress	bufferAddress;
+	uint32_t		size;
+	uint32_t		stride;
+};
+
+struct VkIndirectCommandsIndexBufferTokenEXT
+{
+	VkIndirectCommandsInputModeFlagBitsEXT	mode;
+};
+
+struct VkBindIndexBufferIndirectCommandEXT
+{
+	VkDeviceAddress	bufferAddress;
+	uint32_t		size;
+	VkIndexType		indexType;
+};
+
+struct VkIndirectCommandsPushConstantTokenEXT
+{
+	VkPushConstantRange	updateRange;
+};
+
+struct VkIndirectCommandsExecutionSetTokenEXT
+{
+	VkIndirectExecutionSetInfoTypeEXT	type;
+	VkShaderStageFlags					shaderStages;
+};
+
+union VkIndirectCommandsTokenDataEXT
+{
+	const VkIndirectCommandsPushConstantTokenEXT*	pPushConstant;
+	const VkIndirectCommandsVertexBufferTokenEXT*	pVertexBuffer;
+	const VkIndirectCommandsIndexBufferTokenEXT*	pIndexBuffer;
+	const VkIndirectCommandsExecutionSetTokenEXT*	pExecutionSet;
+};
+
+struct VkIndirectCommandsLayoutTokenEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkIndirectCommandsTokenTypeEXT	type;
+	VkIndirectCommandsTokenDataEXT	data;
+	uint32_t						offset;
+};
+
 struct VkPipelineViewportDepthClipControlCreateInfoEXT
 {
 	VkStructureType	sType;
 	const void*		pNext;
 	VkBool32		negativeOneToOne;
+};
+
+struct VkIndirectCommandsLayoutCreateInfoEXT
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkIndirectCommandsLayoutUsageFlagsEXT	flags;
+	VkShaderStageFlags						shaderStages;
+	uint32_t								indirectStride;
+	VkPipelineLayout						pipelineLayout;
+	uint32_t								tokenCount;
+	const VkIndirectCommandsLayoutTokenEXT*	pTokens;
 };
 
 struct VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT
@@ -7343,7 +7612,7 @@ struct VkDescriptorAddressInfoEXT
 struct VkDescriptorBufferBindingInfoEXT
 {
 	VkStructureType		sType;
-	void*				pNext;
+	const void*			pNext;
 	VkDeviceAddress		address;
 	VkBufferUsageFlags	usage;
 };
@@ -7351,7 +7620,7 @@ struct VkDescriptorBufferBindingInfoEXT
 struct VkDescriptorBufferBindingPushDescriptorBufferHandleEXT
 {
 	VkStructureType	sType;
-	void*			pNext;
+	const void*		pNext;
 	VkBuffer		buffer;
 };
 
@@ -7887,6 +8156,31 @@ struct VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		graphicsPipelineLibrary;
+};
+
+struct VkPhysicalDevicePipelineBinaryFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pipelineBinaries;
+};
+
+struct VkDevicePipelineBinaryInternalCacheControlKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		disableInternalCache;
+};
+
+struct VkPhysicalDevicePipelineBinaryPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pipelineBinaryInternalCache;
+	VkBool32		pipelineBinaryInternalCacheControl;
+	VkBool32		pipelineBinaryPrefersInternalCache;
+	VkBool32		pipelineBinaryPrecompiledInternalCache;
+	VkBool32		pipelineBinaryCompressedData;
 };
 
 struct VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT
@@ -9050,6 +9344,30 @@ struct VkDispatchGraphCountInfoAMDX
 	uint64_t						stride;
 };
 
+struct VkPhysicalDeviceAntiLagFeaturesAMD
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		antiLag;
+};
+
+struct VkAntiLagPresentationInfoAMD
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkAntiLagStageAMD	stage;
+	uint64_t			frameIndex;
+};
+
+struct VkAntiLagDataAMD
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkAntiLagModeAMD					mode;
+	uint32_t							maxFPS;
+	const VkAntiLagPresentationInfoAMD*	pPresentationInfo;
+};
+
 struct VkBindMemoryStatusKHR
 {
 	VkStructureType	sType;
@@ -9492,6 +9810,13 @@ struct VkPhysicalDeviceRawAccessChainsFeaturesNV
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shaderRawAccessChains;
+};
+
+struct VkPhysicalDeviceCommandBufferInheritanceFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		commandBufferInheritance;
 };
 
 struct VkPhysicalDeviceImageAlignmentControlFeaturesMESA
@@ -11023,6 +11348,8 @@ typedef VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR VkPhysicalDeviceVertex
 typedef VkPhysicalDeviceDepthStencilResolveProperties VkPhysicalDeviceDepthStencilResolvePropertiesKHR;
 
 typedef VkSubpassDescriptionDepthStencilResolve VkSubpassDescriptionDepthStencilResolveKHR;
+
+typedef VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR VkPhysicalDeviceComputeShaderDerivativesFeaturesNV;
 
 typedef VkImageStencilUsageCreateInfo VkImageStencilUsageCreateInfoEXT;
 

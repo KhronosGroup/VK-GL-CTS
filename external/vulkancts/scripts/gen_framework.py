@@ -840,16 +840,19 @@ class API:
         # temporary workaround for extensions that are marked only for vulkan api in xml while
         # they are need by vulkan_json_data.hpp and vulkan_json_parser.hpp in vulkansc
         if self.apiName == "vulkansc":
-            deviceDiagnosticCheckpoints = [e for e in self.notSupportedExtensions if e.name == "VK_NV_device_diagnostic_checkpoints"]
-            if len(deviceDiagnosticCheckpoints):
-                deviceDiagnosticCheckpoints = deviceDiagnosticCheckpoints[0]
-                self.extensions.append(deviceDiagnosticCheckpoints)
-                self.notSupportedExtensions.remove(deviceDiagnosticCheckpoints)
-            formatFeatureFlags2 = [e for e in self.notSupportedExtensions if e.name == "VK_KHR_format_feature_flags2"]
-            if len(formatFeatureFlags2):
-                formatFeatureFlags2 = formatFeatureFlags2[0]
-                self.extensions.append(formatFeatureFlags2)
-                self.notSupportedExtensions.remove(formatFeatureFlags2)
+            workAroundList = [
+                    "VK_NV_device_diagnostic_checkpoints",
+                    "VK_KHR_format_feature_flags2",
+                    "VK_EXT_vertex_attribute_divisor",
+                    "VK_EXT_global_priority",
+                    "VK_EXT_calibrated_timestamps",
+            ]
+            for extName in workAroundList:
+                extData = [e for e in self.notSupportedExtensions if e.name == extName]
+                if len(extData):
+                    extData = extData[0]
+                    self.extensions.append(extData)
+                    self.notSupportedExtensions.remove(extData)
 
         # add new enumerators that were added by extensions to api.enums
         # we have to do it at the end for SC because some enums are dependent from extensions/api versions
@@ -1939,7 +1942,7 @@ def getConstructorFunctions (api):
 
     for function in api.functions:
         if (function.name[:8] == "vkCreate" or function.name == "vkAllocateMemory") and not "createInfoCount" in [a.name for a in function.arguments]:
-            if function.name == "vkCreateDisplayModeKHR":
+            if function.name in ["vkCreatePipelineBinariesKHR", "vkCreateDisplayModeKHR"]:
                 continue # No way to delete display modes (bug?)
 
             ifaceArgs = []
@@ -1948,9 +1951,10 @@ def getConstructorFunctions (api):
                              FunctionArgument("instance", "", "VkInstance")]
             ifaceArgs.extend(ifacesDict[function.getType()])
 
-            assert (function.arguments[-2].type == "VkAllocationCallbacks" and \
-                    "const" in function.arguments[-2].qualifiers and \
-                    function.arguments[-2].pointer == "*")
+            allocatorArg = function.arguments[-2]
+            assert (allocatorArg.type == "VkAllocationCallbacks" and \
+                    "const" in allocatorArg.qualifiers and \
+                    allocatorArg.pointer == "*")
 
             objectType = function.arguments[-1].type
             arguments = function.arguments[:-1]
@@ -2093,7 +2097,13 @@ def writeNullDriverImpl (api, filename):
             if function.arguments[-1].len != None:
                 yield "\tVK_NULL_RETURN((allocateNonDispHandleArray<%s, %s>(%s, %s)));" % (objectType[2:], objectType, argsStr, function.arguments[-1].name)
             else:
-                if getHandle(objectType).type == "VK_DEFINE_NON_DISPATCHABLE_HANDLE":
+                if function.name == "vkCreatePipelineBinariesKHR":
+                    yield "\tDE_UNREF(device);"
+                    yield "\tDE_UNREF(pCreateInfo);"
+                    yield "\tDE_UNREF(pAllocator);"
+                    yield "\tDE_UNREF(pBinaries);"
+                    yield "\treturn VK_SUCCESS;"
+                elif getHandle(objectType).type == "VK_DEFINE_NON_DISPATCHABLE_HANDLE":
                     yield "\tVK_NULL_RETURN((*%s = allocateNonDispHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)
                 else:
                     yield "\tVK_NULL_RETURN((*%s = allocateHandle<%s, %s>(%s)));" % (function.arguments[-1].name, objectType[2:], objectType, argsStr)

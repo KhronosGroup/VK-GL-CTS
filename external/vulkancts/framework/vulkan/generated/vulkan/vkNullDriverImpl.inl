@@ -75,6 +75,16 @@ VKAPI_ATTR VkResult VKAPI_CALL createPipelineCache (VkDevice device, const VkPip
 	VK_NULL_RETURN((*pPipelineCache = allocateNonDispHandle<PipelineCache, VkPipelineCache>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createPipelineBinariesKHR (VkDevice device, const VkPipelineBinaryCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryHandlesInfoKHR* pBinaries)
+{
+	DE_UNREF(pAllocator);
+	DE_UNREF(device);
+	DE_UNREF(pCreateInfo);
+	DE_UNREF(pAllocator);
+	DE_UNREF(pBinaries);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createPipelineLayout (VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineLayout* pPipelineLayout)
 {
 	DE_UNREF(pAllocator);
@@ -193,6 +203,18 @@ VKAPI_ATTR VkResult VKAPI_CALL createIndirectCommandsLayoutNV (VkDevice device, 
 {
 	DE_UNREF(pAllocator);
 	VK_NULL_RETURN((*pIndirectCommandsLayout = allocateNonDispHandle<IndirectCommandsLayoutNV, VkIndirectCommandsLayoutNV>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createIndirectCommandsLayoutEXT (VkDevice device, const VkIndirectCommandsLayoutCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutEXT* pIndirectCommandsLayout)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pIndirectCommandsLayout = allocateNonDispHandle<IndirectCommandsLayoutEXT, VkIndirectCommandsLayoutEXT>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createIndirectExecutionSetEXT (VkDevice device, const VkIndirectExecutionSetCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectExecutionSetEXT* pIndirectExecutionSet)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pIndirectExecutionSet = allocateNonDispHandle<IndirectExecutionSetEXT, VkIndirectExecutionSetEXT>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createDescriptorUpdateTemplate (VkDevice device, const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorUpdateTemplate* pDescriptorUpdateTemplate)
@@ -409,6 +431,12 @@ VKAPI_ATTR void VKAPI_CALL destroyPipelineCache (VkDevice device, VkPipelineCach
 	freeNonDispHandle<PipelineCache, VkPipelineCache>(pipelineCache, pAllocator);
 }
 
+VKAPI_ATTR void VKAPI_CALL destroyPipelineBinaryKHR (VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<PipelineBinaryKHR, VkPipelineBinaryKHR>(pipelineBinary, pAllocator);
+}
+
 VKAPI_ATTR void VKAPI_CALL destroyPipeline (VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
@@ -479,6 +507,18 @@ VKAPI_ATTR void VKAPI_CALL destroyIndirectCommandsLayoutNV (VkDevice device, VkI
 {
 	DE_UNREF(device);
 	freeNonDispHandle<IndirectCommandsLayoutNV, VkIndirectCommandsLayoutNV>(indirectCommandsLayout, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyIndirectCommandsLayoutEXT (VkDevice device, VkIndirectCommandsLayoutEXT indirectCommandsLayout, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<IndirectCommandsLayoutEXT, VkIndirectCommandsLayoutEXT>(indirectCommandsLayout, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyIndirectExecutionSetEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<IndirectExecutionSetEXT, VkIndirectExecutionSetEXT>(indirectExecutionSet, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyDescriptorUpdateTemplate (VkDevice device, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const VkAllocationCallbacks* pAllocator)
@@ -791,6 +831,32 @@ VKAPI_ATTR VkResult VKAPI_CALL mergePipelineCaches (VkDevice device, VkPipelineC
 	DE_UNREF(dstCache);
 	DE_UNREF(srcCacheCount);
 	DE_UNREF(pSrcCaches);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPipelineKeyKHR (VkDevice device, const VkPipelineCreateInfoKHR* pPipelineCreateInfo, VkPipelineBinaryKeyKHR* pPipelineKey)
+{
+	DE_UNREF(device);
+	DE_UNREF(pPipelineCreateInfo);
+	DE_UNREF(pPipelineKey);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPipelineBinaryDataKHR (VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, VkPipelineBinaryKeyKHR* pPipelineBinaryKey, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pPipelineBinaryKey);
+	DE_UNREF(pPipelineBinaryDataSize);
+	DE_UNREF(pPipelineBinaryData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL releaseCapturedPipelineDataKHR (VkDevice device, const VkReleaseCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pAllocator);
 	return VK_SUCCESS;
 }
 
@@ -1557,6 +1623,43 @@ VKAPI_ATTR void VKAPI_CALL getGeneratedCommandsMemoryRequirementsNV (VkDevice de
 	DE_UNREF(device);
 	DE_UNREF(pInfo);
 	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdExecuteGeneratedCommandsEXT (VkCommandBuffer commandBuffer, VkBool32 isPreprocessed, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(isPreprocessed);
+	DE_UNREF(pGeneratedCommandsInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdPreprocessGeneratedCommandsEXT (VkCommandBuffer commandBuffer, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo, VkCommandBuffer stateCommandBuffer)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pGeneratedCommandsInfo);
+	DE_UNREF(stateCommandBuffer);
+}
+
+VKAPI_ATTR void VKAPI_CALL getGeneratedCommandsMemoryRequirementsEXT (VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoEXT* pInfo, VkMemoryRequirements2* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL updateIndirectExecutionSetPipelineEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetPipelineEXT* pExecutionSetWrites)
+{
+	DE_UNREF(device);
+	DE_UNREF(indirectExecutionSet);
+	DE_UNREF(executionSetWriteCount);
+	DE_UNREF(pExecutionSetWrites);
+}
+
+VKAPI_ATTR void VKAPI_CALL updateIndirectExecutionSetShaderEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetShaderEXT* pExecutionSetWrites)
+{
+	DE_UNREF(device);
+	DE_UNREF(indirectExecutionSet);
+	DE_UNREF(executionSetWriteCount);
+	DE_UNREF(pExecutionSetWrites);
 }
 
 VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFeatures2 (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2* pFeatures)
@@ -3026,6 +3129,12 @@ VKAPI_ATTR VkDeviceAddress VKAPI_CALL getPipelineIndirectDeviceAddressNV (VkDevi
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL antiLagUpdateAMD (VkDevice device, const VkAntiLagDataAMD* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(pData);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdSetCullMode (VkCommandBuffer commandBuffer, VkCullModeFlags cullMode)
 {
 	DE_UNREF(commandBuffer);
@@ -4368,6 +4477,11 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyPipelineCache,										destroyPipelineCache),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineCacheData,										getPipelineCacheData),
 	VK_NULL_FUNC_ENTRY(vkMergePipelineCaches,										mergePipelineCaches),
+	VK_NULL_FUNC_ENTRY(vkCreatePipelineBinariesKHR,									createPipelineBinariesKHR),
+	VK_NULL_FUNC_ENTRY(vkDestroyPipelineBinaryKHR,									destroyPipelineBinaryKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPipelineKeyKHR,											getPipelineKeyKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPipelineBinaryDataKHR,									getPipelineBinaryDataKHR),
+	VK_NULL_FUNC_ENTRY(vkReleaseCapturedPipelineDataKHR,							releaseCapturedPipelineDataKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateGraphicsPipelines,									createGraphicsPipelines),
 	VK_NULL_FUNC_ENTRY(vkCreateComputePipelines,									createComputePipelines),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI,				getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI),
@@ -4471,6 +4585,15 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetGeneratedCommandsMemoryRequirementsNV,					getGeneratedCommandsMemoryRequirementsNV),
 	VK_NULL_FUNC_ENTRY(vkCreateIndirectCommandsLayoutNV,							createIndirectCommandsLayoutNV),
 	VK_NULL_FUNC_ENTRY(vkDestroyIndirectCommandsLayoutNV,							destroyIndirectCommandsLayoutNV),
+	VK_NULL_FUNC_ENTRY(vkCmdExecuteGeneratedCommandsEXT,							cmdExecuteGeneratedCommandsEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdPreprocessGeneratedCommandsEXT,							cmdPreprocessGeneratedCommandsEXT),
+	VK_NULL_FUNC_ENTRY(vkGetGeneratedCommandsMemoryRequirementsEXT,					getGeneratedCommandsMemoryRequirementsEXT),
+	VK_NULL_FUNC_ENTRY(vkCreateIndirectCommandsLayoutEXT,							createIndirectCommandsLayoutEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyIndirectCommandsLayoutEXT,							destroyIndirectCommandsLayoutEXT),
+	VK_NULL_FUNC_ENTRY(vkCreateIndirectExecutionSetEXT,								createIndirectExecutionSetEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyIndirectExecutionSetEXT,							destroyIndirectExecutionSetEXT),
+	VK_NULL_FUNC_ENTRY(vkUpdateIndirectExecutionSetPipelineEXT,						updateIndirectExecutionSetPipelineEXT),
+	VK_NULL_FUNC_ENTRY(vkUpdateIndirectExecutionSetShaderEXT,						updateIndirectExecutionSetShaderEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetKHR,									cmdPushDescriptorSetKHR),
 	VK_NULL_FUNC_ENTRY(vkTrimCommandPool,											trimCommandPool),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHR,									getMemoryWin32HandleKHR),
@@ -4638,6 +4761,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDeferredOperationJoinKHR,									deferredOperationJoinKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineIndirectMemoryRequirementsNV,					getPipelineIndirectMemoryRequirementsNV),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineIndirectDeviceAddressNV,						getPipelineIndirectDeviceAddressNV),
+	VK_NULL_FUNC_ENTRY(vkAntiLagUpdateAMD,											antiLagUpdateAMD),
 	VK_NULL_FUNC_ENTRY(vkCmdSetCullMode,											cmdSetCullMode),
 	VK_NULL_FUNC_ENTRY(vkCmdSetFrontFace,											cmdSetFrontFace),
 	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveTopology,									cmdSetPrimitiveTopology),

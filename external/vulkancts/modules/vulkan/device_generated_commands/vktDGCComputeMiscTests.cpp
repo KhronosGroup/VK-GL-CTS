@@ -31,6 +31,7 @@
 #include "vkTypeUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktDGCUtil.hpp"
+#include "vktDGCUtilCommon.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include <numeric>
@@ -367,11 +368,11 @@ tcu::TestStatus fullReplayRun(Context &context)
         // Generated indirect commands buffer contents.
         std::vector<uint32_t> genCmdsData;
         genCmdsData.reserve(6u /*pipeline address + push constant + dispatch command*/);
-        pushBackDeviceAddress(genCmdsData, pipelineAddress); // Pipeline address (2 uints).
-        genCmdsData.push_back(iterIdx);                      // Push constant: the index to the output buffer.
-        genCmdsData.push_back(1u);                           // VkDispatchIndirectCommand::x
-        genCmdsData.push_back(1u);                           // VkDispatchIndirectCommand::y
-        genCmdsData.push_back(1u);                           // VkDispatchIndirectCommand::z
+        pushBackElement(genCmdsData, pipelineAddress); // Pipeline address (2 uints).
+        genCmdsData.push_back(iterIdx);                // Push constant: the index to the output buffer.
+        genCmdsData.push_back(1u);                     // VkDispatchIndirectCommand::x
+        genCmdsData.push_back(1u);                     // VkDispatchIndirectCommand::y
+        genCmdsData.push_back(1u);                     // VkDispatchIndirectCommand::z
 
         // Generated indirect commands buffer.
         const auto genCmdsBufferSize = de::dataSize(genCmdsData);
@@ -629,7 +630,7 @@ tcu::TestStatus ScratchSpaceInstance::iterate()
     // Generated indirect commands buffer contents.
     std::vector<uint32_t> genCmdsData;
     genCmdsData.reserve(5u /*pipeline bind + dispatch*/);
-    pushBackDeviceAddress(genCmdsData, dgcPipeline.getIndirectDeviceAddress());
+    pushBackElement(genCmdsData, dgcPipeline.getIndirectDeviceAddress());
     genCmdsData.push_back(1u); // VkDispatchIndirectCommand::x
     genCmdsData.push_back(1u); // VkDispatchIndirectCommand::y
     genCmdsData.push_back(1u); // VkDispatchIndirectCommand::z

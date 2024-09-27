@@ -103,6 +103,7 @@ typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT>
 typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV>
     PipelineRepresentativeFragmentTestCreateInfoWrapper;
 typedef VkPipelineCreateFlags2KHR PipelineCreateFlags2;
+typedef VkShaderCreateFlagsEXT ShaderCreateFlags;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
@@ -112,6 +113,7 @@ typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
 typedef uint64_t PipelineCreateFlags2;
+typedef uint32_t ShaderCreateFlags;
 #endif
 
 PipelineCreateFlags2 translateCreateFlag(VkPipelineCreateFlags flagToTranslate);
@@ -433,6 +435,10 @@ public:
     // Specifying how a pipeline is created using VkPipelineCreateFlags2CreateInfoKHR.
     GraphicsPipelineWrapper &setPipelineCreateFlags2(PipelineCreateFlags2 pipelineFlags2);
 
+    // Specify how shaders should be created with explicit flags. Note we could try to unify this with
+    // setPipelineCreateFlags2 but the equivalence is not direct and some flags do not map.
+    GraphicsPipelineWrapper &setShaderCreateFlags(ShaderCreateFlags shaderFlags);
+
     // Specify topology that is used by default InputAssemblyState in vertex input state. This needs to be
     // specified only when there is no custom InputAssemblyState provided in setupVertexInputState and when
     // topology is diferent then VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST which is used by default.
@@ -620,6 +626,11 @@ public:
     // Get compleate pipeline. GraphicsPipelineWrapper preserves ovnership and will destroy pipeline in its destructor.
     vk::VkPipeline getPipeline(void) const;
 
+#ifndef CTS_USES_VULKANSC
+    // Get particular shader. GraphicsPipelineWrapper preserves ovnership and will destroy shaders in its destructor.
+    vk::VkShaderEXT getShader(VkShaderStageFlagBits stage) const;
+#endif
+
     // Destroy compleate pipeline - pipeline parts are not destroyed.
     void destroyPipeline(void);
 
@@ -645,6 +656,8 @@ protected:
     // Store internal data that is needed only for pipeline construction.
     de::SharedPtr<InternalData> m_internalData;
 };
+
+std::vector<VkDynamicState> getShaderObjectDynamicStatesFromExtensions(const std::vector<std::string> &extensions);
 
 } // namespace vk
 

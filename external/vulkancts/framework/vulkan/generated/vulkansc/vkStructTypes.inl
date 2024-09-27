@@ -2877,6 +2877,13 @@ struct VkPipelineVertexInputDivisorStateCreateInfoKHR
 	const VkVertexInputBindingDivisorDescriptionKHR*	pVertexBindingDivisors;
 };
 
+struct VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxVertexAttribDivisor;
+};
+
 struct VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR
 {
 	VkStructureType	sType;

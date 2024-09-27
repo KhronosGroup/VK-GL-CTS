@@ -1467,7 +1467,7 @@ void Context::resetCommandPoolForVKSC(const VkDevice device, const VkCommandPool
 #endif
 }
 
-ContextCommonData Context::getContextCommonData()
+ContextCommonData Context::getContextCommonData() const
 {
     return ContextCommonData{getInstanceInterface(), getDevice(),           getDeviceInterface(),
                              getPhysicalDevice(),    getDefaultAllocator(), getUniversalQueueFamilyIndex(),

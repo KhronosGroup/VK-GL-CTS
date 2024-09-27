@@ -241,6 +241,9 @@ inline int findMSB(int32_t value)
 
 } // namespace de
 
+// sizeof(X) as uint32_t
+#define DE_SIZEOF32(X) (static_cast<uint32_t>(sizeof(X)))
+
 /*--------------------------------------------------------------------*//*!
  * \brief Throw runtime error if condition is not met.
  * \param X        Condition to check.

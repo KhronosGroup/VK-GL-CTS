@@ -1440,11 +1440,19 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_AMD_anti_lag")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_ray_tracing_position_fetch")
 	{
 		return;
 	}
 	if (extName == "VK_EXT_shader_object")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_pipeline_binary")
 	{
 		return;
 	}
@@ -1502,6 +1510,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_QCOM_multiview_per_view_render_areas")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_compute_shader_derivatives")
 	{
 		return;
 	}
@@ -1590,6 +1602,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_NV_command_buffer_inheritance")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_maintenance7")
 	{
 		return;
@@ -1603,6 +1619,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_NV_ray_tracing_validation")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_device_generated_commands")
 	{
 		return;
 	}
@@ -1987,12 +2007,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_KHR_push_descriptor")
 	{
 		functions.push_back("vkCmdPushDescriptorSetKHR");
-		// Dependencies: VK_VERSION_1_1
-		if (checkVersion(1, 1, apiVersion)) {
-			functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
-		}
-		// Dependencies: VK_KHR_descriptor_update_template
-		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_descriptor_update_template"))) {
+		// Dependencies: VK_VERSION_1_1,VK_KHR_descriptor_update_template
+		if (checkVersion(1, 1, apiVersion) || (checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_descriptor_update_template"))) {
 			functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
 		}
 		return;
@@ -2691,12 +2707,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkAcquireFullScreenExclusiveModeEXT");
 		functions.push_back("vkReleaseFullScreenExclusiveModeEXT");
-		// Dependencies: VK_KHR_device_group
+		// Dependencies: VK_KHR_device_group,VK_VERSION_1_1
 		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_device_group"))) {
-			functions.push_back("vkGetDeviceGroupSurfacePresentModes2EXT");
-		}
-		// Dependencies: VK_VERSION_1_1
-		if (checkVersion(1, 1, apiVersion)) {
 			functions.push_back("vkGetDeviceGroupSurfacePresentModes2EXT");
 		}
 		return;
@@ -3439,6 +3451,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkGetImageSubresourceLayout2KHR");
 		return;
 	}
+	if (extName == "VK_AMD_anti_lag")
+	{
+		functions.push_back("vkAntiLagUpdateAMD");
+		return;
+	}
 	if (extName == "VK_KHR_ray_tracing_position_fetch")
 	{
 		return;
@@ -3545,6 +3562,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		}
 		return;
 	}
+	if (extName == "VK_KHR_pipeline_binary")
+	{
+		functions.push_back("vkCreatePipelineBinariesKHR");
+		functions.push_back("vkDestroyPipelineBinaryKHR");
+		functions.push_back("vkGetPipelineKeyKHR");
+		functions.push_back("vkGetPipelineBinaryDataKHR");
+		functions.push_back("vkReleaseCapturedPipelineDataKHR");
+		return;
+	}
 	if (extName == "VK_QCOM_tile_properties")
 	{
 		functions.push_back("vkGetFramebufferTilePropertiesQCOM");
@@ -3605,6 +3631,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_QCOM_multiview_per_view_render_areas")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_compute_shader_derivatives")
 	{
 		return;
 	}
@@ -3708,6 +3738,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_NV_command_buffer_inheritance")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_maintenance7")
 	{
 		return;
@@ -3722,6 +3756,19 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	}
 	if (extName == "VK_NV_ray_tracing_validation")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_device_generated_commands")
+	{
+		functions.push_back("vkGetGeneratedCommandsMemoryRequirementsEXT");
+		functions.push_back("vkCmdPreprocessGeneratedCommandsEXT");
+		functions.push_back("vkCmdExecuteGeneratedCommandsEXT");
+		functions.push_back("vkCreateIndirectCommandsLayoutEXT");
+		functions.push_back("vkDestroyIndirectCommandsLayoutEXT");
+		functions.push_back("vkCreateIndirectExecutionSetEXT");
+		functions.push_back("vkDestroyIndirectExecutionSetEXT");
+		functions.push_back("vkUpdateIndirectExecutionSetPipelineEXT");
+		functions.push_back("vkUpdateIndirectExecutionSetShaderEXT");
 		return;
 	}
 	if (extName == "VK_MESA_image_alignment_control")
@@ -4106,8 +4153,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_pipeline_protected_access",
 	"VK_ANDROID_external_format_resolve",
 	"VK_KHR_maintenance5",
+	"VK_AMD_anti_lag",
 	"VK_KHR_ray_tracing_position_fetch",
 	"VK_EXT_shader_object",
+	"VK_KHR_pipeline_binary",
 	"VK_QCOM_tile_properties",
 	"VK_SEC_amigo_profiling",
 	"VK_QCOM_multiview_per_view_viewports",
@@ -4121,6 +4170,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_low_latency2",
 	"VK_KHR_cooperative_matrix",
 	"VK_QCOM_multiview_per_view_render_areas",
+	"VK_KHR_compute_shader_derivatives",
 	"VK_KHR_video_decode_av1",
 	"VK_KHR_video_maintenance1",
 	"VK_NV_per_stage_descriptor_set",
@@ -4142,9 +4192,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_descriptor_pool_overallocation",
 	"VK_NV_raw_access_chains",
 	"VK_KHR_shader_relaxed_extended_instruction",
+	"VK_NV_command_buffer_inheritance",
 	"VK_KHR_maintenance7",
 	"VK_NV_shader_atomic_float16_vector",
 	"VK_EXT_shader_replicated_composites",
 	"VK_NV_ray_tracing_validation",
+	"VK_EXT_device_generated_commands",
 	"VK_MESA_image_alignment_control",
 };

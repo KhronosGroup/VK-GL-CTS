@@ -289,6 +289,23 @@ inline VkPushConstantRange makePushConstantRange (VkShaderStageFlags stageFlags,
 	return res;
 }
 
+inline VkPipelineBinaryDataKHR makePipelineBinaryDataKHR (size_t dataSize, void* pData)
+{
+	VkPipelineBinaryDataKHR res;
+	res.dataSize	= dataSize;
+	res.pData		= pData;
+	return res;
+}
+
+inline VkPipelineBinaryKeysAndDataKHR makePipelineBinaryKeysAndDataKHR (uint32_t binaryCount, const VkPipelineBinaryKeyKHR* pPipelineBinaryKeys, const VkPipelineBinaryDataKHR* pPipelineBinaryData)
+{
+	VkPipelineBinaryKeysAndDataKHR res;
+	res.binaryCount			= binaryCount;
+	res.pPipelineBinaryKeys	= pPipelineBinaryKeys;
+	res.pPipelineBinaryData	= pPipelineBinaryData;
+	return res;
+}
+
 inline VkClearDepthStencilValue makeClearDepthStencilValue (float depth, uint32_t stencil)
 {
 	VkClearDepthStencilValue res;
@@ -746,6 +763,55 @@ inline VkMutableDescriptorTypeListEXT makeMutableDescriptorTypeListEXT (uint32_t
 	VkMutableDescriptorTypeListEXT res;
 	res.descriptorTypeCount	= descriptorTypeCount;
 	res.pDescriptorTypes	= pDescriptorTypes;
+	return res;
+}
+
+inline VkDrawIndirectCountIndirectCommandEXT makeDrawIndirectCountIndirectCommandEXT (VkDeviceAddress bufferAddress, uint32_t stride, uint32_t commandCount)
+{
+	VkDrawIndirectCountIndirectCommandEXT res;
+	res.bufferAddress	= bufferAddress;
+	res.stride			= stride;
+	res.commandCount	= commandCount;
+	return res;
+}
+
+inline VkIndirectCommandsVertexBufferTokenEXT makeIndirectCommandsVertexBufferTokenEXT (uint32_t vertexBindingUnit)
+{
+	VkIndirectCommandsVertexBufferTokenEXT res;
+	res.vertexBindingUnit	= vertexBindingUnit;
+	return res;
+}
+
+inline VkBindVertexBufferIndirectCommandEXT makeBindVertexBufferIndirectCommandEXT (VkDeviceAddress bufferAddress, uint32_t size, uint32_t stride)
+{
+	VkBindVertexBufferIndirectCommandEXT res;
+	res.bufferAddress	= bufferAddress;
+	res.size			= size;
+	res.stride			= stride;
+	return res;
+}
+
+inline VkIndirectCommandsIndexBufferTokenEXT makeIndirectCommandsIndexBufferTokenEXT (VkIndirectCommandsInputModeFlagBitsEXT mode)
+{
+	VkIndirectCommandsIndexBufferTokenEXT res;
+	res.mode	= mode;
+	return res;
+}
+
+inline VkBindIndexBufferIndirectCommandEXT makeBindIndexBufferIndirectCommandEXT (VkDeviceAddress bufferAddress, uint32_t size, VkIndexType indexType)
+{
+	VkBindIndexBufferIndirectCommandEXT res;
+	res.bufferAddress	= bufferAddress;
+	res.size			= size;
+	res.indexType		= indexType;
+	return res;
+}
+
+inline VkIndirectCommandsExecutionSetTokenEXT makeIndirectCommandsExecutionSetTokenEXT (VkIndirectExecutionSetInfoTypeEXT type, VkShaderStageFlags shaderStages)
+{
+	VkIndirectCommandsExecutionSetTokenEXT res;
+	res.type			= type;
+	res.shaderStages	= shaderStages;
 	return res;
 }
 

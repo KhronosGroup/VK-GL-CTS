@@ -53,6 +53,11 @@ virtual VkResult			createPipelineCache										(VkDevice device, const VkPipeli
 virtual void				destroyPipelineCache									(VkDevice device, VkPipelineCache pipelineCache, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			getPipelineCacheData									(VkDevice device, VkPipelineCache pipelineCache, size_t* pDataSize, void* pData) const;
 virtual VkResult			mergePipelineCaches										(VkDevice device, VkPipelineCache dstCache, uint32_t srcCacheCount, const VkPipelineCache* pSrcCaches) const;
+virtual VkResult			createPipelineBinariesKHR								(VkDevice device, const VkPipelineBinaryCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryHandlesInfoKHR* pBinaries) const;
+virtual void				destroyPipelineBinaryKHR								(VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator) const;
+virtual VkResult			getPipelineKeyKHR										(VkDevice device, const VkPipelineCreateInfoKHR* pPipelineCreateInfo, VkPipelineBinaryKeyKHR* pPipelineKey) const;
+virtual VkResult			getPipelineBinaryDataKHR								(VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, VkPipelineBinaryKeyKHR* pPipelineBinaryKey, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData) const;
+virtual VkResult			releaseCapturedPipelineDataKHR							(VkDevice device, const VkReleaseCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			createGraphicsPipelines									(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const;
 virtual VkResult			createComputePipelines									(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const;
 virtual VkResult			getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI			(VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize) const;
@@ -156,6 +161,15 @@ virtual void				cmdBindPipelineShaderGroupNV							(VkCommandBuffer commandBuffe
 virtual void				getGeneratedCommandsMemoryRequirementsNV				(VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
 virtual VkResult			createIndirectCommandsLayoutNV							(VkDevice device, const VkIndirectCommandsLayoutCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout) const;
 virtual void				destroyIndirectCommandsLayoutNV							(VkDevice device, VkIndirectCommandsLayoutNV indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const;
+virtual void				cmdExecuteGeneratedCommandsEXT							(VkCommandBuffer commandBuffer, VkBool32 isPreprocessed, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo) const;
+virtual void				cmdPreprocessGeneratedCommandsEXT						(VkCommandBuffer commandBuffer, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo, VkCommandBuffer stateCommandBuffer) const;
+virtual void				getGeneratedCommandsMemoryRequirementsEXT				(VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoEXT* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
+virtual VkResult			createIndirectCommandsLayoutEXT							(VkDevice device, const VkIndirectCommandsLayoutCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutEXT* pIndirectCommandsLayout) const;
+virtual void				destroyIndirectCommandsLayoutEXT						(VkDevice device, VkIndirectCommandsLayoutEXT indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const;
+virtual VkResult			createIndirectExecutionSetEXT							(VkDevice device, const VkIndirectExecutionSetCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectExecutionSetEXT* pIndirectExecutionSet) const;
+virtual void				destroyIndirectExecutionSetEXT							(VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, const VkAllocationCallbacks* pAllocator) const;
+virtual void				updateIndirectExecutionSetPipelineEXT					(VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetPipelineEXT* pExecutionSetWrites) const;
+virtual void				updateIndirectExecutionSetShaderEXT						(VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetShaderEXT* pExecutionSetWrites) const;
 virtual void				cmdPushDescriptorSetKHR									(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites) const;
 virtual void				trimCommandPool											(VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlags flags) const;
 virtual VkResult			getMemoryWin32HandleKHR									(VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const;
@@ -323,6 +337,7 @@ virtual VkResult			getDeferredOperationResultKHR							(VkDevice device, VkDefer
 virtual VkResult			deferredOperationJoinKHR								(VkDevice device, VkDeferredOperationKHR operation) const;
 virtual void				getPipelineIndirectMemoryRequirementsNV					(VkDevice device, const VkComputePipelineCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements) const;
 virtual VkDeviceAddress		getPipelineIndirectDeviceAddressNV						(VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo) const;
+virtual void				antiLagUpdateAMD										(VkDevice device, const VkAntiLagDataAMD* pData) const;
 virtual void				cmdSetCullMode											(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const;
 virtual void				cmdSetFrontFace											(VkCommandBuffer commandBuffer, VkFrontFace frontFace) const;
 virtual void				cmdSetPrimitiveTopology									(VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) const;

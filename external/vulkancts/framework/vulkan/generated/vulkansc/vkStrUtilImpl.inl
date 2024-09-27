@@ -1494,6 +1494,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_KHR:									return "VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_KHR:				return "VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO:							return "VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO";
@@ -2885,6 +2886,16 @@ tcu::Format::Bitfield<32> getBuildMicromapFlagsEXTStr (VkBuildMicromapFlagsEXT v
 }
 
 tcu::Format::Bitfield<32> getMicromapCreateFlagsEXTStr (VkMicromapCreateFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getIndirectCommandsLayoutUsageFlagsEXTStr (VkIndirectCommandsLayoutUsageFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getIndirectCommandsInputModeFlagsEXTStr (VkIndirectCommandsInputModeFlagsEXT value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
@@ -7069,6 +7080,16 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineVertexInputDivisorSta
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvertexBindingDivisorCount = " << value.vertexBindingDivisorCount << '\n';
 	s << "\tpVertexBindingDivisors = " << value.pVertexBindingDivisors << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxVertexAttribDivisor = " << value.maxVertexAttribDivisor << '\n';
 	s << '}';
 	return s;
 }
