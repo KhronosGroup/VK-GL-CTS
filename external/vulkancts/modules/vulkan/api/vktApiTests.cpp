@@ -24,6 +24,7 @@
 #include "vktApiTests.hpp"
 
 #include "vktTestGroupUtil.hpp"
+#include "vktApiDebugUtilsTests.hpp"
 #include "vktApiDeviceInitializationTests.hpp"
 #include "vktApiDriverPropertiesTests.hpp"
 #include "vktApiObjectManagementTests.hpp"
@@ -84,6 +85,7 @@ void createApiTests(tcu::TestCaseGroup *apiTests)
     tcu::TestContext &testCtx = apiTests->getTestContext();
 
     apiTests->addChild(createVersionSanityCheckTests(testCtx));
+    apiTests->addChild(createDebugUtilsTests(testCtx));
     apiTests->addChild(createDriverPropertiesTests(testCtx));
 #ifndef CTS_USES_VULKANSC
     apiTests->addChild(createSmokeTests(testCtx));
