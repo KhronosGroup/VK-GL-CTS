@@ -661,7 +661,8 @@ DepthClampTestInstance::DepthClampTestInstance(Context &context, const TestParam
         m_params.depthClampControl.enabled && !m_dynamic ? VK_DEPTH_CLAMP_MODE_USER_DEFINED_RANGE_EXT :
                                                            VK_DEPTH_CLAMP_MODE_VIEWPORT_RANGE_EXT,
         m_params.depthClampControl.enabled && !m_dynamic ? &depthClampRange : DE_NULL};
-    viewportNext = &depthClampControlCreateInfo;
+    if (m_params.depthClampControl.enabled)
+        viewportNext = &depthClampControlCreateInfo;
 #endif // CTS_USES_VULKANSC
 
     // Graphics pipeline
