@@ -455,9 +455,8 @@ tcu::TestStatus LogicOpTestInstance::verifyImage(void)
     Allocator &allocator            = m_context.getDefaultAllocator();
     auto &log                       = m_context.getTestContext().getLog();
 
-    const auto result = readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, m_colorImage->get(),
-                                            m_params.format, m_renderSize)
-                            .release();
+    const auto result       = readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, m_colorImage->get(),
+                                                  m_params.format, m_renderSize);
     const auto resultAccess = result->getAccess();
     const int iWidth        = static_cast<int>(m_renderSize.x());
     const int iHeight       = static_cast<int>(m_renderSize.y());
