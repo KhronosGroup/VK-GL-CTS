@@ -48,7 +48,7 @@
 #define CHECK(actual, expected, info)                                                                          \
     {                                                                                                          \
         result &= ((actual) != (expected)) ? false : true;                                                     \
-        if ((actual) != (expected))                                                                            \
+        if (!result)                                                                                           \
         {                                                                                                      \
             m_testCtx.getLog() << tcu::TestLog::Message << #info << ": " << __FILE__ << ":" << __LINE__ << ":" \
                                << "expected " << getEnumName((GLenum)(expected)) << "but got "                 \
@@ -59,7 +59,7 @@
 #define CHECK_COLOR(actual, expected, info)                                                             \
     {                                                                                                   \
         result &= ((actual) != (expected)) ? false : true;                                              \
-        if ((actual) != (expected))                                                                     \
+        if (!result)                                                                                    \
         {                                                                                               \
             m_testCtx.getLog() << tcu::TestLog::Message << #info << ": " << __FILE__ << ":" << __LINE__ \
                                << tcu::TestLog::EndMessage;                                             \
@@ -70,7 +70,7 @@
 #define CHECK_CONTINUE(actual, expected, info)                                                                 \
     {                                                                                                          \
         result &= ((actual) != (expected)) ? false : true;                                                     \
-        if ((actual) != (expected))                                                                            \
+        if (!result)                                                                                           \
         {                                                                                                      \
             m_testCtx.getLog() << tcu::TestLog::Message << #info << ": " << __FILE__ << ":" << __LINE__ << ":" \
                                << "expected " << getEnumName((GLenum)(expected)) << "but got "                 \
@@ -1659,6 +1659,13 @@ FramebufferBlitMultiToSingleSampledTestCase::FramebufferBlitMultiToSingleSampled
 {
 }
 
+FramebufferBlitMultiToSingleSampledTestCase::FramebufferBlitMultiToSingleSampledTestCase(deqp::Context &context,
+                                                                                         const char *name,
+                                                                                         const char *desc)
+    : FramebufferBlitBaseTestCase(context, name, desc)
+{
+}
+
 /** Stub deinit method. */
 void FramebufferBlitMultiToSingleSampledTestCase::deinit()
 {
@@ -1701,16 +1708,24 @@ void FramebufferBlitMultiToSingleSampledTestCase::init()
     // clang-format on
 }
 
+FramebufferBlitMultiToSingleSampledColorConfigTestCase::FramebufferBlitMultiToSingleSampledColorConfigTestCase(
+    deqp::Context &context)
+    : FramebufferBlitMultiToSingleSampledTestCase(context, "multisampled_to_singlesampled_blit_color_config_test",
+                                                  "Confirm that blits from multisampled to single sampled framebuffers "
+                                                  "of various types are properly resolved using color config.")
+{
+}
+
 /** Executes color configuration framebuffer blit tests.
  *
  *  @return Returns false if test went wrong.
  */
 template <GLuint samples>
-bool FramebufferBlitMultiToSingleSampledTestCase::testColorBlitConfig(const tcu::IVec2 &ul_center,
-                                                                      const tcu::IVec2 &ur_center,
-                                                                      const tcu::IVec2 &ll_center,
-                                                                      const tcu::IVec2 &lr_center,
-                                                                      const glw::GLint max_color_attachments)
+bool FramebufferBlitMultiToSingleSampledColorConfigTestCase::testColorBlitConfig(const tcu::IVec2 &ul_center,
+                                                                                 const tcu::IVec2 &ur_center,
+                                                                                 const tcu::IVec2 &ll_center,
+                                                                                 const tcu::IVec2 &lr_center,
+                                                                                 const glw::GLint max_color_attachments)
 {
     bool result  = true;
     GLint status = 0;
@@ -2118,15 +2133,23 @@ bool FramebufferBlitMultiToSingleSampledTestCase::testColorBlitConfig(const tcu:
     return result;
 }
 
+FramebufferBlitMultiToSingleSampledDepthConfigTestCase::FramebufferBlitMultiToSingleSampledDepthConfigTestCase(
+    deqp::Context &context)
+    : FramebufferBlitMultiToSingleSampledTestCase(context, "multisampled_to_singlesampled_blit_depth_config_test",
+                                                  "Confirm that blits from multisampled to single sampled framebuffers "
+                                                  "of various types are properly resolved using depth config.")
+{
+}
+
 /** Executes depth configuration framebuffer blit tests.
  *
  *  @return Returns false if test went wrong.
  */
 template <GLuint samples>
-bool FramebufferBlitMultiToSingleSampledTestCase::testDepthBlitConfig(const tcu::IVec2 &ul_center,
-                                                                      const tcu::IVec2 &ur_center,
-                                                                      const tcu::IVec2 &ll_center,
-                                                                      const tcu::IVec2 &lr_center)
+bool FramebufferBlitMultiToSingleSampledDepthConfigTestCase::testDepthBlitConfig(const tcu::IVec2 &ul_center,
+                                                                                 const tcu::IVec2 &ur_center,
+                                                                                 const tcu::IVec2 &ll_center,
+                                                                                 const tcu::IVec2 &lr_center)
 {
     bool result       = true;
     GLint status      = 0;
@@ -2523,8 +2546,7 @@ bool FramebufferBlitMultiToSingleSampledTestCase::testDepthBlitConfig(const tcu:
  */
 tcu::TestNode::IterateResult FramebufferBlitMultiToSingleSampledTestCase::iterate()
 {
-    bool result                 = true;
-    GLint max_color_attachments = 0;
+    bool result = true;
     /* quadrant centers for verifying initial colors */
     tcu::IVec2 ul_center, ur_center, ll_center, lr_center;
     constexpr GLuint samples = 4;
@@ -2539,34 +2561,49 @@ tcu::TestNode::IterateResult FramebufferBlitMultiToSingleSampledTestCase::iterat
     lr_center[0] = m_setup.lr_rect.x + m_setup.lr_rect.w / 2;
     lr_center[1] = m_setup.lr_rect.y + m_setup.lr_rect.h / 2;
 
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-
-    gl.getIntegerv(GL_MAX_COLOR_ATTACHMENTS, &max_color_attachments);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
-
-    CHECK_RET(max_color_attachments >= m_minColorAttachments, GL_TRUE, glGetIntegerv);
-
-    if (m_isContextES)
+    FramebufferBlitMultiToSingleSampledColorConfigTestCase *colorTestCaseConfig =
+        dynamic_cast<FramebufferBlitMultiToSingleSampledColorConfigTestCase *>(this);
+    if (colorTestCaseConfig != nullptr)
     {
-        GLint max_draw_buffers = 0;
-        gl.getIntegerv(GL_MAX_DRAW_BUFFERS, &max_draw_buffers);
+        GLint max_color_attachments = 0;
+        const glw::Functions &gl    = m_context.getRenderContext().getFunctions();
+
+        gl.getIntegerv(GL_MAX_COLOR_ATTACHMENTS, &max_color_attachments);
         GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
 
-        CHECK_RET(max_draw_buffers >= m_minDrawBuffers, GL_TRUE, glGetIntegerv);
-        if (max_draw_buffers < max_color_attachments)
+        CHECK_RET(max_color_attachments >= m_minColorAttachments, GL_TRUE, glGetIntegerv);
+
+        if (m_isContextES)
         {
-            max_color_attachments = max_draw_buffers;
+            GLint max_draw_buffers = 0;
+            gl.getIntegerv(GL_MAX_DRAW_BUFFERS, &max_draw_buffers);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
+
+            CHECK_RET(max_draw_buffers >= m_minDrawBuffers, GL_TRUE, glGetIntegerv);
+            if (max_draw_buffers < max_color_attachments)
+            {
+                max_color_attachments = max_draw_buffers;
+            }
+        }
+
+        /* 1. Test all color buffer formats, no depth or stencil buffers
+         * attached here */
+        CHECK_RET(colorTestCaseConfig->testColorBlitConfig<samples>(ul_center, ur_center, ll_center, lr_center,
+                                                                    max_color_attachments),
+                  true, "color blit test failed");
+    }
+    else
+    {
+        FramebufferBlitMultiToSingleSampledDepthConfigTestCase *depthTestCaseConfig =
+            dynamic_cast<FramebufferBlitMultiToSingleSampledDepthConfigTestCase *>(this);
+        if (depthTestCaseConfig != nullptr)
+        {
+            /* 2. Test all depth buffer formats, no color or stencil buffers
+             * attached here */
+            CHECK_RET(depthTestCaseConfig->testDepthBlitConfig<samples>(ul_center, ur_center, ll_center, lr_center),
+                      true, "depth blit test failed");
         }
     }
-
-    /* 1. Test all color buffer formats, no depth or stencil buffers
-     * attached here */
-    CHECK_RET(testColorBlitConfig<samples>(ul_center, ur_center, ll_center, lr_center, max_color_attachments), true,
-              "color blit test failed");
-
-    /* 2. Test all depth buffer formats, no color or stencil buffers
-     * attached here */
-    CHECK_RET(testDepthBlitConfig<samples>(ul_center, ur_center, ll_center, lr_center), true, "depth blit test failed");
 
     if (result)
         m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -3606,7 +3643,8 @@ FramebufferBlitTests::FramebufferBlitTests(deqp::Context &context)
 /** Initializes the test group contents. */
 void FramebufferBlitTests::init()
 {
-    addChild(new FramebufferBlitMultiToSingleSampledTestCase(m_context));
+    addChild(new FramebufferBlitMultiToSingleSampledColorConfigTestCase(m_context));
+    addChild(new FramebufferBlitMultiToSingleSampledDepthConfigTestCase(m_context));
     addChild(new FramebufferBlitScissorTestCase(m_context));
 }
 

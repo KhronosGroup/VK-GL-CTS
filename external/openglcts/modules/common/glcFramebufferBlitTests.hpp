@@ -303,22 +303,36 @@ class FramebufferBlitMultiToSingleSampledTestCase : public FramebufferBlitBaseTe
 public:
     /* Public methods */
     FramebufferBlitMultiToSingleSampledTestCase(deqp::Context &context);
+    FramebufferBlitMultiToSingleSampledTestCase(deqp::Context &context, const char *, const char *);
 
     void deinit() override;
     void init() override;
     tcu::TestNode::IterateResult iterate() override;
 
 protected:
+    /* Private members */
+    std::vector<blt::MultisampleColorConfig> m_multisampleColorCfg;
+};
+
+class FramebufferBlitMultiToSingleSampledColorConfigTestCase : public FramebufferBlitMultiToSingleSampledTestCase
+{
+public:
+    /* Public methods */
+    FramebufferBlitMultiToSingleSampledColorConfigTestCase(deqp::Context &context);
+
     template <glw::GLuint>
     bool testColorBlitConfig(const tcu::IVec2 &, const tcu::IVec2 &, const tcu::IVec2 &, const tcu::IVec2 &,
                              const glw::GLint);
+};
+
+class FramebufferBlitMultiToSingleSampledDepthConfigTestCase : public FramebufferBlitMultiToSingleSampledTestCase
+{
+public:
+    /* Public methods */
+    FramebufferBlitMultiToSingleSampledDepthConfigTestCase(deqp::Context &context);
 
     template <glw::GLuint>
     bool testDepthBlitConfig(const tcu::IVec2 &, const tcu::IVec2 &, const tcu::IVec2 &, const tcu::IVec2 &);
-
-private:
-    /* Private members */
-    std::vector<blt::MultisampleColorConfig> m_multisampleColorCfg;
 };
 
 /* 4.14 Confirm that the scissor test is properly respected.
