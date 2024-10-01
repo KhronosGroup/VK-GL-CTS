@@ -3769,9 +3769,9 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
-		if ( ( physicalDeviceVulkan14Features.rectangularLines == VK_FALSE ) && ( physicalDeviceVulkan14Features.bresenhamLines == VK_FALSE ) && ( physicalDeviceVulkan14Features.smoothLines == VK_FALSE ) && ( physicalDeviceVulkan14Features.stippledRectangularLines == VK_FALSE ) && ( physicalDeviceVulkan14Features.stippledBresenhamLines == VK_FALSE ) && ( physicalDeviceVulkan14Features.stippledSmoothLines == VK_FALSE ) )
+		if ( physicalDeviceVulkan14Features.bresenhamLines == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature rectangularLines or bresenhamLines or smoothLines or stippledRectangularLines or stippledBresenhamLines or stippledSmoothLines not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature bresenhamLines not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

@@ -361,12 +361,7 @@
             },
             {
                 "features": [
-                    "rectangularLines",
-                    "bresenhamLines",
-                    "smoothLines",
-                    "stippledRectangularLines",
-                    "stippledBresenhamLines",
-                    "stippledSmoothLines"
+                    "bresenhamLines"
                 ],
                 "requirements": [
                     "ApiVersion(0, 1, 4, 0)"
