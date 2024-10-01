@@ -402,7 +402,6 @@ tcu::TestStatus Image2DView3DImageInstance::iterate(void)
 {
     const DeviceInterface &vk              = m_context.getDeviceInterface();
     const VkDevice device                  = m_context.getDevice();
-    const VkQueue queue                    = m_context.getUniversalQueue();
     const uint32_t queueFamilyIndex        = m_context.getUniversalQueueFamilyIndex();
     Allocator &allocator                   = m_context.getDefaultAllocator();
     tcu::IVec3 imageSize                   = m_testParameters.imageSize;
@@ -546,6 +545,7 @@ tcu::TestStatus Image2DView3DImageInstance::iterate(void)
 
     // resultImage is used in sampler / combined image sampler tests to verify the sampled image.
     MovePtr<ImageWithMemory> resultImage;
+    VkImageSubresourceRange resultImgSubresourceRange = {};
     Move<VkImageView> resultImageView;
     Move<VkSampler> sampler;
     if (useSampler)
@@ -571,8 +571,7 @@ tcu::TestStatus Image2DView3DImageInstance::iterate(void)
 
         resultImage = MovePtr<ImageWithMemory>(
             new ImageWithMemory(vk, device, allocator, resultImageCreateInfo, MemoryRequirement::Any));
-        const VkImageSubresourceRange resultImgSubresourceRange =
-            makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+        resultImgSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
         resultImageView = makeImageView(vk, device, **resultImage, VK_IMAGE_VIEW_TYPE_2D, m_testParameters.imageFormat,
                                         resultImgSubresourceRange);
 
@@ -631,20 +630,6 @@ tcu::TestStatus Image2DView3DImageInstance::iterate(void)
         TCU_THROW(InternalError, "Unimplemented testImage type.");
     }
 
-    if (useSampler)
-    {
-        // Clear the result image.
-        clearColorImage(vk, device, queue, m_context.getUniversalQueueFamilyIndex(), **resultImage,
-                        tcu::Vec4(0, 0, 0, 1), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, pipelineStage, 0u,
-                        1u);
-    }
-    else
-    {
-        // Clear the test image.
-        clearColorImage(vk, device, queue, m_context.getUniversalQueueFamilyIndex(), testImage, tcu::Vec4(0, 0, 0, 1),
-                        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, pipelineStage, 0u, 1u, 0u, mipLevelCount);
-    }
-
     // Prepare the command buffer.
     const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(
@@ -652,6 +637,81 @@ tcu::TestStatus Image2DView3DImageInstance::iterate(void)
 
     // Start recording commands.
     beginCommandBuffer(vk, *cmdBuffer);
+
+    if (useSampler)
+    {
+        // Clear the result image.
+        const VkImageMemoryBarrier preImageBarrier = {
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+            nullptr,                                // const void* pNext;
+            0u,                                     // VkAccessFlags srcAccessMask;
+            VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
+            VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout newLayout;
+            queueFamilyIndex,                       // uint32_t srcQueueFamilyIndex;
+            queueFamilyIndex,                       // uint32_t dstQueueFamilyIndex;
+            **resultImage,                          // VkImage image;
+            resultImgSubresourceRange               // VkImageSubresourceRange subresourceRange;
+        };
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &preImageBarrier);
+
+        const VkClearColorValue clearColor = makeClearValueColor(tcu::Vec4(0, 0, 0, 1)).color;
+        vk.cmdClearColorImage(*cmdBuffer, **resultImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1,
+                              &resultImgSubresourceRange);
+
+        const VkImageMemoryBarrier postImageBarrier = {
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+            nullptr,                                // const void* pNext;
+            VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
+            VK_ACCESS_SHADER_WRITE_BIT,             // VkAccessFlags dstAccessMask;
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
+            VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout newLayout;
+            queueFamilyIndex,                       // uint32_t srcQueueFamilyIndex;
+            queueFamilyIndex,                       // uint32_t dstQueueFamilyIndex;
+            **resultImage,                          // VkImage image;
+            resultImgSubresourceRange               // VkImageSubresourceRange subresourceRange;
+        };
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, pipelineStage, (VkDependencyFlags)0, 0,
+                              nullptr, 0, nullptr, 1, &postImageBarrier);
+    }
+    else
+    {
+        // Clear the test image.
+        const VkImageMemoryBarrier preImageBarrier = {
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+            nullptr,                                // const void* pNext;
+            0u,                                     // VkAccessFlags srcAccessMask;
+            VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
+            VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout newLayout;
+            queueFamilyIndex,                       // uint32_t srcQueueFamilyIndex;
+            queueFamilyIndex,                       // uint32_t dstQueueFamilyIndex;
+            testImage,                              // VkImage image;
+            subresourceRange                        // VkImageSubresourceRange subresourceRange;
+        };
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &preImageBarrier);
+
+        const VkClearColorValue clearColor = makeClearValueColor(tcu::Vec4(0, 0, 0, 1)).color;
+        vk.cmdClearColorImage(*cmdBuffer, testImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1,
+                              &subresourceRange);
+
+        const VkImageMemoryBarrier postImageBarrier = {
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+            nullptr,                                // const void* pNext;
+            VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
+            VK_ACCESS_SHADER_WRITE_BIT,             // VkAccessFlags dstAccessMask;
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
+            VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout newLayout;
+            queueFamilyIndex,                       // uint32_t srcQueueFamilyIndex;
+            queueFamilyIndex,                       // uint32_t dstQueueFamilyIndex;
+            testImage,                              // VkImage image;
+            subresourceRange                        // VkImageSubresourceRange subresourceRange;
+        };
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, pipelineStage, (VkDependencyFlags)0, 0,
+                              nullptr, 0, nullptr, 1, &postImageBarrier);
+    }
 
     if (useSampler)
     {
