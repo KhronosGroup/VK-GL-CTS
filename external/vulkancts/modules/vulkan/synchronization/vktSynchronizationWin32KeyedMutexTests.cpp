@@ -136,6 +136,34 @@ SimpleAllocation::~SimpleAllocation(void)
     m_vkd.freeMemory(m_device, getMemory(), nullptr);
 }
 
+// A helper class to test for extensions upfront and throw not supported to speed up test runtimes compared to failing only
+// after creating unnecessary vkInstances.
+class NotSupportedChecker
+{
+public:
+    NotSupportedChecker(const Context &context) : m_context(context)
+    {
+        const uint32_t apiVersion = context.getUsedApiVersion();
+
+        // Check instance support
+        m_context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+        m_context.requireInstanceFunctionality("VK_KHR_external_memory_capabilities");
+
+        if (!isCoreDeviceExtension(apiVersion, "VK_KHR_external_memory"))
+            m_context.requireDeviceFunctionality("VK_KHR_external_memory");
+        if (!isCoreDeviceExtension(apiVersion, "VK_KHR_dedicated_allocation"))
+            m_context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
+        if (!isCoreDeviceExtension(apiVersion, "VK_KHR_get_memory_requirements2"))
+            m_context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
+
+        m_context.requireDeviceFunctionality("VK_KHR_external_memory_win32");
+        m_context.requireDeviceFunctionality("VK_KHR_win32_keyed_mutex");
+    }
+
+private:
+    const Context &m_context;
+};
+
 CustomInstance createTestInstance(Context &context)
 {
     std::vector<std::string> extensions;
@@ -1396,6 +1424,7 @@ private:
     const TestConfig m_config;
     const de::UniquePtr<OperationSupport> m_supportWriteOp;
     const de::UniquePtr<OperationSupport> m_supportReadOp;
+    const NotSupportedChecker m_notSupportedChecker; // Must declare before VkInstance to effectively reduce runtimes!
 
     const vk::VkInstance m_instance;
 
@@ -1421,6 +1450,7 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance(Context &context, TestC
     , m_config(config)
     , m_supportWriteOp(makeOperationSupport(config.writeOp, config.resource))
     , m_supportReadOp(makeOperationSupport(config.readOp, config.resource))
+    , m_notSupportedChecker(context)
 
     , m_instance(InstanceAndDevice::getInstance(context))
 
