@@ -24,6 +24,7 @@
 
 #include "glcNearestEdgeTests.hpp"
 
+#include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
 #include "gluTextureUtil.hpp"
 #include "gluDrawUtil.hpp"
@@ -130,10 +131,17 @@ std::string NearestEdgeTestCase::getDesc(OffsetDirection direction)
     return "";
 }
 
+static bool IsExtensionSupported(deqp::Context &context, const char *extension)
+{
+    const std::vector<std::string> &v = context.getContextInfo().getExtensions();
+    return std::find(v.begin(), v.end(), extension) != v.end();
+}
+
 // Translate pixel format in the frame buffer to texture format.
 // Copied from sglrReferenceContext.cpp.
 tcu::TextureFormat NearestEdgeTestCase::toTextureFormat(deqp::Context &context, const tcu::PixelFormat &pixelFmt)
 {
+    static const bool readFormatBgraEXTSupported = IsExtensionSupported(context, "GL_EXT_read_format_bgra");
     static const struct
     {
         tcu::PixelFormat pixelFmt;
@@ -168,8 +176,13 @@ tcu::TextureFormat NearestEdgeTestCase::toTextureFormat(deqp::Context &context, 
                 glw::GLint implType   = GL_NONE;
                 gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &implFormat);
                 gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &implType);
-                if (implFormat == GL_RGBA && implType == GL_UNSIGNED_BYTE)
-                    return tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
+                if (implType == GL_UNSIGNED_BYTE)
+                {
+                    if (implFormat == GL_RGBA)
+                        return tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
+                    else if (readFormatBgraEXTSupported && implFormat == GL_BGRA_EXT)
+                        return tcu::TextureFormat(tcu::TextureFormat::BGRA, tcu::TextureFormat::UNORM_INT8);
+                }
             }
 
             return pixelFormatMap[ndx].texFmt;

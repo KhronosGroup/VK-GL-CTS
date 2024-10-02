@@ -319,6 +319,9 @@ uint32_t getInternalFormat(tcu::TextureFormat texFormat)
     case FMT_CASE(sRG, UNORM_INT8):
         return GL_SRG8_EXT;
 
+    case FMT_CASE(BGRA, UNORM_INT8):
+        return GL_BGRA8_EXT;
+
     case FMT_CASE(R, FLOAT):
         return GL_R32F;
     case FMT_CASE(R, SIGNED_INT32):
