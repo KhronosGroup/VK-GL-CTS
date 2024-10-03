@@ -159,12 +159,12 @@ public:
                     vk::VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL, uint32_t mipLevels = 1,
                     vk::VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
 
-    VkImage getImage();
-    VkImageView getImageView();
-    VkBuffer getBuffer();
-    VkDeviceSize getBufferSize();
-    Allocation &getImageAllocation();
-    Allocation &getBufferAllocation();
+    VkImage getImage() const;
+    VkImageView getImageView() const;
+    VkBuffer getBuffer() const;
+    VkDeviceSize getBufferSize() const;
+    Allocation &getImageAllocation() const;
+    Allocation &getBufferAllocation() const;
 };
 
 bool isYCbCrFormat(VkFormat format);

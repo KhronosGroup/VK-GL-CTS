@@ -100,11 +100,6 @@ VkMemoryRequirements getGeneratedCommandsMemoryRequirementsNV(
     return memReqs.memoryRequirements;
 }
 
-bool equalMemoryRequirements(const VkMemoryRequirements &a, const VkMemoryRequirements &b)
-{
-    return (a.memoryTypeBits == b.memoryTypeBits && a.alignment == b.alignment && a.size == b.size);
-}
-
 void preprocessToExecuteBarrier(const vk::DeviceInterface &vkd, vk::VkCommandBuffer cmdBuffer)
 {
     const auto preExecutionBarrier =

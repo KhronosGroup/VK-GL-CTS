@@ -30,6 +30,7 @@
 #include "vkObjUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vktDGCUtil.hpp"
+#include "vktDGCUtilCommon.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include <sstream>
@@ -261,7 +262,7 @@ tcu::TestStatus verifyBuiltins(Context &context, BuiltinParams params)
     std::vector<uint32_t> genCmdsData;
     genCmdsData.reserve(5u /*2 for the pipeline device address and 3 for the indirect dispatch command*/);
     if (params.pipelineToken)
-        pushBackDeviceAddress(genCmdsData, dgcPipelineAddress);
+        pushBackElement(genCmdsData, dgcPipelineAddress);
     genCmdsData.push_back(1u); // Dispatch token data.
     genCmdsData.push_back(1u);
     genCmdsData.push_back(1u);

@@ -5392,32 +5392,32 @@ ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice devi
     size = verificationBufferSize;
 }
 
-VkImage ImageWithBuffer::getImage()
+VkImage ImageWithBuffer::getImage() const
 {
     return (*image).get();
 }
 
-VkImageView ImageWithBuffer::getImageView()
+VkImageView ImageWithBuffer::getImageView() const
 {
     return imageView.get();
 }
 
-VkBuffer ImageWithBuffer::getBuffer()
+VkBuffer ImageWithBuffer::getBuffer() const
 {
     return (*buffer).get();
 }
 
-VkDeviceSize ImageWithBuffer::getBufferSize()
+VkDeviceSize ImageWithBuffer::getBufferSize() const
 {
     return size;
 }
 
-Allocation &ImageWithBuffer::getImageAllocation()
+Allocation &ImageWithBuffer::getImageAllocation() const
 {
     return (*image).getAllocation();
 }
 
-Allocation &ImageWithBuffer::getBufferAllocation()
+Allocation &ImageWithBuffer::getBufferAllocation() const
 {
     return (*buffer).getAllocation();
 }

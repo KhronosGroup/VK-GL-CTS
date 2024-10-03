@@ -185,6 +185,8 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetCalibratedTimestampsKHR",
 		"vkCmdSetCheckpointNV",
 		"vkGetQueueCheckpointDataNV",
+		"vkGetPhysicalDeviceCalibrateableTimeDomainsEXT",
+		"vkGetCalibratedTimestampsEXT",
     };
 
     bool fail = false;
