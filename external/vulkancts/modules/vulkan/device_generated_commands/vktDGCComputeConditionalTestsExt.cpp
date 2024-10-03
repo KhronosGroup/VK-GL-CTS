@@ -417,13 +417,11 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
         makeBufferCreateInfo(conditionBufferSize, VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT);
     BufferWithMemory conditionBuffer(ctx.vkd, ctx.device, ctx.allocator, conditionBufferInfo,
                                      MemoryRequirement::HostVisible);
-    const uint32_t preprocessConditionValue =
-        (params.conditionValue ? 2u : 0u); // Avoid using value 1, just to make it interesting.
-    const uint32_t executeConditionValue = (params.inverted ? 0u : 1u); // Always execute.
-    auto &conditionBufferAlloc           = conditionBuffer.getAllocation();
-    void *conditionBufferData            = conditionBufferAlloc.getHostPtr();
+    const uint32_t conditionValue = (params.conditionValue ? 256u : 0u); // Avoid using value 1.
+    auto &conditionBufferAlloc    = conditionBuffer.getAllocation();
+    void *conditionBufferData     = conditionBufferAlloc.getHostPtr();
 
-    deMemcpy(conditionBufferData, &preprocessConditionValue, sizeof(preprocessConditionValue));
+    deMemcpy(conditionBufferData, &conditionValue, sizeof(conditionValue));
     flushAlloc(ctx.vkd, ctx.device, conditionBufferAlloc);
 
     // Preprocess buffer.
@@ -479,10 +477,6 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     endCommandBuffer(ctx.vkd, cmdBuffer);
     submitCommandsAndWait(ctx.vkd, ctx.device, queue, cmdBuffer);
 
-    // Update the condition buffer value and flush.
-    deMemcpy(conditionBufferData, &executeConditionValue, sizeof(executeConditionValue));
-    flushAlloc(ctx.vkd, ctx.device, conditionBufferAlloc);
-
     // Execute on a separate command buffer.
     executeCmd.reset(
         new CommandPoolWithBuffer(ctx.vkd, ctx.device, (params.executeOnCompute ? compQueueIndex : ctx.qfIndex)));
@@ -512,8 +506,7 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     invalidateAlloc(ctx.vkd, ctx.device, outputBufferAlloc);
     deMemcpy(&outputValue, outputBufferData, sizeof(outputValue));
 
-    // In these cases, we expect conditional rendering to not affect preprocessing.
-    const auto expectedValue = pcValue;
+    const auto expectedValue = ((params.inverted != params.conditionValue) ? pcValue : 0u);
     if (outputValue != expectedValue)
     {
         std::ostringstream msg;

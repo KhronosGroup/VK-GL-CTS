@@ -431,13 +431,12 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
         makeBufferCreateInfo(conditionBufferSize, VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT);
     BufferWithMemory conditionBuffer(ctx.vkd, ctx.device, ctx.allocator, conditionBufferInfo,
                                      MemoryRequirement::HostVisible);
-    const uint32_t preprocessConditionValue =
-        (params.conditionValue ? 2u : 0u); // Avoid using value 1, just to make it interesting.
-    const uint32_t executeConditionValue = (params.inverted ? 0u : 1u);
-    auto &conditionBufferAlloc           = conditionBuffer.getAllocation();
-    void *conditionBufferData            = conditionBufferAlloc.getHostPtr();
+    const uint32_t conditionValue =
+        (params.conditionValue ? 512u : 0u); // Avoid using value 1 to make things interesting.
+    auto &conditionBufferAlloc = conditionBuffer.getAllocation();
+    void *conditionBufferData  = conditionBufferAlloc.getHostPtr();
 
-    deMemcpy(conditionBufferData, &preprocessConditionValue, sizeof(preprocessConditionValue));
+    deMemcpy(conditionBufferData, &conditionValue, sizeof(conditionValue));
     flushAlloc(ctx.vkd, ctx.device, conditionBufferAlloc);
 
     // Preprocess buffer.
@@ -466,10 +465,6 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     endCommandBuffer(ctx.vkd, cmdBuffer);
     submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
 
-    // Switch buffer values and flush.
-    deMemcpy(conditionBufferData, &executeConditionValue, sizeof(executeConditionValue));
-    flushAlloc(ctx.vkd, ctx.device, conditionBufferAlloc);
-
     cmdBuffer = *executeCmdBuffer;
 
     beginCommandBuffer(ctx.vkd, cmdBuffer);
@@ -487,8 +482,9 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     const auto tcuFormat = mapVkFormat(colorFormat);
 
     tcu::TextureLevel referenceLevel(tcuFormat, fbExtent.x(), fbExtent.y(), fbExtent.z());
-    auto referenceAccess = referenceLevel.getAccess();
-    tcu::clear(referenceAccess, pcValue);
+    auto referenceAccess      = referenceLevel.getAccess();
+    const auto &expectedValue = ((params.conditionValue != params.inverted) ? pcValue : clearValue);
+    tcu::clear(referenceAccess, expectedValue);
 
     auto &bufferAlloc = colorBuffer.getBufferAllocation();
     invalidateAlloc(ctx.vkd, ctx.device, bufferAlloc);
