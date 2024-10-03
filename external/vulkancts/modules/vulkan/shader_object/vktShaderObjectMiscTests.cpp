@@ -722,8 +722,9 @@ void ShaderObjectStateInstance::createDevice(void)
     eds3Features.pNext             = DE_NULL;
     viFeatures.pNext               = DE_NULL;
 
-    vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure();
-    void *pNext                             = &dynamicRenderingFeatures;
+    vk::VkPhysicalDeviceFeatures2 features2           = vk::initVulkanStructure();
+    features2.features.vertexPipelineStoresAndAtomics = VK_TRUE;
+    void *pNext                                       = &dynamicRenderingFeatures;
 
     const float queuePriority                  = 1.0f;
     std::vector<const char *> deviceExtensions = {"VK_KHR_dynamic_rendering"};
@@ -2023,6 +2024,9 @@ void ShaderObjectStateCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_EXT_shader_object");
     else
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+    if (!context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
+        TCU_THROW(NotSupportedError, "vertexPipelineStoresAndAtomics not supported");
 
     if (m_params.logicOp)
     {

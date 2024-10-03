@@ -3980,7 +3980,7 @@ if __name__ == "__main__":
     writeApiExtensionDependencyInfo            (api, os.path.join(outputPath, "vkApiExtensionDependencyInfo.inl"))
     writeEntryPointValidation                (api, os.path.join(outputPath, "vkEntryPointValidation.inl"))
     writeGetDeviceProcAddr                    (api, os.path.join(outputPath, "vkGetDeviceProcAddr.inl"))
-    writeConformanceVersions                (     os.path.join(outputPath, "vkKnownConformanceVersions.inl"))
+    #writeConformanceVersions                (     os.path.join(outputPath, "vkKnownConformanceVersions.inl"))
 
     # NOTE: when new files are generated then they should also be added to the
     # vk-gl-cts\external\vulkancts\framework\vulkan\CMakeLists.txt outputs list

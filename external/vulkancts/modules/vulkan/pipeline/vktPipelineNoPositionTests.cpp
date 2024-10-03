@@ -25,7 +25,12 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineNoPositionTests.hpp"
+#include "tcuRGBA.hpp"
+#include "tcuVectorType.hpp"
+#include "vkDefs.hpp"
 #include "vktTestCase.hpp"
+#include "vkPipelineConstructionUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "vkQueryUtil.hpp"
 #include "vkObjUtil.hpp"
@@ -38,12 +43,17 @@
 #include "vkImageUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkPlatform.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deUniquePtr.hpp"
 
+#include <cstdint>
+#include <string>
 #include <vector>
 #include <set>
 #include <sstream>
@@ -75,6 +85,14 @@ constexpr uint32_t kStageCount = 4u;
 static_assert((1u << kStageCount) == static_cast<uint32_t>(STAGE_MASK_COUNT),
               "Total stage count does not match stage mask bits");
 
+const uint32_t max_devgrp_phydevices = VK_MAX_DEVICE_GROUP_SIZE;
+
+template <typename T>
+inline de::SharedPtr<Unique<T>> makeSharedPtr(Move<T> move)
+{
+    return de::SharedPtr<Unique<T>>(new Unique<T>(move));
+}
+
 struct TestParams
 {
     vk::PipelineConstructionType pipelineConstructionType; // The way pipeline is constructed
@@ -83,7 +101,7 @@ struct TestParams
     uint32_t numViews;              // Number of views for multiview.
     bool explicitDeclarations;      // Explicitly declare the input and output blocks or not.
     bool useSSBO;                   // Write to an SSBO from the selected stages.
-    bool useDeviceIndexAsViewIndex; // Treat gl_DeviceIndex shader input variable like gl_ViewIndex.
+    bool useViewIndexAsDeviceIndex; // Treat gl_ViewIndex shader input variable like gl_DeviceIndex.
 
     // Commonly used checks.
     bool tessellation(void) const
@@ -119,7 +137,7 @@ public:
 
     static tcu::Vec4 getBackGroundColor(void)
     {
-        return tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
+        return tcu::RGBA::blue().toVec();
     }
     static VkFormat getImageFormat(void)
     {
@@ -144,7 +162,39 @@ public:
 
     virtual tcu::TestStatus iterate(void);
 
+    void createDeviceGroup(void);
+
+    const vk::DeviceInterface &getDeviceInterface(void)
+    {
+        return *m_deviceDriver;
+    }
+    vk::VkInstance getInstance(void)
+    {
+        return m_deviceGroupInstance;
+    }
+    vk::VkDevice getDevice(void)
+    {
+        return *m_logicalDevice;
+    }
+    vk::VkPhysicalDevice getPhysicalDevice(uint32_t i = 0)
+    {
+        return m_physicalDevices[i];
+    }
+
 private:
+    uint32_t m_numPhysDevices;
+    uint32_t m_numViews;
+    uint32_t m_queueFamilyIndex;
+    CustomInstance m_deviceGroupInstance;
+    vk::Move<vk::VkDevice> m_logicalDevice;
+    std::vector<vk::VkPhysicalDevice> m_physicalDevices;
+#ifndef CTS_USES_VULKANSC
+    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
+#else
+    de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> m_deviceDriver;
+#endif // CTS_USES_VULKANSC
+    de::MovePtr<Allocator> m_allocator;
+
     TestParams m_params;
 };
 
@@ -152,7 +202,6 @@ NoPositionCase::NoPositionCase(tcu::TestContext &testCtx, const std::string &nam
     : vkt::TestCase(testCtx, name)
     , m_params(params)
 {
-    DE_ASSERT(params.numViews >= 1u);
 }
 
 void NoPositionCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -169,14 +218,14 @@ void NoPositionCase::initPrograms(vk::SourceCollections &programCollection) cons
 
     const bool multiview = (m_params.numViews > 1u);
 
-    if (m_params.useDeviceIndexAsViewIndex)
-        extensions = "#extension GL_EXT_device_group : require\n";
-    else if (multiview)
+    if (multiview || m_params.useViewIndexAsDeviceIndex)
         extensions = "#extension GL_EXT_multiview : require\n";
 
     if (m_params.useSSBO)
     {
-        const auto ssboElementCount = kStageCount * m_params.numViews;
+        const uint32_t numCountersPerStage =
+            m_params.useViewIndexAsDeviceIndex ? max_devgrp_phydevices : m_params.numViews;
+        const auto ssboElementCount = kStageCount * numCountersPerStage;
         ssboDecl                    = "layout (set=0, binding=0, std430) buffer StorageBlock { uint counters[" +
                    de::toString(ssboElementCount) + "]; } ssbo;\n";
 
@@ -186,13 +235,10 @@ void NoPositionCase::initPrograms(vk::SourceCollections &programCollection) cons
         {
             std::ostringstream s;
             s << "    atomicAdd(ssbo.counters[" << stageNum;
-            if (multiview || m_params.useDeviceIndexAsViewIndex)
+            if (multiview || m_params.useViewIndexAsDeviceIndex)
             {
-                s << " * " << m_params.numViews << " + ";
-                if (m_params.useDeviceIndexAsViewIndex)
-                    s << "gl_DeviceIndex";
-                else
-                    s << "gl_ViewIndex";
+                s << " * " << numCountersPerStage << " + ";
+                s << "gl_ViewIndex";
             }
             s << "], 1);\n";
             s.flush();
@@ -358,7 +404,7 @@ void NoPositionCase::checkSupport(Context &context) const
     if (hasGeom && !features.geometryShader)
         TCU_THROW(NotSupportedError, "Geometry shaders not supported");
 
-    if (m_params.numViews > 1u)
+    if ((m_params.numViews > 1u) || (m_params.useViewIndexAsDeviceIndex))
     {
         context.requireDeviceFunctionality("VK_KHR_multiview");
         const auto &multiviewFeatures = context.getMultiviewFeatures();
@@ -381,30 +427,273 @@ void NoPositionCase::checkSupport(Context &context) const
         if (!features.vertexPipelineStoresAndAtomics)
             TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
     }
+
+    if (m_params.useViewIndexAsDeviceIndex)
+    {
+        context.requireInstanceFunctionality("VK_KHR_device_group_creation");
+        context.requireDeviceFunctionality("VK_KHR_device_group");
+    }
+
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_params.pipelineConstructionType);
 }
 
 NoPositionInstance::NoPositionInstance(Context &context, const TestParams &params)
     : vkt::TestInstance(context)
+    , m_numPhysDevices(1)
+    , m_queueFamilyIndex(0)
     , m_params(params)
 {
+    if (m_params.useViewIndexAsDeviceIndex)
+        createDeviceGroup();
+
+    m_numViews = m_params.useViewIndexAsDeviceIndex ? m_numPhysDevices : m_params.numViews;
+    if (m_numViews > context.getMultiviewProperties().maxMultiviewViewCount)
+        TCU_THROW(NotSupportedError, "Not enough views supported");
+}
+
+void NoPositionInstance::createDeviceGroup(void)
+{
+    const tcu::CommandLine &cmdLine = m_context.getTestContext().getCommandLine();
+    const uint32_t devGroupIdx      = cmdLine.getVKDeviceGroupId() - 1;
+    uint32_t physDeviceIdx          = cmdLine.getVKDeviceId() - 1;
+    const float queuePriority       = 1.0f;
+    const auto &vki                 = m_context.getInstanceInterface();
+
+    m_deviceGroupInstance = createCustomInstanceWithExtension(m_context, "VK_KHR_device_group_creation");
+    const InstanceDriver &instance(m_deviceGroupInstance.getDriver());
+
+    std::vector<VkPhysicalDeviceGroupProperties> devGroupsProperties =
+        enumeratePhysicalDeviceGroups(vki, m_deviceGroupInstance);
+    m_numPhysDevices         = devGroupsProperties[devGroupIdx].physicalDeviceCount;
+    auto &devGroupProperties = devGroupsProperties[devGroupIdx];
+
+    if (physDeviceIdx >= devGroupProperties.physicalDeviceCount)
+        physDeviceIdx = 0;
+
+    // Enable device features
+    VkPhysicalDeviceFeatures2 deviceFeatures2     = initVulkanStructure();
+    VkDeviceGroupDeviceCreateInfo deviceGroupInfo = initVulkanStructure(&deviceFeatures2);
+    deviceGroupInfo.physicalDeviceCount           = devGroupProperties.physicalDeviceCount;
+    deviceGroupInfo.pPhysicalDevices              = devGroupProperties.physicalDevices;
+    const VkPhysicalDeviceFeatures deviceFeatures =
+        getPhysicalDeviceFeatures(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
+    deviceFeatures2.features = deviceFeatures;
+
+    m_physicalDevices.resize(m_numPhysDevices);
+    for (uint32_t physDevIdx = 0; physDevIdx < m_numPhysDevices; physDevIdx++)
+        m_physicalDevices[physDevIdx] = devGroupProperties.physicalDevices[physDevIdx];
+
+    // Prepare queue info
+    const std::vector<VkQueueFamilyProperties> queueProps =
+        getPhysicalDeviceQueueFamilyProperties(instance, devGroupProperties.physicalDevices[physDeviceIdx]);
+    for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
+    {
+        if (queueProps[queueNdx].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            m_queueFamilyIndex = (uint32_t)queueNdx;
+    }
+
+    VkDeviceQueueCreateInfo queueInfo = {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                    // const void* pNext;
+        (VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags flags;
+        m_queueFamilyIndex,                         // uint32_t queueFamilyIndex;
+        1u,                                         // uint32_t queueCount;
+        &queuePriority                              // const float* pQueuePriorities;
+    };
+
+    // Enable extensions
+    const auto &contextMultiviewFeatures                = m_context.getMultiviewFeatures();
+    const bool multiViewSupport                         = contextMultiviewFeatures.multiview;
+    VkPhysicalDeviceMultiviewFeatures multiviewFeatures = vk::initVulkanStructure();
+#ifndef CTS_USES_VULKANSC
+    const auto &contextGpl                                         = m_context.getGraphicsPipelineLibraryFeaturesEXT();
+    const bool gplSupport                                          = contextGpl.graphicsPipelineLibrary;
+    VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT gplFeatures = vk::initVulkanStructure();
+#endif
+    const auto addFeatures = vk::makeStructChainAdder(&deviceFeatures2);
+    if (multiViewSupport)
+        addFeatures(&multiviewFeatures);
+#ifndef CTS_USES_VULKANSC
+    if (isConstructionTypeLibrary(m_params.pipelineConstructionType) && gplSupport)
+        addFeatures(&gplFeatures);
+#endif
+    vki.getPhysicalDeviceFeatures2(deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceFeatures2);
+    // Enable extensions
+    std::vector<const char *> deviceExtensions;
+    if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
+        deviceExtensions.push_back("VK_KHR_device_group");
+
+    if (multiViewSupport)
+        deviceExtensions.push_back("VK_KHR_multiview");
+
+#ifndef CTS_USES_VULKANSC
+    if (isConstructionTypeLibrary(m_params.pipelineConstructionType) && gplSupport)
+    {
+        deviceExtensions.push_back("VK_KHR_pipeline_library");
+        deviceExtensions.push_back("VK_EXT_graphics_pipeline_library");
+    }
+#endif
+
+    void *pNext = &deviceGroupInfo;
+
+#ifdef CTS_USES_VULKANSC
+    VkDeviceObjectReservationCreateInfo memReservationInfo = cmdLine.isSubProcess() ?
+                                                                 m_context.getResourceInterface()->getStatMax() :
+                                                                 resetDeviceObjectReservationCreateInfo();
+    memReservationInfo.pNext                               = pNext;
+    pNext                                                  = &memReservationInfo;
+
+    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
+    sc10Features.pNext                              = pNext;
+    pNext                                           = &sc10Features;
+    VkPipelineCacheCreateInfo pcCI;
+    std::vector<VkPipelinePoolSize> poolSizes;
+    if (m_context.getTestContext().getCommandLine().isSubProcess())
+    {
+        if (m_context.getResourceInterface()->getCacheDataSize() > 0)
+        {
+            pcCI = {
+                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                      // const void* pNext;
+                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
+                m_context.getResourceInterface()->getCacheDataSize(),     // uintptr_t initialDataSize;
+                m_context.getResourceInterface()->getCacheData()          // const void* pInitialData;
+            };
+            memReservationInfo.pipelineCacheCreateInfoCount = 1;
+            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
+        }
+
+        poolSizes = m_context.getResourceInterface()->getPipelinePoolSizes();
+        if (!poolSizes.empty())
+        {
+            memReservationInfo.pipelinePoolSizeCount = uint32_t(poolSizes.size());
+            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
+        }
+    }
+#endif // CTS_USES_VULKANSC
+
+    const VkDeviceCreateInfo deviceCreateInfo = {
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType sType;
+        pNext,                                // const void* pNext;
+        (VkDeviceCreateFlags)0,               // VkDeviceCreateFlags flags;
+        1u,                                   // uint32_t queueCreateInfoCount;
+        &queueInfo,                           // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
+        0u,                                   // uint32_t enabledLayerCount;
+        nullptr,                              // const char* const* ppEnabledLayerNames;
+        de::sizeU32(deviceExtensions),        // uint32_t enabledExtensionCount;
+        de::dataOrNull(deviceExtensions),     // const char* const* ppEnabledExtensionNames;
+        deviceFeatures2.pNext == nullptr ? &deviceFeatures :
+                                           nullptr, // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+    };
+
+    m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
+                                         m_context.getPlatformInterface(), m_deviceGroupInstance, instance,
+                                         deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceCreateInfo);
+
+#ifndef CTS_USES_VULKANSC
+    m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance,
+                                                                *m_logicalDevice, m_context.getUsedApiVersion(),
+                                                                m_context.getTestContext().getCommandLine()));
+#else
+    m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
+        new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice,
+                           m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(),
+                           m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(),
+                           m_context.getUsedApiVersion()),
+        vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
+#endif // CTS_USES_VULKANSC
+
+    m_allocator = de::MovePtr<Allocator>(new SimpleAllocator(
+        *m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, m_physicalDevices[0])));
+}
+
+// Make a render pass with one subpass per color attachment
+RenderPassWrapper makeRenderPass(const DeviceInterface &vk, const VkDevice device,
+                                 const PipelineConstructionType pipelineConstructionType, const VkFormat colorFormat,
+                                 const uint32_t numAttachments,
+                                 de::MovePtr<VkRenderPassMultiviewCreateInfo> multiviewCreateInfo,
+                                 const VkImageLayout initialColorImageLayout = VK_IMAGE_LAYOUT_UNDEFINED)
+{
+    const VkAttachmentDescription colorAttachmentDescription = {
+        (VkAttachmentDescriptionFlags)0,          // VkAttachmentDescriptionFlags flags;
+        colorFormat,                              // VkFormat format;
+        VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits samples;
+        VK_ATTACHMENT_LOAD_OP_CLEAR,              // VkAttachmentLoadOp loadOp;
+        VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp storeOp;
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp stencilLoadOp;
+        VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp stencilStoreOp;
+        initialColorImageLayout,                  // VkImageLayout initialLayout;
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout finalLayout;
+    };
+    std::vector<VkAttachmentDescription> attachmentDescriptions(numAttachments, colorAttachmentDescription);
+
+    // Create a subpass for each attachment (each attachement is a layer of an arrayed image).
+    std::vector<VkAttachmentReference> colorAttachmentReferences(numAttachments);
+    std::vector<VkSubpassDescription> subpasses;
+
+    // Ordering here must match the framebuffer attachments
+    for (uint32_t i = 0; i < numAttachments; ++i)
+    {
+        const VkAttachmentReference attachmentRef = {
+            i,                                       // uint32_t attachment;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout layout;
+        };
+
+        colorAttachmentReferences[i] = attachmentRef;
+
+        const VkSubpassDescription subpassDescription = {
+            (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags flags;
+            VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
+            0u,                              // uint32_t inputAttachmentCount;
+            nullptr,                         // const VkAttachmentReference* pInputAttachments;
+            1u,                              // uint32_t colorAttachmentCount;
+            &colorAttachmentReferences[i],   // const VkAttachmentReference* pColorAttachments;
+            nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
+            0u,                              // uint32_t preserveAttachmentCount;
+            nullptr                          // const uint32_t* pPreserveAttachments;
+        };
+        subpasses.push_back(subpassDescription);
+    }
+
+    const VkRenderPassCreateInfo renderPassInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,            // VkStructureType sType;
+        multiviewCreateInfo.get(),                            // const void* pNext;
+        (VkRenderPassCreateFlags)0,                           // VkRenderPassCreateFlags flags;
+        static_cast<uint32_t>(attachmentDescriptions.size()), // uint32_t attachmentCount;
+        &attachmentDescriptions[0],                           // const VkAttachmentDescription* pAttachments;
+        static_cast<uint32_t>(subpasses.size()),              // uint32_t subpassCount;
+        &subpasses[0],                                        // const VkSubpassDescription* pSubpasses;
+        0u,                                                   // uint32_t dependencyCount;
+        nullptr                                               // const VkSubpassDependency* pDependencies;
+    };
+
+    return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
+}
+
+inline VkImageSubresourceRange makeColorSubresourceRange(const int baseArrayLayer, const int layerCount)
+{
+    return makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, static_cast<uint32_t>(baseArrayLayer),
+                                     static_cast<uint32_t>(layerCount));
 }
 
 tcu::TestStatus NoPositionInstance::iterate(void)
 {
-    const auto &vki               = m_context.getInstanceInterface();
-    const auto &vkd               = m_context.getDeviceInterface();
-    const auto physicalDevice     = m_context.getPhysicalDevice();
-    const auto device             = m_context.getDevice();
-    const auto queue              = m_context.getUniversalQueue();
-    const auto qIndex             = m_context.getUniversalQueueFamilyIndex();
-    auto &alloc                   = m_context.getDefaultAllocator();
-    const auto format             = NoPositionCase::getImageFormat();
-    const auto extent             = NoPositionCase::getImageExtent();
-    const auto color              = NoPositionCase::getBackGroundColor();
+    const bool useDeviceGroup = m_params.useViewIndexAsDeviceIndex;
+    const auto &vki           = m_context.getInstanceInterface();
+    const auto &vkd           = useDeviceGroup ? getDeviceInterface() : m_context.getDeviceInterface();
+    const auto physicalDevice = useDeviceGroup ? getPhysicalDevice() : m_context.getPhysicalDevice();
+    const auto device         = useDeviceGroup ? getDevice() : m_context.getDevice();
+    const auto qIndex         = useDeviceGroup ? m_queueFamilyIndex : m_context.getUniversalQueueFamilyIndex();
+    const auto queue          = useDeviceGroup ? getDeviceQueue(vkd, device, qIndex, 0) : m_context.getUniversalQueue();
+    auto &alloc               = useDeviceGroup ? *m_allocator : m_context.getDefaultAllocator();
+    const auto format         = NoPositionCase::getImageFormat();
+    const auto extent         = NoPositionCase::getImageExtent();
+    const auto bgColor        = NoPositionCase::getBackGroundColor();
     const VkImageUsageFlags usage = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-    const auto viewType           = (m_params.numViews > 1u ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
+    const auto viewType           = (m_numViews > 1u ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
     const bool tess               = m_params.tessellation();
     VkShaderStageFlags stageFlags = 0u;
 
@@ -439,16 +728,18 @@ tcu::TestStatus NoPositionInstance::iterate(void)
     frag = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
     stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
+    const uint32_t layers = m_numViews;
+
     // Color attachment.
     const VkImageCreateInfo colorImageInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
         nullptr,                             // const void* pNext;
         0u,                                  // VkImageCreateFlags flags;
-        VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
+        vk::VK_IMAGE_TYPE_2D,                // VkImageType imageType;
         format,                              // VkFormat format;
         extent,                              // VkExtent3D extent;
         1u,                                  // uint32_t mipLevels;
-        m_params.numViews,                   // uint32_t arrayLayers;
+        layers,                              // uint32_t arrayLayers;
         VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits samples;
         VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
         usage,                               // VkImageUsageFlags usage;
@@ -459,97 +750,75 @@ tcu::TestStatus NoPositionInstance::iterate(void)
     };
     ImageWithMemory colorImage(vkd, device, alloc, colorImageInfo, MemoryRequirement::Any);
 
-    const auto subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_params.numViews);
-    const auto colorImageView   = makeImageView(vkd, device, colorImage.get(), viewType, format, subresourceRange);
+    const auto subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, layers);
 
     // Vertices and vertex buffer.
-    std::vector<tcu::Vec4> vertices = {
+    const uint32_t numVertices            = 3;
+    const tcu::Vec4 vertices[numVertices] = {
         tcu::Vec4(0.0f, -0.5f, 0.0f, 1.0f),
         tcu::Vec4(0.5f, 0.5f, 0.0f, 1.0f),
         tcu::Vec4(-0.5f, 0.5f, 0.0f, 1.0f),
     };
 
-    const auto vertexBufferSize   = static_cast<VkDeviceSize>(vertices.size() * sizeof(decltype(vertices)::value_type));
+    const auto vertexBufferSize   = static_cast<VkDeviceSize>(numVertices * sizeof(vertices[0]));
     const auto vertexBufferInfo   = makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     const auto vertexBufferOffset = static_cast<VkDeviceSize>(0);
     BufferWithMemory vertexBuffer(vkd, device, alloc, vertexBufferInfo, MemoryRequirement::HostVisible);
 
     auto &vertexBufferAlloc = vertexBuffer.getAllocation();
     void *vertexBufferPtr   = vertexBufferAlloc.getHostPtr();
-    deMemcpy(vertexBufferPtr, vertices.data(), static_cast<size_t>(vertexBufferSize));
+    deMemcpy(vertexBufferPtr, &vertices[0], static_cast<size_t>(vertexBufferSize));
     flushAlloc(vkd, device, vertexBufferAlloc);
 
-    // Render pass.
-    const VkAttachmentDescription colorAttachment = {
-        0u,                                       // VkAttachmentDescriptionFlags flags;
-        format,                                   // VkFormat format;
-        VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits samples;
-        VK_ATTACHMENT_LOAD_OP_CLEAR,              // VkAttachmentLoadOp loadOp;
-        VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp storeOp;
-        VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp stencilLoadOp;
-        VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp stencilStoreOp;
-        VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout initialLayout;
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout finalLayout;
-    };
-
-    const VkAttachmentReference colorAttachmentReference = {
-        0u,                                       // uint32_t attachment;
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout layout;
-    };
-
-    const VkSubpassDescription subpassDescription = {
-        0u,                              // VkSubpassDescriptionFlags flags;
-        VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
-        0u,                              // uint32_t inputAttachmentCount;
-        nullptr,                         // const VkAttachmentReference* pInputAttachments;
-        1u,                              // uint32_t colorAttachmentCount;
-        &colorAttachmentReference,       // const VkAttachmentReference* pColorAttachments;
-        0u,                              // const VkAttachmentReference* pResolveAttachments;
-        nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
-        0u,                              // uint32_t preserveAttachmentCount;
-        nullptr,                         // const uint32_t* pPreserveAttachments;
-    };
-
     de::MovePtr<VkRenderPassMultiviewCreateInfo> multiviewInfo;
-    uint32_t viewMask        = 0u;
-    uint32_t correlationMask = 0u;
+    std::vector<uint32_t> viewMasks;
+    std::vector<uint32_t> correlationMasks;
 
-    if (m_params.numViews > 1u)
+    uint32_t subpassCount = 1;
+
+    if ((m_numViews > 1u) || (m_params.useViewIndexAsDeviceIndex))
     {
-        for (uint32_t viewIdx = 0u; viewIdx < m_params.numViews; ++viewIdx)
+        if (m_params.useViewIndexAsDeviceIndex)
         {
-            viewMask |= (1 << viewIdx);
-            correlationMask |= (1 << viewIdx);
+            // In case of useViewIndexAsDeviceIndex,
+            // each view has its own view mask
+            viewMasks.resize(m_numViews);
+            correlationMasks.resize(m_numViews);
+
+            for (uint32_t viewIdx = 0u; viewIdx < m_numViews; ++viewIdx)
+            {
+                viewMasks[viewIdx] |= (1 << viewIdx);
+                correlationMasks[viewIdx] |= (1 << viewIdx);
+            }
+
+            subpassCount = de::sizeU32(viewMasks);
+        }
+        else
+        {
+            viewMasks.resize(1);
+            correlationMasks.resize(1);
+
+            for (uint32_t viewIdx = 0u; viewIdx < m_numViews; ++viewIdx)
+            {
+                viewMasks[0] |= (1 << viewIdx);
+                correlationMasks[0] |= (1 << viewIdx);
+            }
         }
 
         multiviewInfo = de::MovePtr<VkRenderPassMultiviewCreateInfo>(new VkRenderPassMultiviewCreateInfo{
             VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO, // VkStructureType sType;
             nullptr,                                             // const void* pNext;
-            1u,                                                  // uint32_t subpassCount;
-            &viewMask,                                           // const uint32_t* pViewMasks;
+            de::sizeU32(viewMasks),                              // uint32_t subpassCount;
+            de::dataOrNull(viewMasks),                           // const uint32_t* pViewMasks;
             0u,                                                  // uint32_t dependencyCount;
             nullptr,                                             // const int32_t* pViewOffsets;
-            1u,                                                  // uint32_t correlationMaskCount;
-            &correlationMask,                                    // const uint32_t* pCorrelationMasks;
+            de::sizeU32(correlationMasks),                       // uint32_t correlationMaskCount;
+            de::dataOrNull(correlationMasks),                    // const uint32_t* pCorrelationMasks;
         });
     }
 
-    const VkRenderPassCreateInfo renderPassInfo = {
-        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,                // VkStructureType sType;
-        (m_params.numViews > 1u) ? multiviewInfo.get() : nullptr, // const void* pNext;
-        0u,                                                       // VkRenderPassCreateFlags flags;
-        1u,                                                       // uint32_t attachmentCount;
-        &colorAttachment,                                         // const VkAttachmentDescription* pAttachments;
-        1u,                                                       // uint32_t subpassCount;
-        &subpassDescription,                                      // const VkSubpassDescription* pSubpasses;
-        0u,                                                       // uint32_t dependencyCount;
-        nullptr,                                                  // const VkSubpassDependency* pDependencies;
-    };
-
-    RenderPassWrapper renderPass(m_params.pipelineConstructionType, vkd, device, &renderPassInfo);
-
-    // Framebuffer.
-    renderPass.createFramebuffer(vkd, device, *colorImage, colorImageView.get(), extent.width, extent.height);
+    RenderPassWrapper renderPass(makeRenderPass(vkd, device, m_params.pipelineConstructionType, format, subpassCount,
+                                                multiviewInfo, VK_IMAGE_LAYOUT_UNDEFINED));
 
     // Descriptor set layout and pipeline layout.
     DescriptorSetLayoutBuilder layoutBuilder;
@@ -566,30 +835,65 @@ tcu::TestStatus NoPositionInstance::iterate(void)
     const std::vector<VkRect2D> scissors{makeRect2D(extent)};
 
     const auto primitiveTopology(tess ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    const VkPipelineCreateFlags createFlags = m_params.useDeviceIndexAsViewIndex ?
+    const VkPipelineCreateFlags createFlags = m_params.useViewIndexAsDeviceIndex ?
                                                   VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT :
                                                   VkPipelineCreateFlagBits(0u);
-    GraphicsPipelineWrapper pipeline(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(),
-                                     m_params.pipelineConstructionType, createFlags);
-    pipeline.setDefaultTopology(primitiveTopology)
-        .setDefaultRasterizationState()
-        .setDefaultMultisampleState()
-        .setDefaultDepthStencilState()
-        .setDefaultColorBlendState()
-        .setupVertexInputState()
-        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vert, DE_NULL, tesc,
-                                          tese, geom)
-        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, frag)
-        .setupFragmentOutputState(*renderPass)
-        .setMonolithicPipelineLayout(pipelineLayout)
-        .buildPipeline();
+
+    std::vector<GraphicsPipelineWrapper> pipelines;
+    pipelines.reserve(subpassCount);
+
+    std::vector<de::SharedPtr<Unique<VkImageView>>> colorAttachments;
+    std::vector<VkImage> images;
+    std::vector<VkImageView> attachmentHandles;
+
+    VkPipeline basePipeline = VK_NULL_HANDLE;
+
+    for (uint32_t subpassNdx = 0; subpassNdx < subpassCount; ++subpassNdx)
+    {
+        colorAttachments.push_back(makeSharedPtr(makeImageView(
+            vkd, device, *colorImage, viewType, format,
+            makeColorSubresourceRange(0, m_params.useViewIndexAsDeviceIndex ? subpassCount : m_numViews))));
+        images.push_back(*colorImage);
+        attachmentHandles.push_back(**colorAttachments.back());
+
+#ifndef CTS_USES_VULKANSC // Pipeline derivatives are forbidden in Vulkan SC
+        pipelines.emplace_back(
+            vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType,
+            createFlags | (basePipeline == VK_NULL_HANDLE ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT :
+                                                            VK_PIPELINE_CREATE_DERIVATIVE_BIT));
+#else
+        pipelines.emplace_back(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(),
+                               m_params.pipelineConstructionType, createFlags);
+#endif // CTS_USES_VULKANSC
+
+        pipelines.back()
+            .setDefaultTopology(primitiveTopology)
+            .setDefaultRasterizationState()
+            .setDefaultMultisampleState()
+            .setDefaultDepthStencilState()
+            .setDefaultColorBlendState()
+            .setupVertexInputState()
+            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, subpassNdx, vert,
+                                              nullptr, tesc, tese, geom)
+            .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, frag)
+            .setupFragmentOutputState(*renderPass)
+            .setMonolithicPipelineLayout(pipelineLayout)
+            .buildPipeline(VK_NULL_HANDLE, basePipeline, -1);
+
+        if (pipelines.front().wasBuild())
+            basePipeline = pipelines.front().getPipeline();
+    }
+
+    renderPass.createFramebuffer(vkd, device, static_cast<uint32_t>(attachmentHandles.size()), &images[0],
+                                 &attachmentHandles[0], extent.width, extent.height);
 
     // Descriptor set and output SSBO if needed.
     Move<VkDescriptorPool> descriptorPool;
     Move<VkDescriptorSet> descriptorSet;
     de::MovePtr<BufferWithMemory> ssboBuffer;
-    const auto ssboElementCount = kStageCount * m_params.numViews;
-    const auto ssboBufferSize   = static_cast<VkDeviceSize>(ssboElementCount * sizeof(uint32_t));
+    const uint32_t numCountersPerStage = m_params.useViewIndexAsDeviceIndex ? max_devgrp_phydevices : m_params.numViews;
+    const auto ssboElementCount        = kStageCount * numCountersPerStage;
+    const auto ssboBufferSize          = static_cast<VkDeviceSize>(ssboElementCount * sizeof(uint32_t));
 
     if (m_params.useSSBO)
     {
@@ -616,31 +920,42 @@ tcu::TestStatus NoPositionInstance::iterate(void)
         updateBuilder.update(vkd, device);
     }
 
-    // Output verification buffer.
-    const auto tcuFormat   = mapVkFormat(format);
-    const auto pixelSize   = static_cast<uint32_t>(tcu::getPixelSize(tcuFormat));
-    const auto layerPixels = extent.width * extent.height;
-    const auto layerBytes  = layerPixels * pixelSize;
-    const auto totalBytes  = layerBytes * m_params.numViews;
-
-    const auto verificationBufferInfo = makeBufferCreateInfo(totalBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory verificationBuffer(vkd, device, alloc, verificationBufferInfo, MemoryRequirement::HostVisible);
-
     // Command pool and buffer.
     const auto cmdPool      = makeCommandPool(vkd, device, qIndex);
     const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     const auto cmdBuffer    = cmdBufferPtr.get();
 
+    const std::vector<VkClearValue> colors(subpassCount, makeClearValueColorVec4(bgColor));
+
     // Render triangle.
     beginCommandBuffer(vkd, cmdBuffer);
-    renderPass.begin(vkd, cmdBuffer, scissors.front(), color);
-    pipeline.bind(cmdBuffer);
-    vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-    if (m_params.useSSBO)
-        vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u,
-                                  &descriptorSet.get(), 0u, nullptr);
-    vkd.cmdDraw(cmdBuffer, static_cast<uint32_t>(vertices.size()), 1u, 0u, 0u);
+    renderPass.begin(vkd, cmdBuffer, scissors.front(), subpassCount, &colors[0]);
+
+    // Draw
+    for (uint32_t subpassNdx = 0; subpassNdx < subpassCount; ++subpassNdx)
+    {
+        if (subpassNdx != 0)
+            renderPass.nextSubpass(vkd, cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+
+        pipelines[subpassNdx].bind(cmdBuffer);
+        if (m_params.useSSBO)
+            vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u,
+                                      &descriptorSet.get(), 0u, nullptr);
+        vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+        vkd.cmdDraw(cmdBuffer, numVertices, 1u, 0u, 0u);
+    }
+
     renderPass.end(vkd, cmdBuffer);
+
+    // Output verification buffer.
+    const auto tcuFormat   = mapVkFormat(format);
+    const auto pixelSize   = static_cast<uint32_t>(tcu::getPixelSize(tcuFormat));
+    const auto layerPixels = extent.width * extent.height;
+    const auto layerBytes  = layerPixels * pixelSize;
+    const auto totalBytes  = layerBytes * m_numViews;
+
+    const auto verificationBufferInfo = makeBufferCreateInfo(totalBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    BufferWithMemory verificationBuffer(vkd, device, alloc, verificationBufferInfo, MemoryRequirement::HostVisible);
 
     // Copy output image to verification buffer.
     const auto preTransferBarrier = makeImageMemoryBarrier(
@@ -649,7 +964,7 @@ tcu::TestStatus NoPositionInstance::iterate(void)
     vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
                            0u, nullptr, 0u, nullptr, 1u, &preTransferBarrier);
 
-    const auto subresourceLayers = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, m_params.numViews);
+    const auto subresourceLayers       = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, m_numViews);
     const VkBufferImageCopy copyRegion = {
         0ull,                  // VkDeviceSize bufferOffset;
         0u,                    // uint32_t bufferRowLength;
@@ -675,7 +990,8 @@ tcu::TestStatus NoPositionInstance::iterate(void)
 
     // Submit commands.
     endCommandBuffer(vkd, cmdBuffer);
-    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+    const uint32_t deviceMask = (1 << m_numPhysDevices) - 1;
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer, useDeviceGroup, deviceMask);
 
     // Verify the image has the background color.
     auto &verificationBufferAlloc = verificationBuffer.getAllocation();
@@ -696,7 +1012,7 @@ tcu::TestStatus NoPositionInstance::iterate(void)
             for (int x = 0; x < iWidth; ++x)
             {
                 const auto pixel = pixels.getPixel(x, y);
-                if (pixel != color)
+                if (pixel != bgColor)
                 {
                     std::ostringstream msg;
                     msg << "Unexpected color found at pixel (" << x << ", " << y << ") in layer " << layer;
@@ -723,23 +1039,33 @@ tcu::TestStatus NoPositionInstance::iterate(void)
 
         // Minimum accepted counter values.
         // Vertex, Tessellation Control, Tesellation Evaluation, Geometry.
+        uint32_t numActualCountersPerStage     = m_numViews;
         uint32_t expectedCounters[kStageCount] = {3u, 3u, 3u, 1u};
 
         // Verify.
         for (uint32_t stageIdx = 0u; stageIdx < kStageCount; ++stageIdx)
-            for (uint32_t viewIdx = 0u; viewIdx < m_params.numViews; ++viewIdx)
+            for (uint32_t counterIdx = 0u; counterIdx < numActualCountersPerStage; ++counterIdx)
             {
                 // If the stage is not selected, the expected value is exactly zero. Otherwise, it must be at least as expectedCounters.
-                const uint32_t minVal =
-                    ((m_params.selectedStages & (1u << stageIdx)) ? expectedCounters[stageIdx] : 0u);
-                const uint32_t storedVal = ssboCounters[stageIdx * m_params.numViews + viewIdx];
-                const bool ok =
-                    ((minVal == 0u) ? true /* continue */
-                     :
-                     (storedVal == minVal) ? true
-                                             // All shaders must process at least gl_ViewIndex|gl_DeviceIndex times.
-                                             :
-                                             ((storedVal % minVal) == 0u));
+                uint32_t expectedVal     = expectedCounters[stageIdx];
+                uint32_t minVal          = ((m_params.selectedStages & (1u << stageIdx)) ? expectedVal : 0u);
+                const uint32_t storedVal = ssboCounters[stageIdx * numCountersPerStage + counterIdx];
+
+                bool ok = false;
+                if (minVal != 0u)
+                {
+                    if (storedVal != 0)
+                        ok = (storedVal == minVal) ?
+                                 true
+                                 // All shaders must process at least gl_ViewIndex|gl_DeviceIndex times.
+                                 :
+                                 ((storedVal % minVal) == 0u);
+                    else
+                        ok = false;
+                }
+                else
+                    ok = true; /* continue */
+
                 if (!ok)
                 {
                     const char *stageNames[kStageCount] = {
@@ -750,7 +1076,7 @@ tcu::TestStatus NoPositionInstance::iterate(void)
                     };
 
                     std::ostringstream msg;
-                    msg << "Unexpected SSBO counter value in view " << viewIdx << " for the " << stageNames[stageIdx]
+                    msg << "Unexpected SSBO counter value in view " << counterIdx << " for the " << stageNames[stageIdx]
                         << " shader:"
                         << " got " << storedVal << " but expected " << minVal;
                     TCU_FAIL(msg.str());
@@ -836,13 +1162,15 @@ tcu::TestCaseGroup *createNoPositionTests(tcu::TestContext &testCtx,
                                         ((writeMask & STAGE_GEOMETRY) ? "1" : "0");
 
                         TestParams params{};
-                        params.pipelineConstructionType  = pipelineConstructionType;
-                        params.selectedStages            = stages;
-                        params.writeStages               = writeMask;
-                        params.numViews                  = viewCount;
+                        params.pipelineConstructionType = pipelineConstructionType;
+                        params.selectedStages           = stages;
+                        params.writeStages              = writeMask;
+                        // In case of useDeviceIndexAsViewIndex,
+                        // number of physical devices in the group will decide the number of views
+                        params.numViews                  = useDeviceIndexAsViewIndex ? 0u : viewCount;
                         params.explicitDeclarations      = explicitDeclarations;
                         params.useSSBO                   = useSSBO;
-                        params.useDeviceIndexAsViewIndex = useDeviceIndexAsViewIndex;
+                        params.useViewIndexAsDeviceIndex = useDeviceIndexAsViewIndex;
 
                         viewGroup->addChild(new NoPositionCase(testCtx, testName, params));
                     }
