@@ -232,7 +232,6 @@ private:
 tcu::TestStatus NonSequentialInstance::iterate(void)
 {
     tcu::TestLog &log                              = m_context.getTestContext().getLog();
-    const vk::DeviceInterface &vk                  = m_context.getDeviceInterface();
     const vk::PlatformInterface &vkp               = m_context.getPlatformInterface();
     const vk::VkInstance vki                       = m_context.getInstance();
     const vk::InstanceInterface &instanceInterface = m_context.getInstanceInterface();
@@ -240,12 +239,12 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
     const vk::VkPhysicalDevice physicalDevice      = m_context.getPhysicalDevice();
     const vk::Move<vk::VkDevice> device =
         createDynamicVertexStateDevice(m_context, queueFamilyIndex, m_pipelineConstructionType);
+    const vk::DeviceDriver vk(vkp, vki, *device, m_context.getUsedApiVersion(),
+                              m_context.getTestContext().getCommandLine());
     vk::SimpleAllocator allocator(
         vk, *device,
         getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
-    const vk::DeviceDriver deviceDriver(vkp, vki, *device, m_context.getUsedApiVersion(),
-                                        m_context.getTestContext().getCommandLine());
-    const vk::VkQueue queue      = getDeviceQueue(deviceDriver, *device, queueFamilyIndex, 0u);
+    const vk::VkQueue queue      = getDeviceQueue(vk, *device, queueFamilyIndex, 0u);
     const auto &deviceExtensions = m_context.getDeviceExtensions();
 
     // Create shaders

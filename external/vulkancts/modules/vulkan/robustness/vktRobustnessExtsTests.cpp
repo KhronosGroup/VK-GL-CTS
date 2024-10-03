@@ -545,8 +545,9 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
                 VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT)
                 TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT is not supported");
 #ifndef CTS_USES_VULKANSC
-            if ((formatProperties3.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) !=
-                VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR)
+            if ((!m_data.formatQualifier) &&
+                ((formatProperties3.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) !=
+                 VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
                 TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT is not supported");
 #endif // CTS_USES_VULKANSC
             break;

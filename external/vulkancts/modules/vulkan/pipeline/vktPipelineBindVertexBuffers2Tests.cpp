@@ -615,10 +615,10 @@ public:
                                         context.getTestContext().getCommandLine()))
         , m_allocator(getDeviceInterface(), getDevice(),
                       getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), m_physicalDevice))
-        , m_pipelineWrapper(context.getInstanceInterface(), context.getDeviceInterface(), m_physicalDevice, getDevice(),
+        , m_pipelineWrapper(context.getInstanceInterface(), getDeviceInterface(), m_physicalDevice, getDevice(),
                             m_context.getDeviceExtensions(), m_pipelineConstructionType, 0u)
-        , m_vertShaderModule(context.getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("vert"))
-        , m_fragShaderModule(context.getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("frag"))
+        , m_vertShaderModule(getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("vert"))
+        , m_fragShaderModule(getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("frag"))
     {
     }
     virtual ~BindVertexBuffers2Instance(void) = default;

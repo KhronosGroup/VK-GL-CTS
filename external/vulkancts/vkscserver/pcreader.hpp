@@ -292,7 +292,6 @@ private:
 
         return sc1;
     }
-
     const uint64_t m_CacheSize;       // size of data pointed to by m_CacheData in bytes
     const uint8_t *const m_CacheData; // pipeline cache data being read by this reader
     bool m_IsLegacy;                  // is legacy (pre 1.0.5) pipeline cache format
