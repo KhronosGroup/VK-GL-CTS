@@ -1718,6 +1718,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageSparseResidency.cpp",
         "external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesMipmapSparseResidency.cpp",
         "external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesMultisampledImageSparseBinding.cpp",
+        "external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesMultisampledImageSparseResidency.cpp",
         "external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesQueueBindSparseTests.cpp",
         "external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesShaderIntrinsics.cpp",
         "external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesShaderIntrinsicsBase.cpp",
