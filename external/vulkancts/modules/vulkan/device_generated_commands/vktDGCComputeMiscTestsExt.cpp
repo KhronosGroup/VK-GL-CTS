@@ -410,9 +410,9 @@ tcu::TestStatus manyExecutesRun(Context &context, ManyDispatchesParams params)
                 (VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR | VK_BUFFER_USAGE_2_PREPROCESS_BUFFER_BIT_EXT);
 
             const VkBufferUsageFlags2CreateInfoKHR usageFlags2CreateInfo = {
-                VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR, //	VkStructureType			sType;
-                nullptr,                                                //	const void*				pNext;
-                bufferUsage,                                            //	VkBufferUsageFlags2KHR	usage;
+                VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR, // VkStructureType sType;
+                nullptr,                                                // const void* pNext;
+                bufferUsage,                                            // VkBufferUsageFlags2KHR usage;
             };
 
             preprocessBufferCreateInfo.pNext = &usageFlags2CreateInfo;

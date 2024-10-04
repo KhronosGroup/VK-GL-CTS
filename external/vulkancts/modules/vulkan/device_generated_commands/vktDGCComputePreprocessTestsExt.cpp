@@ -288,16 +288,16 @@ tcu::TestStatus parallelPreprocessRun(Context &context, PreprocessParams params)
         const auto &countBufferAddress = (useCountBuffer ? sequencesCountBuffers.at(i)->getDeviceAddress() : 0ull);
         const auto infoSequencesCount  = (useCountBuffer ? fakeCount : realCount);
 
-        cmdInfos.emplace_back(stageFlags,                      //	VkShaderStageFlags			shaderStages;
-                              VK_NULL_HANDLE,                  //	VkIndirectExecutionSetEXT	indirectExecutionSet;
-                              *cmdsLayout,                     //	VkIndirectCommandsLayoutEXT	indirectCommandsLayout;
-                              genCmdBuffer.getDeviceAddress(), //	VkDeviceAddress				indirectAddress;
-                              genCmdsBufferSize,               //	VkDeviceSize				indirectAddressSize;
-                              preprocessBuffer.getDeviceAddress(), //	VkDeviceAddress				preprocessAddress;
-                              preprocessBuffer.getSize(),          //	VkDeviceSize				preprocessSize;
-                              infoSequencesCount,                  //	uint32_t					maxSequenceCount;
-                              countBufferAddress,                  //	VkDeviceAddress				sequenceCountAddress;
-                              0u,                                  //	uint32_t					maxDrawCount;
+        cmdInfos.emplace_back(stageFlags,                      // VkShaderStageFlags shaderStages;
+                              VK_NULL_HANDLE,                  // VkIndirectExecutionSetEXT indirectExecutionSet;
+                              *cmdsLayout,                     // VkIndirectCommandsLayoutEXT indirectCommandsLayout;
+                              genCmdBuffer.getDeviceAddress(), // VkDeviceAddress indirectAddress;
+                              genCmdsBufferSize,               // VkDeviceSize indirectAddressSize;
+                              preprocessBuffer.getDeviceAddress(), // VkDeviceAddress preprocessAddress;
+                              preprocessBuffer.getSize(),          // VkDeviceSize preprocessSize;
+                              infoSequencesCount,                  // uint32_t maxSequenceCount;
+                              countBufferAddress,                  // VkDeviceAddress sequenceCountAddress;
+                              0u,                                  // uint32_t maxDrawCount;
                               *pipeline);
     }
 

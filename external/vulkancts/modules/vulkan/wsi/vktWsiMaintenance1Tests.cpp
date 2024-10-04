@@ -148,9 +148,9 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
     checkAllSupported(supportedExtensions, extensions);
 
     VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenance1Features{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT, // VkStructureType	sType;
-        nullptr,                                                                // void*			pNext;
-        VK_TRUE,                                                                // VkBool32		swapchainMaintenance1;
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT, // VkStructureType sType;
+        nullptr,                                                                // void* pNext;
+        VK_TRUE,                                                                // VkBool32 swapchainMaintenance1;
     };
 
     VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();

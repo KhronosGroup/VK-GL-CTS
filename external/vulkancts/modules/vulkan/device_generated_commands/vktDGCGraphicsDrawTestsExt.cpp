@@ -1383,23 +1383,23 @@ tcu::TestStatus DGCDrawInstance::iterate(void)
     const auto vertexAttrib = makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32B32A32_SFLOAT, 0u);
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, //	VkStructureType								sType;
-        nullptr,                                                   //	const void*									pNext;
-        0u,                                                        //	VkPipelineVertexInputStateCreateFlags		flags;
-        1u,                                                        //	uint32_t									vertexBindingDescriptionCount;
-        &vertexBinding, //	const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
-        1u,             //	uint32_t									vertexAttributeDescriptionCount;
-        &vertexAttrib,  //	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                   // const void* pNext;
+        0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
+        1u,                                                        // uint32_t vertexBindingDescriptionCount;
+        &vertexBinding, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+        1u,             // uint32_t vertexAttributeDescriptionCount;
+        &vertexAttrib,  // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
     };
 
     const std::vector<VkDynamicState> dynamicStates{VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE};
 
     const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, //	VkStructureType						sType;
-        nullptr,                                              //	const void*							pNext;
-        0u,                                                   //	VkPipelineDynamicStateCreateFlags	flags;
-        de::sizeU32(dynamicStates),                           //	uint32_t							dynamicStateCount;
-        de::dataOrNull(dynamicStates),                        //	const VkDynamicState*				pDynamicStates;
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                              // const void* pNext;
+        0u,                                                   // VkPipelineDynamicStateCreateFlags flags;
+        de::sizeU32(dynamicStates),                           // uint32_t dynamicStateCount;
+        de::dataOrNull(dynamicStates),                        // const VkDynamicState* pDynamicStates;
     };
 
     // Prepare indirect execution set at the same time as the pipelines.
@@ -1594,16 +1594,16 @@ tcu::TestStatus DGCDrawInstance::iterate(void)
 
     // Will be used for both preprocessing and execution.
     const DGCGenCmdsInfo generatedCommandsInfo(
-        stageFlags,                          //	VkShaderStageFlags			shaderStages;
-        indirectExecutionSet,                //	VkIndirectExecutionSetEXT	indirectExecutionSet;
-        *cmdsLayout,                         //	VkIndirectCommandsLayoutEXT	indirectCommandsLayout;
-        dgcBuffer.getDeviceAddress(),        //	VkDeviceAddress				indirectAddress;
-        dgcBufferSize,                       //	VkDeviceSize				indirectAddressSize;
-        preprocessBuffer.getDeviceAddress(), //	VkDeviceAddress				preprocessAddress;
-        preprocessBuffer.getSize(),          //	VkDeviceSize				preprocessSize;
-        sequenceCount,                       //	uint32_t					maxSequenceCount;
-        0ull,                                //	VkDeviceAddress				sequenceCountAddress;
-        0u,                                  //	uint32_t					maxDrawCount;
+        stageFlags,                          // VkShaderStageFlags shaderStages;
+        indirectExecutionSet,                // VkIndirectExecutionSetEXT indirectExecutionSet;
+        *cmdsLayout,                         // VkIndirectCommandsLayoutEXT indirectCommandsLayout;
+        dgcBuffer.getDeviceAddress(),        // VkDeviceAddress indirectAddress;
+        dgcBufferSize,                       // VkDeviceSize indirectAddressSize;
+        preprocessBuffer.getDeviceAddress(), // VkDeviceAddress preprocessAddress;
+        preprocessBuffer.getSize(),          // VkDeviceSize preprocessSize;
+        sequenceCount,                       // uint32_t maxSequenceCount;
+        0ull,                                // VkDeviceAddress sequenceCountAddress;
+        0u,                                  // uint32_t maxDrawCount;
         *normalPipeline, shadersVecPtr);
 
     // When preprocessing, we need to use a separate command buffer to record state.

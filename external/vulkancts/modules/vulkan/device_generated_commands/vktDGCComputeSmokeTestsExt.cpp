@@ -448,16 +448,16 @@ tcu::TestStatus SmokeTestInstance::iterate(void)
     const auto indirectCmdsBufferAddress = getBufferDeviceAddress(ctx.vkd, ctx.device, indirectCmdsBufferHandle);
 
     const DGCGenCmdsInfo generatedCommandsInfo(
-        stages,                              //	VkShaderStageFlags			shaderStages;
-        VK_NULL_HANDLE,                      //	VkIndirectExecutionSetEXT	indirectExecutionSet;
-        *cmdLayout,                          //	VkIndirectCommandsLayoutEXT	indirectCommandsLayout;
-        indirectCmdsBufferAddress,           //	VkDeviceAddress				indirectAddress;
-        indirectCmdsBufferSize,              //	VkDeviceSize				indirectAddressSize;
-        preprocessBuffer.getDeviceAddress(), //	VkDeviceAddress				preprocessAddress;
-        preprocessBuffer.getSize(),          //	VkDeviceSize				preprocessSize;
-        m_params.sequenceCount,              //	uint32_t					maxSequenceCount;
-        0ull,                                //	VkDeviceAddress				sequenceCountAddress;
-        0u,                                  //	uint32_t					maxDrawCount;
+        stages,                              // VkShaderStageFlags shaderStages;
+        VK_NULL_HANDLE,                      // VkIndirectExecutionSetEXT indirectExecutionSet;
+        *cmdLayout,                          // VkIndirectCommandsLayoutEXT indirectCommandsLayout;
+        indirectCmdsBufferAddress,           // VkDeviceAddress indirectAddress;
+        indirectCmdsBufferSize,              // VkDeviceSize indirectAddressSize;
+        preprocessBuffer.getDeviceAddress(), // VkDeviceAddress preprocessAddress;
+        preprocessBuffer.getSize(),          // VkDeviceSize preprocessSize;
+        m_params.sequenceCount,              // uint32_t maxSequenceCount;
+        0ull,                                // VkDeviceAddress sequenceCountAddress;
+        0u,                                  // uint32_t maxDrawCount;
         *compPipeline);
 
     ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *compPipelineLayout, 0u, 1u, &compDescriptorSet.get(), 0u,

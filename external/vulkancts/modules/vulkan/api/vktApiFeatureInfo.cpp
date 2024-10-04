@@ -1833,154 +1833,34 @@ tcu::TestStatus validateLimitsMaxInlineUniformTotalSize(Context &context)
         return tcu::TestStatus::fail("fail");
 }
 
-tcu::TestStatus validateRoadmap2022(Context &context)
-{
-    if (context.getUsedApiVersion() < VK_API_VERSION_1_3)
-        TCU_THROW(NotSupportedError, "Profile not supported");
-
-    const VkBool32 checkAlways     = VK_TRUE;
-    VkBool32 oneOrMoreChecksFailed = VK_FALSE;
-    TestLog &log                   = context.getTestContext().getLog();
-
-    auto vk10Features = context.getDeviceFeatures();
-    auto vk11Features = context.getDeviceVulkan11Features();
-    auto vk12Features = context.getDeviceVulkan12Features();
-
-    const auto &vk10Properties = context.getDeviceProperties2();
-    const auto &vk11Properties = context.getDeviceVulkan11Properties();
-    const auto &vk12Properties = context.getDeviceVulkan12Properties();
-    const auto &vk13Properties = context.getDeviceVulkan13Properties();
-    const auto &limits         = vk10Properties.properties.limits;
-
 #define ROADMAP_FEATURE_ITEM(STRUC, FIELD)          \
     {                                               \
         &(STRUC), &(STRUC.FIELD), #STRUC "." #FIELD \
     }
 
-    struct FeatureTable
-    {
-        void *structPtr;
-        VkBool32 *fieldPtr;
-        const char *fieldName;
-    };
+struct FeatureEntry
+{
+    void *structPtr;
+    VkBool32 *fieldPtr;
+    const char *fieldName;
+};
 
-    std::vector<FeatureTable> featureTable{
-        // Vulkan 1.0 Features
-        ROADMAP_FEATURE_ITEM(vk10Features, fullDrawIndexUint32),
-        ROADMAP_FEATURE_ITEM(vk10Features, imageCubeArray),
-        ROADMAP_FEATURE_ITEM(vk10Features, independentBlend),
-        ROADMAP_FEATURE_ITEM(vk10Features, sampleRateShading),
-        ROADMAP_FEATURE_ITEM(vk10Features, drawIndirectFirstInstance),
-        ROADMAP_FEATURE_ITEM(vk10Features, depthClamp),
-        ROADMAP_FEATURE_ITEM(vk10Features, depthBiasClamp),
-        ROADMAP_FEATURE_ITEM(vk10Features, samplerAnisotropy),
-        ROADMAP_FEATURE_ITEM(vk10Features, occlusionQueryPrecise),
-        ROADMAP_FEATURE_ITEM(vk10Features, fragmentStoresAndAtomics),
-        ROADMAP_FEATURE_ITEM(vk10Features, shaderStorageImageExtendedFormats),
-        ROADMAP_FEATURE_ITEM(vk10Features, shaderUniformBufferArrayDynamicIndexing),
-        ROADMAP_FEATURE_ITEM(vk10Features, shaderSampledImageArrayDynamicIndexing),
-        ROADMAP_FEATURE_ITEM(vk10Features, shaderStorageBufferArrayDynamicIndexing),
-        ROADMAP_FEATURE_ITEM(vk10Features, shaderStorageImageArrayDynamicIndexing),
+struct FormatEntry
+{
+    VkFormat format;
+    const std::string name;
+    VkFormatProperties properties;
+};
 
-        // Vulkan 1.1 Features
-        ROADMAP_FEATURE_ITEM(vk11Features, samplerYcbcrConversion),
+struct ProfileEntry
+{
+    std::string name;
+    void (*checkSupportFunction)(Context &);
+    tcu::TestStatus (*validateFunction)(Context &);
+};
 
-        // Vulkan 1.2 Features
-        ROADMAP_FEATURE_ITEM(vk12Features, samplerMirrorClampToEdge),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderUniformTexelBufferArrayDynamicIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderStorageTexelBufferArrayDynamicIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderUniformBufferArrayNonUniformIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderSampledImageArrayNonUniformIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderStorageBufferArrayNonUniformIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderStorageImageArrayNonUniformIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderUniformTexelBufferArrayNonUniformIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, shaderStorageTexelBufferArrayNonUniformIndexing),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingSampledImageUpdateAfterBind),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingStorageImageUpdateAfterBind),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingStorageBufferUpdateAfterBind),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingUniformTexelBufferUpdateAfterBind),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingStorageTexelBufferUpdateAfterBind),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingUpdateUnusedWhilePending),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingPartiallyBound),
-        ROADMAP_FEATURE_ITEM(vk12Features, descriptorBindingVariableDescriptorCount),
-        ROADMAP_FEATURE_ITEM(vk12Features, runtimeDescriptorArray),
-        ROADMAP_FEATURE_ITEM(vk12Features, scalarBlockLayout),
-    };
+#include "vkProfileTests.inl"
 
-    for (FeatureTable &testedFeature : featureTable)
-    {
-        if (!testedFeature.fieldPtr[0])
-        {
-            log << TestLog::Message << "Feature " << testedFeature.fieldName << "is not supported"
-                << TestLog::EndMessage;
-            oneOrMoreChecksFailed = VK_TRUE;
-        }
-    }
-
-    std::vector<FeatureLimitTableItem> featureLimitTable{
-        // Vulkan 1.0 limits
-        {PN(checkAlways), PN(limits.maxImageDimension1D), LIM_MIN_UINT32(8192)},
-        {PN(checkAlways), PN(limits.maxImageDimension2D), LIM_MIN_UINT32(8192)},
-        {PN(checkAlways), PN(limits.maxImageDimensionCube), LIM_MIN_UINT32(8192)},
-        {PN(checkAlways), PN(limits.maxImageArrayLayers), LIM_MIN_UINT32(2048)},
-        {PN(checkAlways), PN(limits.maxUniformBufferRange), LIM_MIN_UINT32(65536)},
-        {PN(checkAlways), PN(limits.bufferImageGranularity), LIM_MAX_DEVSIZE(4096)},
-        {PN(checkAlways), PN(limits.maxPerStageDescriptorSamplers), LIM_MIN_UINT32(64)},
-        {PN(checkAlways), PN(limits.maxPerStageDescriptorUniformBuffers), LIM_MIN_UINT32(15)},
-        {PN(checkAlways), PN(limits.maxPerStageDescriptorStorageBuffers), LIM_MIN_UINT32(30)},
-        {PN(checkAlways), PN(limits.maxPerStageDescriptorSampledImages), LIM_MIN_UINT32(200)},
-        {PN(checkAlways), PN(limits.maxPerStageDescriptorStorageImages), LIM_MIN_UINT32(16)},
-        {PN(checkAlways), PN(limits.maxPerStageResources), LIM_MIN_UINT32(200)},
-        {PN(checkAlways), PN(limits.maxDescriptorSetSamplers), LIM_MIN_UINT32(576)},
-        {PN(checkAlways), PN(limits.maxDescriptorSetUniformBuffers), LIM_MIN_UINT32(90)},
-        {PN(checkAlways), PN(limits.maxDescriptorSetStorageBuffers), LIM_MIN_UINT32(96)},
-        {PN(checkAlways), PN(limits.maxDescriptorSetSampledImages), LIM_MIN_UINT32(1800)},
-        {PN(checkAlways), PN(limits.maxDescriptorSetStorageImages), LIM_MIN_UINT32(144)},
-        {PN(checkAlways), PN(limits.maxFragmentCombinedOutputResources), LIM_MIN_UINT32(16)},
-        {PN(checkAlways), PN(limits.maxComputeWorkGroupInvocations), LIM_MIN_UINT32(256)},
-        {PN(checkAlways), PN(limits.maxComputeWorkGroupSize[0]), LIM_MIN_UINT32(256)},
-        {PN(checkAlways), PN(limits.maxComputeWorkGroupSize[1]), LIM_MIN_UINT32(256)},
-        {PN(checkAlways), PN(limits.maxComputeWorkGroupSize[2]), LIM_MIN_UINT32(64)},
-        {PN(checkAlways), PN(limits.subPixelPrecisionBits), LIM_MIN_UINT32(8)},
-        {PN(checkAlways), PN(limits.mipmapPrecisionBits), LIM_MIN_UINT32(6)},
-        {PN(checkAlways), PN(limits.maxSamplerLodBias), LIM_MIN_FLOAT(14.0f)},
-        {PN(checkAlways), PN(limits.pointSizeGranularity), LIM_MAX_FLOAT(0.125f)},
-        {PN(checkAlways), PN(limits.lineWidthGranularity), LIM_MAX_FLOAT(0.5f)},
-        {PN(checkAlways), PN(limits.standardSampleLocations), LIM_MIN_UINT32(1)},
-        {PN(checkAlways), PN(limits.maxColorAttachments), LIM_MIN_UINT32(7)},
-
-        // Vulkan 1.1 limits
-        {PN(checkAlways), PN(vk11Properties.subgroupSize), LIM_MIN_UINT32(4)},
-        {PN(checkAlways), PN(vk11Properties.subgroupSupportedStages),
-         LIM_MIN_UINT32(VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)},
-        {PN(checkAlways), PN(vk11Properties.subgroupSupportedOperations),
-         LIM_MIN_UINT32(VK_SUBGROUP_FEATURE_BASIC_BIT | VK_SUBGROUP_FEATURE_VOTE_BIT |
-                        VK_SUBGROUP_FEATURE_ARITHMETIC_BIT | VK_SUBGROUP_FEATURE_BALLOT_BIT |
-                        VK_SUBGROUP_FEATURE_SHUFFLE_BIT | VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT |
-                        VK_SUBGROUP_FEATURE_QUAD_BIT)},
-        // Vulkan 1.2 limits
-        {PN(checkAlways), PN(vk12Properties.shaderSignedZeroInfNanPreserveFloat16), LIM_MIN_UINT32(1)},
-        {PN(checkAlways), PN(vk12Properties.shaderSignedZeroInfNanPreserveFloat32), LIM_MIN_UINT32(1)},
-
-        // Vulkan 1.3 limits
-        {PN(checkAlways), PN(vk13Properties.maxSubgroupSize), LIM_MIN_UINT32(4)},
-    };
-
-    for (const auto &featureLimit : featureLimitTable)
-        oneOrMoreChecksFailed |= !validateLimit(featureLimit, log);
-
-    if (!context.isDeviceFunctionalitySupported("VK_KHR_global_priority"))
-    {
-        log << TestLog::Message << "VK_KHR_global_priority is not supported" << TestLog::EndMessage;
-        oneOrMoreChecksFailed = VK_TRUE;
-    }
-
-    if (oneOrMoreChecksFailed)
-        TCU_THROW(NotSupportedError, "Profile not supported");
-
-    return tcu::TestStatus::pass("Profile supported");
-}
 #endif // CTS_USES_VULKANSC
 
 void createTestDevice(Context &context, void *pNext, const char *const *ppEnabledExtensionNames,
@@ -7875,9 +7755,8 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
     {
         de::MovePtr<tcu::TestCaseGroup> profilesValidationTests(new tcu::TestCaseGroup(testCtx, "profiles"));
 
-        // Limits and features check for roadmap 2022
-        addFunctionCase(profilesValidationTests.get(), "roadmap_2022", checkApiVersionSupport<1, 3>,
-                        validateRoadmap2022);
+        for (const auto &[name, checkSupportFun, validateFun] : profileEntries)
+            addFunctionCase(profilesValidationTests.get(), name, *checkSupportFun, *validateFun);
 
         infoTests->addChild(profilesValidationTests.release());
     }

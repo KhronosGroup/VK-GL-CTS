@@ -95,10 +95,10 @@ ExecutionSetManager::ExecutionSetManager(const DeviceInterface &vkd, VkDevice de
     , m_shaderWrites()
 {
     const VkIndirectExecutionSetCreateInfoEXT createInfo = {
-        VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_CREATE_INFO_EXT, //	VkStructureType						sType;
-        nullptr,                                                  //	void*								pNext;
-        VK_INDIRECT_EXECUTION_SET_INFO_TYPE_PIPELINES_EXT,        //	VkIndirectExecutionSetInfoTypeEXT	type;
-        makeIndirectExecutionSetInfo(pipelineInfo),               //	VkIndirectExecutionSetInfoEXT		info;
+        VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_CREATE_INFO_EXT, // VkStructureType sType;
+        nullptr,                                                  // void* pNext;
+        VK_INDIRECT_EXECUTION_SET_INFO_TYPE_PIPELINES_EXT,        // VkIndirectExecutionSetInfoTypeEXT type;
+        makeIndirectExecutionSetInfo(pipelineInfo),               // VkIndirectExecutionSetInfoEXT info;
     };
 
     m_executionSet = createIndirectExecutionSetEXT(vkd, device, &createInfo);
@@ -115,10 +115,10 @@ ExecutionSetManager::ExecutionSetManager(const DeviceInterface &vkd, VkDevice de
     , m_shaderWrites()
 {
     const VkIndirectExecutionSetCreateInfoEXT createInfo = {
-        VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_CREATE_INFO_EXT, //	VkStructureType						sType;
-        nullptr,                                                  //	void*								pNext;
-        VK_INDIRECT_EXECUTION_SET_INFO_TYPE_SHADER_OBJECTS_EXT,   //	VkIndirectExecutionSetInfoTypeEXT	type;
-        makeIndirectExecutionSetInfo(shaderInfo),                 //	VkIndirectExecutionSetInfoEXT		info;
+        VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_CREATE_INFO_EXT, // VkStructureType sType;
+        nullptr,                                                  // void* pNext;
+        VK_INDIRECT_EXECUTION_SET_INFO_TYPE_SHADER_OBJECTS_EXT,   // VkIndirectExecutionSetInfoTypeEXT type;
+        makeIndirectExecutionSetInfo(shaderInfo),                 // VkIndirectExecutionSetInfoEXT info;
     };
 
     m_executionSet = createIndirectExecutionSetEXT(vkd, device, &createInfo);
@@ -539,11 +539,11 @@ VkIndirectCommandsLayoutTokenEXT IndirectCommandsLayoutBuilderExt::InternalToken
         deMemset(&tokenData, 0, sizeof(tokenData));
 
     const VkIndirectCommandsLayoutTokenEXT vkToken = {
-        VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_TOKEN_EXT, //	VkStructureType					sType;
-        nullptr,                                              //	void*							pNext;
-        type,                                                 //	VkIndirectCommandsTokenTypeEXT	type;
-        tokenData,                                            //	VkIndirectCommandsTokenDataEXT	data;
-        offset,                                               //	uint32_t						offset;
+        VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_TOKEN_EXT, // VkStructureType sType;
+        nullptr,                                              // void* pNext;
+        type,                                                 // VkIndirectCommandsTokenTypeEXT type;
+        tokenData,                                            // VkIndirectCommandsTokenDataEXT data;
+        offset,                                               // uint32_t offset;
     };
     return vkToken;
 }
@@ -672,14 +672,14 @@ Move<VkIndirectCommandsLayoutEXT> IndirectCommandsLayoutBuilderExt::build(const 
 
     // Finally create the commands layout.
     const VkIndirectCommandsLayoutCreateInfoEXT createInfo = {
-        VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_EXT, //	VkStructureType							sType;
-        m_layoutCreateInfoPtr,                                      //	const void*								pNext;
-        m_layoutUsageFlags,                                         //	VkIndirectCommandsLayoutUsageFlagsEXT	flags;
-        m_shaderStages,                                             //	VkShaderStageFlags						shaderStages;
-        getStreamStride(),                                          //	uint32_t								indirectStride;
-        m_pipelineLayout,                                           //	VkPipelineLayout						pipelineLayout;
-        de::sizeU32(vkTokens),                                      //	uint32_t								tokenCount;
-        de::dataOrNull(vkTokens),                                   //	const VkIndirectCommandsLayoutTokenEXT*	pTokens;
+        VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_EXT, // VkStructureType sType;
+        m_layoutCreateInfoPtr,                                      // const void* pNext;
+        m_layoutUsageFlags,                                         // VkIndirectCommandsLayoutUsageFlagsEXT flags;
+        m_shaderStages,                                             // VkShaderStageFlags shaderStages;
+        getStreamStride(),                                          // uint32_t indirectStride;
+        m_pipelineLayout,                                           // VkPipelineLayout pipelineLayout;
+        de::sizeU32(vkTokens),                                      // uint32_t tokenCount;
+        de::dataOrNull(vkTokens),                                   // const VkIndirectCommandsLayoutTokenEXT* pTokens;
     };
 
     return createIndirectCommandsLayoutEXT(vkd, device, &createInfo, pAllocator);
@@ -712,20 +712,20 @@ PreprocessBufferExt::PreprocessBufferExt(const DeviceInterface &vkd, VkDevice de
             (VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR | VK_BUFFER_USAGE_2_PREPROCESS_BUFFER_BIT_EXT);
 
         const VkBufferUsageFlags2CreateInfoKHR usageFlags2CreateInfo = {
-            VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR, //	VkStructureType			sType;
-            nullptr,                                                //	const void*				pNext;
-            bufferUsage,                                            //	VkBufferUsageFlags2KHR	usage;
+            VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR, // VkStructureType sType;
+            nullptr,                                                // const void* pNext;
+            bufferUsage,                                            // VkBufferUsageFlags2KHR usage;
         };
 
         const VkBufferCreateInfo preprocessBufferCreateInfo = {
-            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, //	VkStructureType		sType;
-            &usageFlags2CreateInfo,               //	const void*			pNext;
-            0u,                                   //	VkBufferCreateFlags	flags;
-            allocationReqs.size,                  //	VkDeviceSize		size;
-            0u,                                   //	VkBufferUsageFlags	usage;
-            VK_SHARING_MODE_EXCLUSIVE,            //	VkSharingMode		sharingMode;
-            0u,                                   //	uint32_t			queueFamilyIndexCount;
-            nullptr,                              //	const uint32_t*		pQueueFamilyIndices;
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
+            &usageFlags2CreateInfo,               // const void* pNext;
+            0u,                                   // VkBufferCreateFlags flags;
+            allocationReqs.size,                  // VkDeviceSize size;
+            0u,                                   // VkBufferUsageFlags usage;
+            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
+            0u,                                   // uint32_t queueFamilyIndexCount;
+            nullptr,                              // const uint32_t* pQueueFamilyIndices;
         };
 
         m_buffer           = createBuffer(vkd, device, &preprocessBufferCreateInfo);
@@ -734,9 +734,9 @@ PreprocessBufferExt::PreprocessBufferExt(const DeviceInterface &vkd, VkDevice de
             vkd.bindBufferMemory(device, *m_buffer, m_bufferAllocation->getMemory(), m_bufferAllocation->getOffset()));
 
         const VkBufferDeviceAddressInfo deviceAddressInfo = {
-            VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, //	VkStructureType	sType;
-            nullptr,                                      //	const void*		pNext;
-            *m_buffer,                                    //	VkBuffer		buffer;
+            VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType sType;
+            nullptr,                                      // const void* pNext;
+            *m_buffer,                                    // VkBuffer buffer;
         };
         m_deviceAddress = vkd.getBufferDeviceAddress(device, &deviceAddressInfo) + offset;
     }
@@ -777,40 +777,40 @@ DGCComputePipelineExt::DGCComputePipelineExt(const DeviceInterface &vkd, VkDevic
     : m_pipeline()
 {
     const VkPipelineShaderStageRequiredSubgroupSizeCreateInfo subgroupSizeInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO, //	VkStructureType	sType;
-        nullptr,                                                                    //	void*			pNext;
-        subgroupSize,                                                               //	uint32_t		requiredSubgroupSize;
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                                    // void* pNext;
+        subgroupSize,                                                               // uint32_t requiredSubgroupSize;
     };
 
     const auto shaderPNext = (subgroupSize > 0u ? &subgroupSizeInfo : nullptr);
 
     const VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, //	VkStructureType						sType;
-        shaderPNext,                                         //	const void*							pNext;
-        shaderStageCreateFlags,                              //	VkPipelineShaderStageCreateFlags	flags;
-        VK_SHADER_STAGE_COMPUTE_BIT,                         //	VkShaderStageFlagBits				stage;
-        module,                                              //	VkShaderModule						module;
-        "main",                                              //	const char*							pName;
-        specializationInfo,                                  //	const VkSpecializationInfo*			pSpecializationInfo;
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
+        shaderPNext,                                         // const void* pNext;
+        shaderStageCreateFlags,                              // VkPipelineShaderStageCreateFlags flags;
+        VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
+        module,                                              // VkShaderModule module;
+        "main",                                              // const char* pName;
+        specializationInfo,                                  // const VkSpecializationInfo* pSpecializationInfo;
     };
 
     // Make sure the required flag is always passed.
     const auto creationFlags = (pipelineFlags | VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT);
 
     const VkPipelineCreateFlags2CreateInfoKHR pipelineFlagsCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR, //	VkStructureType				sType;
-        nullptr,                                                   //	const void*					pNext;
-        creationFlags,                                             //	VkPipelineCreateFlags2KHR	flags;
+        VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR, // VkStructureType sType;
+        nullptr,                                                   // const void* pNext;
+        creationFlags,                                             // VkPipelineCreateFlags2KHR flags;
     };
 
     const VkComputePipelineCreateInfo createInfo = {
-        VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, //	VkStructureType					sType;
-        &pipelineFlagsCreateInfo,                       //	const void*						pNext;
-        0u,                                             //	VkPipelineCreateFlags			flags;
-        shaderStageCreateInfo,                          //	VkPipelineShaderStageCreateInfo	stage;
-        pipelineLayout,                                 //	VkPipelineLayout				layout;
-        basePipelineHandle,                             //	VkPipeline						basePipelineHandle;
-        basePipelineIndex,                              //	int32_t							basePipelineIndex;
+        VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
+        &pipelineFlagsCreateInfo,                       // const void* pNext;
+        0u,                                             // VkPipelineCreateFlags flags;
+        shaderStageCreateInfo,                          // VkPipelineShaderStageCreateInfo stage;
+        pipelineLayout,                                 // VkPipelineLayout layout;
+        basePipelineHandle,                             // VkPipeline basePipelineHandle;
+        basePipelineIndex,                              // int32_t basePipelineIndex;
     };
 
     m_pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &createInfo);
@@ -853,20 +853,20 @@ void DGCShaderExt::init(const vk::DeviceInterface &vkd, vk::VkDevice device, vk:
     const auto createFlags = (shaderFlags | VK_SHADER_CREATE_INDIRECT_BINDABLE_BIT_EXT);
 
     const VkShaderCreateInfoEXT shaderCreateInfo = {
-        VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, //	VkStructureType					sType;
-        pNext,                                    //	const void*						pNext;
-        createFlags,                              //	VkShaderCreateFlagsEXT			flags;
-        stage,                                    //	VkShaderStageFlagBits			stage;
-        0u,                                       //	VkShaderStageFlags				nextStage;
-        VK_SHADER_CODE_TYPE_SPIRV_EXT,            //	VkShaderCodeTypeEXT				codeType;
-        shaderBinary.getSize(),                   //	size_t							codeSize;
-        shaderBinary.getBinary(),                 //	const void*						pCode;
-        "main",                                   //	const char*						pName;
-        de::sizeU32(setLayouts),                  //	uint32_t						setLayoutCount;
-        de::dataOrNull(setLayouts),               //	const VkDescriptorSetLayout*	pSetLayouts;
-        de::sizeU32(pushConstantRanges),          //	uint32_t						pushConstantRangeCount;
-        de::dataOrNull(pushConstantRanges),       //	const VkPushConstantRange*		pPushConstantRanges;
-        specializationInfo,                       //	const VkSpecializationInfo*		pSpecializationInfo;
+        VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
+        pNext,                                    // const void* pNext;
+        createFlags,                              // VkShaderCreateFlagsEXT flags;
+        stage,                                    // VkShaderStageFlagBits stage;
+        0u,                                       // VkShaderStageFlags nextStage;
+        VK_SHADER_CODE_TYPE_SPIRV_EXT,            // VkShaderCodeTypeEXT codeType;
+        shaderBinary.getSize(),                   // size_t codeSize;
+        shaderBinary.getBinary(),                 // const void* pCode;
+        "main",                                   // const char* pName;
+        de::sizeU32(setLayouts),                  // uint32_t setLayoutCount;
+        de::dataOrNull(setLayouts),               // const VkDescriptorSetLayout* pSetLayouts;
+        de::sizeU32(pushConstantRanges),          // uint32_t pushConstantRangeCount;
+        de::dataOrNull(pushConstantRanges),       // const VkPushConstantRange* pPushConstantRanges;
+        specializationInfo,                       // const VkSpecializationInfo* pSpecializationInfo;
     };
 
     shaderBinary.setUsed();
@@ -882,9 +882,9 @@ DGCComputeShaderExt::DGCComputeShaderExt(const vk::DeviceInterface &vkd, vk::VkD
     : DGCShaderExt()
 {
     const VkPipelineShaderStageRequiredSubgroupSizeCreateInfo subgroupSizeInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO, //	VkStructureType	sType;
-        nullptr,                                                                    //	void*			pNext;
-        subgroupSize,                                                               //	uint32_t		requiredSubgroupSize;
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                                    // void* pNext;
+        subgroupSize,                                                               // uint32_t requiredSubgroupSize;
     };
 
     const auto pNext = (subgroupSize > 0u ? &subgroupSizeInfo : nullptr);
@@ -900,12 +900,12 @@ VkVertexInputBindingDescription2EXT makeVertexInputBindingDescription2(
     const VkVertexInputBindingDescription &description)
 {
     const VkVertexInputBindingDescription2EXT desc2 = {
-        VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT, //	VkStructureType		sType;
-        nullptr,                                                  //	void*				pNext;
-        description.binding,                                      //	uint32_t			binding;
-        description.stride,                                       //	uint32_t			stride;
-        description.inputRate,                                    //	VkVertexInputRate	inputRate;
-        1u,                                                       //	uint32_t			divisor;
+        VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT, // VkStructureType sType;
+        nullptr,                                                  // void* pNext;
+        description.binding,                                      // uint32_t binding;
+        description.stride,                                       // uint32_t stride;
+        description.inputRate,                                    // VkVertexInputRate inputRate;
+        1u,                                                       // uint32_t divisor;
     };
     return desc2;
 }
@@ -914,12 +914,12 @@ VkVertexInputAttributeDescription2EXT makeVertexInputAttributeDescription2(
     const VkVertexInputAttributeDescription &description)
 {
     const VkVertexInputAttributeDescription2EXT desc2 = {
-        VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT, //	VkStructureType	sType;
-        nullptr,                                                    //	void*			pNext;
-        description.location,                                       //	uint32_t		location;
-        description.binding,                                        //	uint32_t		binding;
-        description.format,                                         //	VkFormat		format;
-        description.offset,                                         //	uint32_t		offset;
+        VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT, // VkStructureType sType;
+        nullptr,                                                    // void* pNext;
+        description.location,                                       // uint32_t location;
+        description.binding,                                        // uint32_t binding;
+        description.format,                                         // VkFormat format;
+        description.offset,                                         // uint32_t offset;
     };
     return desc2;
 }
