@@ -180,7 +180,7 @@ public:
 
     void checkPipelineConstructionRequirements(const vk::PipelineConstructionType pipelineConstructionType);
     void resetCommandPoolForVKSC(const vk::VkDevice device, const vk::VkCommandPool commandPool);
-    ContextCommonData getContextCommonData();
+    ContextCommonData getContextCommonData() const;
 
 #ifdef CTS_USES_VULKANSC
     static std::vector<VkFaultData> m_faultData;
