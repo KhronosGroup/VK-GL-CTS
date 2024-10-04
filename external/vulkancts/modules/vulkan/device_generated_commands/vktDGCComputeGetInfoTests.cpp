@@ -29,6 +29,7 @@
 #include "vkQueryUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktDGCUtil.hpp"
+#include "vktDGCUtilCommon.hpp"
 #include "vktTestCaseUtil.hpp"
 
 #include "deRandom.hpp"

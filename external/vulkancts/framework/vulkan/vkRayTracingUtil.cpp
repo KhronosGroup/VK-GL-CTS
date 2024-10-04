@@ -3805,7 +3805,6 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR(const DeviceInterface &vk
         VK_NULL_HANDLE,                 //  VkPipeline basePipelineHandle;
         0,                              //  int32_t basePipelineIndex;
     };
-
     VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
     if (m_pipelineCreateFlags2)
     {

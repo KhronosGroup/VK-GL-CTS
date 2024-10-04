@@ -367,8 +367,12 @@ tcu::TestStatus secondaryCommandBufferCase(Context &context, TestConfig config)
         WAIT,
         COUNT
     };
-    de::MovePtr<VideoDevice> videoDevice(
-        config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : nullptr);
+    VideoDevice::VideoDeviceFlags videoFlags = 0u;
+    if (config.type == SynchronizationType::SYNCHRONIZATION2)
+        videoFlags |= VideoDevice::VideoDeviceFlagBits::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED;
+    de::MovePtr<VideoDevice> videoDevice(config.videoCodecOperationFlags != 0 ?
+                                             new VideoDevice(context, config.videoCodecOperationFlags, videoFlags) :
+                                             nullptr);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
     const VkQueue queue             = getSyncQueue(videoDevice, context);

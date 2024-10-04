@@ -842,16 +842,19 @@ class API:
         # temporary workaround for extensions that are marked only for vulkan api in xml while
         # they are need by vulkan_json_data.hpp and vulkan_json_parser.hpp in vulkansc
         if self.apiName == "vulkansc":
-            deviceDiagnosticCheckpoints = [e for e in self.notSupportedExtensions if e.name == "VK_NV_device_diagnostic_checkpoints"]
-            if len(deviceDiagnosticCheckpoints):
-                deviceDiagnosticCheckpoints = deviceDiagnosticCheckpoints[0]
-                self.extensions.append(deviceDiagnosticCheckpoints)
-                self.notSupportedExtensions.remove(deviceDiagnosticCheckpoints)
-            formatFeatureFlags2 = [e for e in self.notSupportedExtensions if e.name == "VK_KHR_format_feature_flags2"]
-            if len(formatFeatureFlags2):
-                formatFeatureFlags2 = formatFeatureFlags2[0]
-                self.extensions.append(formatFeatureFlags2)
-                self.notSupportedExtensions.remove(formatFeatureFlags2)
+            workAroundList = [
+                    "VK_NV_device_diagnostic_checkpoints",
+                    "VK_KHR_format_feature_flags2",
+                    "VK_EXT_vertex_attribute_divisor",
+                    "VK_EXT_global_priority",
+                    "VK_EXT_calibrated_timestamps",
+            ]
+            for extName in workAroundList:
+                extData = [e for e in self.notSupportedExtensions if e.name == extName]
+                if len(extData):
+                    extData = extData[0]
+                    self.extensions.append(extData)
+                    self.notSupportedExtensions.remove(extData)
 
         # add new enumerators that were added by extensions to api.enums
         # we have to do it at the end for SC because some enums are dependent from extensions/api versions
