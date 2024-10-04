@@ -59,10 +59,11 @@ struct QueueRequirements
 class SparseResourcesBaseInstance : public TestInstance
 {
 public:
-    SparseResourcesBaseInstance(Context &context, bool useDeviceGroups = false)
+    SparseResourcesBaseInstance(Context &context, bool useDeviceGroups = false, bool forceSpecificQueue = false)
         : TestInstance(context)
         , m_numPhysicalDevices(1)
         , m_useDeviceGroups(useDeviceGroups)
+        , m_forceSpecificQueue(forceSpecificQueue)
     {
         const tcu::CommandLine &cmdLine = context.getTestContext().getCommandLine();
         m_deviceGroupIdx                = cmdLine.getVKDeviceGroupId() - 1;
@@ -100,6 +101,7 @@ protected:
 
 private:
     bool m_useDeviceGroups;
+    bool m_forceSpecificQueue;
     uint32_t m_deviceGroupIdx;
     CustomInstance m_deviceGroupInstance;
     std::vector<vk::VkPhysicalDevice> m_physicalDevices;

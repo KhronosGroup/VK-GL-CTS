@@ -2315,6 +2315,28 @@ PlanarFormatDescription getCorePlanarFormatDescription(VkFormat format)
         return desc;
     }
 
+    case VK_FORMAT_R16G16B16A16_SFLOAT:
+    {
+        const PlanarFormatDescription desc = {1, // planes
+                                              chanR | chanG | chanB | chanA,
+                                              1,
+                                              1,
+                                              {
+                                                  //        Size    WDiv    HDiv    planeCompatibleFormat
+                                                  {8, 1, 1, VK_FORMAT_R16G16B16A16_SFLOAT},
+                                                  {0, 0, 0, VK_FORMAT_UNDEFINED},
+                                                  {0, 0, 0, VK_FORMAT_UNDEFINED},
+                                              },
+                                              {
+                                                  //        Plane    Type    Offs    Size    Stride
+                                                  {0, sfloat, 0, 16, 8},  // R
+                                                  {0, sfloat, 16, 16, 8}, // G
+                                                  {0, sfloat, 32, 16, 8}, // B
+                                                  {0, sfloat, 48, 16, 8}  // A
+                                              }};
+        return desc;
+    }
+
     case VK_FORMAT_R32G32B32A32_SFLOAT:
     {
         const PlanarFormatDescription desc = {1, // planes
