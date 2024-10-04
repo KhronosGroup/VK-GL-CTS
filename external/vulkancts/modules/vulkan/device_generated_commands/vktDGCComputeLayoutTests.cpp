@@ -31,6 +31,7 @@
 #include "vkTypeUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktDGCUtil.hpp"
+#include "vktDGCUtilCommon.hpp"
 
 #include "deRandom.hpp"
 
@@ -508,7 +509,7 @@ std::vector<uint32_t> LayoutTestInstance::makeIndirectCommands(
             const auto &wgCount      = wgCounts.at(i);
             const auto deviceAddress = dgcPipeline->getIndirectDeviceAddress();
 
-            pushBackDeviceAddress(indirectCmds, deviceAddress);
+            pushBackElement(indirectCmds, deviceAddress);
             pushDispatchIndirectCommand(wgCount, align8); // Padding may be added.
         }
     }
@@ -528,7 +529,7 @@ std::vector<uint32_t> LayoutTestInstance::makeIndirectCommands(
             const auto &dgcPipeline  = m_dgcPipelines.at(i);
             const auto deviceAddress = dgcPipeline->getIndirectDeviceAddress();
 
-            pushBackDeviceAddress(indirectCmds, deviceAddress);
+            pushBackElement(indirectCmds, deviceAddress);
             indirectCmds.push_back(data.dispatchOffset);
             indirectCmds.push_back(data.skipIndex);
             // valueOffset provided as a specialization constant in the shader.
