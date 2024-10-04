@@ -2302,7 +2302,7 @@ tcu::TestStatus createDeviceQueue2WithMultipleQueueCombinations(Context &context
         vector<uint32_t> itemIndices(queuesPerFamily.size(), 0u);
 
         // Calculate the max number of combinations.
-        auto multiplyConfigCounts = [](uint32_t &count, const typename QueueFamilyConfigurations::value_type &item)
+        auto multiplyConfigCounts = [](uint32_t count, const typename QueueFamilyConfigurations::value_type &item)
         { return count * (uint32_t)item.second.size(); };
         const uint32_t itemCount = accumulate(queuesPerFamily.begin(), queuesPerFamily.end(), 1u, multiplyConfigCounts);
 
