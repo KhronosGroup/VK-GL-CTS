@@ -19,6 +19,7 @@ vk-main-2024-03-01/image/format-reinterpret.txt
 vk-main-2024-03-01/image/host-image-copy.txt
 vk-main-2024-03-01/image/load-store.txt
 vk-main-2024-03-01/image/load-store-multisample.txt
+vk-main-2024-03-01/image/mutable.txt
 vk-main-2024-03-01/image/queue-transfer.txt
 vk-main-2024-03-01/image/store.txt
 vk-main-2024-03-01/image/subresource-layout.txt

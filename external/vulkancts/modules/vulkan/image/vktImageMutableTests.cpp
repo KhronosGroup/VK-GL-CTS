@@ -116,6 +116,7 @@ struct CaseDef
     bool isFormatListTest;
     bool isSwapchainImageTest;
     Type wsiType;
+    bool isLoadOpClearTest;
 };
 
 static const uint32_t COLOR_TABLE_SIZE = 4;
@@ -692,6 +693,8 @@ vector<Vec4> genVertexData(const CaseDef &caseDef)
     vector<Vec4> vectorData;
     const bool isIntegerFormat = isUintFormat(caseDef.viewFormat) || isIntFormat(caseDef.viewFormat);
 
+    const float position = caseDef.isLoadOpClearTest ? 0.5f : 1.0f;
+
     for (uint32_t z = 0; z < caseDef.numLayers; z++)
     {
         const uint32_t colorIdx = z % COLOR_TABLE_SIZE;
@@ -710,13 +713,13 @@ vector<Vec4> genVertexData(const CaseDef &caseDef)
             color = COLOR_TABLE_FLOAT[colorIdx];
         }
 
-        vectorData.push_back(Vec4(-1.0f, -1.0f, 0.0f, 1.0f));
+        vectorData.push_back(Vec4(-position, -position, 0.0f, 1.0f));
         vectorData.push_back(color);
-        vectorData.push_back(Vec4(-1.0f, 1.0f, 0.0f, 1.0f));
+        vectorData.push_back(Vec4(-position, position, 0.0f, 1.0f));
         vectorData.push_back(color);
-        vectorData.push_back(Vec4(1.0f, -1.0f, 0.0f, 1.0f));
+        vectorData.push_back(Vec4(position, -position, 0.0f, 1.0f));
         vectorData.push_back(color);
-        vectorData.push_back(Vec4(1.0f, 1.0f, 0.0f, 1.0f));
+        vectorData.push_back(Vec4(position, position, 0.0f, 1.0f));
         vectorData.push_back(color);
     }
 
@@ -1727,9 +1730,10 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                                 s_formats[viewFormatNdx],
                                 static_cast<enum Upload>(upload),
                                 static_cast<enum Download>(download),
-                                false,             // isFormatListTest;
-                                false,             // isSwapchainImageTest
-                                vk::wsi::TYPE_LAST // wsiType
+                                false,              // isFormatListTest;
+                                false,              // isSwapchainImageTest
+                                vk::wsi::TYPE_LAST, // wsiType
+                                false               // isLoadOpClearTest
                             };
 
                             std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" +
@@ -1743,6 +1747,33 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                             addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, checkSupport,
                                                         initPrograms, testMutable, caseDef);
                         }
+                    }
+
+                    // VK_ATTACHMENT_LOAD_OP_CLEAR tests
+                    {
+                        if (texture.numLayers() > 1)
+                            continue;
+
+                        CaseDef caseDef = {
+                            texture.type(),
+                            texture.layerSize(),
+                            static_cast<uint32_t>(texture.numLayers()),
+                            s_formats[imageFormatNdx],
+                            s_formats[viewFormatNdx],
+                            UPLOAD_DRAW,
+                            DOWNLOAD_COPY,
+                            false,              // isFormatListTest;
+                            false,              // isSwapchainImageTest
+                            vk::wsi::TYPE_LAST, // wsiType
+                            true                // isLoadOpClearTest
+                        };
+
+                        std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" +
+                                               getFormatShortString(s_formats[viewFormatNdx]) + "_" +
+                                               getUploadString(UPLOAD_DRAW) + "_" + getDownloadString(DOWNLOAD_COPY) +
+                                               "_load_op_clear";
+                        addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, checkSupport, initPrograms,
+                                                    testMutable, caseDef);
                     }
                 }
             }
@@ -2158,16 +2189,19 @@ tcu::TestCaseGroup *createSwapchainImageMutableTests(TestContext &testCtx)
                                     !isFormatImageLoadStoreCapable(s_swapchainFormats[viewFormatNdx]))
                                     continue;
 
-                                CaseDef caseDef = {texture.type(),
-                                                   texture.layerSize(),
-                                                   static_cast<uint32_t>(texture.numLayers()),
-                                                   s_swapchainFormats[imageFormatNdx],
-                                                   s_swapchainFormats[viewFormatNdx],
-                                                   static_cast<enum Upload>(upload),
-                                                   static_cast<enum Download>(download),
-                                                   true, // isFormatListTest;
-                                                   true, // isSwapchainImageTest
-                                                   wsiType};
+                                CaseDef caseDef = {
+                                    texture.type(),
+                                    texture.layerSize(),
+                                    static_cast<uint32_t>(texture.numLayers()),
+                                    s_swapchainFormats[imageFormatNdx],
+                                    s_swapchainFormats[viewFormatNdx],
+                                    static_cast<enum Upload>(upload),
+                                    static_cast<enum Download>(download),
+                                    true, // isFormatListTest;
+                                    true, // isSwapchainImageTest
+                                    wsiType,
+                                    false // isLoadOpClearTest
+                                };
 
                                 std::string caseName = getFormatShortString(s_swapchainFormats[imageFormatNdx]) + "_" +
                                                        getFormatShortString(s_swapchainFormats[viewFormatNdx]) + "_" +
