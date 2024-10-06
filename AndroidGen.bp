@@ -523,6 +523,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/shader_object/vktShaderObjectPerformanceTests.cpp",
         "external/vulkancts/modules/vulkan/shader_object/vktShaderObjectPipelineInteractionTests.cpp",
         "external/vulkancts/modules/vulkan/shader_object/vktShaderObjectRenderingTests.cpp",
+        "external/vulkancts/modules/vulkan/shader_object/vktShaderObjectTessellationTests.cpp",
         "external/vulkancts/modules/vulkan/shader_object/vktShaderObjectTests.cpp",
         "external/vulkancts/modules/vulkan/shaderexecutor/vktAtomicOperationTests.cpp",
         "external/vulkancts/modules/vulkan/shaderexecutor/vktOpaqueTypeIndexingTests.cpp",
