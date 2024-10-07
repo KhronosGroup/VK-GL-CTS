@@ -1,3 +1,5 @@
+dEQP-VK.mesh_shader.ext.builtin.clip_distance_mix
+dEQP-VK.mesh_shader.ext.builtin.cull_distance_mix
 dEQP-VK.mesh_shader.ext.conditional_rendering.draw.primary_cmd_buffer.bind_without_offset.cond_without_offset.inverted_cond.mesh_and_task.value_0x00000000_multiview
 dEQP-VK.mesh_shader.ext.conditional_rendering.draw.primary_cmd_buffer.bind_without_offset.cond_without_offset.inverted_cond.mesh_and_task.value_0x00000001_multiview
 dEQP-VK.mesh_shader.ext.conditional_rendering.draw.primary_cmd_buffer.bind_without_offset.cond_without_offset.inverted_cond.mesh_only.value_0x00000000_multiview
@@ -87,6 +89,18 @@ dEQP-VK.mesh_shader.ext.misc.clip_plane_multiview
 dEQP-VK.mesh_shader.ext.misc.clip_plane_provoking_last
 dEQP-VK.mesh_shader.ext.misc.clip_plane_provoking_last_multiview
 dEQP-VK.mesh_shader.ext.misc.single_point_default_size
+dEQP-VK.mesh_shader.ext.pipeline.builtin.fast_lib.clip_distance
+dEQP-VK.mesh_shader.ext.pipeline.builtin.fast_lib.clip_distance_mix
+dEQP-VK.mesh_shader.ext.pipeline.builtin.fast_lib.cull_distance
+dEQP-VK.mesh_shader.ext.pipeline.builtin.fast_lib.cull_distance_mix
+dEQP-VK.mesh_shader.ext.pipeline.builtin.optimized_lib.clip_distance
+dEQP-VK.mesh_shader.ext.pipeline.builtin.optimized_lib.clip_distance_mix
+dEQP-VK.mesh_shader.ext.pipeline.builtin.optimized_lib.cull_distance
+dEQP-VK.mesh_shader.ext.pipeline.builtin.optimized_lib.cull_distance_mix
+dEQP-VK.mesh_shader.ext.pipeline.builtin.shader_objects.clip_distance
+dEQP-VK.mesh_shader.ext.pipeline.builtin.shader_objects.clip_distance_mix
+dEQP-VK.mesh_shader.ext.pipeline.builtin.shader_objects.cull_distance
+dEQP-VK.mesh_shader.ext.pipeline.builtin.shader_objects.cull_distance_mix
 dEQP-VK.mesh_shader.ext.query.no_queries.lines.no_reset.copy.no_wait.draw.32bit.no_availability.multiple_blocks.mesh_only.inside_rp.multi_view.only_primary
 dEQP-VK.mesh_shader.ext.query.no_queries.lines.no_reset.copy.no_wait.draw.32bit.no_availability.multiple_blocks.mesh_only.inside_rp.multi_view.with_secondary
 dEQP-VK.mesh_shader.ext.query.no_queries.lines.no_reset.copy.no_wait.draw.32bit.no_availability.multiple_blocks.mesh_only.inside_rp.single_view.only_primary

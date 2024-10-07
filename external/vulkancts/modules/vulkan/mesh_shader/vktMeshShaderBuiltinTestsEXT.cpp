@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktMeshShaderBuiltinTestsEXT.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 #include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
 
@@ -149,6 +150,7 @@ struct IterationParams
     tcu::Maybe<FragmentSize> fragmentSize;
     DrawCommandVec drawArgs;
     ViewportVec viewports; // If empty, a single default viewport is used.
+    PipelineConstructionType pipelineConstructionType;
 };
 
 class MeshShaderBuiltinInstance : public vkt::TestInstance
@@ -170,8 +172,9 @@ protected:
     IterationParams m_params;
 };
 
-Move<VkRenderPass> createCustomRenderPass(const DeviceInterface &vkd, VkDevice device, VkFormat format, bool multiview,
-                                          uint32_t numLayers)
+RenderPassWrapper createCustomRenderPass(const PipelineConstructionType pipelineConstructionType,
+                                         const DeviceInterface &vkd, VkDevice device, VkFormat format, bool multiview,
+                                         uint32_t numLayers)
 {
     DE_ASSERT(numLayers > 0u);
     const uint32_t numSubpasses = (multiview ? numLayers : 1u);
@@ -258,13 +261,15 @@ Move<VkRenderPass> createCustomRenderPass(const DeviceInterface &vkd, VkDevice d
         de::dataOrNull(dependencies),                      // const VkSubpassDependency*        pDependencies
     };
 
-    return createRenderPass(vkd, device, &renderPassInfo);
+    return RenderPassWrapper(pipelineConstructionType, vkd, device, &renderPassInfo);
 }
 
 tcu::TestStatus MeshShaderBuiltinInstance::iterate()
 {
+    const auto &vki       = m_context.getInstanceInterface();
     const auto &vkd       = m_context.getDeviceInterface();
     const auto device     = m_context.getDevice();
+    const auto phyDevice  = m_context.getPhysicalDevice();
     auto &alloc           = m_context.getDefaultAllocator();
     const auto queueIndex = m_context.getUniversalQueueFamilyIndex();
     const auto queue      = m_context.getUniversalQueue();
@@ -314,23 +319,23 @@ tcu::TestStatus MeshShaderBuiltinInstance::iterate()
     const auto setLayout = layoutBuilder.build(vkd, device);
 
     // Pipeline layout.
-    const auto pipelineLayout = makePipelineLayout(vkd, device, setLayout.get());
+    const PipelineLayoutWrapper pipelineLayout(m_params.pipelineConstructionType, vkd, device, setLayout.get());
 
     // Render pass and framebuffer.
-    const auto renderPass  = createCustomRenderPass(vkd, device, format, m_params.multiview, m_params.numLayers);
-    const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), colorBufferView.get(), extent.width,
-                                             extent.height, (m_params.multiview ? 1u : m_params.numLayers));
-
+    RenderPassWrapper renderPass(createCustomRenderPass(m_params.pipelineConstructionType, vkd, device, format,
+                                                        m_params.multiview, m_params.numLayers));
+    renderPass.createFramebuffer(vkd, device, 1u /*attachmentCount=*/, &**colorBuffer, &colorBufferView.get(),
+                                 extent.width, extent.height, (m_params.multiview ? 1u : m_params.numLayers));
     // Pipeline.
-    Move<VkShaderModule> taskModule;
-    Move<VkShaderModule> meshModule;
-    Move<VkShaderModule> fragModule;
+    ShaderWrapper taskModule;
+    ShaderWrapper meshModule;
+    ShaderWrapper fragModule;
 
     if (useTask)
-        taskModule = createShaderModule(vkd, device, binaries.get("task"));
+        taskModule = ShaderWrapper(vkd, device, binaries.get("task"), 0u);
     if (useFrag)
-        fragModule = createShaderModule(vkd, device, binaries.get("frag"));
-    meshModule = createShaderModule(vkd, device, binaries.get("mesh"));
+        fragModule = ShaderWrapper(vkd, device, binaries.get("frag"), 0u);
+    meshModule = ShaderWrapper(vkd, device, binaries.get("mesh"), 0u);
 
     std::vector<VkViewport> viewports;
     std::vector<VkRect2D> scissors;
@@ -361,13 +366,30 @@ tcu::TestStatus MeshShaderBuiltinInstance::iterate()
     }
 
     // Pipelines.
-    std::vector<Move<VkPipeline>> pipelines;
-    pipelines.reserve(numPasses);
+    using GraphicsPipelineWrapperPtr = std::unique_ptr<GraphicsPipelineWrapper>;
+    std::vector<GraphicsPipelineWrapperPtr> pipelines;
+    pipelines.resize(numPasses);
     for (uint32_t subpassIdx = 0u; subpassIdx < numPasses; ++subpassIdx)
     {
-        pipelines.emplace_back(makeGraphicsPipeline(
-            vkd, device, pipelineLayout.get(), taskModule.get(), meshModule.get(), fragModule.get(), renderPass.get(),
-            viewports, scissors, subpassIdx, nullptr, nullptr, nullptr, nullptr, nullptr, 0u, pNext.get()));
+        auto &pipeline = pipelines.at(subpassIdx);
+
+        pipeline.reset(new GraphicsPipelineWrapper(vki, vkd, phyDevice, device, m_context.getDeviceExtensions(),
+                                                   m_params.pipelineConstructionType));
+
+#ifndef CTS_USES_VULKANSC
+        pipeline->setDefaultMultisampleState()
+            .setDefaultColorBlendState()
+            .setDefaultRasterizationState()
+            .setDefaultDepthStencilState()
+            .setupPreRasterizationMeshShaderState(viewports, scissors, pipelineLayout, renderPass.get(), subpassIdx,
+                                                  taskModule, meshModule, nullptr, nullptr, nullptr, pNext.get())
+            .setupFragmentShaderState(pipelineLayout, renderPass.get(), subpassIdx, fragModule)
+            .setupFragmentOutputState(renderPass.get(), subpassIdx)
+            .setMonolithicPipelineLayout(pipelineLayout)
+            .buildPipeline();
+#else
+        DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
     }
 
     // Command pool and buffer.
@@ -396,14 +418,14 @@ tcu::TestStatus MeshShaderBuiltinInstance::iterate()
 
     // Submit commands.
     beginCommandBuffer(vkd, cmdBuffer);
-    beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0), clearColor);
+    renderPass.begin(vkd, cmdBuffer, scissors.at(0), clearColor);
 
     for (uint32_t subpassIdx = 0u; subpassIdx < numPasses; ++subpassIdx)
     {
         if (subpassIdx > 0u)
-            vkd.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+            renderPass.nextSubpass(vkd, cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[subpassIdx].get());
+        pipelines[subpassIdx]->bind(cmdBuffer);
 
         if (!m_params.indirect)
         {
@@ -418,7 +440,7 @@ tcu::TestStatus MeshShaderBuiltinInstance::iterate()
         }
     }
 
-    endRenderPass(vkd, cmdBuffer);
+    renderPass.end(vkd, cmdBuffer);
 
     // Output buffer to extract the color buffer contents.
     BufferWithMemoryPtr outBuffer;
@@ -472,9 +494,12 @@ tcu::TestStatus MeshShaderBuiltinInstance::iterate()
 class MeshShaderBuiltinCase : public vkt::TestCase
 {
 public:
-    MeshShaderBuiltinCase(tcu::TestContext &testCtx, const std::string &name, bool taskNeeded)
+    MeshShaderBuiltinCase(tcu::TestContext &testCtx, const std::string &name, bool taskNeeded,
+                          const PipelineConstructionType pipelineConstructionType =
+                              PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
         : vkt::TestCase(testCtx, name)
         , m_taskNeeded(taskNeeded)
+        , m_pipelineConstructionType(pipelineConstructionType)
     {
     }
     virtual ~MeshShaderBuiltinCase(void)
@@ -485,10 +510,13 @@ public:
 
 protected:
     const bool m_taskNeeded;
+    const PipelineConstructionType m_pipelineConstructionType;
 };
 
 void MeshShaderBuiltinCase::checkSupport(Context &context) const
 {
+    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                          m_pipelineConstructionType);
     checkTaskMeshShaderSupportEXT(context, m_taskNeeded, true);
 }
 
@@ -820,6 +848,7 @@ TestInstance *PrimitiveIdCase::createInstance(Context &context) const
         tcu::Nothing,             // tcu::Maybe<FragmentSize> fragmentSize;
         getDefaultDrawCommands(), // DrawCommandVec drawArgs;
         {}, //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType // PipelineConstructionType pipelineConstructionType
     };
     return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -953,6 +982,7 @@ TestInstance *LayerCase::createInstance(Context &context) const
         tcu::Nothing,                          // tcu::Maybe<FragmentSize> fragmentSize;
         getDefaultDrawCommands(numWorkGroups), // DrawCommandVec drawArgs;
         {}, //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType // PipelineConstructionType pipelineConstructionType
     };
     return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -1094,6 +1124,7 @@ TestInstance *ViewportIndexCase::createInstance(Context &context) const
         tcu::Nothing,                          // tcu::Maybe<FragmentSize> fragmentSize;
         getDefaultDrawCommands(numWorkGroups), // DrawCommandVec drawArgs;
         std::move(viewports),                  // ViewportVec viewports;
+        m_pipelineConstructionType             // PipelineConstructionType pipelineConstructionType
     };
     return new QuadrantsInstance(context, iterationParams, topLeft, topRight, bottomLeft, bottomRight);
 }
@@ -1174,6 +1205,7 @@ TestInstance *PositionCase::createInstance(Context &context) const
         tcu::Nothing,             // tcu::Maybe<FragmentSize> fragmentSize;
         getDefaultDrawCommands(), // DrawCommandVec drawArgs;
         {}, //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType // PipelineConstructionType pipelineConstructionType
     };
 
     // Must match the shader.
@@ -1249,6 +1281,7 @@ TestInstance *PointSizeCase::createInstance(Context &context) const
         tcu::Nothing,             // tcu::Maybe<FragmentSize> fragmentSize;
         getDefaultDrawCommands(), // DrawCommandVec drawArgs;
         {}, //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType // PipelineConstructionType pipelineConstructionType
     };
 
     // Must match the shader.
@@ -1272,8 +1305,12 @@ void PointSizeCase::checkSupport(Context &context) const
 class ClipDistanceCase : public MeshShaderBuiltinCase
 {
 public:
-    ClipDistanceCase(tcu::TestContext &testCtx, const std::string &name)
-        : MeshShaderBuiltinCase(testCtx, name, false /*taskNeeded*/)
+    ClipDistanceCase(tcu::TestContext &testCtx, const std::string &name,
+                     const PipelineConstructionType pipelineConstructionType =
+                         PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC,
+                     const bool addPerPrimiveOutput = false)
+        : MeshShaderBuiltinCase(testCtx, name, false /*taskNeeded*/, pipelineConstructionType)
+        , m_addPerPrimiveOutput(addPerPrimiveOutput)
     {
     }
     virtual ~ClipDistanceCase(void)
@@ -1283,6 +1320,9 @@ public:
     void initPrograms(vk::SourceCollections &programCollection) const override;
     TestInstance *createInstance(Context &context) const override;
     void checkSupport(Context &context) const override;
+
+protected:
+    const bool m_addPerPrimiveOutput;
 };
 
 void ClipDistanceCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -1303,12 +1343,27 @@ void ClipDistanceCase::initPrograms(vk::SourceCollections &programCollection) co
              << "    vec4  gl_Position;\n"
              << "    float gl_ClipDistance[2];\n"
              << "} gl_MeshVerticesEXT[];\n"
-             << "\n"
-             << "void main ()\n"
+             << "\n";
+
+        if (m_addPerPrimiveOutput)
+        {
+            // Triangle color.
+            mesh << "layout (location=0) out perprimitiveEXT vec4 triangleColor[];\n"
+                 << "\n";
+        }
+
+        mesh << "void main ()\n"
              << "{\n"
              << "    SetMeshOutputsEXT(4u, 2u);\n"
-             << "\n"
-             << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0u, 1u, 2u);\n"
+             << "\n";
+
+        if (m_addPerPrimiveOutput)
+        {
+            mesh << "    triangleColor[0] = vec4(0.0, 0.0, 1.0, 1.0);\n"
+                 << "    triangleColor[1] = vec4(0.0, 0.0, 1.0, 1.0);\n";
+        }
+
+        mesh << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0u, 1u, 2u);\n"
              << "    gl_PrimitiveTriangleIndicesEXT[1] = uvec3(1u, 3u, 2u);\n"
              << "\n"
              << "    gl_MeshVerticesEXT[0].gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
@@ -1337,13 +1392,20 @@ void ClipDistanceCase::initPrograms(vk::SourceCollections &programCollection) co
         frag << "#version 460\n"
              << "#extension GL_EXT_mesh_shader : enable\n"
              << "\n"
-             << "layout (location=0) out vec4 outColor;\n"
-             << "\n"
+             << "layout (location=0) out vec4 outColor;\n";
+
+        if (m_addPerPrimiveOutput)
+        {
+            frag << "layout (location=0) in perprimitiveEXT vec4 triangleColor;\n";
+        }
+
+        frag << "\n"
              << "void main ()\n"
              << "{\n"
              // White color should not actually be used, as those fragments are supposed to be discarded.
-             << "    outColor = ((gl_ClipDistance[0] >= 0.0 && gl_ClipDistance[1] >= 0.0) ? vec4(0.0, 0.0, 1.0, 1.0) : "
-                "vec4(1.0, 1.0, 1.0, 1.0));\n"
+             << "    outColor = ((gl_ClipDistance[0] >= 0.0 && gl_ClipDistance[1] >= 0.0) ? "
+             << (m_addPerPrimiveOutput ? "triangleColor" : "vec4(0.0, 0.0, 1.0, 1.0)")
+             << " : vec4(1.0, 1.0, 1.0, 1.0));\n"
              << "}\n";
         programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str()) << buildOptions;
     }
@@ -1359,6 +1421,7 @@ TestInstance *ClipDistanceCase::createInstance(Context &context) const
         tcu::Nothing,             // tcu::Maybe<FragmentSize> fragmentSize;
         getDefaultDrawCommands(), // DrawCommandVec drawArgs;
         {}, //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType, // PipelineConstructionType pipelineConstructionType
     };
 
     // Must match the shader.
@@ -1374,12 +1437,31 @@ void ClipDistanceCase::checkSupport(Context &context) const
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_CLIP_DISTANCE);
 }
 
+// Clip distance case with per vertex and per primitive outputs
+class ClipDistanceMixedCase : public ClipDistanceCase
+{
+public:
+    ClipDistanceMixedCase(tcu::TestContext &testCtx, const std::string &name,
+                          const PipelineConstructionType pipelineConstructionType =
+                              PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+        : ClipDistanceCase(testCtx, name, pipelineConstructionType, true /* m_addPerPrimiveOutput */)
+    {
+    }
+    virtual ~ClipDistanceMixedCase(void)
+    {
+    }
+};
+
 // CullDistance builtin case.
 class CullDistanceCase : public MeshShaderBuiltinCase
 {
 public:
-    CullDistanceCase(tcu::TestContext &testCtx, const std::string &name)
-        : MeshShaderBuiltinCase(testCtx, name, false /*taskNeeded*/)
+    CullDistanceCase(tcu::TestContext &testCtx, const std::string &name,
+                     const PipelineConstructionType pipelineConstructionType =
+                         PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC,
+                     const bool addPerPrimiveOutput = false)
+        : MeshShaderBuiltinCase(testCtx, name, false /*taskNeeded*/, pipelineConstructionType)
+        , m_addPerPrimiveOutput(addPerPrimiveOutput)
     {
     }
     virtual ~CullDistanceCase(void)
@@ -1389,6 +1471,9 @@ public:
     void initPrograms(vk::SourceCollections &programCollection) const override;
     TestInstance *createInstance(Context &context) const override;
     void checkSupport(Context &context) const override;
+
+protected:
+    const bool m_addPerPrimiveOutput;
 };
 
 void CullDistanceCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -1411,12 +1496,29 @@ void CullDistanceCase::initPrograms(vk::SourceCollections &programCollection) co
              << "    vec4  gl_Position;\n"
              << "    float gl_CullDistance[2];\n"
              << "} gl_MeshVerticesEXT[];\n"
-             << "\n"
-             << "void main ()\n"
+             << "\n";
+
+        if (m_addPerPrimiveOutput)
+        {
+            // Triangle color.
+            mesh << "layout (location=0) out perprimitiveEXT vec4 triangleColor[];\n"
+                 << "\n";
+        }
+
+        mesh << "void main ()\n"
              << "{\n"
              << "    SetMeshOutputsEXT(6u, 4u);\n"
-             << "\n"
-             << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0u, 1u, 3u);\n"
+             << "\n";
+
+        if (m_addPerPrimiveOutput)
+        {
+            mesh << "    triangleColor[0] = vec4(0.0, 0.0, 1.0, 1.0);\n"
+                 << "    triangleColor[1] = vec4(0.0, 0.0, 1.0, 1.0);\n"
+                 << "    triangleColor[2] = vec4(0.0, 0.0, 1.0, 1.0);\n"
+                 << "    triangleColor[3] = vec4(0.0, 0.0, 1.0, 1.0);\n";
+        }
+
+        mesh << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0u, 1u, 3u);\n"
              << "    gl_PrimitiveTriangleIndicesEXT[1] = uvec3(1u, 4u, 3u);\n"
              << "    gl_PrimitiveTriangleIndicesEXT[2] = uvec3(1u, 2u, 4u);\n"
              << "    gl_PrimitiveTriangleIndicesEXT[3] = uvec3(2u, 5u, 4u);\n"
@@ -1453,11 +1555,19 @@ void CullDistanceCase::initPrograms(vk::SourceCollections &programCollection) co
         frag << "#version 460\n"
              << "#extension GL_EXT_mesh_shader : enable\n"
              << "\n"
-             << "layout (location=0) out vec4 outColor;\n"
-             << "\n"
+             << "layout (location=0) out vec4 outColor;\n";
+
+        if (m_addPerPrimiveOutput)
+        {
+            frag << "layout (location=0) in perprimitiveEXT vec4 triangleColor;\n";
+        }
+
+        frag << "\n"
              << "void main ()\n"
              << "{\n"
-             << "    outColor = ((gl_CullDistance[1] >= 0.0) ? vec4(0.0, 0.0, 1.0, 1.0) : vec4(1.0, 1.0, 1.0, 1.0));\n"
+             << "    outColor = ((gl_CullDistance[1] >= 0.0) ? "
+             << (m_addPerPrimiveOutput ? "triangleColor" : "vec4(0.0, 0.0, 1.0, 1.0)")
+             << " : vec4(1.0, 1.0, 1.0, 1.0));\n"
              << "}\n";
         programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str()) << buildOptions;
     }
@@ -1473,6 +1583,7 @@ TestInstance *CullDistanceCase::createInstance(Context &context) const
         tcu::Nothing,             // tcu::Maybe<FragmentSize> fragmentSize;
         getDefaultDrawCommands(), // DrawCommandVec drawArgs;
         {}, //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType // PipelineConstructionType pipelineConstructionType
     };
 
     // Must match the shader.
@@ -1489,6 +1600,20 @@ void CullDistanceCase::checkSupport(Context &context) const
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_CULL_DISTANCE);
 }
 
+// Cull distance case with per vertex and per primitive outputs
+class CullDistanceMixedCase : public CullDistanceCase
+{
+public:
+    CullDistanceMixedCase(tcu::TestContext &testCtx, const std::string &name,
+                          const PipelineConstructionType pipelineConstructionType =
+                              PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+        : CullDistanceCase(testCtx, name, pipelineConstructionType, true /* m_addPerPrimiveOutput */)
+    {
+    }
+    virtual ~CullDistanceMixedCase(void)
+    {
+    }
+};
 // Generates statements to draw a triangle around the given pixel number, knowing the framebuffer width (len).
 // Supposes the height of the framebuffer is 1.
 std::string triangleForPixel(const std::string &pixel, const std::string &len, const std::string &primitiveIndex)
@@ -1600,6 +1725,8 @@ TestInstance *WorkGroupIdCase::createInstance(Context &context) const
         tcu::Nothing,                           // tcu::Maybe<FragmentSize> fragmentSize;
         getDefaultDrawCommands(m_extent.width), // DrawCommandVec drawArgs;
         {}, //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType // PipelineConstructionType pipelineConstructionType
+
     };
     return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -1713,6 +1840,7 @@ TestInstance *LocalInvocationCase::createInstance(Context &context) const
         tcu::Nothing,             // tcu::Maybe<FragmentSize> fragmentSize;
         getDefaultDrawCommands(), // DrawCommandVec drawArgs;
         {}, //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType // PipelineConstructionType pipelineConstructionType
     };
     return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -1875,6 +2003,7 @@ TestInstance *NumWorkgroupsCase::createInstance(Context &context) const
         tcu::Nothing, // tcu::Maybe<FragmentSize> fragmentSize;
         drawCommands, // DrawCommandVec drawArgs;
         {},           //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType // PipelineConstructionType pipelineConstructionType
     };
     return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -1976,6 +2105,7 @@ TestInstance *GlobalInvocationIdCase::createInstance(Context &context) const
         tcu::Nothing,                               // tcu::Maybe<FragmentSize> fragmentSize;
         getDefaultDrawCommands(m_jobSize.numTasks), // DrawCommandVec drawArgs;
         {}, //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType // PipelineConstructionType pipelineConstructionType
     };
     return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -2072,6 +2202,7 @@ TestInstance *DrawIndexCase::createInstance(Context &context) const
         tcu::Nothing, // tcu::Maybe<FragmentSize> fragmentSize;
         commands,     // DrawCommandVec drawArgs;
         {},           //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType // PipelineConstructionType pipelineConstructionType
     };
     return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -2198,6 +2329,7 @@ TestInstance *ViewIndexCase::createInstance(Context &context) const
         tcu::Nothing,             // tcu::Maybe<FragmentSize> fragmentSize;
         getDefaultDrawCommands(), // DrawCommandVec drawArgs;
         {}, //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType // PipelineConstructionType pipelineConstructionType
     };
     return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -2329,6 +2461,7 @@ TestInstance *PrimitiveShadingRateCase::createInstance(Context &context) const
         tcu::just(getBadShadingRateSize(begin(fsInUse), end(fsInUse))), // tcu::Maybe<FragmentSize> fragmentSize;
         getDefaultDrawCommands(),                                       // DrawCommandVec drawArgs;
         {}, //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType // PipelineConstructionType pipelineConstructionType
     };
     return new FullScreenColorInstance(context, iterationParams, expectedColors);
 }
@@ -2417,6 +2550,7 @@ TestInstance *CullPrimitivesCase::createInstance(Context &context) const
         tcu::Nothing,             // tcu::Maybe<FragmentSize> fragmentSize;
         getDefaultDrawCommands(), // DrawCommandVec drawArgs;
         {}, //    ViewportVec                    viewports;    // If empty, a single default viewport is used.
+        m_pipelineConstructionType // PipelineConstructionType pipelineConstructionType
     };
     return new QuadrantsInstance(context, iterationParams, blue, blue, black, black);
 }
@@ -2430,7 +2564,9 @@ tcu::TestCaseGroup *createMeshShaderBuiltinTestsEXT(tcu::TestContext &testCtx)
     mainGroup->addChild(new PositionCase(testCtx, "position"));
     mainGroup->addChild(new PointSizeCase(testCtx, "point_size"));
     mainGroup->addChild(new ClipDistanceCase(testCtx, "clip_distance"));
+    mainGroup->addChild(new ClipDistanceMixedCase(testCtx, "clip_distance_mix"));
     mainGroup->addChild(new CullDistanceCase(testCtx, "cull_distance"));
+    mainGroup->addChild(new CullDistanceMixedCase(testCtx, "cull_distance_mix"));
     mainGroup->addChild(new PrimitiveIdCase(testCtx, "primitive_id_glsl", true /*glslFrag*/));
     mainGroup->addChild(new PrimitiveIdCase(testCtx, "primitive_id_spirv", false /*glslFrag*/));
     mainGroup->addChild(new LayerCase(testCtx, "layer", true /*writeval*/, false /*shareVertices*/));
@@ -2481,6 +2617,37 @@ tcu::TestCaseGroup *createMeshShaderBuiltinTestsEXT(tcu::TestContext &testCtx)
                 mainGroup->addChild(new PrimitiveShadingRateCase(testCtx, testName, topSize, bottomSize));
             }
     }
+    return mainGroup.release();
+}
+
+tcu::TestCaseGroup *createMeshShaderPipelineTestsEXT(tcu::TestContext &testCtx)
+{
+    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "pipeline"));
+    GroupPtr mainSubGroup(new tcu::TestCaseGroup(testCtx, "builtin"));
+
+    const struct
+    {
+        PipelineConstructionType constructionType;
+        const char *name;
+    } constructionTypes[] = {{PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY, "optimized_lib"},
+                             {PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, "fast_lib"},
+                             {PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV, "shader_objects"}};
+
+    for (const auto &pipelineConstructionType : constructionTypes)
+    {
+        GroupPtr pipelineGroup(new tcu::TestCaseGroup(testCtx, pipelineConstructionType.name));
+        pipelineGroup->addChild(
+            new ClipDistanceCase(testCtx, "clip_distance", pipelineConstructionType.constructionType));
+        pipelineGroup->addChild(
+            new CullDistanceCase(testCtx, "cull_distance", pipelineConstructionType.constructionType));
+        pipelineGroup->addChild(
+            new ClipDistanceMixedCase(testCtx, "clip_distance_mix", pipelineConstructionType.constructionType));
+        pipelineGroup->addChild(
+            new CullDistanceMixedCase(testCtx, "cull_distance_mix", pipelineConstructionType.constructionType));
+        mainSubGroup->addChild(pipelineGroup.release());
+    }
+
+    mainGroup->addChild(mainSubGroup.release());
 
     return mainGroup.release();
 }
