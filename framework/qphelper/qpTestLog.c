@@ -1550,6 +1550,14 @@ bool qpTestLog_writeRaw(qpTestLog *log, const char *rawContents)
     return true;
 }
 
+void qpTestLog_setSplitSlices(qpTestLog *log, bool value)
+{
+    if (value)
+        log->flags |= QP_TEST_LOG_SPLIT_SLICES;
+    else
+        log->flags &= (~QP_TEST_LOG_SPLIT_SLICES);
+}
+
 uint32_t qpTestLog_getLogFlags(const qpTestLog *log)
 {
     DE_ASSERT(log);

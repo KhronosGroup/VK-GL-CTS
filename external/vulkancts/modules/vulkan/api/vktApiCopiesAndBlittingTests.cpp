@@ -69,6 +69,7 @@
 #include <iterator>
 #include <limits>
 #include <sstream>
+#include <cstring>
 
 #ifdef CTS_USES_VULKANSC
 // VulkanSC has VK_KHR_copy_commands2 entry points, but not core entry points.
@@ -130,6 +131,7 @@ enum ExtensionUseBits
     MAINTENANCE_1                 = (1 << 2),
     MAINTENANCE_5                 = (1 << 3),
     SPARSE_BINDING                = (1 << 4),
+    MAINTENANCE_8                 = (1 << 5),
 };
 
 template <typename Type>
@@ -366,11 +368,11 @@ struct TestParams
     uint32_t arrayLayers;
     bool singleCommand;
     uint32_t barrierCount;
-    bool
-        clearDestinationWithRed; // Used for CopyImageToImage tests to clear dst image with vec4(1.0f, 0.0f, 0.0f, 1.0f)
+    bool clearDestinationWithRed; // Used for CopyImageToImage tests to clear dst image with vec4(1.0, 0.0, 0.0, 1.0)
     bool imageOffset;
     bool useSecondaryCmdBuffer;
     bool useSparseBinding;
+    bool useMaxSlices;
 
     TestParams(void)
     {
@@ -392,6 +394,7 @@ struct TestParams
         imageOffset             = false;
         useSecondaryCmdBuffer   = false;
         useSparseBinding        = false;
+        useMaxSlices            = false;
     }
 
     bool usesNonUniversalQueue() const
@@ -492,6 +495,9 @@ void checkExtensionSupport(Context &context, uint32_t flags)
 
     if (flags & SPARSE_BINDING)
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+
+    if (flags & MAINTENANCE_8)
+        context.requireDeviceFunctionality("VK_KHR_maintenance8");
 }
 
 inline uint32_t getArraySize(const ImageParms &parms)
@@ -556,7 +562,7 @@ public:
     virtual tcu::TestStatus iterate(void) = 0;
 
 protected:
-    const TestParams m_params;
+    TestParams m_params;
     VkDevice m_device;
     Allocator *m_allocator;
     VkQueue m_universalQueue{VK_NULL_HANDLE};
@@ -3904,6 +3910,35 @@ private:
     CompressedTextureForBlitSp m_destinationCompressedTexture;
 };
 
+// Helper to ease creating a VkImageSubresourceLayers structure.
+VkImageSubresourceLayers makeDefaultSRL(uint32_t baseArrayLayer = 0u, uint32_t layerCount = 1u)
+{
+    return makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, baseArrayLayer, layerCount);
+}
+
+// Helper to create a blit from 3D to a 2D array image.
+VkImageBlit make3Dto2DArrayBlit(VkExtent3D srcBaseSize, VkExtent3D dstBaseSize, uint32_t srcBaseSlice,
+                                uint32_t dstBaseSlice, uint32_t sliceCount)
+{
+    const VkImageBlit blit = {
+        makeDefaultSRL(), // src subresource layers.
+        {
+            // src offsets.
+            {0, 0, static_cast<int32_t>(srcBaseSlice)},
+            {static_cast<int32_t>(srcBaseSize.width), static_cast<int32_t>(srcBaseSize.height),
+             static_cast<int32_t>(srcBaseSlice + sliceCount)},
+        },
+        makeDefaultSRL(dstBaseSlice, sliceCount), // dst subresource layers
+        {
+            // dst offsets.
+            {0, 0, 0},
+            {static_cast<int32_t>(dstBaseSize.width), static_cast<int32_t>(dstBaseSize.height), 1},
+        },
+    };
+
+    return blit;
+}
+
 BlittingImages::BlittingImages(Context &context, TestParams params) : CopiesAndBlittingTestInstance(context, params)
 {
     const InstanceInterface &vki        = context.getInstanceInterface();
@@ -3911,27 +3946,86 @@ BlittingImages::BlittingImages(Context &context, TestParams params) : CopiesAndB
     const VkPhysicalDevice vkPhysDevice = context.getPhysicalDevice();
     const VkDevice vkDevice             = m_device;
     Allocator &memAlloc                 = context.getDefaultAllocator();
+    const auto imageUsage               = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto sparseFlags              = (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
+    const auto srcCreateFlags = (getCreateFlags(m_params.src.image) | (m_params.useSparseBinding ? sparseFlags : 0u));
+    const auto dstCreateFlags = getCreateFlags(m_params.dst.image);
+
+    if (m_params.useMaxSlices)
+    {
+        // Modify the regions and the depth of the source and destination images before proceeding.
+        DE_ASSERT(m_params.regions.empty());
+        DE_ASSERT(m_params.src.image.extent.depth == 0u);
+        DE_ASSERT(m_params.dst.image.extent.depth == 0u);
+
+        VkImageFormatProperties srcFormatProperties;
+        VkImageFormatProperties dstFormatProperties;
+
+        uint32_t srcMaxSlices = 0u;
+        uint32_t dstMaxSlices = 0u;
+
+        srcFormatProperties = getPhysicalDeviceImageFormatProperties(
+            vki, vkPhysDevice, m_params.src.image.format, m_params.src.image.imageType, m_params.src.image.tiling,
+            imageUsage, srcCreateFlags);
+
+        srcMaxSlices = ((m_params.src.image.imageType == VK_IMAGE_TYPE_3D) ? srcFormatProperties.maxExtent.depth :
+                                                                             srcFormatProperties.maxArrayLayers);
+
+        dstFormatProperties = getPhysicalDeviceImageFormatProperties(
+            vki, vkPhysDevice, m_params.dst.image.format, m_params.dst.image.imageType, m_params.dst.image.tiling,
+            imageUsage, dstCreateFlags);
+
+        dstMaxSlices = ((m_params.dst.image.imageType == VK_IMAGE_TYPE_3D) ? dstFormatProperties.maxExtent.depth :
+                                                                             dstFormatProperties.maxArrayLayers);
+
+        const auto maxSlices = ((srcMaxSlices < dstMaxSlices) ? srcMaxSlices : dstMaxSlices);
+
+        m_params.src.image.extent.depth = maxSlices;
+        m_params.dst.image.extent.depth = maxSlices;
+
+        CopyRegion r;
+        r.imageBlit = make3Dto2DArrayBlit(m_params.src.image.extent, m_params.dst.image.extent, 0u, 0u, maxSlices);
+        m_params.regions.push_back(r);
+    }
+
+    const VkImageCreateInfo sourceImageParams = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                             // const void* pNext;
+        srcCreateFlags,                      // VkImageCreateFlags flags;
+        m_params.src.image.imageType,        // VkImageType imageType;
+        m_params.src.image.format,           // VkFormat format;
+        getExtent3D(m_params.src.image),     // VkExtent3D extent;
+        1u,                                  // uint32_t mipLevels;
+        getArraySize(m_params.src.image),    // uint32_t arraySize;
+        VK_SAMPLE_COUNT_1_BIT,               // uint32_t samples;
+        m_params.src.image.tiling,           // VkImageTiling tiling;
+        imageUsage,                          // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
+        0u,                                  // uint32_t queueFamilyIndexCount;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
+    };
+
+    const VkImageCreateInfo destinationImageParams = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                             // const void* pNext;
+        dstCreateFlags,                      // VkImageCreateFlags flags;
+        m_params.dst.image.imageType,        // VkImageType imageType;
+        m_params.dst.image.format,           // VkFormat format;
+        getExtent3D(m_params.dst.image),     // VkExtent3D extent;
+        1u,                                  // uint32_t mipLevels;
+        getArraySize(m_params.dst.image),    // uint32_t arraySize;
+        VK_SAMPLE_COUNT_1_BIT,               // uint32_t samples;
+        m_params.dst.image.tiling,           // VkImageTiling tiling;
+        imageUsage,                          // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
+        0u,                                  // uint32_t queueFamilyIndexCount;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
+    };
 
     // Create source image
     {
-        VkImageCreateInfo sourceImageParams = {
-            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                               // VkStructureType sType;
-            nullptr,                                                           // const void* pNext;
-            getCreateFlags(m_params.src.image),                                // VkImageCreateFlags flags;
-            m_params.src.image.imageType,                                      // VkImageType imageType;
-            m_params.src.image.format,                                         // VkFormat format;
-            getExtent3D(m_params.src.image),                                   // VkExtent3D extent;
-            1u,                                                                // uint32_t mipLevels;
-            getArraySize(m_params.src.image),                                  // uint32_t arraySize;
-            VK_SAMPLE_COUNT_1_BIT,                                             // uint32_t samples;
-            m_params.src.image.tiling,                                         // VkImageTiling tiling;
-            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
-            VK_SHARING_MODE_EXCLUSIVE,                                         // VkSharingMode sharingMode;
-            0u,                                                                // uint32_t queueFamilyIndexCount;
-            nullptr,                                                           // const uint32_t* pQueueFamilyIndices;
-            VK_IMAGE_LAYOUT_UNDEFINED,                                         // VkImageLayout initialLayout;
-        };
-
 #ifndef CTS_USES_VULKANSC
         if (!params.useSparseBinding)
         {
@@ -3945,16 +4039,15 @@ BlittingImages::BlittingImages(Context &context, TestParams params) : CopiesAndB
         }
         else
         {
-            sourceImageParams.flags |=
-                (vk::VK_IMAGE_CREATE_SPARSE_BINDING_BIT | vk::VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
-            vk::VkImageFormatProperties imageFormatProperties;
+            VkImageFormatProperties imageFormatProperties;
             if (vki.getPhysicalDeviceImageFormatProperties(vkPhysDevice, sourceImageParams.format,
                                                            sourceImageParams.imageType, sourceImageParams.tiling,
                                                            sourceImageParams.usage, sourceImageParams.flags,
-                                                           &imageFormatProperties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+                                                           &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
             {
                 TCU_THROW(NotSupportedError, "Image format not supported");
             }
+
             m_source = createImage(
                 vk, m_device,
                 &sourceImageParams); //de::MovePtr<SparseImage>(new SparseImage(vk, vk, vkPhysDevice, vki, sourceImageParams, m_queue, *m_allocator, mapVkFormat(sourceImageParams.format)));
@@ -3968,24 +4061,6 @@ BlittingImages::BlittingImages(Context &context, TestParams params) : CopiesAndB
 
     // Create destination image
     {
-        const VkImageCreateInfo destinationImageParams = {
-            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                               // VkStructureType sType;
-            nullptr,                                                           // const void* pNext;
-            getCreateFlags(m_params.dst.image),                                // VkImageCreateFlags flags;
-            m_params.dst.image.imageType,                                      // VkImageType imageType;
-            m_params.dst.image.format,                                         // VkFormat format;
-            getExtent3D(m_params.dst.image),                                   // VkExtent3D extent;
-            1u,                                                                // uint32_t mipLevels;
-            getArraySize(m_params.dst.image),                                  // uint32_t arraySize;
-            VK_SAMPLE_COUNT_1_BIT,                                             // uint32_t samples;
-            m_params.dst.image.tiling,                                         // VkImageTiling tiling;
-            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
-            VK_SHARING_MODE_EXCLUSIVE,                                         // VkSharingMode sharingMode;
-            0u,                                                                // uint32_t queueFamilyIndexCount;
-            nullptr,                                                           // const uint32_t* pQueueFamilyIndices;
-            VK_IMAGE_LAYOUT_UNDEFINED,                                         // VkImageLayout initialLayout;
-        };
-
         m_destination           = createImage(vk, vkDevice, &destinationImageParams);
         m_destinationImageAlloc = allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_destination, MemoryRequirement::Any,
                                                 memAlloc, m_params.allocationKind, 0u);
@@ -4009,6 +4084,16 @@ tcu::TestStatus BlittingImages::iterate(void)
 
     std::vector<VkImageBlit> regions;
     std::vector<VkImageBlit2KHR> regions2KHR;
+
+    // When using maximum slices, we'll generate the copy region on the fly. This is because we don't know, at test
+    // creation time, the exact size of the images.
+    std::vector<CopyRegion> generatedRegions;
+
+    if (m_params.useMaxSlices)
+    {
+        auto &log = m_context.getTestContext().getLog();
+        log << tcu::TestLog::Message << "Max slices: " << m_params.src.image.extent.depth << tcu::TestLog::EndMessage;
+    }
 
     // setup blit regions - they are also needed for reference generation
     if (!(m_params.extensionFlags & COPY_COMMANDS_2))
@@ -4109,8 +4194,7 @@ tcu::TestStatus BlittingImages::iterate(void)
     if (!(m_params.extensionFlags & COPY_COMMANDS_2))
     {
         vk.cmdBlitImage(*m_universalCmdBuffer, m_source.get(), srcImageParams.operationLayout, m_destination.get(),
-                        dstImageParams.operationLayout, (uint32_t)m_params.regions.size(), &regions[0],
-                        m_params.filter);
+                        dstImageParams.operationLayout, de::sizeU32(regions), de::dataOrNull(regions), m_params.filter);
     }
     else
     {
@@ -4122,8 +4206,8 @@ tcu::TestStatus BlittingImages::iterate(void)
             srcImageParams.operationLayout,          // VkImageLayout srcImageLayout;
             m_destination.get(),                     // VkImage dstImage;
             dstImageParams.operationLayout,          // VkImageLayout dstImageLayout;
-            (uint32_t)m_params.regions.size(),       // uint32_t regionCount;
-            &regions2KHR[0],                         // const VkImageBlit2KHR* pRegions;
+            de::sizeU32(regions2KHR),                // uint32_t regionCount;
+            de::dataOrNull(regions2KHR),             // const VkImageBlit2KHR* pRegions;
             m_params.filter,                         // VkFilter filter;
         };
         vk.cmdBlitImage2(*m_universalCmdBuffer, &blitImageInfo2KHR);
@@ -4379,14 +4463,14 @@ bool BlittingImages::checkNonNearestFilteredResult(const tcu::ConstPixelBufferAc
             (srcMaxDiff + dstMaxDiff) * ((m_params.filter == VK_FILTER_CUBIC_EXT) ? 1.5f : 1.0f);
 
         isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", clampedExpected, result, threshold,
-                                          tcu::COMPARE_LOG_RESULT);
+                                          tcu::COMPARE_LOG_ON_ERROR);
         log << tcu::TestLog::EndSection;
 
         if (!isOk)
         {
             log << tcu::TestLog::Section("NonClampedSourceImage", "Region with non-clamped edges on source image.");
             isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", unclampedExpected, result, threshold,
-                                              tcu::COMPARE_LOG_RESULT);
+                                              tcu::COMPARE_LOG_ON_ERROR);
             log << tcu::TestLog::EndSection;
         }
     }
@@ -4409,14 +4493,14 @@ bool BlittingImages::checkNonNearestFilteredResult(const tcu::ConstPixelBufferAc
         }
 
         isOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", clampedExpected, result, threshold,
-                                        tcu::COMPARE_LOG_RESULT);
+                                        tcu::COMPARE_LOG_ON_ERROR);
         log << tcu::TestLog::EndSection;
 
         if (!isOk)
         {
             log << tcu::TestLog::Section("NonClampedSourceImage", "Region with non-clamped edges on source image.");
             isOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", unclampedExpected, result, threshold,
-                                            tcu::COMPARE_LOG_RESULT);
+                                            tcu::COMPARE_LOG_ON_ERROR);
             log << tcu::TestLog::EndSection;
         }
     }
@@ -4513,7 +4597,7 @@ bool BlittingImages::checkCompressedNonNearestFilteredResult(const tcu::ConstPix
 
     log << tcu::TestLog::Section("ClampedSourceImage", "Region with clamped edges on source image.");
     bool isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", clampedRef, res, threshold,
-                                           tcu::COMPARE_LOG_RESULT);
+                                           tcu::COMPARE_LOG_ON_ERROR);
     log << tcu::TestLog::EndSection;
 
     if (!isOk)
@@ -4523,7 +4607,7 @@ bool BlittingImages::checkCompressedNonNearestFilteredResult(const tcu::ConstPix
 
         log << tcu::TestLog::Section("NonClampedSourceImage", "Region with non-clamped edges on source image.");
         isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", unclampedRef, res, threshold,
-                                          tcu::COMPARE_LOG_RESULT);
+                                          tcu::COMPARE_LOG_ON_ERROR);
         log << tcu::TestLog::EndSection;
     }
 
@@ -4945,11 +5029,30 @@ bool BlittingImages::checkCompressedNearestFilteredResult(const tcu::ConstPixelB
     return false;
 }
 
+struct SlicedImageLogGuard
+{
+    SlicedImageLogGuard(tcu::TestLog &log) : m_log(log), m_origValue(log.isSeparateSlices())
+    {
+        m_log.separateSlices(true);
+    }
+
+    ~SlicedImageLogGuard()
+    {
+        m_log.separateSlices(m_origValue);
+    }
+
+private:
+    tcu::TestLog &m_log;
+    bool m_origValue;
+};
+
 tcu::TestStatus BlittingImages::checkTestResult(tcu::ConstPixelBufferAccess result)
 {
     DE_ASSERT(m_params.filter == VK_FILTER_NEAREST || m_params.filter == VK_FILTER_LINEAR ||
               m_params.filter == VK_FILTER_CUBIC_EXT);
     const std::string failMessage("Result image is incorrect");
+
+    SlicedImageLogGuard slicedImageLogGuard(m_context.getTestContext().getLog());
 
     if (m_params.filter != VK_FILTER_NEAREST)
     {
@@ -5195,12 +5298,24 @@ void BlittingImages::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, t
         region.imageBlit.srcOffsets[1].y - srcOffset.y,
         region.imageBlit.srcOffsets[1].z - srcOffset.z,
     };
-    const VkOffset3D dstOffset = region.imageBlit.dstOffsets[0];
-    const VkOffset3D dstExtent = {
+
+    VkOffset3D dstOffset = region.imageBlit.dstOffsets[0];
+
+    VkOffset3D dstExtent = {
         region.imageBlit.dstOffsets[1].x - dstOffset.x,
         region.imageBlit.dstOffsets[1].y - dstOffset.y,
         region.imageBlit.dstOffsets[1].z - dstOffset.z,
     };
+
+    if (m_params.dst.image.imageType == VK_IMAGE_TYPE_2D)
+    {
+        // Without taking layers into account.
+        DE_ASSERT(dstOffset.z == 0u && dstExtent.z == 1);
+
+        // Modify offset and extent taking layers into account. This is used for the 3D-to-2D_ARRAY case.
+        dstOffset.z += region.imageBlit.dstSubresource.baseArrayLayer;
+        dstExtent.z = region.imageBlit.dstSubresource.layerCount;
+    }
 
     tcu::Sampler::FilterMode filter;
     switch (m_params.filter)
@@ -5305,7 +5420,7 @@ void BlittingImages::generateExpectedResult(void)
         tcu::copy(m_unclampedExpectedTextureLevel->getAccess(), dst);
     }
 
-    for (uint32_t i = 0; i < m_params.regions.size(); i++)
+    for (uint32_t i = 0; i < de::sizeU32(m_params.regions); i++)
     {
         CopyRegion region = m_params.regions[i];
         copyRegionToTextureLevel(src, m_expectedTextureLevel[0]->getAccess(), region);
@@ -14450,6 +14565,134 @@ void addBlittingImageArrayTests(tcu::TestCaseGroup *group, TestParams params)
     }
 }
 
+std::string getFilterSuffix(VkFilter filter)
+{
+    static const size_t prefixLen = std::strlen("VK_FILTER_");
+    return de::toLower(std::string(getFilterName(filter)).substr(prefixLen));
+}
+
+void addBlittingImage3DTo2DArrayTests(tcu::TestCaseGroup *group, TestParams params)
+{
+    tcu::TestContext &testCtx = group->getTestContext();
+
+    const uint32_t layerCount     = 16u;
+    params.dst.image.format       = VK_FORMAT_R8G8B8A8_UNORM;
+    params.src.image.extent       = defaultExtent;
+    params.dst.image.extent       = defaultExtent;
+    params.src.image.extent.depth = layerCount;
+    params.dst.image.extent.depth = layerCount;
+    params.extensionFlags |= MAINTENANCE_8;
+
+    for (const auto filter : {VK_FILTER_NEAREST, VK_FILTER_LINEAR})
+    {
+        params.filter            = filter;
+        const std::string suffix = getFilterSuffix(filter);
+
+        // Attempt to blit a single slice into a cube.
+        {
+            const auto cubeLayers             = 6u;
+            TestParams cubeParams             = params;
+            cubeParams.src.image.extent.depth = cubeLayers;
+            cubeParams.dst.image.extent.depth = cubeLayers;
+
+            const std::vector<VkImageBlit> blits{
+                make3Dto2DArrayBlit(cubeParams.src.image.extent, cubeParams.dst.image.extent, 3u, 1u, 1u),
+            };
+
+            cubeParams.regions.clear();
+            cubeParams.regions.reserve(blits.size());
+
+            for (const auto &blit : blits)
+            {
+                CopyRegion region;
+                region.imageBlit = blit;
+                cubeParams.regions.push_back(region);
+            }
+
+            group->addChild(new BlitImageTestCase(testCtx, "cube_slice_" + suffix, cubeParams));
+        }
+
+        // Attempt to blit one layer at a time, for multiple layers.
+        {
+            const std::vector<VkImageBlit> blits{
+                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 2u, 5u, 1u),
+                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 4u, 11u, 1u),
+                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 7u, 2u, 1u),
+                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 13u, 0u, 1u),
+            };
+
+            params.regions.clear();
+            params.regions.reserve(blits.size());
+
+            for (const auto &blit : blits)
+            {
+                CopyRegion region;
+                region.imageBlit = blit;
+                params.regions.push_back(region);
+            }
+
+            group->addChild(new BlitImageTestCase(testCtx, "single_slices_" + suffix, params));
+        }
+
+        // Attempt to blit multiple layers at the same time.
+        {
+            const std::vector<VkImageBlit> blits{
+                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 2u, 9u, 6u),
+                make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 13u, 0u, 3u),
+            };
+
+            params.regions.clear();
+            params.regions.reserve(blits.size());
+
+            for (const auto &blit : blits)
+            {
+                CopyRegion region;
+                region.imageBlit = blit;
+                params.regions.push_back(region);
+            }
+
+            group->addChild(new BlitImageTestCase(testCtx, "multiple_slices_" + suffix, params));
+        }
+
+        {
+            TestParams maxSlicesParams = params;
+
+            maxSlicesParams.useMaxSlices           = true;
+            maxSlicesParams.src.image.extent       = defaultQuarterExtent;
+            maxSlicesParams.dst.image.extent       = defaultQuarterExtent;
+            maxSlicesParams.src.image.extent.depth = 0u;
+            maxSlicesParams.dst.image.extent.depth = 0u;
+            maxSlicesParams.regions.clear();
+
+            group->addChild(new BlitImageTestCase(testCtx, "max_slices_" + suffix, maxSlicesParams));
+        }
+
+        // Blit a multi-slice region into a smaller multi-slice region of a cube image.
+        {
+            // Copy 5 slices from slice 3 to slice 7, but...
+            auto blit = make3Dto2DArrayBlit(params.src.image.extent, params.dst.image.extent, 3u, 7u, 5u);
+
+            // The number of destination slices will be smaller, and the same for the 2D region.
+            blit.dstSubresource.layerCount = 2u;
+
+            blit.dstOffsets[0].x = defaultSize / 4;
+            blit.dstOffsets[0].y = defaultSize / 2;
+
+            blit.dstOffsets[1].x = defaultSize / 4 + defaultSize / 2;
+            blit.dstOffsets[1].y = defaultSize;
+
+            {
+                CopyRegion region;
+                region.imageBlit = blit;
+                params.regions.clear();
+                params.regions.push_back(region);
+            }
+
+            group->addChild(new BlitImageTestCase(testCtx, "complex_blit_" + suffix, params));
+        }
+    }
+}
+
 void addBlittingImageSimpleMirrorXYTests(tcu::TestCaseGroup *group, TestParams params)
 {
     DE_ASSERT(params.src.image.imageType == params.dst.image.imageType);
@@ -14780,6 +15023,10 @@ void addBlittingImageSimpleTests(tcu::TestCaseGroup *group, AllocationKind alloc
     addTestGroup(group, "scaling_whole2_3d", addBlittingImageSimpleScalingWhole2Tests, params);
     addTestGroup(group, "scaling_and_offset_3d", addBlittingImageSimpleScalingAndOffsetTests, params);
     addTestGroup(group, "without_scaling_partial_3d", addBlittingImageSimpleWithoutScalingPartialTests, params);
+
+    params.src.image.imageType = VK_IMAGE_TYPE_3D;
+    params.dst.image.imageType = VK_IMAGE_TYPE_2D;
+    addTestGroup(group, "3d_to_2d_array", addBlittingImage3DTo2DArrayTests, params);
 }
 
 enum FilterMaskBits
