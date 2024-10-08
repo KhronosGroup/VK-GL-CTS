@@ -1284,19 +1284,20 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
             m_accelerationStructureBuffer->bindMemory();
     }
 
-    if (m_buildScratchSize > 0u)
+    if (m_buildScratchSize > 0u || m_updateScratchSize > 0u)
     {
+        VkDeviceSize scratch_size = de::max(m_buildScratchSize, m_updateScratchSize);
         if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
         {
             const VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(
-                m_buildScratchSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+                scratch_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
             m_deviceScratchBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
                 vk, device, allocator, bufferCreateInfo,
                 MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
         }
         else
         {
-            m_hostScratchBuffer->resize(static_cast<size_t>(m_buildScratchSize));
+            m_hostScratchBuffer->resize(static_cast<size_t>(scratch_size));
         }
     }
 
@@ -2986,19 +2987,20 @@ void TopLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const V
             m_accelerationStructureBuffer->bindMemory();
     }
 
-    if (m_buildScratchSize > 0u)
+    if (m_buildScratchSize > 0u || m_updateScratchSize > 0u)
     {
+        VkDeviceSize scratch_size = de::max(m_buildScratchSize, m_updateScratchSize);
         if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
         {
             const VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(
-                m_buildScratchSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+                scratch_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
             m_deviceScratchBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
                 vk, device, allocator, bufferCreateInfo,
                 MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
         }
         else
         {
-            m_hostScratchBuffer.resize(static_cast<size_t>(m_buildScratchSize));
+            m_hostScratchBuffer.resize(static_cast<size_t>(scratch_size));
         }
     }
 
