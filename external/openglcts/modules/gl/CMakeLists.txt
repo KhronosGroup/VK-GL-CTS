@@ -3,6 +3,8 @@
 set(GLCTS_GL_SRCS
 	gl3cCommonBugsTests.cpp
 	gl3cCommonBugsTests.hpp
+    gl3cDrawBuffers.cpp
+    gl3cDrawBuffers.hpp
 	gl3cTestPackages.cpp
 	gl3cTestPackages.hpp
 	gl3cGetUniform.cpp

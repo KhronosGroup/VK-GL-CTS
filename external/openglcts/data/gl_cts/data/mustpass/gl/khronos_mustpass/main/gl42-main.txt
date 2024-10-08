@@ -875,6 +875,7 @@ KHR-GL42.api.coverage
 KHR-GL42.get_uniform_tests.get_uniform
 KHR-GL42.frag_coord_conventions.multisample
 KHR-GL42.texture_storage.compressed_data
+KHR-GL42.draw_buffers.draw_buffers_1
 KHR-GL42.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL42.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL42.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp

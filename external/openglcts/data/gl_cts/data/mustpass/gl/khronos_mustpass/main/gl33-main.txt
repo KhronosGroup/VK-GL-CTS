@@ -875,6 +875,7 @@ KHR-GL33.api.coverage
 KHR-GL33.get_uniform_tests.get_uniform
 KHR-GL33.frag_coord_conventions.multisample
 KHR-GL33.texture_storage.compressed_data
+KHR-GL33.draw_buffers.draw_buffers_1
 KHR-GL33.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL33.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL33.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp

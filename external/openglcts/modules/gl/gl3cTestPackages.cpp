@@ -24,6 +24,7 @@
 
 #include "gl3cTestPackages.hpp"
 #include "gl3cCommonBugsTests.hpp"
+#include "gl3cDrawBuffers.hpp"
 #include "gl3cGetUniform.hpp"
 #include "gl3cGLSLnoperspectiveTests.hpp"
 #include "gl3cGPUShader5Tests.hpp"
@@ -197,6 +198,7 @@ void GL30TestPackage::init(void)
         addChild(new gl3cts::GetUniformTests(getContext()));
         addChild(new glcts::FragCoordConventionsTests(getContext()));
         addChild(new glcts::TextureStorageTests(getContext()));
+        addChild(new gl3cts::DrawBuffersTests(getContext()));
     }
     catch (...)
     {

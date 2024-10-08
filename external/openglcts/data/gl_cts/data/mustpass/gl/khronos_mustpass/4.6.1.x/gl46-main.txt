@@ -875,6 +875,7 @@ KHR-GL46.api.coverage
 KHR-GL46.get_uniform_tests.get_uniform
 KHR-GL46.frag_coord_conventions.multisample
 KHR-GL46.texture_storage.compressed_data
+KHR-GL46.draw_buffers.draw_buffers_1
 KHR-GL46.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL46.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL46.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp

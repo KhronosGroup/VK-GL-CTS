@@ -875,3 +875,4 @@ KHR-GL30.api.coverage
 KHR-GL30.get_uniform_tests.get_uniform
 KHR-GL30.frag_coord_conventions.multisample
 KHR-GL30.texture_storage.compressed_data
+KHR-GL30.draw_buffers.draw_buffers_1
