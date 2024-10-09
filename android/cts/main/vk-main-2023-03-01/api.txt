@@ -2008,7 +2008,6 @@ dEQP-VK.api.device_init.create_device_unsupported_features.shader_module_identif
 dEQP-VK.api.device_init.create_device_unsupported_features.subpass_merge_feedback_features_ext
 dEQP-VK.api.device_init.create_device_unsupported_features.swapchain_maintenance1_features_ext
 dEQP-VK.api.device_init.create_device_unsupported_features.tile_properties_features_qcom
-dEQP-VK.api.external.memory.android_hardware_buffer.image_formats.r8_unorm
 dEQP-VK.api.external.memory.zircon_vmo.dedicated.buffer.bind_export_import_bind
 dEQP-VK.api.external.memory.zircon_vmo.dedicated.buffer.export_bind_import_bind
 dEQP-VK.api.external.memory.zircon_vmo.dedicated.buffer.export_import_bind_bind
