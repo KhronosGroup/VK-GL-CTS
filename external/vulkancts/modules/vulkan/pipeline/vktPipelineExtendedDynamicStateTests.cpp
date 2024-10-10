@@ -4317,6 +4317,10 @@ void setDynamicStates(const TestConfig &testConfig, const vk::DeviceInterface &v
     if (testConfig.depthClampEnableConfig.dynamicValue)
         vkd.cmdSetDepthClampEnableEXT(cmdBuffer, testConfig.depthClampEnableConfig.dynamicValue.get());
 
+    if (testConfig.depthClampEnableConfig.dynamicValue &&
+        vk::isConstructionTypeShaderObject(testConfig.pipelineConstructionType))
+        vkd.cmdSetDepthClampRangeEXT(cmdBuffer, vk::VK_DEPTH_CLAMP_MODE_VIEWPORT_RANGE_EXT, nullptr);
+
     if (testConfig.polygonModeConfig.dynamicValue)
         vkd.cmdSetPolygonModeEXT(cmdBuffer, testConfig.polygonModeConfig.dynamicValue.get());
 
