@@ -13,6 +13,7 @@ vksc-default/geometry.txt
 vksc-default/glsl.txt
 vksc-default/image/astc-decode-mode.txt
 vksc-default/image/atomic-operations.txt
+vksc-default/image/concurrent-copy.txt
 vksc-default/image/depth-stencil-descriptor.txt
 vksc-default/image/depth-stencil-separate-access.txt
 vksc-default/image/device-scope-access.txt
