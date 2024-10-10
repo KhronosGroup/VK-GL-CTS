@@ -1691,7 +1691,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
             videoDeviceDriver, videoDevice, videoEncodeSessionParametersCreateInfos.back().get()));
     }
 
-    const VkImageUsageFlags dpbImageUsage = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    const VkImageUsageFlags dpbImageUsage = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR;
     // If the implementation does not support individual images for DPB and so must use arrays
     const bool separateReferenceImages =
         videoCapabilities.get()->flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR;
