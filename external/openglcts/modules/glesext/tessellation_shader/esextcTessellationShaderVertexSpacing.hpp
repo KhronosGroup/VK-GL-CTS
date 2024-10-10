@@ -76,8 +76,7 @@ public:
     /* Public methods */
     TessellationShaderVertexSpacing(Context &context, const ExtParameters &extParams,
                                     _tessellation_primitive_mode primitive_mode,
-                                    _tessellation_shader_vertex_spacing vs_mode, _tessellation_levels tess_levels,
-                                    size_t test_index);
+                                    _tessellation_shader_vertex_spacing vs_mode);
 
     virtual ~TessellationShaderVertexSpacing(void)
     {
@@ -352,7 +351,6 @@ private:
 
     _tessellation_primitive_mode m_primitive_mode;
     _tessellation_shader_vertex_spacing m_vs_mode;
-    _tessellation_levels m_tess_levels;
 };
 
 } // namespace glcts
