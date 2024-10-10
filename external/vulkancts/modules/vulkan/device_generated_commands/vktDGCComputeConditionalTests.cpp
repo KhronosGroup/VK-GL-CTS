@@ -585,7 +585,11 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
         ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *normalPipeline);
     }
 
+    // Conditional rendering state must match between preprocess and execute.
+    beginConditionalRendering(ctx.vkd, cmdBuffer, *conditionBuffer, params.inverted);
     ctx.vkd.cmdExecuteGeneratedCommandsNV(cmdBuffer, VK_TRUE, &cmdsInfo);
+    ctx.vkd.cmdEndConditionalRenderingEXT(cmdBuffer);
+
     endCommandBuffer(ctx.vkd, cmdBuffer);
     submitCommandsAndWait(ctx.vkd, ctx.device, queue, cmdBuffer);
 
@@ -594,8 +598,9 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     invalidateAlloc(ctx.vkd, ctx.device, outputBufferAlloc);
     deMemcpy(&outputValue, outputBufferData, sizeof(outputValue));
 
-    // In these cases, we expect conditional rendering to not affect preprocessing.
-    const auto expectedValue = pcValue;
+    // Note the expected value is a logical xor of the condition value and the inverted flag.
+    const auto expectedValue = ((params.conditionValue != params.inverted) ? pcValue : 0u);
+
     if (outputValue != expectedValue)
     {
         std::ostringstream msg;
