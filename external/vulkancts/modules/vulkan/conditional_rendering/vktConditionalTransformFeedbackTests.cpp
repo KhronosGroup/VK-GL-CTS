@@ -144,10 +144,14 @@ void checkSupport(Context &context, ConditionalTestSpec testSpec)
         testSpec.command == DRAW_COMMAND_TYPE_DRAW_MULTI_INDEXED_EXT)
         context.requireDeviceFunctionality("VK_EXT_multi_draw");
 
+    if (!context.getTransformFeedbackFeaturesEXT().geometryStreams)
+        TCU_THROW(NotSupportedError, "geometryStreams feature not supported");
     if (context.getTransformFeedbackPropertiesEXT().transformFeedbackDraw == VK_FALSE)
         TCU_THROW(NotSupportedError, "transformFeedbackDraw feature not supported");
     if (context.getTransformFeedbackPropertiesEXT().maxTransformFeedbackBuffers < 4)
         TCU_THROW(NotSupportedError, "maxTransformFeedbackBuffers is less than required");
+    if (context.getTransformFeedbackPropertiesEXT().maxTransformFeedbackStreams < 4)
+        TCU_THROW(NotSupportedError, "maxTransformFeedbackStreams is less than required");
 }
 
 ConditionalTransformFeedbackDraw::ConditionalTransformFeedbackDraw(Context &context, ConditionalTestSpec testSpec)
