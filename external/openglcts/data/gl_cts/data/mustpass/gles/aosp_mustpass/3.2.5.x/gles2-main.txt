@@ -16973,10 +16973,12 @@ dEQP-GLES2.functional.clipping.triangle_vertex.clip_three.clip_neg_x_pos_y_pos_z
 dEQP-GLES2.functional.clipping.triangle_vertex.clip_three.clip_neg_x_pos_y_pos_z_and_pos_x_neg_y_neg_z_and_pos_x_pos_y_neg_z
 dEQP-GLES2.functional.polygon_offset.default_enable
 dEQP-GLES2.functional.polygon_offset.default_displacement_with_units
+dEQP-GLES2.functional.polygon_offset.default_render_with_units
 dEQP-GLES2.functional.polygon_offset.default_render_with_factor
 dEQP-GLES2.functional.polygon_offset.default_factor_0_slope
 dEQP-GLES2.functional.polygon_offset.fixed16_enable
 dEQP-GLES2.functional.polygon_offset.fixed16_displacement_with_units
+dEQP-GLES2.functional.polygon_offset.fixed16_render_with_units
 dEQP-GLES2.functional.polygon_offset.fixed16_render_with_factor
 dEQP-GLES2.functional.polygon_offset.fixed16_factor_0_slope
 dEQP-GLES2.functional.draw.draw_arrays.first.first_0

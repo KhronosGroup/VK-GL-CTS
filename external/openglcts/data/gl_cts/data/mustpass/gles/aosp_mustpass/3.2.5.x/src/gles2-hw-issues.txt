@@ -4,6 +4,3 @@ dEQP-GLES2.functional.polygon_offset.default_factor_1_slope
 dEQP-GLES2.functional.polygon_offset.fixed16_result_depth_clamp
 dEQP-GLES2.functional.polygon_offset.fixed16_factor_1_slope
 
-#VK-GL-CTS 374
-dEQP-GLES2.functional.polygon_offset.default_render_with_units
-dEQP-GLES2.functional.polygon_offset.fixed16_render_with_units
