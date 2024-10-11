@@ -458,7 +458,7 @@ VkResult InstanceDriver::getPhysicalDeviceToolProperties (VkPhysicalDevice physi
 {
     vk::VkPhysicalDeviceProperties props;
     m_vk.getPhysicalDeviceProperties(physicalDevice, &props);
-    if (props.apiVersion >= VK_API_VERSION_1_1)
+    if (props.apiVersion >= VK_API_VERSION_1_3)
         return m_vk.getPhysicalDeviceToolProperties(physicalDevice, pToolCount, pToolProperties);
     else
         return m_vk.getPhysicalDeviceToolPropertiesEXT(physicalDevice, pToolCount, pToolProperties);
