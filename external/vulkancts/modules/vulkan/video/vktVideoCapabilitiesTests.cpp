@@ -540,7 +540,8 @@ void VideoCapabilitiesQueryTestInstance::validateVideoEncodeCapabilities(
     VALIDATE_FIELD_EQUAL(videoEncodeCapabilitiesKHR, videoEncodeCapabilitiesKHRSecond, supportedEncodeFeedbackFlags);
 
     const VkVideoEncodeCapabilityFlagsKHR videoEncodeCapabilityFlags =
-        VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR;
+        VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR |
+        VK_VIDEO_ENCODE_CAPABILITY_INSUFFICIENT_BITSTREAM_BUFFER_RANGE_DETECTION_BIT_KHR;
 
     if ((videoEncodeCapabilitiesKHR.flags & ~videoEncodeCapabilityFlags) != 0)
         TCU_FAIL("Undeclared VkVideoEncodeCapabilitiesKHR.flags returned");
