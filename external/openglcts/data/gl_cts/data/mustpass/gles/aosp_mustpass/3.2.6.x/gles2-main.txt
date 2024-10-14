@@ -14773,7 +14773,9 @@ dEQP-GLES2.functional.uniform_api.info_query.array_in_struct.sampler2D_samplerCu
 dEQP-GLES2.functional.uniform_api.info_query.nested_structs_arrays.float_vec4_vertex
 dEQP-GLES2.functional.uniform_api.info_query.nested_structs_arrays.float_vec4_fragment
 dEQP-GLES2.functional.uniform_api.info_query.nested_structs_arrays.float_vec4_both
+dEQP-GLES2.functional.uniform_api.info_query.nested_structs_arrays.mat4_mat2_vertex
 dEQP-GLES2.functional.uniform_api.info_query.nested_structs_arrays.mat4_mat2_fragment
+dEQP-GLES2.functional.uniform_api.info_query.nested_structs_arrays.mat4_mat2_both
 dEQP-GLES2.functional.uniform_api.info_query.nested_structs_arrays.int_ivec4_vertex
 dEQP-GLES2.functional.uniform_api.info_query.nested_structs_arrays.int_ivec4_fragment
 dEQP-GLES2.functional.uniform_api.info_query.nested_structs_arrays.int_ivec4_both
@@ -14948,7 +14950,9 @@ dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.array_in_struct.samp
 dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.nested_structs_arrays.float_vec4_vertex
 dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.nested_structs_arrays.float_vec4_fragment
 dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.nested_structs_arrays.float_vec4_both
+dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.nested_structs_arrays.mat4_mat2_vertex
 dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.nested_structs_arrays.mat4_mat2_fragment
+dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.nested_structs_arrays.mat4_mat2_both
 dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.nested_structs_arrays.int_ivec4_vertex
 dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.nested_structs_arrays.int_ivec4_fragment
 dEQP-GLES2.functional.uniform_api.value.initial.get_uniform.nested_structs_arrays.int_ivec4_both
@@ -15081,7 +15085,9 @@ dEQP-GLES2.functional.uniform_api.value.initial.render.array_in_struct.bool_bvec
 dEQP-GLES2.functional.uniform_api.value.initial.render.nested_structs_arrays.float_vec4_vertex
 dEQP-GLES2.functional.uniform_api.value.initial.render.nested_structs_arrays.float_vec4_fragment
 dEQP-GLES2.functional.uniform_api.value.initial.render.nested_structs_arrays.float_vec4_both
+dEQP-GLES2.functional.uniform_api.value.initial.render.nested_structs_arrays.mat4_mat2_vertex
 dEQP-GLES2.functional.uniform_api.value.initial.render.nested_structs_arrays.mat4_mat2_fragment
+dEQP-GLES2.functional.uniform_api.value.initial.render.nested_structs_arrays.mat4_mat2_both
 dEQP-GLES2.functional.uniform_api.value.initial.render.nested_structs_arrays.int_ivec4_vertex
 dEQP-GLES2.functional.uniform_api.value.initial.render.nested_structs_arrays.int_ivec4_fragment
 dEQP-GLES2.functional.uniform_api.value.initial.render.nested_structs_arrays.int_ivec4_both
@@ -15268,7 +15274,9 @@ dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.get_uniform.array_in
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.get_uniform.nested_structs_arrays.float_vec4_vertex
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.get_uniform.nested_structs_arrays.float_vec4_fragment
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.get_uniform.nested_structs_arrays.float_vec4_both
+dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.get_uniform.nested_structs_arrays.mat4_mat2_vertex
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.get_uniform.nested_structs_arrays.mat4_mat2_fragment
+dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.get_uniform.nested_structs_arrays.mat4_mat2_both
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.get_uniform.nested_structs_arrays.int_ivec4_vertex
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.get_uniform.nested_structs_arrays.int_ivec4_fragment
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.get_uniform.nested_structs_arrays.int_ivec4_both
@@ -15410,7 +15418,9 @@ dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.render.array_in_stru
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.render.nested_structs_arrays.float_vec4_vertex
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.render.nested_structs_arrays.float_vec4_fragment
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.render.nested_structs_arrays.float_vec4_both
+dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.render.nested_structs_arrays.mat4_mat2_vertex
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.render.nested_structs_arrays.mat4_mat2_fragment
+dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.render.nested_structs_arrays.mat4_mat2_both
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.render.nested_structs_arrays.int_ivec4_vertex
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.render.nested_structs_arrays.int_ivec4_fragment
 dEQP-GLES2.functional.uniform_api.value.assigned.by_pointer.render.nested_structs_arrays.int_ivec4_both
