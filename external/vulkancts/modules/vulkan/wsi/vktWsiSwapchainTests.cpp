@@ -833,7 +833,13 @@ tcu::TestStatus createSwapchainSimulateOOMTest(Context &context, TestParameters 
         const Unique<VkSurfaceKHR> surface(
             createSurface(instHelper.vki, instHelper.instance, params.wsiType, native.getDisplay(), native.getWindow(),
                           context.getTestContext().getCommandLine(), failingAllocator.getCallbacks()));
-        const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, vector<string>(),
+        std::vector<std::string> additionalExtensions;
+        // If driver supports VK_PRESENT_MODE_FIFO_LATEST_READY_EXT and it will used, VK_EXT_present_mode_fifo_latest_ready must be enabled
+        if (context.isDeviceFunctionalitySupported("VK_EXT_present_mode_fifo_latest_ready"))
+        {
+            additionalExtensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
+        }
+        const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, additionalExtensions,
                                      failingAllocator.getCallbacks());
         const vector<VkSwapchainCreateInfoKHR> allCases(generateSwapchainParameterCases(
             params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
