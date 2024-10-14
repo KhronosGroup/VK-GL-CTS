@@ -569,14 +569,14 @@ uint32_t getIterations(std::vector<VkPresentModeKHR> presentModes,
     // Return an iteration count that is as high as possible while keeping the test time and memory usage reasonable.
     //
     // - If FIFO is used, limit to 120 (~2s on 60Hz)
-    // - Else, limit to 1000
+    // - Else, limit to 250
 
     if (hasFifo)
         return testResizesWindowsFrequently ? 60 : 120;
 
     (void)hasShared;
     (void)hasNoVsync;
-    uint32_t iterations = 1000;
+    uint32_t iterations = 250;
 
     // If the test resizes windows frequently, reduce the testing time as that's a very slow operation.
     if (testResizesWindowsFrequently)
