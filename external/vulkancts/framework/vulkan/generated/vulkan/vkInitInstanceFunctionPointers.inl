@@ -130,3 +130,4 @@ m_vk.acquireDrmDisplayEXT = (AcquireDrmDisplayEXTFunc) GET_PROC_ADDR("vkAcquireD
 m_vk.getDrmDisplayEXT = (GetDrmDisplayEXTFunc) GET_PROC_ADDR("vkGetDrmDisplayEXT");
 m_vk.getPhysicalDeviceOpticalFlowImageFormatsNV = (GetPhysicalDeviceOpticalFlowImageFormatsNVFunc) GET_PROC_ADDR("vkGetPhysicalDeviceOpticalFlowImageFormatsNV");
 m_vk.getPhysicalDeviceCooperativeMatrixPropertiesKHR = (GetPhysicalDeviceCooperativeMatrixPropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR");
+m_vk.getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV = (GetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNVFunc) GET_PROC_ADDR("vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV");

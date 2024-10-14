@@ -6411,7 +6411,7 @@ struct VkGeneratedCommandsShaderInfoEXT
 struct VkGeneratedCommandsMemoryRequirementsInfoEXT
 {
 	VkStructureType				sType;
-	void*						pNext;
+	const void*					pNext;
 	VkIndirectExecutionSetEXT	indirectExecutionSet;
 	VkIndirectCommandsLayoutEXT	indirectCommandsLayout;
 	uint32_t					maxSequenceCount;
@@ -9299,6 +9299,8 @@ struct VkPhysicalDeviceShaderEnqueuePropertiesAMDX
 	uint32_t		maxExecutionGraphShaderPayloadSize;
 	uint32_t		maxExecutionGraphShaderPayloadCount;
 	uint32_t		executionGraphDispatchAddressAlignment;
+	uint32_t		maxExecutionGraphWorkgroupCount[3];
+	uint32_t		maxExecutionGraphWorkgroups;
 };
 
 struct VkPhysicalDeviceShaderEnqueueFeaturesAMDX
@@ -9306,6 +9308,7 @@ struct VkPhysicalDeviceShaderEnqueueFeaturesAMDX
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shaderEnqueue;
+	VkBool32		shaderMeshEnqueue;
 };
 
 struct VkExecutionGraphPipelineCreateInfoAMDX
@@ -9333,7 +9336,9 @@ struct VkExecutionGraphPipelineScratchSizeAMDX
 {
 	VkStructureType	sType;
 	void*			pNext;
-	VkDeviceSize	size;
+	VkDeviceSize	minSize;
+	VkDeviceSize	maxSize;
+	VkDeviceSize	sizeGranularity;
 };
 
 struct VkDispatchGraphInfoAMDX
@@ -9854,6 +9859,13 @@ struct VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT
 	VkBool32		shaderReplicatedComposites;
 };
 
+struct VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentModeFifoLatestReady;
+};
+
 struct VkDepthClampRangeEXT
 {
 	float	minDepthClamp;
@@ -9866,6 +9878,44 @@ struct VkPipelineViewportDepthClampControlCreateInfoEXT
 	const void*					pNext;
 	VkDepthClampModeEXT			depthClampMode;
 	const VkDepthClampRangeEXT*	pDepthClampRange;
+};
+
+struct VkPhysicalDeviceCooperativeMatrix2FeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		cooperativeMatrixWorkgroupScope;
+	VkBool32		cooperativeMatrixFlexibleDimensions;
+	VkBool32		cooperativeMatrixReductions;
+	VkBool32		cooperativeMatrixConversions;
+	VkBool32		cooperativeMatrixPerElementOperations;
+	VkBool32		cooperativeMatrixTensorAddressing;
+	VkBool32		cooperativeMatrixBlockLoads;
+};
+
+struct VkPhysicalDeviceCooperativeMatrix2PropertiesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		cooperativeMatrixWorkgroupScopeMaxWorkgroupSize;
+	uint32_t		cooperativeMatrixFlexibleDimensionsMaxDimension;
+	uint32_t		cooperativeMatrixWorkgroupScopeReservedSharedMemory;
+};
+
+struct VkCooperativeMatrixFlexibleDimensionsPropertiesNV
+{
+	VkStructureType		sType;
+	void*				pNext;
+	uint32_t			MGranularity;
+	uint32_t			NGranularity;
+	uint32_t			KGranularity;
+	VkComponentTypeKHR	AType;
+	VkComponentTypeKHR	BType;
+	VkComponentTypeKHR	CType;
+	VkComponentTypeKHR	ResultType;
+	VkBool32			saturatingAccumulation;
+	VkScopeKHR			scope;
+	uint32_t			workgroupInvocations;
 };
 
 struct StdVideoH264SpsVuiFlags

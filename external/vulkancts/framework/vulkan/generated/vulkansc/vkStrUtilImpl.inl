@@ -1060,13 +1060,14 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,				"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,					"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,							"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT,		"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_BIT,						"VK_PIPELINE_CREATE_DISPATCH_BASE_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT,	"VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT,			"VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,							"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,								"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,										"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT,					"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_BIT,									"VK_PIPELINE_CREATE_DISPATCH_BASE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT,				"VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT,						"VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,	"VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1328,6 +1329,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO:									return "VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES";
 		case VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO:						return "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO";
+		case VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR:				return "VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_PLACEHOLDER_OFFSET_0_NV:						return "VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_PLACEHOLDER_OFFSET_0_NV";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO:								return "VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES";
@@ -1626,6 +1628,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_CREATE_INFO_NV:								return "VK_STRUCTURE_TYPE_SEMAPHORE_SCI_SYNC_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_2_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SCI_SYNC_2_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_DEVICE_SEMAPHORE_SCI_SYNC_POOL_RESERVATION_CREATE_INFO_NV:		return "VK_STRUCTURE_TYPE_DEVICE_SEMAPHORE_SCI_SYNC_POOL_RESERVATION_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX:									return "VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX";
 		case VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX:								return "VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX";
@@ -2672,6 +2675,22 @@ tcu::Format::Bitfield<32> getSubmitFlagsStr (VkSubmitFlags value)
 		tcu::Format::BitDesc(VK_SUBMIT_PROTECTED_BIT,	"VK_SUBMIT_PROTECTED_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+const char* getLayerSettingTypeEXTName (VkLayerSettingTypeEXT value)
+{
+	switch (value)
+	{
+		case VK_LAYER_SETTING_TYPE_BOOL32_EXT:	return "VK_LAYER_SETTING_TYPE_BOOL32_EXT";
+		case VK_LAYER_SETTING_TYPE_INT32_EXT:	return "VK_LAYER_SETTING_TYPE_INT32_EXT";
+		case VK_LAYER_SETTING_TYPE_INT64_EXT:	return "VK_LAYER_SETTING_TYPE_INT64_EXT";
+		case VK_LAYER_SETTING_TYPE_UINT32_EXT:	return "VK_LAYER_SETTING_TYPE_UINT32_EXT";
+		case VK_LAYER_SETTING_TYPE_UINT64_EXT:	return "VK_LAYER_SETTING_TYPE_UINT64_EXT";
+		case VK_LAYER_SETTING_TYPE_FLOAT32_EXT:	return "VK_LAYER_SETTING_TYPE_FLOAT32_EXT";
+		case VK_LAYER_SETTING_TYPE_FLOAT64_EXT:	return "VK_LAYER_SETTING_TYPE_FLOAT64_EXT";
+		case VK_LAYER_SETTING_TYPE_STRING_EXT:	return "VK_LAYER_SETTING_TYPE_STRING_EXT";
+		default:								return nullptr;
+	}
 }
 
 const char* getVendorIdName (VkVendorId value)
@@ -5051,6 +5070,29 @@ std::ostream& operator<< (std::ostream& s, const VkValidationFeaturesEXT& value)
 	s << "\tpEnabledValidationFeatures = " << value.pEnabledValidationFeatures << '\n';
 	s << "\tdisabledValidationFeatureCount = " << value.disabledValidationFeatureCount << '\n';
 	s << "\tpDisabledValidationFeatures = " << value.pDisabledValidationFeatures << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkLayerSettingsCreateInfoEXT& value)
+{
+	s << "VkLayerSettingsCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsettingCount = " << value.settingCount << '\n';
+	s << "\tpSettings = " << value.pSettings << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkLayerSettingEXT& value)
+{
+	s << "VkLayerSettingEXT = {\n";
+	s << "\tpLayerName = " << getCharPtrStr(value.pLayerName) << '\n';
+	s << "\tpSettingName = " << getCharPtrStr(value.pSettingName) << '\n';
+	s << "\ttype = " << value.type << '\n';
+	s << "\tvalueCount = " << value.valueCount << '\n';
+	s << "\tpValues = " << value.pValues << '\n';
 	s << '}';
 	return s;
 }
@@ -8798,6 +8840,18 @@ std::ostream& operator<< (std::ostream& s, const VkDrmFormatModifierProperties2E
 	s << "\tdrmFormatModifier = " << value.drmFormatModifier << '\n';
 	s << "\tdrmFormatModifierPlaneCount = " << value.drmFormatModifierPlaneCount << '\n';
 	s << "\tdrmFormatModifierTilingFeatures = " << getFormatFeatureFlags2Str(value.drmFormatModifierTilingFeatures) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderingFragmentShadingRateAttachmentInfoKHR& value)
+{
+	s << "VkRenderingFragmentShadingRateAttachmentInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageView = " << value.imageView << '\n';
+	s << "\timageLayout = " << value.imageLayout << '\n';
+	s << "\tshadingRateAttachmentTexelSize = " << value.shadingRateAttachmentTexelSize << '\n';
 	s << '}';
 	return s;
 }

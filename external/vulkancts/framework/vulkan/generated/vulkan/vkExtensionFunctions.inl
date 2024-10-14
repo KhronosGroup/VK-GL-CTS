@@ -1213,6 +1213,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_present_mode_fifo_latest_ready")
+	{
+		return;
+	}
 	if (extName == "VK_FUCHSIA_external_memory")
 	{
 		return;
@@ -1632,6 +1636,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	}
 	if (extName == "VK_EXT_depth_clamp_control")
 	{
+		return;
+	}
+	if (extName == "VK_NV_cooperative_matrix2")
+	{
+		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV");
 		return;
 	}
 	if (extName == "vulkan_video_codecs_common")
@@ -2443,6 +2452,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_AMD_buffer_marker")
 	{
 		functions.push_back("vkCmdWriteBufferMarkerAMD");
+		// Dependencies: VK_VERSION_1_3,VK_KHR_synchronization2
+		if (checkVersion(1, 3, apiVersion) || (checkVersion(1, 3, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_synchronization2"))) {
+			functions.push_back("vkCmdWriteBufferMarker2AMD");
+		}
 		return;
 	}
 	if (extName == "VK_KHR_shader_atomic_int64")
@@ -2539,6 +2552,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkCmdSetCheckpointNV");
 		functions.push_back("vkGetQueueCheckpointDataNV");
+		// Dependencies: VK_VERSION_1_3,VK_KHR_synchronization2
+		if (checkVersion(1, 3, apiVersion) || (checkVersion(1, 3, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_synchronization2"))) {
+			functions.push_back("vkGetQueueCheckpointData2NV");
+		}
 		return;
 	}
 	if (extName == "VK_KHR_timeline_semaphore")
@@ -2934,14 +2951,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdPipelineBarrier2KHR");
 		functions.push_back("vkCmdWriteTimestamp2KHR");
 		functions.push_back("vkQueueSubmit2KHR");
-		// Dependencies: VK_AMD_buffer_marker
-		if (extensionIsSupported(vDEP, "VK_AMD_buffer_marker")) {
-			functions.push_back("vkCmdWriteBufferMarker2AMD");
-		}
-		// Dependencies: VK_NV_device_diagnostic_checkpoints
-		if (extensionIsSupported(vDEP, "VK_NV_device_diagnostic_checkpoints")) {
-			functions.push_back("vkGetQueueCheckpointData2NV");
-		}
 		return;
 	}
 	if (extName == "VK_EXT_descriptor_buffer")
@@ -3084,6 +3093,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_KHR_format_feature_flags2")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_present_mode_fifo_latest_ready")
 	{
 		return;
 	}
@@ -3788,6 +3801,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdSetDepthClampRangeEXT");
 		return;
 	}
+	if (extName == "VK_NV_cooperative_matrix2")
+	{
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -4114,6 +4131,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_depth_clip_control",
 	"VK_EXT_primitive_topology_list_restart",
 	"VK_KHR_format_feature_flags2",
+	"VK_EXT_present_mode_fifo_latest_ready",
 	"VK_FUCHSIA_external_memory",
 	"VK_FUCHSIA_external_semaphore",
 	"VK_FUCHSIA_buffer_collection",
@@ -4213,4 +4231,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_device_generated_commands",
 	"VK_MESA_image_alignment_control",
 	"VK_EXT_depth_clamp_control",
+	"VK_NV_cooperative_matrix2",
 };

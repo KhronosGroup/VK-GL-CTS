@@ -5497,6 +5497,43 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderReplicatedCompositesFeaturesEXT (
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+	VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT	devicePresentModeFifoLatestReadyFeaturesEXT[count];
+	const bool												isPresentModeFifoLatestReadyFeaturesEXT = checkExtension(properties, "VK_EXT_present_mode_fifo_latest_ready");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&devicePresentModeFifoLatestReadyFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT));
+		devicePresentModeFifoLatestReadyFeaturesEXT[ndx].sType = isPresentModeFifoLatestReadyFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		devicePresentModeFifoLatestReadyFeaturesEXT[ndx].pNext = nullptr;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &devicePresentModeFifoLatestReadyFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isPresentModeFifoLatestReadyFeaturesEXT)
+		log << TestLog::Message << devicePresentModeFifoLatestReadyFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isPresentModeFifoLatestReadyFeaturesEXT &&
+		(devicePresentModeFifoLatestReadyFeaturesEXT[0].presentModeFifoLatestReady != devicePresentModeFifoLatestReadyFeaturesEXT[1].presentModeFifoLatestReady))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
 {
     if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
@@ -5832,6 +5869,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "map_memory_placed_features_ext", testPhysicalDeviceFeatureMapMemoryPlacedFeaturesEXT);
 	addFunctionCase(testGroup, "image_alignment_control_features_mesa", testPhysicalDeviceFeatureImageAlignmentControlFeaturesMESA);
 	addFunctionCase(testGroup, "shader_replicated_composites_features_ext", testPhysicalDeviceFeatureShaderReplicatedCompositesFeaturesEXT);
+	addFunctionCase(testGroup, "present_mode_fifo_latest_ready_features_ext", testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesEXT);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", createDeviceWithPromoted12Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted13_structures", createDeviceWithPromoted13Structures);

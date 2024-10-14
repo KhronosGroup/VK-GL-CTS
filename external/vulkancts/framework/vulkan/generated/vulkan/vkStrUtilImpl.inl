@@ -2200,6 +2200,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3:													return "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA:							return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA";
 		case VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA:								return "VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA:								return "VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA";
@@ -2447,6 +2448,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA:							return "VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_CONTROL_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_CONTROL_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLAMP_CONTROL_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLAMP_CONTROL_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_FLEXIBLE_DIMENSIONS_PROPERTIES_NV:				return "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_FLEXIBLE_DIMENSIONS_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_PROPERTIES_NV";
 		default:																					return nullptr;
 	}
 }
@@ -3831,6 +3835,7 @@ tcu::Format::Bitfield<64> getPipelineCreateFlags2KHRStr (VkPipelineCreateFlags2K
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT,								"VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT,							"VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR,										"VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_EXECUTION_GRAPH_BIT_AMDX,									"VK_PIPELINE_CREATE_2_EXECUTION_GRAPH_BIT_AMDX"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT,							"VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT,								"VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT"),
 	};
@@ -4053,6 +4058,7 @@ const char* getPresentModeKHRName (VkPresentModeKHR value)
 		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:				return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
 		case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:		return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
 		case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:	return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+		case VK_PRESENT_MODE_FIFO_LATEST_READY_EXT:			return "VK_PRESENT_MODE_FIFO_LATEST_READY_EXT";
 		default:											return nullptr;
 	}
 }
@@ -18553,6 +18559,8 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderEnqueuePr
 	s << "\tmaxExecutionGraphShaderPayloadSize = " << value.maxExecutionGraphShaderPayloadSize << '\n';
 	s << "\tmaxExecutionGraphShaderPayloadCount = " << value.maxExecutionGraphShaderPayloadCount << '\n';
 	s << "\texecutionGraphDispatchAddressAlignment = " << value.executionGraphDispatchAddressAlignment << '\n';
+	s << "\tmaxExecutionGraphWorkgroupCount = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.maxExecutionGraphWorkgroupCount), DE_ARRAY_END(value.maxExecutionGraphWorkgroupCount)) << '\n';
+	s << "\tmaxExecutionGraphWorkgroups = " << value.maxExecutionGraphWorkgroups << '\n';
 	s << '}';
 	return s;
 }
@@ -18563,6 +18571,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderEnqueueFe
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderEnqueue = " << value.shaderEnqueue << '\n';
+	s << "\tshaderMeshEnqueue = " << value.shaderMeshEnqueue << '\n';
 	s << '}';
 	return s;
 }
@@ -18599,7 +18608,9 @@ std::ostream& operator<< (std::ostream& s, const VkExecutionGraphPipelineScratch
 	s << "VkExecutionGraphPipelineScratchSizeAMDX = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tsize = " << value.size << '\n';
+	s << "\tminSize = " << value.minSize << '\n';
+	s << "\tmaxSize = " << value.maxSize << '\n';
+	s << "\tsizeGranularity = " << value.sizeGranularity << '\n';
 	s << '}';
 	return s;
 }
@@ -19317,11 +19328,68 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderReplicate
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT& value)
+{
+	s << "VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentModeFifoLatestReady = " << value.presentModeFifoLatestReady << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDepthClampRangeEXT& value)
 {
 	s << "VkDepthClampRangeEXT = {\n";
 	s << "\tminDepthClamp = " << value.minDepthClamp << '\n';
 	s << "\tmaxDepthClamp = " << value.maxDepthClamp << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatrix2FeaturesNV& value)
+{
+	s << "VkPhysicalDeviceCooperativeMatrix2FeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcooperativeMatrixWorkgroupScope = " << value.cooperativeMatrixWorkgroupScope << '\n';
+	s << "\tcooperativeMatrixFlexibleDimensions = " << value.cooperativeMatrixFlexibleDimensions << '\n';
+	s << "\tcooperativeMatrixReductions = " << value.cooperativeMatrixReductions << '\n';
+	s << "\tcooperativeMatrixConversions = " << value.cooperativeMatrixConversions << '\n';
+	s << "\tcooperativeMatrixPerElementOperations = " << value.cooperativeMatrixPerElementOperations << '\n';
+	s << "\tcooperativeMatrixTensorAddressing = " << value.cooperativeMatrixTensorAddressing << '\n';
+	s << "\tcooperativeMatrixBlockLoads = " << value.cooperativeMatrixBlockLoads << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatrix2PropertiesNV& value)
+{
+	s << "VkPhysicalDeviceCooperativeMatrix2PropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcooperativeMatrixWorkgroupScopeMaxWorkgroupSize = " << value.cooperativeMatrixWorkgroupScopeMaxWorkgroupSize << '\n';
+	s << "\tcooperativeMatrixFlexibleDimensionsMaxDimension = " << value.cooperativeMatrixFlexibleDimensionsMaxDimension << '\n';
+	s << "\tcooperativeMatrixWorkgroupScopeReservedSharedMemory = " << value.cooperativeMatrixWorkgroupScopeReservedSharedMemory << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCooperativeMatrixFlexibleDimensionsPropertiesNV& value)
+{
+	s << "VkCooperativeMatrixFlexibleDimensionsPropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tMGranularity = " << value.MGranularity << '\n';
+	s << "\tNGranularity = " << value.NGranularity << '\n';
+	s << "\tKGranularity = " << value.KGranularity << '\n';
+	s << "\tAType = " << value.AType << '\n';
+	s << "\tBType = " << value.BType << '\n';
+	s << "\tCType = " << value.CType << '\n';
+	s << "\tResultType = " << value.ResultType << '\n';
+	s << "\tsaturatingAccumulation = " << value.saturatingAccumulation << '\n';
+	s << "\tscope = " << value.scope << '\n';
+	s << "\tworkgroupInvocations = " << value.workgroupInvocations << '\n';
 	s << '}';
 	return s;
 }
