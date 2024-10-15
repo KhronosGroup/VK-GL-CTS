@@ -538,10 +538,10 @@ tcu::TestStatus Image2DView3DImageInstance::iterate(void)
     }
 
     // Make an image view covering one of the mip levels.
-    const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(
+    const VkImageSubresourceRange viewSubresourceRange = makeImageSubresourceRange(
         VK_IMAGE_ASPECT_COLOR_BIT, m_testParameters.mipLevel, 1u, m_testParameters.layerNdx, 1u);
-    const Unique<VkImageView> imageView(
-        makeImageView(vk, device, testImage, VK_IMAGE_VIEW_TYPE_2D, m_testParameters.imageFormat, subresourceRange));
+    const Unique<VkImageView> imageView(makeImageView(vk, device, testImage, VK_IMAGE_VIEW_TYPE_2D,
+                                                      m_testParameters.imageFormat, viewSubresourceRange));
 
     // resultImage is used in sampler / combined image sampler tests to verify the sampled image.
     MovePtr<ImageWithMemory> resultImage;
@@ -677,6 +677,9 @@ tcu::TestStatus Image2DView3DImageInstance::iterate(void)
     }
     else
     {
+        const auto singleMipSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+        const auto allMipsSRR   = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, mipLevelCount, 0u, 1u);
+
         // Clear the test image.
         const VkImageMemoryBarrier preImageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
@@ -688,14 +691,14 @@ tcu::TestStatus Image2DView3DImageInstance::iterate(void)
             queueFamilyIndex,                       // uint32_t srcQueueFamilyIndex;
             queueFamilyIndex,                       // uint32_t dstQueueFamilyIndex;
             testImage,                              // VkImage image;
-            subresourceRange                        // VkImageSubresourceRange subresourceRange;
+            allMipsSRR,                             // VkImageSubresourceRange subresourceRange;
         };
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                               (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &preImageBarrier);
 
         const VkClearColorValue clearColor = makeClearValueColor(tcu::Vec4(0, 0, 0, 1)).color;
         vk.cmdClearColorImage(*cmdBuffer, testImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1,
-                              &subresourceRange);
+                              &singleMipSRR);
 
         const VkImageMemoryBarrier postImageBarrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
@@ -707,7 +710,7 @@ tcu::TestStatus Image2DView3DImageInstance::iterate(void)
             queueFamilyIndex,                       // uint32_t srcQueueFamilyIndex;
             queueFamilyIndex,                       // uint32_t dstQueueFamilyIndex;
             testImage,                              // VkImage image;
-            subresourceRange                        // VkImageSubresourceRange subresourceRange;
+            allMipsSRR,                             // VkImageSubresourceRange subresourceRange;
         };
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, pipelineStage, (VkDependencyFlags)0, 0,
                               nullptr, 0, nullptr, 1, &postImageBarrier);
