@@ -1142,7 +1142,7 @@ tcu::TestStatus testPhysicalDeviceFeatureVertexAttributeDivisorFeatures (Context
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
 	VkPhysicalDeviceVertexAttributeDivisorFeatures	deviceVertexAttributeDivisorFeatures[count];
-	const bool										isVertexAttributeDivisorFeatures = checkExtension(properties, "VK_KHR_vertex_attribute_divisor") || context.contextSupports(vk::ApiVersion(0, 1, 4, 0));
+	const bool										isVertexAttributeDivisorFeatures = checkExtension(properties, "VK_KHR_vertex_attribute_divisor") || checkExtension(properties, "VK_EXT_vertex_attribute_divisor") || context.contextSupports(vk::ApiVersion(0, 1, 4, 0));
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -1255,7 +1255,7 @@ tcu::TestStatus testPhysicalDeviceFeatureComputeShaderDerivativesFeaturesKHR (Co
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
 	VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR	deviceComputeShaderDerivativesFeaturesKHR[count];
-	const bool											isComputeShaderDerivativesFeaturesKHR = checkExtension(properties, "VK_KHR_compute_shader_derivatives");
+	const bool											isComputeShaderDerivativesFeaturesKHR = checkExtension(properties, "VK_KHR_compute_shader_derivatives") || checkExtension(properties, "VK_NV_compute_shader_derivatives");
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -2017,7 +2017,7 @@ tcu::TestStatus testPhysicalDeviceFeatureIndexTypeUint8Features (Context& contex
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
 	VkPhysicalDeviceIndexTypeUint8Features	deviceIndexTypeUint8Features[count];
-	const bool								isIndexTypeUint8Features = checkExtension(properties, "VK_KHR_index_type_uint8") || context.contextSupports(vk::ApiVersion(0, 1, 4, 0));
+	const bool								isIndexTypeUint8Features = checkExtension(properties, "VK_KHR_index_type_uint8") || checkExtension(properties, "VK_EXT_index_type_uint8") || context.contextSupports(vk::ApiVersion(0, 1, 4, 0));
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -2317,7 +2317,7 @@ tcu::TestStatus testPhysicalDeviceFeatureLineRasterizationFeatures (Context& con
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
 	VkPhysicalDeviceLineRasterizationFeatures	deviceLineRasterizationFeatures[count];
-	const bool									isLineRasterizationFeatures = checkExtension(properties, "VK_KHR_line_rasterization") || context.contextSupports(vk::ApiVersion(0, 1, 4, 0));
+	const bool									isLineRasterizationFeatures = checkExtension(properties, "VK_KHR_line_rasterization") || checkExtension(properties, "VK_EXT_line_rasterization") || context.contextSupports(vk::ApiVersion(0, 1, 4, 0));
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -3396,7 +3396,7 @@ tcu::TestStatus testPhysicalDeviceFeatureMutableDescriptorTypeFeaturesEXT (Conte
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
 	VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT	deviceMutableDescriptorTypeFeaturesEXT[count];
-	const bool											isMutableDescriptorTypeFeaturesEXT = checkExtension(properties, "VK_EXT_mutable_descriptor_type");
+	const bool											isMutableDescriptorTypeFeaturesEXT = checkExtension(properties, "VK_EXT_mutable_descriptor_type") || checkExtension(properties, "VK_VALVE_mutable_descriptor_type");
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -4143,7 +4143,7 @@ tcu::TestStatus testPhysicalDeviceFeatureFragmentShaderBarycentricFeaturesKHR (C
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
 	VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR	deviceFragmentShaderBarycentricFeaturesKHR[count];
-	const bool												isFragmentShaderBarycentricFeaturesKHR = checkExtension(properties, "VK_KHR_fragment_shader_barycentric");
+	const bool												isFragmentShaderBarycentricFeaturesKHR = checkExtension(properties, "VK_KHR_fragment_shader_barycentric") || checkExtension(properties, "VK_NV_fragment_shader_barycentric");
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -4291,7 +4291,7 @@ tcu::TestStatus testPhysicalDeviceFeatureRasterizationOrderAttachmentAccessFeatu
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
 	VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT	deviceRasterizationOrderAttachmentAccessFeaturesEXT[count];
-	const bool														isRasterizationOrderAttachmentAccessFeaturesEXT = checkExtension(properties, "VK_EXT_rasterization_order_attachment_access");
+	const bool														isRasterizationOrderAttachmentAccessFeaturesEXT = checkExtension(properties, "VK_EXT_rasterization_order_attachment_access") || checkExtension(properties, "VK_ARM_rasterization_order_attachment_access");
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{

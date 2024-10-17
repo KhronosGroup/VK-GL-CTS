@@ -10,7 +10,6 @@ namespace vk
 #define DECL_SUBGROUP_EXTENSION_NAME "core_property"
 #define DECL_PROTECTED_MEMORY_EXTENSION_NAME "core_property"
 
-
 template<> void initPropertyFromBlob<VkPhysicalDevicePushDescriptorProperties>(VkPhysicalDevicePushDescriptorProperties& propertyType, const AllPropertiesBlobs& allPropertiesBlobs)
 {
 	propertyType.maxPushDescriptors = allPropertiesBlobs.vk14.maxPushDescriptors;
@@ -300,7 +299,6 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceMapMemoryPlacedPropertiesEX
 template<> void initPropertyFromBlob<VkPhysicalDeviceImageAlignmentControlPropertiesMESA>(VkPhysicalDeviceImageAlignmentControlPropertiesMESA&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceCooperativeMatrix2PropertiesNV>(VkPhysicalDeviceCooperativeMatrix2PropertiesNV&, const AllPropertiesBlobs&) {}
 
-
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceTransformFeedbackPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_PROPERTIES_EXT, VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME, VK_EXT_TRANSFORM_FEEDBACK_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMultiviewProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHR, VK_KHR_MULTIVIEW_EXTENSION_NAME, VK_KHR_MULTIVIEW_SPEC_VERSION}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePipelineRobustnessProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_PROPERTIES_EXT, VK_EXT_PIPELINE_ROBUSTNESS_EXTENSION_NAME, VK_EXT_PIPELINE_ROBUSTNESS_SPEC_VERSION}; }
@@ -489,6 +487,21 @@ static const PropertyStructCreationData propertyStructCreationArray[] =
 	{ createPropertyStructWrapper<VkPhysicalDeviceProtectedMemoryProperties>, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0 },
 };
 
+const std::string getPreviousPropertyExtName (const std::string &name)
+{
+	const std::map<std::string, std::string> previousExtensionsMap {
+		{ "VK_KHR_fragment_shader_barycentric", "VK_NV_fragment_shader_barycentric" },
+		{ "VK_KHR_compute_shader_derivatives", "VK_NV_compute_shader_derivatives" },
+		{ "VK_KHR_vertex_attribute_divisor", "VK_EXT_vertex_attribute_divisor" },
+		{ "VK_KHR_line_rasterization", "VK_EXT_line_rasterization" }
+	};
+
+	auto it = previousExtensionsMap.find(name);
+	if(it == previousExtensionsMap.end())
+		return {};
+	return it->second;
+}
+
 uint32_t getBlobPropertiesVersion (VkStructureType sType)
 {
 	const std::map<VkStructureType, uint32_t> sTypeBlobMap
@@ -530,4 +543,3 @@ uint32_t getBlobPropertiesVersion (VkStructureType sType)
 }
 
 } // vk
-

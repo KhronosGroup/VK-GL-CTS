@@ -10,7 +10,6 @@ namespace vk
 #define DECL_PROTECTED_MEMORY_EXTENSION_NAME "core_feature"
 #define DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME "core_feature"
 
-
 template<> void initFeatureFromBlob<VkPhysicalDevicePrivateDataFeatures>(VkPhysicalDevicePrivateDataFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
 	featureType.privateData = allFeaturesBlobs.vk13.privateData;
@@ -392,7 +391,6 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeMatrix2FeaturesNV
 template<> void initFeatureFromBlob<VkPhysicalDeviceHdrVividFeaturesHUAWEI>(VkPhysicalDeviceHdrVividFeaturesHUAWEI&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT>(VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&, const AllFeaturesBlobs&) {}
 
-
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceTransformFeedbackFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT, VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME, VK_EXT_TRANSFORM_FEEDBACK_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDynamicRenderingFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCornerSampledImageFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CORNER_SAMPLED_IMAGE_FEATURES_NV, VK_NV_CORNER_SAMPLED_IMAGE_EXTENSION_NAME, VK_NV_CORNER_SAMPLED_IMAGE_SPEC_VERSION}; }
@@ -593,7 +591,6 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCooperativeMatrix2Feature
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT, VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS_EXTENSION_NAME, VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceProtectedMemoryFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderDrawParametersFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES, DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, 0}; }
-
 
 static const FeatureStructCreationData featureStructCreationArray[]
 {
@@ -799,10 +796,28 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderDrawParametersFeatures>, DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, 0 },
 };
 
+const std::string getPreviousFeatureExtName (const std::string &name)
+{
+	const std::map<std::string, std::string> previousExtensionsMap {
+		{ "VK_KHR_global_priority", "VK_EXT_global_priority" },
+		{ "VK_KHR_fragment_shader_barycentric", "VK_NV_fragment_shader_barycentric" },
+		{ "VK_EXT_rasterization_order_attachment_access", "VK_ARM_rasterization_order_attachment_access" },
+		{ "VK_EXT_mutable_descriptor_type", "VK_VALVE_mutable_descriptor_type" },
+		{ "VK_KHR_compute_shader_derivatives", "VK_NV_compute_shader_derivatives" },
+		{ "VK_KHR_vertex_attribute_divisor", "VK_EXT_vertex_attribute_divisor" },
+		{ "VK_KHR_index_type_uint8", "VK_EXT_index_type_uint8" },
+		{ "VK_KHR_line_rasterization", "VK_EXT_line_rasterization" }
+	};
+
+	auto it = previousExtensionsMap.find(name);
+	if(it == previousExtensionsMap.end())
+		return {};
+	return it->second;
+}
+
 uint32_t getBlobFeaturesVersion (VkStructureType sType)
 {
-	const std::map<VkStructureType, uint32_t> sTypeBlobMap
-	{
+	const std::map<VkStructureType, uint32_t> sTypeBlobMap {
 		// Vulkan11
 		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR,							VK_API_VERSION_1_1 },
 		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHR,								VK_API_VERSION_1_1 },
@@ -861,4 +876,3 @@ uint32_t getBlobFeaturesVersion (VkStructureType sType)
 }
 
 } // vk
-

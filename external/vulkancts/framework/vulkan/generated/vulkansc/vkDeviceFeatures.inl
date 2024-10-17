@@ -27,7 +27,6 @@ namespace vk
 #define DECL_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME "core_feature"
 #define DECL_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME "core_feature"
 
-
 template<> void initFeatureFromBlob<VkPhysicalDeviceVariablePointersFeatures>(VkPhysicalDeviceVariablePointersFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
 	featureType.variablePointersStorageBuffer = allFeaturesBlobs.vk11.variablePointersStorageBuffer;
@@ -174,7 +173,6 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceVulkanSC10Features>(VkPhysic
 template<> void initFeatureFromBlob<VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT>(VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX>(VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&, const AllFeaturesBlobs&) {}
 
-
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceTextureCompressionASTCHDRFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_HDR_FEATURES_EXT, VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR_EXTENSION_NAME, VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceASTCDecodeFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ASTC_DECODE_FEATURES_EXT, VK_EXT_ASTC_DECODE_MODE_EXTENSION_NAME, VK_EXT_ASTC_DECODE_MODE_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDepthClipEnableFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT, VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME, VK_EXT_DEPTH_CLIP_ENABLE_SPEC_VERSION}; }
@@ -227,7 +225,6 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceUniformBufferStandardLayo
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceBufferDeviceAddressFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES, DECL_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, 0}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImagelessFramebufferFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES, DECL_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME, 0}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES, DECL_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME, 0}; }
-
 
 static const FeatureStructCreationData featureStructCreationArray[]
 {
@@ -285,10 +282,24 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures>, DECL_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME, 0 },
 };
 
+const std::string getPreviousFeatureExtName (const std::string &name)
+{
+	const std::map<std::string, std::string> previousExtensionsMap {
+		{ "VK_KHR_global_priority", "VK_EXT_global_priority" },
+		{ "VK_KHR_vertex_attribute_divisor", "VK_EXT_vertex_attribute_divisor" },
+		{ "VK_KHR_index_type_uint8", "VK_EXT_index_type_uint8" },
+		{ "VK_KHR_line_rasterization", "VK_EXT_line_rasterization" }
+	};
+
+	auto it = previousExtensionsMap.find(name);
+	if(it == previousExtensionsMap.end())
+		return {};
+	return it->second;
+}
+
 uint32_t getBlobFeaturesVersion (VkStructureType sType)
 {
-	const std::map<VkStructureType, uint32_t> sTypeBlobMap
-	{
+	const std::map<VkStructureType, uint32_t> sTypeBlobMap {
 		// Vulkan11
 		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,								VK_API_VERSION_1_1 },
 		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES,									VK_API_VERSION_1_1 },
@@ -319,4 +330,3 @@ uint32_t getBlobFeaturesVersion (VkStructureType sType)
 }
 
 } // vk
-

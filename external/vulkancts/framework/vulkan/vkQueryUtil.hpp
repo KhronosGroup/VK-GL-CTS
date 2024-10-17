@@ -147,8 +147,7 @@ struct RequiredLayer
 bool isCompatible(const VkExtensionProperties &extensionProperties, const RequiredExtension &required);
 bool isCompatible(const VkLayerProperties &layerProperties, const RequiredLayer &required);
 
-template <typename ExtensionIterator>
-bool isExtensionStructSupported(ExtensionIterator begin, ExtensionIterator end, const RequiredExtension &required);
+bool isExtensionStructSupported(const std::vector<std::string> &extensionStrings, const std::string &extensionName);
 bool isExtensionStructSupported(const std::vector<VkExtensionProperties> &extensions,
                                 const RequiredExtension &required);
 
