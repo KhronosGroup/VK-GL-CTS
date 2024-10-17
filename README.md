@@ -6,6 +6,19 @@ which originated from dEQP (drawElements Quality Program).
 VK-GL-CTS contains tests for several graphics APIs, including
 OpenGL, OpenGL ES, EGL, Vulkan, and Vulkan SC.
 
+
+Quick Build Instruction for Slang
+---------------------------------
+You can build deqp-vk.exe for Slang with the following instruction.
+```
+git clone https://github.com/shader-slang/VK-GL-CTS.git
+cd VK-GL-CTS
+python3 external/fetch_sources.py
+cmake.exe -S . -B BUILD_DIRECTORY
+cmake.exe --build BUILD_DIRECTORY --target deqp-vk # for BUILD_DIRECTORY/external/vulkancts/modules/vulkan/Debug/deqp-vk.exe
+cmake.exe --build BUILD_DIRECTORY --target deqp-vk --config Release # for BUILD_DIRECTORY/external/vulkancts/modules/vulkan/Release/deqp-vk.exe
+```
+
 Documentation
 -------------
 
