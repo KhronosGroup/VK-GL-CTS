@@ -181,8 +181,8 @@ tcu::TestStatus eventSetResetNoneStage(Context &context, TestConfig)
         DE_NULL,                                // const void*                            pNext
         VK_PIPELINE_STAGE_NONE_KHR,             // VkPipelineStageFlags2KHR    srcStageMask
         VK_ACCESS_2_NONE_KHR,                   // VkAccessFlags2KHR                srcAccessMask
-        VK_PIPELINE_STAGE_2_HOST_BIT_KHR,       // VkPipelineStageFlags2KHR    dstStageMask
-        VK_ACCESS_2_HOST_READ_BIT_KHR           // VkAccessFlags2KHR                dstAccessMask
+        VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, // VkPipelineStageFlags2KHR    dstStageMask
+        VK_ACCESS_2_MEMORY_WRITE_BIT            // VkAccessFlags2KHR                dstAccessMask
     };
     const VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(&memoryBarrier2, DE_NULL, DE_NULL, true);
 
