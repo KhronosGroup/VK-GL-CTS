@@ -653,7 +653,9 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
                                               NULL,
                                               VK_PIPELINE_STAGE_2_MICROMAP_BUILD_BIT_EXT,
                                               VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT,
-                                              VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+                                          m_params.copyType != CT_NONE ?
+                                                  VK_PIPELINE_STAGE_2_MICROMAP_BUILD_BIT_EXT :
+                                                  VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
                                               VK_ACCESS_2_MICROMAP_READ_BIT_EXT};
         VkDependencyInfoKHR dependencyInfo = {
             VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR, // VkStructureType sType;
