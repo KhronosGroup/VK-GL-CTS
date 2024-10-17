@@ -382,11 +382,13 @@ tcu::TestStatus RayQueryStressInstance::iterate(void)
     {
         m_rayQueryParams.verts.push_back(instance1);
         m_rayQueryParams.aabbs.push_back(emptyVerts);
+        m_rayQueryParams.triangles = true;
     }
     else
     {
         m_rayQueryParams.verts.push_back(emptyVerts);
         m_rayQueryParams.aabbs.push_back(instance1);
+        m_rayQueryParams.triangles = false;
     }
 
     std::vector<ResultData> resultData;

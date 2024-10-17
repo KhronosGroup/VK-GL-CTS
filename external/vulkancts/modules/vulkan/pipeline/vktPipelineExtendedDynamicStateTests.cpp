@@ -4382,7 +4382,8 @@ void setDynamicStates(const TestConfig &testConfig, const vk::DeviceInterface &v
             vkd.cmdSetColorBlendAdvancedEXT(cmdBuffer, 0u, de::sizeU32(equations), de::dataOrNull(equations));
         }
 
-        if (!isAdvanced || testConfig.colorBlendBoth)
+        if (!isAdvanced || testConfig.colorBlendBoth ||
+            vk::isConstructionTypeShaderObject(testConfig.pipelineConstructionType))
         {
             // VUID-VkColorBlendEquationEXT-colorBlendOp-07361 forbids colorBlendOp and alphaBlendOp to be any advanced operation.
             // When the advanced blend op will be set by vkCmdSetColorBlendAdvancedEXT, we use a legal placeholder in this call.
