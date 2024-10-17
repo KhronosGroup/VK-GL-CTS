@@ -40,7 +40,6 @@ struct FeatureDesc
     VkStructureType sType;
     const char *name;
     const uint32_t specVersion;
-    const uint32_t typeId;
 };
 
 // Structure containg all feature blobs - this simplifies generated code
@@ -62,7 +61,6 @@ public:
     {
     }
     virtual void initializeFeatureFromBlob(const AllFeaturesBlobs &allFeaturesBlobs) = 0;
-    virtual uint32_t getFeatureTypeId(void) const                                    = 0;
     virtual FeatureDesc getFeatureDesc(void) const                                   = 0;
     virtual void **getFeatureTypeNext(void)                                          = 0;
     virtual void *getFeatureTypeRaw(void)                                            = 0;
@@ -169,14 +167,6 @@ const FeatureType &DeviceFeatures::getFeatureType(void) const
             return static_cast<FeatureWrapperPtr>(feature)->getFeatureTypeRef();
     }
 
-    // try to find feature by id that was assigned by gen_framework script
-    const uint32_t featureId = featDesc.typeId;
-    for (auto feature : m_features)
-    {
-        if (featureId == feature->getFeatureTypeId())
-            return static_cast<FeatureWrapperPtr>(feature)->getFeatureTypeRef();
-    }
-
     // if initialized feature structure was not found create empty one and return it
     m_features.push_back(vk::createFeatureStructWrapper<FeatureType>());
     return static_cast<FeatureWrapperPtr>(m_features.back())->getFeatureTypeRef();
@@ -197,10 +187,6 @@ public:
         initFeatureFromBlobWrapper(m_featureType, allFeaturesBlobs);
     }
 
-    uint32_t getFeatureTypeId(void) const
-    {
-        return m_featureDesc.typeId;
-    }
     FeatureDesc getFeatureDesc(void) const
     {
         return m_featureDesc;

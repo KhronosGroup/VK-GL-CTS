@@ -2979,7 +2979,7 @@ def writeDeviceFeatures(api, dfDefs, filename):
         # construct makeFeatureDesc template function definitions
         sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sVerSuffix + sExtSuffix)
         makeFeatureDescDefinitions.append("template<> FeatureDesc makeFeatureDesc<{0}>(void) " \
-                                          "{{ return FeatureDesc{{{1}, {2}, {3}, {4}}}; }}".format(extStruct, sTypeName, extensionNameDefinition, specVersionDef, len(dfDefs)-idx))
+                                          "{{ return FeatureDesc{{{1}, {2}, {3}}}; }}".format(extStruct, sTypeName, extensionNameDefinition, specVersionDef))
         # construct CreateFeatureStruct wrapper block
         featureStructWrappers.append("\t{{ createFeatureStructWrapper<{0}>, {1}, {2} }},".format(extStruct, extensionNameDefinition, specVersionDef))
     # construct function that will check for which vk version structure sType is part of blob
@@ -3186,7 +3186,7 @@ def writeDeviceProperties(api, dpDefs, filename):
         # construct makePropertyDesc template function definitions
         sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_PROPERTIES{1}".format(sType, sVerSuffix + sExtSuffix)
         makePropertyDescDefinitions.append("template<> PropertyDesc makePropertyDesc<{0}>(void) " \
-                                           "{{ return PropertyDesc{{{1}, {2}, {3}, {4}}}; }}".format(extStruct, sTypeName, extensionNameDefinition, specVersionDef, len(dpDefs)-idx))
+                                           "{{ return PropertyDesc{{{1}, {2}, {3}}}; }}".format(extStruct, sTypeName, extensionNameDefinition, specVersionDef))
         # construct CreateProperty struct wrapper block
         propertyStructWrappers.append("\t{{ createPropertyStructWrapper<{0}>, {1}, {2} }},".format(extStruct, extensionNameDefinition, specVersionDef))
     # construct method that will check if structure sType is part of blob

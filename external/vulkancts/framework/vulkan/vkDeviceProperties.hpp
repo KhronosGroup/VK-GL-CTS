@@ -40,7 +40,6 @@ struct PropertyDesc
     VkStructureType sType;
     const char *name;
     const uint32_t specVersion;
-    const uint32_t typeId;
 };
 
 // Structure containg all property blobs - this simplifies generated code
@@ -61,7 +60,6 @@ struct PropertyStructWrapperBase
     {
     }
     virtual void initializePropertyFromBlob(const AllPropertiesBlobs &allPropertiesBlobs) = 0;
-    virtual uint32_t getPropertyTypeId(void) const                                        = 0;
     virtual PropertyDesc getPropertyDesc(void) const                                      = 0;
     virtual void **getPropertyTypeNext(void)                                              = 0;
     virtual void *getPropertyTypeRaw(void)                                                = 0;
@@ -167,14 +165,6 @@ const PropertyType &DeviceProperties::getPropertyType(void) const
             return static_cast<PropertyWrapperPtr>(property)->getPropertyTypeRef();
     }
 
-    // try to find property by id that was assigned by gen_framework script
-    const uint32_t propertyId = propDesc.typeId;
-    for (auto property : m_properties)
-    {
-        if (propertyId == property->getPropertyTypeId())
-            return static_cast<PropertyWrapperPtr>(property)->getPropertyTypeRef();
-    }
-
     // if initialized property structure was not found create empty one and return it
     m_properties.push_back(vk::createPropertyStructWrapper<PropertyType>());
     return static_cast<PropertyWrapperPtr>(m_properties.back())->getPropertyTypeRef();
@@ -195,10 +185,6 @@ public:
         initPropertyFromBlobWrapper(m_propertyType, allPropertiesBlobs);
     }
 
-    uint32_t getPropertyTypeId(void) const
-    {
-        return m_propertyDesc.typeId;
-    }
     PropertyDesc getPropertyDesc(void) const
     {
         return m_propertyDesc;
