@@ -24,6 +24,7 @@
 
 #include "glcNearestEdgeTests.hpp"
 
+#include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
 #include "gluTextureUtil.hpp"
 #include "gluDrawUtil.hpp"
@@ -55,6 +56,12 @@ enum class OffsetDirection
     LEFT  = 0,
     RIGHT = 1,
 };
+
+static bool IsExtensionSupported(deqp::Context &context, const char *extension)
+{
+    const std::vector<std::string> &v = context.getContextInfo().getExtensions();
+    return std::find(v.begin(), v.end(), extension) != v.end();
+}
 
 // Test sampling at the edge of texels. This test is equivalent to:
 //  1) Creating a texture using the same format and size as the frame buffer.
@@ -134,13 +141,12 @@ std::string NearestEdgeTestCase::getDesc(OffsetDirection direction)
 // Copied from sglrReferenceContext.cpp.
 tcu::TextureFormat NearestEdgeTestCase::toTextureFormat(deqp::Context &context, const tcu::PixelFormat &pixelFmt)
 {
+    static const bool readFormatBgraEXTSupported = IsExtensionSupported(context, "GL_EXT_read_format_bgra");
     static const struct
     {
         tcu::PixelFormat pixelFmt;
         tcu::TextureFormat texFmt;
     } pixelFormatMap[] = {
-        {tcu::PixelFormat(8, 8, 8, 8), tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)},
-        {tcu::PixelFormat(8, 8, 8, 0), tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8)},
         {tcu::PixelFormat(4, 4, 4, 4),
          tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_SHORT_4444)},
         {tcu::PixelFormat(5, 5, 5, 1),
@@ -155,25 +161,33 @@ tcu::TextureFormat NearestEdgeTestCase::toTextureFormat(deqp::Context &context, 
          tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::HALF_FLOAT)},
     };
 
+    // Some implementations treat GL_RGB8 and GL_BGR8 as GL_RGBA8888 and GL_BGRA8888 respectively.
+    // In addition, some implementations support GL_EXT_read_format_bgra extension.
+    // So the test should pass implementation format to ReadPixels.
+    if (pixelFmt == tcu::PixelFormat(8, 8, 8, 0) || pixelFmt == tcu::PixelFormat(8, 8, 8, 8))
+    {
+        const auto &gl = context.getRenderContext().getFunctions();
+
+        glw::GLint implFormat = GL_NONE;
+        glw::GLint implType   = GL_NONE;
+        gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &implFormat);
+        gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &implType);
+        if (implFormat == GL_RGBA)
+        {
+            if (implType == GL_UNSIGNED_BYTE)
+                return tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
+        }
+        else if (readFormatBgraEXTSupported && implFormat == GL_BGRA_EXT)
+        {
+            if (implType == GL_UNSIGNED_BYTE)
+                return tcu::TextureFormat(tcu::TextureFormat::BGRA, tcu::TextureFormat::UNORM_INT8);
+        }
+    }
+
     for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(pixelFormatMap); ndx++)
     {
         if (pixelFormatMap[ndx].pixelFmt == pixelFmt)
-        {
-            // Some implementations treat GL_RGB8 as GL_RGBA8888,so the test should pass implementation format to ReadPixels.
-            if (pixelFmt == tcu::PixelFormat(8, 8, 8, 0))
-            {
-                const auto &gl = context.getRenderContext().getFunctions();
-
-                glw::GLint implFormat = GL_NONE;
-                glw::GLint implType   = GL_NONE;
-                gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &implFormat);
-                gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &implType);
-                if (implFormat == GL_RGBA && implType == GL_UNSIGNED_BYTE)
-                    return tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
-            }
-
             return pixelFormatMap[ndx].texFmt;
-        }
     }
 
     TCU_FAIL("Unable to map pixel format to texture format");
