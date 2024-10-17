@@ -549,6 +549,12 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
                 ((formatProperties3.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) !=
                  VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
                 TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT is not supported");
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+            if ((!m_data.formatQualifier) &&
+                ((formatProperties3.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) !=
+                 VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
+                TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT is not supported");
 #endif // CTS_USES_VULKANSC
             break;
         case VERTEX_ATTRIBUTE_FETCH:

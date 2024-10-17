@@ -716,6 +716,8 @@ public:
                 "EGL_FOREVER", EGL_CONDITION_SATISFIED);
 
 #if (DE_OS == DE_OS_ANDROID)
+            m_testCtx.touchWatchdog();
+
             test<createSyncKHR, clientWaitSyncKHR, destroySyncKHR>(
                 m_funcNames, &Library::createSyncKHR, &Library::clientWaitSyncKHR, &Library::destroySyncKHR,
                 EGL_SYNC_NATIVE_FENCE_ANDROID, EGL_SYNC_FLUSH_COMMANDS_BIT, "EGL_SYNC_FLUSH_COMMANDS_BIT", EGL_FOREVER,
