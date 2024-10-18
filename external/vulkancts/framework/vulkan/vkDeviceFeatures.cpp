@@ -170,9 +170,7 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
             {
 #ifndef CTS_USES_VULKANSC
                 // Some non-standard promotions may need feature structs filled in anyway.
-                if (!strcmp(featureName, "VK_EXT_extended_dynamic_state") &&
-                    (de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(),
-                                  "VK_EXT_extended_dynamic_state")))
+                if (!strcmp(featureName, "VK_EXT_extended_dynamic_state") && vk13Supported)
                 {
                     FeatureStructWrapperBase *p = (*featureStructCreationData.creatorFunction)();
                     if (p == nullptr)
@@ -183,9 +181,7 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
                     f->extendedDynamicState = true;
                     m_features.push_back(p);
                 }
-                if (!strcmp(featureName, "VK_EXT_extended_dynamic_state2") &&
-                    (de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(),
-                                  "VK_EXT_extended_dynamic_state2")))
+                if (!strcmp(featureName, "VK_EXT_extended_dynamic_state2") && vk13Supported)
                 {
                     FeatureStructWrapperBase *p = (*featureStructCreationData.creatorFunction)();
                     if (p == nullptr)
