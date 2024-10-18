@@ -19,7 +19,6 @@ namespace vk
 #define DECL_DESCRIPTOR_INDEXING_EXTENSION_NAME "core_property"
 #define DECL_TIMELINE_SEMAPHORE_EXTENSION_NAME "core_property"
 #define DECL_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME "core_property"
-#define DECL_VULKAN_SC_1_0_EXTENSION_NAME "core_property"
 
 
 template<> void initPropertyFromBlob<VkPhysicalDeviceDriverProperties>(VkPhysicalDeviceDriverProperties& propertyType, const AllPropertiesBlobs& allPropertiesBlobs)
@@ -175,7 +174,6 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFloatControlsProperties
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorIndexingProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES, DECL_DESCRIPTOR_INDEXING_EXTENSION_NAME, 0}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceTimelineSemaphoreProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES, DECL_TIMELINE_SEMAPHORE_EXTENSION_NAME, 0}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDepthStencilResolveProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES, DECL_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME, 0}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceVulkanSC10Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_PROPERTIES, DECL_VULKAN_SC_1_0_EXTENSION_NAME, 0}; }
 
 
 static const PropertyStructCreationData propertyStructCreationArray[] =
@@ -206,7 +204,6 @@ static const PropertyStructCreationData propertyStructCreationArray[] =
 	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorIndexingProperties>, DECL_DESCRIPTOR_INDEXING_EXTENSION_NAME, 0 },
 	{ createPropertyStructWrapper<VkPhysicalDeviceTimelineSemaphoreProperties>, DECL_TIMELINE_SEMAPHORE_EXTENSION_NAME, 0 },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDepthStencilResolveProperties>, DECL_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME, 0 },
-	{ createPropertyStructWrapper<VkPhysicalDeviceVulkanSC10Properties>, DECL_VULKAN_SC_1_0_EXTENSION_NAME, 0 },
 };
 
 uint32_t getBlobPropertiesVersion (VkStructureType sType)

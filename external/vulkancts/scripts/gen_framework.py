@@ -3086,7 +3086,7 @@ def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
     structureEnumPatternNotExtension = structureEnumPattern[:-5] + '$'
     structureTypePattern = fr'VkPhysicalDevice(\w+){FeaturesOrProperties}(\w+)'
     structureTypePatternNotExtension = structureTypePattern[:-5] + '$'
-    structureTypeToSkipPattern = fr'VkPhysicalDeviceVulkan\d\d{FeaturesOrProperties}'
+    structureTypeToSkipPattern = fr'VkPhysicalDeviceVulkan(SC)*\d\d{FeaturesOrProperties}'
     structureExtendsPattern = f'VkPhysicalDevice{FeaturesOrProperties}2'
     # iterate over all extensions to find extension that adds enum value matching pattern;
     # this will always be in first requirement section

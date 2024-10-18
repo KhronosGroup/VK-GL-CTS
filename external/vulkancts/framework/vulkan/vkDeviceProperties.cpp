@@ -115,12 +115,6 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
                 if (p == nullptr)
                     continue;
 
-#ifdef CTS_USES_VULKANSC
-                // m_vulkanSC10Properties was already added above
-                if (p->getPropertyDesc().sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_PROPERTIES)
-                    continue;
-#endif // CTS_USES_VULKANSC
-
                 // if property struct is part of VkPhysicalDeviceVulkan1{1,2,3,4}Properties
                 // we dont add it to the chain but store and fill later from blob data
                 bool propertyFilledFromBlob = false;

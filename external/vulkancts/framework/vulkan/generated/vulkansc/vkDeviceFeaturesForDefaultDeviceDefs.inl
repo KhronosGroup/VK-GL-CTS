@@ -55,4 +55,3 @@ const VkPhysicalDeviceUniformBufferStandardLayoutFeatures&		getUniformBufferStan
 const VkPhysicalDeviceBufferDeviceAddressFeatures&				getBufferDeviceAddressFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceBufferDeviceAddressFeatures>();				}
 const VkPhysicalDeviceImagelessFramebufferFeatures&				getImagelessFramebufferFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceImagelessFramebufferFeatures>();				}
 const VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&		getSeparateDepthStencilLayoutsFeatures		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures>();		}
-const VkPhysicalDeviceVulkanSC10Features&						getVulkanSC10Features						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVulkanSC10Features>();						}

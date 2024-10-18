@@ -519,6 +519,12 @@ public:
         return m_deviceFeatures.getVulkan14Features();
     }
 #endif // CTS_USES_VULKANSC
+#ifdef CTS_USES_VULKANSC
+    const VkPhysicalDeviceVulkanSC10Features &getVulkanSC10Features(void) const
+    {
+        return m_deviceFeatures.getVulkanSC10Features();
+    }
+#endif // CTS_USES_VULKANSC
 
 #include "vkDeviceFeaturesForDefaultDeviceDefs.inl"
 

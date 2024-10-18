@@ -26,7 +26,6 @@ namespace vk
 #define DECL_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME "core_feature"
 #define DECL_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME "core_feature"
 #define DECL_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME "core_feature"
-#define DECL_VULKAN_SC_1_0_EXTENSION_NAME "core_feature"
 
 
 template<> void initFeatureFromBlob<VkPhysicalDeviceVariablePointersFeatures>(VkPhysicalDeviceVariablePointersFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
@@ -228,7 +227,6 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceUniformBufferStandardLayo
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceBufferDeviceAddressFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES, DECL_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, 0}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceImagelessFramebufferFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES, DECL_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME, 0}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES, DECL_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME, 0}; }
-template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVulkanSC10Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES, DECL_VULKAN_SC_1_0_EXTENSION_NAME, 0}; }
 
 
 static const FeatureStructCreationData featureStructCreationArray[]
@@ -285,7 +283,6 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceBufferDeviceAddressFeatures>, DECL_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, 0 },
 	{ createFeatureStructWrapper<VkPhysicalDeviceImagelessFramebufferFeatures>, DECL_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME, 0 },
 	{ createFeatureStructWrapper<VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures>, DECL_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME, 0 },
-	{ createFeatureStructWrapper<VkPhysicalDeviceVulkanSC10Features>, DECL_VULKAN_SC_1_0_EXTENSION_NAME, 0 },
 };
 
 uint32_t getBlobFeaturesVersion (VkStructureType sType)

@@ -29,4 +29,3 @@ const vk::VkPhysicalDeviceFloatControlsProperties&					getFloatControlsPropertie
 const vk::VkPhysicalDeviceDescriptorIndexingProperties&				getDescriptorIndexingProperties				(void) const;
 const vk::VkPhysicalDeviceTimelineSemaphoreProperties&				getTimelineSemaphoreProperties				(void) const;
 const vk::VkPhysicalDeviceDepthStencilResolveProperties&			getDepthStencilResolveProperties			(void) const;
-const vk::VkPhysicalDeviceVulkanSC10Properties&						getVulkanSC10Properties						(void) const;
