@@ -794,7 +794,7 @@ void ClearTest::LogFail(bool use_sub_data, glw::GLenum internalformat, const T *
     {
         std::stringstream number;
 
-        number << data[i];
+        number << (GLint)data[i];
 
         the_log.append(number.str());
 
@@ -810,7 +810,7 @@ void ClearTest::LogFail(bool use_sub_data, glw::GLenum internalformat, const T *
     {
         std::stringstream number;
 
-        number << reference[i];
+        number << (GLint)reference[i];
 
         the_log.append(number.str());
 
