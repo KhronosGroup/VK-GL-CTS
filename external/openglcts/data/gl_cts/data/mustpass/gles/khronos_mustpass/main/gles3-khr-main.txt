@@ -6446,3 +6446,4 @@ KHR-GLES3.framebuffer_blit.scissor_blit
 KHR-GLES3.texture_lod_bias.texture_lod_bias_all
 KHR-GLES3.transform_feedback2.transform_feedback2_states
 KHR-GLES3.api.coverage
+KHR-GLES3.texture_storage.compressed_data

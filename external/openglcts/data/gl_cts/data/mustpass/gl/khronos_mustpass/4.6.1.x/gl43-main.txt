@@ -874,6 +874,7 @@ KHR-GL43.transform_feedback2.transform_feedback2_states
 KHR-GL43.api.coverage
 KHR-GL43.get_uniform_tests.get_uniform
 KHR-GL43.frag_coord_conventions.multisample
+KHR-GL43.texture_storage.compressed_data
 KHR-GL43.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL43.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL43.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp

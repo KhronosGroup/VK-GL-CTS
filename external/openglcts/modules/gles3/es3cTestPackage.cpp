@@ -54,6 +54,7 @@
 #include "glcTextureLodBasicTests.hpp"
 #include "glcTextureLodBiasTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
+#include "glcTextureStorageTests.hpp"
 #include "glcTransformFeedbackTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "glcUniformBlockNegativeTests.hpp"
@@ -211,6 +212,7 @@ void ES30TestPackage::init(void)
         addChild(new glcts::TextureLodBiasTests(getContext()));
         addChild(new glcts::TransformFeedbackTests(getContext()));
         addChild(new glcts::ApiCoverageTests(getContext()));
+        addChild(new glcts::TextureStorageTests(getContext()));
     }
     catch (...)
     {
