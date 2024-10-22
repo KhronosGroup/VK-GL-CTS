@@ -162,6 +162,14 @@ enum TessPrimitiveType
     TESSPRIMITIVETYPE_LAST,
 };
 
+enum DrawType
+{
+    DRAWTYPE_DRAW = 0,
+    DRAWTYPE_DRAW_INDIRECT,
+
+    DRAWTYPE_LAST,
+};
+
 enum SpacingMode
 {
     SPACINGMODE_EQUAL = 0,
@@ -256,6 +264,20 @@ static inline const char *getDomainName(const TessPrimitiveType type)
         return "isoline";
     default:
         DE_FATAL("Unexpected primitive type.");
+        return nullptr;
+    }
+}
+
+static inline const char *getDrawName(const DrawType type)
+{
+    switch (type)
+    {
+    case DRAWTYPE_DRAW:
+        return "draw";
+    case DRAWTYPE_DRAW_INDIRECT:
+        return "draw_indirect";
+    default:
+        DE_FATAL("Unexpected draw type.");
         return nullptr;
     }
 }

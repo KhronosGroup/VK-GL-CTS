@@ -64,15 +64,17 @@ struct CaseDefinition
 {
     TessPrimitiveType primitiveType;
     SpacingMode spacingMode;
+    DrawType drawType;
     std::string referenceImagePathPrefix; //!< without case suffix and extension (e.g. "_1.png")
 };
 
 inline CaseDefinition makeCaseDefinition(const TessPrimitiveType primitiveType, const SpacingMode spacingMode,
-                                         const std::string &referenceImagePathPrefix)
+                                         const DrawType drawType, const std::string &referenceImagePathPrefix)
 {
     CaseDefinition caseDef;
     caseDef.primitiveType            = primitiveType;
     caseDef.spacingMode              = spacingMode;
+    caseDef.drawType                 = drawType;
     caseDef.referenceImagePathPrefix = referenceImagePathPrefix;
     return caseDef;
 }
@@ -159,6 +161,27 @@ tcu::TestStatus runTest(Context &context, const CaseDefinition caseDef)
         const Allocation &alloc = vertexBuffer.getAllocation();
 
         deMemcpy(alloc.getHostPtr(), &vertexData[0], static_cast<std::size_t>(vertexDataSizeBytes));
+        flushAlloc(vk, device, alloc);
+        // No barrier needed, flushed memory is automatically visible
+    }
+
+    // Indirect buffer
+
+    const VkDrawIndirectCommand drawIndirectArgs{
+        inPatchSize, // uint32_t vertexCount;
+        1u,          // uint32_t instanceCount;
+        0u,          // uint32_t firstVertex;
+        0u,          // uint32_t firstInstance;
+    };
+
+    const BufferWithMemory indirectBuffer(
+        vk, device, allocator, makeBufferCreateInfo(sizeof(drawIndirectArgs), VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
+        MemoryRequirement::HostVisible);
+
+    {
+        const Allocation &alloc = indirectBuffer.getAllocation();
+
+        deMemcpy(alloc.getHostPtr(), &drawIndirectArgs, sizeof(drawIndirectArgs));
         flushAlloc(vk, device, alloc);
         // No barrier needed, flushed memory is automatically visible
     }
@@ -294,7 +317,10 @@ tcu::TestStatus runTest(Context &context, const CaseDefinition caseDef)
         }
 
         // Process enough vertices to make a patch.
-        vk.cmdDraw(*cmdBuffer, inPatchSize, 1u, 0u, 0u);
+        if (caseDef.drawType == DRAWTYPE_DRAW)
+            vk.cmdDraw(*cmdBuffer, inPatchSize, 1u, 0u, 0u);
+        else                                                                  // DRAWTYPE_DRAW_INDIRECT
+            vk.cmdDrawIndirect(*cmdBuffer, indirectBuffer.get(), 0u, 1u, 0u); // Stride is ignored
         endRenderPass(vk, *cmdBuffer);
 
         // Copy render result to a host-visible buffer
@@ -1015,48 +1041,68 @@ tcu::TestCaseGroup *createMiscDrawTests(tcu::TestContext &testCtx)
         TESSPRIMITIVETYPE_QUADS,
     };
 
-    // Triangle fill case
-    for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitivesNoIsolines); ++primitiveTypeNdx)
-        for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; ++spacingModeNdx)
-        {
-            const TessPrimitiveType primitiveType = primitivesNoIsolines[primitiveTypeNdx];
-            const SpacingMode spacingMode         = static_cast<SpacingMode>(spacingModeNdx);
-            const std::string caseName = std::string() + "fill_cover_" + getTessPrimitiveTypeShaderName(primitiveType) +
-                                         "_" + getSpacingModeShaderName(spacingMode);
+    static const DrawType drawTypes[] = {
+        DRAWTYPE_DRAW,
+        DRAWTYPE_DRAW_INDIRECT,
+    };
 
-            // Check that there are no obvious gaps in the triangle-filled area of a tessellated shape
-            addFunctionCaseWithPrograms(
-                group.get(), caseName, initProgramsFillCoverCase, runTest,
-                makeCaseDefinition(primitiveType, spacingMode, getReferenceImagePathPrefix(caseName)));
-        }
+    // Triangle fill case
+    for (int drawTypeNdx = 0; drawTypeNdx < DE_LENGTH_OF_ARRAY(drawTypes); ++drawTypeNdx)
+        for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitivesNoIsolines); ++primitiveTypeNdx)
+            for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; ++spacingModeNdx)
+            {
+                const TessPrimitiveType primitiveType = primitivesNoIsolines[primitiveTypeNdx];
+                const SpacingMode spacingMode         = static_cast<SpacingMode>(spacingModeNdx);
+                const DrawType drawType               = static_cast<DrawType>(drawTypeNdx);
+                const std::string caseName            = std::string() + "fill_cover_" +
+                                             getTessPrimitiveTypeShaderName(primitiveType) + "_" +
+                                             getSpacingModeShaderName(spacingMode) + "_" + getDrawName(drawType);
+                const std::string refName = std::string() + "fill_cover_" +
+                                            getTessPrimitiveTypeShaderName(primitiveType) + "_" +
+                                            getSpacingModeShaderName(spacingMode);
+
+                // Check that there are no obvious gaps in the triangle-filled area of a tessellated shape
+                addFunctionCaseWithPrograms(
+                    group.get(), caseName, initProgramsFillCoverCase, runTest,
+                    makeCaseDefinition(primitiveType, spacingMode, drawType, getReferenceImagePathPrefix(refName)));
+            }
 
     // Triangle non-overlap case
-    for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitivesNoIsolines); ++primitiveTypeNdx)
-        for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; ++spacingModeNdx)
-        {
-            const TessPrimitiveType primitiveType = primitivesNoIsolines[primitiveTypeNdx];
-            const SpacingMode spacingMode         = static_cast<SpacingMode>(spacingModeNdx);
-            const std::string caseName            = std::string() + "fill_overlap_" +
-                                         getTessPrimitiveTypeShaderName(primitiveType) + "_" +
-                                         getSpacingModeShaderName(spacingMode);
+    for (int drawTypeNdx = 0; drawTypeNdx < DE_LENGTH_OF_ARRAY(drawTypes); ++drawTypeNdx)
+        for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitivesNoIsolines); ++primitiveTypeNdx)
+            for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; ++spacingModeNdx)
+            {
+                const TessPrimitiveType primitiveType = primitivesNoIsolines[primitiveTypeNdx];
+                const SpacingMode spacingMode         = static_cast<SpacingMode>(spacingModeNdx);
+                const DrawType drawType               = static_cast<DrawType>(drawTypeNdx);
+                const std::string caseName            = std::string() + "fill_overlap_" +
+                                             getTessPrimitiveTypeShaderName(primitiveType) + "_" +
+                                             getSpacingModeShaderName(spacingMode) + "_" + getDrawName(drawType);
+                const std::string refName = std::string() + "fill_overlap_" +
+                                            getTessPrimitiveTypeShaderName(primitiveType) + "_" +
+                                            getSpacingModeShaderName(spacingMode);
 
-            // Check that there are no obvious triangle overlaps in the triangle-filled area of a tessellated shape
-            addFunctionCaseWithPrograms(
-                group.get(), caseName, initProgramsFillNonOverlapCase, runTest,
-                makeCaseDefinition(primitiveType, spacingMode, getReferenceImagePathPrefix(caseName)));
-        }
+                // Check that there are no obvious triangle overlaps in the triangle-filled area of a tessellated shape
+                addFunctionCaseWithPrograms(
+                    group.get(), caseName, initProgramsFillNonOverlapCase, runTest,
+                    makeCaseDefinition(primitiveType, spacingMode, drawType, getReferenceImagePathPrefix(refName)));
+            }
 
     // Isolines
-    for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; ++spacingModeNdx)
-    {
-        const SpacingMode spacingMode = static_cast<SpacingMode>(spacingModeNdx);
-        const std::string caseName    = std::string() + "isolines_" + getSpacingModeShaderName(spacingMode);
+    for (int drawTypeNdx = 0; drawTypeNdx < DE_LENGTH_OF_ARRAY(drawTypes); ++drawTypeNdx)
+        for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; ++spacingModeNdx)
+        {
+            const SpacingMode spacingMode = static_cast<SpacingMode>(spacingModeNdx);
+            const DrawType drawType       = static_cast<DrawType>(drawTypeNdx);
+            const std::string caseName =
+                std::string() + "isolines_" + getSpacingModeShaderName(spacingMode) + "_" + getDrawName(drawType);
+            const std::string refName = std::string() + "isolines_" + getSpacingModeShaderName(spacingMode);
 
-        // Basic isolines render test
-        addFunctionCaseWithPrograms(
-            group.get(), caseName, checkSupportCase, initProgramsIsolinesCase, runTest,
-            makeCaseDefinition(TESSPRIMITIVETYPE_ISOLINES, spacingMode, getReferenceImagePathPrefix(caseName)));
-    }
+            // Basic isolines render test
+            addFunctionCaseWithPrograms(group.get(), caseName, checkSupportCase, initProgramsIsolinesCase, runTest,
+                                        makeCaseDefinition(TESSPRIMITIVETYPE_ISOLINES, spacingMode, drawType,
+                                                           getReferenceImagePathPrefix(refName)));
+        }
 
     // Test switching tessellation parameters on the fly.
     for (const auto &geometryShader : {false, true})
