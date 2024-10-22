@@ -201,15 +201,6 @@ typedef void (*deFunctionPtr)(void);
 #endif
 #endif
 
-/* Inline. */
-#if (DE_COMPILER == DE_COMPILER_MSC)
-#define DE_INLINE __forceinline
-#elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
-#define DE_INLINE static __inline__
-#else
-#define DE_INLINE inline /*!< Function inline.        */
-#endif
-
 /* DE_DEV_BUILD -- only define when building on a development machine. */
 #if !defined(DE_DEV_BUILD)
 #if (DE_COMPILER == DE_COMPILER_MSC)
@@ -405,7 +396,7 @@ extern "C"
 #define DE_PACKED
 #endif
 
-    DE_INLINE const char *deFatalStr(const char *reason)
+    static inline const char *deFatalStr(const char *reason)
     {
         DE_ASSERT(0);
         return reason;

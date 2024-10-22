@@ -47,12 +47,12 @@ enum TestType
     TEST_TYPE_VERSION,
 };
 
-DE_INLINE bool isNullTerminated(const char *str, const uint32_t maxSize)
+inline bool isNullTerminated(const char *str, const uint32_t maxSize)
 {
     return memchr(str, '\0', maxSize) != nullptr;
 }
 
-DE_INLINE bool operator==(const VkConformanceVersion &a, const VkConformanceVersion &b)
+inline bool operator==(const VkConformanceVersion &a, const VkConformanceVersion &b)
 {
     return ((a.major == b.major) && (a.minor == b.minor) && (a.subminor == b.subminor) && (a.patch == b.patch));
 }

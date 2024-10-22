@@ -60,77 +60,74 @@ float deFloat16To32(deFloat16 val16);
  *//*--------------------------------------------------------------------*/
 double deFloat16To64(deFloat16 val16);
 
-DE_INLINE uint16_t deHalfExponent(deFloat16 x)
+static inline uint16_t deHalfExponent(deFloat16 x)
 {
     return (uint16_t)((x & 0x7c00u) >> 10);
 }
 
-DE_INLINE uint16_t deHalfMantissa(deFloat16 x)
+static inline uint16_t deHalfMantissa(deFloat16 x)
 {
     return (uint16_t)(x & 0x03ffu);
 }
 
-DE_INLINE uint16_t deHalfHighestMantissaBit(deFloat16 x)
+static inline uint16_t deHalfHighestMantissaBit(deFloat16 x)
 {
     return (uint16_t)(x & (1u << 9));
 }
 
-DE_INLINE uint16_t deHalfSign(deFloat16 x)
+static inline uint16_t deHalfSign(deFloat16 x)
 {
     return (uint16_t)(x >> 15);
 }
 
 static const uint16_t deHalfMaxExponent = 0x1f;
 
-DE_INLINE bool deHalfIsZero(deFloat16 x)
+static inline bool deHalfIsZero(deFloat16 x)
 {
     return deHalfExponent(x) == 0 && deHalfMantissa(x) == 0;
 }
 
-DE_INLINE bool deHalfIsPositiveZero(deFloat16 x)
+static inline bool deHalfIsPositiveZero(deFloat16 x)
 {
     return deHalfIsZero(x) && (deHalfSign(x) == 0);
 }
 
-DE_INLINE bool deHalfIsNegativeZero(deFloat16 x)
+static inline bool deHalfIsNegativeZero(deFloat16 x)
 {
     return deHalfIsZero(x) && (deHalfSign(x) != 0);
 }
 
-static const deFloat16 deFloat16SignalingNaN = 0x7c01;
-static const deFloat16 deFloat16QuietNaN     = 0x7e01;
-
-DE_INLINE bool deHalfIsIEEENaN(deFloat16 x)
+static inline bool deHalfIsIEEENaN(deFloat16 x)
 {
     return deHalfExponent(x) == deHalfMaxExponent && deHalfMantissa(x) != 0;
 }
 
-DE_INLINE bool deHalfIsSignalingNaN(deFloat16 x)
+static inline bool deHalfIsSignalingNaN(deFloat16 x)
 {
     return deHalfIsIEEENaN(x) && deHalfHighestMantissaBit(x) == 0;
 }
 
-DE_INLINE bool deHalfIsQuietNaN(deFloat16 x)
+static inline bool deHalfIsQuietNaN(deFloat16 x)
 {
     return deHalfIsIEEENaN(x) && deHalfHighestMantissaBit(x) != 0;
 }
 
-DE_INLINE bool deHalfIsInf(deFloat16 x)
+static inline bool deHalfIsInf(deFloat16 x)
 {
     return deHalfExponent(x) == deHalfMaxExponent && deHalfMantissa(x) == 0;
 }
 
-DE_INLINE bool deHalfIsPositiveInf(deFloat16 x)
+static inline bool deHalfIsPositiveInf(deFloat16 x)
 {
     return deHalfIsInf(x) && (deHalfSign(x) == 0);
 }
 
-DE_INLINE bool deHalfIsNegativeInf(deFloat16 x)
+static inline bool deHalfIsNegativeInf(deFloat16 x)
 {
     return deHalfIsInf(x) && (deHalfSign(x) != 0);
 }
 
-DE_INLINE bool deHalfIsDenormal(deFloat16 x)
+static inline bool deHalfIsDenormal(deFloat16 x)
 {
     return deHalfExponent(x) == 0 && deHalfMantissa(x) != 0;
 }

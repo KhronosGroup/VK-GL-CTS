@@ -244,27 +244,27 @@ bool isCapabilityRequired(CapabilityFlag capabilityFlag, const ShaderCaseSpecifi
 
 static const glu::GLSLVersion DEFAULT_GLSL_VERSION = glu::GLSL_VERSION_100_ES;
 
-DE_INLINE bool isWhitespace(char c)
+inline bool isWhitespace(char c)
 {
     return (c == ' ') || (c == '\t') || (c == '\r') || (c == '\n');
 }
 
-DE_INLINE bool isEOL(char c)
+inline bool isEOL(char c)
 {
     return (c == '\r') || (c == '\n');
 }
 
-DE_INLINE bool isNumeric(char c)
+inline bool isNumeric(char c)
 {
     return deInRange32(c, '0', '9');
 }
 
-DE_INLINE bool isAlpha(char c)
+inline bool isAlpha(char c)
 {
     return deInRange32(c, 'a', 'z') || deInRange32(c, 'A', 'Z');
 }
 
-DE_INLINE bool isCaseNameChar(char c)
+inline bool isCaseNameChar(char c)
 {
     return deInRange32(c, 'a', 'z') || deInRange32(c, 'A', 'Z') || deInRange32(c, '0', '9') || (c == '_') ||
            (c == '-') || (c == '.');

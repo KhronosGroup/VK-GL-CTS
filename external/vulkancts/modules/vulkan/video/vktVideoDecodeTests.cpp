@@ -723,7 +723,7 @@ struct DownloadedFrame
     }
 };
 
-DE_INLINE uint16_t roru16(uint16_t x, uint16_t n)
+inline uint16_t roru16(uint16_t x, uint16_t n)
 {
     return n == 0 ? x : (x >> n) | (x << (-n & 15));
 }

@@ -78,7 +78,7 @@ static void dieLastError(int statusPipe, const char *message)
     die(statusPipe, msgBuf);
 }
 
-DE_INLINE bool beginsWithPath(const char *fileName, const char *pathPrefix)
+bool beginsWithPath(const char *fileName, const char *pathPrefix)
 {
     size_t pathLen = strlen(pathPrefix);
 

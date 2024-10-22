@@ -36,7 +36,7 @@ DE_BEGIN_EXTERN_C
  * \param dstAddr    Destination address.
  * \return Incremented value.
  *//*--------------------------------------------------------------------*/
-DE_INLINE int32_t deAtomicIncrementInt32(volatile int32_t *dstAddr)
+static inline int32_t deAtomicIncrementInt32(volatile int32_t *dstAddr)
 {
 #if (DE_COMPILER == DE_COMPILER_MSC)
     return _InterlockedIncrement((long volatile *)dstAddr);
@@ -52,7 +52,7 @@ DE_INLINE int32_t deAtomicIncrementInt32(volatile int32_t *dstAddr)
  * \param dstAddr    Destination address.
  * \return Incremented value.
  *//*--------------------------------------------------------------------*/
-DE_INLINE uint32_t deAtomicIncrementUint32(volatile uint32_t *dstAddr)
+static inline uint32_t deAtomicIncrementUint32(volatile uint32_t *dstAddr)
 {
     return deAtomicIncrementInt32((int32_t volatile *)dstAddr);
 }
@@ -62,7 +62,7 @@ DE_INLINE uint32_t deAtomicIncrementUint32(volatile uint32_t *dstAddr)
  * \param dstAddr    Destination address.
  * \return Decremented value.
  *//*--------------------------------------------------------------------*/
-DE_INLINE int32_t deAtomicDecrementInt32(volatile int32_t *dstAddr)
+static inline int32_t deAtomicDecrementInt32(volatile int32_t *dstAddr)
 {
 #if (DE_COMPILER == DE_COMPILER_MSC)
     return _InterlockedDecrement((volatile long *)dstAddr);
@@ -78,7 +78,7 @@ DE_INLINE int32_t deAtomicDecrementInt32(volatile int32_t *dstAddr)
  * \param dstAddr    Destination address.
  * \return Decremented value.
  *//*--------------------------------------------------------------------*/
-DE_INLINE uint32_t deAtomicDecrementUint32(volatile uint32_t *dstAddr)
+static inline uint32_t deAtomicDecrementUint32(volatile uint32_t *dstAddr)
 {
     return deAtomicDecrementInt32((volatile int32_t *)dstAddr);
 }
@@ -97,7 +97,7 @@ DE_INLINE uint32_t deAtomicDecrementUint32(volatile uint32_t *dstAddr)
  * If CAS succeeds, compare value is returned. Otherwise value stored in
  * dstAddr is returned.
  *//*--------------------------------------------------------------------*/
-DE_INLINE uint32_t deAtomicCompareExchangeUint32(volatile uint32_t *dstAddr, uint32_t compare, uint32_t exchange)
+static inline uint32_t deAtomicCompareExchangeUint32(volatile uint32_t *dstAddr, uint32_t compare, uint32_t exchange)
 {
 #if (DE_COMPILER == DE_COMPILER_MSC)
     return _InterlockedCompareExchange((volatile long *)dstAddr, exchange, compare);
@@ -120,7 +120,7 @@ DE_INLINE uint32_t deAtomicCompareExchangeUint32(volatile uint32_t *dstAddr, uin
  * \param dstAddr    Destination address.
  * \return Incremented value.
  *//*--------------------------------------------------------------------*/
-DE_INLINE int64_t deAtomicIncrementInt64(volatile int64_t *dstAddr)
+static inline int64_t deAtomicIncrementInt64(volatile int64_t *dstAddr)
 {
 #if (DE_COMPILER == DE_COMPILER_MSC)
     return _InterlockedIncrement64((volatile long long *)dstAddr);
@@ -136,7 +136,7 @@ DE_INLINE int64_t deAtomicIncrementInt64(volatile int64_t *dstAddr)
  * \param dstAddr    Destination address.
  * \return Incremented value.
  *//*--------------------------------------------------------------------*/
-DE_INLINE uint64_t deAtomicIncrementUint64(volatile uint64_t *dstAddr)
+static inline uint64_t deAtomicIncrementUint64(volatile uint64_t *dstAddr)
 {
     return deAtomicIncrementInt64((volatile int64_t *)dstAddr);
 }
@@ -146,7 +146,7 @@ DE_INLINE uint64_t deAtomicIncrementUint64(volatile uint64_t *dstAddr)
  * \param dstAddr    Destination address.
  * \return Decremented value.
  *//*--------------------------------------------------------------------*/
-DE_INLINE int64_t deAtomicDecrementInt64(volatile int64_t *dstAddr)
+static inline int64_t deAtomicDecrementInt64(volatile int64_t *dstAddr)
 {
 #if (DE_COMPILER == DE_COMPILER_MSC)
     return _InterlockedDecrement64((volatile long long *)dstAddr);
@@ -162,7 +162,7 @@ DE_INLINE int64_t deAtomicDecrementInt64(volatile int64_t *dstAddr)
  * \param dstAddr    Destination address.
  * \return Incremented value.
  *//*--------------------------------------------------------------------*/
-DE_INLINE uint64_t deAtomicDecrementUint64(volatile uint64_t *dstAddr)
+static inline uint64_t deAtomicDecrementUint64(volatile uint64_t *dstAddr)
 {
     return deAtomicDecrementInt64((volatile int64_t *)dstAddr);
 }
@@ -181,7 +181,7 @@ DE_INLINE uint64_t deAtomicDecrementUint64(volatile uint64_t *dstAddr)
  * If CAS succeeds, compare value is returned. Otherwise value stored in
  * dstAddr is returned.
  *//*--------------------------------------------------------------------*/
-DE_INLINE uint64_t deAtomicCompareExchangeUint64(volatile uint64_t *dstAddr, uint64_t compare, uint64_t exchange)
+static inline uint64_t deAtomicCompareExchangeUint64(volatile uint64_t *dstAddr, uint64_t compare, uint64_t exchange)
 {
 #if (DE_COMPILER == DE_COMPILER_MSC)
     return _InterlockedCompareExchange64((volatile long long *)dstAddr, exchange, compare);
@@ -199,7 +199,7 @@ DE_INLINE uint64_t deAtomicCompareExchangeUint64(volatile uint64_t *dstAddr, uin
  * \param dstAddr    Destination address.
  * \return Incremented value.
  *//*--------------------------------------------------------------------*/
-DE_INLINE size_t deAtomicIncrementUSize(volatile size_t *size)
+static inline size_t deAtomicIncrementUSize(volatile size_t *size)
 {
 #if (DE_PTR_SIZE == 8)
     return deAtomicIncrementUint64((volatile uint64_t *)size);
@@ -215,7 +215,7 @@ DE_INLINE size_t deAtomicIncrementUSize(volatile size_t *size)
  * \param dstAddr    Destination address.
  * \return Incremented value.
  *//*--------------------------------------------------------------------*/
-DE_INLINE size_t deAtomicDecrementUSize(volatile size_t *size)
+static inline size_t deAtomicDecrementUSize(volatile size_t *size)
 {
 #if (DE_PTR_SIZE == 8)
     return deAtomicDecrementUint64((volatile uint64_t *)size);
@@ -240,7 +240,7 @@ DE_INLINE size_t deAtomicDecrementUSize(volatile size_t *size)
  * If CAS succeeds, compare value is returned. Otherwise value stored in
  * dstAddr is returned.
  *//*--------------------------------------------------------------------*/
-DE_INLINE void *deAtomicCompareExchangePtr(void *volatile *dstAddr, void *compare, void *exchange)
+static inline void *deAtomicCompareExchangePtr(void *volatile *dstAddr, void *compare, void *exchange)
 {
 #if (DE_PTR_SIZE == 8)
     return (void *)deAtomicCompareExchangeUint64((volatile uint64_t *)dstAddr, (uint64_t)compare, (uint64_t)exchange);
@@ -257,7 +257,7 @@ DE_INLINE void *deAtomicCompareExchangePtr(void *volatile *dstAddr, void *compar
 #if (DE_COMPILER == DE_COMPILER_MSC)
 void deMemoryReadWriteFence(void);
 #elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
-DE_INLINE void deMemoryReadWriteFence(void)
+static inline void deMemoryReadWriteFence(void)
 {
     __sync_synchronize();
 }
