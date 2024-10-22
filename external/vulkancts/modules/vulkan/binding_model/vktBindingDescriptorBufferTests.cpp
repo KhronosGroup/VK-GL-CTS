@@ -5894,7 +5894,7 @@ tcu::TestStatus CaptureReplyTestInstance::iterate()
                                                                imageViewCaptureReplayData.data()));
 
         // call vkGetDescriptorEXT() with the image and store the write descriptor data
-        const auto descriptorSize = de::max(dbProperties.storageImageDescriptorSize, std::size_t(256));
+        const auto descriptorSize = dbProperties.storageImageDescriptorSize;
         std::vector<uint8_t> firstDescriptorData(descriptorSize);
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageView                = *imageView;
