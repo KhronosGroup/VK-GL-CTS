@@ -270,7 +270,7 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
     const VkRenderPassMultiviewCreateInfo *renderPassMultiviewInfoPtr =
         (typeid(RenderPassCreateInfo) == typeid(RenderPassCreateInfo1)) ? &renderPassMultiviewInfo : nullptr;
 
-    const VkPipelineStageFlags srcStageMask = dsAttachmentAvailable ? VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT :
+    const VkPipelineStageFlags srcStageMask = dsAttachmentAvailable ? VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT :
                                                                       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     const VkPipelineStageFlags dstStageMask = dsAttachmentAvailable ? VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT :
                                                                       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
