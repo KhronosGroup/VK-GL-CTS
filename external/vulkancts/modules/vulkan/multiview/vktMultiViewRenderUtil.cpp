@@ -263,10 +263,16 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
     const VkRenderPassMultiviewCreateInfo *renderPassMultiviewInfoPtr =
         (typeid(RenderPassCreateInfo) == typeid(RenderPassCreateInfo1)) ? &renderPassMultiviewInfo : DE_NULL;
 
-    const VkPipelineStageFlags srcStageMask = dsAttacmentAvailable ? VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT :
+    const VkPipelineStageFlags srcStageMask = dsAttacmentAvailable ? VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT :
+                                                                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    const VkPipelineStageFlags dstStageMask = dsAttacmentAvailable ? VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT :
                                                                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     const VkAccessFlags srcAccessMask =
         dsAttacmentAvailable ? VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    const VkAccessFlags dstAccessMask =
+        dsAttacmentAvailable ?
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT :
+            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     vector<SubpassDep> subpassDependencies;
     for (uint32_t subpassNdx = 0u; subpassNdx < subpassCount; ++subpassNdx)
     {
@@ -282,10 +288,10 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
                 subpassNdx, //  uint32_t srcSubpass; || uint32_t srcSubpass;
                 (subpassNdx == subpassCount - 1u) ? subpassNdx :
                                                     subpassNdx + 1u, //  uint32_t dstSubpass; || uint32_t dstSubpass;
-                srcStageMask, //  VkPipelineStageFlags srcStageMask; || VkPipelineStageFlags srcStageMask;
-                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, //  VkPipelineStageFlags dstStageMask; || VkPipelineStageFlags dstStageMask;
-                srcAccessMask,                         //  VkAccessFlags srcAccessMask; || VkAccessFlags srcAccessMask;
-                VK_ACCESS_INPUT_ATTACHMENT_READ_BIT, //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
+                srcStageMask,    //  VkPipelineStageFlags srcStageMask; || VkPipelineStageFlags srcStageMask;
+                dstStageMask,    //  VkPipelineStageFlags dstStageMask; || VkPipelineStageFlags dstStageMask;
+                srcAccessMask,   //  VkAccessFlags srcAccessMask; || VkAccessFlags srcAccessMask;
+                dstAccessMask,   //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
                 dependencyFlags, //  VkDependencyFlags dependencyFlags; || VkDependencyFlags dependencyFlags;
                 0                //    || int32_t viewOffset;
             );
@@ -478,9 +484,10 @@ Move<VkRenderPass> makeRenderPassWithAttachments(const DeviceInterface &vk, cons
                 (subpassNdx == subpassCount - 1u) ? subpassNdx :
                                                     subpassNdx + 1u, //  uint32_t dstSubpass; || uint32_t dstSubpass;
                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, //  VkPipelineStageFlags srcStageMask; || VkPipelineStageFlags srcStageMask;
-                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, //  VkPipelineStageFlags dstStageMask; || VkPipelineStageFlags dstStageMask;
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, //  VkPipelineStageFlags dstStageMask; || VkPipelineStageFlags dstStageMask;
                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, //  VkAccessFlags srcAccessMask; || VkAccessFlags srcAccessMask;
-                VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,  //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
+                VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+                    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
                 dependencyFlags, //  VkDependencyFlags dependencyFlags; || VkDependencyFlags dependencyFlags;
                 0                //    || int32_t viewOffset;
             );
