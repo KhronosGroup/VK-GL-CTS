@@ -82,6 +82,7 @@
 #include "glcShaderLibrary.hpp"
 #include "glcShaderMultisampleInterpolationTests.hpp"
 #include "glcTextureFilterAnisotropicTests.hpp"
+#include "glcTextureStencil8Tests.hpp"
 #include "glcViewportArrayTests.hpp"
 #include "glcPixelStorageModesTests.hpp"
 
@@ -362,6 +363,7 @@ void GL44TestPackage::init(void)
         addChild(new deqp::ShaderMultisampleInterpolationTests(getContext(), glu::GLSL_VERSION_440));
         addChild(new glcts::ShaderTextureImageSamplesTests(getContext()));
         addChild(new glcts::TextureFilterAnisotropicTests(getContext()));
+        addChild(new glcts::TextureStencil8Tests(getContext()));
 
         glcts::ExtParameters extParams(glu::GLSL_VERSION_440, glcts::EXTENSIONTYPE_NONE);
         addChild(new glcts::GeometryShaderTests(getContext(), extParams));

@@ -117,6 +117,8 @@ set(GLCTS_COMMON_SRCS
 	glcTextureFilterAnisotropicTests.hpp
 	glcTextureLodBasicTests.cpp
 	glcTextureLodBasicTests.hpp
+    glcTextureStencil8Tests.cpp
+    glcTextureStencil8Tests.hpp
 	glcTextureRepeatModeTests.cpp
 	glcTextureRepeatModeTests.hpp
 	glcTextureStorageTests.cpp
