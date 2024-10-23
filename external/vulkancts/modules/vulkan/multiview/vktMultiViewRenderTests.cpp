@@ -334,6 +334,9 @@ protected:
     virtual tcu::TestStatus iterate(void);
     virtual void beforeRenderPass(void);
     virtual void afterRenderPass(void);
+#ifndef CTS_USES_VULKANSC
+    virtual void addRenderingSubpassDependencyIfRequired(uint32_t currentSubpassNdx);
+#endif // CTS_USES_VULKANSC
     virtual void bindResources(void)
     {
     }
@@ -368,9 +371,6 @@ protected:
     void fillLayer(const tcu::PixelBufferAccess &pixelBuffer, const tcu::Vec4 &color, const int layerNdx) const;
     void fillQuarter(const tcu::PixelBufferAccess &pixelBuffer, const tcu::Vec4 &color, const int layerNdx,
                      const uint32_t quarter, const uint32_t subpassNdx) const;
-#ifndef CTS_USES_VULKANSC
-    void addRenderingSubpassDependencyIfRequired(uint32_t currentSubpassNdx);
-#endif // CTS_USES_VULKANSC
     VkFormat getVerificationFormat(void) const;
 
     const TestParameters m_parameters;
@@ -3731,6 +3731,7 @@ protected:
               vector<PipelineSp> &pipelines) override;
     void beforeRenderPass(void) override;
     void afterRenderPass(void) override;
+    void addRenderingSubpassDependencyIfRequired(uint32_t currentSubpassNdx) override;
     vector<VkImageView> makeAttachmentsVector(void);
     MovePtr<tcu::Texture2DArray> imageData(void) const override;
     void readImage(VkImage image, const tcu::PixelBufferAccess &dst);
@@ -4291,6 +4292,45 @@ void MultiViewDepthStencilTestInstance::beforeRenderPass(void)
                  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
                  VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
 }
+
+#ifndef CTS_USES_VULKANSC
+void MultiViewDepthStencilTestInstance::addRenderingSubpassDependencyIfRequired(uint32_t currentSubpassNdx)
+{
+    MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired(currentSubpassNdx);
+
+    // Get the combined view mask since the last pipeline barrier.
+    uint32_t viewMask = 0;
+
+    for (uint32_t subpassNdx = 0; subpassNdx < currentSubpassNdx; ++subpassNdx)
+    {
+        if ((viewMask & m_parameters.viewMasks[subpassNdx]) != 0)
+        {
+            viewMask = 0; // This subpass should have a pipeline barrier so reset the view mask.
+        }
+
+        viewMask |= m_parameters.viewMasks[subpassNdx];
+    }
+
+    // Add a pipeline barrier if the view mask for this subpass contains bits used in previous subpasses
+    // since the last pipeline barrier.
+    if ((viewMask & m_parameters.viewMasks[currentSubpassNdx]) != 0)
+    {
+        const VkImageSubresourceRange subresourceRange = {
+            VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, //VkImageAspectFlags aspectMask;
+            0u,                                                      //uint32_t baseMipLevel;
+            1u,                                                      //uint32_t levelCount;
+            0u,                                                      //uint32_t baseArrayLayer;
+            m_parameters.extent.depth,                               //uint32_t layerCount;
+        };
+
+        imageBarrier(*m_device, *m_cmdBuffer, m_dsAttachment->getImage(), subresourceRange,
+                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
+    }
+}
+#endif //CTS_USES_VULKANSC
 
 void MultiViewDepthStencilTestInstance::afterRenderPass(void)
 {
