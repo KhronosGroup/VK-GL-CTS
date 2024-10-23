@@ -1178,6 +1178,7 @@ static shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceCont
     params.queryDecodeStatus  = false;
     params.outOfOrderDecoding = false;
     params.alwaysRecreateDPB  = resolutionChange;
+    params.layeredDpb         = true;
 
     return std::make_shared<VideoBaseDecoder>(std::move(params));
 }
