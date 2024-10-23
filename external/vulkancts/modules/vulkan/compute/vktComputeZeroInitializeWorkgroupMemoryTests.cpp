@@ -150,6 +150,15 @@ tcu::TestStatus runCompute(Context &context, uint32_t bufferSize, uint32_t numWG
 
     vk.cmdDispatch(*cmdBuffer, numWGX, numWGY, numWGZ);
 
+    const VkMemoryBarrier barrier = {
+        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
+        nullptr,                          // pNext
+        VK_ACCESS_SHADER_WRITE_BIT,       // srcAccessMask
+        VK_ACCESS_HOST_READ_BIT,          // dstAccessMask
+    };
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                          (VkDependencyFlags)0, 1, &barrier, 0, nullptr, 0, nullptr);
+
     endCommandBuffer(vk, *cmdBuffer);
 
     submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
@@ -1250,6 +1259,15 @@ tcu::TestStatus RepeatedPipelineInstance::iterate(void)
     vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
 
     vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
+
+    const VkMemoryBarrier barrier = {
+        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
+        nullptr,                          // pNext
+        VK_ACCESS_SHADER_WRITE_BIT,       // srcAccessMask
+        VK_ACCESS_HOST_READ_BIT,          // dstAccessMask
+    };
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                          (VkDependencyFlags)0, 1, &barrier, 0, nullptr, 0, nullptr);
 
     endCommandBuffer(vk, *cmdBuffer);
 
