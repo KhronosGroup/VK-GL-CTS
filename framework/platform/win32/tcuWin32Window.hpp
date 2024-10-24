@@ -39,7 +39,7 @@ public:
     ~Window(void);
 
     void setVisible(bool visible);
-    void setForeground(void);
+    bool setForeground(void);
     void setSize(int width, int height);
     void setMinimized(bool minimize);
 

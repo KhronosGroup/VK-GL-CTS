@@ -34,8 +34,10 @@ void Window::setVisible(bool visible)
     TCU_THROW(InternalError, "setVisible() called on window not supporting it");
 }
 
-void Window::setForeground(void)
+bool Window::setForeground(void)
 {
+    TCU_THROW(InternalError, "setForeground() called on window not supporting it");
+    return false;
 }
 
 void Window::resize(const tcu::UVec2 &)
