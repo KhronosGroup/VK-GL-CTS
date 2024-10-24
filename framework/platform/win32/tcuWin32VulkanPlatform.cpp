@@ -58,9 +58,9 @@ public:
         m_window->setVisible(visible);
     }
 
-    void setForeground(void)
+    bool setForeground(void)
     {
-        m_window->setForeground();
+        return m_window->setForeground();
     }
 
     void resize(const UVec2 &newSize)
