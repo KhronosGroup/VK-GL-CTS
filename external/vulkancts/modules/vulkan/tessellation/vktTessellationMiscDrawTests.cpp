@@ -29,6 +29,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuImageIO.hpp"
 #include "tcuTexture.hpp"
+#include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
 
 #include "vkDefs.hpp"
@@ -46,6 +47,8 @@
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 
+#include "rrRenderer.hpp"
+
 #include <string>
 #include <vector>
 #include <utility>
@@ -59,6 +62,8 @@ using namespace vk;
 
 namespace
 {
+
+typedef de::MovePtr<vk::Allocation> AllocationMp;
 
 struct CaseDefinition
 {
@@ -1028,6 +1033,750 @@ std::string getDomainOriginName(VkTessellationDomainOrigin value)
     return de::toLower(nameStr.substr(prefixLen));
 }
 
+enum TessInstancedType
+{
+    TESSINSTANCEDTYPE_NO_PATCHES = 0,
+    TESSINSTANCEDTYPE_INSTANCED,
+
+    TESSINSTANCEDTYPE_LAST,
+};
+
+struct TessInstancedDrawTestParams
+{
+    TessInstancedType testType;
+    TessPrimitiveType primitiveType;
+};
+
+static inline const char *getInstancedDrawTestName(const TessInstancedType type)
+{
+    static std::string primitiveName[] = {
+        "no_patches", // TESSINSTANCEDTYPE_NO_PATCHES
+        "instances",  // TESSINSTANCEDTYPE_INSTANCED
+    };
+
+    if (type >= TESSINSTANCEDTYPE_LAST)
+    {
+        DE_FATAL("Unexpected test type.");
+        return nullptr;
+    }
+
+    return primitiveName[type].c_str();
+}
+
+class TessInstancedDrawTestInstance : public vkt::TestInstance
+{
+public:
+    TessInstancedDrawTestInstance(Context &context, const TessInstancedDrawTestParams &testParams)
+        : vkt::TestInstance(context)
+        , m_params(testParams)
+    {
+    }
+
+    ~TessInstancedDrawTestInstance()
+    {
+    }
+
+    tcu::TestStatus iterate(void);
+
+protected:
+    Move<VkBuffer> createBufferAndBindMemory(uint32_t bufferSize, VkBufferUsageFlags usageFlags,
+                                             AllocationMp *outMemory);
+    Move<VkImage> createImageAndBindMemory(tcu::IVec3 imgSize, VkFormat format, VkImageUsageFlags usageFlags,
+                                           AllocationMp *outMemory);
+    Move<VkImageView> createImageView(VkFormat format, VkImage image);
+    Move<VkPipelineLayout> createPipelineLayout();
+    Move<VkPipeline> createGraphicsPipeline(uint32_t patchCnt, VkPipelineLayout layout, VkRenderPass renderpass);
+
+    std::vector<tcu::Vec4> genPerVertexVertexData();
+    std::vector<tcu::Vec4> genPerInstanceVertexData();
+    std::vector<uint16_t> genIndexData();
+
+protected:
+    const TessInstancedDrawTestParams m_params;
+};
+
+class InstancedVertexShader : public rr::VertexShader
+{
+public:
+    InstancedVertexShader(void) : rr::VertexShader(2, 0)
+    {
+        m_inputs[0].type = rr::GENERICVECTYPE_FLOAT;
+        m_inputs[1].type = rr::GENERICVECTYPE_FLOAT;
+    }
+
+    virtual ~InstancedVertexShader()
+    {
+    }
+
+    void shadeVertices(const rr::VertexAttrib *inputs, rr::VertexPacket *const *packets, const int numPackets) const
+    {
+        for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
+        {
+            const tcu::Vec4 position =
+                rr::readVertexAttribFloat(inputs[0], packets[packetNdx]->instanceNdx, packets[packetNdx]->vertexNdx);
+            const tcu::Vec4 instancePosition =
+                rr::readVertexAttribFloat(inputs[1], packets[packetNdx]->instanceNdx, packets[packetNdx]->vertexNdx);
+
+            packets[packetNdx]->position = position + instancePosition;
+        }
+    }
+};
+
+class InstancedFragmentShader : public rr::FragmentShader
+{
+public:
+    InstancedFragmentShader(void) : rr::FragmentShader(0, 1)
+    {
+        m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
+    }
+
+    virtual ~InstancedFragmentShader()
+    {
+    }
+
+    void shadeFragments(rr::FragmentPacket *, const int numPackets, const rr::FragmentShadingContext &context) const
+    {
+        for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
+        {
+            for (int fragNdx = 0; fragNdx < rr::NUM_FRAGMENTS_PER_PACKET; ++fragNdx)
+            {
+                const tcu::Vec4 color(1.0f, 0.0f, 1.0f, 1.0f);
+                rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, color);
+            }
+        }
+    }
+};
+
+class TessInstancedDrawTestCase : public vkt::TestCase
+{
+public:
+    TessInstancedDrawTestCase(tcu::TestContext &testCtx, const std::string &name,
+                              const TessInstancedDrawTestParams &testParams)
+        : vkt::TestCase(testCtx, name)
+        , m_params(testParams)
+    {
+    }
+
+    ~TessInstancedDrawTestCase()
+    {
+    }
+
+    void checkSupport(Context &context) const;
+    void initPrograms(vk::SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &context) const
+    {
+        return new TessInstancedDrawTestInstance(context, m_params);
+    }
+
+protected:
+    const TessInstancedDrawTestParams m_params;
+};
+
+void TessInstancedDrawTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+}
+
+void TessInstancedDrawTestCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "\n"
+         << "layout (location = 0) in vec4 inPos;\n"
+         << "layout (location = 1) in vec4 instancePos;\n"
+         << "\n"
+         << "void main()\n"
+         << "{\n"
+         << "    vec4 pos = inPos + instancePos;\n"
+         << "\n"
+         << "    gl_Position = pos;\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "\n"
+         << "layout (location = 0) out vec4 fragColor;\n"
+         << "\n"
+         << "void main()\n"
+         << "{\n"
+         << "    fragColor = vec4(1.0f, 0.0f, 1.0f, 1.0f);\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+
+    const int numVertices = m_params.primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? 3 : 4;
+
+    std::ostringstream tessCntrl;
+    tessCntrl << "#version 460\n"
+              << "\n"
+              << "layout (vertices = " << numVertices << ") out;\n"
+              << "\n"
+              << "void main()\n"
+              << "{\n"
+              << "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+              << "    \n"
+              << "    gl_TessLevelOuter[0] = 1.0f;\n"
+              << "    gl_TessLevelOuter[1] = 1.0f;\n"
+              << "    gl_TessLevelOuter[2] = 1.0f;\n"
+              << "    gl_TessLevelOuter[3] = 1.0f;\n"
+              << "    \n"
+              << "}\n";
+    programCollection.glslSources.add("tess_ctrl") << glu::TessellationControlSource(tessCntrl.str());
+
+    std::ostringstream tessEvel;
+    tessEvel << "#version 460\n"
+             << "\n"
+             << "layout ( " << getTessPrimitiveTypeShaderName(m_params.primitiveType) << " ) in;\n"
+             << "\n"
+             << "void main()\n"
+             << "{\n"
+             << "    const float u = gl_TessCoord.x;\n"
+             << "    const float v = gl_TessCoord.y;\n";
+    if (m_params.primitiveType == TESSPRIMITIVETYPE_TRIANGLES)
+    {
+        tessEvel << "    gl_Position = (1 - u) * (1 - v) * gl_in[0].gl_Position + (1 - u) * v * gl_in[1].gl_Position "
+                 << "+ u * (1 - v) * gl_in[2].gl_Position + u * v * gl_in[3].gl_Position;\n";
+    }
+    else // m_params.primitiveType == TESSPRIMITIVETYPE_QUADS
+    {
+        tessEvel << "    gl_Position = (1 - u) * (1 - v) * gl_in[0].gl_Position + u * (1 - v) * gl_in[1].gl_Position "
+                 << "+ u * v * gl_in[2].gl_Position + (1 - u) * v * gl_in[3].gl_Position;\n";
+    }
+    tessEvel << "}\n";
+    programCollection.glslSources.add("tess_eval") << glu::TessellationEvaluationSource(tessEvel.str());
+}
+
+tcu::TestStatus TessInstancedDrawTestInstance::iterate(void)
+{
+    const DeviceInterface &devInterface = m_context.getDeviceInterface();
+    VkDevice dev                        = m_context.getDevice();
+    VkQueue queue                       = m_context.getUniversalQueue();
+
+    // Command buffer
+    Move<VkCommandPool> cmdPool(makeCommandPool(devInterface, dev, m_context.getUniversalQueueFamilyIndex()));
+    Move<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(devInterface, dev, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    // Per vertex vertex buffer
+    const std::vector<tcu::Vec4> perVertexVertices = genPerVertexVertexData();
+    const uint32_t perVertexVBSize = static_cast<uint32_t>(perVertexVertices.size() * sizeof(tcu::Vec4));
+
+    AllocationMp perVertexVBMemory;
+    Move<VkBuffer> perVertexVB(
+        createBufferAndBindMemory(perVertexVBSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &perVertexVBMemory));
+
+    {
+        deMemcpy(perVertexVBMemory->getHostPtr(), perVertexVertices.data(), perVertexVBSize);
+        flushAlloc(devInterface, dev, *perVertexVBMemory);
+        // No barrier needed, flushed memory is automatically visible
+    }
+
+    const uint32_t patchCnt = static_cast<uint32_t>(perVertexVertices.size());
+
+    // Per instance vertex buffer
+    const std::vector<tcu::Vec4> perInstanceVertices = genPerInstanceVertexData();
+    const uint32_t perInstanceVBSize = static_cast<uint32_t>(perInstanceVertices.size() * sizeof(tcu::Vec4));
+
+    AllocationMp perInstanceVBMemory;
+    Move<VkBuffer> perInstanceVB(
+        createBufferAndBindMemory(perInstanceVBSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &perInstanceVBMemory));
+
+    {
+        deMemcpy(perInstanceVBMemory->getHostPtr(), perInstanceVertices.data(), perInstanceVBSize);
+        flushAlloc(devInterface, dev, *perInstanceVBMemory);
+        // No barrier needed, flushed memory is automatically visible
+    }
+
+    // Render target
+    const tcu::IVec3 renderSize(256, 256, 1);
+    const vk::VkFormat rtFormat = VK_FORMAT_R8G8B8A8_UNORM;
+
+    AllocationMp rtMemory;
+    Move<VkImage> renderTargetImage(createImageAndBindMemory(
+        renderSize, rtFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, &rtMemory));
+
+    // Render target view
+    Move<VkImageView> rtView(createImageView(rtFormat, *renderTargetImage));
+
+    // Pixel buffer
+    const uint32_t pixelBufferSize = renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(rtFormat));
+
+    AllocationMp pixelBufferMemory;
+    Move<VkBuffer> pixelBuffer(
+        createBufferAndBindMemory(pixelBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, &pixelBufferMemory));
+
+    // Pipeline layout
+    Move<VkPipelineLayout> pipelineLayout(createPipelineLayout());
+
+    // Renderpass
+    Move<VkRenderPass> renderPass(makeRenderPass(devInterface, dev, rtFormat));
+
+    // Framebuffer
+    Move<VkFramebuffer> framebuffer(
+        makeFramebuffer(devInterface, dev, *renderPass, *rtView, renderSize.x(), renderSize.y()));
+
+    // Pipeline
+    Move<VkPipeline> pipeline(createGraphicsPipeline(patchCnt, *pipelineLayout, *renderPass));
+
+    // Rendering
+    beginCommandBuffer(devInterface, *cmdBuffer);
+
+    const vk::VkBuffer vertexBuffers[]           = {*perVertexVB, *perInstanceVB};
+    const vk::VkDeviceSize vertexBufferOffsets[] = {0, 0};
+
+    devInterface.cmdBindVertexBuffers(*cmdBuffer, 0, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers,
+                                      vertexBufferOffsets);
+
+    devInterface.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    beginRenderPass(devInterface, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(renderSize), clearColor);
+
+    if (m_params.testType == TESSINSTANCEDTYPE_INSTANCED)
+        devInterface.cmdDraw(*cmdBuffer, patchCnt, static_cast<uint32_t>(perInstanceVertices.size()), 0u, 0u);
+    else // m_params.testType == TESSINSTANCEDTYPE_NO_PATCHES
+        devInterface.cmdDraw(*cmdBuffer, 2u, 1u, 0u, 0u);
+
+    endRenderPass(devInterface, *cmdBuffer);
+
+    copyImageToBuffer(devInterface, *cmdBuffer, *renderTargetImage, *pixelBuffer, {renderSize.x(), renderSize.y()});
+
+    endCommandBuffer(devInterface, *cmdBuffer);
+
+    submitCommandsAndWait(devInterface, dev, queue, cmdBuffer.get());
+
+    // Reference rendering
+    tcu::TextureFormat tcuFormat = mapVkFormat(rtFormat);
+    tcu::TextureLevel refImage(tcuFormat, renderSize.x(), renderSize.y());
+
+    tcu::clear(refImage.getAccess(), clearColor);
+
+    if (m_params.testType == TESSINSTANCEDTYPE_INSTANCED)
+    {
+        const InstancedVertexShader vertShader;
+        const InstancedFragmentShader fragShader;
+        const rr::Program program(&vertShader, &fragShader);
+        const rr::MultisamplePixelBufferAccess colorBuffer =
+            rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(refImage.getAccess());
+        const rr::RenderTarget renderTarget(colorBuffer);
+        const rr::RenderState renderState((rr::ViewportState(colorBuffer)),
+                                          m_context.getDeviceProperties().limits.subPixelPrecisionBits);
+        const rr::Renderer renderer;
+
+        const rr::VertexAttrib vertexAttribs[] = {
+            rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0,
+                             perVertexVertices.data()), // 0 means per vertex attribute
+            rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 1,
+                             perInstanceVertices.data()) // 1 means per instance attribute
+        };
+
+        if (m_params.primitiveType == TESSPRIMITIVETYPE_QUADS)
+        {
+            const std::vector<uint16_t> indices = genIndexData();
+
+            const rr::DrawIndices drawIndices(indices.data());
+            const rr::PrimitiveList primitives =
+                rr::PrimitiveList(rr::PRIMITIVETYPE_TRIANGLES, static_cast<int>(indices.size()), drawIndices);
+            const rr::DrawCommand command(renderState, renderTarget, program, DE_LENGTH_OF_ARRAY(vertexAttribs),
+                                          &vertexAttribs[0], primitives);
+
+            renderer.drawInstanced(command, 4);
+        }
+        else
+        {
+            const rr::PrimitiveList primitives =
+                rr::PrimitiveList(rr::PRIMITIVETYPE_TRIANGLES, static_cast<int>(perVertexVertices.size()), 0);
+            const rr::DrawCommand command(renderState, renderTarget, program, DE_LENGTH_OF_ARRAY(vertexAttribs),
+                                          &vertexAttribs[0], primitives);
+
+            renderer.drawInstanced(command, 4);
+        }
+    }
+
+    // Compare result
+    tcu::TestLog &log = m_context.getTestContext().getLog();
+    qpTestResult res  = QP_TEST_RESULT_FAIL;
+    const tcu::ConstPixelBufferAccess resultAccess(tcuFormat, renderSize, pixelBufferMemory->getHostPtr());
+    const tcu::ConstPixelBufferAccess refAccess = refImage.getAccess();
+
+    if (tcu::fuzzyCompare(log, "Result", "", refAccess, resultAccess, 0.05f, tcu::COMPARE_LOG_RESULT))
+        res = QP_TEST_RESULT_PASS;
+
+    return tcu::TestStatus(res, qpGetTestResultName(res));
+}
+
+Move<VkBuffer> TessInstancedDrawTestInstance::createBufferAndBindMemory(uint32_t bufferSize,
+                                                                        VkBufferUsageFlags usageFlags,
+                                                                        AllocationMp *outMemory)
+{
+    const VkDevice &device      = m_context.getDevice();
+    const DeviceInterface &vkdi = m_context.getDeviceInterface();
+    Allocator &allocator        = m_context.getDefaultAllocator();
+
+    const VkBufferCreateInfo bufferCreateInfo = {
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
+        nullptr,                              // const void*            pNext
+        0,                                    // VkBufferCreateFlags    flags
+        bufferSize,                           // VkDeviceSize           size
+        usageFlags,                           // VkBufferUsageFlags     usage
+        VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode          sharingMode
+        0,                                    // uint32_t               queueFamilyIndexCount
+        nullptr,                              // const uint32_t*        pQueueFamilyIndices
+    };
+
+    Move<VkBuffer> buffer(vk::createBuffer(vkdi, device, &bufferCreateInfo));
+    const VkMemoryRequirements requirements = getBufferMemoryRequirements(vkdi, device, *buffer);
+    AllocationMp bufferMemory               = allocator.allocate(requirements, MemoryRequirement::HostVisible);
+
+    VK_CHECK(vkdi.bindBufferMemory(device, *buffer, bufferMemory->getMemory(), bufferMemory->getOffset()));
+    *outMemory = bufferMemory;
+
+    return buffer;
+}
+
+Move<VkImage> TessInstancedDrawTestInstance::createImageAndBindMemory(tcu::IVec3 imgSize, VkFormat format,
+                                                                      VkImageUsageFlags usageFlags,
+                                                                      AllocationMp *outMemory)
+{
+    const VkDevice &device      = m_context.getDevice();
+    const DeviceInterface &vkdi = m_context.getDeviceInterface();
+    Allocator &allocator        = m_context.getDefaultAllocator();
+
+    const VkImageCreateInfo imageCreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType
+        nullptr,                             // const void*              pNext
+        0u,                                  // VkImageCreateFlags       flags
+        VK_IMAGE_TYPE_2D,                    // VkImageType              imageType
+        format,                              // VkFormat                 format
+        makeExtent3D(imgSize),               // VkExtent3D               extent
+        1u,                                  // uint32_t                 mipLevels
+        1u,                                  // uint32_t                 arrayLayers
+        VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits    samples
+        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling            tiling
+        usageFlags,                          // VkImageUsageFlags        usage
+        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
+        0u,                                  // uint32_t                 queueFamilyIndexCount
+        nullptr,                             // const uint32_t*          pQueueFamilyIndices
+        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout            initialLayout
+    };
+
+    Move<VkImage> image(vk::createImage(vkdi, device, &imageCreateInfo));
+    const VkMemoryRequirements requirements = getImageMemoryRequirements(vkdi, device, *image);
+    AllocationMp imageMemory                = allocator.allocate(requirements, MemoryRequirement::Any);
+
+    VK_CHECK(vkdi.bindImageMemory(device, *image, imageMemory->getMemory(), imageMemory->getOffset()));
+    *outMemory = imageMemory;
+
+    return image;
+}
+
+Move<VkImageView> TessInstancedDrawTestInstance::createImageView(VkFormat format, VkImage image)
+{
+    const VkDevice &device      = m_context.getDevice();
+    const DeviceInterface &vkdi = m_context.getDeviceInterface();
+
+    VkImageSubresourceRange range = {
+        VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask
+        0u,                        // uint32_t           baseMipLevel
+        1u,                        // uint32_t           levelCount
+        0u,                        // uint32_t           baseArrayLayer
+        1u,                        // uint32_t           layerCount
+    };
+
+    return makeImageView(vkdi, device, image, VK_IMAGE_VIEW_TYPE_2D, format, range);
+}
+
+Move<VkPipelineLayout> TessInstancedDrawTestInstance::createPipelineLayout()
+{
+    const VkDevice &device      = m_context.getDevice();
+    const DeviceInterface &vkdi = m_context.getDeviceInterface();
+
+    const VkPipelineLayoutCreateInfo createInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                 sType
+        nullptr,                                       // const void*                     pNext
+        (VkPipelineLayoutCreateFlags)0,                // VkPipelineLayoutCreateFlags     flags
+        0u,                                            // uint32_t                        setLayoutCount
+        nullptr,                                       // const VkDescriptorSetLayout*    pSetLayouts
+        0u,                                            // uint32_t                        pushConstantRangeCount
+        nullptr,                                       // const VkPushConstantRange*      pPushConstantRanges
+    };
+
+    return vk::createPipelineLayout(vkdi, device, &createInfo);
+}
+
+Move<VkPipeline> TessInstancedDrawTestInstance::createGraphicsPipeline(uint32_t patchCnt, VkPipelineLayout layout,
+                                                                       VkRenderPass renderpass)
+{
+    const VkDevice &device      = m_context.getDevice();
+    const DeviceInterface &vkdi = m_context.getDeviceInterface();
+
+    vk::BinaryCollection &binCollection = m_context.getBinaryCollection();
+    Move<VkShaderModule> vertModule(createShaderModule(vkdi, device, binCollection.get("vert")));
+    Move<VkShaderModule> tessCtrlModule(createShaderModule(vkdi, device, binCollection.get("tess_ctrl")));
+    Move<VkShaderModule> tessEvalModule(createShaderModule(vkdi, device, binCollection.get("tess_eval")));
+    Move<VkShaderModule> fragModule(createShaderModule(vkdi, device, binCollection.get("frag")));
+
+    VkPipelineShaderStageCreateInfo stageInfos[4];
+    uint32_t stageNdx = 0;
+
+    {
+        const VkPipelineShaderStageCreateInfo pipelineShaderStageParam = {
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                             // const void* pNext;
+            0,                                                   // VkPipelineShaderStageCreateFlags flags;
+            VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits stage;
+            *vertModule,                                         // VkShaderModule module;
+            "main",                                              // const char* pName;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
+        };
+        stageInfos[stageNdx++] = pipelineShaderStageParam;
+    }
+
+    {
+        const VkPipelineShaderStageCreateInfo pipelineShaderStageParam = {
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                             // const void* pNext;
+            0,                                                   // VkPipelineShaderStageCreateFlags flags;
+            VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,            // VkShaderStageFlagBits stage;
+            *tessCtrlModule,                                     // VkShaderModule module;
+            "main",                                              // const char* pName;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
+        };
+        stageInfos[stageNdx++] = pipelineShaderStageParam;
+    }
+
+    {
+        const VkPipelineShaderStageCreateInfo pipelineShaderStageParam = {
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                             // const void* pNext;
+            0,                                                   // VkPipelineShaderStageCreateFlags flags;
+            VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,         // VkShaderStageFlagBits stage;
+            *tessEvalModule,                                     // VkShaderModule module;
+            "main",                                              // const char* pName;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
+        };
+        stageInfos[stageNdx++] = pipelineShaderStageParam;
+    }
+
+    {
+        const VkPipelineShaderStageCreateInfo pipelineShaderStageParam = {
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                             // const void* pNext;
+            0,                                                   // VkPipelineShaderStageCreateFlags flags;
+            VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits stage;
+            *fragModule,                                         // VkShaderModule module;
+            "main",                                              // const char* pName;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
+        };
+        stageInfos[stageNdx++] = pipelineShaderStageParam;
+    }
+
+    const VkVertexInputBindingDescription vertexInputBindingDescriptions[] = {
+        {
+            0u,                         // uint32_t             binding
+            sizeof(tcu::Vec4),          // uint32_t             stride
+            VK_VERTEX_INPUT_RATE_VERTEX // VkVertexInputRate    inputRate
+        },
+        {
+            1u,                           // uint32_t             binding
+            sizeof(tcu::Vec4),            // uint32_t             stride
+            VK_VERTEX_INPUT_RATE_INSTANCE // VkVertexInputRate    inputRate
+        }};
+
+    const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] = {
+        {
+            0u,                            // uint32_t    location
+            0u,                            // uint32_t    binding
+            VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat    format
+            0u                             // uint32_t    offset
+        },
+        {
+            1u,                            // uint32_t    location
+            1u,                            // uint32_t    binding
+            VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat    format
+            0u,                            // uint32_t    offset
+        }};
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfoDefault = {
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType
+        nullptr,                                                   // const void*                                 pNext
+        (VkPipelineVertexInputStateCreateFlags)0,                  // VkPipelineVertexInputStateCreateFlags       flags
+        2u,                              // uint32_t                                    vertexBindingDescriptionCount
+        vertexInputBindingDescriptions,  // const VkVertexInputBindingDescription*      pVertexBindingDescriptions
+        2u,                              // uint32_t                                    vertexAttributeDescriptionCount
+        vertexInputAttributeDescriptions // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
+    };
+
+    const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfoDefault = {
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                            sType
+        nullptr,                                                     // const void*                                pNext
+        0u,                                                          // VkPipelineInputAssemblyStateCreateFlags    flags
+        VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, // VkPrimitiveTopology                        topology
+        VK_FALSE                          // VkBool32                                   primitiveRestartEnable
+    };
+
+    const VkPipelineTessellationStateCreateInfo tessStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, // VkStructureType                        sType
+        nullptr,                                                   // const void*                            pNext
+        0u,                                                        // VkPipelineTessellationStateCreateFlags flags
+        patchCnt // uint32_t                               patchControlPoints
+    };
+
+    const VkViewport viewport = {
+        0.0f,   // float x
+        0.0f,   // float y
+        256.0f, // float width
+        256.0f, // float height
+        0.0f,   // float minDepth
+        1.0f    // float maxDepth
+    };
+
+    const VkRect2D scissor = {
+        {0, 0},      // VkOffset2D    offset
+        {256u, 256u} // VkExtent2D    extent
+    };
+
+    const VkPipelineViewportStateCreateInfo viewportStateCreateInfoDefault = {
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType
+        nullptr,                                               // const void*                                 pNext
+        (VkPipelineViewportStateCreateFlags)0,                 // VkPipelineViewportStateCreateFlags          flags
+        1u,        // uint32_t                                    viewportCount
+        &viewport, // const VkViewport*                           pViewports
+        1u,        // uint32_t                                    scissorCount
+        &scissor   // const VkRect2D*                             pScissors
+    };
+
+    const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfoDefault = {
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                            sType
+        nullptr,                                                    // const void*                                pNext
+        0u,                                                         // VkPipelineRasterizationStateCreateFlags    flags
+        VK_FALSE,                        // VkBool32                                   depthClampEnable
+        VK_FALSE,                        // VkBool32                                   rasterizerDiscardEnable
+        VK_POLYGON_MODE_FILL,            // VkPolygonMode                              polygonMode
+        VK_CULL_MODE_NONE,               // VkCullModeFlags                            cullMode
+        VK_FRONT_FACE_COUNTER_CLOCKWISE, // VkFrontFace                                frontFace
+        VK_FALSE,                        // VkBool32                                   depthBiasEnable
+        0.0f,                            // float                                      depthBiasConstantFactor
+        0.0f,                            // float                                      depthBiasClamp
+        0.0f,                            // float                                      depthBiasSlopeFactor
+        1.0f                             // float                                      lineWidth
+    };
+
+    const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfoDefault = {
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                          sType
+        nullptr,                                                  // const void*                              pNext
+        0u,                                                       // VkPipelineMultisampleStateCreateFlags    flags
+        VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                    rasterizationSamples
+        VK_FALSE,              // VkBool32                                 sampleShadingEnable
+        1.0f,                  // float                                    minSampleShading
+        nullptr,               // const VkSampleMask*                      pSampleMask
+        VK_FALSE,              // VkBool32                                 alphaToCoverageEnable
+        VK_FALSE               // VkBool32                                 alphaToOneEnable
+    };
+
+    const VkStencilOpState stencilOpState = {
+        VK_STENCIL_OP_KEEP,  // VkStencilOp    failOp
+        VK_STENCIL_OP_KEEP,  // VkStencilOp    passOp
+        VK_STENCIL_OP_KEEP,  // VkStencilOp    depthFailOp
+        VK_COMPARE_OP_NEVER, // VkCompareOp    compareOp
+        0,                   // uint32_t       compareMask
+        0,                   // uint32_t       writeMask
+        0                    // uint32_t       reference
+    };
+
+    const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfoDefault = {
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                          sType
+        nullptr,                                                    // const void*                              pNext
+        0u,                                                         // VkPipelineDepthStencilStateCreateFlags   flags
+        VK_FALSE,                    // VkBool32                                 depthTestEnable
+        VK_FALSE,                    // VkBool32                                 depthWriteEnable
+        VK_COMPARE_OP_LESS_OR_EQUAL, // VkCompareOp                              depthCompareOp
+        VK_FALSE,                    // VkBool32                                 depthBoundsTestEnable
+        VK_FALSE,                    // VkBool32                                 stencilTestEnable
+        stencilOpState,              // VkStencilOpState                         front
+        stencilOpState,              // VkStencilOpState                         back
+        0.0f,                        // float                                    minDepthBounds
+        1.0f,                        // float                                    maxDepthBounds
+    };
+
+    const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
+        VK_FALSE,                // VkBool32                 blendEnable
+        VK_BLEND_FACTOR_ZERO,    // VkBlendFactor            srcColorBlendFactor
+        VK_BLEND_FACTOR_ZERO,    // VkBlendFactor            dstColorBlendFactor
+        VK_BLEND_OP_ADD,         // VkBlendOp                colorBlendOp
+        VK_BLEND_FACTOR_ZERO,    // VkBlendFactor            srcAlphaBlendFactor
+        VK_BLEND_FACTOR_ZERO,    // VkBlendFactor            dstAlphaBlendFactor
+        VK_BLEND_OP_ADD,         // VkBlendOp                alphaBlendOp
+        VK_COLOR_COMPONENT_R_BIT // VkColorComponentFlags    colorWriteMask
+            | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT};
+
+    const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfoDefault = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                               sType
+        nullptr,                                                  // const void*                                   pNext
+        0u,                                                       // VkPipelineColorBlendStateCreateFlags          flags
+        VK_FALSE,                   // VkBool32                                      logicOpEnable
+        VK_LOGIC_OP_CLEAR,          // VkLogicOp                                     logicOp
+        1u,                         // uint32_t                                      attachmentCount
+        &colorBlendAttachmentState, // const VkPipelineColorBlendAttachmentState*    pAttachments
+        {0.0f, 0.0f, 0.0f, 0.0f}    // float                                         blendConstants[4]
+    };
+
+    const VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
+        VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType                                  sType
+        nullptr,                                         // const void*                                      pNext
+        0,                                               // VkPipelineCreateFlags                            flags
+        stageNdx,                                        // uint32_t                                         stageCount
+        stageInfos,                                      // const VkPipelineShaderStageCreateInfo*           pStages
+        &vertexInputStateCreateInfoDefault,   // const VkPipelineVertexInputStateCreateInfo*      pVertexInputState
+        &inputAssemblyStateCreateInfoDefault, // const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState
+        &tessStateCreateInfo,                 // const VkPipelineTessellationStateCreateInfo*     pTessellationState
+        &viewportStateCreateInfoDefault,      // const VkPipelineViewportStateCreateInfo*         pViewportState
+        &rasterizationStateCreateInfoDefault, // const VkPipelineRasterizationStateCreateInfo*    pRasterizationState
+        &multisampleStateCreateInfoDefault,   // const VkPipelineMultisampleStateCreateInfo*      pMultisampleState
+        &depthStencilStateCreateInfoDefault,  // const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState
+        &colorBlendStateCreateInfoDefault,    // const VkPipelineColorBlendStateCreateInfo*       pColorBlendState
+        nullptr,                              // const VkPipelineDynamicStateCreateInfo*          pDynamicState
+        layout,                               // VkPipelineLayout                                 layout
+        renderpass,                           // VkRenderPass                                     renderPass
+        0,                                    // uint32_t                                         subpass
+        VK_NULL_HANDLE,                       // VkPipeline                                       basePipelineHandle
+        0                                     // int32_t                                          basePipelineIndex;
+    };
+
+    return vk::createGraphicsPipeline(vkdi, device, VK_NULL_HANDLE, &pipelineCreateInfo);
+}
+
+std::vector<tcu::Vec4> TessInstancedDrawTestInstance::genPerVertexVertexData()
+{
+    std::vector<tcu::Vec4> vertices = {
+        {-0.1f, -0.1f, 0.0f, 1.0f},
+        {0.1f, -0.1f, 0.0f, 1.0f},
+        {0.1f, 0.1f, 0.0f, 1.0f},
+        {-0.1f, 0.1f, 0.0f, 1.0f},
+    };
+
+    return vertices;
+}
+
+std::vector<tcu::Vec4> TessInstancedDrawTestInstance::genPerInstanceVertexData()
+{
+    std::vector<tcu::Vec4> vertices = {
+        {-0.5f, -0.5f, 0.0f, 1.0f},
+        {0.5f, -0.5f, 0.0f, 1.0f},
+        {0.5f, 0.5f, 0.0f, 1.0f},
+        {-0.5f, 0.5f, 0.0f, 1.0f},
+    };
+
+    return vertices;
+}
+
+std::vector<uint16_t> TessInstancedDrawTestInstance::genIndexData()
+{
+    std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
+
+    return indices;
+}
+
 } // namespace
 
 //! These tests correspond to dEQP-GLES31.functional.tessellation.misc_draw.*
@@ -1102,6 +1851,28 @@ tcu::TestCaseGroup *createMiscDrawTests(tcu::TestContext &testCtx)
             addFunctionCaseWithPrograms(group.get(), caseName, checkSupportCase, initProgramsIsolinesCase, runTest,
                                         makeCaseDefinition(TESSPRIMITIVETYPE_ISOLINES, spacingMode, drawType,
                                                            getReferenceImagePathPrefix(refName)));
+        }
+
+    static const TessInstancedType tessInstancedTypes[] = {
+        TESSINSTANCEDTYPE_NO_PATCHES,
+        TESSINSTANCEDTYPE_INSTANCED,
+    };
+
+    // Instanced
+    for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitivesNoIsolines); ++primitiveTypeNdx)
+        for (int testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(tessInstancedTypes); ++testTypeNdx)
+        {
+            const TessPrimitiveType primitiveType = primitivesNoIsolines[primitiveTypeNdx];
+            const TessInstancedType testType      = tessInstancedTypes[testTypeNdx];
+            const std::string caseName = std::string() + getTessPrimitiveTypeShaderName(primitiveType) + "_" +
+                                         getInstancedDrawTestName(testType);
+
+            const TessInstancedDrawTestParams testParams = {
+                testType,
+                primitiveType,
+            };
+
+            group->addChild(new TessInstancedDrawTestCase(testCtx, caseName.c_str(), testParams));
         }
 
     // Test switching tessellation parameters on the fly.
