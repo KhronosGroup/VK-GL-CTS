@@ -246,15 +246,19 @@ tcu::TestStatus AhbExternalFormatResolveTestInstance::iterate(void)
         tcu::TextureLevel reference(textureFormat, m_width, m_height, m_layers);
         const bool alphaMismatch =
             !AndroidHardwareBufferInstance::hasFormatAlpha(m_format) && hasAlphaChannel(textureFormat.order);
-        const bool isYuvFormat = AndroidHardwareBufferInstance::isFormatYuv(m_format);
-        buildReferenceImage(reference, isYuvFormat, alphaMismatch);
+        // In test cases where input attachment usage is being tested with an implementation that does not support
+        // nullColorAttachment the color image is read directly for comparison without any YUV sub/up sampling.
+        const bool performDownsample =
+            AndroidHardwareBufferInstance::isFormatYuv(m_format) && (!m_isInputAttachment || m_nullColorAttachment);
+        buildReferenceImage(reference, performDownsample, alphaMismatch);
         const tcu::ConstPixelBufferAccess referenceAccess = reference.getAccess();
         const char *name                                  = "Render validation";
         const char *description = "Validate output image was rendered according to expectation (if YUV and input test, "
                                   "a follow up test is done for no downsample)";
         // Some implementations of format YCbCr_P010 will have reduced range, which requires allowing for some threshold since we are rendering with 1.0f
-        const tcu::UVec4 threshold =
-            (m_format == AndroidHardwareBufferInstance::Format::YCbCr_P010) ? tcu::UVec4(4u) : tcu::UVec4(0u);
+        const tcu::UVec4 threshold = (m_format == AndroidHardwareBufferInstance::Format::YCbCr_P010) ?
+                                         tcu::UVec4(4u) :
+                                         tcu::UVec4(1u, 0u, 1u, 0u);
 
         if (!tcu::intThresholdCompare(log, name, description, referenceAccess, resultAccess, threshold,
                                       tcu::COMPARE_LOG_ON_ERROR))
@@ -668,7 +672,8 @@ bool AhbExternalFormatResolveTestInstance::checkExternalFormatTestingRequired(
 
     // Need to fetch correct max clear value since it'll depend on each format
     const tcu::Vec4 formatMaxValue = tcu::getTextureFormatInfo(mapVkFormat(m_colorAttachmentFormat)).valueMax;
-    m_clearColor[0]                = formatMaxValue[0];
+    m_clearColor[0]                = formatMaxValue[0] * 0.5f;
+    m_clearColor[1]                = formatMaxValue[0];
     m_clearColor[3]                = formatMaxValue[3];
 
     return true;
@@ -683,8 +688,8 @@ void AhbExternalFormatResolveTestInstance::buildReferenceImage(tcu::TextureLevel
         // Modify alpha value to match output if original AHB format does not contain alpha
         tcu::Vec4(0.0f, 0.0f, 0.0f, (ahbFormatVulkanFormatAlphaMismatch ? formatMaxValue.w() : 0.0f)), // black
         tcu::Vec4(formatMaxValue.x(), 0.0f, 0.0f, formatMaxValue.w()),                                 // red
-        tcu::Vec4(0.0f, formatMaxValue.y(), 0.0f, formatMaxValue.w()), // green
-        tcu::Vec4(0.0f, 0.0f, formatMaxValue.z(), formatMaxValue.w()), // blue
+        tcu::Vec4(0.0f, formatMaxValue.y(), 0.0f, formatMaxValue.w()),        // green
+        tcu::Vec4(0.0f, 0.0f, formatMaxValue.z() * 0.5f, formatMaxValue.w()), // blue
     };
 
     tcu::IVec2 renderAreaStart(m_renderArea.offset.x, m_renderArea.offset.y);
@@ -1562,12 +1567,12 @@ void AhbExternalFormatResolveTestCase::initPrograms(SourceCollections &programCo
 
                << "const " << possibleTypes[i].first << "vec4 reference_colors[] =\n"
                << "{\n"
-               << "    " << possibleTypes[i].first << "vec4(0.0f, 0.0f, 0.0f, 0.0f),\n"
+               << "    " << possibleTypes[i].first << "vec4(0.0f, 0.0f, 0.0f, " << possibleTypes[i].second << "),\n"
                << "    " << possibleTypes[i].first << "vec4(" << possibleTypes[i].second << ", 0.0f, 0.0f, "
                << possibleTypes[i].second << "),\n"
                << "    " << possibleTypes[i].first << "vec4(0.0f, " << possibleTypes[i].second << ", 0.0f, "
                << possibleTypes[i].second << "),\n"
-               << "    " << possibleTypes[i].first << "vec4(0.0f, 0.0f, " << possibleTypes[i].second << ", "
+               << "    " << possibleTypes[i].first << "vec4(0.0f, 0.0f, " << possibleTypes[i].second << " * 0.5, "
                << possibleTypes[i].second << "),\n"
                << "};\n"
                << "void main()\n"

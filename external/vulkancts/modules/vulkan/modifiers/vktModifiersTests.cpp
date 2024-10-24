@@ -1485,7 +1485,9 @@ tcu::TestStatus exportImportMemoryExplicitModifiersWithSuballocationCase(Context
     if (compatibleModifiers.empty())
         TCU_FAIL("Expected non-empty list of compatible modifiers for the given format");
 
-    std::ostringstream failureReasons;
+    std::vector<std::string> failureReasons;
+    failureReasons.reserve(compatibleModifiers.size());
+
     bool nonPassed = true;
 
     for (size_t i = 0; i < compatibleModifiers.size(); ++i)
@@ -1494,29 +1496,32 @@ tcu::TestStatus exportImportMemoryExplicitModifiersWithSuballocationCase(Context
         try
         {
             if (exportImportMemoryExplicitModifiersWithSuballocationCase(context, format, modifier))
-            {
                 nonPassed = false;
-            }
             else
-            {
-                failureReasons << "Modifier " << modifier.drmFormatModifier << " failed: Unexpected copy image result";
-                if (i < compatibleModifiers.size() - 1)
-                    failureReasons << "\n";
-            }
+                failureReasons.push_back("Modifier " + std::to_string(modifier.drmFormatModifier) +
+                                         " failed: unexpected copy image result");
         }
         catch (const tcu::NotSupportedError &e)
         {
-            failureReasons << "Modifier " << modifier.drmFormatModifier << " not supported: " << e.what();
-            if (i < compatibleModifiers.size() - 1)
-                failureReasons << "\n";
+            failureReasons.push_back("Modifier " + std::to_string(modifier.drmFormatModifier) +
+                                     " not supported: " + e.what());
         }
     }
 
-    if (nonPassed)
-        TCU_THROW(NotSupportedError, "None of DRM modifiers for " + de::toString(format) +
-                                         " format can be used in a suballocated image:\n" + failureReasons.str());
+    if (!failureReasons.empty())
+    {
+        auto &log = context.getTestContext().getLog();
+        for (const auto &line : failureReasons)
+            log << tcu::TestLog::Message << line << tcu::TestLog::EndMessage;
+    }
 
-    return tcu::TestStatus::pass("OK");
+    if (nonPassed)
+    {
+        TCU_THROW(NotSupportedError, "None of DRM modifiers for " + de::toString(format) +
+                                         " can be used in a suballocated image; check log for details");
+    }
+
+    return tcu::TestStatus::pass("OK; check log for details");
 }
 
 } // namespace
