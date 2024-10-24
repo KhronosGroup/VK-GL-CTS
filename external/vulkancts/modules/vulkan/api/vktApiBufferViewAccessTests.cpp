@@ -837,7 +837,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance(Context &cont
         //vk.cmdDispatch(*m_cmdBuffer, 1u, 1u, 1u);
         vk.cmdDispatch(*m_cmdBuffer, 4u, 1u, 1u);
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                              nullptr, 0u, &bufferBarrier, 0u, nullptr);
+                              nullptr, 1u, &bufferBarrier, 0u, nullptr);
         endCommandBuffer(vk, *m_cmdBuffer);
     }
 }
