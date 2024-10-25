@@ -753,15 +753,6 @@ tcu::TestStatus InstancedDrawInstance::iterate()
                 endCommandBuffer(m_vk, *m_cmdBuffer);
             }
 
-            /*
-
-            void InstancedDrawInstance::beginRender(vk::VkCommandBuffer cmdBuffer, const vk::VkClearValue& clearColor, vk::VkRenderingFlagsKHR renderingFlags)
-            {
-
-                if (m_params.groupParams->useDynamicRendering)
-                else
-            */
-
             submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
             m_context.resetCommandPoolForVKSC(device, *m_cmdPool);
 
