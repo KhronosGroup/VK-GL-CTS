@@ -688,6 +688,15 @@ tcu::TestStatus DescriptorLimitTestInstance::iterate(void)
         vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u,
                                  static_cast<uint32_t>(descSets.size()), descSets.data(), 0u, DE_NULL);
         vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
+
+        const VkMemoryBarrier barrier = {
+            VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
+            nullptr,                          // pNext
+            VK_ACCESS_SHADER_WRITE_BIT,       // srcAccessMask
+            VK_ACCESS_HOST_READ_BIT,          // dstAccessMask
+        };
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                              (VkDependencyFlags)0, 1, &barrier, 0, nullptr, 0, nullptr);
     }
     else
     {
