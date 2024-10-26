@@ -495,6 +495,7 @@ struct TestParams
     SeparateDepthStencilLayoutMode separateDepthStencilLayoutMode;
     bool isColorMultipleSubresourceRangeTest;
     VkSampleCountFlagBits imageSampleCount;
+    bool create2DArrayCompatible;
 };
 
 template <typename T>
@@ -789,7 +790,12 @@ bool ImageClearingTestInstance::getIsDepthFormat(VkFormat format) const
 
 VkImageCreateFlags ImageClearingTestInstance::getImageCreateFlags(void) const
 {
-    return m_params.isCube ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (VkImageCreateFlags)0;
+    VkImageCreateFlags imageCreateFlags = 0u;
+    if (m_params.isCube)
+        imageCreateFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    if (m_params.create2DArrayCompatible)
+        imageCreateFlags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
+    return imageCreateFlags;
 }
 
 VkImageFormatProperties ImageClearingTestInstance::getImageFormatProperties(void) const
@@ -2553,12 +2559,23 @@ TestCaseGroup *createImageClearingTestsCommon(TestContext &testCtx, tcu::TestCas
                                         allocationKind,       // AllocationKind allocationKind;
                                         false,                // bool isCube;
                                         SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE, // SeparateDepthStencilLayoutMode separateDepthStencilLayoutMode;
-                                        false,                // bool isColorMultipleSubresourceRangeTest;
-                                        VK_SAMPLE_COUNT_1_BIT // VkSampleCountFlagBits            imageSampleCount
+                                        false,                 // bool isColorMultipleSubresourceRangeTest;
+                                        VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits            imageSampleCount
+                                        false                  // create2DArrayCompatible
                                     };
 
                                     if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
                                     {
+                                        // Randomly set VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT for some of the tests
+                                        if (imageTypesToTest[imageTypeIndex] == VK_IMAGE_TYPE_3D &&
+                                            ((imageTypeIndex + imageTilingIndex + imageLayerParamsIndex +
+                                              imageDimensionsIndex + imageFormatIndex + clearColorIndex) %
+                                                 7 >
+                                             3))
+                                        {
+                                            testParams.create2DArrayCompatible = true;
+                                        }
+
                                         // Clear Color Image
                                         imageLayersGroup->addChild(
                                             new ImageClearingTestCase<ClearColorImageTestInstance>(
@@ -2635,8 +2652,9 @@ TestCaseGroup *createImageClearingTestsCommon(TestContext &testCtx, tcu::TestCas
                                         allocationKind,       // AllocationKind allocationKind;
                                         false,                // bool isCube;
                                         SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE, // SeparateDepthStencilLayoutMode separateDepthStencilLayoutMode;
-                                        false,                // bool isColorMultipleSubresourceRangeTest;
-                                        VK_SAMPLE_COUNT_1_BIT // VkSampleCountFlagBits            imageSampleCount
+                                        false,                 // bool isColorMultipleSubresourceRangeTest;
+                                        VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits            imageSampleCount
+                                        false                  // create2DArrayCompatible
                                     };
 
                                     if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
@@ -2754,7 +2772,8 @@ TestCaseGroup *createImageClearingTestsCommon(TestContext &testCtx, tcu::TestCas
                                 SeparateDepthStencilLayoutMode(
                                     separateDepthStencilLayoutMode), // SeparateDepthStencilLayoutMode separateDepthStencilLayoutMode;
                                 false,                               // bool isColorMultipleSubresourceRangeTest;
-                                VK_SAMPLE_COUNT_1_BIT // VkSampleCountFlagBits            imageSampleCount
+                                VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits            imageSampleCount
+                                false                  // create2DArrayCompatible
                             };
 
                             if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
@@ -2889,7 +2908,8 @@ TestCaseGroup *createImageClearingTestsCommon(TestContext &testCtx, tcu::TestCas
                                 imageLayerParamsToTest[imageLayerParamsIndex].isCube, // bool isCube;
                                 SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE, // SeparateDepthStencilLayoutMode separateDepthStencilLayoutMode;
                                 false,                                   // bool isColorMultipleSubresourceRangeTest;
-                                VK_SAMPLE_COUNT_1_BIT // VkSampleCountFlagBits            imageSampleCount
+                                VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits            imageSampleCount
+                                false                  // create2DArrayCompatible
                             };
                             // Clear Color Attachment
                             colorAttachmentClearLayersGroup->addChild(
@@ -2997,7 +3017,8 @@ TestCaseGroup *createImageClearingTestsCommon(TestContext &testCtx, tcu::TestCas
                                 SeparateDepthStencilLayoutMode(
                                     separateDepthStencilLayoutMode), // SeparateDepthStencilLayoutMode separateDepthStencilLayoutMode;
                                 false,                               // bool isColorMultipleSubresourceRangeTest;
-                                VK_SAMPLE_COUNT_1_BIT // VkSampleCountFlagBits            imageSampleCount
+                                VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits            imageSampleCount
+                                false                  // create2DArrayCompatible
                             };
                             // Clear Depth/Stencil Attachment
                             depthStencilLayersGroup->addChild(new ImageClearingTestCase<ClearAttachmentTestInstance>(
