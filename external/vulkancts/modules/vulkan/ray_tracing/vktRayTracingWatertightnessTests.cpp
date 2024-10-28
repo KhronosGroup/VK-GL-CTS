@@ -101,12 +101,12 @@ static inline tcu::Vec3 mixVec3(const tcu::Vec3 &a, const tcu::Vec3 &b, const fl
     return result;
 }
 
-static inline double doCrossProduct(tcu::DVec2 a, tcu::DVec2 b)
+static inline double doCrossProduct(const tcu::DVec2 &a, const tcu::DVec2 &b)
 {
     return a.x() * b.y() - a.y() * b.x();
 }
 
-static bool pointInTriangle2D(tcu::Vec3 p, tcu::Vec3 a, tcu::Vec3 b, tcu::Vec3 c)
+static bool pointInTriangle2D(const tcu::Vec3 &p, const tcu::Vec3 &a, const tcu::Vec3 &b, const tcu::Vec3 &c)
 {
     tcu::DVec2 pa = {a.x() - p.x(), a.y() - p.y()};
     tcu::DVec2 pb = {b.x() - p.x(), b.y() - p.y()};
@@ -117,6 +117,46 @@ static bool pointInTriangle2D(tcu::Vec3 p, tcu::Vec3 a, tcu::Vec3 b, tcu::Vec3 c
 
     // The winding of all the triangles in the test on XY plane is the same, so a negative value can be assumed
     return v1 < 0 && v2 < 0 && v3 < 0;
+}
+
+static inline double sqr(double v)
+{
+    return v * v;
+}
+
+static bool pointFits(const tcu::Vec3 &p, const tcu::Vec3 &a, const tcu::Vec3 &b, const tcu::Vec3 &c, float threshold)
+{
+    // Implement two points method described at https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+    const double aa = sqr(b.x() - c.x()) + sqr(b.y() - c.y());
+    const double bb = sqr(a.x() - c.x()) + sqr(a.y() - c.y());
+    const double cc = sqr(a.x() - b.x()) + sqr(a.y() - b.y());
+    tcu::DVec2 p1;
+    tcu::DVec2 p2;
+    double d = 0.0;
+
+    if (aa > bb && aa > cc)
+    {
+        p1 = tcu::DVec2(b.x(), b.y());
+        p2 = tcu::DVec2(c.x(), c.y());
+        d  = sqrt(aa);
+    }
+    else if (bb > aa && bb > cc)
+    {
+        p1 = tcu::DVec2(a.x(), a.y());
+        p2 = tcu::DVec2(c.x(), c.y());
+        d  = sqrt(bb);
+    }
+    else
+    {
+        p1 = tcu::DVec2(a.x(), a.y());
+        p2 = tcu::DVec2(b.x(), b.y());
+        d  = sqrt(cc);
+    }
+
+    if (d > 0.0)
+        d = abs((p2.y() - p1.y()) * p.x() - (p2.x() - p1.x()) * p.y() + p2.x() * p1.y() - p2.y() * p1.x()) / d;
+
+    return float(d) > threshold;
 }
 
 uint32_t getShaderGroupSize(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
@@ -470,6 +510,10 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingWatertightnessTestInstan
         // A check to avoid vertices that are outside the triangle in the XY plane due to floating-point precision,
         // resulting in inconsistent winding order
         if (!pointInTriangle2D(d, a, b, c))
+            continue;
+
+        // A check to avoid vertex too close to longest side to avoid incorrect winding order
+        if (!pointFits(d, a, b, c, 1e-7f))
             continue;
 
         const uint32_t &p = t.x();
@@ -834,8 +878,9 @@ tcu::TestCaseGroup *createWatertightnessTests(tcu::TestContext &testCtx)
             const uint32_t squaresGroupCount    = sizes[sizesNdx];
             const uint32_t geometriesGroupCount = 1;
             const uint32_t instancesGroupCount  = 1;
-            const uint32_t randomSeed           = (uint32_t)(5 * testNdx + 11 * sizes[sizesNdx]);
-            const CaseDef caseDef               = {
+            const uint32_t randomSeed =
+                (uint32_t)(5 * testNdx + 11 * sizes[sizesNdx]) + (uint32_t)testCtx.getCommandLine().getBaseSeed();
+            const CaseDef caseDef = {
                 256u,       256u, squaresGroupCount, geometriesGroupCount, instancesGroupCount,
                 randomSeed, 1, /* depth - irrelevant */
                 0              /* useManyBottomASes - irrelevant */
