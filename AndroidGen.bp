@@ -655,6 +655,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/tessellation/vktTessellationGeometryPointSizeTests.cpp",
         "external/vulkancts/modules/vulkan/tessellation/vktTessellationInvarianceTests.cpp",
         "external/vulkancts/modules/vulkan/tessellation/vktTessellationLimitsTests.cpp",
+        "external/vulkancts/modules/vulkan/tessellation/vktTessellationMaxIOTests.cpp",
         "external/vulkancts/modules/vulkan/tessellation/vktTessellationMiscDrawTests.cpp",
         "external/vulkancts/modules/vulkan/tessellation/vktTessellationPrimitiveDiscardTests.cpp",
         "external/vulkancts/modules/vulkan/tessellation/vktTessellationShaderInputOutputTests.cpp",
