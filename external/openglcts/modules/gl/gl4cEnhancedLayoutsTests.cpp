@@ -7583,6 +7583,12 @@ bool TextureTestBase::testCase(GLuint test_case_index)
             return testSeparable(test_case_index);
         }
     }
+    catch (tcu::NotSupportedError &exc)
+    {
+        // Write message to log and return true to continue with rest of test cases
+        m_context.getTestContext().getLog().writeMessage(exc.what());
+        return true;
+    }
     catch (Utils::Shader::InvalidSourceException &exc)
     {
         exc.log(m_context);
@@ -12438,7 +12444,11 @@ bool SSBAlignmentTest::isDrawRelevant(GLuint /* test_case_index */)
  **/
 VaryingLocationsTest::VaryingLocationsTest(deqp::Context &context)
     : TextureTestBase(context, "varying_locations", "Test verifies that input and output locations are respected")
+    , m_gl_max_geometry_input_components(0)
 {
+    const Functions &gl = m_context.getRenderContext().getFunctions();
+    gl.getIntegerv(GL_MAX_GEOMETRY_INPUT_COMPONENTS, &m_gl_max_geometry_input_components);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
 }
 
 /** Constructor
@@ -12464,6 +12474,16 @@ void VaryingLocationsTest::getProgramInterface(GLuint test_case_index, Utils::Pr
 {
     const Utils::Type type = getType(test_case_index);
 
+    GLint totalComponents = 2 * type.m_n_columns * type.m_n_rows;
+    if (type.m_basic_type == Utils::Type::Double)
+    {
+        totalComponents = totalComponents * 2;
+    }
+    if (totalComponents >= m_gl_max_geometry_input_components)
+    {
+        throw tcu::NotSupportedError("Test case index " + std::to_string(test_case_index) + " for type " +
+                                     type.GetGLSLTypeName() + " not supported");
+    }
     m_first_data = type.GenerateDataPacked();
     m_last_data  = type.GenerateDataPacked();
 
