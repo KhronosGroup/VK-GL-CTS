@@ -4793,32 +4793,36 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                            m_descriptorBufferProperties.samplerDescriptorSize) ==
                           m_descriptorBufferProperties.combinedImageSamplerDescriptorSize);
 
-                std::vector<uint8_t> scratchSpace(arrayCount *
-                                                  m_descriptorBufferProperties.combinedImageSamplerDescriptorSize);
+                // Needed buffer memory size depends on combinedImageSamplerDescriptorCount
+                auto sampledImageDescriptorSizeInBuffer =
+                    m_descriptorBufferProperties.sampledImageDescriptorSize * m_combinedImageSamplerDescriptorCount;
+                auto samplerDescriptorSizeInBuffer =
+                    m_descriptorBufferProperties.samplerDescriptorSize * m_combinedImageSamplerDescriptorCount;
+                auto combinedImageSamplerDescriptorSizeInBuffer =
+                    m_descriptorBufferProperties.combinedImageSamplerDescriptorSize *
+                    m_combinedImageSamplerDescriptorCount;
 
-                const auto descriptorArraySize = static_cast<std::size_t>(
-                    arrayCount * m_descriptorBufferProperties.combinedImageSamplerDescriptorSize);
+                std::vector<uint8_t> scratchSpace(arrayCount * combinedImageSamplerDescriptorSizeInBuffer);
+
+                const auto descriptorArraySize =
+                    static_cast<std::size_t>(arrayCount * combinedImageSamplerDescriptorSizeInBuffer);
 
                 deMemcpy(scratchSpace.data(), bindingHostPtr, descriptorArraySize);
                 deMemset(bindingHostPtr, 0, descriptorArraySize);
 
                 const void *combinedReadPtr = scratchSpace.data();
                 void *imageWritePtr         = bindingHostPtr;
-                void *samplerWritePtr =
-                    offsetPtr(bindingHostPtr, arrayCount * m_descriptorBufferProperties.sampledImageDescriptorSize);
+                void *samplerWritePtr = offsetPtr(bindingHostPtr, arrayCount * sampledImageDescriptorSizeInBuffer);
 
                 for (uint32_t i = 0; i < arrayCount; ++i)
                 {
-                    deMemcpy(imageWritePtr, offsetPtr(combinedReadPtr, 0),
-                             m_descriptorBufferProperties.sampledImageDescriptorSize);
-                    deMemcpy(samplerWritePtr,
-                             offsetPtr(combinedReadPtr, m_descriptorBufferProperties.sampledImageDescriptorSize),
-                             m_descriptorBufferProperties.samplerDescriptorSize);
+                    deMemcpy(imageWritePtr, offsetPtr(combinedReadPtr, 0), sampledImageDescriptorSizeInBuffer);
+                    deMemcpy(samplerWritePtr, offsetPtr(combinedReadPtr, sampledImageDescriptorSizeInBuffer),
+                             samplerDescriptorSizeInBuffer);
 
-                    combinedReadPtr =
-                        offsetPtr(combinedReadPtr, m_descriptorBufferProperties.combinedImageSamplerDescriptorSize);
-                    imageWritePtr   = offsetPtr(imageWritePtr, m_descriptorBufferProperties.sampledImageDescriptorSize);
-                    samplerWritePtr = offsetPtr(samplerWritePtr, m_descriptorBufferProperties.samplerDescriptorSize);
+                    combinedReadPtr = offsetPtr(combinedReadPtr, combinedImageSamplerDescriptorSizeInBuffer);
+                    imageWritePtr   = offsetPtr(imageWritePtr, sampledImageDescriptorSizeInBuffer);
+                    samplerWritePtr = offsetPtr(samplerWritePtr, samplerDescriptorSizeInBuffer);
                 }
             }
 
