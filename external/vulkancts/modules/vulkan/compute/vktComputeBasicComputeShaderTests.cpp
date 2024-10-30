@@ -4595,6 +4595,8 @@ enum InstType
     SPECCONSTANT,
 };
 
+#ifndef CTS_USES_VULKANSC
+
 class ReplicatedCompositesTest : public vkt::TestCase
 {
 public:
@@ -5111,6 +5113,7 @@ tcu::TestStatus ReplicatedCompositesTestInstance::iterate(void)
     }
     return tcu::TestStatus::pass("Compute succeeded");
 }
+#endif // ifndef CTS_USES_VULKANSC
 
 } // namespace
 
@@ -5334,7 +5337,7 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
             basicComputeTests->addChild(testCase);
         }
     }
-#endif
+#endif // ifndef CTS_USES_VULKANSC
 
     return basicComputeTests.release();
 }
