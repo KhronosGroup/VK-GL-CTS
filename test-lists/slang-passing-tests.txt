@@ -8100,6 +8100,9 @@ dEQP-VK.glsl.texture_gather.offset.implementation_offset.2d.rgba8.filter_mode.mi
 dEQP-VK.glsl.texture_gather.offset.implementation_offset.2d.rgba8.size_npot.clamp_to_edge_repeat
 dEQP-VK.glsl.texture_gather.offset.implementation_offset.2d.rgba8.size_npot.mirrored_repeat_clamp_to_edge
 dEQP-VK.glsl.texture_gather.offset.implementation_offset.2d.rgba8.size_npot.repeat_mirrored_repeat
+dEQP-VK.glsl.texture_gather.offset.implementation_offset.2d.rgba8.size_pot.clamp_to_edge_repeat
+dEQP-VK.glsl.texture_gather.offset.implementation_offset.2d.rgba8.size_pot.mirrored_repeat_clamp_to_edge
+dEQP-VK.glsl.texture_gather.offset.implementation_offset.2d.rgba8.size_pot.repeat_mirrored_repeat
 dEQP-VK.glsl.texture_gather.offset.implementation_offset.2d.rgba8.texture_swizzle.alpha_zero_one_red
 dEQP-VK.glsl.texture_gather.offset.implementation_offset.2d.rgba8.texture_swizzle.blue_alpha_zero_one
 dEQP-VK.glsl.texture_gather.offset.implementation_offset.2d.rgba8.texture_swizzle.green_blue_alpha_zero
