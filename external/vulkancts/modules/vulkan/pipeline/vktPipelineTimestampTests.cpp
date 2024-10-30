@@ -495,13 +495,13 @@ protected:
     void createCustomDeviceWithTransferOnlyQueue(void);
 
 protected:
+#ifdef CTS_USES_VULKANSC
+    const CustomInstance m_customInstance;
+#endif // CTS_USES_VULKANSC
     Move<VkDevice> m_customDevice;
     de::MovePtr<Allocator> m_customAllocator;
 
     VkDevice m_device;
-#ifdef CTS_USES_VULKANSC
-    const CustomInstance m_customInstance;
-#endif // CTS_USES_VULKANSC
     Allocator *m_allocator;
     uint32_t m_queueFamilyIndex;
 
@@ -565,6 +565,11 @@ TimestampTestInstance::TimestampTestInstance(Context &context, const StageFlagVe
 #ifdef CTS_USES_VULKANSC
     , m_customInstance(createCustomInstanceFromContext(context))
 #endif // CTS_USES_VULKANSC
+    , m_customDevice()
+    , m_customAllocator()
+    , m_device(VK_NULL_HANDLE)
+    , m_allocator(nullptr)
+    , m_queueFamilyIndex(std::numeric_limits<uint32_t>::max())
     , m_stages(stages)
     , m_inRenderPass(inRenderPass)
     , m_hostQueryReset(hostQueryReset)
