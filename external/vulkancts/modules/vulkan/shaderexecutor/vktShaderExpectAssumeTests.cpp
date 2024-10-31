@@ -729,6 +729,16 @@ private:
                                   &pcValue);
         }
         m_vk.cmdDispatch(*m_cmdBuffer, 1, 1, 1);
+
+        const VkMemoryBarrier barrier = {
+            VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
+            nullptr,                          // pNext
+            VK_ACCESS_SHADER_WRITE_BIT,       // srcAccessMask
+            VK_ACCESS_HOST_READ_BIT,          // dstAccessMask
+        };
+        m_vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                (VkDependencyFlags)0, 1, &barrier, 0, nullptr, 0, nullptr);
+
         VK_CHECK(m_vk.endCommandBuffer(*m_cmdBuffer));
         submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
         flushMappedMemoryRange(m_vk, device, m_outputAlloc->getMemory(), 0, VK_WHOLE_SIZE);
