@@ -1904,6 +1904,9 @@ struct GraphicsPipelineWrapper::InternalData
         bool depthClampEnable                           = VK_FALSE;
         bool depthClipEnable                            = VK_FALSE;
         bool negativeOneToOne                           = VK_FALSE;
+        VkDepthClampModeEXT depthClampMode              = VK_DEPTH_CLAMP_MODE_VIEWPORT_RANGE_EXT;
+        float minDepthClamp                             = 0.0f;
+        float maxDepthClamp                             = 1.0f;
         uint32_t colorWriteEnableAttachmentCount        = 0;
         std::vector<VkBool32> colorWriteEnables;
         float extraPrimitiveOverestimationSize            = 0.0f;
@@ -2149,6 +2152,7 @@ std::vector<VkDynamicState> getDynamicStates(const VkPipelineDynamicStateCreateI
 #ifndef CTS_USES_VULKANSC
         VK_DYNAMIC_STATE_TESSELLATION_DOMAIN_ORIGIN_EXT,
         VK_DYNAMIC_STATE_DEPTH_CLAMP_ENABLE_EXT,
+        VK_DYNAMIC_STATE_DEPTH_CLAMP_RANGE_EXT,
         VK_DYNAMIC_STATE_POLYGON_MODE_EXT,
         VK_DYNAMIC_STATE_RASTERIZATION_STREAM_EXT,
         VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT,
@@ -3632,6 +3636,18 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
                 pointerToCreateInfo->pViewportState->pNext);
             if (depthClipControl)
                 state->negativeOneToOne = depthClipControl->negativeOneToOne;
+            const auto depthClampControl = findStructure<VkPipelineViewportDepthClampControlCreateInfoEXT>(
+                pointerToCreateInfo->pViewportState->pNext);
+            if (depthClampControl)
+            {
+                state->depthClampMode = depthClampControl->depthClampMode;
+                if (depthClampControl->pDepthClampRange)
+                {
+                    state->minDepthClamp = depthClampControl->pDepthClampRange->minDepthClamp;
+                    state->maxDepthClamp = depthClampControl->pDepthClampRange->maxDepthClamp;
+                }
+            }
+
             const auto viewportShadingRate = findStructure<VkPipelineViewportShadingRateImageStateCreateInfoNV>(
                 pointerToCreateInfo->pViewportState->pNext);
             if (viewportShadingRate)
@@ -4334,6 +4350,14 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates(vk::VkCommandBuffer c
             if (rasterizerDiscardDisabled)
                 vk.cmdSetDepthClampEnableEXT(cmdBuffer, state->depthClampEnable);
             break;
+        case vk::VK_DYNAMIC_STATE_DEPTH_CLAMP_RANGE_EXT:
+        {
+            vk::VkDepthClampRangeEXT depthClampRange;
+            depthClampRange.minDepthClamp = state->minDepthClamp;
+            depthClampRange.maxDepthClamp = state->maxDepthClamp;
+            vk.cmdSetDepthClampRangeEXT(cmdBuffer, state->depthClampMode, &depthClampRange);
+            break;
+        }
         case vk::VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT:
             vk.cmdSetDepthClipEnableEXT(cmdBuffer, state->depthClipEnable);
             break;
@@ -4687,6 +4711,8 @@ std::vector<VkDynamicState> getShaderObjectDynamicStatesFromExtensions(const std
         dynamicStates.push_back(VK_DYNAMIC_STATE_DISCARD_RECTANGLE_MODE_EXT);
     if (extensionSet.count("VK_EXT_attachment_feedback_loop_dynamic_state") > 0u)
         dynamicStates.push_back(VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT);
+    if (extensionSet.count("VK_EXT_depth_clamp_control") > 0u)
+        dynamicStates.push_back(VK_DYNAMIC_STATE_DEPTH_CLAMP_RANGE_EXT);
 #else
     DE_UNREF(extensions);
 #endif

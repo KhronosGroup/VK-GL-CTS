@@ -2175,6 +2175,8 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     swapchainImages[acquiredIndices[presentIndex]],
                     range,
                 };
+                vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
 
                 VkClearColorValue clearValue;
                 clearValue.float32[0] = static_cast<float>(i % 33) / 32.0f;
