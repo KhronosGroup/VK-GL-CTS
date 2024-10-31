@@ -42,6 +42,7 @@
 #include "vktImageExtendedUsageBitTests.hpp"
 #include "vktImageTransfer.hpp"
 #include "vktImageDepthStencilSeparateTests.hpp"
+#include "vktImageNonUniformOffsetSampleTests.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktImageHostImageCopyTests.hpp"
 #endif
@@ -88,6 +89,7 @@ void createChildren(tcu::TestCaseGroup *imageTests)
     imageTests->addChild(createImageHostImageCopyTests(testCtx));
 #endif // CTS_USES_VULKANSC
     imageTests->addChild(createImageDepthStencilSeparateTests(testCtx));
+    imageTests->addChild(createImageNonUniformOffsetSampleTests(testCtx));
 }
 
 } // namespace

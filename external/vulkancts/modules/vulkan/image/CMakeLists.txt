@@ -52,6 +52,8 @@ set(DEQP_VK_VKSC_IMAGE_SRCS
 	vktImageTransfer.hpp
 	vktImageDepthStencilSeparateTests.cpp
 	vktImageDepthStencilSeparateTests.hpp
+	vktImageNonUniformOffsetSampleTests.cpp
+	vktImageNonUniformOffsetSampleTests.hpp
 	)
 
 set(DEQP_VK_IMAGE_SRCS

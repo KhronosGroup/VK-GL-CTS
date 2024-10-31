@@ -27,6 +27,7 @@ vksc-default/image/misaligned-cube.txt
 vksc-default/image/mismatched-formats.txt
 vksc-default/image/mismatched-write-op.txt
 vksc-default/image/mutable.txt
+vksc-default/image/non-uniform-offset-sample.txt
 vksc-default/image/qualifiers.txt
 vksc-default/image/queue-transfer.txt
 vksc-default/image/sample-cubemap.txt
