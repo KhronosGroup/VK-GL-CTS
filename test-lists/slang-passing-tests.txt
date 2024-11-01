@@ -6673,6 +6673,10 @@ dEQP-VK.glsl.switch.conditional_fall_through_static_fragment
 dEQP-VK.glsl.switch.conditional_fall_through_static_vertex
 dEQP-VK.glsl.switch.conditional_fall_through_uniform_fragment
 dEQP-VK.glsl.switch.conditional_fall_through_uniform_vertex
+dEQP-VK.glsl.switch.const_expr_in_label_dynamic_fragment
+dEQP-VK.glsl.switch.const_expr_in_label_dynamic_vertex
+dEQP-VK.glsl.switch.const_expr_in_label_uniform_fragment
+dEQP-VK.glsl.switch.const_expr_in_label_uniform_vertex
 dEQP-VK.glsl.switch.default_label_dynamic_fragment
 dEQP-VK.glsl.switch.default_label_dynamic_vertex
 dEQP-VK.glsl.switch.default_label_static_fragment
