@@ -108,6 +108,7 @@ const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				getVertexInputD
 const vk::VkPhysicalDeviceAddressBindingReportFeaturesEXT&					getAddressBindingReportFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceDepthClipControlFeaturesEXT&						getDepthClipControlFeaturesEXT						(void) const;
 const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&			getPrimitiveTopologyListRestartFeaturesEXT			(void) const;
+const vk::VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT&			getPresentModeFifoLatestReadyFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceSubpassShadingFeaturesHUAWEI&						getSubpassShadingFeaturesHUAWEI						(void) const;
 const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&						getInvocationMaskFeaturesHUAWEI						(void) const;
 const vk::VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&						getExternalMemoryRDMAFeatures						(void) const;

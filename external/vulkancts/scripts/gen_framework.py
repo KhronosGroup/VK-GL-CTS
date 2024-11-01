@@ -860,6 +860,7 @@ class API:
         # we have to do it at the end for SC because some enums are dependent from extensions/api versions
         # and those dependencies can be checked only after all extensions were read
         for ext in self.extensions:
+            logging.debug("Considering extension %s for API %s" % (ext.name, apiName))
             for requirement in ext.requirementsList:
                 # check if this requirement is supported by current implementation
                 isRequirementSupported = isDependencyMet(requirement.depends, self.extensions)
@@ -876,6 +877,7 @@ class API:
                         # add enumerator only when it is not already in enum
                         if len([e for e in matchedEnum.enumeratorList if e.name == enumerator.name]) == 0:
                             if enumerator.alias == None:
+                                logging.debug("Adding enum value %s for extension %s in API %s" % (enumerator.name, ext.name, apiName))
                                 self.addEnumerator(
                                         matchedEnum,
                                         enumerator.name,
@@ -886,7 +888,8 @@ class API:
                                         enumerator.dir)
                             elif not self.addAliasToEnumerator(matchedEnum, enumerator.name, enumerator.alias):
                                 # we might not be able to add alias as we might be missing what we are aliasing
-                                # this will hapen when aliased enum is added later then definition of alias
+                                # this will happen when aliased enum is added later then definition of alias
+                                logging.debug("Adding alias %s to enum %s for extension %s in API %s" % (enumerator.name, matchedEnum.name, ext.name, apiName))
                                 self.tempAliasesList.append((matchedEnum, enumerator.name, enumerator.alias))
                 else:
                     logging.warning("Skipping requirement in extension %s because dependencies are not met: %s" % (ext.name, requirement.depends))
@@ -1005,6 +1008,7 @@ class API:
                     for promotedEnumerator in featureRequirement.enumList:
                         # iterate over all enums and find one that was extended
                         for enum in self.enums:
+                            logging.debug("Considering enum %s for API %s" % (enum.name, api.apiName))
                             if enum.name != promotedEnumerator.extends:
                                 continue
                             enumeratorReplaced = False
@@ -1090,6 +1094,7 @@ class API:
                 continue
             enumsToRemove.append(enum)
         for er in enumsToRemove:
+            logging.debug("Removing enum %s because not used in API %s" % (er.name, self.apiName))
             self.enums.remove(er)
 
         # remove structures that are not part of any vulkan version nor extension; SC specific

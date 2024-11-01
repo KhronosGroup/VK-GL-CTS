@@ -2202,6 +2202,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3:													return "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA:							return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA";
 		case VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA:								return "VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA:								return "VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA";
@@ -3812,6 +3813,7 @@ tcu::Format::Bitfield<64> getPipelineCreateFlags2Str (VkPipelineCreateFlags2 val
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT,								"VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT,							"VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR,										"VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_EXECUTION_GRAPH_BIT_AMDX,									"VK_PIPELINE_CREATE_2_EXECUTION_GRAPH_BIT_AMDX"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT,							"VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT,								"VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT"),
 	};
@@ -4055,6 +4057,7 @@ const char* getPresentModeKHRName (VkPresentModeKHR value)
 		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:				return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
 		case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:		return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
 		case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:	return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+		case VK_PRESENT_MODE_FIFO_LATEST_READY_EXT:			return "VK_PRESENT_MODE_FIFO_LATEST_READY_EXT";
 		default:											return nullptr;
 	}
 }
@@ -18619,6 +18622,8 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderEnqueuePr
 	s << "\tmaxExecutionGraphShaderPayloadSize = " << value.maxExecutionGraphShaderPayloadSize << '\n';
 	s << "\tmaxExecutionGraphShaderPayloadCount = " << value.maxExecutionGraphShaderPayloadCount << '\n';
 	s << "\texecutionGraphDispatchAddressAlignment = " << value.executionGraphDispatchAddressAlignment << '\n';
+	s << "\tmaxExecutionGraphWorkgroupCount = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.maxExecutionGraphWorkgroupCount), DE_ARRAY_END(value.maxExecutionGraphWorkgroupCount)) << '\n';
+	s << "\tmaxExecutionGraphWorkgroups = " << value.maxExecutionGraphWorkgroups << '\n';
 	s << '}';
 	return s;
 }
@@ -18629,6 +18634,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderEnqueueFe
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderEnqueue = " << value.shaderEnqueue << '\n';
+	s << "\tshaderMeshEnqueue = " << value.shaderMeshEnqueue << '\n';
 	s << '}';
 	return s;
 }
@@ -18665,7 +18671,9 @@ std::ostream& operator<< (std::ostream& s, const VkExecutionGraphPipelineScratch
 	s << "VkExecutionGraphPipelineScratchSizeAMDX = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tsize = " << value.size << '\n';
+	s << "\tminSize = " << value.minSize << '\n';
+	s << "\tmaxSize = " << value.maxSize << '\n';
+	s << "\tsizeGranularity = " << value.sizeGranularity << '\n';
 	s << '}';
 	return s;
 }
@@ -19379,6 +19387,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderReplicate
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderReplicatedComposites = " << value.shaderReplicatedComposites << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT& value)
+{
+	s << "VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentModeFifoLatestReady = " << value.presentModeFifoLatestReady << '\n';
 	s << '}';
 	return s;
 }

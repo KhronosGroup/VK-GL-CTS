@@ -1059,8 +1059,8 @@ bool check_VK_AMDX_shader_enqueue(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 	if (!isSupported(vDEP, "VK_AMDX_shader_enqueue"))
 		return true;
 
-	// depends attribute in xml: (((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_synchronization2),VK_VERSION_1_3)+VK_KHR_pipeline_library+VK_KHR_spirv_1_4
-	return ((((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")))) && isSupported(vDEP, "VK_KHR_pipeline_library") && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4"));
+	// depends attribute in xml: ((VK_KHR_synchronization2+VK_KHR_spirv_1_4+VK_EXT_extended_dynamic_state),VK_VERSION_1_3)+VK_KHR_maintenance5+VK_KHR_pipeline_library
+	return (((isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4")) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_EXT_extended_dynamic_state")))) && (isCompatibile(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance5")) && isSupported(vDEP, "VK_KHR_pipeline_library");
 }
 
 bool check_VK_EXT_inline_uniform_block(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2599,6 +2599,18 @@ bool check_VK_KHR_format_feature_flags2(const tcu::UVec2& v, const ExtPropVect& 
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_EXT_present_mode_fifo_latest_ready(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_present_mode_fifo_latest_ready"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_swapchain
+	return isSupported(vDEP, "VK_KHR_swapchain");
+}
+
 bool check_VK_FUCHSIA_external_memory(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3817,6 +3829,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_depth_clip_control",								&check_VK_EXT_depth_clip_control),
 	std::make_pair("VK_EXT_primitive_topology_list_restart",				&check_VK_EXT_primitive_topology_list_restart),
 	std::make_pair("VK_KHR_format_feature_flags2",							&check_VK_KHR_format_feature_flags2),
+	std::make_pair("VK_EXT_present_mode_fifo_latest_ready",					&check_VK_EXT_present_mode_fifo_latest_ready),
 	std::make_pair("VK_FUCHSIA_external_memory",							&check_VK_FUCHSIA_external_memory),
 	std::make_pair("VK_FUCHSIA_external_semaphore",							&check_VK_FUCHSIA_external_semaphore),
 	std::make_pair("VK_FUCHSIA_buffer_collection",							&check_VK_FUCHSIA_buffer_collection),
@@ -3907,7 +3920,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
 {
 	std::make_tuple(541065216, 1, 1, 0),
-	std::make_tuple(4210688, 0, 1, 4),
+	std::make_tuple(541081600, 1, 1, 4),
 	std::make_tuple(541077504, 1, 1, 3),
 	std::make_tuple(541073408, 1, 1, 2),
 	std::make_tuple(541069312, 1, 1, 1),
@@ -4191,6 +4204,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_depth_clip_control"),
 	std::make_tuple(1, 0, "VK_EXT_primitive_topology_list_restart"),
 	std::make_tuple(1, 0, "VK_KHR_format_feature_flags2"),
+	std::make_tuple(1, 0, "VK_EXT_present_mode_fifo_latest_ready"),
 	std::make_tuple(1, 0, "VK_FUCHSIA_external_memory"),
 	std::make_tuple(1, 0, "VK_FUCHSIA_external_semaphore"),
 	std::make_tuple(1, 0, "VK_FUCHSIA_buffer_collection"),

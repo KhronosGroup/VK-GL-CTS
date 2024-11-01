@@ -4688,3 +4688,8 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderReplicatedComp
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT;
+}
+

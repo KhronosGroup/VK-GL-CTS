@@ -426,6 +426,17 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceVulkan14Features physicalDeviceVulkan14Features;
+	deMemset(&physicalDeviceVulkan14Features, 0, sizeof(physicalDeviceVulkan14Features));
+
+	{
+		physicalDeviceVulkan14Features.sType = getStructureType<VkPhysicalDeviceVulkan14Features>();
+		*nextPtr = &physicalDeviceVulkan14Features;
+		nextPtr  = &physicalDeviceVulkan14Features.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
 	vk::VkPhysicalDeviceVulkanMemoryModelFeatures physicalDeviceVulkanMemoryModelFeatures;
 	deMemset(&physicalDeviceVulkanMemoryModelFeatures, 0, sizeof(physicalDeviceVulkanMemoryModelFeatures));
 
@@ -2155,6 +2166,160 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceVulkan12Features.scalarBlockLayout == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature scalarBlockLayout not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDeviceVulkan14Features.globalPriorityQuery == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature globalPriorityQuery not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDeviceVulkan14Features.shaderSubgroupRotate == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupRotate not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDeviceVulkan14Features.shaderSubgroupRotateClustered == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupRotateClustered not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDeviceVulkan14Features.shaderFloatControls2 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderFloatControls2 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDeviceVulkan14Features.shaderExpectAssume == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderExpectAssume not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDeviceVulkan14Features.bresenhamLines == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature bresenhamLines not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDeviceVulkan14Features.vertexAttributeInstanceRateDivisor == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature vertexAttributeInstanceRateDivisor not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDeviceVulkan14Features.indexTypeUint8 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature indexTypeUint8 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDeviceVulkan14Features.dynamicRenderingLocalRead == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature dynamicRenderingLocalRead not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDeviceVulkan14Features.maintenance5 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature maintenance5 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDeviceVulkan14Features.maintenance6 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature maintenance6 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) && physicalDeviceVulkan11Features.protectedMemory )
+	{
+		if ( physicalDeviceVulkan14Features.pipelineProtectedAccess == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature pipelineProtectedAccess not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDeviceVulkan14Features.pipelineRobustness == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature pipelineRobustness not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDeviceVulkan14Features.pushDescriptor == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature pushDescriptor not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

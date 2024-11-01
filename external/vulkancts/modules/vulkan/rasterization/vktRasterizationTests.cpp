@@ -1628,9 +1628,13 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
             context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization"))
         {
             VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProperties = {
+#ifndef CTS_USES_VULKANSC
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES, // VkStructureType sType;
-                nullptr,                                                         // void* pNext;
-                0u,                                                              // uint32_t lineSubPixelPrecisionBits;
+#else
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT, // VkStructureType sType;
+#endif                   // #ifndef CTS_USES_VULKANSC
+                nullptr, // void* pNext;
+                0u,      // uint32_t lineSubPixelPrecisionBits;
             };
 
             VkPhysicalDeviceProperties2 deviceProperties2;

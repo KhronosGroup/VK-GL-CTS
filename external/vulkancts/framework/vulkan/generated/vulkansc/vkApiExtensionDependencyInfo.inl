@@ -951,7 +951,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
 {
 	std::make_tuple(541065216, 1, 1, 0),
-	std::make_tuple(4210688, 0, 1, 4),
+	std::make_tuple(541081600, 1, 1, 4),
 	std::make_tuple(541077504, 1, 1, 3),
 	std::make_tuple(541073408, 1, 1, 2),
 	std::make_tuple(541069312, 1, 1, 1),
@@ -1028,6 +1028,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_color_write_enable"),
 	std::make_tuple(1, 0, "VK_EXT_application_parameters"),
 	std::make_tuple(1, 1, "VK_NV_external_sci_sync2"),
+	std::make_tuple(1, 0, "VK_EXT_layer_settings"),
 	std::make_tuple(1, 0, "VK_KHR_vertex_attribute_divisor"),
 	std::make_tuple(1, 0, "VK_QNX_external_memory_screen_buffer"),
 	std::make_tuple(1, 0, "VK_KHR_index_type_uint8"),

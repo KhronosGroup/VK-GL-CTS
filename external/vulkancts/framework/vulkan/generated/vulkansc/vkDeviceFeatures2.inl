@@ -396,7 +396,7 @@ tcu::TestStatus testPhysicalDeviceFeatureGlobalPriorityQueryFeaturesEXT (Context
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
 		deMemset(&deviceGlobalPriorityQueryFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT));
-		deviceGlobalPriorityQueryFeaturesEXT[ndx].sType = isGlobalPriorityQueryFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceGlobalPriorityQueryFeaturesEXT[ndx].sType = isGlobalPriorityQueryFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
 		deviceGlobalPriorityQueryFeaturesEXT[ndx].pNext = nullptr;
 
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
@@ -690,7 +690,7 @@ tcu::TestStatus testPhysicalDeviceFeatureVertexAttributeDivisorFeaturesEXT (Cont
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
 		deMemset(&deviceVertexAttributeDivisorFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT));
-		deviceVertexAttributeDivisorFeaturesEXT[ndx].sType = isVertexAttributeDivisorFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceVertexAttributeDivisorFeaturesEXT[ndx].sType = isVertexAttributeDivisorFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
 		deviceVertexAttributeDivisorFeaturesEXT[ndx].pNext = nullptr;
 
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
@@ -1102,7 +1102,7 @@ tcu::TestStatus testPhysicalDeviceFeatureIndexTypeUint8FeaturesEXT (Context& con
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
 		deMemset(&deviceIndexTypeUint8FeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceIndexTypeUint8FeaturesEXT));
-		deviceIndexTypeUint8FeaturesEXT[ndx].sType = isIndexTypeUint8FeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceIndexTypeUint8FeaturesEXT[ndx].sType = isIndexTypeUint8FeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
 		deviceIndexTypeUint8FeaturesEXT[ndx].pNext = nullptr;
 
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
@@ -1327,7 +1327,7 @@ tcu::TestStatus testPhysicalDeviceFeatureLineRasterizationFeaturesEXT (Context& 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
 		deMemset(&deviceLineRasterizationFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceLineRasterizationFeaturesEXT));
-		deviceLineRasterizationFeaturesEXT[ndx].sType = isLineRasterizationFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceLineRasterizationFeaturesEXT[ndx].sType = isLineRasterizationFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
 		deviceLineRasterizationFeaturesEXT[ndx].pNext = nullptr;
 
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));

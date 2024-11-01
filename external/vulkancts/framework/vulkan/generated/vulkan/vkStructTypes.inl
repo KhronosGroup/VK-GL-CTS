@@ -6469,7 +6469,7 @@ struct VkGeneratedCommandsShaderInfoEXT
 struct VkGeneratedCommandsMemoryRequirementsInfoEXT
 {
 	VkStructureType				sType;
-	void*						pNext;
+	const void*					pNext;
 	VkIndirectExecutionSetEXT	indirectExecutionSet;
 	VkIndirectCommandsLayoutEXT	indirectCommandsLayout;
 	uint32_t					maxSequenceCount;
@@ -9357,6 +9357,8 @@ struct VkPhysicalDeviceShaderEnqueuePropertiesAMDX
 	uint32_t		maxExecutionGraphShaderPayloadSize;
 	uint32_t		maxExecutionGraphShaderPayloadCount;
 	uint32_t		executionGraphDispatchAddressAlignment;
+	uint32_t		maxExecutionGraphWorkgroupCount[3];
+	uint32_t		maxExecutionGraphWorkgroups;
 };
 
 struct VkPhysicalDeviceShaderEnqueueFeaturesAMDX
@@ -9364,6 +9366,7 @@ struct VkPhysicalDeviceShaderEnqueueFeaturesAMDX
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shaderEnqueue;
+	VkBool32		shaderMeshEnqueue;
 };
 
 struct VkExecutionGraphPipelineCreateInfoAMDX
@@ -9391,7 +9394,9 @@ struct VkExecutionGraphPipelineScratchSizeAMDX
 {
 	VkStructureType	sType;
 	void*			pNext;
-	VkDeviceSize	size;
+	VkDeviceSize	minSize;
+	VkDeviceSize	maxSize;
+	VkDeviceSize	sizeGranularity;
 };
 
 struct VkDispatchGraphInfoAMDX
@@ -9910,6 +9915,13 @@ struct VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shaderReplicatedComposites;
+};
+
+struct VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentModeFifoLatestReady;
 };
 
 struct VkDepthClampRangeEXT

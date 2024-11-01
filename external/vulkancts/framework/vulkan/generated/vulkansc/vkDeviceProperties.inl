@@ -228,6 +228,7 @@ uint32_t getBlobPropertiesVersion (VkStructureType sType)
 		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES,			VK_API_VERSION_1_2 },
 		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES,				VK_API_VERSION_1_2 },
 		// Vulkan13
+		// Vulkan14
 	};
 
 	auto it = sTypeBlobMap.find(sType);

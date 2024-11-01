@@ -108,6 +108,7 @@ const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				getVertexInputDynam
 const VkPhysicalDeviceAddressBindingReportFeaturesEXT&					getAddressBindingReportFeaturesEXT					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceAddressBindingReportFeaturesEXT>();				}
 const VkPhysicalDeviceDepthClipControlFeaturesEXT&						getDepthClipControlFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDepthClipControlFeaturesEXT>();					}
 const VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&			getPrimitiveTopologyListRestartFeaturesEXT			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();		}
+const VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT&			getPresentModeFifoLatestReadyFeaturesEXT			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT>();			}
 const VkPhysicalDeviceSubpassShadingFeaturesHUAWEI&						getSubpassShadingFeaturesHUAWEI						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceSubpassShadingFeaturesHUAWEI>();					}
 const VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&						getInvocationMaskFeaturesHUAWEI						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceInvocationMaskFeaturesHUAWEI>();					}
 const VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&						getExternalMemoryRDMAFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceExternalMemoryRDMAFeaturesNV>();					}

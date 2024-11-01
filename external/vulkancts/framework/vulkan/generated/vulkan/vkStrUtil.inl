@@ -1779,6 +1779,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageAlignmentC
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageAlignmentControlPropertiesMESA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageAlignmentControlCreateInfoMESA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDepthClampRangeEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);

@@ -501,10 +501,10 @@ virtual VkResult			getScreenBufferPropertiesQNX							(VkDevice device, const st
 virtual VkResult			getExecutionGraphPipelineScratchSizeAMDX				(VkDevice device, VkPipeline executionGraph, VkExecutionGraphPipelineScratchSizeAMDX* pSizeInfo) const;
 virtual VkResult			getExecutionGraphPipelineNodeIndexAMDX					(VkDevice device, VkPipeline executionGraph, const VkPipelineShaderStageNodeCreateInfoAMDX* pNodeInfo, uint32_t* pNodeIndex) const;
 virtual VkResult			createExecutionGraphPipelinesAMDX						(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkExecutionGraphPipelineCreateInfoAMDX* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const;
-virtual void				cmdInitializeGraphScratchMemoryAMDX						(VkCommandBuffer commandBuffer, VkDeviceAddress scratch) const;
-virtual void				cmdDispatchGraphAMDX									(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const;
-virtual void				cmdDispatchGraphIndirectAMDX							(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo) const;
-virtual void				cmdDispatchGraphIndirectCountAMDX						(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceAddress countInfo) const;
+virtual void				cmdInitializeGraphScratchMemoryAMDX						(VkCommandBuffer commandBuffer, VkPipeline executionGraph, VkDeviceAddress scratch, VkDeviceSize scratchSize) const;
+virtual void				cmdDispatchGraphAMDX									(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo) const;
+virtual void				cmdDispatchGraphIndirectAMDX							(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo) const;
+virtual void				cmdDispatchGraphIndirectCountAMDX						(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, VkDeviceAddress countInfo) const;
 virtual void				cmdBindDescriptorSets2									(VkCommandBuffer commandBuffer, const VkBindDescriptorSetsInfo* pBindDescriptorSetsInfo) const;
 virtual void				cmdPushConstants2										(VkCommandBuffer commandBuffer, const VkPushConstantsInfo* pPushConstantsInfo) const;
 virtual void				cmdPushDescriptorSet2									(VkCommandBuffer commandBuffer, const VkPushDescriptorSetInfo* pPushDescriptorSetInfo) const;

@@ -22,6 +22,7 @@ void initApisMap (ApisMap& apis)
     apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_1, FunctionInfosList()));
     apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_2, FunctionInfosList()));
     apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_3, FunctionInfosList()));
+    apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_4, FunctionInfosList()));
 
 	apis[VK_API_VERSION_1_0] = {
 		{"vkGetCommandPoolMemoryConsumption",	FUNCTIONORIGIN_DEVICE},
@@ -93,6 +94,45 @@ void initApisMap (ApisMap& apis)
 		{"vkGetDeviceMemoryOpaqueCaptureAddress",			FUNCTIONORIGIN_DEVICE},
 	};
 	apis[VK_API_VERSION_1_3] = {
+		{"vkGetCommandPoolMemoryConsumption",				FUNCTIONORIGIN_DEVICE},
+		{"vkGetFaultData",									FUNCTIONORIGIN_DEVICE},
+		{"vkEnumerateInstanceVersion",						FUNCTIONORIGIN_PLATFORM},
+		{"vkBindBufferMemory2",								FUNCTIONORIGIN_DEVICE},
+		{"vkBindImageMemory2",								FUNCTIONORIGIN_DEVICE},
+		{"vkGetDeviceGroupPeerMemoryFeatures",				FUNCTIONORIGIN_DEVICE},
+		{"vkCmdSetDeviceMask",								FUNCTIONORIGIN_DEVICE},
+		{"vkCmdDispatchBase",								FUNCTIONORIGIN_DEVICE},
+		{"vkEnumeratePhysicalDeviceGroups",					FUNCTIONORIGIN_INSTANCE},
+		{"vkGetImageMemoryRequirements2",					FUNCTIONORIGIN_DEVICE},
+		{"vkGetBufferMemoryRequirements2",					FUNCTIONORIGIN_DEVICE},
+		{"vkGetPhysicalDeviceFeatures2",					FUNCTIONORIGIN_INSTANCE},
+		{"vkGetPhysicalDeviceProperties2",					FUNCTIONORIGIN_INSTANCE},
+		{"vkGetPhysicalDeviceFormatProperties2",			FUNCTIONORIGIN_INSTANCE},
+		{"vkGetPhysicalDeviceImageFormatProperties2",		FUNCTIONORIGIN_INSTANCE},
+		{"vkGetPhysicalDeviceQueueFamilyProperties2",		FUNCTIONORIGIN_INSTANCE},
+		{"vkGetPhysicalDeviceMemoryProperties2",			FUNCTIONORIGIN_INSTANCE},
+		{"vkGetDeviceQueue2",								FUNCTIONORIGIN_DEVICE},
+		{"vkCreateSamplerYcbcrConversion",					FUNCTIONORIGIN_DEVICE},
+		{"vkDestroySamplerYcbcrConversion",					FUNCTIONORIGIN_DEVICE},
+		{"vkGetPhysicalDeviceExternalBufferProperties",		FUNCTIONORIGIN_INSTANCE},
+		{"vkGetPhysicalDeviceExternalFenceProperties",		FUNCTIONORIGIN_INSTANCE},
+		{"vkGetPhysicalDeviceExternalSemaphoreProperties",	FUNCTIONORIGIN_INSTANCE},
+		{"vkGetDescriptorSetLayoutSupport",					FUNCTIONORIGIN_DEVICE},
+		{"vkCmdDrawIndirectCount",							FUNCTIONORIGIN_DEVICE},
+		{"vkCmdDrawIndexedIndirectCount",					FUNCTIONORIGIN_DEVICE},
+		{"vkCreateRenderPass2",								FUNCTIONORIGIN_DEVICE},
+		{"vkCmdBeginRenderPass2",							FUNCTIONORIGIN_DEVICE},
+		{"vkCmdNextSubpass2",								FUNCTIONORIGIN_DEVICE},
+		{"vkCmdEndRenderPass2",								FUNCTIONORIGIN_DEVICE},
+		{"vkResetQueryPool",								FUNCTIONORIGIN_DEVICE},
+		{"vkGetSemaphoreCounterValue",						FUNCTIONORIGIN_DEVICE},
+		{"vkWaitSemaphores",								FUNCTIONORIGIN_DEVICE},
+		{"vkSignalSemaphore",								FUNCTIONORIGIN_DEVICE},
+		{"vkGetBufferDeviceAddress",						FUNCTIONORIGIN_DEVICE},
+		{"vkGetBufferOpaqueCaptureAddress",					FUNCTIONORIGIN_DEVICE},
+		{"vkGetDeviceMemoryOpaqueCaptureAddress",			FUNCTIONORIGIN_DEVICE},
+	};
+	apis[VK_API_VERSION_1_4] = {
 		{"vkGetCommandPoolMemoryConsumption",				FUNCTIONORIGIN_DEVICE},
 		{"vkGetFaultData",									FUNCTIONORIGIN_DEVICE},
 		{"vkEnumerateInstanceVersion",						FUNCTIONORIGIN_PLATFORM},

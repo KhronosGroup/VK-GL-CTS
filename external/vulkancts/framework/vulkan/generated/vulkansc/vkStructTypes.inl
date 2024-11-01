@@ -1370,6 +1370,23 @@ struct VkValidationFeaturesEXT
 	const VkValidationFeatureDisableEXT*	pDisabledValidationFeatures;
 };
 
+struct VkLayerSettingEXT
+{
+	const char*				pLayerName;
+	const char*				pSettingName;
+	VkLayerSettingTypeEXT	type;
+	uint32_t				valueCount;
+	const void*				pValues;
+};
+
+struct VkLayerSettingsCreateInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	uint32_t					settingCount;
+	const VkLayerSettingEXT*	pSettings;
+};
+
 struct VkApplicationParametersEXT
 {
 	VkStructureType	sType;
@@ -3626,6 +3643,64 @@ struct VkPhysicalDeviceVulkan13Properties
 	VkDeviceSize		maxBufferSize;
 };
 
+struct VkPhysicalDeviceVulkan14Features
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		globalPriorityQuery;
+	VkBool32		shaderSubgroupRotate;
+	VkBool32		shaderSubgroupRotateClustered;
+	VkBool32		shaderFloatControls2;
+	VkBool32		shaderExpectAssume;
+	VkBool32		rectangularLines;
+	VkBool32		bresenhamLines;
+	VkBool32		smoothLines;
+	VkBool32		stippledRectangularLines;
+	VkBool32		stippledBresenhamLines;
+	VkBool32		stippledSmoothLines;
+	VkBool32		vertexAttributeInstanceRateDivisor;
+	VkBool32		vertexAttributeInstanceRateZeroDivisor;
+	VkBool32		indexTypeUint8;
+	VkBool32		dynamicRenderingLocalRead;
+	VkBool32		maintenance5;
+	VkBool32		maintenance6;
+	VkBool32		pipelineProtectedAccess;
+	VkBool32		pipelineRobustness;
+	VkBool32		hostImageCopy;
+	VkBool32		pushDescriptor;
+};
+
+struct VkPhysicalDeviceVulkan14Properties
+{
+	VkStructureType						sType;
+	void*								pNext;
+	uint32_t							lineSubPixelPrecisionBits;
+	uint32_t							maxVertexAttribDivisor;
+	VkBool32							supportsNonZeroFirstInstance;
+	uint32_t							maxPushDescriptors;
+	VkBool32							dynamicRenderingLocalReadDepthStencilAttachments;
+	VkBool32							dynamicRenderingLocalReadMultisampledAttachments;
+	VkBool32							earlyFragmentMultisampleCoverageAfterSampleCounting;
+	VkBool32							earlyFragmentSampleMaskTestBeforeSampleCounting;
+	VkBool32							depthStencilSwizzleOneSupport;
+	VkBool32							polygonModePointSize;
+	VkBool32							nonStrictSinglePixelWideLinesUseParallelogram;
+	VkBool32							nonStrictWideLinesUseParallelogram;
+	VkBool32							blockTexelViewCompatibleMultipleLayers;
+	uint32_t							maxCombinedImageSamplerDescriptorCount;
+	VkBool32							fragmentShadingRateClampCombinerInputs;
+	VkPipelineRobustnessBufferBehavior	defaultRobustnessStorageBuffers;
+	VkPipelineRobustnessBufferBehavior	defaultRobustnessUniformBuffers;
+	VkPipelineRobustnessBufferBehavior	defaultRobustnessVertexInputs;
+	VkPipelineRobustnessImageBehavior	defaultRobustnessImages;
+	uint32_t							copySrcLayoutCount;
+	VkImageLayout*						pCopySrcLayouts;
+	uint32_t							copyDstLayoutCount;
+	VkImageLayout*						pCopyDstLayouts;
+	uint8_t								optimalTilingLayoutUUID[VK_UUID_SIZE];
+	VkBool32							identicalMemoryTypeRequirements;
+};
+
 struct VkFaultData
 {
 	VkStructureType	sType;
@@ -4212,6 +4287,15 @@ struct VkDrmFormatModifierPropertiesList2EXT
 	void*								pNext;
 	uint32_t							drmFormatModifierCount;
 	VkDrmFormatModifierProperties2EXT*	pDrmFormatModifierProperties;
+};
+
+struct VkRenderingFragmentShadingRateAttachmentInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkImageView		imageView;
+	VkImageLayout	imageLayout;
+	VkExtent2D		shadingRateAttachmentTexelSize;
 };
 
 struct VkImportScreenBufferInfoQNX

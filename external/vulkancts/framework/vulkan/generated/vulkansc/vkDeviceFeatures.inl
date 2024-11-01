@@ -314,6 +314,7 @@ uint32_t getBlobFeaturesVersion (VkStructureType sType)
 		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES,			VK_API_VERSION_1_2 },
 		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES,						VK_API_VERSION_1_2 },
 		// Vulkan13
+		// Vulkan14
 	};
 
 	auto it = sTypeBlobMap.find(sType);

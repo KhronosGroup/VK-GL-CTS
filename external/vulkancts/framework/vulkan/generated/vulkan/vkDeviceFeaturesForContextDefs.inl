@@ -108,6 +108,7 @@ const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				Context::getVer
 const vk::VkPhysicalDeviceAddressBindingReportFeaturesEXT&					Context::getAddressBindingReportFeaturesEXT					(void) const { return m_device->getAddressBindingReportFeaturesEXT();				}
 const vk::VkPhysicalDeviceDepthClipControlFeaturesEXT&						Context::getDepthClipControlFeaturesEXT						(void) const { return m_device->getDepthClipControlFeaturesEXT();					}
 const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&			Context::getPrimitiveTopologyListRestartFeaturesEXT			(void) const { return m_device->getPrimitiveTopologyListRestartFeaturesEXT();		}
+const vk::VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT&			Context::getPresentModeFifoLatestReadyFeaturesEXT			(void) const { return m_device->getPresentModeFifoLatestReadyFeaturesEXT();			}
 const vk::VkPhysicalDeviceSubpassShadingFeaturesHUAWEI&						Context::getSubpassShadingFeaturesHUAWEI					(void) const { return m_device->getSubpassShadingFeaturesHUAWEI();					}
 const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&						Context::getInvocationMaskFeaturesHUAWEI					(void) const { return m_device->getInvocationMaskFeaturesHUAWEI();					}
 const vk::VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&						Context::getExternalMemoryRDMAFeatures						(void) const { return m_device->getExternalMemoryRDMAFeatures();					}
