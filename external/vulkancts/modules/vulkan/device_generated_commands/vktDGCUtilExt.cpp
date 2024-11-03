@@ -1240,6 +1240,9 @@ void bindShaderObjectState(const DeviceInterface &vkd, const std::vector<std::st
         case VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT:
             vkd.cmdSetAttachmentFeedbackLoopEnableEXT(cmdBuffer, 0u);
             break;
+        case VK_DYNAMIC_STATE_DEPTH_CLAMP_RANGE_EXT:
+            vkd.cmdSetDepthClampRangeEXT(cmdBuffer, VK_DEPTH_CLAMP_MODE_VIEWPORT_RANGE_EXT, nullptr);
+            break;
         default:
             DE_ASSERT(false);
             break;
