@@ -23,6 +23,10 @@
 
 #include "vktVideoTestUtils.hpp"
 
+#ifdef DE_BUILD_VIDEO
+#include "vktVideoBaseDecodeUtils.hpp"
+#endif
+
 #include "vkDefs.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
@@ -40,6 +44,14 @@
 #include "vktVideoDecodeTests.hpp"
 
 #include "vkMd5Sum.hpp"
+
+#ifdef DE_BUILD_VIDEO
+#include "video_generator.h"
+#endif
+
+#ifndef STREAM_DUMP_DEBUG
+#define STREAM_DUMP_DEBUG 0
+#endif
 
 using namespace vk;
 using namespace std;
@@ -335,6 +347,151 @@ de::MovePtr<vector<uint8_t>> VideoBaseTestInstance::loadVideoData(const string &
 
     return result;
 }
+#ifdef DE_BUILD_VIDEO
+tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
+    VkVideoCodecOperationFlagBitsKHR videoCodecEncodeOperation, StdVideoAV1Profile profile, const char *encodedFileName,
+    const char *yuvFileName, int32_t numberOfFrames, int32_t inputWidth, int32_t inputHeight,
+    const VkExtent2D expectedOutputExtent, VkVideoChromaSubsamplingFlagsKHR chromaSubsampling,
+    VkVideoComponentBitDepthFlagsKHR lumaBitDepth, VkVideoComponentBitDepthFlagsKHR chromaBitDepth,
+    double psnrThresholdLowerLimit)
+{
+    double criticalPsnrThreshold                               = 10.0;
+    VkVideoCodecOperationFlagBitsKHR videoCodecDecodeOperation = VK_VIDEO_CODEC_OPERATION_NONE_KHR;
+    ElementaryStreamFraming framing                            = ElementaryStreamFraming::UNKNOWN;
+
+    switch (videoCodecEncodeOperation)
+    {
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
+        videoCodecDecodeOperation = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
+        framing                   = ElementaryStreamFraming::H26X_BYTE_STREAM;
+        break;
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
+        videoCodecDecodeOperation = VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR;
+        framing                   = ElementaryStreamFraming::H26X_BYTE_STREAM;
+        break;
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR:
+        videoCodecDecodeOperation = VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
+        framing                   = ElementaryStreamFraming::IVF;
+        break;
+    default:
+        tcu::TestStatus::fail("Unable to validate the encoded content, the decode operation is not supported.");
+    };
+
+    VideoDevice::VideoDeviceFlags videoDeviceFlags = VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED;
+    const VkPhysicalDevice physicalDevice          = m_context.getPhysicalDevice();
+    const VkDevice videoDevice =
+        getDeviceSupportingQueue(VK_QUEUE_VIDEO_ENCODE_BIT_KHR | VK_QUEUE_VIDEO_DECODE_BIT_KHR | VK_QUEUE_TRANSFER_BIT,
+                                 videoCodecDecodeOperation | videoCodecEncodeOperation, videoDeviceFlags);
+    const DeviceInterface &videoDeviceDriver = getDeviceDriver();
+
+    const uint32_t encodeQueueFamilyIndex   = getQueueFamilyIndexEncode();
+    const uint32_t decodeQueueFamilyIndex   = getQueueFamilyIndexDecode();
+    const uint32_t transferQueueFamilyIndex = getQueueFamilyIndexTransfer();
+
+    const VkQueue encodeQueue   = getDeviceQueue(videoDeviceDriver, videoDevice, encodeQueueFamilyIndex, 0u);
+    const VkQueue decodeQueue   = getDeviceQueue(videoDeviceDriver, videoDevice, decodeQueueFamilyIndex, 0u);
+    const VkQueue transferQueue = getDeviceQueue(videoDeviceDriver, videoDevice, transferQueueFamilyIndex, 0u);
+
+    DeviceContext deviceContext(&m_context, &m_videoDevice, physicalDevice, videoDevice, decodeQueue, encodeQueue,
+                                transferQueue);
+    auto decodeProfile =
+        VkVideoCoreProfile(videoCodecDecodeOperation, chromaSubsampling, lumaBitDepth, chromaBitDepth, profile);
+    auto basicDecoder = createBasicDecoder(&deviceContext, &decodeProfile, numberOfFrames, false);
+
+    Demuxer::Params demuxParams = {};
+    demuxParams.data            = std::make_unique<BufferedReader>(static_cast<const char *>(encodedFileName));
+    demuxParams.codecOperation  = videoCodecDecodeOperation;
+
+    demuxParams.framing = framing;
+    auto demuxer        = Demuxer::create(std::move(demuxParams));
+
+    VkVideoParser parser;
+    // TODO: Check for decoder extension support before attempting validation!
+    createParser(demuxer->codecOperation(), basicDecoder, parser, demuxer->framing());
+
+    FrameProcessor processor(std::move(demuxer), basicDecoder);
+    std::vector<int> incorrectFrames;
+    std::vector<int> correctFrames;
+    for (int frameIdx = 0; frameIdx < numberOfFrames; frameIdx++)
+    {
+        DecodedFrame frame;
+        TCU_CHECK_AND_THROW(
+            InternalError, processor.getNextFrame(&frame) > 0,
+            "Expected more frames from the bitstream. Most likely an internal CTS bug, or maybe an invalid bitstream");
+
+        auto resultImage =
+            getDecodedImageFromContext(deviceContext,
+                                       basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR :
+                                                                              VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR,
+                                       &frame);
+
+        if (frame.displayWidth != expectedOutputExtent.width || frame.displayHeight != expectedOutputExtent.height)
+        {
+            return tcu::TestStatus::fail(
+                "Decoded frame resolution (" + std::to_string(frame.displayWidth) + "," +
+                std::to_string(frame.displayHeight) + ")" + " doesn't match expected resolution (" +
+                std::to_string(expectedOutputExtent.width) + "," + std::to_string(expectedOutputExtent.height) + ")");
+        }
+
+        double psnr;
+        if (lumaBitDepth == VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR)
+        {
+            de::MovePtr<std::vector<uint8_t>> out =
+                vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(resultImage.get());
+            de::MovePtr<std::vector<uint8_t>> inputFrame =
+                vkt::ycbcr::YCbCrContent<uint8_t>::getFrame(yuvFileName, inputWidth, inputHeight, frameIdx);
+            psnr = util::PSNRImplicitCrop(*inputFrame, inputWidth, inputHeight, *out, expectedOutputExtent.width,
+                                          expectedOutputExtent.height);
+#if STREAM_DUMP_DEBUG
+            const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
+            vkt::ycbcr::YCbCrContent<uint8_t>::save(*out, outputFileName);
+            const string refFileName = "ref_" + std::to_string(frameIdx) + ".yuv";
+            vkt::ycbcr::YCbCrContent<uint8_t>::save(*inputFrame, refFileName);
+#endif
+        }
+        else
+        {
+            de::MovePtr<std::vector<uint16_t>> out =
+                vkt::ycbcr::YCbCrConvUtil<uint16_t>::MultiPlanarNV12toI420(resultImage.get());
+            de::MovePtr<std::vector<uint16_t>> inputFrame =
+                vkt::ycbcr::YCbCrContent<uint16_t>::getFrame(yuvFileName, inputWidth, inputHeight, frameIdx);
+            psnr = util::PSNRImplicitCrop(*inputFrame, inputWidth, inputHeight, *out, expectedOutputExtent.width,
+                                          expectedOutputExtent.height);
+#if STREAM_DUMP_DEBUG
+            const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
+            vkt::ycbcr::YCbCrContent<uint16_t>::save(*out, outputFileName);
+            const string refFileName = "ref_" + std::to_string(frameIdx) + ".yuv";
+            vkt::ycbcr::YCbCrContent<uint16_t>::save(*inputFrame, refFileName);
+#endif
+        }
+#if STREAM_DUMP_DEBUG
+        cout << "Current PSNR: " << psnr << endl;
+#endif
+
+        string failMessage;
+
+        if (psnr < psnrThresholdLowerLimit)
+        {
+            double difference = psnrThresholdLowerLimit - psnr;
+
+            if (psnr > criticalPsnrThreshold)
+            {
+                failMessage = "Frame " + std::to_string(frameIdx) + " with PSNR " + std::to_string(psnr) + " is " +
+                              std::to_string(difference) + " points below the lower threshold";
+                return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, failMessage);
+            }
+            else
+            {
+                failMessage = "Frame " + std::to_string(frameIdx) + " with PSNR " + std::to_string(psnr) + " is " +
+                              std::to_string(difference) + " points below the critical threshold";
+                return tcu::TestStatus::fail(failMessage);
+            }
+        }
+    }
+
+    return tcu::TestStatus::pass("Video encoding completed successfully");
+}
+#endif
 
 de::MovePtr<VkVideoDecodeCapabilitiesKHR> getVideoDecodeCapabilities(void *pNext)
 {
@@ -438,6 +595,42 @@ de::MovePtr<VkVideoEncodeH265CapabilitiesKHR> getVideoCapabilitiesExtensionH265E
 
     return de::MovePtr<VkVideoEncodeH265CapabilitiesKHR>(
         new VkVideoEncodeH265CapabilitiesKHR(videoCapabilitiesExtension));
+}
+
+de::MovePtr<VkVideoEncodeAV1CapabilitiesKHR> getVideoCapabilitiesExtensionAV1E(void)
+{
+    const VkVideoEncodeAV1CapabilitiesKHR videoCapabilitiesExtension = {
+        VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_CAPABILITIES_KHR, // VkStructureType sType
+        nullptr,                                             // void* pNext
+        0u,                                                  // VkVideoEncodeAV1CapabilityFlagsKHR flags
+        static_cast<StdVideoAV1Level>(0),                    // StdVideoAV1Level maxLevel
+        {0, 0},                                              // codedPictureAlignment
+        {0, 0},                                              // VkExtent2D maxTiles
+        {0, 0},                                              // VkExtent2D minTileSize
+        {0, 0},                                              // VkExtent2D maxTileSize
+        static_cast<VkVideoEncodeAV1SuperblockSizeFlagsKHR>(
+            0),                                     // VkVideoEncodeAV1SuperblockSizeFlagsKHR superblockSizes
+        0u,                                         // uint32_t maxSingleReferenceCount
+        0u,                                         // uint32_t singleReferenceNameMask
+        0u,                                         // uint32_t maxUnidirectionalCompoundReferenceCount
+        0u,                                         // uint32_t maxUnidirectionalCompoundGroup1ReferenceCount
+        0u,                                         // uint32_t unidirectionalCompoundReferenceNameMask
+        0u,                                         // uint32_t maxBidirectionalCompoundReferenceCount
+        0u,                                         // uint32_t maxBidirectionalCompoundGroup1ReferenceCount
+        0u,                                         // uint32_t maxBidirectionalCompoundGroup2ReferenceCount
+        0u,                                         // uint32_t bidirectionalCompoundReferenceNameMask
+        0u,                                         // uint32_t maxTemporalLayerCount
+        0u,                                         // uint32_t maxSpatialLayerCount
+        0u,                                         // uint32_t maxOperatingPoints
+        0u,                                         // uint32_t minQIndex
+        0u,                                         // uint32_t maxQIndex
+        VK_FALSE,                                   // VkBool32 prefersGopRemainingFrames
+        VK_FALSE,                                   // VkBool32 requiresGopRemainingFrames
+        static_cast<VkVideoEncodeAV1StdFlagsKHR>(0) // VkVideoEncodeAV1StdFlagsKHR stdSyntaxFlags
+    };
+
+    return de::MovePtr<VkVideoEncodeAV1CapabilitiesKHR>(
+        new VkVideoEncodeAV1CapabilitiesKHR(videoCapabilitiesExtension));
 }
 
 de::MovePtr<VkVideoCapabilitiesKHR> getVideoCapabilities(const InstanceInterface &vk, VkPhysicalDevice physicalDevice,
@@ -2038,6 +2231,46 @@ bool imageMatchesReferenceChecksum(const ycbcr::MultiPlaneImageData &multiPlaneI
 
 namespace util
 {
+#ifdef DE_BUILD_VIDEO
+void generateYCbCrFile(std::string fileName, uint32_t n_frames, uint32_t width, uint32_t height, uint32_t format,
+                       uint8_t bitdepth)
+{
+    video_generator gen;
+    video_generator_settings cfg;
+    uint32_t max_frames;
+    std::ofstream outFile(fileName, std::ios::binary | std::ios::out);
+
+    if (!outFile.is_open())
+    {
+        TCU_THROW(NotSupportedError, "Unable to create the file to generate the YUV content");
+    }
+
+    max_frames = n_frames;
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.width    = width;
+    cfg.height   = height;
+    cfg.format   = format;
+    cfg.bitdepth = bitdepth;
+
+    if (video_generator_init(&cfg, &gen))
+    {
+        TCU_THROW(NotSupportedError, "Unable to create the video generator");
+    }
+
+    while (gen.frame < max_frames)
+    {
+        video_generator_update(&gen);
+        // write video planes to a file
+        outFile.write((char *)gen.y, gen.ybytes);
+        outFile.write((char *)gen.u, gen.ubytes);
+        outFile.write((char *)gen.v, gen.vbytes);
+    }
+
+    outFile.close();
+    video_generator_clear(&gen);
+}
+#endif
+
 const char *getVideoCodecString(VkVideoCodecOperationFlagBitsKHR codec)
 {
     static struct
@@ -2237,6 +2470,8 @@ const char *codecToName(VkVideoCodecOperationFlagBitsKHR codec)
         return "encode h.264";
     case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
         return "encode h.265";
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR:
+        return "encode av1";
     default:
         tcu::die("Unknown video codec");
     }
@@ -2485,31 +2720,6 @@ VkResult getVideoEncodeCapabilities(DeviceContext &devCtx, const VkVideoCoreProf
         fprintf(stderr, "\nERROR: Input is not supported. GetVideoCapabilities() result: 0x%x\n", result);
     }
     return result;
-}
-
-double PSNR(const std::vector<uint8_t> &img1, const std::vector<uint8_t> &img2)
-{
-    TCU_CHECK_AND_THROW(InternalError, (img1.size() > 0) && (img1.size() == img2.size()),
-                        "Input and output YUVs have different sizes " + de::toString(img1.size()) + " vs " +
-                            de::toString(img2.size()));
-
-    using sizet         = std::vector<uint8_t>::size_type;
-    sizet sz            = img1.size();
-    double squaredError = 0.0;
-
-    for (sizet i = 0; i < sz; i++)
-    {
-        int diff = static_cast<int>(img1[i]) - static_cast<int>(img2[i]);
-        squaredError += std::abs(diff);
-    }
-
-    double mse = squaredError / static_cast<double>(sz);
-    if (mse == 0)
-    {
-        return std::numeric_limits<double>::infinity();
-    }
-
-    return 10 * std::log10((255.0 * 255.0) / mse);
 }
 
 } // namespace util

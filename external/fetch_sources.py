@@ -317,7 +317,7 @@ PACKAGES = [
         "e7b5f0aa5b1b0eadc63a1c624c0ca7f5af133aa857d6a4271b0ef3d0bdb6868e",
         "renderdoc"),
     GitRepo(
-        "https://gitlab.khronos.org/spirv/spirv-tools.git",
+        None,
         "git@gitlab.khronos.org:spirv/spirv-tools.git",
         "0c84b0a133086a6e0b736f41dc899ce940ca33fc",
         "spirv-tools"),
@@ -343,7 +343,7 @@ PACKAGES = [
         "9a46ae006fa5c92e2d2af7944187f7794210844b",
         "vulkan-validationlayers"),
     GitRepo(
-        "https://gitlab.khronos.org/spirv/amber.git",
+        None,
         "git@gitlab.khronos.org:spirv/amber.git",
         "6f0251977e51c26609a5ceed3339537639741abf",
         "amber"),
@@ -358,8 +358,21 @@ PACKAGES = [
     GitRepo(
         "https://github.com/Igalia/vk_video_samples.git",
         "git@github.com:Igalia/vk_video_samples.git",
-        "4b5c49d2c3ea7e9af6b7cce243780c62270eae77",
+        "45fe88b456c683120138f052ea81f0a958ff3ec4",
         "nvidia-video-samples"),
+    # NOTE: Temporary vk_video_samples repo and branch where AV1
+    # encoder library is being developed by NVidia.
+    GitRepo(
+        "https://github.com/nvpro-samples/vk_video_samples.git",
+        "git@github.com:nvpro-samples/vk_video_samples.git",
+        "d78acbefe82183d00634a95705885a7cbabdf20b",
+        "vk-video-samples"),
+    # NOTE: Temporary video generator repo .
+    GitRepo(
+        "https://github.com/Igalia/video_generator.git",
+        "git@github.com:Igalia/video_generator.git",
+        "426300e12a5cc5d4676807039a1be237a2b68187",
+        "video_generator"),
 ]
 
 def parseArgs ():

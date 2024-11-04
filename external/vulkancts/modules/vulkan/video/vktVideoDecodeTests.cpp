@@ -569,6 +569,13 @@ public:
         return m_info->filename;
     }
 
+    std::string getClipFilePath() const
+    {
+        std::vector<std::string> resourcePathComponents = {"vulkan", "video", m_info->filename};
+        de::FilePath resourcePath                       = de::FilePath::join(resourcePathComponents);
+        return resourcePath.getPath();
+    }
+
     const ClipInfo *getClipInfo() const
     {
         return m_info;
@@ -1148,7 +1155,7 @@ static std::unique_ptr<FrameProcessor> createProcessor(const TestDefinition *td,
                                                        bool forceDisableFilmGrain = false)
 {
     Demuxer::Params demuxParams = {};
-    demuxParams.data            = std::make_unique<BufferedReader>(td->getClipFilename());
+    demuxParams.data            = std::make_unique<BufferedReader>(td->getClipFilePath());
     demuxParams.codecOperation  = td->getCodecOperation(0);
     demuxParams.framing         = td->getClipInfo()->framing;
 
