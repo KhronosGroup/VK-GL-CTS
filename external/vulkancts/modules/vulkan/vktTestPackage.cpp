@@ -269,8 +269,10 @@ std::string trim(const std::string &original)
 }
 
 TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
-    : m_prebuiltBinRegistry(testCtx.getArchive(), "vulkan/prebuilt")
+    : m_progCollection()
+    , m_prebuiltBinRegistry(testCtx.getArchive(), "vulkan/prebuilt")
     , m_library(createLibrary(testCtx))
+    , m_context()
     , m_renderDoc(testCtx.getCommandLine().isRenderDocEnabled() ? MovePtr<vk::RenderDocUtil>(new vk::RenderDocUtil()) :
                                                                   MovePtr<vk::RenderDocUtil>(nullptr))
 #if defined CTS_USES_VULKANSC
@@ -278,7 +280,10 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
 #else
     , m_resourceInterface(new vk::ResourceInterfaceStandard(testCtx))
 #endif // CTS_USES_VULKANSC
+    , m_deviceProperties()
+    , m_waiverMechanism()
     , m_instance(nullptr)
+    , m_status()
 #if defined CTS_USES_VULKANSC
     , m_subprocessCount(0)
 #endif // CTS_USES_VULKANSC
@@ -417,7 +422,12 @@ TestCaseExecutor::~TestCaseExecutor(void)
 void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath)
 {
     if (m_waiverMechanism.isOnWaiverList(casePath))
+    {
+#ifdef CTS_USES_VULKANSC
+        m_testsForSubprocess.push_back(casePath);
+#endif
         throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
+    }
 
     TestCase *vktCase                           = dynamic_cast<TestCase *>(testCase);
     tcu::TestLog &log                           = m_context->getTestContext().getLog();
@@ -460,9 +470,6 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     }
 
     m_resourceInterface->initTestCase(casePath);
-
-    if (m_waiverMechanism.isOnWaiverList(casePath))
-        throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
 
     vktCase->checkSupport(*m_context);
 
