@@ -31,6 +31,11 @@
 #include "vktTestGroupUtil.hpp"
 
 #include "deUniquePtr.hpp"
+#include "vkPrograms.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkObjUtil.hpp"
+#include "vkCmdUtil.hpp"
+#include "vkBuilderUtil.hpp"
 
 #include <algorithm>
 #include <map>
@@ -2564,7 +2569,10 @@ std::string createShaderAnnotations(COOPERATIVE_MATRIX_TEST_CASE testCase)
                                    "OpMemberDecorate %output_buffer          0             Offset 0\n"
                                    "OpDecorate       %output_buffer          Block\n"
                                    "OpDecorate       %output_data_var        DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_var        Binding       1\n");
+                                   "OpDecorate       %output_data_var        Binding       1\n"
+
+                                   "OpDecorate       %rows                   SpecId        0\n"
+                                   "OpDecorate       %cols                   SpecId        1\n");
         break;
     }
     case CooperativeMatrixTestCases::BASIC_STORE:
@@ -2579,7 +2587,10 @@ std::string createShaderAnnotations(COOPERATIVE_MATRIX_TEST_CASE testCase)
                                    "OpMemberDecorate %output_buffer           0             Offset 0\n"
                                    "OpDecorate       %output_buffer           Block\n"
                                    "OpDecorate       %output_data_untyped_var DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_untyped_var Binding       1\n");
+                                   "OpDecorate       %output_data_untyped_var Binding       1\n"
+
+                                   "OpDecorate       %rows                   SpecId        0\n"
+                                   "OpDecorate       %cols                   SpecId        1\n");
         break;
     }
     case CooperativeMatrixTestCases::TYPE_PUNNING_LOAD:
@@ -2595,7 +2606,10 @@ std::string createShaderAnnotations(COOPERATIVE_MATRIX_TEST_CASE testCase)
                                    "OpMemberDecorate %output_buffer          0             Offset 0\n"
                                    "OpDecorate       %output_buffer          Block\n"
                                    "OpDecorate       %output_data_var        DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_var        Binding       1\n");
+                                   "OpDecorate       %output_data_var        Binding       1\n"
+
+                                   "OpDecorate       %rows                   SpecId        0\n"
+                                   "OpDecorate       %cols                   SpecId        1\n");
         break;
     }
     case CooperativeMatrixTestCases::TYPE_PUNNING_STORE:
@@ -2611,7 +2625,10 @@ std::string createShaderAnnotations(COOPERATIVE_MATRIX_TEST_CASE testCase)
                                    "OpMemberDecorate %output_buffer           0             Offset 0\n"
                                    "OpDecorate       %output_buffer           Block\n"
                                    "OpDecorate       %output_data_untyped_var DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_untyped_var Binding       1\n");
+                                   "OpDecorate       %output_data_untyped_var Binding       1\n"
+
+                                   "OpDecorate       %rows                   SpecId        0\n"
+                                   "OpDecorate       %cols                   SpecId        1\n");
         break;
     }
     case CooperativeMatrixTestCases::MIXED_LOAD:
@@ -2626,7 +2643,10 @@ std::string createShaderAnnotations(COOPERATIVE_MATRIX_TEST_CASE testCase)
                                    "OpMemberDecorate %output_buffer          0             Offset 0\n"
                                    "OpDecorate       %output_buffer          Block\n"
                                    "OpDecorate       %output_data_var        DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_var        Binding       1\n");
+                                   "OpDecorate       %output_data_var        Binding       1\n"
+
+                                   "OpDecorate       %rows                   SpecId        0\n"
+                                   "OpDecorate       %cols                   SpecId        1\n");
         break;
     }
     case CooperativeMatrixTestCases::MIXED_STORE:
@@ -2641,7 +2661,10 @@ std::string createShaderAnnotations(COOPERATIVE_MATRIX_TEST_CASE testCase)
                                    "OpMemberDecorate %output_buffer           0             Offset 0\n"
                                    "OpDecorate       %output_buffer           Block\n"
                                    "OpDecorate       %output_data_untyped_var DescriptorSet 0\n"
-                                   "OpDecorate       %output_data_untyped_var Binding       1\n");
+                                   "OpDecorate       %output_data_untyped_var Binding       1\n"
+
+                                   "OpDecorate       %rows                   SpecId        0\n"
+                                   "OpDecorate       %cols                   SpecId        1\n");
         break;
     }
     default:
@@ -4021,15 +4044,19 @@ std::string createShaderVariables(COOPERATIVE_MATRIX_TEST_CASE testCase)
             /* Constants */
             "%c_uint32_0             = OpConstant %uint32 0\n"
             "%c_uint32_1             = OpConstant %uint32 1\n"
-            "%c_matrix_rows          = OpConstant %uint32 1\n"
-            "%c_matrix_cols          = OpConstant %uint32 1\n"
+            "%c_uint32_scope         = OpConstant %uint32 3\n" // Subgroup scope
             "%c_uint32_2             = OpConstant %uint32 2\n"
             "%c_matrix_use           = OpConstant %uint32 ${matrixUse}\n"
             "%c_matrix_layout        = OpConstant %uint32 ${matrixLayout}\n"
+            "%c_type_size            = OpConstant %uint32 ${typeSize}\n"
+
+            /* Spec constants */
+            "%rows = OpSpecConstant %uint32 0\n"
+            "%cols = OpSpecConstant %uint32 0\n"
+            "%stride = OpSpecConstantOp %uint32 IMul %cols %c_type_size\n"
 
             /* Cooperative matrix */
-            "%${baseType}_matrix_1x1 = OpTypeCooperativeMatrixKHR %${baseType} %c_uint32_0 %c_matrix_rows "
-            "%c_matrix_cols %c_matrix_use\n"
+            "%${baseType}_matrix = OpTypeCooperativeMatrixKHR %${baseType} %c_uint32_scope %rows %cols %c_matrix_use\n"
 
             /* Struct */
             "%input_buffer                        = OpTypeStruct            %${baseType}_rta\n"
@@ -4066,15 +4093,19 @@ std::string createShaderVariables(COOPERATIVE_MATRIX_TEST_CASE testCase)
             /* Constants */
             "%c_uint32_0             = OpConstant %uint32 0\n"
             "%c_uint32_1             = OpConstant %uint32 1\n"
-            "%c_matrix_rows          = OpConstant %uint32 1\n"
-            "%c_matrix_cols          = OpConstant %uint32 1\n"
+            "%c_uint32_scope         = OpConstant %uint32 3\n" // Subgroup scope
             "%c_uint32_2             = OpConstant %uint32 2\n"
             "%c_matrix_use           = OpConstant %uint32 ${matrixUse}\n"
             "%c_matrix_layout        = OpConstant %uint32 ${matrixLayout}\n"
+            "%c_type_size            = OpConstant %uint32 ${typeSize}\n"
+
+            /* Spec constants */
+            "%rows = OpSpecConstant %uint32 0\n"
+            "%cols = OpSpecConstant %uint32 0\n"
+            "%stride = OpSpecConstantOp %uint32 IMul %cols %c_type_size\n"
 
             /* Cooperative matrix */
-            "%${baseType}_matrix_1x1 = OpTypeCooperativeMatrixKHR %${baseType} %c_uint32_0 %c_matrix_rows "
-            "%c_matrix_cols %c_matrix_use\n"
+            "%${baseType}_matrix = OpTypeCooperativeMatrixKHR %${baseType} %c_uint32_scope %rows %cols %c_matrix_use\n"
 
             /* Struct */
             "%input_buffer                        = OpTypeStruct            %${baseType}_rta\n"
@@ -4113,15 +4144,20 @@ std::string createShaderVariables(COOPERATIVE_MATRIX_TEST_CASE testCase)
             /* Constants */
             "%c_uint32_0             = OpConstant %uint32 0\n"
             "%c_uint32_1             = OpConstant %uint32 1\n"
-            "%c_matrix_rows          = OpConstant %uint32 1\n"
-            "%c_matrix_cols          = OpConstant %uint32 1\n"
+            "%c_uint32_scope         = OpConstant %uint32 3\n" // Subgroup scope
             "%c_uint32_2             = OpConstant %uint32 2\n"
             "%c_matrix_use           = OpConstant %uint32 ${matrixUse}\n"
             "%c_matrix_layout        = OpConstant %uint32 ${matrixLayout}\n"
+            "%c_type_size            = OpConstant %uint32 ${typeSize}\n"
+
+            /* Spec constants */
+            "%rows = OpSpecConstant %uint32 0\n"
+            "%cols = OpSpecConstant %uint32 0\n"
+            "%stride = OpSpecConstantOp %uint32 IMul %cols %c_type_size\n"
 
             /* Cooperative matrix */
-            "%${sameSizeType}_matrix_1x1 = OpTypeCooperativeMatrixKHR %${sameSizeType} %c_uint32_0 %c_matrix_rows "
-            "%c_matrix_cols %c_matrix_use\n"
+            "%${sameSizeType}_matrix = OpTypeCooperativeMatrixKHR %${sameSizeType} %c_uint32_scope %rows %cols "
+            "%c_matrix_use\n"
 
             /* Struct */
             "%input_buffer               = OpTypeStruct            %${baseType}_rta\n"
@@ -4160,15 +4196,19 @@ std::string createShaderVariables(COOPERATIVE_MATRIX_TEST_CASE testCase)
             /* Constants */
             "%c_uint32_0             = OpConstant %uint32 0\n"
             "%c_uint32_1             = OpConstant %uint32 1\n"
-            "%c_matrix_rows          = OpConstant %uint32 1\n"
-            "%c_matrix_cols          = OpConstant %uint32 1\n"
+            "%c_uint32_scope         = OpConstant %uint32 3\n" // Subgroup scope
             "%c_uint32_2             = OpConstant %uint32 2\n"
             "%c_matrix_use           = OpConstant %uint32 ${matrixUse}\n"
             "%c_matrix_layout        = OpConstant %uint32 ${matrixLayout}\n"
+            "%c_type_size            = OpConstant %uint32 ${typeSize}\n"
+
+            /* Spec constants */
+            "%rows = OpSpecConstant %uint32 0\n"
+            "%cols = OpSpecConstant %uint32 0\n"
+            "%stride = OpSpecConstantOp %uint32 IMul %cols %c_type_size\n"
 
             /* Cooperative matrix */
-            "%${baseType}_matrix_1x1 = OpTypeCooperativeMatrixKHR %${baseType} %c_uint32_0 %c_matrix_rows "
-            "%c_matrix_cols %c_matrix_use\n"
+            "%${baseType}_matrix = OpTypeCooperativeMatrixKHR %${baseType} %c_uint32_scope %rows %cols %c_matrix_use\n"
 
             /* Struct */
             "%input_buffer                        = OpTypeStruct            %${baseType}_rta\n"
@@ -4205,16 +4245,19 @@ std::string createShaderVariables(COOPERATIVE_MATRIX_TEST_CASE testCase)
             /* Constants */
             "%c_uint32_0             = OpConstant %uint32 0\n"
             "%c_uint32_1             = OpConstant %uint32 1\n"
-            "%c_matrix_rows          = OpConstant %uint32 2\n"
-            "%c_matrix_cols          = OpConstant %uint32 2\n"
+            "%c_uint32_scope         = OpConstant %uint32 3\n" // Subgroup scope
             "%c_uint32_2             = OpConstant %uint32 2\n"
             "%c_matrix_use           = OpConstant %uint32 ${matrixUse}\n"
             "%c_matrix_layout        = OpConstant %uint32 ${matrixLayout}\n"
-            "%c_matrix_stride        = OpConstant %uint32 ${matrixStride}\n"
+            "%c_type_size            = OpConstant %uint32 ${typeSize}\n"
+
+            /* Spec constants */
+            "%rows = OpSpecConstant %uint32 0\n"
+            "%cols = OpSpecConstant %uint32 0\n"
+            "%stride = OpSpecConstantOp %uint32 IMul %cols %c_type_size\n"
 
             /* Cooperative matrix */
-            "%${baseType}_matrix_2x2 = OpTypeCooperativeMatrixKHR %${baseType} %c_uint32_0 %c_matrix_rows "
-            "%c_matrix_cols %c_matrix_use\n"
+            "%${baseType}_matrix = OpTypeCooperativeMatrixKHR %${baseType} %c_uint32_scope %rows %cols %c_matrix_use\n"
 
             /* Struct */
             "%input_buffer                        = OpTypeStruct            %${baseType}_rta\n"
@@ -4251,16 +4294,19 @@ std::string createShaderVariables(COOPERATIVE_MATRIX_TEST_CASE testCase)
             /* Constants */
             "%c_uint32_0             = OpConstant %uint32 0\n"
             "%c_uint32_1             = OpConstant %uint32 1\n"
-            "%c_matrix_rows          = OpConstant %uint32 2\n"
-            "%c_matrix_cols          = OpConstant %uint32 2\n"
+            "%c_uint32_scope         = OpConstant %uint32 3\n" // Subgroup scope
             "%c_uint32_2             = OpConstant %uint32 2\n"
             "%c_matrix_use           = OpConstant %uint32 ${matrixUse}\n"
             "%c_matrix_layout        = OpConstant %uint32 ${matrixLayout}\n"
-            "%c_matrix_stride        = OpConstant %uint32 ${matrixStride}\n"
+            "%c_type_size            = OpConstant %uint32 ${typeSize}\n"
+
+            /* Spec constants */
+            "%rows = OpSpecConstant %uint32 0\n"
+            "%cols = OpSpecConstant %uint32 0\n"
+            "%stride = OpSpecConstantOp %uint32 IMul %cols %c_type_size\n"
 
             /* Cooperative matrix */
-            "%${baseType}_matrix_2x2 = OpTypeCooperativeMatrixKHR %${baseType} %c_uint32_0 %c_matrix_rows "
-            "%c_matrix_cols %c_matrix_use\n"
+            "%${baseType}_matrix = OpTypeCooperativeMatrixKHR %${baseType} %c_uint32_scope %rows %cols %c_matrix_use\n"
 
             /* Struct */
             "%input_buffer                        = OpTypeStruct            %${baseType}_rta\n"
@@ -5118,82 +5164,78 @@ std::string createShaderMain(COOPERATIVE_MATRIX_TEST_CASE testCase)
     {
     case CooperativeMatrixTestCases::BASIC_LOAD:
     {
-        main += std::string("%output_loc    = OpAccessChain               %${baseType}_storage_buffer_ptr       "
-                            "%output_data_var                %c_uint32_0      %c_uint32_0\n"
+        main += std::string("%output_loc    = OpAccessChain    %${baseType}_storage_buffer_ptr"
+                            "                 %output_data_var %c_uint32_0 %c_uint32_0\n"
 
-                            "%loaded_matrix = OpCooperativeMatrixLoadKHR  %${baseType}_matrix_1x1               "
-                            "%input_data_untyped_var         %c_matrix_layout\n"
-                            "                 OpCooperativeMatrixStoreKHR %output_loc                           "
-                            "%loaded_matrix                  %c_matrix_layout\n");
+                            "%loaded_matrix = OpCooperativeMatrixLoadKHR %${baseType}_matrix "
+                            "                 %input_data_untyped_var    %c_matrix_layout %stride\n"
+                            "                 OpCooperativeMatrixStoreKHR %output_loc"
+                            "                 %loaded_matrix              %c_matrix_layout %stride\n");
         break;
     }
     case CooperativeMatrixTestCases::BASIC_STORE:
     {
-        main += std::string("%input_loc     = OpAccessChain               %${baseType}_storage_buffer_ptr       "
-                            "%input_data_var                 %c_uint32_0      %c_uint32_0\n"
+        main += std::string("%input_loc     = OpAccessChain   %${baseType}_storage_buffer_ptr"
+                            "                 %input_data_var %c_uint32_0 %c_uint32_0\n"
 
-                            "%loaded_matrix = OpCooperativeMatrixLoadKHR  %${baseType}_matrix_1x1               "
-                            "%input_loc                      %c_matrix_layout\n"
-                            "                 OpCooperativeMatrixStoreKHR %output_data_untyped_var              "
-                            "%loaded_matrix                  %c_matrix_layout\n");
+                            "%loaded_matrix = OpCooperativeMatrixLoadKHR  %${baseType}_matrix"
+                            "                 %input_loc                  %c_matrix_layout %stride\n"
+                            "                 OpCooperativeMatrixStoreKHR %output_data_untyped_var"
+                            "                 %loaded_matrix              %c_matrix_layout %stride\n");
         break;
     }
     case CooperativeMatrixTestCases::TYPE_PUNNING_LOAD:
     {
-        main += std::string("%output_loc    = OpAccessChain               %${sameSizeType}_storage_buffer_ptr   "
-                            "%output_data_var                %c_uint32_0      %c_uint32_0\n"
+        main += std::string("%output_loc    = OpAccessChain    %${sameSizeType}_storage_buffer_ptr"
+                            "                 %output_data_var %c_uint32_0 %c_uint32_0\n"
 
-                            "%loaded_matrix = OpCooperativeMatrixLoadKHR  %${sameSizeType}_matrix_1x1           "
-                            "%input_data_untyped_var         %c_matrix_layout\n"
-                            "                 OpCooperativeMatrixStoreKHR %output_loc                           "
-                            "%loaded_matrix                  %c_matrix_layout\n");
+                            "%loaded_matrix = OpCooperativeMatrixLoadKHR  %${sameSizeType}_matrix"
+                            "                 %input_data_untyped_var     %c_matrix_layout %stride\n"
+                            "                 OpCooperativeMatrixStoreKHR %output_loc"
+                            "                 %loaded_matrix              %c_matrix_layout %stride\n");
         break;
     }
     case CooperativeMatrixTestCases::TYPE_PUNNING_STORE:
     {
-        main += std::string("%input_loc     = OpAccessChain               %${baseType}_storage_buffer_ptr       "
-                            "%input_data_var                 %c_uint32_0      %c_uint32_0\n"
+        main += std::string("%input_loc     = OpAccessChain   %${baseType}_storage_buffer_ptr"
+                            "                 %input_data_var %c_uint32_0 %c_uint32_0\n"
 
-                            "%loaded_matrix = OpCooperativeMatrixLoadKHR  %${baseType}_matrix_1x1               "
-                            "%input_loc                      %c_matrix_layout\n"
-                            "                 OpCooperativeMatrixStoreKHR %output_data_untyped_var              "
-                            "%loaded_matrix                  %c_matrix_layout\n");
+                            "%loaded_matrix = OpCooperativeMatrixLoadKHR  %${baseType}_matrix"
+                            "                 %input_loc                  %c_matrix_layout %stride\n"
+                            "                 OpCooperativeMatrixStoreKHR %output_data_untyped_var"
+                            "                 %loaded_matrix              %c_matrix_layout %stride\n");
         break;
     }
     case CooperativeMatrixTestCases::MIXED_LOAD:
     {
-        main +=
-            std::string("%id_loc        = OpAccessChain               %uint32_input_ptr                     %id        "
-                        "                     %c_uint32_0\n"
-                        "%x             = OpLoad                      %uint32                               %id_loc\n"
+        main += std::string("%id_loc = OpAccessChain %uint32_input_ptr %id %c_uint32_0\n"
+                            "%x      = OpLoad        %uint32           %id_loc\n"
 
-                        "%input_loc     = OpUntypedAccessChainKHR     %storage_buffer_untyped_ptr           "
-                        "%input_buffer                   %input_data_untyped_var %c_uint32_0 %x\n"
-                        "%output_loc    = OpAccessChain               %${baseType}_storage_buffer_ptr       "
-                        "%output_data_var                %c_uint32_0             %x\n"
+                            "%input_loc  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr"
+                            "              %input_buffer           %input_data_untyped_var %c_uint32_0 %x\n"
+                            "%output_loc = OpAccessChain           %${baseType}_storage_buffer_ptr"
+                            "              %output_data_var        %c_uint32_0 %x\n"
 
-                        "%loaded_matrix = OpCooperativeMatrixLoadKHR  %${baseType}_matrix_2x2               %input_loc "
-                        "                     %c_matrix_layout        %c_matrix_stride None\n"
-                        "                 OpCooperativeMatrixStoreKHR %output_loc                           "
-                        "%loaded_matrix                  %c_matrix_layout        %c_matrix_stride None\n");
+                            "%loaded_matrix = OpCooperativeMatrixLoadKHR  %${baseType}_matrix %input_loc"
+                            "                 %c_matrix_layout            %stride             None\n"
+                            "                 OpCooperativeMatrixStoreKHR %output_loc         %loaded_matrix"
+                            "                 %c_matrix_layout            %stride             None\n");
         break;
     }
     case CooperativeMatrixTestCases::MIXED_STORE:
     {
-        main +=
-            std::string("%id_loc        = OpAccessChain               %uint32_input_ptr                     %id        "
-                        "                     %c_uint32_0\n"
-                        "%x             = OpLoad                      %uint32                               %id_loc\n"
+        main += std::string("%id_loc = OpAccessChain %uint32_input_ptr %id %c_uint32_0\n"
+                            "%x      = OpLoad        %uint32           %id_loc\n"
 
-                        "%input_loc     = OpAccessChain               %${baseType}_storage_buffer_ptr       "
-                        "%input_data_var                 %c_uint32_0              %x\n"
-                        "%output_loc    = OpUntypedAccessChainKHR     %storage_buffer_untyped_ptr           "
-                        "%output_buffer                  %output_data_untyped_var %c_uint32_0 %x\n"
+                            "%input_loc  = OpAccessChain           %${baseType}_storage_buffer_ptr"
+                            "              %input_data_var         %c_uint32_0 %x\n"
+                            "%output_loc = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr"
+                            "              %output_buffer          %output_data_untyped_var %c_uint32_0 %x\n"
 
-                        "%loaded_matrix = OpCooperativeMatrixLoadKHR  %${baseType}_matrix_2x2               %input_loc "
-                        "                     %c_matrix_layout         %c_matrix_stride None\n"
-                        "                 OpCooperativeMatrixStoreKHR %output_loc                           "
-                        "%loaded_matrix                  %c_matrix_layout         %c_matrix_stride None\n");
+                            "%loaded_matrix = OpCooperativeMatrixLoadKHR  %${baseType}_matrix %input_loc"
+                            "                 %c_matrix_layout            %stride             None\n"
+                            "                 OpCooperativeMatrixStoreKHR %output_loc         %loaded_matrix"
+                            "                 %c_matrix_layout            %stride             None\n");
         break;
     }
     default:
@@ -9336,6 +9378,415 @@ void addWorkgroupMemoryExplicitLayoutInteractionTests(tcu::TestCaseGroup *testGr
     }
 }
 
+struct MatrixSize
+{
+    uint32_t rows;
+    uint32_t cols;
+};
+
+const char *getShaderInterfaces(COOPERATIVE_MATRIX_TEST_CASE testCase)
+{
+    static const char *const translateTable[DE_ENUM_COUNT(CooperativeMatrixTestCases)] = {
+        "%input_data_untyped_var %output_data_var", // BASIC_LOAD
+        "%input_data_var %output_data_untyped_var", // BASIC_STORE
+        "%input_data_untyped_var %output_data_var", // TYPE_PUNNING_LOAD
+        "%input_data_var %output_data_untyped_var", // TYPE_PUNNING_STORE
+        "%input_data_untyped_var %output_data_var", // MIXED_LOAD
+        "%input_data_var %output_data_untyped_var", // MIXED_STORE
+    };
+
+    return translateTable[DE_ENUM_INDEX(testCase)];
+}
+
+VkComponentTypeKHR getVkComponentType(DATA_TYPE type)
+{
+    static const VkComponentTypeKHR translateTable[DE_ENUM_COUNT(DataTypes)] = {
+        VK_COMPONENT_TYPE_UINT8_KHR,   // UINT8
+        VK_COMPONENT_TYPE_SINT8_KHR,   // INT8
+        VK_COMPONENT_TYPE_UINT16_KHR,  // UINT16
+        VK_COMPONENT_TYPE_SINT16_KHR,  // INT16
+        VK_COMPONENT_TYPE_FLOAT16_KHR, // FLOAT16
+        VK_COMPONENT_TYPE_UINT32_KHR,  // UINT32
+        VK_COMPONENT_TYPE_SINT32_KHR,  // INT32
+        VK_COMPONENT_TYPE_FLOAT32_KHR, // FLOAT32
+        VK_COMPONENT_TYPE_UINT64_KHR,  // UINT64
+        VK_COMPONENT_TYPE_SINT64_KHR,  // INT64
+        VK_COMPONENT_TYPE_FLOAT64_KHR, // FLOAT64
+    };
+
+    return translateTable[DE_ENUM_INDEX(type)];
+}
+
+bool checkMatrixSupport(const InstanceInterface &instance, VkPhysicalDevice physicalDevice, MATRIX_TYPE matrixType,
+                        DATA_TYPE dataType)
+{
+    uint32_t propsCnt = 0;
+    std::vector<VkCooperativeMatrixPropertiesKHR> props;
+    instance.getPhysicalDeviceCooperativeMatrixPropertiesKHR(physicalDevice, &propsCnt, nullptr);
+    props.resize(propsCnt);
+    for (size_t ndx = 0; ndx < props.size(); ndx++)
+        props[ndx].sType = VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR;
+    instance.getPhysicalDeviceCooperativeMatrixPropertiesKHR(physicalDevice, &propsCnt, props.data());
+
+    bool isSupported = false;
+    for (size_t ndx = 0; ndx < props.size(); ndx++)
+    {
+        switch (matrixType)
+        {
+        case MatrixTypes::A:
+        {
+            if (getVkComponentType(dataType) == props[ndx].AType)
+                isSupported = true;
+
+            break;
+        }
+        case MatrixTypes::B:
+        {
+            if (getVkComponentType(dataType) == props[ndx].BType)
+                isSupported = true;
+
+            break;
+        }
+        case MatrixTypes::ACCUMULATOR:
+        {
+            if (getVkComponentType(dataType) == props[ndx].CType)
+                isSupported = true;
+
+            break;
+        }
+        default:
+            break;
+        }
+
+        if (isSupported)
+            break;
+    }
+
+    return isSupported;
+}
+
+MatrixSize getMatrixSize(const InstanceInterface &instance, VkPhysicalDevice physicalDevice, MATRIX_TYPE matrixType,
+                         DATA_TYPE dataType)
+{
+    uint32_t propsCnt = 0;
+    std::vector<VkCooperativeMatrixPropertiesKHR> props;
+    instance.getPhysicalDeviceCooperativeMatrixPropertiesKHR(physicalDevice, &propsCnt, nullptr);
+    props.resize(propsCnt);
+    for (size_t ndx = 0; ndx < props.size(); ndx++)
+        props[ndx].sType = VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR;
+    instance.getPhysicalDeviceCooperativeMatrixPropertiesKHR(physicalDevice, &propsCnt, props.data());
+
+    bool isFound = false;
+    MatrixSize size{0u, 0u};
+    for (size_t ndx = 0; ndx < props.size(); ndx++)
+    {
+        switch (matrixType)
+        {
+        case MatrixTypes::A:
+        {
+            if (getVkComponentType(dataType) == props[ndx].AType)
+            {
+                size.rows = props[ndx].MSize;
+                size.cols = props[ndx].KSize;
+                isFound   = true;
+            }
+
+            break;
+        }
+        case MatrixTypes::B:
+        {
+            if (getVkComponentType(dataType) == props[ndx].BType)
+            {
+                size.rows = props[ndx].KSize;
+                size.cols = props[ndx].NSize;
+                isFound   = true;
+            }
+
+            break;
+        }
+        case MatrixTypes::ACCUMULATOR:
+        {
+            if (getVkComponentType(dataType) == props[ndx].CType)
+            {
+                size.rows = props[ndx].MSize;
+                size.cols = props[ndx].NSize;
+                isFound   = true;
+            }
+
+            break;
+        }
+        default:
+            break;
+        }
+
+        if (isFound)
+            break;
+    }
+
+    return size;
+}
+
+struct CooperativeMatrixInteractionTestParams
+{
+    COOPERATIVE_MATRIX_TEST_CASE testCase;
+    MATRIX_LAYOUT matLayout;
+    MATRIX_TYPE matType;
+    DATA_TYPE dataType;
+    DATA_TYPE sameSizeDataType;
+    MEMORY_MODEL_TYPE memModel;
+};
+
+class CooperativeMatrixInteractionTestInstance : public TestInstance
+{
+public:
+    CooperativeMatrixInteractionTestInstance(Context &ctx, const CooperativeMatrixInteractionTestParams &params)
+        : TestInstance(ctx)
+        , m_params(params)
+    {
+    }
+    tcu::TestStatus iterate(void);
+
+private:
+    const CooperativeMatrixInteractionTestParams &m_params;
+};
+
+tcu::TestStatus CooperativeMatrixInteractionTestInstance::iterate(void)
+{
+    const InstanceInterface &ivk           = m_context.getInstanceInterface();
+    const DeviceInterface &vk              = m_context.getDeviceInterface();
+    const VkPhysicalDevice &physicalDevice = m_context.getPhysicalDevice();
+    const VkDevice device                  = m_context.getDevice();
+    const VkQueue queue                    = m_context.getUniversalQueue();
+    const uint32_t queueNdx                = m_context.getUniversalQueueFamilyIndex();
+    Allocator &allocator                   = m_context.getDefaultAllocator();
+
+    MatrixSize matrixSize         = getMatrixSize(ivk, physicalDevice, m_params.matType, m_params.dataType);
+    const VkDeviceSize bufferSize = matrixSize.rows * matrixSize.cols * getSizeInBytes(m_params.dataType);
+    if (bufferSize == 0)
+        TCU_THROW(NotSupportedError, "Cooperative matrix feature is not supported");
+
+    // Gen input and expected data
+    FilledResourceDesc desc;
+    desc.dataType        = m_params.dataType;
+    desc.elemCount       = 1;
+    desc.descriptorType  = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    desc.padding         = 0;
+    desc.fillType        = FillingTypes::VALUE;
+    desc.value           = 1;
+    Resource inputOutput = createFilledResource(desc);
+    std::vector<uint8_t> expectedBytes;
+    inputOutput.getBytes(expectedBytes);
+
+    // Storage buffers
+    const BufferWithMemory inputBuffer(vk, device, allocator,
+                                       makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                                       MemoryRequirement::HostVisible);
+
+    {
+        const Allocation &alloc = inputBuffer.getAllocation();
+
+        deMemcpy(alloc.getHostPtr(), expectedBytes.data(), expectedBytes.size());
+        flushAlloc(vk, device, alloc);
+        // No barrier needed, flushed memory is automatically visible
+    }
+
+    const BufferWithMemory outputBuffer(vk, device, allocator,
+                                        makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                                        MemoryRequirement::HostVisible);
+
+    // Descriptors
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vk, device));
+
+    const Unique<VkDescriptorPool> descriptorPool(
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+    const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+    const VkDescriptorBufferInfo inputBufferInfo(makeDescriptorBufferInfo(inputBuffer.get(), 0ull, bufferSize));
+    const VkDescriptorBufferInfo outputBufferInfo(makeDescriptorBufferInfo(outputBuffer.get(), 0ull, bufferSize));
+
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputBufferInfo)
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputBufferInfo)
+        .update(vk, device);
+
+    // Pipeline
+    const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
+
+    const VkSpecializationMapEntry specializationMapEntries[] = {
+        {
+            0u, // uint32_t    constantID
+            0u, // uint32_t    offset
+            4   // size_t      size
+        },
+        {
+            1u, // uint32_t    constantID
+            4u, // uint32_t    offset
+            4   // size_t      size
+        },
+    };
+
+    const VkSpecializationInfo specializationInfo = {
+        2u,                       // uint32_t                           mapEntryCount
+        specializationMapEntries, // const VkSpecializationMapEntry*    pMapEntries
+        sizeof(matrixSize),       // size_t                             dataSize
+        &matrixSize               // const void*                        pData
+    };
+
+    BinaryCollection &binaries = m_context.getBinaryCollection();
+    const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, binaries.get("compute")));
+
+    const Unique<VkPipeline> computePipeline(
+        makeComputePipeline(vk, device, *pipelineLayout, 0u, nullptr, *shaderModule, 0u, &specializationInfo));
+
+    // Commands
+    const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueNdx));
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    // Reset the command buffer and begin recording.
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(),
+                             0u, nullptr);
+
+    vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
+
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    // Retrive result from buffer
+    const Allocation &outputBufferAllocation = outputBuffer.getAllocation();
+    invalidateAlloc(vk, device, outputBufferAllocation);
+
+    // Check result
+    bool passed               = true;
+    uint8_t *expectedBytesPtr = static_cast<uint8_t *>(outputBufferAllocation.getHostPtr());
+    for (size_t ndx = 0; ndx < expectedBytes.size(); ++ndx)
+    {
+        if (expectedBytes[ndx] != expectedBytesPtr[ndx])
+        {
+            passed = false;
+            break;
+        }
+    }
+
+    return passed ? tcu::TestStatus::pass("Passed") : tcu::TestStatus::fail("Failed");
+}
+
+class CooperativeMatrixInteractionTestCase : public TestCase
+{
+public:
+    CooperativeMatrixInteractionTestCase(tcu::TestContext &testCtx, const char *name,
+                                         const CooperativeMatrixInteractionTestParams &params)
+        : TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+
+    void checkSupport(Context &context) const;
+    void initPrograms(vk::SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &ctx) const;
+
+private:
+    const CooperativeMatrixInteractionTestParams m_params;
+};
+
+void CooperativeMatrixInteractionTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_shader_untyped_pointers");
+    {
+        const VkPhysicalDeviceShaderUntypedPointersFeaturesKHR &extensionFeatures =
+            context.getShaderUntypedPointersFeatures();
+
+        if (!extensionFeatures.shaderUntypedPointers)
+            TCU_THROW(NotSupportedError, "Untyped pointers feature is not supported");
+    }
+    context.requireDeviceFunctionality("VK_KHR_cooperative_matrix");
+    {
+        const VkPhysicalDeviceCooperativeMatrixFeaturesKHR &extensionFeatures = context.getCooperativeMatrixFeatures();
+
+        if (!extensionFeatures.cooperativeMatrix)
+            TCU_THROW(NotSupportedError, "Cooperative matrix feature is not supported");
+    }
+
+    VkPhysicalDevice physicalDevice   = context.getPhysicalDevice();
+    const InstanceInterface &instance = context.getInstanceInterface();
+
+    DATA_TYPE dataType = m_params.dataType;
+    if (m_params.testCase == CooperativeMatrixTestCases::TYPE_PUNNING_LOAD)
+        dataType = m_params.sameSizeDataType;
+
+    if (!checkMatrixSupport(instance, physicalDevice, m_params.matType, dataType))
+        TCU_THROW(NotSupportedError,
+                  std::string("Cooperative matrix not supported for requested params: \n\tmatrix type - ") +
+                      toString(m_params.matType) + "\n\tdata type   - " + toString(dataType) + "\n");
+}
+
+void CooperativeMatrixInteractionTestCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    tcu::StringTemplate shaderHeader(createShaderHeader(getShaderInterfaces(m_params.testCase)));
+    tcu::StringTemplate shaderAnnotations(createShaderAnnotations(m_params.testCase));
+    tcu::StringTemplate shaderVariables(createShaderVariables(m_params.testCase));
+    tcu::StringTemplate shaderFunctions(createShaderMain(m_params.testCase));
+
+    std::map<std::string, std::string> specMap;
+    specMap["baseDecl"]     = getDeclaration(m_params.dataType);
+    specMap["baseType"]     = toString(m_params.dataType);
+    specMap["typeSize"]     = std::to_string(getSizeInBytes(m_params.dataType));
+    specMap["matrixUse"]    = std::to_string(getMatrixBinaryUse(m_params.matType));
+    specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(m_params.matLayout));
+    if (m_params.sameSizeDataType != DataTypes::_ENUM_COUNT)
+    {
+        specMap["sameSizeType"] = toString(m_params.sameSizeDataType);
+        specMap["sameSizeDecl"] = getDeclaration(m_params.sameSizeDataType);
+    }
+
+    std::string memModelOp;
+    std::vector<const char *> spvExts;
+    std::vector<const char *> spvCaps;
+    ComputeShaderSpec spec;
+    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+    adjustSpecForMemoryModel(m_params.memModel, spec, memModelOp, spvExts, spvCaps);
+    adjustSpecForDataTypes(m_params.dataType, spec, spvExts, spvCaps);
+    if ((m_params.sameSizeDataType != DataTypes::_ENUM_COUNT) && (m_params.dataType != m_params.sameSizeDataType))
+        adjustSpecForDataTypes(m_params.sameSizeDataType, spec, spvExts, spvCaps);
+    adjustSpecForCooperativeMatrix(spec, spvExts, spvCaps);
+
+    specMap["memModelOp"]                         = memModelOp;
+    specMap["extensions"]                         = toString(spvExts);
+    specMap["capabilities"]                       = toString(spvCaps);
+    const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
+
+    std::string shaderVariablesStr = shaderVariables.specialize(specMap);
+    if ((m_params.dataType != DataTypes::UINT32) && (m_params.sameSizeDataType != DataTypes::UINT32))
+    {
+        shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
+    }
+
+    const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                  shaderVariablesStr + tempShaderFunctions.specialize(specMap);
+
+    programCollection.spirvAsmSources.add("compute")
+        << shaderAsm.c_str()
+        << SpirVAsmBuildOptions(programCollection.usedVulkanVersion,
+                                SPIRV_VERSION_1_6); // cooperative matrices requires SPIR-V 1.6
+}
+
+TestInstance *CooperativeMatrixInteractionTestCase::createInstance(Context &ctx) const
+{
+    return new CooperativeMatrixInteractionTestInstance(ctx, m_params);
+}
+
 void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
 {
     tcu::TestContext &testCtx = testGroup->getTestContext();
@@ -9343,14 +9794,6 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup *testGroup, ME
     // Load tests
     {
         de::MovePtr<tcu::TestCaseGroup> loadGroup(new tcu::TestCaseGroup(testCtx, "load", ""));
-
-        tcu::StringTemplate shaderHeader(createShaderHeader("%input_data_untyped_var %output_data_var"));
-
-        tcu::StringTemplate shaderAnnotations(createShaderAnnotations(CooperativeMatrixTestCases::BASIC_LOAD));
-
-        tcu::StringTemplate shaderVariables(createShaderVariables(CooperativeMatrixTestCases::BASIC_LOAD));
-
-        tcu::StringTemplate shaderFunctions(createShaderMain(CooperativeMatrixTestCases::BASIC_LOAD));
 
         for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(MATRIX_USE_CASES); ++i)
         {
@@ -9366,56 +9809,15 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup *testGroup, ME
                 {
                     std::string testName = toString(BASE_DATA_TYPE_CASES[k]);
 
-                    std::map<std::string, std::string> specMap;
-                    specMap["baseDecl"]     = getDeclaration(BASE_DATA_TYPE_CASES[k]);
-                    specMap["baseType"]     = toString(BASE_DATA_TYPE_CASES[k]);
-                    specMap["typeSize"]     = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[k]));
-                    specMap["matrixUse"]    = std::to_string(getMatrixBinaryUse(MATRIX_USE_CASES[i]));
-                    specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
+                    CooperativeMatrixInteractionTestParams params;
+                    params.testCase         = CooperativeMatrixTestCases::BASIC_LOAD;
+                    params.dataType         = BASE_DATA_TYPE_CASES[k];
+                    params.sameSizeDataType = DataTypes::_ENUM_COUNT;
+                    params.matLayout        = MATRIX_LAYOUT_CASES[j];
+                    params.matType          = MATRIX_USE_CASES[i];
+                    params.memModel         = memModel;
 
-                    std::string memModelOp;
-                    std::vector<const char *> spvExts;
-                    std::vector<const char *> spvCaps;
-                    ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
-                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
-                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[k], spec, spvExts, spvCaps);
-                    adjustSpecForCooperativeMatrix(spec, spvExts, spvCaps);
-
-                    specMap["memModelOp"]   = memModelOp;
-                    specMap["extensions"]   = toString(spvExts);
-                    specMap["capabilities"] = toString(spvCaps);
-                    const tcu::StringTemplate tempShaderFunctions =
-                        tcu::StringTemplate(shaderFunctions.specialize(specMap));
-
-                    std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-                    if (BASE_DATA_TYPE_CASES[k] != DataTypes::UINT32)
-                    {
-                        shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
-                    }
-
-                    const std::string shaderAsm = shaderHeader.specialize(specMap) +
-                                                  shaderAnnotations.specialize(specMap) + shaderVariablesStr +
-                                                  tempShaderFunctions.specialize(specMap);
-
-                    FilledResourceDesc desc;
-                    desc.dataType       = BASE_DATA_TYPE_CASES[k];
-                    desc.elemCount      = 1;
-                    desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                    desc.padding        = 0;
-                    desc.fillType       = FillingTypes::VALUE;
-                    desc.value          = 1;
-
-                    Resource inputOutput = createFilledResource(desc);
-
-                    spec.assembly      = shaderAsm;
-                    spec.numWorkGroups = tcu::IVec3(1, 1, 1);
-                    spec.spirvVersion  = SPIRV_VERSION_1_6; // cooperative matrices requires SPIR-V 1.6
-                    spec.inputs.push_back(inputOutput);
-                    spec.outputs.push_back(inputOutput);
-                    spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-
-                    layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+                    layoutGroup->addChild(new CooperativeMatrixInteractionTestCase(testCtx, testName.c_str(), params));
                 }
 
                 useCaseGroup->addChild(layoutGroup.release());
@@ -9431,14 +9833,6 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup *testGroup, ME
     {
         de::MovePtr<tcu::TestCaseGroup> storeGroup(new tcu::TestCaseGroup(testCtx, "store", ""));
 
-        tcu::StringTemplate shaderHeader(createShaderHeader("%input_data_var %output_data_untyped_var"));
-
-        tcu::StringTemplate shaderAnnotations(createShaderAnnotations(CooperativeMatrixTestCases::BASIC_STORE));
-
-        tcu::StringTemplate shaderVariables(createShaderVariables(CooperativeMatrixTestCases::BASIC_STORE));
-
-        tcu::StringTemplate shaderFunctions(createShaderMain(CooperativeMatrixTestCases::BASIC_STORE));
-
         for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(MATRIX_USE_CASES); ++i)
         {
             de::MovePtr<tcu::TestCaseGroup> useCaseGroup(
@@ -9453,56 +9847,15 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup *testGroup, ME
                 {
                     std::string testName = toString(BASE_DATA_TYPE_CASES[k]);
 
-                    std::map<std::string, std::string> specMap;
-                    specMap["baseDecl"]     = getDeclaration(BASE_DATA_TYPE_CASES[k]);
-                    specMap["baseType"]     = toString(BASE_DATA_TYPE_CASES[k]);
-                    specMap["typeSize"]     = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[k]));
-                    specMap["matrixUse"]    = std::to_string(getMatrixBinaryUse(MATRIX_USE_CASES[i]));
-                    specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
+                    CooperativeMatrixInteractionTestParams params;
+                    params.testCase         = CooperativeMatrixTestCases::BASIC_STORE;
+                    params.dataType         = BASE_DATA_TYPE_CASES[k];
+                    params.sameSizeDataType = DataTypes::_ENUM_COUNT;
+                    params.matLayout        = MATRIX_LAYOUT_CASES[j];
+                    params.matType          = MATRIX_USE_CASES[i];
+                    params.memModel         = memModel;
 
-                    std::string memModelOp;
-                    std::vector<const char *> spvExts;
-                    std::vector<const char *> spvCaps;
-                    ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
-                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
-                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[k], spec, spvExts, spvCaps);
-                    adjustSpecForCooperativeMatrix(spec, spvExts, spvCaps);
-
-                    specMap["memModelOp"]   = memModelOp;
-                    specMap["extensions"]   = toString(spvExts);
-                    specMap["capabilities"] = toString(spvCaps);
-                    const tcu::StringTemplate tempShaderFunctions =
-                        tcu::StringTemplate(shaderFunctions.specialize(specMap));
-
-                    std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-                    if (BASE_DATA_TYPE_CASES[k] != DataTypes::UINT32)
-                    {
-                        shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
-                    }
-
-                    const std::string shaderAsm = shaderHeader.specialize(specMap) +
-                                                  shaderAnnotations.specialize(specMap) + shaderVariablesStr +
-                                                  tempShaderFunctions.specialize(specMap);
-
-                    FilledResourceDesc desc;
-                    desc.dataType       = BASE_DATA_TYPE_CASES[k];
-                    desc.elemCount      = 1;
-                    desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                    desc.padding        = 0;
-                    desc.fillType       = FillingTypes::VALUE;
-                    desc.value          = 1;
-
-                    Resource inputOutput = createFilledResource(desc);
-
-                    spec.assembly      = shaderAsm;
-                    spec.numWorkGroups = tcu::IVec3(1, 1, 1);
-                    spec.spirvVersion  = SPIRV_VERSION_1_6; // cooperative matrices requires SPIR-V 1.6
-                    spec.inputs.push_back(inputOutput);
-                    spec.outputs.push_back(inputOutput);
-                    spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-
-                    layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+                    layoutGroup->addChild(new CooperativeMatrixInteractionTestCase(testCtx, testName.c_str(), params));
                 }
 
                 useCaseGroup->addChild(layoutGroup.release());
@@ -9523,14 +9876,6 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup *testGro
     {
         de::MovePtr<tcu::TestCaseGroup> loadGroup(new tcu::TestCaseGroup(testCtx, "load", ""));
 
-        tcu::StringTemplate shaderHeader(createShaderHeader("%input_data_untyped_var %output_data_var"));
-
-        tcu::StringTemplate shaderAnnotations(createShaderAnnotations(CooperativeMatrixTestCases::TYPE_PUNNING_LOAD));
-
-        tcu::StringTemplate shaderVariables(createShaderVariables(CooperativeMatrixTestCases::TYPE_PUNNING_LOAD));
-
-        tcu::StringTemplate shaderFunctions(createShaderMain(CooperativeMatrixTestCases::TYPE_PUNNING_LOAD));
-
         for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(MATRIX_USE_CASES); ++i)
         {
             de::MovePtr<tcu::TestCaseGroup> useCaseGroup(
@@ -9550,60 +9895,16 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup *testGro
                         std::string testName =
                             toString(BASE_DATA_TYPE_CASES[k]) + std::string("_to_") + toString(sameSizeTypes[l]);
 
-                        std::map<std::string, std::string> specMap;
-                        specMap["baseDecl"]     = getDeclaration(BASE_DATA_TYPE_CASES[k]);
-                        specMap["baseType"]     = toString(BASE_DATA_TYPE_CASES[k]);
-                        specMap["sameSizeType"] = toString(sameSizeTypes[l]);
-                        specMap["sameSizeDecl"] = getDeclaration(sameSizeTypes[l]);
-                        specMap["typeSize"]     = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[k]));
-                        specMap["matrixUse"]    = std::to_string(getMatrixBinaryUse(MATRIX_USE_CASES[i]));
-                        specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
+                        CooperativeMatrixInteractionTestParams params;
+                        params.testCase         = CooperativeMatrixTestCases::TYPE_PUNNING_LOAD;
+                        params.dataType         = BASE_DATA_TYPE_CASES[k];
+                        params.sameSizeDataType = sameSizeTypes[l];
+                        params.matLayout        = MATRIX_LAYOUT_CASES[j];
+                        params.matType          = MATRIX_USE_CASES[i];
+                        params.memModel         = memModel;
 
-                        std::string memModelOp;
-                        std::vector<const char *> spvExts;
-                        std::vector<const char *> spvCaps;
-                        ComputeShaderSpec spec;
-                        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
-                        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
-                        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[k], spec, spvExts, spvCaps);
-                        adjustSpecForCooperativeMatrix(spec, spvExts, spvCaps);
-
-                        specMap["memModelOp"]   = memModelOp;
-                        specMap["extensions"]   = toString(spvExts);
-                        specMap["capabilities"] = toString(spvCaps);
-                        const tcu::StringTemplate tempShaderFunctions =
-                            tcu::StringTemplate(shaderFunctions.specialize(specMap));
-
-                        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-                        if (BASE_DATA_TYPE_CASES[k] != DataTypes::UINT32)
-                        {
-                            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
-                        }
-
-                        const std::string shaderAsm = shaderHeader.specialize(specMap) +
-                                                      shaderAnnotations.specialize(specMap) + shaderVariablesStr +
-                                                      tempShaderFunctions.specialize(specMap);
-
-                        FilledResourceDesc desc;
-                        desc.dataType       = BASE_DATA_TYPE_CASES[k];
-                        desc.elemCount      = 1;
-                        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                        desc.padding        = 0;
-                        desc.fillType       = FillingTypes::VALUE;
-                        desc.value          = 1;
-                        Resource input      = createFilledResource(desc);
-
-                        desc.dataType   = sameSizeTypes[l];
-                        Resource output = createFilledResource(desc);
-
-                        spec.assembly      = shaderAsm;
-                        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
-                        spec.spirvVersion  = SPIRV_VERSION_1_6; // cooperative matrices requires SPIR-V 1.6
-                        spec.inputs.push_back(input);
-                        spec.outputs.push_back(output);
-                        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-
-                        layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+                        layoutGroup->addChild(
+                            new CooperativeMatrixInteractionTestCase(testCtx, testName.c_str(), params));
                     }
                 }
 
@@ -9620,14 +9921,6 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup *testGro
     {
         de::MovePtr<tcu::TestCaseGroup> storeGroup(new tcu::TestCaseGroup(testCtx, "store", ""));
 
-        tcu::StringTemplate shaderHeader(createShaderHeader("%input_data_var %output_data_untyped_var"));
-
-        tcu::StringTemplate shaderAnnotations(createShaderAnnotations(CooperativeMatrixTestCases::TYPE_PUNNING_STORE));
-
-        tcu::StringTemplate shaderVariables(createShaderVariables(CooperativeMatrixTestCases::TYPE_PUNNING_STORE));
-
-        tcu::StringTemplate shaderFunctions(createShaderMain(CooperativeMatrixTestCases::TYPE_PUNNING_STORE));
-
         for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(MATRIX_USE_CASES); ++i)
         {
             de::MovePtr<tcu::TestCaseGroup> useCaseGroup(
@@ -9647,60 +9940,16 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup *testGro
                         std::string testName =
                             toString(BASE_DATA_TYPE_CASES[k]) + std::string("_to_") + toString(sameSizeTypes[l]);
 
-                        std::map<std::string, std::string> specMap;
-                        specMap["baseDecl"]     = getDeclaration(BASE_DATA_TYPE_CASES[k]);
-                        specMap["baseType"]     = toString(BASE_DATA_TYPE_CASES[k]);
-                        specMap["sameSizeType"] = toString(sameSizeTypes[l]);
-                        specMap["sameSizeDecl"] = getDeclaration(sameSizeTypes[l]);
-                        specMap["typeSize"]     = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[k]));
-                        specMap["matrixUse"]    = std::to_string(getMatrixBinaryUse(MATRIX_USE_CASES[i]));
-                        specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
+                        CooperativeMatrixInteractionTestParams params;
+                        params.testCase         = CooperativeMatrixTestCases::TYPE_PUNNING_STORE;
+                        params.dataType         = BASE_DATA_TYPE_CASES[k];
+                        params.sameSizeDataType = sameSizeTypes[l];
+                        params.matLayout        = MATRIX_LAYOUT_CASES[j];
+                        params.matType          = MATRIX_USE_CASES[i];
+                        params.memModel         = memModel;
 
-                        std::string memModelOp;
-                        std::vector<const char *> spvExts;
-                        std::vector<const char *> spvCaps;
-                        ComputeShaderSpec spec;
-                        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
-                        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
-                        adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[k], spec, spvExts, spvCaps);
-                        adjustSpecForCooperativeMatrix(spec, spvExts, spvCaps);
-
-                        specMap["memModelOp"]   = memModelOp;
-                        specMap["extensions"]   = toString(spvExts);
-                        specMap["capabilities"] = toString(spvCaps);
-                        const tcu::StringTemplate tempShaderFunctions =
-                            tcu::StringTemplate(shaderFunctions.specialize(specMap));
-
-                        std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-                        if (BASE_DATA_TYPE_CASES[k] != DataTypes::UINT32)
-                        {
-                            shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
-                        }
-
-                        const std::string shaderAsm = shaderHeader.specialize(specMap) +
-                                                      shaderAnnotations.specialize(specMap) + shaderVariablesStr +
-                                                      tempShaderFunctions.specialize(specMap);
-
-                        FilledResourceDesc desc;
-                        desc.dataType       = BASE_DATA_TYPE_CASES[k];
-                        desc.elemCount      = 1;
-                        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                        desc.padding        = 0;
-                        desc.fillType       = FillingTypes::VALUE;
-                        desc.value          = 1;
-                        Resource input      = createFilledResource(desc);
-
-                        desc.dataType   = sameSizeTypes[l];
-                        Resource output = createFilledResource(desc);
-
-                        spec.assembly      = shaderAsm;
-                        spec.numWorkGroups = tcu::IVec3(1, 1, 1);
-                        spec.spirvVersion  = SPIRV_VERSION_1_6; // cooperative matrices requires SPIR-V 1.6
-                        spec.inputs.push_back(input);
-                        spec.outputs.push_back(output);
-                        spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-
-                        layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+                        layoutGroup->addChild(
+                            new CooperativeMatrixInteractionTestCase(testCtx, testName.c_str(), params));
                     }
                 }
 
@@ -9722,14 +9971,6 @@ void addCooperativeMatrixInteractionMixedTests(tcu::TestCaseGroup *testGroup, ME
     {
         de::MovePtr<tcu::TestCaseGroup> loadGroup(new tcu::TestCaseGroup(testCtx, "load", ""));
 
-        tcu::StringTemplate shaderHeader(createShaderHeader("%input_data_untyped_var %output_data_var"));
-
-        tcu::StringTemplate shaderAnnotations(createShaderAnnotations(CooperativeMatrixTestCases::MIXED_LOAD));
-
-        tcu::StringTemplate shaderVariables(createShaderVariables(CooperativeMatrixTestCases::MIXED_LOAD));
-
-        tcu::StringTemplate shaderFunctions(createShaderMain(CooperativeMatrixTestCases::MIXED_LOAD));
-
         for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(MATRIX_USE_CASES); ++i)
         {
             de::MovePtr<tcu::TestCaseGroup> useCaseGroup(
@@ -9743,60 +9984,16 @@ void addCooperativeMatrixInteractionMixedTests(tcu::TestCaseGroup *testGroup, ME
                 for (uint32_t k = 0; k < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++k)
                 {
                     std::string testName = toString(BASE_DATA_TYPE_CASES[k]);
-                    std::string testDesc = "Test load operation from untyped pointer to cooperative matrix for " +
-                                           std::string(toString(BASE_DATA_TYPE_CASES[k])) + " base data type.";
 
-                    std::map<std::string, std::string> specMap;
-                    specMap["baseDecl"]     = getDeclaration(BASE_DATA_TYPE_CASES[k]);
-                    specMap["baseType"]     = toString(BASE_DATA_TYPE_CASES[k]);
-                    specMap["typeSize"]     = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[k]));
-                    specMap["matrixStride"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[k]) * 2);
-                    specMap["matrixUse"]    = std::to_string(getMatrixBinaryUse(MATRIX_USE_CASES[i]));
-                    specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
+                    CooperativeMatrixInteractionTestParams params;
+                    params.testCase         = CooperativeMatrixTestCases::MIXED_LOAD;
+                    params.dataType         = BASE_DATA_TYPE_CASES[k];
+                    params.sameSizeDataType = DataTypes::_ENUM_COUNT;
+                    params.matLayout        = MATRIX_LAYOUT_CASES[j];
+                    params.matType          = MATRIX_USE_CASES[i];
+                    params.memModel         = memModel;
 
-                    std::string memModelOp;
-                    std::vector<const char *> spvExts;
-                    std::vector<const char *> spvCaps;
-                    ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
-                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
-                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[k], spec, spvExts, spvCaps);
-                    adjustSpecForCooperativeMatrix(spec, spvExts, spvCaps);
-
-                    specMap["memModelOp"]   = memModelOp;
-                    specMap["extensions"]   = toString(spvExts);
-                    specMap["capabilities"] = toString(spvCaps);
-                    const tcu::StringTemplate tempShaderFunctions =
-                        tcu::StringTemplate(shaderFunctions.specialize(specMap));
-
-                    std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-                    if (BASE_DATA_TYPE_CASES[k] != DataTypes::UINT32)
-                    {
-                        shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
-                    }
-
-                    const std::string shaderAsm = shaderHeader.specialize(specMap) +
-                                                  shaderAnnotations.specialize(specMap) + shaderVariablesStr +
-                                                  tempShaderFunctions.specialize(specMap);
-
-                    FilledResourceDesc desc;
-                    desc.dataType       = BASE_DATA_TYPE_CASES[k];
-                    desc.elemCount      = 4;
-                    desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                    desc.padding        = 0;
-                    desc.fillType       = FillingTypes::VALUE;
-                    desc.value          = 1;
-
-                    Resource inputOutput = createFilledResource(desc);
-
-                    spec.assembly      = shaderAsm;
-                    spec.numWorkGroups = tcu::IVec3(4, 1, 1);
-                    spec.spirvVersion  = SPIRV_VERSION_1_6; // cooperative matrices requires SPIR-V 1.6
-                    spec.inputs.push_back(inputOutput);
-                    spec.outputs.push_back(inputOutput);
-                    spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-
-                    layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+                    layoutGroup->addChild(new CooperativeMatrixInteractionTestCase(testCtx, testName.c_str(), params));
                 }
 
                 useCaseGroup->addChild(layoutGroup.release());
@@ -9812,14 +10009,6 @@ void addCooperativeMatrixInteractionMixedTests(tcu::TestCaseGroup *testGroup, ME
     {
         de::MovePtr<tcu::TestCaseGroup> storeGroup(new tcu::TestCaseGroup(testCtx, "store", ""));
 
-        tcu::StringTemplate shaderHeader(createShaderHeader("%input_data_var %output_data_untyped_var"));
-
-        tcu::StringTemplate shaderAnnotations(createShaderAnnotations(CooperativeMatrixTestCases::MIXED_STORE));
-
-        tcu::StringTemplate shaderVariables(createShaderVariables(CooperativeMatrixTestCases::MIXED_STORE));
-
-        tcu::StringTemplate shaderFunctions(createShaderMain(CooperativeMatrixTestCases::MIXED_STORE));
-
         for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(MATRIX_USE_CASES); ++i)
         {
             de::MovePtr<tcu::TestCaseGroup> useCaseGroup(
@@ -9833,60 +10022,16 @@ void addCooperativeMatrixInteractionMixedTests(tcu::TestCaseGroup *testGroup, ME
                 for (uint32_t k = 0; k < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++k)
                 {
                     std::string testName = toString(BASE_DATA_TYPE_CASES[k]);
-                    std::string testDesc = "Test store operation from untyped pointer to cooperative matrix for " +
-                                           std::string(toString(BASE_DATA_TYPE_CASES[i])) + " base data type.";
 
-                    std::map<std::string, std::string> specMap;
-                    specMap["baseDecl"]     = getDeclaration(BASE_DATA_TYPE_CASES[k]);
-                    specMap["baseType"]     = toString(BASE_DATA_TYPE_CASES[k]);
-                    specMap["typeSize"]     = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[k]));
-                    specMap["matrixStride"] = std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[k]) * 2);
-                    specMap["matrixUse"]    = std::to_string(getMatrixBinaryUse(MATRIX_USE_CASES[i]));
-                    specMap["matrixLayout"] = std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
+                    CooperativeMatrixInteractionTestParams params;
+                    params.testCase         = CooperativeMatrixTestCases::MIXED_STORE;
+                    params.dataType         = BASE_DATA_TYPE_CASES[k];
+                    params.sameSizeDataType = DataTypes::_ENUM_COUNT;
+                    params.matLayout        = MATRIX_LAYOUT_CASES[j];
+                    params.matType          = MATRIX_USE_CASES[i];
+                    params.memModel         = memModel;
 
-                    std::string memModelOp;
-                    std::vector<const char *> spvExts;
-                    std::vector<const char *> spvCaps;
-                    ComputeShaderSpec spec;
-                    adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
-                    adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
-                    adjustSpecForDataTypes(BASE_DATA_TYPE_CASES[k], spec, spvExts, spvCaps);
-                    adjustSpecForCooperativeMatrix(spec, spvExts, spvCaps);
-
-                    specMap["memModelOp"]   = memModelOp;
-                    specMap["extensions"]   = toString(spvExts);
-                    specMap["capabilities"] = toString(spvCaps);
-                    const tcu::StringTemplate tempShaderFunctions =
-                        tcu::StringTemplate(shaderFunctions.specialize(specMap));
-
-                    std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-                    if (BASE_DATA_TYPE_CASES[k] != DataTypes::UINT32)
-                    {
-                        shaderVariablesStr = "%uint32     = OpTypeInt  32      0\n" + shaderVariablesStr;
-                    }
-
-                    const std::string shaderAsm = shaderHeader.specialize(specMap) +
-                                                  shaderAnnotations.specialize(specMap) + shaderVariablesStr +
-                                                  tempShaderFunctions.specialize(specMap);
-
-                    FilledResourceDesc desc;
-                    desc.dataType       = BASE_DATA_TYPE_CASES[k];
-                    desc.elemCount      = 4;
-                    desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                    desc.padding        = 0;
-                    desc.fillType       = FillingTypes::VALUE;
-                    desc.value          = 1;
-
-                    Resource inputOutput = createFilledResource(desc);
-
-                    spec.assembly      = shaderAsm;
-                    spec.numWorkGroups = tcu::IVec3(4, 1, 1);
-                    spec.spirvVersion  = SPIRV_VERSION_1_6; // cooperative matrices requires SPIR-V 1.6
-                    spec.inputs.push_back(inputOutput);
-                    spec.outputs.push_back(inputOutput);
-                    spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
-
-                    layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+                    layoutGroup->addChild(new CooperativeMatrixInteractionTestCase(testCtx, testName.c_str(), params));
                 }
 
                 useCaseGroup->addChild(layoutGroup.release());
@@ -9894,8 +10039,6 @@ void addCooperativeMatrixInteractionMixedTests(tcu::TestCaseGroup *testGroup, ME
 
             storeGroup->addChild(useCaseGroup.release());
         }
-
-        testGroup->addChild(storeGroup.release());
     }
 }
 
