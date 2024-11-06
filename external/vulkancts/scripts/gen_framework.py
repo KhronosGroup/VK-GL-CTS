@@ -1324,10 +1324,14 @@ def genDefinesSrc (apiName, defines):
         yield line
     # add VK_API_MAX_FRAMEWORK_VERSION
     major, minor = 1, 0
-    for feature in reversed(api.features):
-        if feature.api == api.apiName:
+    # In vk.xml, vulkan features (1.1, 1.2, 1.3) are marked as vulkan,vulkansc
+    api_feature_name = "vulkan,vulkansc" if api.apiName == "vulkan" else api.apiName
+    sorted_features = reversed(sorted(api.features, key=lambda feature: feature.number))
+    for feature in sorted_features:
+        if feature.api == api_feature_name:
             major, minor = feature.number.split('.')
             break
+    logging.debug("Found max framework version for API '%s': %s.%s" % (api.apiName, major, minor))
     yield f"#define VK{apiName}_API_MAX_FRAMEWORK_VERSION\tVK{apiName}_API_VERSION_{major}_{minor}"
 
 def genHandlesSrc (handles):
