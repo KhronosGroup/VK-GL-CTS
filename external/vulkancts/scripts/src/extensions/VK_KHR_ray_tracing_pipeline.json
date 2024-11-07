@@ -10,7 +10,14 @@
                 [
                     {
                         "features": [
-                            "rayTracingPipeline",
+                            "rayTracingPipeline"
+                        ],
+                        "requirements": [
+                            "VK_KHR_ray_tracing_pipeline"
+                        ]
+                    },
+                    {
+                        "features": [
                             "rayTracingPipelineTraceRaysIndirect"
                         ],
                         "requirements": [
