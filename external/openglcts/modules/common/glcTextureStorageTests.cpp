@@ -38,6 +38,8 @@
 #include "tcuRenderTarget.hpp"
 #include "tcuTestLog.hpp"
 
+#include <cmath>
+
 using namespace glw;
 using namespace glu;
 
