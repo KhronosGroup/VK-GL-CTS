@@ -316,12 +316,14 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
         .buildPipeline();
 
     // create vertex buffer
+    const std::vector<tcu::Vec4> vertices{
+        tcu::Vec4(1.0f, -1.0f, 0.0f, 1.0f),
+        tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f),
+        tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+    };
     {
-        std::vector<float> vertices{
-            1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f, -1.0f, -1.0f, 0.0f, 1.0f,
-        };
         const VkBufferCreateInfo bufferCreateInfo =
-            makeBufferCreateInfo(vertices.size() * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+            makeBufferCreateInfo(de::dataSize(vertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
         m_vertexBuffer = createBuffer(vk, device, &bufferCreateInfo);
         m_vertexBufferAlloc =
@@ -329,7 +331,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
         VK_CHECK(vk.bindBufferMemory(device, *m_vertexBuffer, m_vertexBufferAlloc->getMemory(),
                                      m_vertexBufferAlloc->getOffset()));
 
-        deMemcpy(m_vertexBufferAlloc->getHostPtr(), vertices.data(), vertices.size() * sizeof(float));
+        deMemcpy(m_vertexBufferAlloc->getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
         flushAlloc(vk, device, *m_vertexBufferAlloc);
     }
 
@@ -365,7 +367,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 
     m_graphicsPipeline.bind(*m_cmdBuffer);
     vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &*m_vertexBuffer, &vertexBufferOffset);
-    vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
+    vk.cmdDraw(*m_cmdBuffer, de::sizeU32(vertices), 1u, 0, 0);
 
     m_renderPass.end(vk, *m_cmdBuffer);
 
