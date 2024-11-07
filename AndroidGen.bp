@@ -513,6 +513,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/shaderexecutor/vktShaderExecutor.cpp",
         "external/vulkancts/modules/vulkan/shaderexecutor/vktShaderExpectAssumeTests.cpp",
         "external/vulkancts/modules/vulkan/shaderexecutor/vktShaderFConvertTests.cpp",
+        "external/vulkancts/modules/vulkan/shaderexecutor/vktShaderHelperInvocationsTests.cpp",
         "external/vulkancts/modules/vulkan/shaderexecutor/vktShaderIntegerFunctionTests.cpp",
         "external/vulkancts/modules/vulkan/shaderexecutor/vktShaderPackingFunctionTests.cpp",
         "external/vulkancts/modules/vulkan/shaderrender/vktShaderRender.cpp",

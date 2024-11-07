@@ -450,6 +450,12 @@ dEQP-VK.glsl.derivate.fwidthfine.private_store.vec3_highp
 dEQP-VK.glsl.derivate.fwidthfine.private_store.vec3_mediump
 dEQP-VK.glsl.derivate.fwidthfine.private_store.vec4_highp
 dEQP-VK.glsl.derivate.fwidthfine.private_store.vec4_mediump
+dEQP-VK.glsl.helper_invocations.load_from_address
+dEQP-VK.glsl.helper_invocations.load_from_image
+dEQP-VK.glsl.helper_invocations.load_from_ssbo
+dEQP-VK.glsl.helper_invocations.load_from_texture
+dEQP-VK.glsl.helper_invocations.load_from_ubo
+dEQP-VK.glsl.helper_invocations.output_variables
 dEQP-VK.glsl.shader_expect_assume.compute.assume.constant
 dEQP-VK.glsl.shader_expect_assume.compute.assume.pushconstant
 dEQP-VK.glsl.shader_expect_assume.compute.assume.specializationconstant

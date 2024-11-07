@@ -112,6 +112,7 @@
 #include "vktFragmentShaderInterlockTests.hpp"
 #include "vktShaderClockTests.hpp"
 #include "vktShaderExpectAssumeTests.hpp"
+#include "vktShaderHelperInvocationsTests.hpp"
 #include "vktModifiersTests.hpp"
 #include "vktRayTracingTests.hpp"
 #include "vktRayQueryTests.hpp"
@@ -1142,6 +1143,7 @@ void createGlslTests(tcu::TestCaseGroup *glslTests)
     glslTests->addChild(shaderexecutor::createOpaqueTypeIndexingTests(testCtx));
     glslTests->addChild(shaderexecutor::createAtomicOperationTests(testCtx));
     glslTests->addChild(shaderexecutor::createShaderClockTests(testCtx));
+    glslTests->addChild(shaderexecutor::createShaderHelperInvocationsTests(testCtx));
 
 #ifndef CTS_USES_VULKANSC
     // Amber GLSL tests.

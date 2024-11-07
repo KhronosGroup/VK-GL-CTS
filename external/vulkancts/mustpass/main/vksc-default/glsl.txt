@@ -6185,6 +6185,12 @@ dEQP-VKSC.glsl.functions.qualifiers.out_lowp_float_fragment
 dEQP-VKSC.glsl.functions.qualifiers.out_lowp_float_vertex
 dEQP-VKSC.glsl.functions.qualifiers.out_lowp_int_fragment
 dEQP-VKSC.glsl.functions.qualifiers.out_lowp_int_vertex
+dEQP-VKSC.glsl.helper_invocations.load_from_address
+dEQP-VKSC.glsl.helper_invocations.load_from_image
+dEQP-VKSC.glsl.helper_invocations.load_from_ssbo
+dEQP-VKSC.glsl.helper_invocations.load_from_texture
+dEQP-VKSC.glsl.helper_invocations.load_from_ubo
+dEQP-VKSC.glsl.helper_invocations.output_variables
 dEQP-VKSC.glsl.indexing.matrix_subscript.mat2_dynamic_loop_write_dynamic_loop_read_fragment
 dEQP-VKSC.glsl.indexing.matrix_subscript.mat2_dynamic_loop_write_dynamic_loop_read_vertex
 dEQP-VKSC.glsl.indexing.matrix_subscript.mat2_dynamic_loop_write_dynamic_read_fragment
