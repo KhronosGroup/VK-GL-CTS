@@ -7469,6 +7469,7 @@ dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.last_frag_data
 dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.fragment_discard
 dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.multiple_assignment
 dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.multiple_render_targets
+dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.multiple_render_targets_overdraw
 dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.framebuffer_texture_level
 dEQP-GLES31.functional.shaders.framebuffer_fetch.basic.framebuffer_texture_layer
 dEQP-GLES31.functional.shaders.framebuffer_fetch.framebuffer_format.rgba32i
