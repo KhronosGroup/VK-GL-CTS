@@ -2258,9 +2258,10 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                 pNext = videoEncodePictureInfoPtr;
             }
 
-            videoEncodeFrameInfos.push_back(getVideoEncodeInfo(
-                pNext, *encodeBuffer, dstBufferOffset, (*imagePictureResourceVector[srcPictureResourceIdx]),
-                setupReferenceSlotPtr, refsCount, (refsPool == 0) ? nullptr : referenceSlots));
+            videoEncodeFrameInfos.push_back(
+                getVideoEncodeInfo(pNext, *encodeBuffer, dstBufferOffset, encodeBufferSize - dstBufferOffset,
+                                   (*imagePictureResourceVector[srcPictureResourceIdx]), setupReferenceSlotPtr,
+                                   refsCount, (refsPool == 0) ? nullptr : referenceSlots));
 
             if (!useInlineQueries)
                 videoDeviceDriver.cmdBeginQuery(encodeCmdBuffer, encodeQueryPool.get(), 1, 0);
