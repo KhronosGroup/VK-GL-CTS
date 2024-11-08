@@ -799,6 +799,36 @@ void MultisampleRenderPassTestInstance::submit(void)
     const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(nullptr);
     RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
+    // Memory barriers between rendering and copying image to buffer
+    if (m_baseLayer > 0)
+    {
+        std::vector<VkImageMemoryBarrier> barriers;
+
+        for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
+        {
+            const VkImageMemoryBarrier barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                                  nullptr,
+
+                                                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                                  VK_ACCESS_TRANSFER_READ_BIT,
+
+                                                  VK_IMAGE_LAYOUT_UNDEFINED,
+                                                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+
+                                                  VK_QUEUE_FAMILY_IGNORED,
+                                                  VK_QUEUE_FAMILY_IGNORED,
+
+                                                  **m_singlesampleImages[dstNdx],
+                                                  {VK_IMAGE_ASPECT_COLOR_BIT, m_renderLevel, 1u, 0u, m_baseLayer}};
+
+            barriers.push_back(barrier);
+        }
+
+        vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, (uint32_t)barriers.size(),
+                               &barriers[0]);
+    }
+
     for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
     {
         // assume that buffer(s) have enough memory to store desired amount of mipmaps

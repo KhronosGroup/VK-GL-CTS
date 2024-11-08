@@ -233,6 +233,7 @@ public:
     {
         return m_framebuffer ? *m_framebuffer : VK_NULL_HANDLE;
     }
+    void resetLayouts(void);
 
     void begin(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const VkRect2D &renderArea,
                const uint32_t clearValueCount, const VkClearValue *clearValues,

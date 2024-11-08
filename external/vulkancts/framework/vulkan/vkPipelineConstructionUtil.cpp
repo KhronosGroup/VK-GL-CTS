@@ -1254,6 +1254,15 @@ void RenderPassWrapper::fillInheritanceRenderingInfo(
 
 #endif
 
+// If a render pass is reused, image layouts have to be reset so that when vkCmdBeginRenderPass is called image layouts are transitioned correctly
+void RenderPassWrapper::resetLayouts(void)
+{
+#ifndef CTS_USES_VULKANSC
+    for (auto &layout : m_layouts)
+        layout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
+#endif
+}
+
 void RenderPassWrapper::begin(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
                               const VkRect2D &renderArea, const uint32_t clearValueCount,
                               const VkClearValue *clearValues, const VkSubpassContents contents,
