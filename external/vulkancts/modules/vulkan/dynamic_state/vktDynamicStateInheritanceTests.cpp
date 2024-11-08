@@ -875,6 +875,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry &geometry)
         break;
     }
 
+    m_renderPass.resetLayouts();
     m_renderPass.begin(m_vk, m_primaryCmdBuffer.get(), renderPassBeginInfo.renderArea,
                        renderPassBeginInfo.clearValueCount, renderPassBeginInfo.pClearValues,
                        VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);

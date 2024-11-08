@@ -7,7 +7,17 @@
         "VkPhysicalDeviceMeshShaderFeaturesEXT": [
             {
                 "features": [
-                    "meshShader",
+                    "meshShader"
+                ],
+                "requirements": [
+                    "VK_EXT_mesh_shader"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
                     "taskShader"
                 ],
                 "requirements": [
