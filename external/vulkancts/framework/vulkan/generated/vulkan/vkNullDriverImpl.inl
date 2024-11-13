@@ -4212,30 +4212,35 @@ VKAPI_ATTR VkResult VKAPI_CALL getExecutionGraphPipelineNodeIndexAMDX (VkDevice 
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdInitializeGraphScratchMemoryAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch)
+VKAPI_ATTR void VKAPI_CALL cmdInitializeGraphScratchMemoryAMDX (VkCommandBuffer commandBuffer, VkPipeline executionGraph, VkDeviceAddress scratch, VkDeviceSize scratchSize)
 {
 	DE_UNREF(commandBuffer);
+	DE_UNREF(executionGraph);
 	DE_UNREF(scratch);
+	DE_UNREF(scratchSize);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo)
+VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(scratch);
+	DE_UNREF(scratchSize);
 	DE_UNREF(pCountInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphIndirectAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo)
+VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphIndirectAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(scratch);
+	DE_UNREF(scratchSize);
 	DE_UNREF(pCountInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceAddress countInfo)
+VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, VkDeviceAddress countInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(scratch);
+	DE_UNREF(scratchSize);
 	DE_UNREF(countInfo);
 }
 

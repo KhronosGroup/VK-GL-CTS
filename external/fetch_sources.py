@@ -317,35 +317,35 @@ PACKAGES = [
         "e7b5f0aa5b1b0eadc63a1c624c0ca7f5af133aa857d6a4271b0ef3d0bdb6868e",
         "renderdoc"),
     GitRepo(
-        "https://github.com/KhronosGroup/SPIRV-Tools.git",
-        "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "44936c4a9d42f1c67e34babb5792adf5bce7f76b",
+        "https://gitlab.khronos.org/spirv/spirv-tools.git",
+        "git@gitlab.khronos.org:spirv/spirv-tools.git",
+        "f207dcb5103901b905c6a68944b797a921aca014",
         "spirv-tools"),
     GitRepo(
-        "https://github.com/KhronosGroup/glslang.git",
-        "git@github.com:KhronosGroup/glslang.git",
-        "c5b76b78c9dec95251e9c1840a671e19bf61abe3",
+        "https://gitlab.khronos.org/GLSL/glslang.git",
+        "git@gitlab.khronos.org:GLSL/glslang.git",
+        "9a415ad3c69eae445b84ee9647c10e46d42dc25d",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
-        "https://github.com/KhronosGroup/SPIRV-Headers.git",
-        "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "2a9b6f951c7d6b04b6c21fe1bf3f475b68b84801",
+        "https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
+        "git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
+        "6782ffb1a16d3485d6f17ca919729d8a9b75d990",
         "spirv-headers"),
     GitRepo(
-        "https://github.com/KhronosGroup/Vulkan-Docs.git",
-        "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "486e4b289053a7d64784e7ce791711843c60c235",
+        "https://gitlab.khronos.org/vulkan/vulkan.git",
+        "git@gitlab.khronos.org:vulkan/vulkan.git",
+        "56f7d8fb4cc8425c7b1a984e288e42a7fac39cd0",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
         "git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
-        "9a46ae006fa5c92e2d2af7944187f7794210844b",
+        "f589bc456545fbab97caf49380b102b8aafe1f40",
         "vulkan-validationlayers"),
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
-        "67fea651b886460d7b72295e680528c059bbbe40",
+        "6bb8b9979d12122c3ac2e627bcad965129556d12",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
@@ -358,7 +358,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/Igalia/vk_video_samples.git",
         "git@github.com:Igalia/vk_video_samples.git",
-        "4b5c49d2c3ea7e9af6b7cce243780c62270eae77",
+        "6821adf11eb4f84a2168264b954c170d03237699",
         "nvidia-video-samples"),
 ]
 

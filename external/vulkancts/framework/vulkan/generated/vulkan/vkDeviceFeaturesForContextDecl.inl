@@ -20,6 +20,7 @@ const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&						getPerformanceQueryF
 const vk::VkPhysicalDeviceVariablePointersFeatures&							getVariablePointersFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderEnqueueFeaturesAMDX&						getShaderEnqueueFeaturesAMDX						(void) const;
 const vk::VkPhysicalDeviceInlineUniformBlockFeatures&						getInlineUniformBlockFeatures						(void) const;
+const vk::VkPhysicalDeviceShaderBfloat16FeaturesKHR&						getShaderBfloat16Features							(void) const;
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&				getBlendOperationAdvancedFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceAccelerationStructureFeaturesKHR&					getAccelerationStructureFeatures					(void) const;
 const vk::VkPhysicalDeviceRayTracingPipelineFeaturesKHR&					getRayTracingPipelineFeatures						(void) const;
@@ -108,6 +109,7 @@ const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				getVertexInputD
 const vk::VkPhysicalDeviceAddressBindingReportFeaturesEXT&					getAddressBindingReportFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceDepthClipControlFeaturesEXT&						getDepthClipControlFeaturesEXT						(void) const;
 const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&			getPrimitiveTopologyListRestartFeaturesEXT			(void) const;
+const vk::VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT&			getPresentModeFifoLatestReadyFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceSubpassShadingFeaturesHUAWEI&						getSubpassShadingFeaturesHUAWEI						(void) const;
 const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&						getInvocationMaskFeaturesHUAWEI						(void) const;
 const vk::VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&						getExternalMemoryRDMAFeatures						(void) const;

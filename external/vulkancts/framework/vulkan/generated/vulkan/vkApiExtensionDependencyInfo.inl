@@ -1055,8 +1055,8 @@ bool check_VK_AMDX_shader_enqueue(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 	if (!isSupported(vDEP, "VK_AMDX_shader_enqueue"))
 		return true;
 
-	// depends attribute in xml: (((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_synchronization2),VK_VERSION_1_3)+VK_KHR_pipeline_library+VK_KHR_spirv_1_4
-	return ((((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")))) && isSupported(vDEP, "VK_KHR_pipeline_library") && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4"));
+	// depends attribute in xml: ((VK_KHR_synchronization2+VK_KHR_spirv_1_4+VK_EXT_extended_dynamic_state),VK_VERSION_1_3)+VK_KHR_maintenance5+VK_KHR_pipeline_library
+	return (((isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4")) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_EXT_extended_dynamic_state")))) && isSupported(vDEP, "VK_KHR_maintenance5") && isSupported(vDEP, "VK_KHR_pipeline_library");
 }
 
 bool check_VK_EXT_inline_uniform_block(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1071,6 +1071,18 @@ bool check_VK_EXT_inline_uniform_block(const tcu::UVec2& v, const ExtPropVect& v
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2+VK_KHR_maintenance1),VK_VERSION_1_1
 	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance1")));
+}
+
+bool check_VK_KHR_shader_bfloat16(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_shader_bfloat16"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
 bool check_VK_EXT_sample_locations(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2589,6 +2601,18 @@ bool check_VK_KHR_format_feature_flags2(const tcu::UVec2& v, const ExtPropVect& 
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_EXT_present_mode_fifo_latest_ready(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_present_mode_fifo_latest_ready"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_swapchain
+	return isSupported(vDEP, "VK_KHR_swapchain");
+}
+
 bool check_VK_FUCHSIA_external_memory(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3670,6 +3694,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_sampler_filter_minmax",							&check_VK_EXT_sampler_filter_minmax),
 	std::make_pair("VK_AMDX_shader_enqueue",								&check_VK_AMDX_shader_enqueue),
 	std::make_pair("VK_EXT_inline_uniform_block",							&check_VK_EXT_inline_uniform_block),
+	std::make_pair("VK_KHR_shader_bfloat16",								&check_VK_KHR_shader_bfloat16),
 	std::make_pair("VK_EXT_sample_locations",								&check_VK_EXT_sample_locations),
 	std::make_pair("VK_EXT_blend_operation_advanced",						&check_VK_EXT_blend_operation_advanced),
 	std::make_pair("VK_KHR_acceleration_structure",							&check_VK_KHR_acceleration_structure),
@@ -3791,6 +3816,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_depth_clip_control",								&check_VK_EXT_depth_clip_control),
 	std::make_pair("VK_EXT_primitive_topology_list_restart",				&check_VK_EXT_primitive_topology_list_restart),
 	std::make_pair("VK_KHR_format_feature_flags2",							&check_VK_KHR_format_feature_flags2),
+	std::make_pair("VK_EXT_present_mode_fifo_latest_ready",					&check_VK_EXT_present_mode_fifo_latest_ready),
 	std::make_pair("VK_FUCHSIA_external_memory",							&check_VK_FUCHSIA_external_memory),
 	std::make_pair("VK_FUCHSIA_external_semaphore",							&check_VK_FUCHSIA_external_semaphore),
 	std::make_pair("VK_FUCHSIA_buffer_collection",							&check_VK_FUCHSIA_buffer_collection),
@@ -4003,6 +4029,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_AMD_shader_fragment_mask"),
 	std::make_tuple(1, 0, "VK_EXT_inline_uniform_block"),
 	std::make_tuple(1, 0, "VK_EXT_shader_stencil_export"),
+	std::make_tuple(1, 0, "VK_KHR_shader_bfloat16"),
 	std::make_tuple(1, 0, "VK_EXT_sample_locations"),
 	std::make_tuple(1, 0, "VK_KHR_relaxed_block_layout"),
 	std::make_tuple(1, 0, "VK_KHR_get_memory_requirements2"),
@@ -4164,6 +4191,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_depth_clip_control"),
 	std::make_tuple(1, 0, "VK_EXT_primitive_topology_list_restart"),
 	std::make_tuple(1, 0, "VK_KHR_format_feature_flags2"),
+	std::make_tuple(1, 0, "VK_EXT_present_mode_fifo_latest_ready"),
 	std::make_tuple(1, 0, "VK_FUCHSIA_external_memory"),
 	std::make_tuple(1, 0, "VK_FUCHSIA_external_semaphore"),
 	std::make_tuple(1, 0, "VK_FUCHSIA_buffer_collection"),

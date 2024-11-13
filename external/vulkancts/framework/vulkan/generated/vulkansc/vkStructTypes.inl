@@ -1370,6 +1370,23 @@ struct VkValidationFeaturesEXT
 	const VkValidationFeatureDisableEXT*	pDisabledValidationFeatures;
 };
 
+struct VkLayerSettingEXT
+{
+	const char*				pLayerName;
+	const char*				pSettingName;
+	VkLayerSettingTypeEXT	type;
+	uint32_t				valueCount;
+	const void*				pValues;
+};
+
+struct VkLayerSettingsCreateInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	uint32_t					settingCount;
+	const VkLayerSettingEXT*	pSettings;
+};
+
 struct VkApplicationParametersEXT
 {
 	VkStructureType	sType;
@@ -4140,6 +4157,15 @@ struct VkDrmFormatModifierPropertiesList2EXT
 	void*								pNext;
 	uint32_t							drmFormatModifierCount;
 	VkDrmFormatModifierProperties2EXT*	pDrmFormatModifierProperties;
+};
+
+struct VkRenderingFragmentShadingRateAttachmentInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkImageView		imageView;
+	VkImageLayout	imageLayout;
+	VkExtent2D		shadingRateAttachmentTexelSize;
 };
 
 struct VkImportScreenBufferInfoQNX

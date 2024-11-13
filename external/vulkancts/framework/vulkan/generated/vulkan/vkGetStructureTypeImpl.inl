@@ -4648,6 +4648,11 @@ template<> VkStructureType getStructureType<VkMemoryMapPlacedInfoEXT> (void)
 	return VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderBfloat16FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_BFLOAT16_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceRawAccessChainsFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV;
@@ -4676,5 +4681,10 @@ template<> VkStructureType getStructureType<VkImageAlignmentControlCreateInfoMES
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT;
 }
 

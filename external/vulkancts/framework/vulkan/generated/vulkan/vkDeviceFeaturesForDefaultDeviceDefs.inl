@@ -20,6 +20,7 @@ const VkPhysicalDevicePerformanceQueryFeaturesKHR&						getPerformanceQueryFeatu
 const VkPhysicalDeviceVariablePointersFeatures&							getVariablePointersFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVariablePointersFeatures>();						}
 const VkPhysicalDeviceShaderEnqueueFeaturesAMDX&						getShaderEnqueueFeaturesAMDX						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderEnqueueFeaturesAMDX>();						}
 const VkPhysicalDeviceInlineUniformBlockFeatures&						getInlineUniformBlockFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceInlineUniformBlockFeatures>();					}
+const VkPhysicalDeviceShaderBfloat16FeaturesKHR&						getShaderBfloat16Features							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderBfloat16FeaturesKHR>();						}
 const VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&				getBlendOperationAdvancedFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT>();				}
 const VkPhysicalDeviceAccelerationStructureFeaturesKHR&					getAccelerationStructureFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceAccelerationStructureFeaturesKHR>();				}
 const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&					getRayTracingPipelineFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>();					}
@@ -108,6 +109,7 @@ const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				getVertexInputDynam
 const VkPhysicalDeviceAddressBindingReportFeaturesEXT&					getAddressBindingReportFeaturesEXT					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceAddressBindingReportFeaturesEXT>();				}
 const VkPhysicalDeviceDepthClipControlFeaturesEXT&						getDepthClipControlFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDepthClipControlFeaturesEXT>();					}
 const VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&			getPrimitiveTopologyListRestartFeaturesEXT			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();		}
+const VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT&			getPresentModeFifoLatestReadyFeaturesEXT			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT>();			}
 const VkPhysicalDeviceSubpassShadingFeaturesHUAWEI&						getSubpassShadingFeaturesHUAWEI						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceSubpassShadingFeaturesHUAWEI>();					}
 const VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&						getInvocationMaskFeaturesHUAWEI						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceInvocationMaskFeaturesHUAWEI>();					}
 const VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&						getExternalMemoryRDMAFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceExternalMemoryRDMAFeaturesNV>();					}

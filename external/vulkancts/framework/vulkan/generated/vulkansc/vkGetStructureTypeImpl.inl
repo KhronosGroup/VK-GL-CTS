@@ -268,6 +268,11 @@ template<> VkStructureType getStructureType<VkValidationFeaturesEXT> (void)
 	return VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkLayerSettingsCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkApplicationParametersEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_APPLICATION_PARAMETERS_EXT;
@@ -1686,6 +1691,11 @@ template<> VkStructureType getStructureType<VkFormatProperties3> (void)
 template<> VkStructureType getStructureType<VkDrmFormatModifierPropertiesList2EXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT;
+}
+
+template<> VkStructureType getStructureType<VkRenderingFragmentShadingRateAttachmentInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkImportScreenBufferInfoQNX> (void)

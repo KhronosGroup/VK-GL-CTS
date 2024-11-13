@@ -20,6 +20,7 @@ const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&						Context::getPerforma
 const vk::VkPhysicalDeviceVariablePointersFeatures&							Context::getVariablePointersFeatures						(void) const { return m_device->getVariablePointersFeatures();						}
 const vk::VkPhysicalDeviceShaderEnqueueFeaturesAMDX&						Context::getShaderEnqueueFeaturesAMDX						(void) const { return m_device->getShaderEnqueueFeaturesAMDX();						}
 const vk::VkPhysicalDeviceInlineUniformBlockFeatures&						Context::getInlineUniformBlockFeatures						(void) const { return m_device->getInlineUniformBlockFeatures();					}
+const vk::VkPhysicalDeviceShaderBfloat16FeaturesKHR&						Context::getShaderBfloat16Features							(void) const { return m_device->getShaderBfloat16Features();						}
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&				Context::getBlendOperationAdvancedFeaturesEXT				(void) const { return m_device->getBlendOperationAdvancedFeaturesEXT();				}
 const vk::VkPhysicalDeviceAccelerationStructureFeaturesKHR&					Context::getAccelerationStructureFeatures					(void) const { return m_device->getAccelerationStructureFeatures();					}
 const vk::VkPhysicalDeviceRayTracingPipelineFeaturesKHR&					Context::getRayTracingPipelineFeatures						(void) const { return m_device->getRayTracingPipelineFeatures();					}
@@ -108,6 +109,7 @@ const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				Context::getVer
 const vk::VkPhysicalDeviceAddressBindingReportFeaturesEXT&					Context::getAddressBindingReportFeaturesEXT					(void) const { return m_device->getAddressBindingReportFeaturesEXT();				}
 const vk::VkPhysicalDeviceDepthClipControlFeaturesEXT&						Context::getDepthClipControlFeaturesEXT						(void) const { return m_device->getDepthClipControlFeaturesEXT();					}
 const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&			Context::getPrimitiveTopologyListRestartFeaturesEXT			(void) const { return m_device->getPrimitiveTopologyListRestartFeaturesEXT();		}
+const vk::VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT&			Context::getPresentModeFifoLatestReadyFeaturesEXT			(void) const { return m_device->getPresentModeFifoLatestReadyFeaturesEXT();			}
 const vk::VkPhysicalDeviceSubpassShadingFeaturesHUAWEI&						Context::getSubpassShadingFeaturesHUAWEI					(void) const { return m_device->getSubpassShadingFeaturesHUAWEI();					}
 const vk::VkPhysicalDeviceInvocationMaskFeaturesHUAWEI&						Context::getInvocationMaskFeaturesHUAWEI					(void) const { return m_device->getInvocationMaskFeaturesHUAWEI();					}
 const vk::VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&						Context::getExternalMemoryRDMAFeatures						(void) const { return m_device->getExternalMemoryRDMAFeatures();					}

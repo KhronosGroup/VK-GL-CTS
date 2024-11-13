@@ -1816,6 +1816,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES";
 		case VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK:							return "VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO:					return "VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_BFLOAT16_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_BFLOAT16_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT:											return "VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT:							return "VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_SAMPLE_LOCATIONS_STATE_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_PIPELINE_SAMPLE_LOCATIONS_STATE_CREATE_INFO_EXT";
@@ -2200,6 +2201,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3:													return "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA:							return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA";
 		case VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA:								return "VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA:								return "VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA";
@@ -3831,6 +3833,7 @@ tcu::Format::Bitfield<64> getPipelineCreateFlags2KHRStr (VkPipelineCreateFlags2K
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT,								"VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT,							"VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR,										"VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_EXECUTION_GRAPH_BIT_AMDX,									"VK_PIPELINE_CREATE_2_EXECUTION_GRAPH_BIT_AMDX"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT,							"VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT,								"VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT"),
 	};
@@ -3925,18 +3928,19 @@ const char* getComponentTypeKHRName (VkComponentTypeKHR value)
 {
 	switch (value)
 	{
-		case VK_COMPONENT_TYPE_FLOAT16_KHR:	return "VK_COMPONENT_TYPE_FLOAT16_KHR";
-		case VK_COMPONENT_TYPE_FLOAT32_KHR:	return "VK_COMPONENT_TYPE_FLOAT32_KHR";
-		case VK_COMPONENT_TYPE_FLOAT64_KHR:	return "VK_COMPONENT_TYPE_FLOAT64_KHR";
-		case VK_COMPONENT_TYPE_SINT8_KHR:	return "VK_COMPONENT_TYPE_SINT8_KHR";
-		case VK_COMPONENT_TYPE_SINT16_KHR:	return "VK_COMPONENT_TYPE_SINT16_KHR";
-		case VK_COMPONENT_TYPE_SINT32_KHR:	return "VK_COMPONENT_TYPE_SINT32_KHR";
-		case VK_COMPONENT_TYPE_SINT64_KHR:	return "VK_COMPONENT_TYPE_SINT64_KHR";
-		case VK_COMPONENT_TYPE_UINT8_KHR:	return "VK_COMPONENT_TYPE_UINT8_KHR";
-		case VK_COMPONENT_TYPE_UINT16_KHR:	return "VK_COMPONENT_TYPE_UINT16_KHR";
-		case VK_COMPONENT_TYPE_UINT32_KHR:	return "VK_COMPONENT_TYPE_UINT32_KHR";
-		case VK_COMPONENT_TYPE_UINT64_KHR:	return "VK_COMPONENT_TYPE_UINT64_KHR";
-		default:							return nullptr;
+		case VK_COMPONENT_TYPE_FLOAT16_KHR:		return "VK_COMPONENT_TYPE_FLOAT16_KHR";
+		case VK_COMPONENT_TYPE_FLOAT32_KHR:		return "VK_COMPONENT_TYPE_FLOAT32_KHR";
+		case VK_COMPONENT_TYPE_FLOAT64_KHR:		return "VK_COMPONENT_TYPE_FLOAT64_KHR";
+		case VK_COMPONENT_TYPE_SINT8_KHR:		return "VK_COMPONENT_TYPE_SINT8_KHR";
+		case VK_COMPONENT_TYPE_SINT16_KHR:		return "VK_COMPONENT_TYPE_SINT16_KHR";
+		case VK_COMPONENT_TYPE_SINT32_KHR:		return "VK_COMPONENT_TYPE_SINT32_KHR";
+		case VK_COMPONENT_TYPE_SINT64_KHR:		return "VK_COMPONENT_TYPE_SINT64_KHR";
+		case VK_COMPONENT_TYPE_UINT8_KHR:		return "VK_COMPONENT_TYPE_UINT8_KHR";
+		case VK_COMPONENT_TYPE_UINT16_KHR:		return "VK_COMPONENT_TYPE_UINT16_KHR";
+		case VK_COMPONENT_TYPE_UINT32_KHR:		return "VK_COMPONENT_TYPE_UINT32_KHR";
+		case VK_COMPONENT_TYPE_UINT64_KHR:		return "VK_COMPONENT_TYPE_UINT64_KHR";
+		case VK_COMPONENT_TYPE_BFLOAT16_KHR:	return "VK_COMPONENT_TYPE_BFLOAT16_KHR";
+		default:								return nullptr;
 	}
 }
 
@@ -4053,6 +4057,7 @@ const char* getPresentModeKHRName (VkPresentModeKHR value)
 		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:				return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
 		case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:		return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
 		case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:	return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+		case VK_PRESENT_MODE_FIFO_LATEST_READY_EXT:			return "VK_PRESENT_MODE_FIFO_LATEST_READY_EXT";
 		default:											return nullptr;
 	}
 }
@@ -18553,6 +18558,8 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderEnqueuePr
 	s << "\tmaxExecutionGraphShaderPayloadSize = " << value.maxExecutionGraphShaderPayloadSize << '\n';
 	s << "\tmaxExecutionGraphShaderPayloadCount = " << value.maxExecutionGraphShaderPayloadCount << '\n';
 	s << "\texecutionGraphDispatchAddressAlignment = " << value.executionGraphDispatchAddressAlignment << '\n';
+	s << "\tmaxExecutionGraphWorkgroupCount = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.maxExecutionGraphWorkgroupCount), DE_ARRAY_END(value.maxExecutionGraphWorkgroupCount)) << '\n';
+	s << "\tmaxExecutionGraphWorkgroups = " << value.maxExecutionGraphWorkgroups << '\n';
 	s << '}';
 	return s;
 }
@@ -18563,6 +18570,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderEnqueueFe
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderEnqueue = " << value.shaderEnqueue << '\n';
+	s << "\tshaderMeshEnqueue = " << value.shaderMeshEnqueue << '\n';
 	s << '}';
 	return s;
 }
@@ -18599,7 +18607,9 @@ std::ostream& operator<< (std::ostream& s, const VkExecutionGraphPipelineScratch
 	s << "VkExecutionGraphPipelineScratchSizeAMDX = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tsize = " << value.size << '\n';
+	s << "\tminSize = " << value.minSize << '\n';
+	s << "\tmaxSize = " << value.maxSize << '\n';
+	s << "\tsizeGranularity = " << value.sizeGranularity << '\n';
 	s << '}';
 	return s;
 }
@@ -19257,6 +19267,18 @@ std::ostream& operator<< (std::ostream& s, const VkMemoryMapPlacedInfoEXT& value
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderBfloat16FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderBfloat16FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderBFloat16Type = " << value.shaderBFloat16Type << '\n';
+	s << "\tshaderBFloat16DotProduct = " << value.shaderBFloat16DotProduct << '\n';
+	s << "\tshaderBFloat16CooperativeMatrix = " << value.shaderBFloat16CooperativeMatrix << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRawAccessChainsFeaturesNV& value)
 {
 	s << "VkPhysicalDeviceRawAccessChainsFeaturesNV = {\n";
@@ -19313,6 +19335,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderReplicate
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderReplicatedComposites = " << value.shaderReplicatedComposites << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT& value)
+{
+	s << "VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentModeFifoLatestReady = " << value.presentModeFifoLatestReady << '\n';
 	s << '}';
 	return s;
 }
