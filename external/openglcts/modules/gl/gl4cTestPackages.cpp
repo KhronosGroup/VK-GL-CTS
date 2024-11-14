@@ -102,7 +102,6 @@
 
 namespace gl4cts
 {
-
 // GL40TestPackage
 
 GL40TestPackage::GL40TestPackage(tcu::TestContext &testCtx, const char *packageName, const char *description,
@@ -439,6 +438,7 @@ void GL45TestPackage::init(void)
         addChild(new glcts::LayoutLocationTests(getContext()));
         addChild(new gl4cts::SpirvExtensionsTests(getContext()));
         addChild(new gl4cts::GlSpirvTests(getContext()));
+        addChild(new gl4cts::es31compatibility::Tests(getContext()));
     }
     catch (...)
     {

@@ -1,5 +1,5 @@
-#ifndef _ES31CSHADERSTORAGEBUFFEROBJECTTESTS_HPP
-#define _ES31CSHADERSTORAGEBUFFEROBJECTTESTS_HPP
+#ifndef _GLCSHADERSTORAGEBUFFEROBJECTTESTS_HPP
+#define _GLCSHADERSTORAGEBUFFEROBJECTTESTS_HPP
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
@@ -43,4 +43,4 @@ private:
 };
 } // namespace glcts
 
-#endif // _ES31CSHADERSTORAGEBUFFEROBJECTTESTS_HPP
+#endif // _GLCSHADERSTORAGEBUFFEROBJECTTESTS_HPP

@@ -149,6 +149,10 @@ set(GLCTS_COMMON_SRCS
 	glcCompressedFormatTests_data.inl
 	glcCompressedFormatTests.cpp
 	glcCompressedFormatTests.hpp
+	glcShaderImageLoadStoreTests.cpp
+	glcShaderImageLoadStoreTests.hpp
+	glcShaderStorageBufferObjectTests.cpp
+	glcShaderStorageBufferObjectTests.hpp
 	)
 
 set(GLCTS_COMMON_LIBS
