@@ -102,22 +102,9 @@ vk::VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const vk::VkFo
     return imageParams;
 }
 
-static std::vector<std::string> removeExtensions(const std::vector<std::string> &a, const std::vector<const char *> &b)
-{
-    std::vector<std::string> res;
-    std::set<std::string> removeExts(b.begin(), b.end());
-
-    for (std::vector<std::string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
-    {
-        if (!de::contains(removeExts, *aIter))
-            res.push_back(*aIter);
-    }
-
-    return res;
-}
-
 vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const uint32_t testQueueFamilyIndex,
-                                                      const vk::PipelineConstructionType pipelineConstructionType)
+                                                      const vk::PipelineConstructionType pipelineConstructionType,
+                                                      std::vector<std::string> &deviceExtensions)
 {
     DE_UNREF(pipelineConstructionType);
 
@@ -131,7 +118,11 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const ui
     };
 
     if (vk::isConstructionTypeLibrary(pipelineConstructionType))
+    {
         pNext = &graphicsPipelineFeatures;
+        deviceExtensions.push_back("VK_KHR_pipeline_library");
+        deviceExtensions.push_back("VK_EXT_graphics_pipeline_library");
+    }
     vk::VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR, // VkStructureType sType;
         pNext,                                                                // void* pNext;
@@ -144,7 +135,20 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const ui
     };
 
     if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
+    {
         pNext = &shaderObjectFeatures;
+        if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_dynamic_rendering"))
+        {
+            deviceExtensions.push_back("VK_KHR_dynamic_rendering");
+            if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_create_renderpass2"))
+                deviceExtensions.push_back("VK_KHR_create_renderpass2");
+            if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_depth_stencil_resolve"))
+                deviceExtensions.push_back("VK_KHR_depth_stencil_resolve");
+            if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_maintenance2"))
+                deviceExtensions.push_back("VK_KHR_maintenance2");
+        }
+        deviceExtensions.push_back("VK_EXT_shader_object");
+    }
 #endif
 
     vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT dynamicVertexState{
@@ -152,6 +156,8 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const ui
         pNext,                                                                         // void* pNext;
         VK_TRUE, // VkBool32 vertexInputDynamicState;
     };
+
+    deviceExtensions.push_back("VK_EXT_vertex_input_dynamic_state");
 
     vk::VkPhysicalDeviceFeatures2 physDeviceFeats2 = context.getDeviceFeatures2();
 
@@ -170,16 +176,8 @@ vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const ui
     };
 
     std::vector<const char *> extensionPtrs;
-    std::vector<const char *> coreExtensions;
-
-    vk::getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-
-    std::vector<std::string> nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-    extensionPtrs.resize(nonCoreExtensions.size());
-
-    for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
-        extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
+    for (const auto &ext : deviceExtensions)
+        extensionPtrs.push_back(ext.c_str());
 
     const vk::VkDeviceCreateInfo deviceInfo = {
         vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType sType;
@@ -237,15 +235,15 @@ tcu::TestStatus NonSequentialInstance::iterate(void)
     const vk::InstanceInterface &instanceInterface = m_context.getInstanceInterface();
     const uint32_t queueFamilyIndex                = m_context.getUniversalQueueFamilyIndex();
     const vk::VkPhysicalDevice physicalDevice      = m_context.getPhysicalDevice();
+    std::vector<std::string> deviceExtensions;
     const vk::Move<vk::VkDevice> device =
-        createDynamicVertexStateDevice(m_context, queueFamilyIndex, m_pipelineConstructionType);
+        createDynamicVertexStateDevice(m_context, queueFamilyIndex, m_pipelineConstructionType, deviceExtensions);
     const vk::DeviceDriver vk(vkp, vki, *device, m_context.getUsedApiVersion(),
                               m_context.getTestContext().getCommandLine());
     vk::SimpleAllocator allocator(
         vk, *device,
         getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
-    const vk::VkQueue queue      = getDeviceQueue(vk, *device, queueFamilyIndex, 0u);
-    const auto &deviceExtensions = m_context.getDeviceExtensions();
+    const vk::VkQueue queue = getDeviceQueue(vk, *device, queueFamilyIndex, 0u);
 
     // Create shaders
     const std::array<vk::ShaderWrapper, 2> vertexShaderModules = {
