@@ -967,10 +967,21 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
 
     if (!offscreenData.empty())
     {
-        // Concatenate positions with vertex colors.
-        const std::vector<tcu::Vec4> colors(offscreenData.size(), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-        std::vector<tcu::Vec4> fullOffscreenData(offscreenData);
-        fullOffscreenData.insert(fullOffscreenData.end(), colors.begin(), colors.end());
+        const std::vector<tcu::Vec4> offscreenColors(offscreenData.size(), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+        // Concatenate positions with vertex colors, respecting the color attribute offset. Positions come first and
+        // color are supposed to start at attributeBatchSize offset. See vertexInputAttributeDescriptions.
+        DE_ASSERT(attributeBatchSize >= de::dataSize(offscreenData));
+        DE_ASSERT(attributeBatchSize % sizeof(tcu::Vec4) == 0u);
+
+        const auto itemsPerAttribute = static_cast<uint32_t>(attributeBatchSize / sizeof(tcu::Vec4));
+        const auto totalItemCount    = itemsPerAttribute * 2u; // positions and colors.
+
+        // Positions at the start, colors at attributeBatchSize offset.
+        std::vector<tcu::Vec4> fullOffscreenData(totalItemCount, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f));
+        deMemcpy(de::dataOrNull(fullOffscreenData), de::dataOrNull(offscreenData), de::dataSize(offscreenData));
+        deMemcpy(&fullOffscreenData.at(itemsPerAttribute), de::dataOrNull(offscreenColors),
+                 de::dataSize(offscreenColors));
 
         // Copy full data to offscreen data buffer.
         const auto offscreenBufferSizeSz = de::dataSize(fullOffscreenData);
@@ -1027,9 +1038,9 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
         vkd.cmdSetLineStipple(*commandBuffer, lineStippleFactor, lineStipplePattern);
         if (isDynamicTopology())
         {
-            // Using a dynamic topology can interact with the dynamic line stipple set above on some implementations, so we try to
-            // check nothing breaks here. We set a wrong topology, draw some offscreen data and go back to the right topology
-            // _without_ re-setting the line stipple again. Side effects should not be visible.
+            // Using a dynamic topology can interact with the dynamic line stipple set above on some implementations, so
+            // we try to check nothing breaks here. We set a wrong topology, draw some offscreen data and go back to the
+            // right topology _without_ re-setting the line stipple again. Side effects should not be visible.
             DE_ASSERT(!!offscreenDataBuffer);
 
             vkd.cmdSetPrimitiveTopology(*commandBuffer, getWrongTopology());

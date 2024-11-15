@@ -1607,6 +1607,34 @@ public:
                 true, true);
 
             beginCommandBuffer(vk, cmdBuffer);
+            if (iterIdx > 0)
+            {
+                const SyncInfo readSync      = m_iterations[iterIdx]->op->getInSyncInfo();
+                const Resource &readResource = *m_resources[iterIdx - 1];
+
+                if (readResource.getType() == RESOURCE_TYPE_IMAGE)
+                {
+                    DE_ASSERT(readSync.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
+
+                    const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
+                        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,        // VkPipelineStageFlags2KHR            srcStageMask
+                        VK_ACCESS_2_NONE,                         // VkAccessFlags2KHR                srcAccessMask
+                        readSync.stageMask,                       // VkPipelineStageFlags2KHR            dstStageMask
+                        readSync.accessMask,                      // VkAccessFlags2KHR                dstAccessMask
+                        VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout                    oldLayout
+                        readSync.imageLayout,                     // VkImageLayout                    newLayout
+                        readResource.getImage().handle,           // VkImage                            image
+                        readResource.getImage().subresourceRange, // VkImageSubresourceRange            subresourceRange
+                        m_iterations[iterIdx]
+                            ->queueFamilyIdx, // uint32_t                            srcQueueFamilyIndex
+                        m_iterations[iterIdx + 1]
+                            ->queueFamilyIdx // uint32_t                            destQueueFamilyIndex
+                    );
+                    VkDependencyInfoKHR dependencyInfo =
+                        makeCommonDependencyInfo(nullptr, nullptr, &imageMemoryBarrier2);
+                    synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
+                }
+            }
             m_iterations[iterIdx]->op->recordCommands(cmdBuffer);
 
             {
