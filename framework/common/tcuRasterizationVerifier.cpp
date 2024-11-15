@@ -1490,8 +1490,7 @@ void genScreenSpaceLines(std::vector<tcu::Vec4> &screenspaceLines, const std::ve
 bool verifySinglesampleLineGroupRasterization(const tcu::Surface &surface, const LineSceneSpec &scene,
                                               const RasterizationArguments &args, tcu::TestLog &log)
 {
-    DE_ASSERT(deFloatFrac(scene.lineWidth) != 0.5f); // rounding direction is not defined, disallow undefined cases
-    DE_ASSERT(scene.lines.size() < 255);             // indices are stored as unsigned 8-bit ints
+    DE_ASSERT(scene.lines.size() < 255); // indices are stored as unsigned 8-bit ints
 
     bool allOK               = true;
     bool overdrawInReference = false;
@@ -2208,8 +2207,7 @@ bool isBlack(const tcu::RGBA &c)
 bool verifySinglesampleWideLineGroupInterpolation(const tcu::Surface &surface, const LineSceneSpec &scene,
                                                   const RasterizationArguments &args, tcu::TestLog &log)
 {
-    DE_ASSERT(deFloatFrac(scene.lineWidth) != 0.5f); // rounding direction is not defined, disallow undefined cases
-    DE_ASSERT(scene.lines.size() < 8);               // coverage indices are stored as bitmask in a unsigned 8-bit ints
+    DE_ASSERT(scene.lines.size() < 8); // coverage indices are stored as bitmask in a unsigned 8-bit ints
 
     enum
     {
