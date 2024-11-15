@@ -805,8 +805,8 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest(bool replay
                 const auto curHandles      = handleGetter->getShaderGroupHandlesVector(curRTPipeline, vkd, device,
                                                                                        curPipeline, 0u, curGroupCount);
 
-                const auto rangeStart = curGroupOffset * shaderGroupHandleSize;
-                const auto rangeEnd   = (curGroupOffset + curGroupCount) * shaderGroupHandleSize;
+                const auto rangeStart = curGroupOffset * handleSize;
+                const auto rangeEnd   = (curGroupOffset + curGroupCount) * handleSize;
 
                 const std::vector<uint8_t> handleRange(allHandles.begin() + rangeStart, allHandles.begin() + rangeEnd);
                 if (handleRange != curHandles)
