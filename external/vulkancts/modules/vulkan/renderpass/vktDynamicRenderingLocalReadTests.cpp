@@ -46,9 +46,7 @@
 #include <iostream>
 #include <algorithm>
 
-namespace vkt
-{
-namespace renderpass
+namespace vkt::renderpass
 {
 namespace
 {
@@ -214,7 +212,9 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
             physicalDevice, m_dsFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, 0,
             &imageFormatProperties))
+    {
         m_dsFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
+    }
 
     // by default all test read from depth attachment and some from stencil
     // but after promoting DRLR to vk1.4 reading depth/stencil is guarded by property
@@ -545,6 +545,10 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     VkImageMemoryBarrier dsImageBarrier =
         makeImageMemoryBarrier(0, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR, VK_NULL_HANDLE, dsSRR);
+    VkMemoryBarrier memoryBarrier =
+        makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                          VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
+
     VkRenderingAttachmentInfo depthStencilAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType sType;
         nullptr,                                     // const void* pNext;
@@ -693,9 +697,9 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     Move<VkPipelineLayout> writePipelineLayout = makePipelineLayout(vk, device, 0, nullptr, 1u, &pushConstantRange);
     Move<VkPipelineLayout> readPipelineLayout  = makePipelineLayout(vk, device, descriptorSetLayouts);
     auto &bc                                   = m_context.getBinaryCollection();
-    Move<VkShaderModule> vertShaderModule      = createShaderModule(vk, device, bc.get("vert"), 0);
-    Move<VkShaderModule> writeFragShaderModule = createShaderModule(vk, device, bc.get(m_writeFragName), 0);
-    Move<VkShaderModule> readFragShaderModule  = createShaderModule(vk, device, bc.get(m_readFragName), 0);
+    Move<VkShaderModule> vertShaderModule      = createShaderModule(vk, device, bc.get("vert"));
+    Move<VkShaderModule> writeFragShaderModule = createShaderModule(vk, device, bc.get(m_writeFragName));
+    Move<VkShaderModule> readFragShaderModule  = createShaderModule(vk, device, bc.get(m_readFragName));
 
     // define empty VertexInputState, full screen quad will be generated in vertex shader
     const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
@@ -825,10 +829,8 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
             0, &vertexInputState, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &renderingCreateInfo);
     }
 
-    Move<VkCommandPool> commandPool =
-        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
-    Move<VkCommandBuffer> commandBuffer =
-        allocateCommandBuffer(vk, device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    auto commandPool = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+    auto commandBuffer        = allocateCommandBuffer(vk, device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     VkCommandBuffer cmdBuffer = *commandBuffer;
 
     VkRenderingInfo renderingInfo      = initVulkanStructure();
@@ -870,23 +872,10 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
     }
 
-    // reuse existing barrier structures to finish rendering before next subpass
-    dsImageBarrier.oldLayout     = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-    dsImageBarrier.newLayout     = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-    dsImageBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    dsImageBarrier.dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-    for (auto &barrier : colorImageBarriers)
-    {
-        barrier.oldLayout     = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-        barrier.newLayout     = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-    }
-    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr,
-                          (uint32_t)colorImageBarriers.size(), colorImageBarriers.data());
-    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                          VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1u, &dsImageBarrier);
+    // finish rendering before next subpass
+    vk.cmdPipelineBarrier(
+        cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 1u, &memoryBarrier, 0, 0, 0, 0);
 
     // draw using read pipelines
     for (uint32_t pipelineIndex = 0; pipelineIndex < m_outputDrawsCount; ++pipelineIndex)
@@ -1094,11 +1083,9 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
             new BufferWithMemory(vk, device, memAlloc, outputBufferInfo, MemoryRequirement::HostVisible));
     }
 
-    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, VK_NULL_HANDLE);
-    Move<VkShaderModule> vertShaderModule =
-        createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
-    Move<VkShaderModule> fragShaderModule =
-        createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0);
+    auto pipelineLayout   = makePipelineLayout(vk, device, VK_NULL_HANDLE);
+    auto vertShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"));
+    auto fragShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"));
 
     // define empty VertexInputState, full screen quad will be generated in vertex shader
     const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
@@ -2554,5 +2541,4 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
     return mainGroup.release();
 }
 
-} // namespace renderpass
-} // namespace vkt
+} // namespace vkt::renderpass
