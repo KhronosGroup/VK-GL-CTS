@@ -129,15 +129,14 @@ VkFormat chooseDepthStencilFormat(const InstanceInterface &vki, VkPhysicalDevice
     // The spec mandates support for one of these two formats.
     const VkFormat candidates[] = {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
 
-    for (const auto &format : candidates)
-    {
-        const auto properties = getPhysicalDeviceFormatProperties(vki, physDev, format);
-        if ((properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0u)
-            return format;
-    }
+    const auto requiredFeatures = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    const auto chosenFormat     = findFirstSupportedFormat(vki, physDev, requiredFeatures, ImageFeatureType::OPTIMAL,
+                                                           std::begin(candidates), std::end(candidates));
 
-    TCU_FAIL("No suitable depth/stencil format found");
-    return VK_FORMAT_UNDEFINED; // Unreachable.
+    if (chosenFormat == VK_FORMAT_UNDEFINED)
+        TCU_FAIL("No suitable depth/stencil format found");
+
+    return chosenFormat;
 }
 
 // Format used when verifying the stencil aspect.
