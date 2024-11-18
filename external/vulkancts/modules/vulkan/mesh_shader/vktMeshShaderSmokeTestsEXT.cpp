@@ -51,6 +51,7 @@
 #include <sstream>
 #include <set>
 #include <memory>
+#include <map>
 
 namespace vkt
 {
@@ -1537,12 +1538,20 @@ tcu::TestStatus PartialUsageInstance::iterate()
 // Create a classic and a mesh shading pipeline using graphics pipeline libraries. Both pipelines will use the same fragment shader
 // pipeline library, and the fragment shader will use the gl_Layer built-in, which is per-primitive in mesh shaders and per-vertex
 // in vertex shaders.
+struct SharedFragLibraryParams
+{
+    PipelineConstructionType constructionType;
+    bool primitiveID; // false: test gl_Layer; true: test gl_PrimitiveID.
+    bool meshFirst;   // false: classic + mesh, true: mesh + classic.
+    bool extraInput;  // true: add custom extra input in the frag shader.
+};
+
 class SharedFragLibraryCase : public vkt::TestCase
 {
 public:
-    SharedFragLibraryCase(tcu::TestContext &testCtx, const std::string &name, PipelineConstructionType constructionType)
+    SharedFragLibraryCase(tcu::TestContext &testCtx, const std::string &name, const SharedFragLibraryParams &params)
         : vkt::TestCase(testCtx, name)
-        , m_constructionType(constructionType)
+        , m_params(params)
     {
     }
     virtual ~SharedFragLibraryCase(void)
@@ -1556,15 +1565,15 @@ public:
     static std::vector<tcu::Vec4> getLayerColors(void);
 
 protected:
-    PipelineConstructionType m_constructionType;
+    const SharedFragLibraryParams m_params;
 };
 
 class SharedFragLibraryInstance : public vkt::TestInstance
 {
 public:
-    SharedFragLibraryInstance(Context &context, PipelineConstructionType constructionType)
+    SharedFragLibraryInstance(Context &context, const SharedFragLibraryParams &params)
         : vkt::TestInstance(context)
-        , m_constructionType(constructionType)
+        , m_params(params)
     {
     }
     virtual ~SharedFragLibraryInstance(void)
@@ -1574,14 +1583,14 @@ public:
     tcu::TestStatus iterate(void) override;
 
 protected:
-    PipelineConstructionType m_constructionType;
+    const SharedFragLibraryParams m_params;
 };
 
 std::vector<tcu::Vec4> SharedFragLibraryCase::getLayerColors(void)
 {
     std::vector<tcu::Vec4> layerColors{
         tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f),
-        tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f),
+        tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f),
         tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
     };
 
@@ -1592,65 +1601,84 @@ void SharedFragLibraryCase::checkSupport(Context &context) const
 {
     checkTaskMeshShaderSupportEXT(context, false /*requireTask*/, true /*requireMesh*/);
 
-    if (context.getUsedApiVersion() < VK_API_VERSION_1_2)
-        context.requireDeviceFunctionality("VK_EXT_shader_viewport_index_layer");
+    if (m_params.primitiveID)
+    {
+        // When using gl_PrimitiveID in the frag shader, glslang will add "OpCapability Geometry" to it.
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+    }
     else
     {
-        // More fine-grained: we do not need shaderViewportIndex.
-        const auto &vk12Features = context.getDeviceVulkan12Features();
-        if (!vk12Features.shaderOutputLayer)
-            TCU_THROW(NotSupportedError, "shaderOutputLayer not supported");
+        if (context.getUsedApiVersion() < VK_API_VERSION_1_2)
+            context.requireDeviceFunctionality("VK_EXT_shader_viewport_index_layer");
+        else
+        {
+            // More fine-grained: we do not need shaderViewportIndex.
+            const auto &vk12Features = context.getDeviceVulkan12Features();
+            if (!vk12Features.shaderOutputLayer)
+                TCU_THROW(NotSupportedError, "shaderOutputLayer not supported");
+        }
     }
 
-    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                          m_constructionType);
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.constructionType);
 }
 
 void SharedFragLibraryCase::initPrograms(vk::SourceCollections &programCollection) const
 {
     const auto meshBuildOptions = getMinMeshEXTBuildOptions(programCollection.usedVulkanVersion);
 
-    const std::string vtxPositions = "vec2 positions[3] = vec2[](\n"
+    const std::string vtxPositions = "vec2 positions[4] = vec2[](\n"
                                      "    vec2(-1.0, -1.0),\n"
-                                     "    vec2(-1.0, 3.0),\n"
-                                     "    vec2(3.0, -1.0)\n"
+                                     "    vec2(-1.0,  1.0),\n"
+                                     "    vec2( 1.0, -1.0),\n"
+                                     "    vec2( 1.0,  1.0)\n"
                                      ");\n";
 
-    // The vertex shader emits geometry to layer 1.
+    const bool useLayer = (!m_params.primitiveID);
+
+    // The vertex shader emits geometry to layer 1 when using layers.
     std::ostringstream vert;
     vert << "#version 450\n"
          << "#extension GL_ARB_shader_viewport_layer_array : enable\n"
-         << "\n"
+         << (m_params.extraInput ? "layout (location=0) out float multiplier;\n" : "") << "\n"
          << vtxPositions << "void main ()\n"
          << "{\n"
-         << "    gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);\n"
-         << "    gl_Layer = 1;\n"
+         << "    gl_Position = vec4(positions[gl_VertexIndex % 4], 0.0, 1.0);\n"
+         << (useLayer ? "    gl_Layer = 1;\n" : "")
+         << (m_params.extraInput ? "    multiplier = (gl_VertexIndex < 1024 ? 1.0 : 0.0);\n" : "") // 1.0 in practice.
          << "}\n";
     programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
     programCollection.glslSources.add("vert_1_2")
         << glu::VertexSource(vert.str())
         << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 
-    // The mesh shader emits geometry to layer 2.
+    // The mesh shader emits geometry to layer 2 when using layers.
     std::ostringstream mesh;
     mesh << "#version 450\n"
          << "#extension GL_EXT_mesh_shader : enable\n"
          << "\n"
          << "layout (local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
          << "layout (triangles) out;\n"
-         << "layout (max_vertices=3, max_primitives=1) out;\n"
+         << "layout (max_vertices=4, max_primitives=2) out;\n"
          << "\n"
          << "perprimitiveEXT out gl_MeshPerPrimitiveEXT {\n"
-         << "   int gl_Layer;\n"
-         << "} gl_MeshPrimitivesEXT[];\n"
+         << (useLayer ? "   int gl_Layer;\n" : "   int gl_PrimitiveID;\n") << "} gl_MeshPrimitivesEXT[];\n"
          << "\n"
-         << vtxPositions << "void main ()\n"
+         << vtxPositions << "\n"
+         << (m_params.extraInput ? "    layout (location=0) out float multiplier[];\n" : "") << "void main ()\n"
          << "{\n"
-         << "    SetMeshOutputsEXT(3u, 1u);\n"
-         << "    for (uint i = 0; i < 3; ++i)\n"
+         << "    SetMeshOutputsEXT(4u, 2u);\n"
+         << "    for (uint i = 0; i < 4; ++i) {\n"
          << "        gl_MeshVerticesEXT[i].gl_Position = vec4(positions[i], 0.0, 1.0);\n"
+         << (m_params.extraInput ? "        multiplier[i] = (gl_NumWorkGroups[0] < 1024 ? 1.0 : 0.0);\n" :
+                                   "") // 1.0 in practice.
+         << "    }\n"
          << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
-         << "    gl_MeshPrimitivesEXT[0].gl_Layer = 2;\n"
+         << "    gl_PrimitiveTriangleIndicesEXT[1] = uvec3(2, 1, 3);\n"
+         << (useLayer ? "    gl_MeshPrimitivesEXT[0].gl_Layer = 2;\n" :
+                        "    gl_MeshPrimitivesEXT[0].gl_PrimitiveID = 0;\n")
+         << (useLayer ? "    gl_MeshPrimitivesEXT[1].gl_Layer = 2;\n" :
+                        "    gl_MeshPrimitivesEXT[1].gl_PrimitiveID = 1;\n")
          << "}\n";
     programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << meshBuildOptions;
 
@@ -1661,6 +1689,7 @@ void SharedFragLibraryCase::initPrograms(vk::SourceCollections &programCollectio
     std::ostringstream frag;
     frag << "#version 450\n"
          << "\n"
+         << (m_params.extraInput ? "layout (location=0) in float multiplier;\n" : "")
          << "layout (location=0) out vec4 outColor;\n"
          << "\n"
          << "vec4 outColors[3] = vec4[](\n"
@@ -1671,14 +1700,16 @@ void SharedFragLibraryCase::initPrograms(vk::SourceCollections &programCollectio
          << "\n"
          << "void main ()\n"
          << "{\n"
-         << "    outColor = outColors[gl_Layer];\n"
+         << (useLayer ? "    const vec4 baseColor = outColors[gl_Layer];\n" :
+                        "    const vec4 baseColor = vec4(outColors[2].xy, gl_PrimitiveID, 1.0);\n")
+         << "    outColor = baseColor" << (m_params.extraInput ? " * multiplier" : "") << ";\n"
          << "}\n";
     programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
 }
 
 TestInstance *SharedFragLibraryCase::createInstance(Context &context) const
 {
-    return new SharedFragLibraryInstance(context, m_constructionType);
+    return new SharedFragLibraryInstance(context, m_params);
 }
 
 VkGraphicsPipelineLibraryCreateInfoEXT makeLibCreateInfo(VkGraphicsPipelineLibraryFlagsEXT flags, void *pNext = nullptr)
@@ -1694,6 +1725,8 @@ VkGraphicsPipelineLibraryCreateInfoEXT makeLibCreateInfo(VkGraphicsPipelineLibra
 
 tcu::TestStatus SharedFragLibraryInstance::iterate(void)
 {
+    const auto &vki        = m_context.getInstanceInterface();
+    const auto physDev     = m_context.getPhysicalDevice();
     const auto &vkd        = m_context.getDeviceInterface();
     const auto &device     = m_context.getDevice();
     const auto queueIndex  = m_context.getUniversalQueueFamilyIndex();
@@ -1701,74 +1734,104 @@ tcu::TestStatus SharedFragLibraryInstance::iterate(void)
     auto &alloc            = m_context.getDefaultAllocator();
     const auto layerColors = SharedFragLibraryCase::getLayerColors();
     const auto &clearColor = layerColors.front();
-    const auto layerCount  = static_cast<uint32_t>(layerColors.size());
-    const auto fbExtent    = makeExtent3D(1u, 1u, 1u);
+    const auto layerCount  = (m_params.primitiveID ? 1u : static_cast<uint32_t>(layerColors.size()));
+    const auto height      = (m_params.primitiveID ? 2u : 1u);
+    const auto fbExtent    = makeExtent3D(1u, height, 1u);
     const tcu::IVec3 iExtent(static_cast<int>(fbExtent.width), static_cast<int>(fbExtent.height),
                              static_cast<int>(layerCount));
-    const auto fbFormat          = VK_FORMAT_R8G8B8A8_UNORM;
-    const auto tcuFormat         = mapVkFormat(fbFormat);
-    const auto pixelSize         = tcu::getPixelSize(tcuFormat);
-    const auto pixelCount        = fbExtent.width * fbExtent.height * layerCount;
-    const auto fbUsage           = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-    const bool optimized         = (m_constructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY);
-    const auto libExtraFlags     = (optimized ? VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT : 0);
-    const auto libCompileFlags   = (VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | libExtraFlags);
+    const auto fbFormat        = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto tcuFormat       = mapVkFormat(fbFormat);
+    const auto fbUsage         = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+    const bool optimized       = (m_params.constructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY);
+    const auto libExtraFlags   = (optimized ? VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT : 0);
+    const auto libCompileFlags = (VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | libExtraFlags);
     const auto pipelineLinkFlags = (optimized ? VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT : 0);
+    const bool useESO            = isConstructionTypeShaderObject(m_params.constructionType);
+    const auto colorBufferSRR    = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, layerCount);
 
-    // Color buffer.
-    const VkImageCreateInfo colorBufferCreateInfo = {
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                             // const void* pNext;
-        0u,                                  // VkImageCreateFlags flags;
-        VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
-        fbFormat,                            // VkFormat format;
-        fbExtent,                            // VkExtent3D extent;
-        1u,                                  // uint32_t mipLevels;
-        layerCount,                          // uint32_t arrayLayers;
-        VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits samples;
-        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
-        fbUsage,                             // VkImageUsageFlags usage;
-        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
-        0u,                                  // uint32_t queueFamilyIndexCount;
-        nullptr,                             // const uint32_t* pQueueFamilyIndices;
-        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
+    // When using layer, use a single framebuffer and draw twice in the same render pass.
+    // When using primitive ID, use two framebuffers. Draw to the first one with a normal pipeline and to the second one with a mesh pipeline.
+    // Also, when using primitive ID, the framebuffer will be 2 pixels tall so each triangle in the strip draws to a separate pixel.
+    enum class DrawType
+    {
+        CLASSIC = 0,
+        MESH    = 1,
     };
+    using DrawTypeVec = std::vector<DrawType>;
+    std::vector<DrawTypeVec> rpSetups; // One or two render pass instances.
 
-    ImageWithMemory colorBuffer(vkd, device, alloc, colorBufferCreateInfo, MemoryRequirement::Any);
-    const auto colorBufferSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, layerCount);
-    const auto colorBufferSRL = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, layerCount);
-    const auto colorBufferView =
-        makeImageView(vkd, device, colorBuffer.get(), VK_IMAGE_VIEW_TYPE_2D_ARRAY, fbFormat, colorBufferSRR);
+    std::vector<DrawType> usedDraws{DrawType::CLASSIC, DrawType::MESH};
+    if (m_params.meshFirst)
+        std::swap(usedDraws.front(), usedDraws.back());
 
-    // Render pass.
-    const auto renderPass = makeRenderPass(vkd, device, fbFormat);
+    if (m_params.primitiveID)
+    {
+        rpSetups.push_back(DrawTypeVec{usedDraws.front()});
+        rpSetups.push_back(DrawTypeVec{usedDraws.back()});
+    }
+    else
+    {
+        rpSetups.push_back(DrawTypeVec{usedDraws.front(), usedDraws.back()});
+    }
+    const auto fbCount = de::sizeU32(rpSetups);
 
-    // Framebuffer.
-    const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), colorBufferView.get(), fbExtent.width,
-                                             fbExtent.height, layerCount);
+    // Color buffer(s).
+    using ImageWithBufferPtr = std::unique_ptr<ImageWithBuffer>;
+    std::vector<ImageWithBufferPtr> colorBuffers;
+    colorBuffers.reserve(fbCount);
+    for (uint32_t i = 0u; i < fbCount; ++i)
+        colorBuffers.emplace_back(new ImageWithBuffer(vkd, device, alloc, fbExtent, fbFormat, fbUsage, VK_IMAGE_TYPE_2D,
+                                                      colorBufferSRR, layerCount));
 
-    // Verification buffer.
-    const auto verificationBufferSize = static_cast<VkDeviceSize>(static_cast<int>(pixelCount) * pixelSize);
-    const auto verificationBufferInfo = makeBufferCreateInfo(verificationBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory verificationBuffer(vkd, device, alloc, verificationBufferInfo, MemoryRequirement::HostVisible);
-    auto &verificationBufferAlloc = verificationBuffer.getAllocation();
-    void *verificationBufferData  = verificationBufferAlloc.getHostPtr();
+    // Render pass. Note for ESO we will not use its begin/end methods because we have multiple framebuffers.
+    RenderPassWrapper renderPass(m_params.constructionType, vkd, device, fbFormat);
+
+    // Framebuffer(s).
+    std::vector<Move<VkFramebuffer>> framebuffers;
+    if (!useESO)
+    {
+        framebuffers.reserve(fbCount);
+        for (uint32_t i = 0u; i < fbCount; ++i)
+        {
+            framebuffers.push_back(makeFramebuffer(vkd, device, renderPass.get(), colorBuffers.at(i)->getImageView(),
+                                                   fbExtent.width, fbExtent.height, layerCount));
+        }
+    }
 
     // Pipeline layout (common).
-    const auto pipelineLayout = makePipelineLayout(vkd, device);
+    PipelineLayoutWrapper pipelineLayout(m_params.constructionType, vkd, device);
 
     // Shader modules.
-    const auto &binaries  = m_context.getBinaryCollection();
-    const auto vertModule = createShaderModule(
-        vkd, device, (m_context.contextSupports(VK_API_VERSION_1_2)) ? binaries.get("vert_1_2") : binaries.get("vert"));
-    const auto meshModule = createShaderModule(vkd, device, binaries.get("mesh"));
-    const auto fragModule = createShaderModule(vkd, device, binaries.get("frag"));
+    const auto &binaries = m_context.getBinaryCollection();
+    const auto &vertBinary =
+        (m_context.contextSupports(VK_API_VERSION_1_2) ? binaries.get("vert_1_2") : binaries.get("vert"));
+    const auto &meshBinary = binaries.get("mesh");
 
-    // Fragment output state library (common).
+    ShaderWrapper vertModule(vkd, device, vertBinary);
+    ShaderWrapper meshModule(vkd, device, meshBinary);
+    ShaderWrapper fragModule(vkd, device, binaries.get("frag"));
+
+    Move<VkPipeline> fragOutputLib;
+    Move<VkPipeline> fragShaderLib;
+    Move<VkPipeline> preRastClassicLib;
+    Move<VkPipeline> preRastMeshLib;
+    Move<VkPipeline> vertexInputLib;
+    Move<VkPipeline> classicPipeline;
+    Move<VkPipeline> meshPipeline;
+
+    std::unique_ptr<GraphicsPipelineWrapper> pipelineWrapper;
+    Move<VkShaderEXT> vertShader;
+    Move<VkShaderEXT> meshShader;
+
+    // Pipeline state. We can reuse this for ESO and GPL.
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
     const VkColorComponentFlags colorComponentFlags =
         (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
     const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
-        VK_FALSE,             // VkBool32                    blendEnable
+        VK_FALSE,             // VkBool32                 blendEnable
         VK_BLEND_FACTOR_ZERO, // VkBlendFactor            srcColorBlendFactor
         VK_BLEND_FACTOR_ZERO, // VkBlendFactor            dstColorBlendFactor
         VK_BLEND_OP_ADD,      // VkBlendOp                colorBlendOp
@@ -1801,63 +1864,11 @@ tcu::TestStatus SharedFragLibraryInstance::iterate(void)
         VK_FALSE               // VkBool32                                        alphaToOneEnable
     };
 
-    const auto fragOutputLibInfo = makeLibCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT);
-
-    VkGraphicsPipelineCreateInfo fragOutputInfo = initVulkanStructure();
-    fragOutputInfo.layout                       = pipelineLayout.get();
-    fragOutputInfo.renderPass                   = renderPass.get();
-    fragOutputInfo.pColorBlendState             = &colorBlendState;
-    fragOutputInfo.pMultisampleState            = &multisampleState;
-    fragOutputInfo.flags                        = libCompileFlags;
-    fragOutputInfo.pNext                        = &fragOutputLibInfo;
-
-    const auto fragOutputLib = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &fragOutputInfo);
-
-    // Fragment shader lib (shared among the classic and mesh pipelines).
     const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = initVulkanStructure();
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo   = initVulkanStructure();
 
-    const VkPipelineShaderStageCreateInfo fragShaderStageCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                             // const void* pNext;
-        0u,                                                  // VkPipelineShaderStageCreateFlags flags;
-        VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits stage;
-        fragModule.get(),                                    // VkShaderModule module;
-        "main",                                              // const char* pName;
-        nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
-    };
-
-    const auto fragShaderLibInfo = makeLibCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT);
-
-    VkGraphicsPipelineCreateInfo fragShaderInfo = initVulkanStructure();
-    fragShaderInfo.layout                       = pipelineLayout.get();
-    fragShaderInfo.renderPass                   = renderPass.get();
-    fragShaderInfo.pMultisampleState            = &multisampleState;
-    fragShaderInfo.pDepthStencilState           = &depthStencilStateCreateInfo;
-    fragShaderInfo.stageCount                   = 1u;
-    fragShaderInfo.pStages                      = &fragShaderStageCreateInfo;
-    fragShaderInfo.flags                        = libCompileFlags;
-    fragShaderInfo.pNext                        = &fragShaderLibInfo;
-
-    const auto fragShaderLib = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &fragShaderInfo);
-
-    // Vertex input state (common, but should be unused by the mesh shading pipeline).
-    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo   = initVulkanStructure();
-    inputAssemblyStateCreateInfo.topology                                 = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    const auto vertexInputLibInfo = makeLibCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT);
-
-    VkGraphicsPipelineCreateInfo vertexInputInfo = initVulkanStructure();
-    vertexInputInfo.layout                       = pipelineLayout.get();
-    vertexInputInfo.pVertexInputState            = &vertexInputStateCreateInfo;
-    vertexInputInfo.pInputAssemblyState          = &inputAssemblyStateCreateInfo;
-    vertexInputInfo.flags                        = libCompileFlags;
-    vertexInputInfo.pNext                        = &vertexInputLibInfo;
-
-    const auto vertexInputLib = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &vertexInputInfo);
-
-    // Pre-rasterization shader state: common pieces.
-    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
-    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = initVulkanStructure();
+    inputAssemblyStateCreateInfo.topology                               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
     const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType sType;
@@ -1885,78 +1896,195 @@ tcu::TestStatus SharedFragLibraryInstance::iterate(void)
         1.0f,                                                       // float lineWidth;
     };
 
-    const auto preRastLibInfo = makeLibCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
+    if (useESO)
+    {
+        // For ESO, we will create a graphics pipeline wrapper with the right module for the first draw, and
+        // a separate module for the second draw. We will use the pipeline wrapper to bind shaders and state correctly
+        // for the first draw and manually unbind shaders and bind the correct ones for the second draw.
+        pipelineWrapper.reset(new GraphicsPipelineWrapper(vki, vkd, physDev, device, m_context.getDeviceExtensions(),
+                                                          m_params.constructionType));
+        auto &pipeline = *pipelineWrapper;
+        pipeline.setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo);
+        if (m_params.meshFirst)
+            pipeline.setupPreRasterizationMeshShaderState(viewports, scissors, pipelineLayout, renderPass.get(), 0u,
+                                                          ShaderWrapper(), meshModule, &rasterizationStateCreateInfo);
+        else
+            pipeline.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass.get(), 0u,
+                                                      vertModule, &rasterizationStateCreateInfo);
+        pipeline.setupFragmentShaderState(pipelineLayout, renderPass.get(), 0u, fragModule,
+                                          &depthStencilStateCreateInfo, &multisampleState);
+        pipeline.setupFragmentOutputState(renderPass.get(), 0u, &colorBlendState, &multisampleState);
+        pipeline.buildPipeline();
 
-    VkGraphicsPipelineCreateInfo preRastShaderInfo = initVulkanStructure();
-    preRastShaderInfo.layout                       = pipelineLayout.get();
-    preRastShaderInfo.pViewportState               = &viewportStateCreateInfo;
-    preRastShaderInfo.pRasterizationState          = &rasterizationStateCreateInfo;
-    preRastShaderInfo.renderPass                   = renderPass.get();
-    preRastShaderInfo.flags                        = libCompileFlags;
-    preRastShaderInfo.pNext                        = &preRastLibInfo;
-    preRastShaderInfo.stageCount                   = 1u;
+        const VkShaderCreateInfoEXT shaderCreateInfoTemplate = {
+            VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,
+            nullptr,
+            0u,
+            VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            VK_SHADER_CODE_TYPE_SPIRV_EXT,
+            0ull,
+            nullptr,
+            "main",
+            0u,
+            nullptr,
+            0u,
+            nullptr,
+            nullptr,
+        };
 
-    // Vertex stage info.
-    const VkPipelineShaderStageCreateInfo vertShaderStageCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                             // const void* pNext;
-        0u,                                                  // VkPipelineShaderStageCreateFlags flags;
-        VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits stage;
-        vertModule.get(),                                    // VkShaderModule module;
-        "main",                                              // const char* pName;
-        nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
-    };
+        if (m_params.meshFirst)
+        {
+            VkShaderCreateInfoEXT vertShaderCreateInfo = shaderCreateInfoTemplate;
+            vertShaderCreateInfo.stage                 = VK_SHADER_STAGE_VERTEX_BIT;
+            vertShaderCreateInfo.codeSize              = vertBinary.getSize();
+            vertShaderCreateInfo.pCode                 = vertBinary.getBinary();
 
-    // Mesh stage info.
-    const VkPipelineShaderStageCreateInfo meshShaderStageCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                             // const void* pNext;
-        0u,                                                  // VkPipelineShaderStageCreateFlags flags;
-        VK_SHADER_STAGE_MESH_BIT_EXT,                        // VkShaderStageFlagBits stage;
-        meshModule.get(),                                    // VkShaderModule module;
-        "main",                                              // const char* pName;
-        nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
-    };
+            vertShader = createShader(vkd, device, vertShaderCreateInfo);
+        }
+        else
+        {
+            VkShaderCreateInfoEXT meshShaderCreateInfo = shaderCreateInfoTemplate;
+            meshShaderCreateInfo.stage                 = VK_SHADER_STAGE_MESH_BIT_EXT;
+            meshShaderCreateInfo.codeSize              = meshBinary.getSize();
+            meshShaderCreateInfo.pCode                 = meshBinary.getBinary();
+            meshShaderCreateInfo.flags                 = VK_SHADER_CREATE_NO_TASK_SHADER_BIT_EXT;
 
-    // Pre-rasterization shader libs.
-    preRastShaderInfo.pStages    = &vertShaderStageCreateInfo;
-    const auto preRastClassicLib = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &preRastShaderInfo);
+            meshShader = createShader(vkd, device, meshShaderCreateInfo);
+        }
+    }
+    else
+    {
+        // Create classic modules directly.
+        vertModule.createModule();
+        meshModule.createModule();
+        fragModule.createModule();
 
-    preRastShaderInfo.pStages = &meshShaderStageCreateInfo;
-    const auto preRastMeshLib = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &preRastShaderInfo);
+        // Fragment output state library (common).
+        const auto fragOutputLibInfo =
+            makeLibCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT);
 
-    // Pipelines.
-    const std::vector<VkPipeline> classicLibs{vertexInputLib.get(), preRastClassicLib.get(), fragShaderLib.get(),
-                                              fragOutputLib.get()};
-    const std::vector<VkPipeline> meshLibs{vertexInputLib.get(), preRastMeshLib.get(), fragShaderLib.get(),
-                                           fragOutputLib.get()};
+        VkGraphicsPipelineCreateInfo fragOutputInfo = initVulkanStructure();
+        fragOutputInfo.layout                       = pipelineLayout.get();
+        fragOutputInfo.renderPass                   = renderPass.get();
+        fragOutputInfo.pColorBlendState             = &colorBlendState;
+        fragOutputInfo.pMultisampleState            = &multisampleState;
+        fragOutputInfo.flags                        = libCompileFlags;
+        fragOutputInfo.pNext                        = &fragOutputLibInfo;
 
-    const VkPipelineLibraryCreateInfoKHR classicLinkInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR, // VkStructureType sType;
-        nullptr,                                            // const void* pNext;
-        static_cast<uint32_t>(classicLibs.size()),          // uint32_t libraryCount;
-        de::dataOrNull(classicLibs),                        // const VkPipeline* pLibraries;
-    };
+        fragOutputLib = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &fragOutputInfo);
 
-    const VkPipelineLibraryCreateInfoKHR meshLinkInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR, // VkStructureType sType;
-        nullptr,                                            // const void* pNext;
-        static_cast<uint32_t>(meshLibs.size()),             // uint32_t libraryCount;
-        de::dataOrNull(meshLibs),                           // const VkPipeline* pLibraries;
-    };
+        // Fragment shader lib (shared among the classic and mesh pipelines).
+        const VkPipelineShaderStageCreateInfo fragShaderStageCreateInfo = {
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                             // const void* pNext;
+            0u,                                                  // VkPipelineShaderStageCreateFlags flags;
+            VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits stage;
+            fragModule.getModule(),                              // VkShaderModule module;
+            "main",                                              // const char* pName;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
+        };
 
-    VkGraphicsPipelineCreateInfo classicPipelineCreateInfo = initVulkanStructure();
-    classicPipelineCreateInfo.flags                        = pipelineLinkFlags;
-    classicPipelineCreateInfo.layout                       = pipelineLayout.get();
-    classicPipelineCreateInfo.pNext                        = &classicLinkInfo;
+        const auto fragShaderLibInfo = makeLibCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT);
 
-    VkGraphicsPipelineCreateInfo meshPipelineCreateInfo = initVulkanStructure();
-    meshPipelineCreateInfo.flags                        = pipelineLinkFlags;
-    meshPipelineCreateInfo.layout                       = pipelineLayout.get();
-    meshPipelineCreateInfo.pNext                        = &meshLinkInfo;
+        VkGraphicsPipelineCreateInfo fragShaderInfo = initVulkanStructure();
+        fragShaderInfo.layout                       = pipelineLayout.get();
+        fragShaderInfo.renderPass                   = renderPass.get();
+        fragShaderInfo.pMultisampleState            = &multisampleState;
+        fragShaderInfo.pDepthStencilState           = &depthStencilStateCreateInfo;
+        fragShaderInfo.stageCount                   = 1u;
+        fragShaderInfo.pStages                      = &fragShaderStageCreateInfo;
+        fragShaderInfo.flags                        = libCompileFlags;
+        fragShaderInfo.pNext                        = &fragShaderLibInfo;
 
-    const auto classicPipeline = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &classicPipelineCreateInfo);
-    const auto meshPipeline    = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &meshPipelineCreateInfo);
+        fragShaderLib = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &fragShaderInfo);
+
+        // Vertex input state (common, but should be unused by the mesh shading pipeline).
+        const auto vertexInputLibInfo = makeLibCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT);
+
+        VkGraphicsPipelineCreateInfo vertexInputInfo = initVulkanStructure();
+        vertexInputInfo.layout                       = pipelineLayout.get();
+        vertexInputInfo.pVertexInputState            = &vertexInputStateCreateInfo;
+        vertexInputInfo.pInputAssemblyState          = &inputAssemblyStateCreateInfo;
+        vertexInputInfo.flags                        = libCompileFlags;
+        vertexInputInfo.pNext                        = &vertexInputLibInfo;
+
+        vertexInputLib = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &vertexInputInfo);
+
+        // Pre-rasterization shader state: common pieces.
+        const auto preRastLibInfo = makeLibCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
+
+        VkGraphicsPipelineCreateInfo preRastShaderInfo = initVulkanStructure();
+        preRastShaderInfo.layout                       = pipelineLayout.get();
+        preRastShaderInfo.pViewportState               = &viewportStateCreateInfo;
+        preRastShaderInfo.pRasterizationState          = &rasterizationStateCreateInfo;
+        preRastShaderInfo.renderPass                   = renderPass.get();
+        preRastShaderInfo.flags                        = libCompileFlags;
+        preRastShaderInfo.pNext                        = &preRastLibInfo;
+        preRastShaderInfo.stageCount                   = 1u;
+
+        // Vertex stage info.
+        const VkPipelineShaderStageCreateInfo vertShaderStageCreateInfo = {
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                             // const void* pNext;
+            0u,                                                  // VkPipelineShaderStageCreateFlags flags;
+            VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits stage;
+            vertModule.getModule(),                              // VkShaderModule module;
+            "main",                                              // const char* pName;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
+        };
+
+        // Mesh stage info.
+        const VkPipelineShaderStageCreateInfo meshShaderStageCreateInfo = {
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                             // const void* pNext;
+            0u,                                                  // VkPipelineShaderStageCreateFlags flags;
+            VK_SHADER_STAGE_MESH_BIT_EXT,                        // VkShaderStageFlagBits stage;
+            meshModule.getModule(),                              // VkShaderModule module;
+            "main",                                              // const char* pName;
+            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
+        };
+
+        // Pre-rasterization shader libs.
+        preRastShaderInfo.pStages = &vertShaderStageCreateInfo;
+        preRastClassicLib         = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &preRastShaderInfo);
+
+        preRastShaderInfo.pStages = &meshShaderStageCreateInfo;
+        preRastMeshLib            = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &preRastShaderInfo);
+
+        // Pipelines.
+        const std::vector<VkPipeline> classicLibs{vertexInputLib.get(), preRastClassicLib.get(), fragShaderLib.get(),
+                                                  fragOutputLib.get()};
+        const std::vector<VkPipeline> meshLibs{vertexInputLib.get(), preRastMeshLib.get(), fragShaderLib.get(),
+                                               fragOutputLib.get()};
+
+        const VkPipelineLibraryCreateInfoKHR classicLinkInfo = {
+            VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR, // VkStructureType sType;
+            nullptr,                                            // const void* pNext;
+            static_cast<uint32_t>(classicLibs.size()),          // uint32_t libraryCount;
+            de::dataOrNull(classicLibs),                        // const VkPipeline* pLibraries;
+        };
+
+        const VkPipelineLibraryCreateInfoKHR meshLinkInfo = {
+            VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR, // VkStructureType sType;
+            nullptr,                                            // const void* pNext;
+            static_cast<uint32_t>(meshLibs.size()),             // uint32_t libraryCount;
+            de::dataOrNull(meshLibs),                           // const VkPipeline* pLibraries;
+        };
+
+        VkGraphicsPipelineCreateInfo classicPipelineCreateInfo = initVulkanStructure();
+        classicPipelineCreateInfo.flags                        = pipelineLinkFlags;
+        classicPipelineCreateInfo.layout                       = pipelineLayout.get();
+        classicPipelineCreateInfo.pNext                        = &classicLinkInfo;
+
+        VkGraphicsPipelineCreateInfo meshPipelineCreateInfo = initVulkanStructure();
+        meshPipelineCreateInfo.flags                        = pipelineLinkFlags;
+        meshPipelineCreateInfo.layout                       = pipelineLayout.get();
+        meshPipelineCreateInfo.pNext                        = &meshLinkInfo;
+
+        classicPipeline = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &classicPipelineCreateInfo);
+        meshPipeline    = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &meshPipelineCreateInfo);
+    }
 
     // Record commands with both pipelines.
     const auto cmdPool      = makeCommandPool(vkd, device, queueIndex);
@@ -1965,60 +2093,165 @@ tcu::TestStatus SharedFragLibraryInstance::iterate(void)
 
     beginCommandBuffer(vkd, cmdBuffer);
 
+    bool esoStateBound = false;
+
+    if (useESO)
+    {
+        // Transition color attachment layouts manually.
+        const auto dstAccess = (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+        const auto dstStage  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+        std::vector<VkImageMemoryBarrier> barriers;
+        barriers.reserve(colorBuffers.size());
+
+        for (const auto &colorBuffer : colorBuffers)
+            barriers.push_back(makeImageMemoryBarrier(0u, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, colorBuffer->getImage(),
+                                                      colorBufferSRR));
+
+        cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, 0u, dstStage, barriers.data(), barriers.size());
+    }
+
     // Draw using both pipelines.
-    beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0), clearColor);
-    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, classicPipeline.get());
-    vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
-    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshPipeline.get());
-    vkd.cmdDrawMeshTasksEXT(cmdBuffer, 1u, 1u, 1u);
-    endRenderPass(vkd, cmdBuffer);
+    for (size_t i = 0u; i < rpSetups.size(); ++i)
+    {
+        const auto &rpSetup = rpSetups.at(i);
 
-    // Copy color buffer to verification buffer.
-    const auto preTransferBarrier = makeImageMemoryBarrier(
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorBuffer.get(), colorBufferSRR);
+        if (useESO)
+        {
+            const VkRenderingAttachmentInfo colorRenderingAttachment = {
+                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                nullptr,
+                colorBuffers.at(i)->getImageView(),
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_RESOLVE_MODE_NONE_KHR,
+                VK_NULL_HANDLE,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_ATTACHMENT_LOAD_OP_CLEAR,
+                VK_ATTACHMENT_STORE_OP_STORE,
+                makeClearValueColor(clearColor),
+            };
 
-    const auto postTransferBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+            const VkRenderingInfo renderingInfo = {
+                VK_STRUCTURE_TYPE_RENDERING_INFO, nullptr, 0u,      scissors.at(0u), layerCount, 0u, 1u,
+                &colorRenderingAttachment,        nullptr, nullptr,
+            };
+            vkd.cmdBeginRendering(cmdBuffer, &renderingInfo);
+        }
+        else
+            beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffers.at(i).get(), scissors.at(0), clearColor);
 
-    const auto copyRegion = makeBufferImageCopy(fbExtent, colorBufferSRL);
+        for (const auto &drawType : rpSetup)
+        {
+            if (drawType == DrawType::CLASSIC)
+            {
+                if (useESO)
+                {
+                    if (!esoStateBound)
+                    {
+                        DE_ASSERT(!m_params.meshFirst); // The wrapper should contain the classic graphics state.
+                        pipelineWrapper->bind(cmdBuffer);
+                        esoStateBound = true;
+                    }
+                    else
+                    {
+                        const std::map<VkShaderStageFlagBits, VkShaderEXT> stagesToBind{
+                            std::make_pair(VK_SHADER_STAGE_MESH_BIT_EXT, VK_NULL_HANDLE),
+                            std::make_pair(VK_SHADER_STAGE_VERTEX_BIT, *vertShader),
+                        };
+                        for (const auto &stageShader : stagesToBind)
+                            vkd.cmdBindShadersEXT(cmdBuffer, 1u, &stageShader.first, &stageShader.second);
+                        vkd.cmdSetPrimitiveTopology(cmdBuffer, inputAssemblyStateCreateInfo.topology);
+                        vkd.cmdSetPrimitiveRestartEnable(cmdBuffer,
+                                                         inputAssemblyStateCreateInfo.primitiveRestartEnable);
+                        vkd.cmdSetVertexInputEXT(cmdBuffer, 0u, nullptr, 0u, nullptr);
+                    }
+                }
+                else
+                    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, classicPipeline.get());
+                vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+            }
+            else if (drawType == DrawType::MESH)
+            {
+                if (useESO)
+                {
+                    if (!esoStateBound)
+                    {
+                        DE_ASSERT(m_params.meshFirst); // The wrapper should contain the mesh graphics state.
+                        pipelineWrapper->bind(cmdBuffer);
+                        esoStateBound = true;
+                    }
+                    else
+                    {
+                        const std::map<VkShaderStageFlagBits, VkShaderEXT> stagesToBind{
+                            std::make_pair(VK_SHADER_STAGE_VERTEX_BIT, VK_NULL_HANDLE),
+                            std::make_pair(VK_SHADER_STAGE_MESH_BIT_EXT, *meshShader),
+                        };
+                        for (const auto &stageShader : stagesToBind)
+                            vkd.cmdBindShadersEXT(cmdBuffer, 1u, &stageShader.first, &stageShader.second);
+                    }
+                }
+                else
+                    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshPipeline.get());
+                vkd.cmdDrawMeshTasksEXT(cmdBuffer, 1u, 1u, 1u);
+            }
+            else
+                DE_ASSERT(false);
+        }
 
-    cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                  VK_PIPELINE_STAGE_TRANSFER_BIT, &preTransferBarrier);
-    vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                             verificationBuffer.get(), 1u, &copyRegion);
-    cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                             &postTransferBarrier);
+        if (useESO)
+            vkd.cmdEndRendering(cmdBuffer);
+        else
+            endRenderPass(vkd, cmdBuffer);
+    }
+
+    // Copy color buffers to verification buffers.
+    for (uint32_t i = 0u; i < fbCount; ++i)
+    {
+        copyImageToBuffer(vkd, cmdBuffer, colorBuffers.at(i)->getImage(), colorBuffers.at(i)->getBuffer(),
+                          iExtent.swizzle(0, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, layerCount);
+    }
 
     endCommandBuffer(vkd, cmdBuffer);
     submitCommandsAndWait(vkd, device, queue, cmdBuffer);
 
     // Validate color buffer.
-    invalidateAlloc(vkd, device, verificationBufferAlloc);
+    for (uint32_t i = 0u; i < fbCount; ++i)
+        invalidateAlloc(vkd, device, colorBuffers.at(i)->getBufferAllocation());
 
-    tcu::ConstPixelBufferAccess resultAccess(tcuFormat, iExtent, verificationBufferData);
-    auto &log = m_context.getTestContext().getLog();
     bool fail = false;
+    auto &log = m_context.getTestContext().getLog();
 
-    for (int z = 0; z < iExtent.z(); ++z)
+    for (uint32_t i = 0u; i < fbCount; ++i)
     {
-        const auto &expectedColor = layerColors.at(z);
-        for (int y = 0; y < iExtent.y(); ++y)
-            for (int x = 0; x < iExtent.x(); ++x)
-            {
-                const auto resultColor = resultAccess.getPixel(x, y, z);
-                if (resultColor != expectedColor)
+        Allocation &colorDataAlloc = colorBuffers.at(i)->getBufferAllocation();
+        tcu::ConstPixelBufferAccess resultAccess(tcuFormat, iExtent, colorDataAlloc.getHostPtr());
+
+        for (int z = 0; z < iExtent.z(); ++z)
+        {
+            for (int y = 0; y < iExtent.y(); ++y)
+                for (int x = 0; x < iExtent.x(); ++x)
                 {
-                    std::ostringstream msg;
-                    msg << "Unexpected color at coordinates (x=" << x << ", y=" << y << ", layer=" << z
-                        << "): expected " << expectedColor << " but found " << resultColor;
-                    log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
-                    fail = true;
+                    const auto expectedColor =
+                        (m_params.primitiveID ?
+                             tcu::Vec4(layerColors.at(2u).x(), layerColors.at(2u).y(), static_cast<float>(y), 1.0f) :
+                             layerColors.at(z));
+                    const auto resultColor = resultAccess.getPixel(x, y, z);
+                    if (resultColor != expectedColor)
+                    {
+                        std::ostringstream msg;
+                        msg << "Unexpected color at framebuffer " << i << " coordinates (x=" << x << ", y=" << y
+                            << ", layer=" << z << "): expected " << expectedColor << " but found " << resultColor;
+                        log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+                        fail = true;
+                    }
                 }
-            }
+        }
     }
 
     if (fail)
-        return tcu::TestStatus::fail("Failed; check log for details");
+        TCU_FAIL("Failed; check log for details --");
     return tcu::TestStatus::pass("Pass");
 }
 
@@ -2034,44 +2267,60 @@ tcu::TestCaseGroup *createMeshShaderSmokeTestsEXT(tcu::TestContext &testCtx)
         {PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, "monolithic"},
         {PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY, "optimized_lib"},
         {PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, "fast_lib"},
+        {PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV, "shader_objects"},
     };
 
     GroupPtr smokeTests(new tcu::TestCaseGroup(testCtx, "smoke"));
 
     for (const auto &constructionCase : constructionTypes)
     {
-        GroupPtr constructionGroup(new tcu::TestCaseGroup(testCtx, constructionCase.name));
-
         const auto &cType = constructionCase.constructionType;
 
-        constructionGroup->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle", cType));
-        constructionGroup->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle_rasterization_disabled",
-                                                             cType, true /*rasterizationDisabled*/));
-        constructionGroup->addChild(new MeshTaskTriangleCase(testCtx, "mesh_task_shader_triangle", cType));
-        constructionGroup->addChild(new TaskOnlyTriangleCase(testCtx, "task_only_shader_triangle", cType));
+        GroupPtr constructionGroup(new tcu::TestCaseGroup(testCtx, constructionCase.name));
 
-        for (int i = 0; i < 2; ++i)
+        if (!isConstructionTypeShaderObject(cType))
         {
-            const bool compaction        = (i == 0);
-            const std::string nameSuffix = (compaction ? "" : "_without_compaction");
-            const PartialUsageParams params{cType, compaction};
+            constructionGroup->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle", cType));
+            constructionGroup->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle_rasterization_disabled",
+                                                                 cType, true /*rasterizationDisabled*/));
+            constructionGroup->addChild(new MeshTaskTriangleCase(testCtx, "mesh_task_shader_triangle", cType));
+            constructionGroup->addChild(new TaskOnlyTriangleCase(testCtx, "task_only_shader_triangle", cType));
 
-            constructionGroup->addChild(new PartialUsageCase(testCtx, "partial_usage" + nameSuffix, params));
+            for (int i = 0; i < 2; ++i)
+            {
+                const bool compaction        = (i == 0);
+                const std::string nameSuffix = (compaction ? "" : "_without_compaction");
+                const PartialUsageParams params{cType, compaction};
+
+                constructionGroup->addChild(new PartialUsageCase(testCtx, "partial_usage" + nameSuffix, params));
+            }
+
+            addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient", checkMeshSupport,
+                                        initGradientPrograms, testFullscreenGradient,
+                                        GradientParams(tcu::nothing<FragmentSize>(), cType));
+            addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient_fs2x2", checkMeshSupport,
+                                        initGradientPrograms, testFullscreenGradient,
+                                        GradientParams(tcu::just(FragmentSize::SIZE_2X2), cType));
+            addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient_fs2x1", checkMeshSupport,
+                                        initGradientPrograms, testFullscreenGradient,
+                                        GradientParams(tcu::just(FragmentSize::SIZE_2X1), cType));
         }
-
-        addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient", checkMeshSupport,
-                                    initGradientPrograms, testFullscreenGradient,
-                                    GradientParams(tcu::nothing<FragmentSize>(), cType));
-        addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient_fs2x2", checkMeshSupport,
-                                    initGradientPrograms, testFullscreenGradient,
-                                    GradientParams(tcu::just(FragmentSize::SIZE_2X2), cType));
-        addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient_fs2x1", checkMeshSupport,
-                                    initGradientPrograms, testFullscreenGradient,
-                                    GradientParams(tcu::just(FragmentSize::SIZE_2X1), cType));
 
         if (cType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
         {
-            constructionGroup->addChild(new SharedFragLibraryCase(testCtx, "shared_frag_library", cType));
+            const bool isESOCase = isConstructionTypeShaderObject(cType);
+
+            for (const auto usePrimitiveID : {false, true})
+                for (const auto meshFirst : {false, true})
+                    for (const auto extraInput : {false, true})
+                    {
+                        SharedFragLibraryParams params{cType, usePrimitiveID, meshFirst, extraInput};
+                        const auto testName = std::string() +
+                                              (isESOCase ? "shared_frag_shader" : "shared_frag_library") +
+                                              (usePrimitiveID ? "_primid" : "") + (meshFirst ? "_mesh_first" : "") +
+                                              (extraInput ? "_extra_input" : "");
+                        constructionGroup->addChild(new SharedFragLibraryCase(testCtx, testName, params));
+                    }
         }
 
         smokeTests->addChild(constructionGroup.release());
