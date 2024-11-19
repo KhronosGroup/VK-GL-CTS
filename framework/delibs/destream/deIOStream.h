@@ -75,14 +75,15 @@ typedef struct deIOStream_s
     const deIOStreamVFTable *vfTable;
 } deIOStream;
 
-inline deStreamResult deIOStream_read(deIOStream *stream, void *buf, int32_t bufSize, int32_t *numRead);
-inline deStreamResult deIOStream_write(deIOStream *stream, const void *buf, int32_t bufSize, int32_t *numWritten);
-inline const char *deIOStream_getError(deIOStream *stream);
-inline deStreamStatus deIOStream_getStatus(deIOStream *stream);
-inline deStreamResult deIOStream_flush(deIOStream *stream);
-inline deStreamResult deIOStream_deinit(deIOStream *stream);
+static inline deStreamResult deIOStream_read(deIOStream *stream, void *buf, int32_t bufSize, int32_t *numRead);
+static inline deStreamResult deIOStream_write(deIOStream *stream, const void *buf, int32_t bufSize,
+                                              int32_t *numWritten);
+static inline const char *deIOStream_getError(deIOStream *stream);
+static inline deStreamStatus deIOStream_getStatus(deIOStream *stream);
+static inline deStreamResult deIOStream_flush(deIOStream *stream);
+static inline deStreamResult deIOStream_deinit(deIOStream *stream);
 
-inline deStreamResult deIOStream_write(deIOStream *stream, const void *buf, int32_t bufSize, int32_t *numWritten)
+static inline deStreamResult deIOStream_write(deIOStream *stream, const void *buf, int32_t bufSize, int32_t *numWritten)
 {
     DE_ASSERT(stream);
     DE_ASSERT(stream->vfTable);
@@ -91,7 +92,7 @@ inline deStreamResult deIOStream_write(deIOStream *stream, const void *buf, int3
     return stream->vfTable->writeFunc(stream->streamData, buf, bufSize, numWritten);
 }
 
-inline deStreamResult deIOStream_read(deIOStream *stream, void *buf, int32_t bufSize, int32_t *numRead)
+static inline deStreamResult deIOStream_read(deIOStream *stream, void *buf, int32_t bufSize, int32_t *numRead)
 {
     DE_ASSERT(stream);
     DE_ASSERT(stream->vfTable);
@@ -100,7 +101,7 @@ inline deStreamResult deIOStream_read(deIOStream *stream, void *buf, int32_t buf
     return stream->vfTable->readFunc(stream->streamData, buf, bufSize, numRead);
 }
 
-inline const char *deIOStream_getError(deIOStream *stream)
+static inline const char *deIOStream_getError(deIOStream *stream)
 {
     DE_ASSERT(stream);
     DE_ASSERT(stream->vfTable);
@@ -109,7 +110,7 @@ inline const char *deIOStream_getError(deIOStream *stream)
     return stream->vfTable->getErrorFunc(stream->streamData);
 }
 
-inline deStreamResult deIOStream_flush(deIOStream *stream)
+static inline deStreamResult deIOStream_flush(deIOStream *stream)
 {
     DE_ASSERT(stream);
     DE_ASSERT(stream->vfTable);
@@ -118,7 +119,7 @@ inline deStreamResult deIOStream_flush(deIOStream *stream)
     return stream->vfTable->flushFunc(stream->streamData);
 }
 
-inline deStreamResult deIOStream_deinit(deIOStream *stream)
+static inline deStreamResult deIOStream_deinit(deIOStream *stream)
 {
     deStreamResult result = DE_STREAMRESULT_ERROR;
     DE_ASSERT(stream);
@@ -133,7 +134,7 @@ inline deStreamResult deIOStream_deinit(deIOStream *stream)
     return result;
 }
 
-inline deStreamStatus deIOStream_getStatus(deIOStream *stream)
+static inline deStreamStatus deIOStream_getStatus(deIOStream *stream)
 {
     DE_ASSERT(stream);
     DE_ASSERT(stream->vfTable);

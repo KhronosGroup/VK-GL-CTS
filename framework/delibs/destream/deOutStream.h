@@ -35,33 +35,35 @@ typedef struct deOutStream_s
     deIOStream ioStream;
 } deOutStream;
 
-inline deStreamResult deOutStream_write(deOutStream *stream, const void *buf, int32_t bufSize, int32_t *numWritten);
-inline deStreamResult deOutStream_flush(deOutStream *stream);
-inline deStreamResult deOutStream_deinit(deOutStream *stream);
-inline const char *deOutStream_getError(deOutStream *stream);
-inline deStreamStatus deOutStream_getStatus(deOutStream *stream);
+static inline deStreamResult deOutStream_write(deOutStream *stream, const void *buf, int32_t bufSize,
+                                               int32_t *numWritten);
+static inline deStreamResult deOutStream_flush(deOutStream *stream);
+static inline deStreamResult deOutStream_deinit(deOutStream *stream);
+static inline const char *deOutStream_getError(deOutStream *stream);
+static inline deStreamStatus deOutStream_getStatus(deOutStream *stream);
 
-inline deStreamResult deOutStream_write(deOutStream *stream, const void *buf, int32_t bufSize, int32_t *numWritten)
+static inline deStreamResult deOutStream_write(deOutStream *stream, const void *buf, int32_t bufSize,
+                                               int32_t *numWritten)
 {
     return deIOStream_write(&(stream->ioStream), buf, bufSize, numWritten);
 }
 
-inline deStreamResult deOutStream_flush(deOutStream *stream)
+static inline deStreamResult deOutStream_flush(deOutStream *stream)
 {
     return deIOStream_flush(&(stream->ioStream));
 }
 
-inline deStreamResult deOutStream_deinit(deOutStream *stream)
+static inline deStreamResult deOutStream_deinit(deOutStream *stream)
 {
     return deIOStream_deinit(&(stream->ioStream));
 }
 
-inline const char *deOutStream_getError(deOutStream *stream)
+static inline const char *deOutStream_getError(deOutStream *stream)
 {
     return deIOStream_getError(&(stream->ioStream));
 }
 
-inline deStreamStatus deOutStream_getStatus(deOutStream *stream)
+static inline deStreamStatus deOutStream_getStatus(deOutStream *stream)
 {
     return deIOStream_getStatus(&(stream->ioStream));
 }

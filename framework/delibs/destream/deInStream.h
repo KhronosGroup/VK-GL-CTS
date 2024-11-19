@@ -35,27 +35,27 @@ typedef struct deInStream_s
     deIOStream ioStream;
 } deInStream;
 
-inline deStreamResult deInStream_read(deInStream *stream, void *buf, int32_t bufSize, int32_t *numWritten);
-inline deStreamResult deInStream_deinit(deInStream *stream);
-inline const char *deInStream_getError(deInStream *stream);
-inline deStreamStatus deInStream_getStatus(deInStream *stream);
+static inline deStreamResult deInStream_read(deInStream *stream, void *buf, int32_t bufSize, int32_t *numWritten);
+static inline deStreamResult deInStream_deinit(deInStream *stream);
+static inline const char *deInStream_getError(deInStream *stream);
+static inline deStreamStatus deInStream_getStatus(deInStream *stream);
 
-inline deStreamResult deInStream_read(deInStream *stream, void *buf, int32_t bufSize, int32_t *numWritten)
+static inline deStreamResult deInStream_read(deInStream *stream, void *buf, int32_t bufSize, int32_t *numWritten)
 {
     return deIOStream_read(&(stream->ioStream), buf, bufSize, numWritten);
 }
 
-inline deStreamResult deInStream_deinit(deInStream *stream)
+static inline deStreamResult deInStream_deinit(deInStream *stream)
 {
     return deIOStream_deinit(&(stream->ioStream));
 }
 
-inline const char *deInStream_getError(deInStream *stream)
+static inline const char *deInStream_getError(deInStream *stream)
 {
     return deIOStream_getError(&(stream->ioStream));
 }
 
-inline deStreamStatus deInStream_getStatus(deInStream *stream)
+static inline deStreamStatus deInStream_getStatus(deInStream *stream)
 {
     return deIOStream_getStatus(&(stream->ioStream));
 }
