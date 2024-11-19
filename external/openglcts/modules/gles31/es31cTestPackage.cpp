@@ -43,6 +43,7 @@
 #include "es31cTextureStorageMultisampleTests.hpp"
 #include "es31cVertexAttribBindingTests.hpp"
 #include "glcAggressiveShaderOptimizationsTests.hpp"
+#include "glcBindImageTextureTests.hpp"
 #include "glcBlendEquationAdvancedTests.hpp"
 #include "glcFragCoordConventionsTests.hpp"
 #include "glcInfoTests.hpp"
@@ -223,6 +224,7 @@ void ES31TestPackage::init(void)
         coreGroup->addChild(new glcts::CompressedFormatTests(getContext()));
         coreGroup->addChild(new glcts::FragCoordConventionsTests(getContext()));
         coreGroup->addChild(new glcts::TextureStencil8Tests(getContext()));
+        coreGroup->addChild(new glcts::BindImageTextureTests(getContext()));
 
         glcts::ExtParameters extParams(glu::GLSL_VERSION_310_ES, glcts::EXTENSIONTYPE_OES);
         coreGroup->addChild(new glcts::GeometryShaderTests(getContext(), extParams));

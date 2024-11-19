@@ -13,6 +13,8 @@ set(GLCTS_COMMON_SRCS
 	glcAggressiveShaderOptimizationsTests.hpp
 	glcApiCoverageTests.cpp
 	glcApiCoverageTests.hpp
+    glcBindImageTextureTests.cpp
+    glcBindImageTextureTests.hpp
 	glcBlendEquationAdvancedTests.cpp
 	glcBlendEquationAdvancedTests.hpp
 	glcBufferObjectsTests.cpp

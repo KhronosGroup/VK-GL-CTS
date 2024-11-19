@@ -11229,6 +11229,7 @@ KHR-GL45.texture_view.view_classes
 KHR-GL45.texture_view.coherency
 KHR-GL45.texture_view.base_and_max_levels
 KHR-GL45.texture_view.reference_counting
+KHR-GL45.bind_image_texture.single_layer
 KHR-GL45.shaders42.declarations.declarations.layout_qualifier_on_image_function_parameter_vertex
 KHR-GL45.shaders42.declarations.declarations.layout_qualifier_on_image_function_parameter_fragment
 KHR-GL45.copy_image.functional_src_target_renderbuffer_src_format_r8_dst_target_texture_2d_array_dst_format_r8

@@ -67,6 +67,7 @@
 #include "gl4cVertexAttrib64BitTest.hpp"
 #include "gl4cVertexAttribBindingTests.hpp"
 #include "glcAggressiveShaderOptimizationsTests.hpp"
+#include "glcBindImageTextureTests.hpp"
 #include "glcBlendEquationAdvancedTests.hpp"
 #include "glcExposedExtensionsTests.hpp"
 #include "glcInfoTests.hpp"
@@ -213,6 +214,7 @@ void GL42TestPackage::init(void)
         addChild(new gl4cts::ShaderImageLoadStoreTests(getContext()));
         addChild(new gl4cts::ShadingLanguage420PackTests(getContext()));
         addChild(new gl4cts::TextureViewTests(getContext()));
+        addChild(new glcts::BindImageTextureTests(getContext()));
         addChild(new GL42ShaderTests(getContext()));
     }
     catch (...)
