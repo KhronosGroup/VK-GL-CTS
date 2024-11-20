@@ -68,8 +68,8 @@ struct TestConfig
 {
     VkQueueFlagBits transitionFrom;
     VkQueueFlagBits transitionTo;
-    VkQueueGlobalPriorityKHR priorityFrom;
-    VkQueueGlobalPriorityKHR priorityTo;
+    VkQueueGlobalPriority priorityFrom;
+    VkQueueGlobalPriority priorityTo;
     bool enableProtected;
     bool enableSparseBinding;
     SyncType syncType;
@@ -507,7 +507,7 @@ void GPQCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "Queue families with VK_QUEUE_SPARSE_BINDING_BIT not supported");
     }
 
-    auto assertUnavailableQueue = [](const uint32_t qIdx, VkQueueFlagBits qfb, VkQueueGlobalPriorityKHR qgp)
+    auto assertUnavailableQueue = [](const uint32_t qIdx, VkQueueFlagBits qfb, VkQueueGlobalPriority qgp)
     {
         if (qIdx == INVALID_UINT32)
         {
@@ -1065,10 +1065,10 @@ public:
     struct Params
     {
         QueueType queueA;
-        VkQueueGlobalPriorityKHR priorityA;
+        VkQueueGlobalPriority priorityA;
 
         QueueType queueB;
-        VkQueueGlobalPriorityKHR priorityB;
+        VkQueueGlobalPriority priorityB;
 
         bool doublePreemption;
 
@@ -1192,8 +1192,7 @@ void PreemptionCase::initPrograms(vk::SourceCollections &programCollection) cons
 }
 
 tcu::Maybe<uint32_t> findQueueByTypeAndPriority(const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                                PreemptionInstance::QueueType queueType,
-                                                VkQueueGlobalPriorityKHR priority)
+                                                PreemptionInstance::QueueType queueType, VkQueueGlobalPriority priority)
 {
     std::vector<VkQueueFamilyProperties2> qfProperties2;
     std::vector<VkQueueFamilyGlobalPriorityPropertiesKHR> qfGlobalPriorities;
@@ -1294,9 +1293,9 @@ std::string getQueueTypeName(PreemptionInstance::QueueType queueType)
     return capabilityIter->second;
 }
 
-std::string getPriorityName(VkQueueGlobalPriorityKHR priority)
+std::string getPriorityName(VkQueueGlobalPriority priority)
 {
-    static const std::map<VkQueueGlobalPriorityKHR, std::string> priorityNames{
+    static const std::map<VkQueueGlobalPriority, std::string> priorityNames{
         std::make_pair(VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR, std::string("low")),
         std::make_pair(VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR, std::string("medium")),
         std::make_pair(VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR, std::string("high")),
@@ -1309,7 +1308,7 @@ std::string getPriorityName(VkQueueGlobalPriorityKHR priority)
     return priorityNameIter->second;
 }
 
-void throwNotSupported(PreemptionInstance::QueueType queueType, VkQueueGlobalPriorityKHR priority)
+void throwNotSupported(PreemptionInstance::QueueType queueType, VkQueueGlobalPriority priority)
 {
     const auto queueTypeName = getQueueTypeName(queueType);
     const auto priorityName  = getPriorityName(priority);
@@ -1359,7 +1358,7 @@ protected:
     }
 
 public:
-    DeviceHelper(Context &context, PreemptionInstance::QueueType queueType, VkQueueGlobalPriorityKHR priority)
+    DeviceHelper(Context &context, PreemptionInstance::QueueType queueType, VkQueueGlobalPriority priority)
         : DeviceHelper()
     {
         const float numericPriority = 1.0f; // This is the classic priority.
@@ -1965,7 +1964,7 @@ tcu::TestCaseGroup *createGlobalPriorityQueueTests(tcu::TestContext &testCtx)
     std::pair<VkQueueFlags, const char *> const modifiers[]{
         {0, "no_modifiers"}, {VK_QUEUE_SPARSE_BINDING_BIT, "sparse"}, {VK_QUEUE_PROTECTED_BIT, "protected"}};
 
-    std::pair<VkQueueGlobalPriorityKHR, const char *> const prios[]{
+    std::pair<VkQueueGlobalPriority, const char *> const prios[]{
         {VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR, "low"},
         {VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR, "medium"},
         {VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR, "high"},
@@ -2042,7 +2041,7 @@ tcu::TestCaseGroup *createGlobalPriorityQueueTests(tcu::TestContext &testCtx)
         constexpr auto PRIORITY_REALTIME = VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR;
 
         using QueueTypeVec = std::vector<PreemptionInstance::QueueType>;
-        using PriorityVec  = std::vector<VkQueueGlobalPriorityKHR>;
+        using PriorityVec  = std::vector<VkQueueGlobalPriority>;
 
         const QueueTypeVec kQueueTypes{GRAPHICS, COMPUTE, COMPUTE_EXCLUSIVE, TRANSFER, TRANSFER_EXCLUSIVE};
         const PriorityVec kPriorities{PRIORITY_LOW, PRIORITY_MEDIUM, PRIORITY_HIGH, PRIORITY_REALTIME};

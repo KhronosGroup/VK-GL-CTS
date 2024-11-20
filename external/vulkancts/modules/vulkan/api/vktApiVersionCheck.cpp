@@ -164,8 +164,22 @@ public:
 
             // Check entry points of core functions
             {
-                ApisMap functions = ApisMap();
+                ApisMap functions;
                 initApisMap(functions);
+
+#if defined(CTS_USES_VULKAN)
+                // For vulkan 1.4+ we may need to test optionaly promoted VK_EXT_host_image_copy
+                if (m_context.getDeviceVulkan14Features().hostImageCopy)
+                {
+                    const char *hostImageCopyFunctions[]{"vkCopyMemoryToImage", "vkCopyImageToMemory",
+                                                         "vkCopyImageToImage", "vkTransitionImageLayout",
+                                                         "vkGetImageSubresourceLayout2"};
+                    auto &vk14Functions = functions[VK_API_VERSION_1_4];
+                    for (const auto fun : hostImageCopyFunctions)
+                        vk14Functions.emplace_back(fun, FUNCTIONORIGIN_DEVICE);
+                }
+#endif
+
                 ApisMap::const_iterator lastGoodVersion   = functions.begin();
                 const ApisMap::const_iterator versionsEnd = functions.end();
                 for (ApisMap::const_iterator it = lastGoodVersion; it != versionsEnd; ++it)
@@ -191,16 +205,17 @@ public:
 
             // Check function entry points of disabled extensions
             {
-                FunctionInfosList extFunctions = FunctionInfosList();
-                extFunctions.push_back(FunctionInfo("vkTrimCommandPoolKHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkCmdPushDescriptorSetKHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkCreateSamplerYcbcrConversionKHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkCreateSwapchainKHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkGetImageSparseMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkBindBufferMemory2KHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkImportFenceWin32HandleKHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkGetBufferMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE));
-                extFunctions.push_back(FunctionInfo("vkGetImageMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE));
+                FunctionInfosList extFunctions = {
+                    {"vkTrimCommandPoolKHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkCmdPushDescriptorSetKHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkCreateSamplerYcbcrConversionKHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkCreateSwapchainKHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkGetImageSparseMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkBindBufferMemory2KHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkImportFenceWin32HandleKHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkGetBufferMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE},
+                    {"vkGetImageMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE},
+                };
 
                 log << tcu::TestLog::Message
                     << "Disabled extensions check - tries to get functions of disabled extensions from proper "
@@ -213,13 +228,13 @@ public:
 
             // Check special cases
             {
-                FunctionInfosList nonexistingFunctions = FunctionInfosList();
+                FunctionInfosList nonexistingFunctions;
                 for (uint32_t i = 0; i <= FUNCTIONORIGIN_DEVICE; ++i)
                 {
                     const FunctionOrigin origin = static_cast<FunctionOrigin>(i);
-                    nonexistingFunctions.push_back(FunctionInfo("vkSomeName", origin));
-                    nonexistingFunctions.push_back(FunctionInfo("vkNonexistingKHR", origin));
-                    nonexistingFunctions.push_back(FunctionInfo("", origin));
+                    nonexistingFunctions.emplace_back("vkSomeName", origin);
+                    nonexistingFunctions.emplace_back("vkNonexistingKHR", origin);
+                    nonexistingFunctions.emplace_back("", origin);
                 }
 
                 log << tcu::TestLog::Message
@@ -249,45 +264,42 @@ public:
                 vector<FunctionInfo> extFunctions;
 
                 // Add supported instance extension functions
-                for (size_t instanceExtNdx = 0; instanceExtNdx < DE_LENGTH_OF_ARRAY(instanceExtensionNames);
-                     instanceExtNdx++)
+                for (auto instanceExtensionName : instanceExtensionNames)
                 {
                     vector<const char *> instanceExtFunctions;
                     vector<const char *> deviceExtFunctions;
 
-                    if (isSupportedInstanceExt(instanceExtensionNames[instanceExtNdx], instanceApiVersion))
+                    if (isSupportedInstanceExt(instanceExtensionName, instanceApiVersion))
                     {
                         getInstanceExtensionFunctions(instanceApiVersion, supportedInstanceExtensions,
-                                                      supportedDeviceExtensions, instanceExtensionNames[instanceExtNdx],
+                                                      supportedDeviceExtensions, instanceExtensionName,
                                                       instanceExtFunctions);
                     }
-                    if (isSupportedInstanceExt(instanceExtensionNames[instanceExtNdx], deviceApiVersion))
+                    if (isSupportedInstanceExt(instanceExtensionName, deviceApiVersion))
                     {
                         getDeviceExtensionFunctions(deviceApiVersion, supportedInstanceExtensions,
-                                                    supportedDeviceExtensions, instanceExtensionNames[instanceExtNdx],
+                                                    supportedDeviceExtensions, instanceExtensionName,
                                                     deviceExtFunctions);
                     }
 
-                    for (size_t instanceFuncNdx = 0; instanceFuncNdx < instanceExtFunctions.size(); instanceFuncNdx++)
-                        extFunctions.push_back(
-                            FunctionInfo(instanceExtFunctions[instanceFuncNdx], FUNCTIONORIGIN_INSTANCE));
+                    for (auto instanceFunc : instanceExtFunctions)
+                        extFunctions.emplace_back(instanceFunc, FUNCTIONORIGIN_INSTANCE);
 
-                    for (size_t deviceFuncNdx = 0; deviceFuncNdx < deviceExtFunctions.size(); deviceFuncNdx++)
-                        extFunctions.push_back(FunctionInfo(deviceExtFunctions[deviceFuncNdx], FUNCTIONORIGIN_DEVICE));
+                    for (auto deviceFunc : deviceExtFunctions)
+                        extFunctions.emplace_back(deviceFunc, FUNCTIONORIGIN_DEVICE);
                 }
 
                 // Add supported device extension functions
-                for (size_t deviceExtNdx = 0; deviceExtNdx < DE_LENGTH_OF_ARRAY(deviceExtensionNames); deviceExtNdx++)
+                for (const auto &deviceExtensionName : deviceExtensionNames)
                 {
                     vector<const char *> deviceExtFunctions;
 
-                    if (isSupportedDeviceExt(deviceExtensionNames[deviceExtNdx], deviceApiVersion))
+                    if (isSupportedDeviceExt(deviceExtensionName, deviceApiVersion))
                         getDeviceExtensionFunctions(deviceApiVersion, supportedInstanceExtensions,
-                                                    supportedDeviceExtensions, deviceExtensionNames[deviceExtNdx],
-                                                    deviceExtFunctions);
+                                                    supportedDeviceExtensions, deviceExtensionName, deviceExtFunctions);
 
-                    for (size_t deviceFuncNdx = 0; deviceFuncNdx < deviceExtFunctions.size(); deviceFuncNdx++)
-                        extFunctions.push_back(FunctionInfo(deviceExtFunctions[deviceFuncNdx], FUNCTIONORIGIN_DEVICE));
+                    for (auto deviceFunc : deviceExtFunctions)
+                        extFunctions.emplace_back(deviceFunc, FUNCTIONORIGIN_DEVICE);
                 }
 
                 log << tcu::TestLog::Message
@@ -301,8 +313,8 @@ public:
 
         if (failsQuantity > 0u)
             return tcu::TestStatus::fail("Fail");
-        else
-            return tcu::TestStatus::pass("Pass");
+
+        return tcu::TestStatus::pass("Pass");
     }
 
 private:

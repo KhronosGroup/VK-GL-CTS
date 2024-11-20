@@ -962,6 +962,7 @@ private:
 void VertexAttributeDivisorCase::checkSupport(Context &context) const
 {
     const auto attributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
+
     if (m_params.extension == Extension::EXT)
     {
         context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");

@@ -47,7 +47,7 @@ namespace
 // clang-format off
 /** @brief Vertex shader source code to test vertex stencil8 texture implementation. */
 const glw::GLchar* texture_stencil8_vert =
-	R"(${VERSION}
+    R"(${VERSION}
     layout (location = 0) in vec4 inVertex;
     out highp vec2 texCoords;
 
@@ -56,12 +56,12 @@ const glw::GLchar* texture_stencil8_vert =
         gl_Position = inVertex;
         texCoords = inVertex.xy * 0.5 + vec2(0.5);
     }
-	)";
+    )";
 
 /** @brief Fragment shader source code to test fragment lookup texture stencil8 simple color. */
 const glw::GLchar* texture_stencil8_simple_color_frag =
-	R"(${VERSION}
-	${PRECISION}
+    R"(${VERSION}
+    ${PRECISION}
 
     layout (location = 0) out lowp vec4 fragColor;
 
@@ -73,8 +73,8 @@ const glw::GLchar* texture_stencil8_simple_color_frag =
 
 /** @brief Fragment shader source code to test fragment lookup texture stencil8. */
 const glw::GLchar* texture_stencil8_frag =
-	R"(${VERSION}
-	${PRECISION}
+    R"(${VERSION}
+    ${PRECISION}
 
     uniform lowp usampler2D stencilTex;
     in highp vec2 texCoords;
@@ -140,7 +140,7 @@ const glw::GLchar* texture_stencil8_multisample_frag =
                                 vec4(0.0, 1.0,  0.0,  1.0) : // green for success
                                 vec4(1.0, 0.0,  0.0,  1.0);  // red for failure
     }
-	)";
+    )";
 // clang-format on
 
 constexpr glw::GLenum g_multisampleTexTargets[2] = {GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D_MULTISAMPLE_ARRAY};

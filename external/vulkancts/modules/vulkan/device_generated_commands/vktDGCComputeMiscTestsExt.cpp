@@ -1139,7 +1139,7 @@ tcu::TestStatus MaxPushConstantRangeInstance::iterate(void)
             &bufferDescInfo,                        //  const VkDescriptorBufferInfo*   pBufferInfo;
             nullptr,                                //  const VkBufferView*             pTexelBufferView;
         };
-        ctx.vkd.cmdPushDescriptorSetKHR(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &pushWrite);
+        ctx.vkd.cmdPushDescriptorSet(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &pushWrite);
     }
     else
     {
@@ -2148,8 +2148,8 @@ tcu::TestStatus DBPDInstance::iterate(void)
             nullptr,
         });
     }
-    ctx.vkd.cmdPushDescriptorSetKHR(cmdBuffer, bindPoint, *pipelineLayout, 0u, de::sizeU32(pushWrites),
-                                    de::dataOrNull(pushWrites));
+    ctx.vkd.cmdPushDescriptorSet(cmdBuffer, bindPoint, *pipelineLayout, 0u, de::sizeU32(pushWrites),
+                                 de::dataOrNull(pushWrites));
 
     IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(0u, stages, *pipelineLayout);
     if (m_params.useExecutionSet)

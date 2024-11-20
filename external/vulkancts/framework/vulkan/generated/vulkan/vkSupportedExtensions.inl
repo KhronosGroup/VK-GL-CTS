@@ -75,6 +75,25 @@ void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char
         dst.push_back("VK_KHR_bind_memory2");
         dst.push_back("VK_KHR_maintenance3");
     }
+    if (coreVersion >= VK_API_VERSION_1_4)
+    {
+        dst.push_back("VK_EXT_pipeline_robustness");
+        dst.push_back("VK_KHR_push_descriptor");
+        dst.push_back("VK_KHR_global_priority");
+        dst.push_back("VK_KHR_dynamic_rendering_local_read");
+        dst.push_back("VK_EXT_host_image_copy");
+        dst.push_back("VK_KHR_map_memory2");
+        dst.push_back("VK_KHR_shader_subgroup_rotate");
+        dst.push_back("VK_EXT_pipeline_protected_access");
+        dst.push_back("VK_KHR_maintenance5");
+        dst.push_back("VK_KHR_vertex_attribute_divisor");
+        dst.push_back("VK_KHR_load_store_op_none");
+        dst.push_back("VK_KHR_shader_float_controls2");
+        dst.push_back("VK_KHR_index_type_uint8");
+        dst.push_back("VK_KHR_line_rasterization");
+        dst.push_back("VK_KHR_shader_expect_assume");
+        dst.push_back("VK_KHR_maintenance6");
+    }
 }
 
 void getCoreInstanceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>& dst)

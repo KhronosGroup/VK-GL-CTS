@@ -61,8 +61,8 @@ dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.fragment_shad
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.fragment_shading_rate_khr.before
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.front_face.after
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.front_face.before
-dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.line_stipple_khr.after
-dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.line_stipple_khr.before
+dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.line_stipple.after
+dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.line_stipple.before
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.line_width.after
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.line_width.before
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.compute.primitive_topology.after
@@ -111,8 +111,8 @@ dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.transfer.fragment_sha
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.transfer.fragment_shading_rate_khr.before
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.transfer.front_face.after
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.transfer.front_face.before
-dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.transfer.line_stipple_khr.after
-dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.transfer.line_stipple_khr.before
+dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.transfer.line_stipple.after
+dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.transfer.line_stipple.before
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.transfer.line_width.after
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.transfer.line_width.before
 dEQP-VKSC.dynamic_state.monolithic.compute_transfer.single.transfer.primitive_topology.after
@@ -342,8 +342,8 @@ dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.com
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.fragment_shading_rate_khr.before
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.front_face.after
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.front_face.before
-dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_stipple_khr.after
-dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_stipple_khr.before
+dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_stipple.after
+dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_stipple.before
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_width.after
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_width.before
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.primitive_topology.after
@@ -392,8 +392,8 @@ dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.tra
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.fragment_shading_rate_khr.before
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.front_face.after
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.front_face.before
-dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_stipple_khr.after
-dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_stipple_khr.before
+dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_stipple.after
+dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_stipple.before
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_width.after
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_width.before
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.primitive_topology.after

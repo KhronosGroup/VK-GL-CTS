@@ -1392,7 +1392,8 @@ tcu::TestCaseGroup *createShaderImageAccessTests(tcu::TestContext &testCtx)
         params.useMaintenance5 = true;
         de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
         miscGroup->addChild(new ImageAccessTestCase(testCtx, "maintenance5_protected_access", params));
-        params.flags = vk::VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT;
+        params.flags          = vk::VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT;
+        params.protectionMode = PROTECTION_DISABLED;
         miscGroup->addChild(new ImageAccessTestCase(testCtx, "maintenance5_no_protected_access", params));
         accessGroup->addChild(miscGroup.release());
     }

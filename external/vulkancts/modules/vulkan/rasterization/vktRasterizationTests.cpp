@@ -1034,8 +1034,8 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
                               &m_descriptorSet.get(), 0u, nullptr);
     if (getLineStippleDynamic())
     {
-        vkd.cmdSetLineStippleKHR(*commandBuffer, lineStippleFactor, lineStipplePattern);
 #ifndef CTS_USES_VULKANSC
+        vkd.cmdSetLineStipple(*commandBuffer, lineStippleFactor, lineStipplePattern);
         if (isDynamicTopology())
         {
             // Using a dynamic topology can interact with the dynamic line stipple set above on some implementations, so
@@ -1048,6 +1048,8 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
             vkd.cmdDraw(*commandBuffer, static_cast<uint32_t>(offscreenData.size()), 1u, 0u, 0u);
             vkd.cmdSetPrimitiveTopology(*commandBuffer, getRightTopology());
         }
+#else
+        vkd.cmdSetLineStippleEXT(*commandBuffer, lineStippleFactor, lineStipplePattern);
 #endif // CTS_USES_VULKANSC
     }
 
@@ -1631,15 +1633,19 @@ BaseLineTestInstance::BaseLineTestInstance(Context &context, VkPrimitiveTopology
 {
     DE_ASSERT(m_primitiveWideness < PRIMITIVEWIDENESS_LAST);
 
-    if (m_lineRasterizationMode != VK_LINE_RASTERIZATION_MODE_KHR_LAST)
+    if (m_lineRasterizationMode != VK_LINE_RASTERIZATION_MODE_LAST)
     {
         if (context.isDeviceFunctionalitySupported("VK_KHR_line_rasterization") ||
             context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization"))
         {
             VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProperties = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR, // VkStructureType sType;
-                nullptr,                                                             // void* pNext;
-                0u, // uint32_t lineSubPixelPrecisionBits;
+#ifndef CTS_USES_VULKANSC
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES, // VkStructureType sType;
+#else
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT, // VkStructureType sType;
+#endif                   // #ifndef CTS_USES_VULKANSC
+                nullptr, // void* pNext;
+                0u,      // uint32_t lineSubPixelPrecisionBits;
             };
 
             VkPhysicalDeviceProperties2 deviceProperties2;
@@ -2282,7 +2288,7 @@ VkPipelineRasterizationLineStateCreateInfoEXT BaseLineTestInstance::initLineRast
 
 const VkPipelineRasterizationLineStateCreateInfoEXT *BaseLineTestInstance::getLineRasterizationStateCreateInfo(void)
 {
-    if (m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_KHR_LAST)
+    if (m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_LAST)
         return nullptr;
 
     if (m_lineRasterizationStateInfo.sType != VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT)
@@ -3395,8 +3401,7 @@ uint32_t ConservativeTestCase<ConcreteTestInstance>::getSubPixelResolution(Conte
 {
     if (isUseLineSubPixel(context))
     {
-        const VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProperties =
-            context.getLineRasterizationProperties();
+        const auto &lineRasterizationProperties = context.getLineRasterizationProperties();
 
         return lineRasterizationProperties.lineSubPixelPrecisionBits;
     }
@@ -5541,12 +5546,14 @@ public:
             if (m_wideness == PRIMITIVEWIDENESS_WIDE)
                 context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
 
+            const auto &lineRasterizationFeatures = context.getLineRasterizationFeatures();
+
             switch (m_lineRasterizationMode)
             {
             default:
                 TCU_THROW(InternalError, "Unknown line rasterization mode");
 
-            case VK_LINE_RASTERIZATION_MODE_KHR_LAST:
+            case VK_LINE_RASTERIZATION_MODE_LAST:
             {
                 if (m_strictness == PRIMITIVESTRICTNESS_STRICT)
                     if (!context.getDeviceProperties().limits.strictLines)
@@ -5564,37 +5571,37 @@ public:
                 if (!context.getDeviceProperties().limits.strictLines)
                     TCU_THROW(NotSupportedError, "Strict rasterization is not supported");
 
-                if (getLineStippleEnable() && !context.getLineRasterizationFeatures().stippledRectangularLines)
+                if (getLineStippleEnable() && !lineRasterizationFeatures.stippledRectangularLines)
                     TCU_THROW(NotSupportedError, "Stippled rectangular lines not supported");
                 break;
             }
 
             case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT:
             {
-                if (!context.getLineRasterizationFeatures().rectangularLines)
+                if (!lineRasterizationFeatures.rectangularLines)
                     TCU_THROW(NotSupportedError, "Rectangular lines not supported");
 
-                if (getLineStippleEnable() && !context.getLineRasterizationFeatures().stippledRectangularLines)
+                if (getLineStippleEnable() && !lineRasterizationFeatures.stippledRectangularLines)
                     TCU_THROW(NotSupportedError, "Stippled rectangular lines not supported");
                 break;
             }
 
             case VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT:
             {
-                if (!context.getLineRasterizationFeatures().bresenhamLines)
+                if (!lineRasterizationFeatures.bresenhamLines)
                     TCU_THROW(NotSupportedError, "Bresenham lines not supported");
 
-                if (getLineStippleEnable() && !context.getLineRasterizationFeatures().stippledBresenhamLines)
+                if (getLineStippleEnable() && !lineRasterizationFeatures.stippledBresenhamLines)
                     TCU_THROW(NotSupportedError, "Stippled Bresenham lines not supported");
                 break;
             }
 
             case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT:
             {
-                if (!context.getLineRasterizationFeatures().smoothLines)
+                if (!lineRasterizationFeatures.smoothLines)
                     TCU_THROW(NotSupportedError, "Smooth lines not supported");
 
-                if (getLineStippleEnable() && !context.getLineRasterizationFeatures().stippledSmoothLines)
+                if (getLineStippleEnable() && !lineRasterizationFeatures.stippledSmoothLines)
                     TCU_THROW(NotSupportedError, "Stippled smooth lines not supported");
                 break;
             }
@@ -8931,7 +8938,7 @@ class NonStrictLinesMaintenance5TestInstance : public LinesTestInstance
 public:
     NonStrictLinesMaintenance5TestInstance(Context &context, PrimitiveWideness wideness, uint32_t additionalRenderSize)
         : LinesTestInstance(context, wideness, PRIMITIVESTRICTNESS_NONSTRICT, VK_SAMPLE_COUNT_1_BIT,
-                            LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST, LineStippleFactorCase::DEFAULT,
+                            LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST, LineStippleFactorCase::DEFAULT,
                             additionalRenderSize)
         , m_amIWide(PRIMITIVEWIDENESS_WIDE == wideness)
     {
@@ -8957,8 +8964,8 @@ public:
     NonStrictLineStripMaintenance5TestInstance(Context &context, PrimitiveWideness wideness,
                                                uint32_t additionalRenderSize)
         : LineStripTestInstance(context, wideness, PRIMITIVESTRICTNESS_NONSTRICT, VK_SAMPLE_COUNT_1_BIT,
-                                LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
-                                LineStippleFactorCase::DEFAULT, additionalRenderSize)
+                                LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST, LineStippleFactorCase::DEFAULT,
+                                additionalRenderSize)
         , m_amIWide(PRIMITIVEWIDENESS_WIDE == wideness)
     {
     }
@@ -9058,75 +9065,75 @@ void createRasterizationTests(tcu::TestCaseGroup *rasterizationTests)
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
             testCtx, "strict_lines", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT,
-            LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in strict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>(
             testCtx, "strict_lines_with_adjacency", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in strict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>(
             testCtx, "strict_line_strip", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in strict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>(
             testCtx, "strict_line_strip_with_adjacency", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
             testCtx, "strict_lines_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in strict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>(
             testCtx, "strict_lines_with_adjacency_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in strict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>(
             testCtx, "strict_line_strip_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in strict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>(
             testCtx, "strict_line_strip_with_adjacency_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
 
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
             testCtx, "non_strict_lines", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in nonstrict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>(
             testCtx, "non_strict_lines_with_adjacency", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>(
             testCtx, "non_strict_line_strip", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in nonstrict mode, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>(
             testCtx, "non_strict_line_strip_with_adjacency", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT,
-            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
             testCtx, "non_strict_lines_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in nonstrict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>(
             testCtx, "non_strict_lines_with_adjacency_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT,
-            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>(
             testCtx, "non_strict_line_strip_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT, true,
-            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+            VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
         // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in nonstrict mode with wide lines, verify rasterization result
         nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>(
             testCtx, "non_strict_line_strip_with_adjacency_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT,
-            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST,
+            true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST,
             LineStippleFactorCase::DEFAULT, 0, true));
 
         for (int i = 0; i < static_cast<int>(LINESTIPPLE_LAST); ++i)
@@ -10087,20 +10094,20 @@ void createRasterizationTests(tcu::TestCaseGroup *rasterizationTests)
             // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode, verify rasterization result
             nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
                 testCtx, "strict_lines", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_STRICT, true,
-                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
             // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode with wide lines, verify rasterization result
             nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
                 testCtx, "strict_lines_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_STRICT, true,
-                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
 
             // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result
             nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
                 testCtx, "non_strict_lines", PRIMITIVEWIDENESS_NARROW, PRIMITIVESTRICTNESS_NONSTRICT, true,
-                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
             // Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode with wide lines, verify rasterization result
             nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>(
                 testCtx, "non_strict_lines_wide", PRIMITIVEWIDENESS_WIDE, PRIMITIVESTRICTNESS_NONSTRICT, true,
-                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+                samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_LAST));
 
             for (int i = 0; i < static_cast<int>(LINESTIPPLE_LAST); ++i)
             {

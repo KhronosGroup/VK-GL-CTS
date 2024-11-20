@@ -171,11 +171,13 @@ void verifyDriverSupport(const uint32_t apiVersion, const vk::VkPhysicalDeviceFe
     switch (updateMethod)
     {
     case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH:
-        extensionNames.push_back("VK_KHR_push_descriptor");
+        if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_push_descriptor"))
+            extensionNames.push_back("VK_KHR_push_descriptor");
         break;
 
     case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE:
-        extensionNames.push_back("VK_KHR_push_descriptor");
+        if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_push_descriptor"))
+            extensionNames.push_back("VK_KHR_push_descriptor");
     // Fallthrough
     case DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE:
         if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_descriptor_update_template"))
@@ -494,7 +496,7 @@ void bindDescriptorSets(const vk::DeviceInterface &m_vki, vk::VkCommandBuffer cm
             dynamicOffsetCount,                                  // uint32_t dynamicOffsetCount;
             dynamicOffsets                                       // const uint32_t* pDynamicOffsets;
         };
-        m_vki.cmdBindDescriptorSets2KHR(cmdBuffer, &bindDescriptorSetsInfo);
+        m_vki.cmdBindDescriptorSets2(cmdBuffer, &bindDescriptorSetsInfo);
 #endif
     }
     else
@@ -1899,8 +1901,8 @@ void BufferRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) const
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
     {
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
-            m_vki.cmdPushDescriptorSetWithTemplateKHR(cmd, **m_updateTemplates[setNdx], getPipelineLayout(), setNdx,
-                                                      (const void *)m_updateRegistry[setNdx].getRawPointer());
+            m_vki.cmdPushDescriptorSetWithTemplate(cmd, **m_updateTemplates[setNdx], getPipelineLayout(), setNdx,
+                                                   (const void *)m_updateRegistry[setNdx].getRawPointer());
     }
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
     {
@@ -2280,9 +2282,9 @@ void ComputeCommand::submitAndWait(uint32_t queueFamilyIndex, vk::VkQueue queue
     else
     {
         for (uint32_t setNdx = 0; setNdx < (uint32_t)(*updateTemplates).size(); setNdx++)
-            m_vki.cmdPushDescriptorSetWithTemplateKHR(*cmd, **(*updateTemplates)[setNdx], m_pipelineLayout,
-                                                      getDescriptorSetNdx(m_descriptorSetCount, setNdx),
-                                                      (const void *)(*updateRegistry)[setNdx].getRawPointer());
+            m_vki.cmdPushDescriptorSetWithTemplate(*cmd, **(*updateTemplates)[setNdx], m_pipelineLayout,
+                                                   getDescriptorSetNdx(m_descriptorSetCount, setNdx),
+                                                   (const void *)(*updateRegistry)[setNdx].getRawPointer());
     }
 #endif
 
@@ -4598,9 +4600,9 @@ void ImageFetchRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) const
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE)
     {
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
-            m_vki.cmdPushDescriptorSetWithTemplateKHR(cmd, **m_updateTemplates[setNdx], getPipelineLayout(),
-                                                      getDescriptorSetNdx(m_descriptorSetCount, setNdx),
-                                                      (const void *)m_updateRegistry[setNdx].getRawPointer());
+            m_vki.cmdPushDescriptorSetWithTemplate(cmd, **m_updateTemplates[setNdx], getPipelineLayout(),
+                                                   getDescriptorSetNdx(m_descriptorSetCount, setNdx),
+                                                   (const void *)m_updateRegistry[setNdx].getRawPointer());
     }
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
     {
@@ -6413,9 +6415,9 @@ void ImageSampleRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) cons
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
         {
             const uint32_t descriptorSetNdx = getDescriptorSetNdx(m_descriptorSetCount, setNdx);
-            m_vki.cmdPushDescriptorSetWithTemplateKHR(cmd, **m_updateTemplates[setNdx], getPipelineLayout(),
-                                                      descriptorSetNdx,
-                                                      (const void *)m_updateRegistry[setNdx].getRawPointer());
+            m_vki.cmdPushDescriptorSetWithTemplate(cmd, **m_updateTemplates[setNdx], getPipelineLayout(),
+                                                   descriptorSetNdx,
+                                                   (const void *)m_updateRegistry[setNdx].getRawPointer());
         }
     }
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
@@ -8778,9 +8780,9 @@ void TexelBufferRenderInstance::writeDrawCmdBuffer(vk::VkCommandBuffer cmd) cons
         for (uint32_t setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
         {
             const uint32_t descriptorSetNdx = getDescriptorSetNdx(m_descriptorSetCount, setNdx);
-            m_vki.cmdPushDescriptorSetWithTemplateKHR(cmd, **m_updateTemplates[setNdx], getPipelineLayout(),
-                                                      descriptorSetNdx,
-                                                      (const void *)m_updateRegistry[setNdx].getRawPointer());
+            m_vki.cmdPushDescriptorSetWithTemplate(cmd, **m_updateTemplates[setNdx], getPipelineLayout(),
+                                                   descriptorSetNdx,
+                                                   (const void *)m_updateRegistry[setNdx].getRawPointer());
         }
     }
     else if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)

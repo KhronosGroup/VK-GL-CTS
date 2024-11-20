@@ -53,6 +53,8 @@ static spv_target_env getSpirvToolsEnvForValidatorOptions(SpirvValidatorOptions 
         return SPV_ENV_VULKAN_1_2;
     case VK_MAKE_API_VERSION(0, 1, 3, 0):
         return SPV_ENV_VULKAN_1_3;
+    case VK_MAKE_API_VERSION(0, 1, 4, 0):
+        return SPV_ENV_VULKAN_1_4;
     default:
         break;
     }

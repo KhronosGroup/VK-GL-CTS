@@ -48,6 +48,7 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
     m_vulkan12Features = initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
     m_vulkan13Features = initVulkanStructure();
+    m_vulkan14Features = initVulkanStructure();
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
     m_vulkanSC10Features = initVulkanStructure();
@@ -60,6 +61,7 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
         void **nextPtr = &m_coreFeatures2.pNext;
         std::vector<FeatureStructWrapperBase *> featuresToFillFromBlob;
 #ifndef CTS_USES_VULKANSC
+        bool vk14Supported = (apiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0));
         bool vk13Supported = (apiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0));
 #endif // CTS_USES_VULKANSC
         bool vk12Supported = (apiVersion >= VK_MAKE_API_VERSION(0, 1, 2, 0));
@@ -77,6 +79,8 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
 #ifndef CTS_USES_VULKANSC
             if (vk13Supported)
                 addToChainVulkanStructure(&nextPtr, m_vulkan13Features);
+            if (vk14Supported)
+                addToChainVulkanStructure(&nextPtr, m_vulkan14Features);
 #endif // CTS_USES_VULKANSC
         }
 #ifdef CTS_USES_VULKANSC
@@ -116,7 +120,7 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
                     continue;
 #endif // CTS_USES_VULKANSC
 
-                // if feature struct is part of VkPhysicalDeviceVulkan1{1,2,3}Features
+                // if feature struct is part of VkPhysicalDeviceVulkan1{1,2,3,4}Features
                 // we dont add it to the chain but store and fill later from blob data
                 bool featureFilledFromBlob = false;
                 if (vk12Supported)
@@ -198,13 +202,13 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &m_coreFeatures2);
 
-        // fill data from VkPhysicalDeviceVulkan1{1,2,3}Features
+        // fill data from VkPhysicalDeviceVulkan1{1,2,3,4}Features
         if (vk12Supported)
         {
             AllFeaturesBlobs allBlobs = {
                 m_vulkan11Features, m_vulkan12Features,
 #ifndef CTS_USES_VULKANSC
-                m_vulkan13Features,
+                m_vulkan13Features, m_vulkan14Features,
 #endif // CTS_USES_VULKANSC
                 // add blobs from future vulkan versions here
             };

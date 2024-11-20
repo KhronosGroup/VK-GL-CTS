@@ -2741,8 +2741,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                         templateCreateInfo.pDescriptorUpdateEntries   = templateVectorsBefore[i]->data();
                         Move<VkDescriptorUpdateTemplate> descriptorUpdateTemplate =
                             createDescriptorUpdateTemplate(vk, device, &templateCreateInfo, NULL);
-                        vk.cmdPushDescriptorSetWithTemplateKHR(*cmdBuffer, *descriptorUpdateTemplate, *pipelineLayout,
-                                                               0, templateVectorData[i]);
+                        vk.cmdPushDescriptorSetWithTemplate(*cmdBuffer, *descriptorUpdateTemplate, *pipelineLayout, 0,
+                                                            templateVectorData[i]);
                     }
                 }
             }
@@ -2773,8 +2773,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
                 if (writesBeforeBindVec.size())
                 {
-                    vk.cmdPushDescriptorSetKHR(*cmdBuffer, bindPoint, *pipelineLayout, 0,
-                                               (uint32_t)writesBeforeBindVec.size(), &writesBeforeBindVec[0]);
+                    vk.cmdPushDescriptorSet(*cmdBuffer, bindPoint, *pipelineLayout, 0,
+                                            (uint32_t)writesBeforeBindVec.size(), &writesBeforeBindVec[0]);
                 }
 #endif
             }
