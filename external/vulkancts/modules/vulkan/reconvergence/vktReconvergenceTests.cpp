@@ -812,8 +812,11 @@ Move<VkPipeline> ReconvergenceTestInstance::createComputePipeline(const VkPipeli
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
+    const VkBool32 computeFullSubgroups =
+        m_subgroupSize <= 64 && m_context.getSubgroupSizeControlFeatures().computeFullSubgroups;
 
-    const uint32_t specData[2]                                               = {m_data.sizeX, m_data.sizeY};
+    const uint32_t specData[2] = {computeFullSubgroups ? ROUNDUP(m_data.sizeX, m_subgroupSize) : m_data.sizeX,
+                                  m_data.sizeY};
     const vk::VkSpecializationMapEntry entries[DE_LENGTH_OF_ARRAY(specData)] = {
         {0, (uint32_t)(sizeof(uint32_t) * 0), sizeof(uint32_t)},
         {1, (uint32_t)(sizeof(uint32_t) * 1), sizeof(uint32_t)},
@@ -830,9 +833,6 @@ Move<VkPipeline> ReconvergenceTestInstance::createComputePipeline(const VkPipeli
         nullptr,                                                                        // void* pNext;
         m_subgroupSize // uint32_t requiredSubgroupSize;
     };
-
-    const VkBool32 computeFullSubgroups =
-        m_subgroupSize <= 64 && m_context.getSubgroupSizeControlFeatures().computeFullSubgroups;
 
     const void *shaderPNext = computeFullSubgroups ? &subgroupSizeCreateInfo : nullptr;
     VkPipelineShaderStageCreateFlags pipelineShaderStageCreateFlags =
