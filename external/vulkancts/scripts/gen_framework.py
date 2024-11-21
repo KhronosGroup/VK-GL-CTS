@@ -2937,11 +2937,11 @@ def writeDeviceFeatures2(api, filename):
         stream.append("tcu::TestStatus testPhysicalDeviceFeature" + x.instanceName[len('device'):]+" (Context& context)")
         stream.append("""{
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
-    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-    const InstanceDriver&        vki                (instance.getDriver());
-    const int                    count = 2u;
-    TestLog&                    log = context.getTestContext().getLog();
-    VkPhysicalDeviceFeatures2    extFeatures;
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 """)
         stream.append("\t"+structureDefinitions[n])
