@@ -1565,6 +1565,11 @@ uint32_t DeviceDriver::getImageViewHandleNVX (VkDevice device, const VkImageView
     return m_vk.getImageViewHandleNVX(device, pInfo);
 }
 
+uint64_t DeviceDriver::getImageViewHandle64NVX (VkDevice device, const VkImageViewHandleInfoNVX* pInfo) const
+{
+    return m_vk.getImageViewHandle64NVX(device, pInfo);
+}
+
 VkResult DeviceDriver::getImageViewAddressNVX (VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties) const
 {
     return m_vk.getImageViewAddressNVX(device, imageView, pProperties);

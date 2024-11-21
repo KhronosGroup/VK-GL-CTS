@@ -429,6 +429,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceAccelerationStructureCompatibi
 typedef VKAPI_ATTR VkDeviceSize			(VKAPI_CALL* GetRayTracingShaderGroupStackSizeKHRFunc)								(VkDevice device, VkPipeline pipeline, uint32_t group, VkShaderGroupShaderKHR groupShader);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRayTracingPipelineStackSizeKHRFunc)								(VkCommandBuffer commandBuffer, uint32_t pipelineStackSize);
 typedef VKAPI_ATTR uint32_t				(VKAPI_CALL* GetImageViewHandleNVXFunc)												(VkDevice device, const VkImageViewHandleInfoNVX* pInfo);
+typedef VKAPI_ATTR uint64_t				(VKAPI_CALL* GetImageViewHandle64NVXFunc)											(VkDevice device, const VkImageViewHandleInfoNVX* pInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetImageViewAddressNVXFunc)											(VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSurfacePresentModes2EXTFunc)							(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, uint32_t* pPresentModeCount, VkPresentModeKHR* pPresentModes);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceGroupSurfacePresentModes2EXTFunc)								(VkDevice device, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes);
@@ -716,3 +717,4 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRenderingAttachmentLocationsKHRFu
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRenderingInputAttachmentIndicesFunc)								(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfo* pInputAttachmentIndexInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRenderingInputAttachmentIndicesKHRFunc)							(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfo* pInputAttachmentIndexInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthClampRangeEXTFunc)											(VkCommandBuffer commandBuffer, VkDepthClampModeEXT depthClampMode, const VkDepthClampRangeEXT* pDepthClampRange);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNVFunc)	(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixFlexibleDimensionsPropertiesNV* pProperties);

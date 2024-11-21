@@ -1817,7 +1817,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 299
+#define VK_HEADER_VERSION 301
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 4, VK_HEADER_VERSION)
@@ -2270,6 +2270,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_CU_MODULE_CREATE_INFO_NVX = 1000029000,
     VK_STRUCTURE_TYPE_CU_FUNCTION_CREATE_INFO_NVX = 1000029001,
     VK_STRUCTURE_TYPE_CU_LAUNCH_INFO_NVX = 1000029002,
+    VK_STRUCTURE_TYPE_CU_MODULE_TEXTURING_MODE_CREATE_INFO_NVX = 1000029004,
     VK_STRUCTURE_TYPE_IMAGE_VIEW_HANDLE_INFO_NVX = 1000030000,
     VK_STRUCTURE_TYPE_IMAGE_VIEW_ADDRESS_PROPERTIES_NVX = 1000030001,
     VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_KHR = 1000038000,
@@ -2914,6 +2915,11 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA = 1000575002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_CONTROL_FEATURES_EXT = 1000582000,
     VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLAMP_CONTROL_CREATE_INFO_EXT = 1000582001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HDR_VIVID_FEATURES_HUAWEI = 1000590000,
+    VK_STRUCTURE_TYPE_HDR_VIVID_DYNAMIC_METADATA_HUAWEI = 1000590001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV = 1000593000,
+    VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_FLEXIBLE_DIMENSIONS_PROPERTIES_NV = 1000593001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_PROPERTIES_NV = 1000593002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
   // VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT is a deprecated alias
@@ -9513,6 +9519,8 @@ static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_VIEW_INDEX_FROM_DEVI
 static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_DISPATCH_BASE_BIT = 0x00000010ULL;
 static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT = 0x00000100ULL;
 static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_EARLY_RETURN_ON_FAILURE_BIT = 0x00000200ULL;
+static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_NO_PROTECTED_ACCESS_BIT = 0x08000000ULL;
+static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT = 0x40000000ULL;
 #ifdef VK_ENABLE_BETA_EXTENSIONS
 static const VkPipelineCreateFlagBits2 VK_PIPELINE_CREATE_2_EXECUTION_GRAPH_BIT_AMDX = 0x100000000ULL;
 #endif
@@ -14551,7 +14559,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndirectByteCountEXT(
 #define VK_NVX_binary_import 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkCuModuleNVX)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkCuFunctionNVX)
-#define VK_NVX_BINARY_IMPORT_SPEC_VERSION 1
+#define VK_NVX_BINARY_IMPORT_SPEC_VERSION 2
 #define VK_NVX_BINARY_IMPORT_EXTENSION_NAME "VK_NVX_binary_import"
 typedef struct VkCuModuleCreateInfoNVX {
     VkStructureType    sType;
@@ -14559,6 +14567,12 @@ typedef struct VkCuModuleCreateInfoNVX {
     uintptr_t             dataSize;
     const void*        pData;
 } VkCuModuleCreateInfoNVX;
+
+typedef struct VkCuModuleTexturingModeCreateInfoNVX {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkBool32           use64bitTexturing;
+} VkCuModuleTexturingModeCreateInfoNVX;
 
 typedef struct VkCuFunctionCreateInfoNVX {
     VkStructureType    sType;
@@ -14621,7 +14635,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCuLaunchKernelNVX(
 
 // VK_NVX_image_view_handle is a preprocessor guard. Do not pass it to API calls.
 #define VK_NVX_image_view_handle 1
-#define VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION 2
+#define VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION 3
 #define VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME "VK_NVX_image_view_handle"
 typedef struct VkImageViewHandleInfoNVX {
     VkStructureType     sType;
@@ -14639,10 +14653,15 @@ typedef struct VkImageViewAddressPropertiesNVX {
 } VkImageViewAddressPropertiesNVX;
 
 typedef uint32_t (VKAPI_PTR *PFN_vkGetImageViewHandleNVX)(VkDevice device, const VkImageViewHandleInfoNVX* pInfo);
+typedef uint64_t (VKAPI_PTR *PFN_vkGetImageViewHandle64NVX)(VkDevice device, const VkImageViewHandleInfoNVX* pInfo);
 typedef VkResult (VKAPI_PTR *PFN_vkGetImageViewAddressNVX)(VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties);
 
 #ifndef VK_NO_PROTOTYPES
 VKAPI_ATTR uint32_t VKAPI_CALL vkGetImageViewHandleNVX(
+    VkDevice                                    device,
+    const VkImageViewHandleInfoNVX*             pInfo);
+
+VKAPI_ATTR uint64_t VKAPI_CALL vkGetImageViewHandle64NVX(
     VkDevice                                    device,
     const VkImageViewHandleInfoNVX*             pInfo);
 
@@ -22043,6 +22062,74 @@ typedef struct VkPipelineViewportDepthClampControlCreateInfoEXT {
     const VkDepthClampRangeEXT*    pDepthClampRange;
 } VkPipelineViewportDepthClampControlCreateInfoEXT;
 
+
+
+// VK_HUAWEI_hdr_vivid is a preprocessor guard. Do not pass it to API calls.
+#define VK_HUAWEI_hdr_vivid 1
+#define VK_HUAWEI_HDR_VIVID_SPEC_VERSION  1
+#define VK_HUAWEI_HDR_VIVID_EXTENSION_NAME "VK_HUAWEI_hdr_vivid"
+typedef struct VkPhysicalDeviceHdrVividFeaturesHUAWEI {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           hdrVivid;
+} VkPhysicalDeviceHdrVividFeaturesHUAWEI;
+
+typedef struct VkHdrVividDynamicMetadataHUAWEI {
+    VkStructureType    sType;
+    const void*        pNext;
+    uintptr_t             dynamicMetadataSize;
+    const void*        pDynamicMetadata;
+} VkHdrVividDynamicMetadataHUAWEI;
+
+
+
+// VK_NV_cooperative_matrix2 is a preprocessor guard. Do not pass it to API calls.
+#define VK_NV_cooperative_matrix2 1
+#define VK_NV_COOPERATIVE_MATRIX_2_SPEC_VERSION 1
+#define VK_NV_COOPERATIVE_MATRIX_2_EXTENSION_NAME "VK_NV_cooperative_matrix2"
+typedef struct VkCooperativeMatrixFlexibleDimensionsPropertiesNV {
+    VkStructureType       sType;
+    void*                 pNext;
+    uint32_t              MGranularity;
+    uint32_t              NGranularity;
+    uint32_t              KGranularity;
+    VkComponentTypeKHR    AType;
+    VkComponentTypeKHR    BType;
+    VkComponentTypeKHR    CType;
+    VkComponentTypeKHR    ResultType;
+    VkBool32              saturatingAccumulation;
+    VkScopeKHR            scope;
+    uint32_t              workgroupInvocations;
+} VkCooperativeMatrixFlexibleDimensionsPropertiesNV;
+
+typedef struct VkPhysicalDeviceCooperativeMatrix2FeaturesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           cooperativeMatrixWorkgroupScope;
+    VkBool32           cooperativeMatrixFlexibleDimensions;
+    VkBool32           cooperativeMatrixReductions;
+    VkBool32           cooperativeMatrixConversions;
+    VkBool32           cooperativeMatrixPerElementOperations;
+    VkBool32           cooperativeMatrixTensorAddressing;
+    VkBool32           cooperativeMatrixBlockLoads;
+} VkPhysicalDeviceCooperativeMatrix2FeaturesNV;
+
+typedef struct VkPhysicalDeviceCooperativeMatrix2PropertiesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    uint32_t           cooperativeMatrixWorkgroupScopeMaxWorkgroupSize;
+    uint32_t           cooperativeMatrixFlexibleDimensionsMaxDimension;
+    uint32_t           cooperativeMatrixWorkgroupScopeReservedSharedMemory;
+} VkPhysicalDeviceCooperativeMatrix2PropertiesNV;
+
+typedef VkResult (VKAPI_PTR *PFN_vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV)(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixFlexibleDimensionsPropertiesNV* pProperties);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV(
+    VkPhysicalDevice                            physicalDevice,
+    uint32_t*                                   pPropertyCount,
+    VkCooperativeMatrixFlexibleDimensionsPropertiesNV* pProperties);
+#endif
 
 
 // VK_KHR_acceleration_structure is a preprocessor guard. Do not pass it to API calls.

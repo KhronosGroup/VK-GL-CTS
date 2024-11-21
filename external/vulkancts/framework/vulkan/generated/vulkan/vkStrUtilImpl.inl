@@ -1610,6 +1610,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_CU_MODULE_CREATE_INFO_NVX:											return "VK_STRUCTURE_TYPE_CU_MODULE_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_CU_FUNCTION_CREATE_INFO_NVX:											return "VK_STRUCTURE_TYPE_CU_FUNCTION_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_CU_LAUNCH_INFO_NVX:													return "VK_STRUCTURE_TYPE_CU_LAUNCH_INFO_NVX";
+		case VK_STRUCTURE_TYPE_CU_MODULE_TEXTURING_MODE_CREATE_INFO_NVX:							return "VK_STRUCTURE_TYPE_CU_MODULE_TEXTURING_MODE_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_HANDLE_INFO_NVX:											return "VK_STRUCTURE_TYPE_IMAGE_VIEW_HANDLE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_ADDRESS_PROPERTIES_NVX:									return "VK_STRUCTURE_TYPE_IMAGE_VIEW_ADDRESS_PROPERTIES_NVX";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_KHR";
@@ -2450,6 +2451,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA:							return "VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_CONTROL_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_CONTROL_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLAMP_CONTROL_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLAMP_CONTROL_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HDR_VIVID_FEATURES_HUAWEI:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HDR_VIVID_FEATURES_HUAWEI";
+		case VK_STRUCTURE_TYPE_HDR_VIVID_DYNAMIC_METADATA_HUAWEI:									return "VK_STRUCTURE_TYPE_HDR_VIVID_DYNAMIC_METADATA_HUAWEI";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_FLEXIBLE_DIMENSIONS_PROPERTIES_NV:				return "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_FLEXIBLE_DIMENSIONS_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_PROPERTIES_NV";
 		default:																					return nullptr;
 	}
 }
@@ -3808,10 +3814,10 @@ tcu::Format::Bitfield<64> getPipelineCreateFlags2Str (VkPipelineCreateFlags2 val
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_RAY_TRACING_OPACITY_MICROMAP_BIT_EXT,						"VK_PIPELINE_CREATE_2_RAY_TRACING_OPACITY_MICROMAP_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,					"VK_PIPELINE_CREATE_2_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,			"VK_PIPELINE_CREATE_2_DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_NO_PROTECTED_ACCESS_BIT_EXT,								"VK_PIPELINE_CREATE_2_NO_PROTECTED_ACCESS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_NO_PROTECTED_ACCESS_BIT,									"VK_PIPELINE_CREATE_2_NO_PROTECTED_ACCESS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_RAY_TRACING_DISPLACEMENT_MICROMAP_BIT_NV,					"VK_PIPELINE_CREATE_2_RAY_TRACING_DISPLACEMENT_MICROMAP_BIT_NV"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT,								"VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT,							"VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT,								"VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR,										"VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_EXECUTION_GRAPH_BIT_AMDX,									"VK_PIPELINE_CREATE_2_EXECUTION_GRAPH_BIT_AMDX"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT,							"VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT"),
@@ -9404,6 +9410,17 @@ std::ostream& operator<< (std::ostream& s, const VkHdrMetadataEXT& value)
 	s << "\tminLuminance = " << value.minLuminance << '\n';
 	s << "\tmaxContentLightLevel = " << value.maxContentLightLevel << '\n';
 	s << "\tmaxFrameAverageLightLevel = " << value.maxFrameAverageLightLevel << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkHdrVividDynamicMetadataHUAWEI& value)
+{
+	s << "VkHdrVividDynamicMetadataHUAWEI = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdynamicMetadataSize = " << value.dynamicMetadataSize << '\n';
+	s << "\tpDynamicMetadata = " << value.pDynamicMetadata << '\n';
 	s << '}';
 	return s;
 }
@@ -16262,6 +16279,16 @@ std::ostream& operator<< (std::ostream& s, const VkCuModuleCreateInfoNVX& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkCuModuleTexturingModeCreateInfoNVX& value)
+{
+	s << "VkCuModuleTexturingModeCreateInfoNVX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tuse64bitTexturing = " << value.use64bitTexturing << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkCuFunctionCreateInfoNVX& value)
 {
 	s << "VkCuFunctionCreateInfoNVX = {\n";
@@ -19406,6 +19433,63 @@ std::ostream& operator<< (std::ostream& s, const VkDepthClampRangeEXT& value)
 	s << "VkDepthClampRangeEXT = {\n";
 	s << "\tminDepthClamp = " << value.minDepthClamp << '\n';
 	s << "\tmaxDepthClamp = " << value.maxDepthClamp << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatrix2FeaturesNV& value)
+{
+	s << "VkPhysicalDeviceCooperativeMatrix2FeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcooperativeMatrixWorkgroupScope = " << value.cooperativeMatrixWorkgroupScope << '\n';
+	s << "\tcooperativeMatrixFlexibleDimensions = " << value.cooperativeMatrixFlexibleDimensions << '\n';
+	s << "\tcooperativeMatrixReductions = " << value.cooperativeMatrixReductions << '\n';
+	s << "\tcooperativeMatrixConversions = " << value.cooperativeMatrixConversions << '\n';
+	s << "\tcooperativeMatrixPerElementOperations = " << value.cooperativeMatrixPerElementOperations << '\n';
+	s << "\tcooperativeMatrixTensorAddressing = " << value.cooperativeMatrixTensorAddressing << '\n';
+	s << "\tcooperativeMatrixBlockLoads = " << value.cooperativeMatrixBlockLoads << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatrix2PropertiesNV& value)
+{
+	s << "VkPhysicalDeviceCooperativeMatrix2PropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcooperativeMatrixWorkgroupScopeMaxWorkgroupSize = " << value.cooperativeMatrixWorkgroupScopeMaxWorkgroupSize << '\n';
+	s << "\tcooperativeMatrixFlexibleDimensionsMaxDimension = " << value.cooperativeMatrixFlexibleDimensionsMaxDimension << '\n';
+	s << "\tcooperativeMatrixWorkgroupScopeReservedSharedMemory = " << value.cooperativeMatrixWorkgroupScopeReservedSharedMemory << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCooperativeMatrixFlexibleDimensionsPropertiesNV& value)
+{
+	s << "VkCooperativeMatrixFlexibleDimensionsPropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tMGranularity = " << value.MGranularity << '\n';
+	s << "\tNGranularity = " << value.NGranularity << '\n';
+	s << "\tKGranularity = " << value.KGranularity << '\n';
+	s << "\tAType = " << value.AType << '\n';
+	s << "\tBType = " << value.BType << '\n';
+	s << "\tCType = " << value.CType << '\n';
+	s << "\tResultType = " << value.ResultType << '\n';
+	s << "\tsaturatingAccumulation = " << value.saturatingAccumulation << '\n';
+	s << "\tscope = " << value.scope << '\n';
+	s << "\tworkgroupInvocations = " << value.workgroupInvocations << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceHdrVividFeaturesHUAWEI& value)
+{
+	s << "VkPhysicalDeviceHdrVividFeaturesHUAWEI = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thdrVivid = " << value.hdrVivid << '\n';
 	s << '}';
 	return s;
 }
