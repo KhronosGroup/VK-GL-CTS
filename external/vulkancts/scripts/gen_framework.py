@@ -2901,8 +2901,7 @@ def writeDeviceFeatures2(api, filename):
     for index, structureDetail in enumerate(testedStructureDetail):
         structureName = structureDetail.nameList[0]
         # create two instances of each structure
-        nameSpacing = '\t'
-        structureDefinitions.append(structureName + nameSpacing + structureDetail.instanceName + '[count];')
+        structureDefinitions.append(structureName + ' ' + structureDetail.instanceName + '[count];')
         # create flags that check if proper extension or vulkan version is available
         condition = ''
         extension = structureDetail.extension
@@ -2918,32 +2917,30 @@ def writeDeviceFeatures2(api, filename):
         if condition == '':
             condition = ' true'
         condition += ';'
-        nameSpacing = '\t' * int((len(structureName) - 4) / 4)
+        nameSpacing = ' ' * int((len(structureName) - len("const bool")) + 1)
         featureEnabledFlags.append('const bool' + nameSpacing + structureDetail.flagName + ' =' + condition)
         # clear memory of each structure
-        clearStructures.append('\tdeMemset(&' + structureDetail.instanceName + '[ndx], 0xFF * ndx, sizeof(' + structureName + '));')
+        clearStructures.append('    deMemset(&' + structureDetail.instanceName + '[ndx], 0xFF * ndx, sizeof(' + structureName + '));')
         # construct structure chain
         nextInstanceName = 'nullptr';
         if index < len(testedStructureDetail)-1:
             nextInstanceName = '&' + testedStructureDetail[index+1].instanceName + '[ndx]'
         structureChain.append([
-            '\t\t' + structureDetail.instanceName + '[ndx].sType = ' + structureDetail.flagName + ' ? ' + structureDetail.sType + ' : VK_STRUCTURE_TYPE_MAX_ENUM;',
-            '\t\t' + structureDetail.instanceName + '[ndx].pNext = nullptr;'])
+            '        ' + structureDetail.instanceName + '[ndx].sType = ' + structureDetail.sType + ';',
+            '        ' + structureDetail.instanceName + '[ndx].pNext = nullptr;'])
         # construct log section
         logStructures.append([
-            '\tif (' + structureDetail.flagName + ')',
-            '\t\tlog << TestLog::Message << ' + structureDetail.instanceName + '[0] << TestLog::EndMessage;'
+            '    log << TestLog::Message << ' + structureDetail.instanceName + '[0] << TestLog::EndMessage;'
             ])
-        #construct verification section
+        # construct verification section
         verifyStructure = []
-        verifyStructure.append('\tif (' + structureDetail.flagName + ' &&')
+        verifyStructure.append('    if (')
         for index, m in enumerate(structureDetail.members):
-            prefix = '\t\t(' if index == 0 else '\t\t '
-            postfix = '))' if index == len(structureDetail.members)-1 else ' ||'
-            verifyStructure.append(prefix + structureDetail.instanceName + '[0].' + m + ' != ' + structureDetail.instanceName + '[1].' + m + postfix)
+            postfix = ')' if index == len(structureDetail.members)-1 else ' ||'
+            verifyStructure.append('        ' + structureDetail.instanceName + '[0].' + m + ' != ' + structureDetail.instanceName + '[1].' + m + postfix)
         if len(structureDetail.members) == 0:
-            verifyStructure.append('\t\tfalse)')
-        verifyStructure.append('\t{\n\t\tTCU_FAIL("Mismatch between ' + structureName + '");\n\t}')
+            verifyStructure.append('    false)')
+        verifyStructure.append('    {\n        TCU_FAIL("Mismatch between ' + structureName + '");\n    }')
         verifyStructures.append(verifyStructure)
 
     # construct file content
@@ -2961,23 +2958,26 @@ def writeDeviceFeatures2(api, filename):
     VkPhysicalDeviceFeatures2     extFeatures;
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 """)
-        stream.append("\t"+structureDefinitions[n])
-        stream.append("\t"+featureEnabledFlags[n])
+        stream.append("    "+structureDefinitions[n])
+        stream.append("    "+featureEnabledFlags[n])
         stream.append('')
-        stream.append('\tfor (int ndx = 0; ndx < count; ++ndx)\n\t{')
-        stream.append("\t" + clearStructures[n])
+        stream.append('    if (!' + x.flagName + ')')
+        stream.append('        return tcu::TestStatus::pass("Querying not supported");')
+        stream.append('')
+        stream.append('    for (int ndx = 0; ndx < count; ++ndx)\n    {')
+        stream.append("    " + clearStructures[n])
         stream.extend(structureChain[n])
         stream.append('')
         stream.append(
-                '\t\tdeMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));\n'
-                '\t\textFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;\n'
-                '\t\textFeatures.pNext = &' + testedStructureDetail[n].instanceName + '[ndx];\n\n'
-                '\t\tvki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);')
-        stream.append('\t}\n')
+                '        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));\n'
+                '        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;\n'
+                '        extFeatures.pNext = &' + testedStructureDetail[n].instanceName + '[ndx];\n\n'
+                '        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);')
+        stream.append('    }\n')
         stream.extend(logStructures[n])
         stream.append('')
         stream.extend(verifyStructures[n])
-        stream.append('\treturn tcu::TestStatus::pass("Querying succeeded");')
+        stream.append('    return tcu::TestStatus::pass("Querying succeeded");')
         stream.append("}\n")
 
     allApiVersions = [f.number for f in api.features]
