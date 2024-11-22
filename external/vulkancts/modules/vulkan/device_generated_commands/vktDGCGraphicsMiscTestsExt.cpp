@@ -4871,7 +4871,7 @@ tcu::TestStatus sparseVBORun(Context &context)
     auto vertexBufferInfo              = makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
     vertexBufferInfo.flags             = VK_BUFFER_CREATE_SPARSE_BINDING_BIT;
     const auto vertexBuffer            = makeBuffer(ctx.vkd, ctx.device, vertexBufferInfo);
-    const auto vertexBufferMemReqFlags = (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    const auto vertexBufferMemReqFlags = MemoryRequirement::DeviceAddress;
     const auto vertexBufferMemReqs     = getBufferMemoryRequirements(ctx.vkd, ctx.device, *vertexBuffer);
     const auto vertexBufferAlloc       = ctx.allocator.allocate(vertexBufferMemReqs, vertexBufferMemReqFlags);
 
