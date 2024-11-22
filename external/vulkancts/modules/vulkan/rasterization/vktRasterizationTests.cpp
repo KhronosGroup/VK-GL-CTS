@@ -816,8 +816,9 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
     const VkQueue queue             = m_context.getUniversalQueue();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     Allocator &allocator            = m_context.getDefaultAllocator();
-    const size_t attributeBatchSize = de::dataSize(positionData);
     const auto offscreenData        = getOffScreenPoints();
+    const size_t attributeBatchSize = std::max(de::dataSize(positionData), de::dataSize(offscreenData));
+    const size_t totalAttributeSize = attributeBatchSize * 2u; // Position and color.
 
     Move<VkCommandBuffer> commandBuffer;
     Move<VkPipeline> graphicsPipeline;
@@ -844,12 +845,14 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
         };
 
         const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] = {
+            // Positions.
             {
                 0u,                            // uint32_t location;
                 0u,                            // uint32_t binding;
                 VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat format;
                 0u                             // uint32_t offsetInBytes;
             },
+            // Colors.
             {
                 1u,                            // uint32_t location;
                 0u,                            // uint32_t binding;
@@ -944,7 +947,7 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
             DE_NULL,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
-            attributeBatchSize * 2,               // VkDeviceSize size;
+            totalAttributeSize,                   // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             1u,                                   // uint32_t queueFamilyCount;
@@ -959,13 +962,13 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
                                       vertexBufferMemory->getOffset()));
 
         // Load vertices into vertex buffer
-        deMemcpy(vertexBufferMemory->getHostPtr(), positionData.data(), attributeBatchSize);
-        deMemcpy(reinterpret_cast<uint8_t *>(vertexBufferMemory->getHostPtr()) + attributeBatchSize, colorData.data(),
-                 attributeBatchSize);
+        deMemcpy(vertexBufferMemory->getHostPtr(), de::dataOrNull(positionData), de::dataSize(positionData));
+        deMemcpy(reinterpret_cast<uint8_t *>(vertexBufferMemory->getHostPtr()) + attributeBatchSize,
+                 de::dataOrNull(colorData), de::dataSize(colorData));
         flushAlloc(vkd, vkDevice, *vertexBufferMemory);
     }
 
-    if (!offscreenData.empty())
+    if (!offscreenData.empty() && isDynamicTopology())
     {
         const std::vector<tcu::Vec4> offscreenColors(offscreenData.size(), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
@@ -1036,13 +1039,11 @@ void BaseRenderingTestInstance::drawPrimitives(tcu::Surface &result, const std::
     {
         vkd.cmdSetLineStippleKHR(*commandBuffer, lineStippleFactor, lineStipplePattern);
 #ifndef CTS_USES_VULKANSC
-        if (isDynamicTopology())
+        if (isDynamicTopology() && (!!offscreenDataBuffer))
         {
             // Using a dynamic topology can interact with the dynamic line stipple set above on some implementations, so
             // we try to check nothing breaks here. We set a wrong topology, draw some offscreen data and go back to the
             // right topology _without_ re-setting the line stipple again. Side effects should not be visible.
-            DE_ASSERT(!!offscreenDataBuffer);
-
             vkd.cmdSetPrimitiveTopology(*commandBuffer, getWrongTopology());
             vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &offscreenDataBuffer->get(), &vertexBufferOffset);
             vkd.cmdDraw(*commandBuffer, static_cast<uint32_t>(offscreenData.size()), 1u, 0u, 0u);
@@ -1089,14 +1090,13 @@ void BaseRenderingTestInstance::drawPrimitives(
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     Allocator &allocator            = m_context.getDefaultAllocator();
     const size_t attributeBatchSize = de::dataSize(positionData);
-    const auto offscreenData        = getOffScreenPoints();
+    const size_t totalAttributeSize = attributeBatchSize * 2u;
 
     Move<VkCommandBuffer> commandBuffer;
     Move<VkPipeline> graphicsPipeline;
     Move<VkPipeline> noStippleGraphicsPipeline;
     Move<VkBuffer> vertexBuffer;
     de::MovePtr<Allocation> vertexBufferMemory;
-    std::unique_ptr<BufferWithMemory> offscreenDataBuffer;
     const VkPhysicalDeviceProperties properties = m_context.getDeviceProperties();
 
     if (attributeBatchSize > properties.limits.maxVertexInputAttributeOffset)
@@ -1250,7 +1250,7 @@ void BaseRenderingTestInstance::drawPrimitives(
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
             DE_NULL,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
-            attributeBatchSize * 2,               // VkDeviceSize size;
+            totalAttributeSize,                   // VkDeviceSize size;
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             1u,                                   // uint32_t queueFamilyCount;
@@ -1265,32 +1265,10 @@ void BaseRenderingTestInstance::drawPrimitives(
                                       vertexBufferMemory->getOffset()));
 
         // Load vertices into vertex buffer
-        deMemcpy(vertexBufferMemory->getHostPtr(), positionData.data(), attributeBatchSize);
-        deMemcpy(reinterpret_cast<uint8_t *>(vertexBufferMemory->getHostPtr()) + attributeBatchSize, colorData.data(),
-                 attributeBatchSize);
+        deMemcpy(vertexBufferMemory->getHostPtr(), de::dataOrNull(positionData), de::dataSize(positionData));
+        deMemcpy(reinterpret_cast<uint8_t *>(vertexBufferMemory->getHostPtr()) + attributeBatchSize,
+                 de::dataOrNull(colorData), de::dataSize(colorData));
         flushAlloc(vkd, vkDevice, *vertexBufferMemory);
-    }
-
-    if (!offscreenData.empty())
-    {
-        // Concatenate positions with vertex colors.
-        const std::vector<tcu::Vec4> colors(offscreenData.size(), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-        std::vector<tcu::Vec4> fullOffscreenData(offscreenData);
-        fullOffscreenData.insert(fullOffscreenData.end(), colors.begin(), colors.end());
-
-        // Copy full data to offscreen data buffer.
-        const auto offscreenBufferSizeSz = de::dataSize(fullOffscreenData);
-        const auto offscreenBufferSize   = static_cast<VkDeviceSize>(offscreenBufferSizeSz);
-        const auto offscreenDataCreateInfo =
-            makeBufferCreateInfo(offscreenBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-
-        offscreenDataBuffer.reset(
-            new BufferWithMemory(vkd, vkDevice, allocator, offscreenDataCreateInfo, MemoryRequirement::HostVisible));
-        auto &bufferAlloc = offscreenDataBuffer->getAllocation();
-        void *dataPtr     = bufferAlloc.getHostPtr();
-
-        deMemcpy(dataPtr, fullOffscreenData.data(), offscreenBufferSizeSz);
-        flushAlloc(vkd, vkDevice, bufferAlloc);
     }
 
     // Create Command Buffer
