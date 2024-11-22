@@ -5804,20 +5804,22 @@ tcu::TestCaseGroup *createCommandBuffersTests(tcu::TestContext &testCtx)
     {
         uint32_t seed          = 1614182419u;
         const auto smallExtent = makeExtent3D(128u, 128u, 1u);
-        const auto largeExtent = makeExtent3D(512u, 256u, 1u);
 
         commandBuffersTests->addChild(
             new ManyDrawsCase(testCtx, "record_many_draws_primary_1",
                               ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY, smallExtent, seed++)));
         commandBuffersTests->addChild(
+            new ManyDrawsCase(testCtx, "record_many_draws_secondary_1",
+                              ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_SECONDARY, smallExtent, seed++)));
+#ifndef CTS_USES_VULKANSC
+        const auto largeExtent = makeExtent3D(512u, 256u, 1u);
+        commandBuffersTests->addChild(
             new ManyDrawsCase(testCtx, "record_many_draws_primary_2",
                               ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY, largeExtent, seed++)));
         commandBuffersTests->addChild(
-            new ManyDrawsCase(testCtx, "record_many_draws_secondary_1",
-                              ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_SECONDARY, smallExtent, seed++)));
-        commandBuffersTests->addChild(
             new ManyDrawsCase(testCtx, "record_many_draws_secondary_2",
                               ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_SECONDARY, largeExtent, seed++)));
+#endif // CTS_USES_VULKANSC
     }
     addFunctionCase(commandBuffersTests.get(), "submit_twice_primary", checkEventSupport, submitPrimaryBufferTwiceTest);
     addFunctionCase(commandBuffersTests.get(), "submit_twice_secondary",
