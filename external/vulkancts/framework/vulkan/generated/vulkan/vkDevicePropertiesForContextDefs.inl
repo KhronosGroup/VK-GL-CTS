@@ -91,5 +91,6 @@ const vk::VkPhysicalDeviceMaintenance6Properties&					Context::getMaintenance6Pr
 const vk::VkPhysicalDeviceMaintenance7PropertiesKHR&				Context::getMaintenance7Properties					(void) const { return m_device->getMaintenance7Properties();					}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&		Context::getDeviceGeneratedCommandsPropertiesEXT	(void) const { return m_device->getDeviceGeneratedCommandsPropertiesEXT();		}
 const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&		Context::getImageAlignmentControlPropertiesMESA		(void) const { return m_device->getImageAlignmentControlPropertiesMESA();		}
+const vk::VkPhysicalDeviceCooperativeMatrix2PropertiesNV&			Context::getCooperativeMatrix2PropertiesNV			(void) const { return m_device->getCooperativeMatrix2PropertiesNV();			}
 const vk::VkPhysicalDeviceSubgroupProperties&						Context::getSubgroupProperties						(void) const { return m_device->getSubgroupProperties();						}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				Context::getProtectedMemoryProperties				(void) const { return m_device->getProtectedMemoryProperties();					}

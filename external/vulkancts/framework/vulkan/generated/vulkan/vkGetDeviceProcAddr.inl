@@ -121,6 +121,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkDestroyCuFunctionNVX",
 		"vkCmdCuLaunchKernelNVX",
 		"vkGetImageViewHandleNVX",
+		"vkGetImageViewHandle64NVX",
 		"vkGetImageViewAddressNVX",
 		"vkCmdDrawIndirectCountAMD",
 		"vkCmdDrawIndexedIndirectCountAMD",
@@ -592,6 +593,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkUpdateIndirectExecutionSetPipelineEXT",
 		"vkUpdateIndirectExecutionSetShaderEXT",
 		"vkCmdSetDepthClampRangeEXT",
+		"vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV",
     };
 
     bool fail = false;

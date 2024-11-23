@@ -2849,6 +2849,13 @@ VKAPI_ATTR uint32_t VKAPI_CALL getImageViewHandleNVX (VkDevice device, const VkI
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR uint64_t VKAPI_CALL getImageViewHandle64NVX (VkDevice device, const VkImageViewHandleInfoNVX* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getImageViewAddressNVX (VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties)
 {
 	DE_UNREF(device);
@@ -4335,6 +4342,14 @@ VKAPI_ATTR void VKAPI_CALL cmdSetDepthClampRangeEXT (VkCommandBuffer commandBuff
 	DE_UNREF(pDepthClampRange);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixFlexibleDimensionsPropertiesNV* pProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pPropertyCount);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -4435,6 +4450,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetDrmDisplayEXT,													getDrmDisplayEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceOpticalFlowImageFormatsNV,						getPhysicalDeviceOpticalFlowImageFormatsNV),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR,					getPhysicalDeviceCooperativeMatrixPropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV,	getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -4738,6 +4754,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetRayTracingShaderGroupStackSizeKHR,						getRayTracingShaderGroupStackSizeKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRayTracingPipelineStackSizeKHR,						cmdSetRayTracingPipelineStackSizeKHR),
 	VK_NULL_FUNC_ENTRY(vkGetImageViewHandleNVX,										getImageViewHandleNVX),
+	VK_NULL_FUNC_ENTRY(vkGetImageViewHandle64NVX,									getImageViewHandle64NVX),
 	VK_NULL_FUNC_ENTRY(vkGetImageViewAddressNVX,									getImageViewAddressNVX),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupSurfacePresentModes2EXT,						getDeviceGroupSurfacePresentModes2EXT),
 	VK_NULL_FUNC_ENTRY(vkAcquireFullScreenExclusiveModeEXT,							acquireFullScreenExclusiveModeEXT),

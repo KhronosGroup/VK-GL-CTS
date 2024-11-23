@@ -956,6 +956,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentIdFeatur
 std::ostream&	operator<<	(std::ostream& s, const VkPresentIdKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentWaitFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkHdrMetadataEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkHdrVividDynamicMetadataHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayNativeHdrSurfaceCapabilitiesAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainDisplayNativeHdrCreateInfoAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRefreshCycleDurationGOOGLE& value);
@@ -1514,6 +1515,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProvokingVertex
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProvokingVertexPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationProvokingVertexStateCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCuModuleCreateInfoNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCuModuleTexturingModeCreateInfoNVX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCuFunctionCreateInfoNVX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCuLaunchInfoNVX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDescriptorBufferFeaturesEXT& value);
@@ -1781,6 +1783,10 @@ std::ostream&	operator<<	(std::ostream& s, const VkImageAlignmentControlCreateIn
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDepthClampRangeEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrix2FeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrix2PropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixFlexibleDimensionsPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceHdrVividFeaturesHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

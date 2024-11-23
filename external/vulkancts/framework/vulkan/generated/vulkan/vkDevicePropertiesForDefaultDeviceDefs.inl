@@ -91,5 +91,6 @@ const VkPhysicalDeviceMaintenance6Properties&					getMaintenance6Properties					
 const VkPhysicalDeviceMaintenance7PropertiesKHR&				getMaintenance7Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance7PropertiesKHR>();					}
 const VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&		getDeviceGeneratedCommandsPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT>();		}
 const VkPhysicalDeviceImageAlignmentControlPropertiesMESA&		getImageAlignmentControlPropertiesMESA		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceImageAlignmentControlPropertiesMESA>();		}
+const VkPhysicalDeviceCooperativeMatrix2PropertiesNV&			getCooperativeMatrix2PropertiesNV			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCooperativeMatrix2PropertiesNV>();				}
 const VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubgroupProperties>();							}
 const VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceProtectedMemoryProperties>();					}

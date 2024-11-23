@@ -1638,6 +1638,15 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_HUAWEI_hdr_vivid")
+	{
+		return;
+	}
+	if (extName == "VK_NV_cooperative_matrix2")
+	{
+		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV");
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -1819,6 +1828,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_NVX_image_view_handle")
 	{
 		functions.push_back("vkGetImageViewHandleNVX");
+		functions.push_back("vkGetImageViewHandle64NVX");
 		functions.push_back("vkGetImageViewAddressNVX");
 		return;
 	}
@@ -3796,6 +3806,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdSetDepthClampRangeEXT");
 		return;
 	}
+	if (extName == "VK_HUAWEI_hdr_vivid")
+	{
+		return;
+	}
+	if (extName == "VK_NV_cooperative_matrix2")
+	{
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -4222,4 +4240,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_device_generated_commands",
 	"VK_MESA_image_alignment_control",
 	"VK_EXT_depth_clamp_control",
+	"VK_HUAWEI_hdr_vivid",
+	"VK_NV_cooperative_matrix2",
 };

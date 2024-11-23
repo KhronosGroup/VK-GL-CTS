@@ -302,6 +302,7 @@ virtual void				getDeviceAccelerationStructureCompatibilityKHR			(VkDevice devic
 virtual VkDeviceSize		getRayTracingShaderGroupStackSizeKHR					(VkDevice device, VkPipeline pipeline, uint32_t group, VkShaderGroupShaderKHR groupShader) const;
 virtual void				cmdSetRayTracingPipelineStackSizeKHR					(VkCommandBuffer commandBuffer, uint32_t pipelineStackSize) const;
 virtual uint32_t			getImageViewHandleNVX									(VkDevice device, const VkImageViewHandleInfoNVX* pInfo) const;
+virtual uint64_t			getImageViewHandle64NVX									(VkDevice device, const VkImageViewHandleInfoNVX* pInfo) const;
 virtual VkResult			getImageViewAddressNVX									(VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties) const;
 virtual VkResult			getDeviceGroupSurfacePresentModes2EXT					(VkDevice device, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes) const;
 virtual VkResult			acquireFullScreenExclusiveModeEXT						(VkDevice device, VkSwapchainKHR swapchain) const;
