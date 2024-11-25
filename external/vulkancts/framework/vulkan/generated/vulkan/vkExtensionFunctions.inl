@@ -1525,6 +1525,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_encode_av1")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_video_maintenance1")
 	{
 		return;
@@ -1598,6 +1602,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_NV_display_stereo")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_video_encode_quantization_map")
+	{
+		return;
+	}
 	if (extName == "VK_NV_raw_access_chains")
 	{
 		return;
@@ -1647,6 +1659,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV");
 		return;
 	}
+	if (extName == "VK_EXT_vertex_attribute_robustness")
+	{
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -1680,6 +1696,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "vulkan_video_codec_av1std_decode")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_av1std_encode")
 	{
 		return;
 	}
@@ -3668,6 +3688,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_encode_av1")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_video_maintenance1")
 	{
 		return;
@@ -3756,6 +3780,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_NV_display_stereo")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_video_encode_quantization_map")
+	{
+		return;
+	}
 	if (extName == "VK_NV_raw_access_chains")
 	{
 		return;
@@ -3814,6 +3846,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_vertex_attribute_robustness")
+	{
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -3847,6 +3883,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "vulkan_video_codec_av1std_decode")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_av1std_encode")
 	{
 		return;
 	}
@@ -3893,6 +3933,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_GOOGLE_surfaceless_query",
 	"VK_LUNARG_direct_driver_loading",
 	"VK_EXT_layer_settings",
+	"VK_NV_display_stereo",
 };
 
 ::std::string deviceExtensionNames[] =
@@ -4212,6 +4253,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_QCOM_multiview_per_view_render_areas",
 	"VK_KHR_compute_shader_derivatives",
 	"VK_KHR_video_decode_av1",
+	"VK_KHR_video_encode_av1",
 	"VK_KHR_video_maintenance1",
 	"VK_NV_per_stage_descriptor_set",
 	"VK_QCOM_image_processing2",
@@ -4230,6 +4272,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_shader_expect_assume",
 	"VK_KHR_maintenance6",
 	"VK_NV_descriptor_pool_overallocation",
+	"VK_KHR_video_encode_quantization_map",
 	"VK_NV_raw_access_chains",
 	"VK_KHR_shader_relaxed_extended_instruction",
 	"VK_NV_command_buffer_inheritance",
@@ -4242,4 +4285,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_depth_clamp_control",
 	"VK_HUAWEI_hdr_vivid",
 	"VK_NV_cooperative_matrix2",
+	"VK_EXT_vertex_attribute_robustness",
 };
