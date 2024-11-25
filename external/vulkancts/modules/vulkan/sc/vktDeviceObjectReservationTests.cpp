@@ -1820,7 +1820,6 @@ public:
             rasterizationStateCreateInfo, multisampleStateCreateInfo, colorBlendAttachmentState,
             colorBlendStateCreateInfo, dynamicStateCreateInfo, dynamicStates, *pipelineLayout, *renderPass);
 
-        // create custom VkPipelineIdentifierInfo
         VkPipelineOfflineCreateInfo pipelineID = resetPipelineOfflineCreateInfo();
         applyPipelineIdentifier(pipelineID, "ID_DR_PS_00");
         pipelineID.pNext                 = graphicsPipelineCreateInfo.pNext;

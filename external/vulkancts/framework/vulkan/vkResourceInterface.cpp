@@ -302,7 +302,7 @@ void ResourceInterface::preparePipelinePoolSizes()
         auto it = std::find_if(begin(m_pipelineSizes), end(m_pipelineSizes),
                                vksc_server::PipelineIdentifierEqual(pipeline.id));
         if (it == end(m_pipelineSizes))
-            TCU_THROW(InternalError, "VkPipelinePoolEntrySizeCreateInfo not created for pipelineIdentifier");
+            TCU_THROW(InternalError, "Pipeline size information not found for pipeline identifier");
 
         PipelinePoolSizeInfo ppsi{it->count, it->size};
 
@@ -366,7 +366,7 @@ void ResourceInterface::fillPoolEntrySize(vk::VkPipelineOfflineCreateInfo &pipel
     auto it = std::find_if(begin(m_pipelineSizes), end(m_pipelineSizes),
                            vksc_server::PipelineIdentifierEqual(pipelineIdentifier));
     if (it == end(m_pipelineSizes))
-        TCU_THROW(InternalError, "VkPipelinePoolEntrySizeCreateInfo not created for pipelineIdentifier");
+        TCU_THROW(InternalError, "Pipeline size information not found for pipeline identifier");
     pipelineIdentifier.poolEntrySize = it->size;
 }
 
