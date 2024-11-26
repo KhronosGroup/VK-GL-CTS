@@ -167,6 +167,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCGraphicsMeshConditionalTestsExt.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCGraphicsMeshTestsExt.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCGraphicsMiscTestsExt.cpp",
+        "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCGraphicsTessStateTestsExt.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCGraphicsXfbTestsExt.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCPropertyTests.cpp",
         "external/vulkancts/modules/vulkan/device_generated_commands/vktDGCPropertyTestsExt.cpp",

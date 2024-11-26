@@ -1687,6 +1687,7 @@ void RenderPassWrapper::createFramebuffer(const DeviceInterface &vk, const VkDev
                 subpass.m_colorAttachments[0].attachmentInfo.imageView = colorAttachment;
             }
         }
+        m_layers = layers;
 #endif
     }
 }
@@ -1738,6 +1739,7 @@ void RenderPassWrapper::createFramebuffer(const DeviceInterface &vk, const VkDev
                         attachmentsArray[subpass.m_resolveAttachments[i].index];
             }
         }
+        m_layers = layers;
 #endif
     }
 }
