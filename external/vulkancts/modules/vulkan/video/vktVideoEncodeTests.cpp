@@ -61,6 +61,7 @@
 #include <fstream>
 #include <string>
 #include <algorithm>
+#include <cmath>
 
 #ifndef VK_MAX_NUM_IMAGE_PLANES_KHR
 #define VK_MAX_NUM_IMAGE_PLANES_KHR 4
@@ -97,7 +98,13 @@ enum TestType
     TEST_TYPE_H264_ENCODE_RC_CBR, // Encode one I frame with enabled constant rate control, maximum QP value equal to 42
     TEST_TYPE_H264_ENCODE_RC_DISABLE,    // Encode one I frame with disabled rate control, constant QP value equal to 28
     TEST_TYPE_H264_ENCODE_QUALITY_LEVEL, // Encode one I frame with quality level set to 0
-    TEST_TYPE_H264_ENCODE_USAGE,         // Encode one I frame with non-default encode usage setup
+    TEST_TYPE_H264_ENCODE_QM_DELTA_RC_VBR, // Encode three I frame with enabled quantization map with enabled variable rate control, maximum QP value equal to 42
+    TEST_TYPE_H264_ENCODE_QM_DELTA_RC_CBR, // Encode three I frame with enabled quantization map with enabled constant rate control, maximum QP value equal to 42
+    TEST_TYPE_H264_ENCODE_QM_DELTA_RC_DISABLE, // Encode three I frame with enabled quantization map with delta values and disabled rate control
+    TEST_TYPE_H264_ENCODE_QM_DELTA, // Encode one I frame with enabled quantization map with delta values
+    TEST_TYPE_H264_ENCODE_QM_EMPHASIS_CBR, // Encode one I frame with enabled quantization map with emphasis values and enabled constant rate control
+    TEST_TYPE_H264_ENCODE_QM_EMPHASIS_VBR, // Encode one I frame with enabled quantization map with emphasis values and enabled variable rate control
+    TEST_TYPE_H264_ENCODE_USAGE, // Encode one I frame with non-default encode usage setup
     TEST_TYPE_H264_ENCODE_I_P, // Encode one I frame and one P frame, recording and submission order match encode order
     TEST_TYPE_H264_ENCODE_I_P_NOT_MATCHING_ORDER, // Encode one I frame, one P frame, recording and submission order not matching encoding order
     TEST_TYPE_H264_I_P_B_13, // Encode two 13-frame GOPs, both I, P, and B frames recording and submission order match encode order
@@ -111,6 +118,12 @@ enum TestType
     TEST_TYPE_H265_ENCODE_RC_CBR,
     TEST_TYPE_H265_ENCODE_RC_DISABLE,
     TEST_TYPE_H265_ENCODE_QUALITY_LEVEL,
+    TEST_TYPE_H265_ENCODE_QM_DELTA_RC_VBR,
+    TEST_TYPE_H265_ENCODE_QM_DELTA_RC_CBR,
+    TEST_TYPE_H265_ENCODE_QM_DELTA_RC_DISABLE,
+    TEST_TYPE_H265_ENCODE_QM_DELTA,
+    TEST_TYPE_H265_ENCODE_QM_EMPHASIS_CBR,
+    TEST_TYPE_H265_ENCODE_QM_EMPHASIS_VBR,
     TEST_TYPE_H265_ENCODE_USAGE,
     TEST_TYPE_H265_ENCODE_I_P,
     TEST_TYPE_H265_ENCODE_I_P_NOT_MATCHING_ORDER,
@@ -150,6 +163,24 @@ const char *getTestName(const TestType testType)
     case TEST_TYPE_H264_ENCODE_QUALITY_LEVEL:
     case TEST_TYPE_H265_ENCODE_QUALITY_LEVEL:
         return "quality_level";
+    case TEST_TYPE_H264_ENCODE_QM_DELTA_RC_VBR:
+    case TEST_TYPE_H265_ENCODE_QM_DELTA_RC_VBR:
+        return "quantization_map_delta_rc_vbr";
+    case TEST_TYPE_H264_ENCODE_QM_DELTA_RC_CBR:
+    case TEST_TYPE_H265_ENCODE_QM_DELTA_RC_CBR:
+        return "quantization_map_delta_rc_cbr";
+    case TEST_TYPE_H264_ENCODE_QM_DELTA_RC_DISABLE:
+    case TEST_TYPE_H265_ENCODE_QM_DELTA_RC_DISABLE:
+        return "quantization_map_delta_rc_disable";
+    case TEST_TYPE_H264_ENCODE_QM_DELTA:
+    case TEST_TYPE_H265_ENCODE_QM_DELTA:
+        return "quantization_map_delta";
+    case TEST_TYPE_H264_ENCODE_QM_EMPHASIS_CBR:
+    case TEST_TYPE_H265_ENCODE_QM_EMPHASIS_CBR:
+        return "quantization_map_emphasis_cbr";
+    case TEST_TYPE_H264_ENCODE_QM_EMPHASIS_VBR:
+    case TEST_TYPE_H265_ENCODE_QM_EMPHASIS_VBR:
+        return "quantization_map_emphasis_vbr";
     case TEST_TYPE_H264_ENCODE_USAGE:
     case TEST_TYPE_H265_ENCODE_USAGE:
         return "usage";
@@ -196,6 +227,12 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H264_ENCODE_QUERY_RESULT_WITH_STATUS:
     case TEST_TYPE_H264_ENCODE_INLINE_QUERY:
     case TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES:
+    case TEST_TYPE_H264_ENCODE_QM_DELTA_RC_VBR:
+    case TEST_TYPE_H264_ENCODE_QM_DELTA_RC_CBR:
+    case TEST_TYPE_H264_ENCODE_QM_DELTA_RC_DISABLE:
+    case TEST_TYPE_H264_ENCODE_QM_DELTA:
+    case TEST_TYPE_H264_ENCODE_QM_EMPHASIS_CBR:
+    case TEST_TYPE_H264_ENCODE_QM_EMPHASIS_VBR:
         return TEST_CODEC_H264;
     case TEST_TYPE_H265_ENCODE_I:
     case TEST_TYPE_H265_ENCODE_RC_VBR:
@@ -210,6 +247,12 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H265_ENCODE_QUERY_RESULT_WITH_STATUS:
     case TEST_TYPE_H265_ENCODE_INLINE_QUERY:
     case TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES:
+    case TEST_TYPE_H265_ENCODE_QM_DELTA_RC_VBR:
+    case TEST_TYPE_H265_ENCODE_QM_DELTA_RC_CBR:
+    case TEST_TYPE_H265_ENCODE_QM_DELTA_RC_DISABLE:
+    case TEST_TYPE_H265_ENCODE_QM_DELTA:
+    case TEST_TYPE_H265_ENCODE_QM_EMPHASIS_CBR:
+    case TEST_TYPE_H265_ENCODE_QM_EMPHASIS_VBR:
         return TEST_CODEC_H265;
     default:
         TCU_THROW(InternalError, "Unknown TestType");
@@ -222,6 +265,12 @@ enum FrameType
     I_FRAME,
     P_FRAME,
     B_FRAME
+};
+
+enum QuantizationMap
+{
+    QM_DELTA,
+    QM_EMPHASIS
 };
 
 enum Option : uint32_t
@@ -238,8 +287,10 @@ enum Option : uint32_t
     ResolutionChange          = 1 << 5,
     UseQualityLevel           = 1 << 6,
     UseEncodeUsage            = 1 << 7,
-    UseInlineQueries          = 1 << 8, // Inline queries from the video_mainteance1 extension.
-    ResourcesWithoutProfiles  = 1 << 9, // Test profile-less resources from the video_mainteance1 extension.
+    UseInlineQueries          = 1 << 8,  // Inline queries from the video_mainteance1 extension.
+    ResourcesWithoutProfiles  = 1 << 9,  // Test profile-less resources from the video_mainteance1 extension.
+    UseDeltaMap               = 1 << 10, // VK_KHR_video_encode_quantization_map
+    UseEmphasisMap            = 1 << 11, // VK_KHR_video_encode_quantization_map
 };
 
 struct EncodeTestParam
@@ -324,6 +375,84 @@ struct EncodeTestParam
      /* curSlot */ {0},
      /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
      /* encoderOptions */ Option::UseQualityLevel},
+    {TEST_TYPE_H264_ENCODE_QM_DELTA_RC_VBR,
+     CLIP_E,
+     3,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseDeltaMap | Option::UseVariableBitrateControl)},
+    {TEST_TYPE_H264_ENCODE_QM_DELTA_RC_CBR,
+     CLIP_E,
+     3,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseDeltaMap | Option::UseConstantBitrateControl)},
+    {TEST_TYPE_H264_ENCODE_QM_DELTA_RC_DISABLE,
+     CLIP_E,
+     3,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseDeltaMap | Option::DisableRateControl)},
+    {TEST_TYPE_H264_ENCODE_QM_DELTA,
+     CLIP_E,
+     3,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ Option::UseDeltaMap},
+    {TEST_TYPE_H264_ENCODE_QM_EMPHASIS_CBR,
+     CLIP_E,
+     2,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseEmphasisMap | Option::UseConstantBitrateControl)},
+    {TEST_TYPE_H264_ENCODE_QM_EMPHASIS_VBR,
+     CLIP_E,
+     2,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseEmphasisMap | Option::UseVariableBitrateControl)},
     {TEST_TYPE_H264_ENCODE_USAGE,
      CLIP_E,
      1,
@@ -517,6 +646,84 @@ struct EncodeTestParam
      /* curSlot */ {0},
      /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
      /* encoderOptions */ Option::UseQualityLevel},
+    {TEST_TYPE_H265_ENCODE_QM_DELTA_RC_VBR,
+     CLIP_F,
+     3,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseDeltaMap | Option::UseVariableBitrateControl)},
+    {TEST_TYPE_H265_ENCODE_QM_DELTA_RC_CBR,
+     CLIP_F,
+     3,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseDeltaMap | Option::UseConstantBitrateControl)},
+    {TEST_TYPE_H265_ENCODE_QM_DELTA_RC_DISABLE,
+     CLIP_F,
+     3,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseDeltaMap | Option::DisableRateControl)},
+    {TEST_TYPE_H265_ENCODE_QM_DELTA,
+     CLIP_F,
+     3,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ Option::UseDeltaMap},
+    {TEST_TYPE_H265_ENCODE_QM_EMPHASIS_CBR,
+     CLIP_F,
+     2,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseEmphasisMap | Option::UseConstantBitrateControl)},
+    {TEST_TYPE_H265_ENCODE_QM_EMPHASIS_VBR,
+     CLIP_F,
+     2,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseEmphasisMap | Option::UseVariableBitrateControl)},
     {TEST_TYPE_H265_ENCODE_USAGE,
      CLIP_F,
      1,
@@ -886,6 +1093,9 @@ public:
             if (hasOption(Option::UseInlineQueries) || hasOption(Option::ResourcesWithoutProfiles))
                 flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_1;
 
+            if (hasOption(Option::UseDeltaMap) || hasOption(Option::UseEmphasisMap))
+                flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_QUANTIZATION_MAP;
+
             return flags;
         }
         default:
@@ -1110,21 +1320,159 @@ de::MovePtr<std::vector<uint8_t>> saveNV12FrameAsYUV(MultiPlaneImageData *imageD
     return outputDataPtr;
 }
 
-void fillBuffer(const DeviceInterface &vk, const VkDevice device, Allocation &bufferAlloc, const void *data,
-                const VkDeviceSize dataSize, VkDeviceSize dataOffset = 0)
+template <typename T>
+void fillBuffer(const DeviceInterface &vk, const VkDevice device, Allocation &bufferAlloc, const std::vector<T> &data,
+                VkDeviceSize nonCoherentAtomSize, VkDeviceSize mappedSize, VkDeviceSize dataOffset = 0)
 {
+    VkDeviceSize dataSize    = data.size() * sizeof(T);
+    VkDeviceSize roundedSize = ((dataSize + nonCoherentAtomSize - 1) / nonCoherentAtomSize) * nonCoherentAtomSize;
+
+    VkDeviceSize flushSize;
+    if (dataOffset + roundedSize > mappedSize)
+    {
+        flushSize = VK_WHOLE_SIZE;
+    }
+    else
+    {
+        flushSize = roundedSize;
+    }
+
     const VkMappedMemoryRange memRange = {
-        VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, // VkStructureType sType;
-        nullptr,                               // const void* pNext;
-        bufferAlloc.getMemory(),               // VkDeviceMemory memory;
-        bufferAlloc.getOffset(),               // VkDeviceSize offset;
-        VK_WHOLE_SIZE                          // VkDeviceSize size;
+        VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, //  VkStructureType sType;
+        nullptr,                               //  const void* pNext;
+        bufferAlloc.getMemory(),               //  VkDeviceMemory memory;
+        bufferAlloc.getOffset() + dataOffset,  //  VkDeviceSize offset;
+        flushSize                              //  VkDeviceSize size;
     };
 
-    uint8_t *hostPtr = static_cast<uint8_t *>(bufferAlloc.getHostPtr());
-    deMemcpy(hostPtr + dataOffset, data, static_cast<uint32_t>(dataSize));
+    T *hostPtr = static_cast<T *>(bufferAlloc.getHostPtr());
+    memcpy(hostPtr + dataOffset, data.data(), data.size() * sizeof(T));
 
     VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &memRange));
+}
+
+template <typename T>
+vector<T> createQuantizationPatternImage(VkExtent2D quantizationMapExtent, T leftSideQp, T rightSideQp)
+{
+    size_t totalPixels = quantizationMapExtent.width * quantizationMapExtent.height;
+    vector<T> quantizationMap(totalPixels);
+
+    uint32_t midPoint = quantizationMapExtent.width / 2;
+
+    for (uint32_t y = 0; y < quantizationMapExtent.height; ++y)
+    {
+        for (uint32_t x = 0; x < quantizationMapExtent.width; ++x)
+        {
+            if (x < midPoint)
+            {
+                quantizationMap[y * quantizationMapExtent.width + x] = leftSideQp;
+            }
+            else
+            {
+                quantizationMap[y * quantizationMapExtent.width + x] = rightSideQp;
+            }
+        }
+    }
+
+    return quantizationMap;
+}
+
+void copyBufferToImage(const DeviceInterface &vk, VkDevice device, VkQueue queue, uint32_t queueFamilyIndex,
+                       const VkBuffer &buffer, VkDeviceSize bufferSize, const VkExtent2D &imageSize,
+                       uint32_t arrayLayers, VkImage destImage)
+{
+    Move<VkCommandPool> cmdPool = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+    Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    Move<VkFence> fence             = createFence(vk, device);
+    VkImageLayout destImageLayout   = VK_IMAGE_LAYOUT_VIDEO_ENCODE_QUANTIZATION_MAP_KHR;
+    VkPipelineStageFlags destImageDstStageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    VkAccessFlags finalAccessMask               = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+
+    const VkCommandBufferBeginInfo cmdBufferBeginInfo = {
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
+        DE_NULL,                                     // const void* pNext;
+        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, // VkCommandBufferUsageFlags flags;
+        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+    };
+
+    const VkBufferImageCopy copyRegion = {
+        0,                                              // VkDeviceSize                    bufferOffset
+        0,                                              // uint32_t                        bufferRowLength
+        0,                                              // uint32_t                        bufferImageHeight
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, arrayLayers}, // VkImageSubresourceLayers        imageSubresource
+        {0, 0, 0},                                      // VkOffset3D                    imageOffset
+        {imageSize.width, imageSize.height, 1}          // VkExtent3D                    imageExtent
+    };
+
+    // Barriers for copying buffer to image
+    const VkBufferMemoryBarrier preBufferBarrier =
+        makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT,    // VkAccessFlags srcAccessMask;
+                                VK_ACCESS_TRANSFER_READ_BIT, // VkAccessFlags dstAccessMask;
+                                buffer,                      // VkBuffer buffer;
+                                0u,                          // VkDeviceSize offset;
+                                bufferSize                   // VkDeviceSize size;
+        );
+
+    const VkImageSubresourceRange subresourceRange{
+        // VkImageSubresourceRange subresourceRange;
+        VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspect;
+        0u,                        // uint32_t baseMipLevel;
+        1u,                        // uint32_t mipLevels;
+        0u,                        // uint32_t baseArraySlice;
+        arrayLayers                // uint32_t arraySize;
+    };
+
+    const VkImageMemoryBarrier preImageBarrier =
+        makeImageMemoryBarrier(0u,                                   // VkAccessFlags srcAccessMask;
+                               VK_ACCESS_TRANSFER_WRITE_BIT,         // VkAccessFlags dstAccessMask;
+                               VK_IMAGE_LAYOUT_UNDEFINED,            // VkImageLayout oldLayout;
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout newLayout;
+                               destImage,                            // VkImage image;
+                               subresourceRange                      // VkImageSubresourceRange subresourceRange;
+        );
+
+    const VkImageMemoryBarrier postImageBarrier =
+        makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT,         // VkAccessFlags srcAccessMask;
+                               finalAccessMask,                      // VkAccessFlags dstAccessMask;
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout oldLayout;
+                               destImageLayout,                      // VkImageLayout newLayout;
+                               destImage,                            // VkImage image;
+                               subresourceRange                      // VkImageSubresourceRange subresourceRange;
+        );
+
+    VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
+                          0, (const VkMemoryBarrier *)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
+    vk.cmdCopyBufferToImage(*cmdBuffer, buffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, destImageDstStageFlags, (VkDependencyFlags)0, 0,
+                          (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
+                          &postImageBarrier);
+    VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+
+    const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+
+    const VkSubmitInfo submitInfo = {
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
+        DE_NULL,                       // const void* pNext;
+        0u,                            // uint32_t waitSemaphoreCount;
+        DE_NULL,                       // const VkSemaphore* pWaitSemaphores;
+        &pipelineStageFlags,           // const VkPipelineStageFlags* pWaitDstStageMask;
+        1u,                            // uint32_t commandBufferCount;
+        &cmdBuffer.get(),              // const VkCommandBuffer* pCommandBuffers;
+        0u,                            // uint32_t signalSemaphoreCount;
+        DE_NULL                        // const VkSemaphore* pSignalSemaphores;
+    };
+
+    try
+    {
+        VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
+        VK_CHECK(vk.waitForFences(device, 1, &fence.get(), true, ~(0ull)));
+    }
+    catch (...)
+    {
+        VK_CHECK(vk.deviceWaitIdle(device));
+        throw;
+    }
 }
 
 VkVideoPictureResourceInfoKHR makeVideoPictureResource(const VkExtent2D &codedExtent, uint32_t baseArrayLayer,
@@ -1155,6 +1503,7 @@ VkVideoReferenceSlotInfoKHR makeVideoReferenceSlot(int32_t slotIndex,
 
     return videoReferenceSlotKHR;
 }
+
 // Vulkan video is not supported on android platform
 // all external libraries, helper functions and test instances has been excluded
 #ifdef DE_BUILD_VIDEO
@@ -1476,13 +1825,21 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     const bool swapOrder                = m_testDefinition->hasOption(Option::SwapOrder);
     const bool useVariableBitrate       = m_testDefinition->hasOption(Option::UseVariableBitrateControl);
     const bool useConstantBitrate       = m_testDefinition->hasOption(Option::UseConstantBitrateControl);
-    const bool disableRateControl       = m_testDefinition->hasOption(Option::DisableRateControl);
     const bool customEncodeUsage        = m_testDefinition->hasOption(Option::UseEncodeUsage);
     const bool useQualityLevel          = m_testDefinition->hasOption(Option::UseQualityLevel);
+    const bool useDeltaMap              = m_testDefinition->hasOption(Option::UseDeltaMap);
+    const bool useEmphasisMap           = m_testDefinition->hasOption(Option::UseEmphasisMap);
+    const bool disableRateControl       = m_testDefinition->hasOption(Option::DisableRateControl);
 
-    const bool rateControl    = useVariableBitrate || useConstantBitrate || disableRateControl;
-    const uint32_t constQp    = 28;
-    const uint32_t maxQpValue = rateControl ? 42 : 51;
+    const bool activeRateControl = useVariableBitrate || useConstantBitrate;
+
+    const int32_t constQp          = 28;
+    const int32_t maxQpValue       = disableRateControl || activeRateControl ? 42 : 51;
+    const int32_t minQpValue       = 0;
+    const float minEmphasisQpValue = 0.0f;
+    const float maxEmphasisQpValue = 1.0f;
+    int32_t minQpDelta             = 0;
+    int32_t maxQpDelta             = 0;
 
     const VkExtent2D codedExtent = {m_testDefinition->getClipWidth(), m_testDefinition->getClipHeight()};
 
@@ -1524,10 +1881,15 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     const VkQueue decodeQueue   = getDeviceQueue(videoDeviceDriver, videoDevice, decodeQueueFamilyIndex, 0u);
     const VkQueue transferQueue = getDeviceQueue(videoDeviceDriver, videoDevice, transferQueueFamilyIndex, 0u);
 
+    const MovePtr<VkVideoEncodeH264QuantizationMapCapabilitiesKHR> H264QuantizationMapCapabilities =
+        getVideoEncodeH264QuantizationMapCapabilities();
+    const MovePtr<VkVideoEncodeH265QuantizationMapCapabilitiesKHR> H265QuantizationMapCapabilities =
+        getVideoEncodeH265QuantizationMapCapabilities();
+
     const MovePtr<VkVideoEncodeH264CapabilitiesKHR> videoH264CapabilitiesExtension =
-        getVideoCapabilitiesExtensionH264E();
+        getVideoCapabilitiesExtensionH264E(H264QuantizationMapCapabilities.get());
     const MovePtr<VkVideoEncodeH265CapabilitiesKHR> videoH265CapabilitiesExtension =
-        getVideoCapabilitiesExtensionH265E();
+        getVideoCapabilitiesExtensionH265E(H265QuantizationMapCapabilities.get());
 
     void *videoCapabilitiesExtensionPtr = NULL;
 
@@ -1548,6 +1910,32 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
     DE_ASSERT(videoEncodeCapabilities->supportedEncodeFeedbackFlags &
               VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR);
+
+    if (useDeltaMap)
+    {
+        if (!(videoEncodeCapabilities->flags & VK_VIDEO_ENCODE_CAPABILITY_QUANTIZATION_DELTA_MAP_BIT_KHR))
+        {
+            TCU_THROW(NotSupportedError, "Implementation does not support quantization delta map");
+        }
+    }
+    if (useEmphasisMap)
+    {
+        if (!(videoEncodeCapabilities->flags & VK_VIDEO_ENCODE_CAPABILITY_EMPHASIS_MAP_BIT_KHR))
+        {
+            TCU_THROW(NotSupportedError, "Implementation does not support emphasis map");
+        }
+    }
+
+    if (m_testDefinition->getProfile()->IsH264())
+    {
+        minQpDelta = H264QuantizationMapCapabilities->minQpDelta;
+        maxQpDelta = H264QuantizationMapCapabilities->maxQpDelta;
+    }
+    else if (m_testDefinition->getProfile()->IsH265())
+    {
+        minQpDelta = H265QuantizationMapCapabilities->minQpDelta;
+        maxQpDelta = H265QuantizationMapCapabilities->maxQpDelta;
+    }
 
     // Check support for P and B frames
     if (m_testDefinition->getProfile()->IsH264())
@@ -1599,20 +1987,231 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
     VkDeviceSize bitstreamBufferOffset             = 0u;
     VkDeviceSize minBitstreamBufferOffsetAlignment = videoCapabilities->minBitstreamBufferOffsetAlignment;
+    VkDeviceSize nonCoherentAtomSize               = m_context.getDeviceProperties().limits.nonCoherentAtomSize;
 
     Allocator &allocator = getAllocator();
 
     DE_ASSERT(videoCapabilities->maxDpbSlots >= dpbSlots);
 
-    const MovePtr<VkVideoSessionCreateInfoKHR> videoEncodeSessionCreateInfo = getVideoSessionCreateInfo(
-        encodeQueueFamilyIndex, useInlineQueries ? VK_VIDEO_SESSION_CREATE_INLINE_QUERIES_BIT_KHR : 0,
-        videoEncodeProfile.get(), codedExtent, imageFormat, dpbImageFormat, dpbSlots,
-        videoCapabilities->maxActiveReferencePictures);
+    VkVideoSessionCreateFlagsKHR videoSessionFlags = 0;
+
+    if (useInlineQueries)
+        videoSessionFlags |= VK_VIDEO_SESSION_CREATE_INLINE_QUERIES_BIT_KHR;
+    if (useDeltaMap)
+        videoSessionFlags |= VK_VIDEO_SESSION_CREATE_ALLOW_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR;
+    if (useEmphasisMap)
+        videoSessionFlags |= VK_VIDEO_SESSION_CREATE_ALLOW_ENCODE_EMPHASIS_MAP_BIT_KHR;
+
+    const MovePtr<VkVideoSessionCreateInfoKHR> videoEncodeSessionCreateInfo =
+        getVideoSessionCreateInfo(encodeQueueFamilyIndex, videoSessionFlags, videoEncodeProfile.get(), codedExtent,
+                                  imageFormat, dpbImageFormat, dpbSlots, videoCapabilities->maxActiveReferencePictures);
 
     const Move<VkVideoSessionKHR> videoEncodeSession =
         createVideoSessionKHR(videoDeviceDriver, videoDevice, videoEncodeSessionCreateInfo.get());
     const vector<AllocationPtr> encodeAllocation =
         getAndBindVideoSessionMemory(videoDeviceDriver, videoDevice, *videoEncodeSession, allocator);
+
+    uint8_t quantizationMapCount          = useDeltaMap ? 3 : 2;
+    VkFormat quantizationImageFormat      = VK_FORMAT_R8_SNORM;
+    VkImageTiling quantizationImageTiling = VK_IMAGE_TILING_OPTIMAL;
+    VkExtent2D quantizationMapExtent      = {0, 0};
+    VkExtent2D quantizationMapTexelSize   = {0, 0};
+
+    std::vector<std::unique_ptr<const ImageWithMemory>> quantizationMapImages;
+    std::vector<std::unique_ptr<const Move<VkImageView>>> quantizationMapImageViews;
+
+    if (useDeltaMap || useEmphasisMap)
+    {
+        // Query quantization map capabilities
+        uint32_t videoFormatPropertiesCount = 0u;
+
+        VkImageUsageFlags quantizationImageUsageFlags =
+            (useDeltaMap ? VK_IMAGE_USAGE_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR :
+                           VK_IMAGE_USAGE_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR) |
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+        const VkPhysicalDeviceVideoFormatInfoKHR videoFormatInfo = {
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR, //  VkStructureType sType;
+            videoEncodeProfileList.get(),                            //  const void* pNext;
+            quantizationImageUsageFlags,                             //  VkImageUsageFlags imageUsage;
+        };
+
+        VkVideoFormatPropertiesKHR videoFormatPropertiesKHR = {};
+        videoFormatPropertiesKHR.sType                      = VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR;
+        videoFormatPropertiesKHR.pNext                      = DE_NULL;
+
+        VkVideoFormatQuantizationMapPropertiesKHR quantizationMapPropertiesKHR = {};
+        quantizationMapPropertiesKHR.sType = VK_STRUCTURE_TYPE_VIDEO_FORMAT_QUANTIZATION_MAP_PROPERTIES_KHR;
+        quantizationMapPropertiesKHR.pNext = DE_NULL;
+
+        VkVideoFormatH265QuantizationMapPropertiesKHR H265QuantizationMapFormatProperty = {};
+        H265QuantizationMapFormatProperty.sType = VK_STRUCTURE_TYPE_VIDEO_FORMAT_H265_QUANTIZATION_MAP_PROPERTIES_KHR;
+        H265QuantizationMapFormatProperty.pNext = DE_NULL;
+
+        vector<VkVideoFormatPropertiesKHR> videoFormatProperties;
+        vector<VkVideoFormatQuantizationMapPropertiesKHR> quantizationMapProperties;
+        vector<VkVideoFormatH265QuantizationMapPropertiesKHR> H265quantizationMapFormatProperties;
+        de::MovePtr<vector<VkFormat>> result;
+
+        VK_CHECK(vki.getPhysicalDeviceVideoFormatPropertiesKHR(physicalDevice, &videoFormatInfo,
+                                                               &videoFormatPropertiesCount, DE_NULL));
+
+        videoFormatProperties.resize(videoFormatPropertiesCount, videoFormatPropertiesKHR);
+        quantizationMapProperties.resize(videoFormatPropertiesCount, quantizationMapPropertiesKHR);
+        H265quantizationMapFormatProperties.resize(videoFormatPropertiesCount, H265QuantizationMapFormatProperty);
+
+        for (uint32_t i = 0; i < videoFormatPropertiesCount; ++i)
+        {
+            videoFormatProperties[i].pNext = &quantizationMapProperties[i];
+            if (m_testDefinition->getProfile()->IsH265())
+            {
+                quantizationMapProperties[i].pNext = &H265quantizationMapFormatProperties[i];
+            }
+        }
+
+        VK_CHECK(vki.getPhysicalDeviceVideoFormatPropertiesKHR(
+            physicalDevice, &videoFormatInfo, &videoFormatPropertiesCount, videoFormatProperties.data()));
+
+        // Pick first available quantization map format and properties
+        quantizationImageFormat  = videoFormatProperties[0].format;
+        quantizationImageTiling  = videoFormatProperties[0].imageTiling;
+        quantizationMapTexelSize = quantizationMapProperties[0].quantizationMapTexelSize;
+
+        DE_ASSERT(quantizationMapTexelSize.width > 0 && quantizationMapTexelSize.height > 0);
+
+        quantizationMapExtent = {static_cast<uint32_t>(std::ceil(static_cast<float>(codedExtent.width) /
+                                                                 static_cast<float>(quantizationMapTexelSize.width))),
+                                 static_cast<uint32_t>(std::ceil(static_cast<float>(codedExtent.height) /
+                                                                 static_cast<float>(quantizationMapTexelSize.height)))};
+
+        const VkImageUsageFlags quantizationMapImageUsage =
+            (useDeltaMap ? VK_IMAGE_USAGE_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR :
+                           VK_IMAGE_USAGE_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR) |
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        const VkImageCreateInfo quantizationMapImageCreateInfo = makeImageCreateInfo(
+            quantizationImageFormat, quantizationMapExtent, 0, &encodeQueueFamilyIndex, quantizationMapImageUsage,
+            videoEncodeProfileList.get(), 1U, VK_IMAGE_LAYOUT_UNDEFINED, quantizationImageTiling);
+
+        const vector<uint32_t> transaferQueueFamilyIndices(1u, transferQueueFamilyIndex);
+
+        const VkBufferUsageFlags quantizationMapBufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        const VkDeviceSize quantizationMapBufferSize =
+            getBufferSize(quantizationImageFormat, quantizationMapExtent.width, quantizationMapExtent.height);
+
+        const VkBufferCreateInfo quantizationMapBufferCreateInfo = makeBufferCreateInfo(
+            quantizationMapBufferSize, quantizationMapBufferUsageFlags, transaferQueueFamilyIndices, 0, DE_NULL);
+
+        BufferWithMemory quantizationMapBuffer(videoDeviceDriver, videoDevice, getAllocator(),
+                                               quantizationMapBufferCreateInfo,
+                                               MemoryRequirement::Local | MemoryRequirement::HostVisible);
+
+        Allocation &quantizationMapBufferAlloc = quantizationMapBuffer.getAllocation();
+        void *quantizationMapBufferHostPtr     = quantizationMapBufferAlloc.getHostPtr();
+
+        // Calculate QP values for each image sides, the type of values is based on the quantization map format and adnotated by the index
+        auto calculateMapValues = [minQpValue, constQp, minQpDelta, maxQpValue, maxQpDelta, minEmphasisQpValue,
+                                   maxEmphasisQpValue](auto idx, QuantizationMap mapType) -> auto
+        {
+            using T          = decltype(idx);
+            T leftSideValue  = T{0};
+            T rightSideValue = T{0};
+
+            if (mapType == QM_DELTA)
+            {
+                // Quantization map provided, constant Qp set to 26
+                if (idx == 0)
+                {
+                    leftSideValue = rightSideValue = static_cast<T>(std::max(minQpValue - constQp, minQpDelta));
+                }
+                // Quantization map provided, constant Qp set to 26
+                else if (idx == 1)
+                {
+                    leftSideValue = rightSideValue = static_cast<T>(std::min(maxQpValue - constQp, maxQpDelta));
+                }
+                // Only third frame will receive different quantization values for both sides
+                else if (idx == 2)
+                {
+                    leftSideValue  = static_cast<T>(std::max(minQpValue - constQp, minQpDelta));
+                    rightSideValue = static_cast<T>(std::min(maxQpValue - constQp, maxQpDelta));
+                }
+            }
+            else if (mapType == QM_EMPHASIS)
+            {
+                // Only second frame will receive different quantization values for both sides
+                if (idx == 1)
+                {
+                    if constexpr (std::is_same_v<T, uint8_t>)
+                    {
+                        leftSideValue  = static_cast<T>(minEmphasisQpValue * 255.0f);
+                        rightSideValue = static_cast<T>(maxEmphasisQpValue * 255.0f);
+                    }
+                    else
+                    {
+                        leftSideValue  = static_cast<T>(minEmphasisQpValue);
+                        rightSideValue = static_cast<T>(maxEmphasisQpValue);
+                    }
+                }
+            }
+
+            return std::make_tuple(leftSideValue, rightSideValue);
+        };
+
+        // Create quantization map image
+        auto processQuantizationMapImage = [&](auto leftSideQp, auto rightSideQp)
+        {
+            using T = decltype(leftSideQp);
+
+            auto quantizationMapImageData =
+                createQuantizationPatternImage<T>(quantizationMapExtent, leftSideQp, rightSideQp);
+
+            std::unique_ptr<const ImageWithMemory> quantizationMapImage(
+                new ImageWithMemory(videoDeviceDriver, videoDevice, getAllocator(), quantizationMapImageCreateInfo,
+                                    MemoryRequirement::Any));
+            std::unique_ptr<const Move<VkImageView>> quantizationMapImageView(new Move<VkImageView>(makeImageView(
+                videoDeviceDriver, videoDevice, quantizationMapImage->get(), VK_IMAGE_VIEW_TYPE_2D,
+                quantizationImageFormat, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1))));
+
+            deMemset(quantizationMapBufferHostPtr, 0x00, static_cast<size_t>(quantizationMapBufferSize));
+            flushAlloc(videoDeviceDriver, videoDevice, quantizationMapBufferAlloc);
+
+            fillBuffer(videoDeviceDriver, videoDevice, quantizationMapBufferAlloc, quantizationMapImageData,
+                       nonCoherentAtomSize, quantizationMapBufferSize);
+
+            copyBufferToImage(videoDeviceDriver, videoDevice, transferQueue, transferQueueFamilyIndex,
+                              *quantizationMapBuffer, quantizationMapBufferSize, quantizationMapExtent, 1,
+                              quantizationMapImage->get());
+
+            quantizationMapImages.push_back(std::move(quantizationMapImage));
+            quantizationMapImageViews.push_back(std::move(quantizationMapImageView));
+        };
+
+        for (uint32_t qmIdx = 0; qmIdx < quantizationMapCount; ++qmIdx)
+        {
+            switch (quantizationImageFormat)
+            {
+            case VK_FORMAT_R8_UNORM:
+            {
+                auto [leftSideQp, rightSideQp] = calculateMapValues(uint8_t(qmIdx), QM_EMPHASIS);
+                processQuantizationMapImage(leftSideQp, rightSideQp);
+                break;
+            }
+            case VK_FORMAT_R8_SINT:
+            {
+                auto [leftSideQp, rightSideQp] = calculateMapValues(int8_t(qmIdx), QM_DELTA);
+                processQuantizationMapImage(leftSideQp, rightSideQp);
+                break;
+            }
+            case VK_FORMAT_R32_SINT:
+            {
+                auto [leftSideQp, rightSideQp] = calculateMapValues(int32_t(qmIdx), QM_DELTA);
+                processQuantizationMapImage(leftSideQp, rightSideQp);
+                break;
+            }
+            default:
+                TCU_THROW(NotSupportedError, "Unsupported quantization map format");
+            }
+        }
+    } // if (useDeltaMap || useEmphasisMap)
 
     // Must be smaller than the maxQualityLevels capabilities limit supported by the specified video profile
     uint32_t qualityLevel = 0;
@@ -1620,6 +2219,9 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
     const MovePtr<VkVideoEncodeQualityLevelInfoKHR> videoEncodeQualityLevelInfo =
         getVideoEncodeQualityLevelInfo(qualityLevel, nullptr);
+
+    const MovePtr<VkVideoEncodeQuantizationMapSessionParametersCreateInfoKHR> quantizationMapSessionParametersInfo =
+        getVideoEncodeH264QuantizationMapParameters(quantizationMapTexelSize);
 
     std::vector<MovePtr<StdVideoH264SequenceParameterSet>> stdVideoH264SequenceParameterSets;
     std::vector<MovePtr<StdVideoH264PictureParameterSet>> stdVideoH264PictureParameterSets;
@@ -1650,9 +2252,14 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
             m_testDefinition->ppsActiveRefs0(), m_testDefinition->ppsActiveRefs1()));
         encodeH264SessionParametersAddInfoKHRs.push_back(createVideoEncodeH264SessionParametersAddInfoKHR(
             1u, stdVideoH264SequenceParameterSets.back().get(), 1u, stdVideoH264PictureParameterSets.back().get()));
+
         H264sessionParametersCreateInfos.push_back(createVideoEncodeH264SessionParametersCreateInfoKHR(
-            useQualityLevel ? videoEncodeQualityLevelInfo.get() : nullptr, 1u, 1u,
-            encodeH264SessionParametersAddInfoKHRs.back().get()));
+            static_cast<const void *>(useQualityLevel ?
+                                          videoEncodeQualityLevelInfo.get() :
+                                          ((useDeltaMap || useEmphasisMap) ?
+                                               static_cast<const void *>(quantizationMapSessionParametersInfo.get()) :
+                                               nullptr)),
+            1u, 1u, encodeH264SessionParametersAddInfoKHRs.back().get()));
 
         stdVideoH265ProfileTierLevels.push_back(
             getStdVideoH265ProfileTierLevel(STD_VIDEO_H265_PROFILE_IDC_MAIN, STD_VIDEO_H265_LEVEL_IDC_6_2));
@@ -1671,8 +2278,12 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
             1u, stdVideoH265VideoParameterSets.back().get(), 1u, stdVideoH265SequenceParameterSets.back().get(), 1u,
             stdVideoH265PictureParameterSets.back().get()));
         H265sessionParametersCreateInfos.push_back(getVideoEncodeH265SessionParametersCreateInfoKHR(
-            useQualityLevel ? videoEncodeQualityLevelInfo.get() : nullptr, 1u, 1u, 1u,
-            encodeH265SessionParametersAddInfoKHRs.back().get()));
+            static_cast<const void *>(useQualityLevel ?
+                                          videoEncodeQualityLevelInfo.get() :
+                                          ((useDeltaMap || useEmphasisMap) ?
+                                               static_cast<const void *>(quantizationMapSessionParametersInfo.get()) :
+                                               nullptr)),
+            1u, 1u, 1u, encodeH265SessionParametersAddInfoKHRs.back().get()));
 
         const void *sessionParametersCreateInfoPtr = nullptr;
 
@@ -1686,8 +2297,14 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
         }
         DE_ASSERT(sessionParametersCreateInfoPtr);
 
-        videoEncodeSessionParametersCreateInfos.push_back(
-            getVideoSessionParametersCreateInfoKHR(sessionParametersCreateInfoPtr, *videoEncodeSession));
+        const VkVideoSessionParametersCreateFlagsKHR videoSessionParametersFlags =
+            (useDeltaMap || useEmphasisMap) ?
+                static_cast<VkVideoSessionParametersCreateFlagsKHR>(
+                    VK_VIDEO_SESSION_PARAMETERS_CREATE_QUANTIZATION_MAP_COMPATIBLE_BIT_KHR) :
+                static_cast<VkVideoSessionParametersCreateFlagsKHR>(0);
+
+        videoEncodeSessionParametersCreateInfos.push_back(getVideoSessionParametersCreateInfoKHR(
+            sessionParametersCreateInfoPtr, videoSessionParametersFlags, *videoEncodeSession));
         videoEncodeSessionParameters.push_back(createVideoSessionParametersKHR(
             videoDeviceDriver, videoDevice, videoEncodeSessionParametersCreateInfos.back().get()));
     }
@@ -1736,7 +2353,6 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
     std::vector<std::unique_ptr<const Move<VkImageView>>> dpbImageViews;
     std::vector<std::unique_ptr<const VkVideoPictureResourceInfoKHR>> dpbPictureResources;
-
     std::vector<VkVideoReferenceSlotInfoKHR> dpbImageVideoReferenceSlots;
 
     for (uint8_t i = 0, j = 0; i < gopFrameCount; ++i)
@@ -1781,10 +2397,6 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
     const VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
 
-    const VkImageSubresourceRange imageSubresourceRange =
-        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
-    const VkImageViewType imageViewType = VK_IMAGE_VIEW_TYPE_2D;
-
     std::vector<std::unique_ptr<const ImageWithMemory>> imageVector;
     std::vector<std::unique_ptr<const Move<VkImageView>>> imageViewVector;
     std::vector<std::unique_ptr<const VkVideoPictureResourceInfoKHR>> imagePictureResourceVector;
@@ -1808,8 +2420,9 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
             std::unique_ptr<const ImageWithMemory> image(new ImageWithMemory(
                 videoDeviceDriver, videoDevice, getAllocator(), imageCreateInfo, MemoryRequirement::Any));
-            std::unique_ptr<const Move<VkImageView>> imageView(new Move<VkImageView>(makeImageView(
-                videoDeviceDriver, videoDevice, image->get(), imageViewType, imageFormat, imageSubresourceRange)));
+            std::unique_ptr<const Move<VkImageView>> imageView(new Move<VkImageView>(
+                makeImageView(videoDeviceDriver, videoDevice, image->get(), VK_IMAGE_VIEW_TYPE_2D, imageFormat,
+                              makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1))));
             std::unique_ptr<const VkVideoPictureResourceInfoKHR> imagePictureResource(
                 new VkVideoPictureResourceInfoKHR(makeVideoPictureResource(currentCodedExtent, 0, **imageView)));
 
@@ -1840,7 +2453,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     Move<VkQueryPool> encodeQueryPool =
         createEncodeVideoQueries(videoDeviceDriver, videoDevice, 2, videoEncodeProfile.get());
 
-    deMemset(encodeBufferHostPtr, 0x00, static_cast<uint32_t>(encodeBufferSize));
+    deMemset(encodeBufferHostPtr, 0x00, static_cast<size_t>(encodeBufferSize));
     flushAlloc(videoDeviceDriver, videoDevice, encodeBufferAlloc);
 
     de::MovePtr<vector<uint8_t>> clip = loadVideoData(m_testDefinition->getClipFilename());
@@ -1953,7 +2566,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     }
 
     // Pre fill buffer with SPS and PPS header
-    fillBuffer(videoDeviceDriver, videoDevice, encodeBufferAlloc, headersData[0].data(), headersData[0].size(),
+    fillBuffer(videoDeviceDriver, videoDevice, encodeBufferAlloc, headersData[0], nonCoherentAtomSize, encodeBufferSize,
                bitstreamBufferOffset);
 
     // Move offset to accommodate header data
@@ -1970,7 +2583,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     const de::MovePtr<VkVideoEncodeH264RateControlLayerInfoKHR> videoEncodeH264RateControlLayerInfo =
         getVideoEncodeH264RateControlLayerInfo(true, 0, 0, 0, true, maxQpValue, maxQpValue, maxQpValue);
     const de::MovePtr<VkVideoEncodeH265RateControlLayerInfoKHR> videoEncodeH265RateControlLayerInfo =
-        getVideoEncodeH265RateControlLayerInfo(true, maxQpValue, maxQpValue, maxQpValue);
+        getVideoEncodeH265RateControlLayerInfo(true, 0, 0, 0, true, maxQpValue, maxQpValue, maxQpValue);
 
     const void *videoEncodeRateControlLayerInfoPtr = nullptr;
 
@@ -1985,10 +2598,10 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     DE_ASSERT(videoEncodeRateControlLayerInfoPtr);
 
     const VkVideoEncodeRateControlModeFlagBitsKHR rateControlMode =
-        !rateControl ? VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DEFAULT_KHR :
-                       (disableRateControl ? VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR :
-                                             (useVariableBitrate ? VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR :
-                                                                   VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR));
+        disableRateControl ? VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR :
+                             (activeRateControl ? (useVariableBitrate ? VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR :
+                                                                        VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR) :
+                                                  VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DEFAULT_KHR);
 
     const de::MovePtr<VkVideoEncodeRateControlLayerInfoKHR> videoEncodeRateControlLayerInfo =
         getVideoEncodeRateControlLayerInfo(videoEncodeRateControlLayerInfoPtr, rateControlMode,
@@ -2027,8 +2640,8 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     DE_ASSERT(videoEncodeRateControlInfoPtr);
 
     const de::MovePtr<VkVideoEncodeRateControlInfoKHR> videoEncodeRateControlInfo = getVideoEncodeRateControlInfo(
-        !disableRateControl ? videoEncodeRateControlInfoPtr : nullptr, rateControlMode,
-        (useConstantBitrate || useVariableBitrate) ? videoEncodeRateControlLayerInfo.get() : nullptr);
+        disableRateControl ? DE_NULL : videoEncodeRateControlInfoPtr, rateControlMode,
+        (useConstantBitrate || useVariableBitrate) ? videoEncodeRateControlLayerInfo.get() : DE_NULL);
     // End coding
     const VkVideoEndCodingInfoKHR videoEndCodingInfo = {
         VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR, //  VkStructureType sType;
@@ -2059,8 +2672,8 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
         if (resolutionChange && GOPIdx == 1)
         {
             // Pre fill buffer with new SPS/PPS/VPS header
-            fillBuffer(videoDeviceDriver, videoDevice, encodeBufferAlloc, headersData[1].data(), headersData[1].size(),
-                       bitstreamBufferOffset);
+            fillBuffer(videoDeviceDriver, videoDevice, encodeBufferAlloc, headersData[1], nonCoherentAtomSize,
+                       encodeBufferSize, bitstreamBufferOffset);
             bitstreamBufferOffset =
                 deAlign64(bitstreamBufferOffset + headersData[1].size(), minBitstreamBufferOffsetAlignment);
         }
@@ -2078,17 +2691,18 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                 *videoEncodeSession,
                 resolutionChange ? videoEncodeSessionParameters[GOPIdx].get() : videoEncodeSessionParameters[0].get(),
                 dpbSlots, &dpbImageVideoReferenceSlots[0],
-                (rateControl && NALIdx > 0) ? videoEncodeRateControlInfo.get() : nullptr);
+                (activeRateControl && NALIdx > 0) ? videoEncodeRateControlInfo.get() : DE_NULL);
 
             videoDeviceDriver.cmdBeginVideoCodingKHR(encodeCmdBuffer, videoBeginCodingFrameInfoKHR.get());
 
+            de::MovePtr<VkVideoCodingControlInfoKHR> resetVideoEncodingControl =
+                getVideoCodingControlInfo(VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR);
+
             if (NALIdx == 0)
             {
-                de::MovePtr<VkVideoCodingControlInfoKHR> resetVideoEncodingControl =
-                    getVideoCodingControlInfo(VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR);
                 videoDeviceDriver.cmdControlVideoCodingKHR(encodeCmdBuffer, resetVideoEncodingControl.get());
 
-                if (rateControl)
+                if (disableRateControl || activeRateControl)
                 {
                     de::MovePtr<VkVideoCodingControlInfoKHR> videoRateConstrolInfo = getVideoCodingControlInfo(
                         VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_BIT_KHR, videoEncodeRateControlInfo.get());
@@ -2174,7 +2788,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                 getStdVideoEncodeH264SliceHeader(stdVideoH264SliceType, h264ActiveOverrideFlag));
             videoEncodeH264NaluSlices.push_back(getVideoEncodeH264NaluSlice(
                 stdVideoEncodeH264SliceHeaders.back().get(),
-                rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR ? constQp : 0));
+                (rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) ? constQp : 0));
             videoEncodeH264ReferenceListInfos.push_back(
                 getVideoEncodeH264ReferenceListsInfo(H264RefPicList0, H264RefPicList1, numL0, numL1));
             H264pictureInfos.push_back(getStdVideoEncodeH264PictureInfo(
@@ -2188,7 +2802,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                 getStdVideoEncodeH265SliceSegmentHeader(stdVideoH265SliceType));
             videoEncodeH265NaluSliceSegments.push_back(getVideoEncodeH265NaluSliceSegment(
                 stdVideoEncodeH265SliceSegmentHeaders.back().get(),
-                rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR ? constQp : 0));
+                (rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) ? constQp : 0));
             videoEncodeH265ReferenceListInfos.push_back(
                 getVideoEncodeH265ReferenceListsInfo(H265RefPicList0, H265RefPicList1));
             stdVideoH265ShortTermRefPicSets.push_back(getStdVideoH265ShortTermRefPicSet(
@@ -2250,6 +2864,8 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
             de::MovePtr<VkVideoInlineQueryInfoKHR> inlineQueryInfo =
                 getVideoInlineQueryInfo(encodeQueryPool.get(), queryId, 1, nullptr);
 
+            de::MovePtr<VkVideoEncodeQuantizationMapInfoKHR> quantizationMapInfo;
+
             if (useInlineQueries)
             {
                 VkBaseInStructure *pStruct = (VkBaseInStructure *)videoEncodePictureInfoPtr;
@@ -2257,11 +2873,28 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                     pStruct = (VkBaseInStructure *)pStruct->pNext;
                 pStruct->pNext = (VkBaseInStructure *)inlineQueryInfo.get();
             }
+            else if (useDeltaMap || useEmphasisMap)
+            {
+                VkBaseInStructure *pStruct = (VkBaseInStructure *)videoEncodePictureInfoPtr;
+                quantizationMapInfo =
+                    getQuantizationMapInfo(quantizationMapImageViews[GOPIdx % quantizationMapCount]->get(),
+                                           quantizationMapExtent, videoEncodePictureInfoPtr);
+                while (pStruct->pNext)
+                    pStruct = (VkBaseInStructure *)pStruct->pNext;
+                pStruct->pNext = (VkBaseInStructure *)quantizationMapInfo.get();
+            }
+
+            const VkVideoEncodeFlagsKHR encodeFlags =
+                (useDeltaMap || useEmphasisMap) ?
+                    (useDeltaMap ?
+                         static_cast<VkVideoEncodeFlagsKHR>(VK_VIDEO_ENCODE_WITH_QUANTIZATION_DELTA_MAP_BIT_KHR) :
+                         static_cast<VkVideoEncodeFlagsKHR>(VK_VIDEO_ENCODE_WITH_EMPHASIS_MAP_BIT_KHR)) :
+                    static_cast<VkVideoEncodeFlagsKHR>(0);
 
             videoEncodeFrameInfos.push_back(
-                getVideoEncodeInfo(videoEncodePictureInfoPtr, *encodeBuffer, dstBufferOffset,
+                getVideoEncodeInfo(videoEncodePictureInfoPtr, encodeFlags, *encodeBuffer, dstBufferOffset,
                                    (*imagePictureResourceVector[srcPictureResourceIdx]), setupReferenceSlotPtr,
-                                   refsCount, (refsPool == 0) ? nullptr : referenceSlots));
+                                   refsCount, (refsPool == 0) ? DE_NULL : referenceSlots));
 
             if (!useInlineQueries)
                 videoDeviceDriver.cmdBeginQuery(encodeCmdBuffer, encodeQueryPool.get(), queryId, 0);
@@ -2372,6 +3005,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     FrameProcessor processor(std::move(demuxer), basicDecoder);
     std::vector<int> incorrectFrames;
     std::vector<int> correctFrames;
+    std::vector<double> psnrDiff;
 
     for (int NALIdx = 0; NALIdx < m_testDefinition->framesToCheck(); NALIdx++)
     {
@@ -2391,7 +3025,27 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
         const string outputFileName = "out_" + std::to_string(NALIdx) + ".yuv";
         saveYUVfile(out, outputFileName);
 #endif
-        double psnr = util::PSNR(*inVector[NALIdx], *out);
+        // Quantization maps verification
+        if (useDeltaMap || useEmphasisMap)
+        {
+            double d = util::calculatePSNRdifference(*inVector[NALIdx], *out, codedExtent, quantizationMapExtent,
+                                                     quantizationMapTexelSize);
+
+            psnrDiff.push_back(d);
+
+            if (useEmphasisMap && NALIdx == 1)
+            {
+                if (psnrDiff[1] <= psnrDiff[0])
+                    return tcu::TestStatus::fail(
+                        "PSNR difference for the second frame is not greater than for the first frame");
+            }
+            else if (useDeltaMap && NALIdx == 2)
+            {
+                if (psnrDiff[2] > 0)
+                    return tcu::TestStatus::fail(
+                        "PSNR value for left half of the frame is lower than for the right half");
+            }
+        }
 
         double higherPsnrThreshold     = 30.0;
         double lowerPsnrThreshold      = 20.0;
@@ -2399,10 +3053,18 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
         double psnrThresholdLowerLimit = disableRateControl ? lowerPsnrThreshold : higherPsnrThreshold;
         string failMessage;
 
+        double psnr = util::PSNR(*inVector[NALIdx], *out);
+
+        // Quality checks
         if (psnr < psnrThresholdLowerLimit)
         {
             double difference = psnrThresholdLowerLimit - psnr;
 
+            if ((useDeltaMap || useEmphasisMap) && NALIdx == 1)
+            {
+                // When testing quantization map, the PSNR of the secont image is expected to be low
+                break;
+            }
             if (psnr > criticalPsnrThreshold)
             {
                 failMessage = "Frame " + std::to_string(NALIdx) + " with PSNR " + std::to_string(psnr) + " is " +
@@ -2477,6 +3139,15 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
         context.requireDeviceFunctionality("VK_KHR_video_maintenance1");
         break;
+    case TEST_TYPE_H264_ENCODE_QM_DELTA_RC_DISABLE:
+    case TEST_TYPE_H264_ENCODE_QM_DELTA_RC_VBR:
+    case TEST_TYPE_H264_ENCODE_QM_DELTA_RC_CBR:
+    case TEST_TYPE_H264_ENCODE_QM_DELTA:
+    case TEST_TYPE_H264_ENCODE_QM_EMPHASIS_CBR:
+    case TEST_TYPE_H264_ENCODE_QM_EMPHASIS_VBR:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_quantization_map");
+        break;
     case TEST_TYPE_H265_ENCODE_I:
     case TEST_TYPE_H265_ENCODE_RC_VBR:
     case TEST_TYPE_H265_ENCODE_RC_CBR:
@@ -2494,6 +3165,15 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES:
         context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
         context.requireDeviceFunctionality("VK_KHR_video_maintenance1");
+        break;
+    case TEST_TYPE_H265_ENCODE_QM_DELTA_RC_DISABLE:
+    case TEST_TYPE_H265_ENCODE_QM_DELTA_RC_VBR:
+    case TEST_TYPE_H265_ENCODE_QM_DELTA_RC_CBR:
+    case TEST_TYPE_H265_ENCODE_QM_DELTA:
+    case TEST_TYPE_H265_ENCODE_QM_EMPHASIS_CBR:
+    case TEST_TYPE_H265_ENCODE_QM_EMPHASIS_VBR:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_quantization_map");
         break;
     default:
         TCU_THROW(InternalError, "Unknown TestType");
