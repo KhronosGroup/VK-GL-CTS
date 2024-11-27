@@ -1389,6 +1389,13 @@ struct VkDisplaySurfaceCreateInfoKHR
 	VkExtent2D						imageExtent;
 };
 
+struct VkDisplaySurfaceStereoCreateInfoNV
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDisplaySurfaceStereoTypeNV	stereoType;
+};
+
 struct VkDisplayPresentInfoKHR
 {
 	VkStructureType	sType;
@@ -2787,6 +2794,13 @@ struct VkDisplayModeProperties2KHR
 	VkStructureType				sType;
 	void*						pNext;
 	VkDisplayModePropertiesKHR	displayModeProperties;
+};
+
+struct VkDisplayModeStereoPropertiesNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		hdmi3DSupported;
 };
 
 struct VkDisplayPlaneInfo2KHR
@@ -6987,6 +7001,58 @@ struct VkVideoFormatPropertiesKHR
 	VkImageUsageFlags	imageUsageFlags;
 };
 
+struct VkVideoEncodeQuantizationMapCapabilitiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkExtent2D		maxQuantizationMapExtent;
+};
+
+struct VkVideoEncodeH264QuantizationMapCapabilitiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	int32_t			minQpDelta;
+	int32_t			maxQpDelta;
+};
+
+struct VkVideoEncodeH265QuantizationMapCapabilitiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	int32_t			minQpDelta;
+	int32_t			maxQpDelta;
+};
+
+struct VkVideoEncodeAV1QuantizationMapCapabilitiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	int32_t			minQIndexDelta;
+	int32_t			maxQIndexDelta;
+};
+
+struct VkVideoFormatQuantizationMapPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkExtent2D		quantizationMapTexelSize;
+};
+
+struct VkVideoFormatH265QuantizationMapPropertiesKHR
+{
+	VkStructureType						sType;
+	void*								pNext;
+	VkVideoEncodeH265CtbSizeFlagsKHR	compatibleCtbSizes;
+};
+
+struct VkVideoFormatAV1QuantizationMapPropertiesKHR
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkVideoEncodeAV1SuperblockSizeFlagsKHR	compatibleSuperblockSizes;
+};
+
 struct VkVideoProfileInfoKHR
 {
 	VkStructureType						sType;
@@ -7237,6 +7303,28 @@ struct VkVideoEncodeInfoKHR
 	uint32_t							referenceSlotCount;
 	const VkVideoReferenceSlotInfoKHR*	pReferenceSlots;
 	uint32_t							precedingExternallyEncodedBytes;
+};
+
+struct VkVideoEncodeQuantizationMapInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkImageView		quantizationMap;
+	VkExtent2D		quantizationMapExtent;
+};
+
+struct VkVideoEncodeQuantizationMapSessionParametersCreateInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkExtent2D		quantizationMapTexelSize;
+};
+
+struct VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		videoEncodeQuantizationMap;
 };
 
 struct VkQueryPoolVideoEncodeFeedbackCreateInfoKHR
@@ -7535,6 +7623,126 @@ struct VkVideoEncodeH265ProfileInfoKHR
 	VkStructureType			sType;
 	const void*				pNext;
 	StdVideoH265ProfileIdc	stdProfileIdc;
+};
+
+struct VkVideoEncodeAV1CapabilitiesKHR
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkVideoEncodeAV1CapabilityFlagsKHR		flags;
+	StdVideoAV1Level						maxLevel;
+	VkExtent2D								codedPictureAlignment;
+	VkExtent2D								maxTiles;
+	VkExtent2D								minTileSize;
+	VkExtent2D								maxTileSize;
+	VkVideoEncodeAV1SuperblockSizeFlagsKHR	superblockSizes;
+	uint32_t								maxSingleReferenceCount;
+	uint32_t								singleReferenceNameMask;
+	uint32_t								maxUnidirectionalCompoundReferenceCount;
+	uint32_t								maxUnidirectionalCompoundGroup1ReferenceCount;
+	uint32_t								unidirectionalCompoundReferenceNameMask;
+	uint32_t								maxBidirectionalCompoundReferenceCount;
+	uint32_t								maxBidirectionalCompoundGroup1ReferenceCount;
+	uint32_t								maxBidirectionalCompoundGroup2ReferenceCount;
+	uint32_t								bidirectionalCompoundReferenceNameMask;
+	uint32_t								maxTemporalLayerCount;
+	uint32_t								maxSpatialLayerCount;
+	uint32_t								maxOperatingPoints;
+	uint32_t								minQIndex;
+	uint32_t								maxQIndex;
+	VkBool32								prefersGopRemainingFrames;
+	VkBool32								requiresGopRemainingFrames;
+	VkVideoEncodeAV1StdFlagsKHR				stdSyntaxFlags;
+};
+
+struct VkPhysicalDeviceVideoEncodeAV1FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		videoEncodeAV1;
+};
+
+struct VkVideoEncodeAV1SessionCreateInfoKHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkBool32			useMaxLevel;
+	StdVideoAV1Level	maxLevel;
+};
+
+struct VkVideoEncodeAV1ProfileInfoKHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	StdVideoAV1Profile	stdProfile;
+};
+
+struct VkVideoEncodeAV1RateControlInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkVideoEncodeAV1RateControlFlagsKHR	flags;
+	uint32_t							gopFrameCount;
+	uint32_t							keyFramePeriod;
+	uint32_t							consecutiveBipredictiveFrameCount;
+	uint32_t							temporalLayerCount;
+};
+
+struct VkVideoEncodeAV1QIndexKHR
+{
+	uint32_t	intraQIndex;
+	uint32_t	predictiveQIndex;
+	uint32_t	bipredictiveQIndex;
+};
+
+struct VkVideoEncodeAV1QualityLevelPropertiesKHR
+{
+	VkStructureType						sType;
+	void*								pNext;
+	VkVideoEncodeAV1RateControlFlagsKHR	preferredRateControlFlags;
+	uint32_t							preferredGopFrameCount;
+	uint32_t							preferredKeyFramePeriod;
+	uint32_t							preferredConsecutiveBipredictiveFrameCount;
+	uint32_t							preferredTemporalLayerCount;
+	VkVideoEncodeAV1QIndexKHR			preferredConstantQIndex;
+	uint32_t							preferredMaxSingleReferenceCount;
+	uint32_t							preferredSingleReferenceNameMask;
+	uint32_t							preferredMaxUnidirectionalCompoundReferenceCount;
+	uint32_t							preferredMaxUnidirectionalCompoundGroup1ReferenceCount;
+	uint32_t							preferredUnidirectionalCompoundReferenceNameMask;
+	uint32_t							preferredMaxBidirectionalCompoundReferenceCount;
+	uint32_t							preferredMaxBidirectionalCompoundGroup1ReferenceCount;
+	uint32_t							preferredMaxBidirectionalCompoundGroup2ReferenceCount;
+	uint32_t							preferredBidirectionalCompoundReferenceNameMask;
+};
+
+struct VkVideoEncodeAV1FrameSizeKHR
+{
+	uint32_t	intraFrameSize;
+	uint32_t	predictiveFrameSize;
+	uint32_t	bipredictiveFrameSize;
+};
+
+struct VkVideoEncodeAV1GopRemainingFrameInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		useGopRemainingFrames;
+	uint32_t		gopRemainingIntra;
+	uint32_t		gopRemainingPredictive;
+	uint32_t		gopRemainingBipredictive;
+};
+
+struct VkVideoEncodeAV1RateControlLayerInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkBool32						useMinQIndex;
+	VkVideoEncodeAV1QIndexKHR		minQIndex;
+	VkBool32						useMaxQIndex;
+	VkVideoEncodeAV1QIndexKHR		maxQIndex;
+	VkBool32						useMaxFrameSize;
+	VkVideoEncodeAV1FrameSizeKHR	maxFrameSize;
 };
 
 struct VkPhysicalDeviceInheritedViewportScissorFeaturesNV
@@ -9998,6 +10206,13 @@ struct VkPhysicalDeviceHdrVividFeaturesHUAWEI
 	VkBool32		hdrVivid;
 };
 
+struct VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		vertexAttributeRobustness;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;
@@ -11266,6 +11481,152 @@ struct VkVideoDecodeAV1DpbSlotInfoKHR
 	VkStructureType							sType;
 	const void*								pNext;
 	const StdVideoDecodeAV1ReferenceInfo*	pStdReferenceInfo;
+};
+
+struct StdVideoEncodeAV1ExtensionHeader
+{
+	uint8_t	temporal_id;
+	uint8_t	spatial_id;
+};
+
+struct StdVideoEncodeAV1DecoderModelInfo
+{
+	uint8_t		buffer_delay_length_minus_1;
+	uint8_t		buffer_removal_time_length_minus_1;
+	uint8_t		frame_presentation_time_length_minus_1;
+	uint8_t		reserved1;
+	uint32_t	num_units_in_decoding_tick;
+};
+
+struct StdVideoEncodeAV1OperatingPointInfoFlags
+{
+	uint32_t	decoder_model_present_for_this_op:1;
+	uint32_t	low_delay_mode_flag:1;
+	uint32_t	initial_display_delay_present_for_this_op:1;
+	uint32_t	reserved:29;
+};
+
+struct StdVideoEncodeAV1OperatingPointInfo
+{
+	StdVideoEncodeAV1OperatingPointInfoFlags	flags;
+	uint16_t									operating_point_idc;
+	uint8_t										seq_level_idx;
+	uint8_t										seq_tier;
+	uint32_t									decoder_buffer_delay;
+	uint32_t									encoder_buffer_delay;
+	uint8_t										initial_display_delay_minus_1;
+};
+
+struct VkVideoEncodeAV1SessionParametersCreateInfoKHR
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	const StdVideoAV1SequenceHeader*			pStdSequenceHeader;
+	const StdVideoEncodeAV1DecoderModelInfo*	pStdDecoderModelInfo;
+	uint32_t									stdOperatingPointCount;
+	const StdVideoEncodeAV1OperatingPointInfo*	pStdOperatingPoints;
+};
+
+struct StdVideoEncodeAV1PictureInfoFlags
+{
+	uint32_t	error_resilient_mode:1;
+	uint32_t	disable_cdf_update:1;
+	uint32_t	use_superres:1;
+	uint32_t	render_and_frame_size_different:1;
+	uint32_t	allow_screen_content_tools:1;
+	uint32_t	is_filter_switchable:1;
+	uint32_t	force_integer_mv:1;
+	uint32_t	frame_size_override_flag:1;
+	uint32_t	buffer_removal_time_present_flag:1;
+	uint32_t	allow_intrabc:1;
+	uint32_t	frame_refs_short_signaling:1;
+	uint32_t	allow_high_precision_mv:1;
+	uint32_t	is_motion_mode_switchable:1;
+	uint32_t	use_ref_frame_mvs:1;
+	uint32_t	disable_frame_end_update_cdf:1;
+	uint32_t	allow_warped_motion:1;
+	uint32_t	reduced_tx_set:1;
+	uint32_t	skip_mode_present:1;
+	uint32_t	delta_q_present:1;
+	uint32_t	delta_lf_present:1;
+	uint32_t	delta_lf_multi:1;
+	uint32_t	segmentation_enabled:1;
+	uint32_t	segmentation_update_map:1;
+	uint32_t	segmentation_temporal_update:1;
+	uint32_t	segmentation_update_data:1;
+	uint32_t	UsesLr:1;
+	uint32_t	usesChromaLr:1;
+	uint32_t	show_frame:1;
+	uint32_t	showable_frame:1;
+	uint32_t	reserved:3;
+};
+
+struct StdVideoEncodeAV1PictureInfo
+{
+	StdVideoEncodeAV1PictureInfoFlags		flags;
+	StdVideoAV1FrameType					frame_type;
+	uint32_t								frame_presentation_time;
+	uint32_t								current_frame_id;
+	uint8_t									order_hint;
+	uint8_t									primary_ref_frame;
+	uint8_t									refresh_frame_flags;
+	uint8_t									coded_denom;
+	uint16_t								render_width_minus_1;
+	uint16_t								render_height_minus_1;
+	StdVideoAV1InterpolationFilter			interpolation_filter;
+	StdVideoAV1TxMode						TxMode;
+	uint8_t									delta_q_res;
+	uint8_t									delta_lf_res;
+	uint8_t									ref_order_hint[STD_VIDEO_AV1_NUM_REF_FRAMES];
+	int8_t									ref_frame_idx[STD_VIDEO_AV1_REFS_PER_FRAME];
+	uint8_t									reserved1[3];
+	uint32_t								delta_frame_id_minus_1[STD_VIDEO_AV1_REFS_PER_FRAME];
+	const StdVideoAV1TileInfo*				pTileInfo;
+	const StdVideoAV1Quantization*			pQuantization;
+	const StdVideoAV1Segmentation*			pSegmentation;
+	const StdVideoAV1LoopFilter*			pLoopFilter;
+	const StdVideoAV1CDEF*					pCDEF;
+	const StdVideoAV1LoopRestoration*		pLoopRestoration;
+	const StdVideoAV1GlobalMotion*			pGlobalMotion;
+	const StdVideoEncodeAV1ExtensionHeader*	pExtensionHeader;
+	const uint32_t*							pBufferRemovalTimes;
+};
+
+struct VkVideoEncodeAV1PictureInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkVideoEncodeAV1PredictionModeKHR	predictionMode;
+	VkVideoEncodeAV1RateControlGroupKHR	rateControlGroup;
+	uint32_t							constantQIndex;
+	const StdVideoEncodeAV1PictureInfo*	pStdPictureInfo;
+	int32_t								referenceNameSlotIndices[VK_MAX_VIDEO_AV1_REFERENCES_PER_FRAME_KHR];
+	VkBool32							primaryReferenceCdfOnly;
+	VkBool32							generateObuExtensionHeader;
+};
+
+struct StdVideoEncodeAV1ReferenceInfoFlags
+{
+	uint32_t	disable_frame_end_update_cdf:1;
+	uint32_t	segmentation_enabled:1;
+	uint32_t	reserved:30;
+};
+
+struct StdVideoEncodeAV1ReferenceInfo
+{
+	StdVideoEncodeAV1ReferenceInfoFlags		flags;
+	uint32_t								RefFrameId;
+	StdVideoAV1FrameType					frame_type;
+	uint8_t									OrderHint;
+	uint8_t									reserved1[3];
+	const StdVideoEncodeAV1ExtensionHeader*	pExtensionHeader;
+};
+
+struct VkVideoEncodeAV1DpbSlotInfoKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	const StdVideoEncodeAV1ReferenceInfo*	pStdReferenceInfo;
 };
 
 typedef VkBufferUsageFlags2CreateInfo VkBufferUsageFlags2CreateInfoKHR;

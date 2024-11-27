@@ -1174,9 +1174,10 @@ tcu::TestStatus presentModesQueryTest(Context &context, const PresentModesTestCo
     VK_CHECK(
         instHelper.vki.getPhysicalDeviceSurfaceCapabilities2KHR(devHelper.physicalDevice, &surfaceInfo, &capabilities));
 
-    // The return value must be at least one, as every mode is compatible with itself.
+    // Sometime ICD selected will not support the instance extensions got in enumerateInstanceExtensionProperties.
+    // In this case the struct varible compatibility queried in getPhysicalDeviceSurfaceCapabilities2KHR will keep unchanged.
     if (compatibility.presentModeCount < 1)
-        return tcu::TestStatus::fail("Empty compatible present mode list");
+        TCU_THROW(NotSupportedError, "Empty compatible present mode list, VK_EXT_surface_maintenance1 not supported.");
 
     // Test again providing a buffer that's too small
     constexpr VkPresentModeKHR invalidValue = (VkPresentModeKHR)0x1234;
