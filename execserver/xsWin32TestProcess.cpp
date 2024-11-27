@@ -444,8 +444,8 @@ static void createPipeWithOverlappedIO(HANDLE *readHandleOut, HANDLE *writeHandl
 
     DE_ASSERT(((readMode | writeMode) & ~FILE_FLAG_OVERLAPPED) == 0);
 
-    deSprintf(pipeName, sizeof(pipeName), "\\\\.\\Pipe\\dEQP-ExecServer-%08x-%08x-%08x", GetCurrentProcessId(),
-              GetCurrentThreadId(), t_pipeNdx++);
+    snprintf(pipeName, sizeof(pipeName), "\\\\.\\Pipe\\dEQP-ExecServer-%08x-%08x-%08x", GetCurrentProcessId(),
+             GetCurrentThreadId(), t_pipeNdx++);
 
     readHandle = CreateNamedPipe(pipeName,                       /* Pipe name.                */
                                  PIPE_ACCESS_INBOUND | readMode, /* Open mode.                */

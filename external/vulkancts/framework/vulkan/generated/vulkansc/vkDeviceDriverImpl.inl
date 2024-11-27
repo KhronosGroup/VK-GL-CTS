@@ -958,10 +958,10 @@ uint64_t DeviceDriver::getDeviceMemoryOpaqueCaptureAddress (VkDevice device, con
     return m_vk.getDeviceMemoryOpaqueCaptureAddress(device, pInfo);
 }
 
-void DeviceDriver::cmdSetLineStippleKHR (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const
+void DeviceDriver::cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetLineStippleKHR(commandBuffer, lineStippleFactor, lineStipplePattern);
+    m_vk.cmdSetLineStippleEXT(commandBuffer, lineStippleFactor, lineStipplePattern);
 }
 
 VkResult DeviceDriver::getFaultData (VkDevice device, VkFaultQueryBehavior faultQueryBehavior, VkBool32* pUnrecordedFaults, uint32_t* pFaultCount, VkFaultData* pFaults) const

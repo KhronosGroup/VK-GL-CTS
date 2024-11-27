@@ -411,7 +411,7 @@ static int findShaderInputIndex(const vector<rsg::ShaderInput *> &vars, const ch
 {
     for (int ndx = 0; ndx < (int)vars.size(); ++ndx)
     {
-        if (deStringEqual(vars[ndx]->getVariable()->getName(), name))
+        if (strcmp(vars[ndx]->getVariable()->getName(), name) == 0)
             return ndx;
     }
 

@@ -587,14 +587,14 @@ uint32_t getIterations(std::vector<VkPresentModeKHR> presentModes,
     // Return an iteration count that is as high as possible while keeping the test time and memory usage reasonable.
     //
     // - If FIFO is used, limit to 120 (~2s on 60Hz)
-    // - Else, limit to 1000
+    // - Else, limit to 250
 
     if (hasFifo)
         return testResizesWindowsFrequently ? 60 : 120;
 
     (void)hasShared;
     (void)hasNoVsync;
-    uint32_t iterations = 1000;
+    uint32_t iterations = 250;
 
     // If the test resizes windows frequently, reduce the testing time as that's a very slow operation.
     if (testResizesWindowsFrequently)
@@ -1174,9 +1174,10 @@ tcu::TestStatus presentModesQueryTest(Context &context, const PresentModesTestCo
     VK_CHECK(
         instHelper.vki.getPhysicalDeviceSurfaceCapabilities2KHR(devHelper.physicalDevice, &surfaceInfo, &capabilities));
 
-    // The return value must be at least one, as every mode is compatible with itself.
+    // Sometime ICD selected will not support the instance extensions got in enumerateInstanceExtensionProperties.
+    // In this case the struct varible compatibility queried in getPhysicalDeviceSurfaceCapabilities2KHR will keep unchanged.
     if (compatibility.presentModeCount < 1)
-        return tcu::TestStatus::fail("Empty compatible present mode list");
+        TCU_THROW(NotSupportedError, "Empty compatible present mode list, VK_EXT_surface_maintenance1 not supported.");
 
     // Test again providing a buffer that's too small
     constexpr VkPresentModeKHR invalidValue = (VkPresentModeKHR)0x1234;
@@ -2175,6 +2176,8 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     swapchainImages[acquiredIndices[presentIndex]],
                     range,
                 };
+                vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
 
                 VkClearColorValue clearValue;
                 clearValue.float32[0] = static_cast<float>(i % 33) / 32.0f;

@@ -539,6 +539,8 @@ void RenderContext::postIterate(void)
 
     if (m_window)
     {
+        EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
+
         EGLBoolean swapOk    = egl.swapBuffers(m_eglDisplay, m_eglSurface);
         EGLint error         = egl.getError();
         const bool badWindow = error == EGL_BAD_SURFACE || error == EGL_BAD_NATIVE_WINDOW;

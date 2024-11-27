@@ -874,6 +874,8 @@ KHR-GL32.transform_feedback2.transform_feedback2_states
 KHR-GL32.api.coverage
 KHR-GL32.get_uniform_tests.get_uniform
 KHR-GL32.frag_coord_conventions.multisample
+KHR-GL32.texture_storage.compressed_data
+KHR-GL32.draw_buffers.draw_buffers_1
 KHR-GL32.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL32.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL32.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp

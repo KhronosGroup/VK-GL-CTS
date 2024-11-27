@@ -1760,9 +1760,8 @@ bool veryfiBinaryShader(const ProgramBinary &binary)
 
     for (size_t ndx = 0u; ndx < binary.getSize(); ++ndx)
     {
-        if (false == paternsCheck[paternNdx] && patersns[paternNdx][0] == static_cast<char>(binary.getBinary()[ndx]) &&
-            deMemoryEqual((const char *)&binary.getBinary()[ndx], &patersns[paternNdx][0],
-                          patersns[paternNdx].length()))
+        if (!paternsCheck[paternNdx] && patersns[paternNdx][0] == static_cast<char>(binary.getBinary()[ndx]) &&
+            memcmp(&binary.getBinary()[ndx], &patersns[paternNdx][0], patersns[paternNdx].length()) == 0)
         {
             paternsCheck[paternNdx] = true;
             paternNdx++;

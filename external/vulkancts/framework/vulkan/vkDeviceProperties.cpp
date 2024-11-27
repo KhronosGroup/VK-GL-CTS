@@ -36,6 +36,7 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
     m_vulkan12Properties = initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
     m_vulkan13Properties = initVulkanStructure();
+    m_vulkan14Properties = initVulkanStructure();
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
     m_vulkanSC10Properties = initVulkanStructure();
@@ -52,6 +53,7 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
         bool vk12Supported = (apiVersion >= VK_MAKE_API_VERSION(0, 1, 2, 0));
 #ifndef CTS_USES_VULKANSC
         bool vk13Supported = (apiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0));
+        bool vk14Supported = (apiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0));
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
         bool vksc10Supported = (apiVersion >= VK_MAKE_API_VERSION(1, 1, 0, 0));
@@ -83,6 +85,8 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
 #ifndef CTS_USES_VULKANSC
             if (vk13Supported)
                 addToChainVulkanStructure(&nextPtr, m_vulkan13Properties);
+            if (vk14Supported)
+                addToChainVulkanStructure(&nextPtr, m_vulkan14Properties);
 #endif // CTS_USES_VULKANSC
         }
 
@@ -117,7 +121,7 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
                     continue;
 #endif // CTS_USES_VULKANSC
 
-                // if property struct is part of VkPhysicalDeviceVulkan1{1,2}Properties
+                // if property struct is part of VkPhysicalDeviceVulkan1{1,2,3,4}Properties
                 // we dont add it to the chain but store and fill later from blob data
                 bool propertyFilledFromBlob = false;
                 if (vk12Supported)
@@ -138,15 +142,31 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
             }
         }
 
+#ifndef CTS_USES_VULKANSC
+        // special handling for the copyDstLayoutCount/pCopyDstLayouts fields
+        // we need to query again to fill allocated arrays with layouts
+        if (vk14Supported)
+        {
+            VkPhysicalDeviceVulkan14Properties vulkan14Properties = initVulkanStructure();
+            VkPhysicalDeviceProperties2 coreProperties2           = initVulkanStructure();
+            coreProperties2.pNext                                 = &vulkan14Properties;
+            vki.getPhysicalDeviceProperties2(physicalDevice, &coreProperties2);
+
+            m_vulkan14Properties.pCopySrcLayouts = m_vulkan14CopyLayouts.data();
+            m_vulkan14Properties.pCopyDstLayouts =
+                m_vulkan14CopyLayouts.data() + m_vulkan14Properties.copySrcLayoutCount;
+        }
+#endif // CTS_USES_VULKANSC
+
         vki.getPhysicalDeviceProperties2(physicalDevice, &m_coreProperties2);
 
-        // fill data from VkPhysicalDeviceVulkan1{1,2,3}Properties
+        // fill data from VkPhysicalDeviceVulkan1{1,2,3,4}Properties
         if (vk12Supported)
         {
             AllPropertiesBlobs allBlobs = {
                 m_vulkan11Properties, m_vulkan12Properties,
 #ifndef CTS_USES_VULKANSC
-                m_vulkan13Properties,
+                m_vulkan13Properties, m_vulkan14Properties,
 #endif // CTS_USES_VULKANSC
                 // add blobs from future vulkan versions here
             };
@@ -175,7 +195,7 @@ bool DeviceProperties::contains(const std::string &property, bool throwIfNotExis
 {
     for (const auto f : m_properties)
     {
-        if (deStringEqual(f->getPropertyDesc().name, property.c_str()))
+        if (strcmp(f->getPropertyDesc().name, property.c_str()) == 0)
             return true;
     }
 

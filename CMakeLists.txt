@@ -403,6 +403,11 @@ if (DE_COMPILER_IS_MSC)
 	add_compile_options(/bigobj) # Required by glsBuiltinPrecisionTests.cpp
 endif ()
 
+if (DE_COMPILER_IS_GCC)
+	# Should reduce memory usage by the GCC linker, which sometimes gets killed with -9
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-keep-memory")
+endif ()
+
 add_subdirectory(modules ${MAYBE_EXCLUDE_FROM_ALL})
 add_subdirectory(external/vulkancts/modules/vulkan ${MAYBE_EXCLUDE_FROM_ALL})
 add_subdirectory(external/vulkancts/vkscserver ${MAYBE_EXCLUDE_FROM_ALL})

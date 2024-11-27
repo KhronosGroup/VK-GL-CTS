@@ -125,7 +125,7 @@ void ImageTest::checkSupport(Context &context) const
 #ifndef CTS_USES_VULKANSC
         context.requireDeviceFunctionality("VK_EXT_pipeline_protected_access");
 
-        if (!context.getPipelineProtectedAccessFeaturesEXT().pipelineProtectedAccess)
+        if (!context.getPipelineProtectedAccessFeatures().pipelineProtectedAccess)
         {
             throw tcu::NotSupportedError("pipelineProtectedAccess feature is not supported");
         }

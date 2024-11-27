@@ -88,7 +88,7 @@ void cmdPipelineImageMemoryBarrier2(const DeviceInterface &vk, const VkCommandBu
 
 static VkExtensionProperties makeExtensionProperties(const char *extensionName, uint32_t specVersion)
 {
-    const uint32_t extensionNameLen = static_cast<uint32_t>(deStrnlen(extensionName, VK_MAX_EXTENSION_NAME_SIZE));
+    const uint32_t extensionNameLen = static_cast<uint32_t>(strlen(extensionName));
     VkExtensionProperties result;
 
     deMemset(&result, 0, sizeof(result));

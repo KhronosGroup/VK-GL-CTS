@@ -1929,9 +1929,8 @@ tcu::TestStatus renderPassContinueNestedTest(Context &context, bool framebufferH
 #ifndef CTS_USES_VULKANSC
     if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance7"))
     {
-        const auto &features =
-            *vk::findStructure<vk::VkPhysicalDeviceMaintenance7FeaturesKHR>(&context.getDeviceFeatures2());
-        maintenance7 = features.maintenance7;
+        const auto &features = context.getMaintenance7Features();
+        maintenance7         = features.maintenance7;
     }
 #endif
 
@@ -1939,8 +1938,7 @@ tcu::TestStatus renderPassContinueNestedTest(Context &context, bool framebufferH
     {
         context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
 #ifndef CTS_USES_VULKANSC
-        const auto &features =
-            *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+        const auto &features = context.getNestedCommandBufferFeaturesEXT();
         if (!features.nestedCommandBuffer)
 #endif // CTS_USES_VULKANSC
             TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
@@ -4622,8 +4620,7 @@ void checkNestedCommandBufferSupport(Context &context)
     context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
 
 #ifndef CTS_USES_VULKANSC
-    const auto &features =
-        *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+    const auto &features = context.getNestedCommandBufferFeaturesEXT();
     if (!features.nestedCommandBuffer)
 #endif // CTS_USES_VULKANSC
         TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
@@ -4634,8 +4631,7 @@ void checkNestedCommandBufferDepthSupport(Context &context)
     checkNestedCommandBufferSupport(context);
 
 #ifndef CTS_USES_VULKANSC
-    const auto &properties =
-        *findStructure<VkPhysicalDeviceNestedCommandBufferPropertiesEXT>(&context.getDeviceProperties2());
+    const auto &properties = context.getNestedCommandBufferPropertiesEXT();
     if (properties.maxCommandBufferNestingLevel <= 1)
 #endif // CTS_USES_VULKANSC
         TCU_THROW(NotSupportedError, "nestedCommandBuffer with nesting level greater than 1 is not supported");
@@ -4647,8 +4643,7 @@ void checkNestedCommandBufferRenderPassContinueSupport(Context &context, bool va
 
     DE_UNREF(value);
 #ifndef CTS_USES_VULKANSC
-    const auto &features =
-        *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+    const auto &features = context.getNestedCommandBufferFeaturesEXT();
     if (!features.nestedCommandBufferRendering)
 #endif // CTS_USES_VULKANSC
         TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
@@ -4659,8 +4654,7 @@ void checkSimultaneousUseAndNestedCommandBufferNullFramebufferSupport(Context &c
     checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport(context);
     checkNestedCommandBufferSupport(context);
 #ifndef CTS_USES_VULKANSC
-    const auto &features =
-        *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+    const auto &features = context.getNestedCommandBufferFeaturesEXT();
     if (!features.nestedCommandBufferSimultaneousUse)
 #endif // CTS_USES_VULKANSC
         TCU_THROW(NotSupportedError, "nestedCommandBufferSimultaneousUse is not supported");

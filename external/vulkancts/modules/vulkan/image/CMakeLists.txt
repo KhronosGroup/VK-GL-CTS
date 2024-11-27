@@ -52,6 +52,8 @@ set(DEQP_VK_VKSC_IMAGE_SRCS
 	vktImageTransfer.hpp
 	vktImageDepthStencilSeparateTests.cpp
 	vktImageDepthStencilSeparateTests.hpp
+	vktImageConcurrentCopyTests.cpp
+	vktImageConcurrentCopyTests.hpp
 	)
 
 set(DEQP_VK_IMAGE_SRCS

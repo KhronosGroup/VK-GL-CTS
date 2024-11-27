@@ -257,11 +257,14 @@ void FragCoordConventionsMultisampleTestCase::init()
         return program;
     };
 
-    auto sources_list = {std::make_pair(default_shader_vert, default_shader_frag),
-                         std::make_pair(default_shader_vert, multisample_shader_frag)};
+    if (m_testSupported)
+    {
+        auto sources_list = {std::make_pair(default_shader_vert, default_shader_frag),
+                             std::make_pair(default_shader_vert, multisample_shader_frag)};
 
-    for (auto src : sources_list)
-        m_programs.emplace_back(make_program(src.first, src.second));
+        for (auto src : sources_list)
+            m_programs.emplace_back(make_program(src.first, src.second));
+    }
 }
 
 void FragCoordConventionsMultisampleTestCase::getBufferBits(GLint colorBits[4])
@@ -748,10 +751,7 @@ bool FragCoordConventionsMultisampleTestCase::doQuadCase(const TestParams &param
 tcu::TestNode::IterateResult FragCoordConventionsMultisampleTestCase::iterate()
 {
     if (!m_testSupported)
-    {
         throw tcu::NotSupportedError("Test frag_coord_conventions.multisample is not supported");
-        return STOP;
-    }
 
     bool ret = true;
     TestParams params;

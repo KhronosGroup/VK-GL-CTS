@@ -5,7 +5,7 @@
 
 tcu::TestStatus validate_roadmap_2022(Context& context)
 {
-	const bool checkAlways = true;
+	const VkBool32 checkAlways = true;
 	bool oneOrMoreChecksFailed = false;
 	auto pd = context.getPhysicalDevice();
 	const auto &vki = context.getInstanceInterface();
@@ -220,7 +220,7 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 
 tcu::TestStatus validate_roadmap_2024(Context& context)
 {
-	const bool checkAlways = true;
+	const VkBool32 checkAlways = true;
 	bool oneOrMoreChecksFailed = false;
 	auto pd = context.getPhysicalDevice();
 	const auto &vki = context.getInstanceInterface();

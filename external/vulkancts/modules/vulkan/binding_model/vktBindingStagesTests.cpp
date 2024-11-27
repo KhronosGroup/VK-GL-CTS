@@ -402,7 +402,7 @@ tcu::TestStatus StagesTestInstance::iterate(void)
     };
 
     vk::beginCommandBuffer(vk, *cmdBuffer);
-    vk.cmdBindDescriptorSets2KHR(*cmdBuffer, &bindDescriptorSetsInfo);
+    vk.cmdBindDescriptorSets2(*cmdBuffer, &bindDescriptorSetsInfo);
 
     vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
     vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBegin, vk::VK_SUBPASS_CONTENTS_INLINE);

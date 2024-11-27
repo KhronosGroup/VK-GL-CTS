@@ -70,7 +70,7 @@ void DirectoryIterator::next(void)
 
 void DirectoryIterator::skipCurAndParent(void)
 {
-    while (m_hasItem && (deStringEqual(m_fileInfo.name, "..") || deStringEqual(m_fileInfo.name, ".")))
+    while (m_hasItem && (strcmp(m_fileInfo.name, "..") == 0 || strcmp(m_fileInfo.name, ".") == 0))
         m_hasItem = (_findnext32(m_handle, &m_fileInfo) == 0);
 }
 
@@ -112,7 +112,7 @@ void DirectoryIterator::next(void)
     do
     {
         m_curEntry = readdir(m_handle);
-    } while (m_curEntry && (deStringEqual(m_curEntry->d_name, "..") || deStringEqual(m_curEntry->d_name, ".")));
+    } while (m_curEntry && (strcmp(m_curEntry->d_name, "..") == 0 || strcmp(m_curEntry->d_name, ".") == 0));
 }
 
 #endif

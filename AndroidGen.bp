@@ -249,6 +249,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/image/vktImageAtomicOperationTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageAtomicSpirvShaders.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageCompressionTranscodingSupport.cpp",
+        "external/vulkancts/modules/vulkan/image/vktImageConcurrentCopyTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageDepthStencilDescriptorTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageDepthStencilSeparateTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageExtendedUsageBitTests.cpp",

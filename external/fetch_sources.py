@@ -317,9 +317,9 @@ PACKAGES = [
         "e7b5f0aa5b1b0eadc63a1c624c0ca7f5af133aa857d6a4271b0ef3d0bdb6868e",
         "renderdoc"),
     GitRepo(
-        "https://github.com/KhronosGroup/SPIRV-Tools.git",
-        "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "44936c4a9d42f1c67e34babb5792adf5bce7f76b",
+        "https://gitlab.khronos.org/spirv/spirv-tools.git",
+        "git@gitlab.khronos.org:spirv/spirv-tools.git",
+        "0c84b0a133086a6e0b736f41dc899ce940ca33fc",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
@@ -333,9 +333,9 @@ PACKAGES = [
         "2a9b6f951c7d6b04b6c21fe1bf3f475b68b84801",
         "spirv-headers"),
     GitRepo(
-        None,
+        "https://gitlab.khronos.org/vulkan/vulkan.git",
         "git@gitlab.khronos.org:vulkan/vulkan.git",
-        "3b407581270cbd0fd34e289f9fa7f0700016fec8",
+        "3ff288caf086a12e509410fa4307cba142a1be7d",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
@@ -343,9 +343,9 @@ PACKAGES = [
         "9a46ae006fa5c92e2d2af7944187f7794210844b",
         "vulkan-validationlayers"),
     GitRepo(
-        "https://github.com/google/amber.git",
-        "git@github.com:google/amber.git",
-        "67fea651b886460d7b72295e680528c059bbbe40",
+        "https://gitlab.khronos.org/spirv/amber.git",
+        "git@gitlab.khronos.org:spirv/amber.git",
+        "6f0251977e51c26609a5ceed3339537639741abf",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",

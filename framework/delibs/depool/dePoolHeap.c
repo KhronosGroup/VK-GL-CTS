@@ -33,7 +33,7 @@ typedef struct HeapItem_s
     int value;
 } HeapItem;
 
-DE_INLINE HeapItem HeapItem_create(int priority, int value)
+HeapItem HeapItem_create(int priority, int value)
 {
     HeapItem h;
     h.priority = priority;
@@ -41,7 +41,7 @@ DE_INLINE HeapItem HeapItem_create(int priority, int value)
     return h;
 }
 
-DE_INLINE int HeapItem_cmp(HeapItem a, HeapItem b)
+int HeapItem_cmp(HeapItem a, HeapItem b)
 {
     if (a.priority < b.priority)
         return -1;

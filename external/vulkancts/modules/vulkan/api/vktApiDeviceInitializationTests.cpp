@@ -998,8 +998,8 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
         chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const vector<float> queuePriorities(1, 1.0f);
     const VkQueueGlobalPriorityEXT globalPriorities[] = {
-        VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT, VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT, VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT,
-        VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT};
+        VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR, VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR, VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR,
+        VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR};
 
 #ifndef CTS_USES_VULKANSC
     uint32_t queueFamilyPropertyCount = ~0u;
@@ -1029,7 +1029,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
     if (useKhrGlobalPriority)
         enabledExtensions = {"VK_KHR_global_priority"};
 
-    VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT globalPriorityQueryFeatures{
+    VkPhysicalDeviceGlobalPriorityQueryFeatures globalPriorityQueryFeatures{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT, //sType;
         nullptr,                                                              //pNext;
         VK_TRUE                                                               //globalPriorityQuery;
@@ -1089,7 +1089,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
             nullptr,                              //pEnabledFeatures;
         };
 
-        const bool mayBeDenied = globalPriority > VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT;
+        const bool mayBeDenied = globalPriority > VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR;
 #ifndef CTS_USES_VULKANSC
         const bool mustFail =
             useKhrGlobalPriority &&
@@ -1186,7 +1186,7 @@ bool isValidGlobalPriority(VkQueueGlobalPriorityEXT priority)
 void checkGlobalPriorityProperties(const VkQueueFamilyGlobalPriorityPropertiesEXT &properties)
 {
     TCU_CHECK(properties.priorityCount > 0);
-    TCU_CHECK(properties.priorityCount <= VK_MAX_GLOBAL_PRIORITY_SIZE_KHR);
+    TCU_CHECK(properties.priorityCount <= VK_MAX_GLOBAL_PRIORITY_SIZE);
     TCU_CHECK(isValidGlobalPriority(properties.priorities[0]));
 
     for (uint32_t ndx = 1; ndx < properties.priorityCount; ndx++)
@@ -1245,7 +1245,7 @@ tcu::TestStatus createDeviceWithQueriedGlobalPriorityTest(Context &context, bool
 
         for (VkQueueGlobalPriorityEXT globalPriority : globalPriorities)
         {
-            const VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT globalPriorityQueryFeatures = {
+            const VkPhysicalDeviceGlobalPriorityQueryFeatures globalPriorityQueryFeatures = {
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_EXT, //sType;
                 nullptr,                                                              //pNext;
                 VK_TRUE                                                               //globalPriorityQuery;

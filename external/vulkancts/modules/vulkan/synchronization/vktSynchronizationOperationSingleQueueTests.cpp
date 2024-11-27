@@ -98,7 +98,10 @@ public:
         const Unique<VkCommandPool> cmdPool(
             createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
         const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
-        const Unique<VkEvent> event(createEvent(vk, device));
+        const VkEventCreateFlagBits eventFlags(m_type == SynchronizationType::SYNCHRONIZATION2 ?
+                                                   VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR :
+                                                   (VkEventCreateFlagBits)0);
+        const Unique<VkEvent> event(createEvent(vk, device, eventFlags));
         const SyncInfo writeSync                         = m_writeOp->getOutSyncInfo();
         const SyncInfo readSync                          = m_readOp->getInSyncInfo();
         SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(m_type, vk, false);

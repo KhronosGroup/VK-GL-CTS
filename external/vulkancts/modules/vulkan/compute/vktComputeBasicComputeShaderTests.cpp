@@ -4595,6 +4595,8 @@ enum InstType
     SPECCONSTANT,
 };
 
+#ifndef CTS_USES_VULKANSC
+
 class ReplicatedCompositesTest : public vkt::TestCase
 {
 public:
@@ -5111,6 +5113,7 @@ tcu::TestStatus ReplicatedCompositesTestInstance::iterate(void)
     }
     return tcu::TestStatus::pass("Compute succeeded");
 }
+#endif // ifndef CTS_USES_VULKANSC
 
 } // namespace
 
@@ -5307,6 +5310,8 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
     {
         basicComputeTests->addChild(
             cts_amber::createAmberTestCase(testCtx, "write_ssbo_array", "", "compute", "write_ssbo_array.amber"));
+        basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "atomic_barrier_sum_small", "", "compute",
+                                                                   "atomic_barrier_sum_small.amber"));
         basicComputeTests->addChild(
             cts_amber::createAmberTestCase(testCtx, "branch_past_barrier", "", "compute", "branch_past_barrier.amber"));
         basicComputeTests->addChild(cts_amber::createAmberTestCase(
@@ -5334,7 +5339,7 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
             basicComputeTests->addChild(testCase);
         }
     }
-#endif
+#endif // ifndef CTS_USES_VULKANSC
 
     return basicComputeTests.release();
 }

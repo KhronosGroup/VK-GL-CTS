@@ -533,8 +533,8 @@ tcu::TestStatus BindingAcceleratioStructureTestInstance::iterate(void)
 
         case UPDATE_METHOD_WITH_PUSH_TEMPLATE:
         {
-            vkd.cmdPushDescriptorSetWithTemplateKHR(*commandBuffer, *m_updateTemplate, *m_pipelineLayout, 0,
-                                                    topAccelerationStructurePtr);
+            vkd.cmdPushDescriptorSetWithTemplate(*commandBuffer, *m_updateTemplate, *m_pipelineLayout, 0,
+                                                 topAccelerationStructurePtr);
 
             updateCount++;
 

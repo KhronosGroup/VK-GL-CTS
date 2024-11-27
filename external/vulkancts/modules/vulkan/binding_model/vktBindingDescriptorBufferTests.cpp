@@ -2307,10 +2307,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "VK_EXT_inline_uniform_block is not supported");
     }
 
-    const auto &descriptorBufferFeatures =
-        *findStructure<VkPhysicalDeviceDescriptorBufferFeaturesEXT>(&context.getDeviceFeatures2());
-    const auto &descriptorBufferProps =
-        *findStructure<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(&context.getDeviceProperties2());
+    const auto &descriptorBufferFeatures = context.getDescriptorBufferFeaturesEXT();
+    const auto &descriptorBufferProps    = context.getDescriptorBufferPropertiesEXT();
 
     if (!descriptorBufferFeatures.descriptorBuffer)
     {
@@ -3059,8 +3057,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     m_descriptorBufferFeatures       = descriptorBufferFeatures;
     m_descriptorBufferFeatures.pNext = nullptr;
 
-    m_descriptorBufferProperties =
-        *findStructure<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(&context.getDeviceProperties2());
+    m_descriptorBufferProperties       = context.getDescriptorBufferPropertiesEXT();
     m_descriptorBufferProperties.pNext = nullptr;
 
     VkDeviceCreateInfo createInfo      = initVulkanStructure(&features2);
@@ -4793,32 +4790,36 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                            m_descriptorBufferProperties.samplerDescriptorSize) ==
                           m_descriptorBufferProperties.combinedImageSamplerDescriptorSize);
 
-                std::vector<uint8_t> scratchSpace(arrayCount *
-                                                  m_descriptorBufferProperties.combinedImageSamplerDescriptorSize);
+                // Needed buffer memory size depends on combinedImageSamplerDescriptorCount
+                auto sampledImageDescriptorSizeInBuffer =
+                    m_descriptorBufferProperties.sampledImageDescriptorSize * m_combinedImageSamplerDescriptorCount;
+                auto samplerDescriptorSizeInBuffer =
+                    m_descriptorBufferProperties.samplerDescriptorSize * m_combinedImageSamplerDescriptorCount;
+                auto combinedImageSamplerDescriptorSizeInBuffer =
+                    m_descriptorBufferProperties.combinedImageSamplerDescriptorSize *
+                    m_combinedImageSamplerDescriptorCount;
 
-                const auto descriptorArraySize = static_cast<std::size_t>(
-                    arrayCount * m_descriptorBufferProperties.combinedImageSamplerDescriptorSize);
+                std::vector<uint8_t> scratchSpace(arrayCount * combinedImageSamplerDescriptorSizeInBuffer);
+
+                const auto descriptorArraySize =
+                    static_cast<std::size_t>(arrayCount * combinedImageSamplerDescriptorSizeInBuffer);
 
                 deMemcpy(scratchSpace.data(), bindingHostPtr, descriptorArraySize);
                 deMemset(bindingHostPtr, 0, descriptorArraySize);
 
                 const void *combinedReadPtr = scratchSpace.data();
                 void *imageWritePtr         = bindingHostPtr;
-                void *samplerWritePtr =
-                    offsetPtr(bindingHostPtr, arrayCount * m_descriptorBufferProperties.sampledImageDescriptorSize);
+                void *samplerWritePtr = offsetPtr(bindingHostPtr, arrayCount * sampledImageDescriptorSizeInBuffer);
 
                 for (uint32_t i = 0; i < arrayCount; ++i)
                 {
-                    deMemcpy(imageWritePtr, offsetPtr(combinedReadPtr, 0),
-                             m_descriptorBufferProperties.sampledImageDescriptorSize);
-                    deMemcpy(samplerWritePtr,
-                             offsetPtr(combinedReadPtr, m_descriptorBufferProperties.sampledImageDescriptorSize),
-                             m_descriptorBufferProperties.samplerDescriptorSize);
+                    deMemcpy(imageWritePtr, offsetPtr(combinedReadPtr, 0), sampledImageDescriptorSizeInBuffer);
+                    deMemcpy(samplerWritePtr, offsetPtr(combinedReadPtr, sampledImageDescriptorSizeInBuffer),
+                             samplerDescriptorSizeInBuffer);
 
-                    combinedReadPtr =
-                        offsetPtr(combinedReadPtr, m_descriptorBufferProperties.combinedImageSamplerDescriptorSize);
-                    imageWritePtr   = offsetPtr(imageWritePtr, m_descriptorBufferProperties.sampledImageDescriptorSize);
-                    samplerWritePtr = offsetPtr(samplerWritePtr, m_descriptorBufferProperties.samplerDescriptorSize);
+                    combinedReadPtr = offsetPtr(combinedReadPtr, combinedImageSamplerDescriptorSizeInBuffer);
+                    imageWritePtr   = offsetPtr(imageWritePtr, sampledImageDescriptorSizeInBuffer);
+                    samplerWritePtr = offsetPtr(samplerWritePtr, samplerDescriptorSizeInBuffer);
                 }
             }
 
@@ -4955,12 +4956,12 @@ void DescriptorBufferTestInstance::pushDescriptorSet(VkCommandBuffer cmdBuf, VkP
                 u32(descriptorWrites.size()),                   // uint32_t descriptorWriteCount;
                 descriptorWrites.data()                         // const VkWriteDescriptorSet* pDescriptorWrites;
             };
-            m_deviceInterface->cmdPushDescriptorSet2KHR(cmdBuf, &pushDescriptorSetInfo);
+            m_deviceInterface->cmdPushDescriptorSet2(cmdBuf, &pushDescriptorSetInfo);
         }
         else
         {
-            m_deviceInterface->cmdPushDescriptorSetKHR(cmdBuf, bindPoint, *m_pipelineLayout, setIndex,
-                                                       u32(descriptorWrites.size()), descriptorWrites.data());
+            m_deviceInterface->cmdPushDescriptorSet(cmdBuf, bindPoint, *m_pipelineLayout, setIndex,
+                                                    u32(descriptorWrites.size()), descriptorWrites.data());
         }
     }
     else if (m_params.variant == TestVariant::PUSH_TEMPLATE)
@@ -5035,12 +5036,12 @@ void DescriptorBufferTestInstance::pushDescriptorSet(VkCommandBuffer cmdBuf, VkP
                 setIndex,                  // uint32_t set;
                 dataBasePtr                // const void* pData;
             };
-            m_deviceInterface->cmdPushDescriptorSetWithTemplate2KHR(cmdBuf, &pushDescriptorSetWithTemplateInfo);
+            m_deviceInterface->cmdPushDescriptorSetWithTemplate2(cmdBuf, &pushDescriptorSetWithTemplateInfo);
         }
         else
         {
-            m_deviceInterface->cmdPushDescriptorSetWithTemplateKHR(cmdBuf, *descriptorUpdateTemplate, *m_pipelineLayout,
-                                                                   setIndex, dataBasePtr);
+            m_deviceInterface->cmdPushDescriptorSetWithTemplate(cmdBuf, *descriptorUpdateTemplate, *m_pipelineLayout,
+                                                                setIndex, dataBasePtr);
         }
     }
 }
@@ -5818,11 +5819,9 @@ tcu::TestStatus testLimits(Context &context)
 
     if (context.isDeviceFunctionalitySupported("VK_EXT_descriptor_buffer"))
     {
-        const auto &features =
-            *findStructure<VkPhysicalDeviceDescriptorBufferFeaturesEXT>(&context.getDeviceFeatures2());
-        const auto &props =
-            *findStructure<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(&context.getDeviceProperties2());
-        const bool hasRT = context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline") ||
+        const auto &features = context.getDescriptorBufferFeaturesEXT();
+        const auto &props    = context.getDescriptorBufferPropertiesEXT();
+        const bool hasRT     = context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline") ||
                            context.isDeviceFunctionalitySupported("VK_KHR_ray_query");
         const size_t maxResourceDescriptorSize = std::max(
             props.storageImageDescriptorSize,
@@ -6021,7 +6020,7 @@ tcu::TestStatus CaptureReplyTestInstance::iterate()
                                                                imageViewCaptureReplayData.data()));
 
         // call vkGetDescriptorEXT() with the image and store the write descriptor data
-        const auto descriptorSize = de::max(dbProperties.storageImageDescriptorSize, std::size_t(256));
+        const auto descriptorSize = dbProperties.storageImageDescriptorSize;
         std::vector<uint8_t> firstDescriptorData(descriptorSize);
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageView                = *imageView;

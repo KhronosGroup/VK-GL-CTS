@@ -39,7 +39,7 @@ namespace vkt
 namespace synchronization
 {
 
-uint32_t findQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice dev, VkQueueGlobalPriorityKHR priority,
+uint32_t findQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice dev, VkQueueGlobalPriority priority,
                               VkQueueFlags includeFlags, VkQueueFlags excludeFlags, uint32_t excludeIndex)
 {
     uint32_t queueFamilyPropertyCount = 0;
@@ -91,8 +91,8 @@ uint32_t findQueueFamilyIndex(const InstanceInterface &vki, VkPhysicalDevice dev
 #define SAVEEXPR(expr, text, file, line) (text = #expr, file = __FILE__, line = __LINE__, expr)
 
 SpecialDevice::SpecialDevice(Context &ctx, VkQueueFlagBits transitionFrom, VkQueueFlagBits transitionTo,
-                             VkQueueGlobalPriorityKHR priorityFrom, VkQueueGlobalPriorityKHR priorityTo,
-                             bool enableProtected, bool enableSparseBinding)
+                             VkQueueGlobalPriority priorityFrom, VkQueueGlobalPriority priorityTo, bool enableProtected,
+                             bool enableSparseBinding)
     : queueFamilyIndexFrom(m_queueFamilyIndexFrom)
     , queueFamilyIndexTo(m_queueFamilyIndexTo)
     , handle(m_deviceHandle)

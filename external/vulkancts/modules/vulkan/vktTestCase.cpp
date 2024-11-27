@@ -111,7 +111,7 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
 
     for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
     {
-        if (deStringEqual(extensions[extNdx].extensionName, "VK_KHR_buffer_device_address"))
+        if (strcmp(extensions[extNdx].extensionName, "VK_KHR_buffer_device_address") == 0)
         {
             khrBufferDeviceAddress = true;
             break;
@@ -125,12 +125,12 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         excludeExtension = false;
 
         // VK_EXT_buffer_device_address is deprecated and must not be enabled if VK_KHR_buffer_device_address is enabled
-        if (khrBufferDeviceAddress && deStringEqual(extName, "VK_EXT_buffer_device_address"))
+        if (khrBufferDeviceAddress && strcmp(extName, "VK_EXT_buffer_device_address") == 0)
             continue;
 
         for (int exclusionsNdx = 0; exclusionsNdx < DE_LENGTH_OF_ARRAY(exclusions); exclusionsNdx++)
         {
-            if (deStringEqual(extName, exclusions[exclusionsNdx]))
+            if (strcmp(extName, exclusions[exclusionsNdx]) == 0)
             {
                 excludeExtension = true;
                 break;
@@ -513,6 +513,10 @@ public:
     {
         return m_deviceFeatures.getVulkan13Features();
     }
+    const VkPhysicalDeviceVulkan14Features &getVulkan14Features(void) const
+    {
+        return m_deviceFeatures.getVulkan14Features();
+    }
 #endif // CTS_USES_VULKANSC
 
 #include "vkDeviceFeaturesForDefaultDeviceDefs.inl"
@@ -541,6 +545,10 @@ public:
     const VkPhysicalDeviceVulkan13Properties &getDeviceVulkan13Properties(void) const
     {
         return m_deviceProperties.getVulkan13Properties();
+    }
+    const VkPhysicalDeviceVulkan14Properties &getDeviceVulkan14Properties(void) const
+    {
+        return m_deviceProperties.getVulkan14Properties();
     }
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
@@ -894,6 +902,10 @@ const vk::VkPhysicalDeviceVulkan13Features &Context::getDeviceVulkan13Features(v
 {
     return m_device->getVulkan13Features();
 }
+const vk::VkPhysicalDeviceVulkan14Features &Context::getDeviceVulkan14Features(void) const
+{
+    return m_device->getVulkan14Features();
+}
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
 const vk::VkPhysicalDeviceVulkanSC10Features &Context::getDeviceVulkanSC10Features(void) const
@@ -978,6 +990,30 @@ bool Context::isDeviceFunctionalitySupported(const std::string &extension) const
                 return !!vk13Features.shaderIntegerDotProduct;
             if (extension == "VK_KHR_maintenance4")
                 return !!vk13Features.maintenance4;
+
+            const auto &vk14Features = m_device->getVulkan14Features();
+            if (extension == "VK_KHR_dynamic_rendering_local_read")
+                return !!vk14Features.dynamicRenderingLocalRead;
+            if (extension == "VK_KHR_global_priority")
+                return !!vk14Features.globalPriorityQuery;
+            if (extension == "VK_KHR_index_type_uint8")
+                return !!vk14Features.indexTypeUint8;
+            if (extension == "VK_KHR_maintenance5")
+                return !!vk14Features.maintenance5;
+            if (extension == "VK_KHR_maintenance6")
+                return !!vk14Features.maintenance6;
+            if (extension == "VK_KHR_shader_expect_assume")
+                return !!vk14Features.shaderExpectAssume;
+            if (extension == "VK_KHR_shader_float_controls2")
+                return !!vk14Features.shaderFloatControls2;
+            if (extension == "VK_EXT_host_image_copy")
+                return !!vk14Features.hostImageCopy;
+            if (extension == "VK_EXT_pipeline_protected_access")
+                return !!vk14Features.pipelineProtectedAccess;
+            if (extension == "VK_EXT_pipeline_robustness")
+                return !!vk14Features.pipelineRobustness;
+            if (extension == "VK_KHR_push_descriptor")
+                return !!vk14Features.pushDescriptor;
 #endif // CTS_USES_VULKANSC
 
 #ifdef CTS_USES_VULKANSC
@@ -1027,6 +1063,10 @@ const vk::VkPhysicalDeviceVulkan12Properties &Context::getDeviceVulkan12Properti
 const vk::VkPhysicalDeviceVulkan13Properties &Context::getDeviceVulkan13Properties(void) const
 {
     return m_device->getDeviceVulkan13Properties();
+}
+const vk::VkPhysicalDeviceVulkan14Properties &Context::getDeviceVulkan14Properties(void) const
+{
+    return m_device->getDeviceVulkan14Properties();
 }
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC

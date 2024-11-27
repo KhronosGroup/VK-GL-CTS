@@ -29,6 +29,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuStringTemplate.hpp"
 
 #include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
@@ -70,6 +71,14 @@ enum class TestType
 
     // Test mapping depth + stencil to no index
     DEPTH_STENCIL_MAPPING_TO_NO_INDEX,
+
+    // Test mapping depth + stencil to no index and DS attachment having only the depth aspect.
+    // The test clears depth and reads from it in the shader.
+    DEPTH_STENCIL_MAPPING_TO_NO_INDEX_DEPTH_CLEAR,
+
+    // Test mapping depth + stencil to no index and DS attachment having only the stencil aspect.
+    // The test clears stencil and reads from it in the shader.
+    DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR,
 
     // Test mapping depth + stencil to the same index
     DEPTH_STENCIL_MAPPING_TO_SAME_INDEX,
@@ -154,6 +163,8 @@ private:
     const TestType m_testType;
     const uint32_t m_renderSize;
     VkFormat m_dsFormat;
+    VkImageAspectFlags m_dsAspectMask;
+    VkClearValue m_dsClearValue;
 
     uint32_t m_colorAttachmentCount;
     uint32_t m_inputDrawsCount;
@@ -166,6 +177,7 @@ private:
     uint32_t m_stencilInputAttachmentIndex;
     const VkBool32 m_colorWriteEnables[4];
     VkBool32 m_useMapping;
+    VkBool32 m_useDepthInReadFrag;
     VkBool32 m_useStencilInReadFrag;
     std::vector<uint32_t> m_expectedValues;
 };
@@ -175,6 +187,8 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
     , m_testType(testType)
     , m_renderSize(16)
     , m_dsFormat(VK_FORMAT_D24_UNORM_S8_UINT)
+    , m_dsAspectMask(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)
+    , m_dsClearValue(makeClearValueDepthStencil(0.0f, 0))
     , m_colorAttachmentCount(4)
     , m_inputDrawsCount(1)
     , m_outputDrawsCount(1)
@@ -186,6 +200,7 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
     , m_stencilInputAttachmentIndex(5)
     , m_colorWriteEnables{0, 1, 0, 1}
     , m_useMapping(true)
+    , m_useDepthInReadFrag(true)
     , m_useStencilInReadFrag(true)
     , m_expectedValues{0}
 {
@@ -201,22 +216,27 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
             &imageFormatProperties))
         m_dsFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
 
+    // by default all test read from depth attachment and some from stencil
+    // but after promoting DRLR to vk1.4 reading depth/stencil is guarded by property
+    bool readDepthStencil = (context.getUsedApiVersion() < VK_MAKE_API_VERSION(0, 1, 4, 0)) ||
+                            context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments;
+
     // setup test configuration - all test cases use same test instance code but with diferent parameters
     switch (m_testType)
     {
     case TestType::MAX_INPUT_ATTACHMENTS:
     {
-        m_colorAttachmentCount = deMinu32(properties.limits.maxColorAttachments,
-                                          properties.limits.maxPerStageDescriptorInputAttachments - 2u);
+        uint32_t dsAttachmentsCount = 2u * readDepthStencil;
+        m_colorAttachmentCount      = deMinu32(properties.limits.maxColorAttachments,
+                                               properties.limits.maxPerStageDescriptorInputAttachments - dsAttachmentsCount);
 
         // if this assert is trigered then shader for number m_colorAttachmentCount+2 was not prepared;
         // to fix this just add value of m_colorAttachmentCount+2 to the inputAttachmentsPossibleValues array on top of this file
         DE_ASSERT(std::find(std::begin(inputAttachmentsPossibleValues), std::end(inputAttachmentsPossibleValues),
-                            m_colorAttachmentCount + 2) != std::end(inputAttachmentsPossibleValues));
+                            m_colorAttachmentCount + dsAttachmentsCount) != std::end(inputAttachmentsPossibleValues));
 
         m_writeFragName += "_" + std::to_string(m_colorAttachmentCount);
-        m_readFragName +=
-            "_" + std::to_string(m_colorAttachmentCount + 2u); // +2 because depth and stencil are read too
+        m_readFragName += "_" + std::to_string(m_colorAttachmentCount + dsAttachmentsCount);
         m_depthInputAttachmentIndex   = m_colorAttachmentCount;
         m_stencilInputAttachmentIndex = m_colorAttachmentCount + 1;
 
@@ -231,13 +251,13 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
     }
     case TestType::MAX_ATTACHMENTS_REMAPPED_REPEATEDLY:
     {
-        m_colorAttachmentCount = deMinu32(properties.limits.maxColorAttachments,
-                                          properties.limits.maxPerStageDescriptorInputAttachments - 2u);
-        m_inputDrawsCount      = m_colorAttachmentCount / 2u;
-        m_colorAttachmentCount = m_inputDrawsCount * 2u;
-        m_outputDrawsCount     = 3;
-        m_readFragName +=
-            "_" + std::to_string(m_colorAttachmentCount + 2u); // +2 because depth and stencil are read too
+        uint32_t dsAttachmentsCount = 2u * readDepthStencil;
+        m_colorAttachmentCount      = deMinu32(properties.limits.maxColorAttachments,
+                                               properties.limits.maxPerStageDescriptorInputAttachments - dsAttachmentsCount);
+        m_inputDrawsCount           = m_colorAttachmentCount / 2u;
+        m_colorAttachmentCount      = m_inputDrawsCount * 2u;
+        m_outputDrawsCount          = 3;
+        m_readFragName += "_" + std::to_string(m_colorAttachmentCount + dsAttachmentsCount);
         m_depthInputAttachmentIndex   = m_colorAttachmentCount;
         m_stencilInputAttachmentIndex = m_colorAttachmentCount + 1;
 
@@ -295,6 +315,26 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
         m_stencilInputAttachmentIndex = VK_ATTACHMENT_UNUSED;
         break;
     }
+    case TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_DEPTH_CLEAR:
+    {
+        m_dsFormat             = VK_FORMAT_D32_SFLOAT;
+        m_dsAspectMask         = VK_IMAGE_ASPECT_DEPTH_BIT;
+        m_dsClearValue         = makeClearValueDepthStencil(0.6f, 1);
+        m_inputDrawsCount      = 0;
+        m_useStencilInReadFrag = false;
+        m_colorAttachmentCount = 0;
+        break;
+    }
+    case TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR:
+    {
+        m_dsFormat             = VK_FORMAT_S8_UINT;
+        m_dsAspectMask         = VK_IMAGE_ASPECT_STENCIL_BIT;
+        m_dsClearValue         = makeClearValueDepthStencil(0.6f, 1);
+        m_inputDrawsCount      = 0;
+        m_useDepthInReadFrag   = false;
+        m_colorAttachmentCount = 0;
+        break;
+    }
     case TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX:
     {
         m_useStencilInReadFrag        = true;
@@ -340,6 +380,19 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
     default:
         DE_ASSERT(false);
         break;
+    }
+
+    // overwrite some of configuration for vk1.4 when dynamicRenderingLocalReadDepthStencilAttachments
+    // property is not available to allow some test to be executed without depth/stencil attachment
+    if (!readDepthStencil)
+    {
+        if (m_useDepthInReadFrag || m_useStencilInReadFrag)
+            m_readFragName += "_no_ds";
+
+        m_useDepthInReadFrag          = false;
+        m_useStencilInReadFrag        = false;
+        m_depthInputAttachmentIndex   = VK_ATTACHMENT_UNUSED;
+        m_stencilInputAttachmentIndex = VK_ATTACHMENT_UNUSED;
     }
 
     CalculateExpectedValues();
@@ -413,25 +466,26 @@ void BasicLocalReadTestInstance::CalculateExpectedValues()
 
     for (uint32_t outputDraw = 0; outputDraw < m_outputDrawsCount; ++outputDraw)
     {
-        // Depth read is 0.6 and stencil read is 1. Depth read is already enabled, but stencil read depends on test type.
-        const float depthRead      = 0.6f;
+        // Depth read is 0.6 and stencil read is 1
+        const uint32_t depthRead   = static_cast<uint32_t>(0.6f * 1000);
         const uint32_t stencilRead = 1;
 
         if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX)
         {
             // Depth read and stencil read are both enabled
-            m_expectedValues[outputDraw] = static_cast<uint32_t>(depthRead * 1000) + stencilRead * 100;
+            m_expectedValues[outputDraw] = depthRead + stencilRead * 100;
         }
         else if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||
-                 (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX))
+                 (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX) ||
+                 (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_DEPTH_CLEAR) ||
+                 (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR))
         {
-            // Depth read and stencil read are both enabled
-            m_expectedValues[outputDraw] = static_cast<uint32_t>(depthRead * 1000) + stencilRead;
+            m_expectedValues[outputDraw] = m_useDepthInReadFrag * depthRead + m_useStencilInReadFrag * stencilRead;
         }
         else
         {
             m_expectedValues[outputDraw] =
-                static_cast<uint32_t>(depthRead * 1000) + ((m_useStencilInReadFrag) ? (stencilRead * 1000) : 0);
+                (m_useDepthInReadFrag * depthRead) + (m_useStencilInReadFrag * stencilRead * 1000);
         }
 
         // each output draw uses all attachments but remaped differently
@@ -474,9 +528,13 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     const VkImageSubresourceRange colorSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
     const VkImageSubresourceRange dSRR     = makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
     const VkImageSubresourceRange sSRR     = makeImageSubresourceRange(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u);
-    const VkImageSubresourceRange dsSRR = makeImageSubresourceRange(dSRR.aspectMask | sSRR.aspectMask, 0u, 1u, 0u, 1u);
+    const VkImageSubresourceRange dsSRR    = makeImageSubresourceRange(m_dsAspectMask, 0u, 1u, 0u, 1u);
+
     const std::vector<VkViewport> viewports{makeViewport(m_renderSize, m_renderSize)};
     const std::vector<VkRect2D> scissors{makeRect2D(m_renderSize, m_renderSize)};
+
+    const bool useDepthAspect      = (m_dsAspectMask & VK_IMAGE_ASPECT_DEPTH_BIT);
+    const bool useStencilAspect    = (m_dsAspectMask & VK_IMAGE_ASPECT_STENCIL_BIT);
     const bool useColorWriteEnable = UseColorWriteEnable();
     const bool useUseExtendedDynamicState3(m_testType == TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3);
 
@@ -497,7 +555,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_CLEAR,                 // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp storeOp;
-        makeClearValueColor(tcu::Vec4(0.0f))         // VkClearValue clearValue;
+        m_dsClearValue                               // VkClearValue clearValue;
     };
     VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |
                                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -518,12 +576,17 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     std::vector<Move<VkPipeline>> writeGraphicsPipelines(m_inputDrawsCount);
     std::vector<Move<VkPipeline>> readGraphicsPipelines(m_outputDrawsCount);
 
+    auto setupImageViewSp = [&](VkImage image, VkFormat format, const VkImageSubresourceRange &srr)
+    {
+        return VkImageViewSp(
+            new vk::Move<VkImageView>(makeImageView(vk, device, image, VK_IMAGE_VIEW_TYPE_2D, format, srr)));
+    };
+
     // create images and image views for color attachments and use same loop to fill other needed containers
     for (uint32_t attIndex = 0; attIndex < m_colorAttachmentCount; ++attIndex)
     {
         images[attIndex]     = createImage(m_context, m_renderSize, colorImageFormats[attIndex], imageUsage);
-        imageViews[attIndex] = VkImageViewSp(new vk::Move<VkImageView>(makeImageView(
-            vk, device, **images[attIndex], VK_IMAGE_VIEW_TYPE_2D, colorImageFormats[attIndex], colorSRR)));
+        imageViews[attIndex] = setupImageViewSp(**images[attIndex], colorImageFormats[attIndex], colorSRR);
 
         colorImageBarriers[attIndex].image        = **images[attIndex];
         colorAttachments[attIndex].imageView      = **imageViews[attIndex];
@@ -531,20 +594,23 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     }
 
     // create image and image views for depth/stencil attachments
-    uint32_t depthIndex              = m_colorAttachmentCount;
-    images[depthIndex]               = createImage(m_context, m_renderSize, m_dsFormat,
-                                                   VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |
-                                                       VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-    imageViews[depthIndex]           = VkImageViewSp(new vk::Move<VkImageView>(
-        makeImageView(vk, device, **images[depthIndex], VK_IMAGE_VIEW_TYPE_2D, m_dsFormat, dSRR)));
-    imageViews[depthIndex + 1]       = VkImageViewSp(new vk::Move<VkImageView>(
-        makeImageView(vk, device, **images[depthIndex], VK_IMAGE_VIEW_TYPE_2D, m_dsFormat, sSRR)));
-    imageViews[depthIndex + 2]       = VkImageViewSp(new vk::Move<VkImageView>(
-        makeImageView(vk, device, **images[depthIndex], VK_IMAGE_VIEW_TYPE_2D, m_dsFormat, dsSRR)));
-    dsImageBarrier.image             = **images[depthIndex];
-    depthImageDescriptor.imageView   = **imageViews[depthIndex];
-    stencilImageDescriptor.imageView = **imageViews[depthIndex + 1];
-    depthStencilAttachment.imageView = **imageViews[depthIndex + 2];
+    uint32_t dsIndex = m_colorAttachmentCount;
+    images[dsIndex]  = createImage(m_context, m_renderSize, m_dsFormat,
+                                   VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |
+                                       VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    if (useDepthAspect)
+    {
+        imageViews[dsIndex]            = setupImageViewSp(**images[dsIndex], m_dsFormat, dSRR);
+        depthImageDescriptor.imageView = **imageViews[dsIndex];
+    }
+    if (useStencilAspect)
+    {
+        imageViews[dsIndex + useDepthAspect] = setupImageViewSp(**images[dsIndex], m_dsFormat, sSRR);
+        stencilImageDescriptor.imageView     = **imageViews[dsIndex + useDepthAspect];
+    }
+    imageViews[dsIndex + useDepthAspect + useStencilAspect] = setupImageViewSp(**images[dsIndex], m_dsFormat, dsSRR);
+    dsImageBarrier.image                                    = **images[dsIndex];
+    depthStencilAttachment.imageView                        = **imageViews[dsIndex + useDepthAspect + useStencilAspect];
 
     // define buffers for output
     const VkDeviceSize outputBufferSize = static_cast<VkDeviceSize>(m_renderSize * m_renderSize * sizeof(uint32_t));
@@ -595,12 +661,14 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
                                                    VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
                                                    &colorImageDescriptors[remapedIndex]);
         }
-        descriptorSetUpdateBuilder.writeSingle(*inputAttachmentsDescriptorSets[i],
-                                               DSLocation::binding(m_colorAttachmentCount),
-                                               VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &depthImageDescriptor);
-        descriptorSetUpdateBuilder.writeSingle(*inputAttachmentsDescriptorSets[i],
-                                               DSLocation::binding(m_colorAttachmentCount + 1),
-                                               VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &stencilImageDescriptor);
+        if (useDepthAspect)
+            descriptorSetUpdateBuilder.writeSingle(*inputAttachmentsDescriptorSets[i],
+                                                   DSLocation::binding(m_colorAttachmentCount),
+                                                   VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &depthImageDescriptor);
+        if (useStencilAspect)
+            descriptorSetUpdateBuilder.writeSingle(*inputAttachmentsDescriptorSets[i],
+                                                   DSLocation::binding(m_colorAttachmentCount + useDepthAspect),
+                                                   VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &stencilImageDescriptor);
     }
 
     // set descriptor sets for all output buffers
@@ -624,12 +692,10 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {*descriptorSetLayoutA, *descriptorSetLayoutB};
     Move<VkPipelineLayout> writePipelineLayout = makePipelineLayout(vk, device, 0, nullptr, 1u, &pushConstantRange);
     Move<VkPipelineLayout> readPipelineLayout  = makePipelineLayout(vk, device, descriptorSetLayouts);
-    Move<VkShaderModule> vertShaderModule =
-        createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
-    Move<VkShaderModule> writeFragShaderModule =
-        createShaderModule(vk, device, m_context.getBinaryCollection().get(m_writeFragName), 0);
-    Move<VkShaderModule> readFragShaderModule =
-        createShaderModule(vk, device, m_context.getBinaryCollection().get(m_readFragName), 0);
+    auto &bc                                   = m_context.getBinaryCollection();
+    Move<VkShaderModule> vertShaderModule      = createShaderModule(vk, device, bc.get("vert"), 0);
+    Move<VkShaderModule> writeFragShaderModule = createShaderModule(vk, device, bc.get(m_writeFragName), 0);
+    Move<VkShaderModule> readFragShaderModule  = createShaderModule(vk, device, bc.get(m_readFragName), 0);
 
     // define empty VertexInputState, full screen quad will be generated in vertex shader
     const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
@@ -669,11 +735,11 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                        sType
         nullptr,                                                    // const void*                            pNext
         0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags
-        VK_TRUE,               // VkBool32                               depthTestEnable
+        useDepthAspect,        // VkBool32                               depthTestEnable
         VK_TRUE,               // VkBool32                               depthWriteEnable
         VK_COMPARE_OP_GREATER, // VkCompareOp                            depthCompareOp
         VK_FALSE,              // VkBool32                               depthBoundsTestEnable
-        VK_TRUE,               // VkBool32                               stencilTestEnable
+        useStencilAspect,      // VkBool32                               stencilTestEnable
         stencilOpState,        // VkStencilOpState                       front
         stencilOpState,        // VkStencilOpState                       back
         0.0f,                  // float                                  minDepthBounds
@@ -696,20 +762,21 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
 
     VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocationInfo{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO_KHR, nullptr, m_colorAttachmentCount, nullptr};
+    bool useDSInputAttachmentIndex(useDepthAspect && useStencilAspect);
     VkRenderingInputAttachmentIndexInfoKHR renderingInputAttachmentIndexInfo{
         VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR,
         nullptr,
         m_colorAttachmentCount,
         nullptr,
-        &m_depthInputAttachmentIndex,
-        &m_stencilInputAttachmentIndex};
+        (useDSInputAttachmentIndex) ? &m_depthInputAttachmentIndex : nullptr,
+        (useDSInputAttachmentIndex) ? &m_stencilInputAttachmentIndex : nullptr};
     VkPipelineRenderingCreateInfo renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
                                                       nullptr,
                                                       0u,
                                                       (uint32_t)colorImageFormats.size(),
                                                       colorImageFormats.data(),
-                                                      m_dsFormat,
-                                                      m_dsFormat};
+                                                      useDepthAspect ? m_dsFormat : VK_FORMAT_UNDEFINED,
+                                                      useStencilAspect ? m_dsFormat : VK_FORMAT_UNDEFINED};
 
     // set attachment locations remapping for write pipelines
     if (m_useMapping)
@@ -738,22 +805,24 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     for (auto &cb : colorBlendAttachmentStates)
         cb.colorWriteMask = 0;
 
-    // Per spec, if either of pDepthInputAttachmentIndex or pStencilInputAttachmentIndex are set to NULL it means that these are only accessible in the shader
-    // if the shader does not associate these input attachments with an InputAttachmentIndex.
+    // Per spec, if either of pDepthInputAttachmentIndex or pStencilInputAttachmentIndex are
+    // set to NULL it means that these are only accessible in the shader if the shader does not
+    // associate these input attachments with an InputAttachmentIndex.
     if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX)
     {
         renderingInputAttachmentIndexInfo.pDepthInputAttachmentIndex   = NULL;
         renderingInputAttachmentIndexInfo.pStencilInputAttachmentIndex = NULL;
     }
 
+    uint32_t subpass = (m_inputDrawsCount > 0);
     for (uint32_t pipelineIndex = 0; pipelineIndex < m_outputDrawsCount; ++pipelineIndex)
     {
         renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices =
             de::dataOrNull(m_colorAttachmentInputIndices[pipelineIndex]);
         readGraphicsPipelines[pipelineIndex] = makeGraphicsPipeline(
             vk, device, *readPipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
-            *readFragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 1, 0,
-            &vertexInputState, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &renderingCreateInfo);
+            *readFragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, subpass,
+            0, &vertexInputState, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &renderingCreateInfo);
     }
 
     Move<VkCommandPool> commandPool =
@@ -762,18 +831,15 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         allocateCommandBuffer(vk, device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     VkCommandBuffer cmdBuffer = *commandBuffer;
 
-    VkRenderingInfo renderingInfo{
-        VK_STRUCTURE_TYPE_RENDERING_INFO,
-        nullptr,
-        0u,                                // VkRenderingFlags                        flags
-        scissors[0],                       // VkRect2D                                renderArea
-        1u,                                // uint32_t                                layerCount
-        0u,                                // uint32_t                                viewMask
-        (uint32_t)colorAttachments.size(), // uint32_t                                colorAttachmentCount
-        colorAttachments.data(),           // const VkRenderingAttachmentInfo*        pColorAttachments
-        &depthStencilAttachment,           // const VkRenderingAttachmentInfo*        pDepthAttachment
-        &depthStencilAttachment            // const VkRenderingAttachmentInfo*        pStencilAttachment
-    };
+    VkRenderingInfo renderingInfo      = initVulkanStructure();
+    renderingInfo.renderArea           = scissors[0];
+    renderingInfo.layerCount           = 1;
+    renderingInfo.colorAttachmentCount = (uint32_t)colorAttachments.size();
+    renderingInfo.pColorAttachments    = colorAttachments.data();
+    if (useDepthAspect)
+        renderingInfo.pDepthAttachment = &depthStencilAttachment;
+    if (useStencilAspect)
+        renderingInfo.pStencilAttachment = &depthStencilAttachment;
 
     // record commands
     beginCommandBuffer(vk, cmdBuffer);
@@ -795,7 +861,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         vk.cmdPushConstants(cmdBuffer, *writePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4, &pipelineIndex);
 
         if (m_useMapping)
-            vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocationInfo);
+            vk.cmdSetRenderingAttachmentLocations(cmdBuffer, &renderingAttachmentLocationInfo);
         if (useColorWriteEnable)
             vk.cmdSetColorWriteEnableEXT(cmdBuffer, 4u, m_colorWriteEnables);
         if (useUseExtendedDynamicState3)
@@ -834,8 +900,8 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *readPipelineLayout, 0u, 2u,
                                  descriptorSets, 0u, nullptr);
 
-        if (m_useMapping)
-            vk.cmdSetRenderingInputAttachmentIndicesKHR(cmdBuffer, &renderingInputAttachmentIndexInfo);
+        if (m_useMapping && m_colorAttachmentInputIndices[pipelineIndex].size() > 0)
+            vk.cmdSetRenderingInputAttachmentIndices(cmdBuffer, &renderingInputAttachmentIndexInfo);
 
         vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
     }
@@ -872,6 +938,10 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
 
     if (allOk)
         return tcu::TestStatus::pass("Pass");
+
+    // if there are no color attachments then we can't log them
+    if (!m_colorAttachmentCount)
+        return tcu::TestStatus::fail("Fail");
 
     const VkBufferCreateInfo attBufferCreateInfo =
         makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
@@ -1077,7 +1147,7 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
     vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
 
     // remaping should affect to which attachments shader writes but not blend state
-    vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocations);
+    vk.cmdSetRenderingAttachmentLocations(cmdBuffer, &renderingAttachmentLocations);
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
     vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
@@ -1541,19 +1611,19 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
     vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
     pipelineWrapper.bind(*cmdBuffer);
 
-    vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocations);
+    vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocations);
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 
     VkRect2D localScissor(makeRect2D(2 * drawWidth, 0, drawWidth, imageSize));
     renderingAttachmentLocations.pColorAttachmentLocations = colorAttachmentLocations[1];
     vk.cmdSetScissorWithCount(*cmdBuffer, 1u, &localScissor);
-    vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocations);
+    vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocations);
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 
     localScissor.offset.x += drawWidth;
     renderingAttachmentLocations.pColorAttachmentLocations = colorAttachmentLocations[2];
     vk.cmdSetScissorWithCount(*cmdBuffer, 1u, &localScissor);
-    vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocations);
+    vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocations);
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 
     vk.cmdEndRendering(*cmdBuffer);
@@ -1803,15 +1873,29 @@ LocalReadTestCase::LocalReadTestCase(tcu::TestContext &context, const std::strin
 
 void LocalReadTestCase::checkSupport(Context &context) const
 {
+    const InstanceInterface &vki    = context.getInstanceInterface();
+    VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
     context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
 
     if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX)
     {
-        const InstanceInterface &vki    = context.getInstanceInterface();
-        VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
-        const auto &limits              = getPhysicalDeviceProperties(vki, physicalDevice).limits;
+        const auto &limits = getPhysicalDeviceProperties(vki, physicalDevice).limits;
         if (limits.maxPerStageDescriptorInputAttachments < 21)
             TCU_THROW(NotSupportedError, "maxPerStageDescriptorInputAttachments is too small");
+    }
+    else if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_DEPTH_CLEAR) ||
+             (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR))
+    {
+        VkImageFormatProperties imageFormatProperties;
+        VkFormat format = VK_FORMAT_D32_SFLOAT;
+        if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR)
+            format = VK_FORMAT_S8_UINT;
+        if (vki.getPhysicalDeviceImageFormatProperties(
+                physicalDevice, format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, 0,
+                &imageFormatProperties))
+            TCU_THROW(NotSupportedError, "Depth/stencil format not supported");
     }
     else if (m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE)
         context.requireDeviceFunctionality("VK_EXT_color_write_enable");
@@ -1824,6 +1908,16 @@ void LocalReadTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state3");
         if (!context.getExtendedDynamicState3FeaturesEXT().extendedDynamicState3RasterizationSamples)
             TCU_THROW(NotSupportedError, "extendedDynamicState3RasterizationSamples not supported");
+    }
+
+    if (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0) &&
+        !context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments)
+    {
+        if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||
+            (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX) ||
+            (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX) ||
+            (m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT))
+            TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadDepthStencilAttachments not supported");
     }
 }
 
@@ -1862,17 +1956,18 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
     };
 
     // helper lambda that generates fragment shader that reads from specified number of input attachments
-    auto generateReadFragSource = [](uint32_t inputAttachmentCount, bool useStencil = true)
+    auto generateReadFragSource = [](uint32_t inputAttachmentCount, bool useDepth = true, bool useStencil = true)
     {
-        uint32_t colorInputAttachmentCount = inputAttachmentCount - 1u - useStencil;
+        uint32_t colorInputAttachmentCount = inputAttachmentCount - useDepth - useStencil;
         std::stringstream fragSrc;
         fragSrc << "#version 450\n";
         for (uint32_t i = 0; i < colorInputAttachmentCount; ++i)
             fragSrc << "layout(input_attachment_index=" << i << ", binding=" << i << ") uniform usubpassInput inColor"
                     << i << ";\n";
 
-        fragSrc << "layout(input_attachment_index = " << colorInputAttachmentCount
-                << ", binding = " << colorInputAttachmentCount << ") uniform subpassInput inDepth;\n";
+        if (useDepth)
+            fragSrc << "layout(input_attachment_index = " << colorInputAttachmentCount
+                    << ", binding = " << colorInputAttachmentCount << ") uniform subpassInput inDepth;\n";
         if (useStencil)
             fragSrc << "layout(input_attachment_index = " << colorInputAttachmentCount + 1
                     << ", binding = " << colorInputAttachmentCount + 1 << ") uniform usubpassInput inStencil;\n";
@@ -1884,9 +1979,12 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                    "  uint result = 0;\n";
         for (uint32_t i = 0; i < colorInputAttachmentCount; ++i)
             fragSrc << "  result = result + " << (i + 1) << " * subpassLoad(inColor" << i << ").x; \n";
-        fragSrc << "  result = result + uint(subpassLoad(inDepth).x * 1000);\n"; // 0.6*1000
+
+        if (useDepth)
+            fragSrc << "  result = result + uint(subpassLoad(inDepth).x * 1000);\n"; // 0.6*1000
         if (useStencil)
             fragSrc << "  result = result + uint(subpassLoad(inStencil).x * 1000);\n"; // 1 * 1000
+
         fragSrc << "  const uvec2 i = uvec2(trunc(gl_FragCoord.xy));\n"
                    "  outBuffer.v[i.x+i.y*16] = result;\n"
                    "}\n";
@@ -1914,6 +2012,7 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
     {
         glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(4));
         glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(6));
+        glslSources.add("frag1_no_ds") << glu::FragmentSource(generateReadFragSource(4, false, false));
     }
     else if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX)
     {
@@ -2047,12 +2146,127 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                                                           "OpReturn\n"
                                                           "OpFunctionEnd\n";
     }
-    else if ((m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT) ||
-             (m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE) ||
+    else if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_DEPTH_CLEAR) ||
+             (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR))
+    {
+        glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(0));
+
+        // NOTE at the memoment glslang doesn't support input attachments without
+        // input_attachment_index qualifiers
+
+        //std::map<std::string, std::string> specMap{{"SUBPASS_INPUT", "subpassInput inDepth"},
+        //                                           {"SUBPASS_LOAD", "subpassLoad(inDepth).x * 1000"}};
+        //if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR)
+        //{
+        //    specMap["SUBPASS_INPUT"] = "usubpassInput inStencil";
+        //    specMap["SUBPASS_LOAD"]  = "subpassLoad(inStencil).x";
+        //}
+        //
+        //std::string fragSrc("#version 450\n"
+        //                    "layout(input_attachment_index=0, binding=0) uniform ${SUBPASS_INPUT};\n"
+        //                    "layout(set=1, binding=0, std430) writeonly buffer Output\n{\n"
+        //                    "  uint v[];\n"
+        //                    "} outBuffer;\n"
+        //                    "void main()\n{\n"
+        //                    "  uint result = uint(${SUBPASS_LOAD});\n"
+        //                    "  const uvec2 i = uvec2(trunc(gl_FragCoord.xy));\n"
+        //                    "  outBuffer.v[i.x+i.y*16] = result;\n"
+        //                    "}\n");
+        //glslSources.add("frag1") << glu::FragmentSource(tcu::StringTemplate(fragSrc).specialize(specMap));
+
+        std::string subpassType = "%10 = OpTypeImage %9 SubpassData 0 0 0 2 Unknown\n";
+        std::string saveResult  = "%19 = OpImageRead %18 %13 %17\n"
+                                  "%21 = OpCompositeExtract %9 %19 0\n"
+                                  "%23 = OpFMul %9 %21 %22\n"
+                                  "%24 = OpConvertFToU %6 %23\n"
+                                  "OpStore %8 %24\n";
+        if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR)
+        {
+            subpassType = "%10 = OpTypeImage %6 SubpassData 0 0 0 2 Unknown\n";
+            saveResult  = "%19 = OpImageRead %50 %13 %17\n"
+                          "%21 = OpCompositeExtract %6 %19 0\n"
+                          "OpStore %8 %21\n";
+        }
+
+        programCollection.spirvAsmSources.add("frag1") << "OpCapability Shader\n"
+                                                          "OpCapability InputAttachment\n"
+                                                          "%1 = OpExtInstImport \"GLSL.std.450\"\n"
+                                                          "OpMemoryModel Logical GLSL450\n"
+                                                          "OpEntryPoint Fragment %4 \"main\" %29\n"
+                                                          "OpExecutionMode %4 OriginUpperLeft\n"
+                                                          "OpDecorate %12 Binding 0\n"
+                                                          "OpDecorate %12 DescriptorSet 0\n"
+                                                          //"OpDecorate %12 InputAttachmentIndex 0\n"
+                                                          "OpDecorate %29 BuiltIn FragCoord\n"
+                                                          "OpDecorate %35 ArrayStride 4\n"
+                                                          "OpDecorate %36 BufferBlock\n"
+                                                          "OpMemberDecorate %36 0 NonReadable\n"
+                                                          "OpMemberDecorate %36 0 Offset 0\n"
+                                                          "OpDecorate %38 NonReadable\n"
+                                                          "OpDecorate %38 Binding 0\n"
+                                                          "OpDecorate %38 DescriptorSet 1\n"
+                                                          "%2 = OpTypeVoid\n"
+                                                          "%3 = OpTypeFunction %2\n"
+                                                          "%6 = OpTypeInt 32 0\n"
+                                                          "%7 = OpTypePointer Function %6\n"
+                                                          "%9 = OpTypeFloat 32\n"
+                                                       << subpassType
+                                                       << "%11 = OpTypePointer UniformConstant %10\n"
+                                                          "%12 = OpVariable %11 UniformConstant\n"
+                                                          "%14 = OpTypeInt 32 1\n"
+                                                          "%15 = OpConstant %14 0\n"
+                                                          "%16 = OpTypeVector %14 2\n"
+                                                          "%17 = OpConstantComposite %16 %15 %15\n"
+                                                          "%18 = OpTypeVector %9 4\n"
+                                                          "%50 = OpTypeVector %6 4\n"
+                                                          "%20 = OpConstant %6 0\n"
+                                                          "%22 = OpConstant %9 1000\n"
+                                                          "%25 = OpTypeVector %6 2\n"
+                                                          "%26 = OpTypePointer Function %25\n"
+                                                          "%28 = OpTypePointer Input %18\n"
+                                                          "%29 = OpVariable %28 Input\n"
+                                                          "%30 = OpTypeVector %9 2\n"
+                                                          "%35 = OpTypeRuntimeArray %6\n"
+                                                          "%36 = OpTypeStruct %35\n"
+                                                          "%37 = OpTypePointer Uniform %36\n"
+                                                          "%38 = OpVariable %37 Uniform\n"
+                                                          "%41 = OpConstant %6 1\n"
+                                                          "%44 = OpConstant %6 16\n"
+                                                          "%48 = OpTypePointer Uniform %6\n"
+                                                          "%4 = OpFunction %2 None %3\n"
+                                                          "%5 = OpLabel\n"
+                                                          "%8 = OpVariable %7 Function\n"
+                                                          "%27 = OpVariable %26 Function\n"
+                                                          "%13 = OpLoad %10 %12\n"
+                                                       << saveResult
+                                                       << "%31 = OpLoad %18 %29\n"
+                                                          "%32 = OpVectorShuffle %30 %31 %31 0 1\n"
+                                                          "%33 = OpExtInst %30 %1 Trunc %32\n"
+                                                          "%34 = OpConvertFToU %25 %33\n"
+                                                          "OpStore %27 %34\n"
+                                                          "%39 = OpAccessChain %7 %27 %20\n"
+                                                          "%40 = OpLoad %6 %39\n"
+                                                          "%42 = OpAccessChain %7 %27 %41\n"
+                                                          "%43 = OpLoad %6 %42\n"
+                                                          "%45 = OpIMul %6 %43 %44\n"
+                                                          "%46 = OpIAdd %6 %40 %45\n"
+                                                          "%47 = OpLoad %6 %8\n"
+                                                          "%49 = OpAccessChain %48 %38 %15 %46\n"
+                                                          "OpStore %49 %47\n"
+                                                          "OpReturn\n"
+                                                          "OpFunctionEnd\n";
+    }
+    else if (m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT)
+    {
+        glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(4));
+        glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(5, true, false));
+    }
+    else if ((m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE) ||
              (m_testType == TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3))
     {
         glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(4));
-        glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(5, false));
+        glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(5, true, false));
+        glslSources.add("frag1_no_ds") << glu::FragmentSource(generateReadFragSource(4, false, false));
     }
     else if (m_testType == TestType::INPUT_ATTACHMENTS_WITHOUT_MAPPING)
     {
@@ -2077,106 +2291,116 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
         //    "}\n");
         //glslSources.add("frag1") << glu::FragmentSource(fragSrc);
 
-        programCollection.spirvAsmSources.add("frag1") << "OpCapability Shader\n"
-                                                          "OpCapability InputAttachment\n"
-                                                          "%1 = OpExtInstImport \"GLSL.std.450\"\n"
-                                                          "OpMemoryModel Logical GLSL450\n"
-                                                          "OpEntryPoint Fragment %4 \"main\" %13\n"
-                                                          "OpExecutionMode %4 OriginUpperLeft\n"
-                                                          "OpDecorate %13 BuiltIn FragCoord\n"
-                                                          "OpDecorate %23 DescriptorSet 0\n"
-                                                          "OpDecorate %23 Binding 0\n"
-                                                          "OpDecorate %23 InputAttachmentIndex 0\n"
-                                                          "OpDecorate %34 DescriptorSet 0\n"
-                                                          "OpDecorate %34 Binding 1\n"
-                                                          "OpDecorate %34 InputAttachmentIndex 1\n"
-                                                          "OpDecorate %41 DescriptorSet 0\n"
-                                                          "OpDecorate %41 Binding 2\n"
-                                                          "OpDecorate %41 InputAttachmentIndex 2\n"
-                                                          "OpDecorate %47 ArrayStride 4\n"
-                                                          "OpMemberDecorate %48 0 NonReadable\n"
-                                                          "OpMemberDecorate %48 0 Offset 0\n"
-                                                          "OpDecorate %48 BufferBlock\n"
-                                                          "OpDecorate %50 DescriptorSet 1\n"
-                                                          "OpDecorate %50 Binding 0\n"
-                                                          "OpDecorate %62 DescriptorSet 0\n"
-                                                          "OpDecorate %62 Binding 3\n"
-                                                          //"OpDecorate %62 InputAttachmentIndex 3\n"
-                                                          "%2 = OpTypeVoid\n"
-                                                          "%3 = OpTypeFunction %2\n"
-                                                          "%6 = OpTypeInt 32 0\n"
-                                                          "%7 = OpTypeVector %6 2\n"
-                                                          "%8 = OpTypePointer Function %7\n"
-                                                          "%10 = OpTypeFloat 32\n"
-                                                          "%11 = OpTypeVector %10 4\n"
-                                                          "%12 = OpTypePointer Input %11\n"
-                                                          "%13 = OpVariable %12 Input\n"
-                                                          "%14 = OpTypeVector %10 2\n"
-                                                          "%19 = OpTypePointer Function %6\n"
-                                                          "%21 = OpTypeImage %6 SubpassData 0 0 0 2 Unknown\n"
-                                                          "%22 = OpTypePointer UniformConstant %21\n"
-                                                          "%23 = OpVariable %22 UniformConstant\n"
-                                                          "%25 = OpTypeInt 32 1\n"
-                                                          "%26 = OpConstant %25 0\n"
-                                                          "%27 = OpTypeVector %25 2\n"
-                                                          "%28 = OpConstantComposite %27 %26 %26\n"
-                                                          "%29 = OpTypeVector %6 4\n"
-                                                          "%31 = OpConstant %6 0\n"
-                                                          "%33 = OpConstant %6 2\n"
-                                                          "%34 = OpVariable %22 UniformConstant\n"
-                                                          "%40 = OpConstant %6 3\n"
-                                                          "%41 = OpVariable %22 UniformConstant\n"
-                                                          "%47 = OpTypeRuntimeArray %6\n"
-                                                          "%48 = OpTypeStruct %47\n"
-                                                          "%49 = OpTypePointer Uniform %48\n"
-                                                          "%50 = OpVariable %49 Uniform\n"
-                                                          "%53 = OpConstant %6 1\n"
-                                                          "%56 = OpConstant %6 16\n"
-                                                          "%60 = OpTypeImage %10 SubpassData 0 0 0 2 Unknown\n"
-                                                          "%61 = OpTypePointer UniformConstant %60\n"
-                                                          "%62 = OpVariable %61 UniformConstant\n"
-                                                          "%66 = OpConstant %10 1000\n"
-                                                          "%70 = OpTypePointer Uniform %6\n"
-                                                          "%4 = OpFunction %2 None %3\n"
-                                                          "%5 = OpLabel\n"
-                                                          "%9 = OpVariable %8 Function\n"
-                                                          "%20 = OpVariable %19 Function\n"
-                                                          "%15 = OpLoad %11 %13\n"
-                                                          "%16 = OpVectorShuffle %14 %15 %15 0 1\n"
-                                                          "%17 = OpExtInst %14 %1 Trunc %16\n"
-                                                          "%18 = OpConvertFToU %7 %17\n"
-                                                          "OpStore %9 %18\n"
-                                                          "%24 = OpLoad %21 %23\n"
-                                                          "%30 = OpImageRead %29 %24 %28\n"
-                                                          "%32 = OpCompositeExtract %6 %30 0\n"
-                                                          "%35 = OpLoad %21 %34\n"
-                                                          "%36 = OpImageRead %29 %35 %28\n"
-                                                          "%37 = OpCompositeExtract %6 %36 0\n"
-                                                          "%38 = OpIMul %6 %33 %37\n"
-                                                          "%39 = OpIAdd %6 %32 %38\n"
-                                                          "%42 = OpLoad %21 %41\n"
-                                                          "%43 = OpImageRead %29 %42 %28\n"
-                                                          "%44 = OpCompositeExtract %6 %43 0\n"
-                                                          "%45 = OpIMul %6 %40 %44\n"
-                                                          "%46 = OpIAdd %6 %39 %45\n"
-                                                          "OpStore %20 %46\n"
-                                                          "%51 = OpAccessChain %19 %9 %31\n"
-                                                          "%52 = OpLoad %6 %51\n"
-                                                          "%54 = OpAccessChain %19 %9 %53\n"
-                                                          "%55 = OpLoad %6 %54\n"
-                                                          "%57 = OpIMul %6 %55 %56\n"
-                                                          "%58 = OpIAdd %6 %52 %57\n"
-                                                          "%59 = OpLoad %6 %20\n"
-                                                          "%63 = OpLoad %60 %62\n"
-                                                          "%64 = OpImageRead %11 %63 %28\n"
-                                                          "%65 = OpCompositeExtract %10 %64 0\n"
-                                                          "%67 = OpFMul %10 %65 %66\n"
-                                                          "%68 = OpConvertFToU %6 %67\n"
-                                                          "%69 = OpIAdd %6 %59 %68\n"
-                                                          "%71 = OpAccessChain %70 %50 %26 %58\n"
-                                                          "OpStore %71 %69\n"
-                                                          "OpReturn\n"
-                                                          "OpFunctionEnd\n";
+        tcu::StringTemplate fragTemplate(R"(OpCapability Shader
+                                            OpCapability InputAttachment
+                                           %1 = OpExtInstImport "GLSL.std.450"
+                                           OpMemoryModel Logical GLSL450
+                                           OpEntryPoint Fragment %4 "main" %13
+                                           OpExecutionMode %4 OriginUpperLeft
+                                           OpDecorate %13 BuiltIn FragCoord
+                                           OpDecorate %23 DescriptorSet 0
+                                           OpDecorate %23 Binding 0
+                                           OpDecorate %23 InputAttachmentIndex 0
+                                           OpDecorate %34 DescriptorSet 0
+                                           OpDecorate %34 Binding 1
+                                           OpDecorate %34 InputAttachmentIndex 1
+                                           OpDecorate %41 DescriptorSet 0
+                                           OpDecorate %41 Binding 2
+                                           OpDecorate %41 InputAttachmentIndex 2
+                                           OpDecorate %47 ArrayStride 4
+                                           OpMemberDecorate %48 0 NonReadable
+                                           OpMemberDecorate %48 0 Offset 0
+                                           OpDecorate %48 BufferBlock
+                                           OpDecorate %50 DescriptorSet 1
+                                           OpDecorate %50 Binding 0
+                                           ${DECORATIONS:default=}
+                                           %2 = OpTypeVoid
+                                           %3 = OpTypeFunction %2
+                                           %6 = OpTypeInt 32 0
+                                           %7 = OpTypeVector %6 2
+                                           %8 = OpTypePointer Function %7
+                                           %10 = OpTypeFloat 32
+                                           %11 = OpTypeVector %10 4
+                                           %12 = OpTypePointer Input %11
+                                           %13 = OpVariable %12 Input
+                                           %14 = OpTypeVector %10 2
+                                           %19 = OpTypePointer Function %6
+                                           %21 = OpTypeImage %6 SubpassData 0 0 0 2 Unknown
+                                           %22 = OpTypePointer UniformConstant %21
+                                           %23 = OpVariable %22 UniformConstant
+                                           %25 = OpTypeInt 32 1
+                                           %26 = OpConstant %25 0
+                                           %27 = OpTypeVector %25 2
+                                           %28 = OpConstantComposite %27 %26 %26
+                                           %29 = OpTypeVector %6 4
+                                           %31 = OpConstant %6 0
+                                           %33 = OpConstant %6 2
+                                           %34 = OpVariable %22 UniformConstant
+                                           %40 = OpConstant %6 3
+                                           %41 = OpVariable %22 UniformConstant
+                                           %47 = OpTypeRuntimeArray %6
+                                           %48 = OpTypeStruct %47
+                                           %49 = OpTypePointer Uniform %48
+                                           %50 = OpVariable %49 Uniform
+                                           %53 = OpConstant %6 1
+                                           %56 = OpConstant %6 16
+                                           ${DECLARATIONS:default=}
+                                           %70 = OpTypePointer Uniform %6
+                                           %4 = OpFunction %2 None %3
+                                           %5 = OpLabel
+                                           %9 = OpVariable %8 Function
+                                           %20 = OpVariable %19 Function
+                                           %15 = OpLoad %11 %13
+                                           %16 = OpVectorShuffle %14 %15 %15 0 1
+                                           %17 = OpExtInst %14 %1 Trunc %16
+                                           %18 = OpConvertFToU %7 %17
+                                           OpStore %9 %18
+                                           %24 = OpLoad %21 %23
+                                           %30 = OpImageRead %29 %24 %28
+                                           %32 = OpCompositeExtract %6 %30 0
+                                           %35 = OpLoad %21 %34
+                                           %36 = OpImageRead %29 %35 %28
+                                           %37 = OpCompositeExtract %6 %36 0
+                                           %38 = OpIMul %6 %33 %37
+                                           %39 = OpIAdd %6 %32 %38
+                                           %42 = OpLoad %21 %41
+                                           %43 = OpImageRead %29 %42 %28
+                                           %44 = OpCompositeExtract %6 %43 0
+                                           %45 = OpIMul %6 %40 %44
+                                           %46 = OpIAdd %6 %39 %45
+                                           OpStore %20 %46
+                                           %51 = OpAccessChain %19 %9 %31
+                                           %52 = OpLoad %6 %51
+                                           %54 = OpAccessChain %19 %9 %53
+                                           %55 = OpLoad %6 %54
+                                           %57 = OpIMul %6 %55 %56
+                                           %58 = OpIAdd %6 %52 %57
+                                           %59 = OpLoad %6 %20
+                                           ${OPERATIONS:default=}
+                                           %71 = OpAccessChain %70 %50 %26 %58
+                                           OpStore %71 ${RESULT_ID:default=%59}
+                                           OpReturn
+                                           OpFunctionEnd)");
+
+        using SpecMap = std::map<std::string, std::string>;
+        const SpecMap specializationMap{{"DECORATIONS", "OpDecorate %62 DescriptorSet 0\n"
+                                                        "OpDecorate %62 Binding 3\n"},
+                                        {"DECLARATIONS", "%60 = OpTypeImage %10 SubpassData 0 0 0 2 Unknown\n"
+                                                         "%61 = OpTypePointer UniformConstant %60\n"
+                                                         "%62 = OpVariable %61 UniformConstant\n"
+                                                         "%66 = OpConstant %10 1000\n"},
+                                        {"OPERATIONS", "%63 = OpLoad %60 %62\n"
+                                                       "%64 = OpImageRead %11 %63 %28\n"
+                                                       "%65 = OpCompositeExtract %10 %64 0\n"
+                                                       "%67 = OpFMul %10 %65 %66\n"
+                                                       "%68 = OpConvertFToU %6 %67\n"
+                                                       "%69 = OpIAdd %6 %59 %68\n"},
+                                        {"RESULT_ID", "%69"}};
+        const SpecMap noDepthSpecializationMap; // use default values
+
+        auto &spirv = programCollection.spirvAsmSources;
+        spirv.add("frag1") << fragTemplate.specialize(specializationMap);
+        spirv.add("frag1_no_ds") << fragTemplate.specialize(noDepthSpecializationMap);
     }
     else if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||
              (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX))
@@ -2269,8 +2493,12 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
         // generate fragment shaders for all posible number of input attachments;
         // during test execution proper shader will be picked
         for (uint32_t inputAttachmentCount : inputAttachmentsPossibleValues)
-            glslSources.add(std::string("frag1_") + std::to_string(inputAttachmentCount))
-                << glu::FragmentSource(generateReadFragSource(inputAttachmentCount));
+        {
+            std::string name = std::string("frag1_") + std::to_string(inputAttachmentCount);
+            glslSources.add(name) << glu::FragmentSource(generateReadFragSource(inputAttachmentCount));
+            glslSources.add(name + "_no_ds")
+                << glu::FragmentSource(generateReadFragSource(inputAttachmentCount, false, false));
+        }
     }
 }
 
@@ -2304,6 +2532,8 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
         {"input_attachments_without_mapping", TestType::INPUT_ATTACHMENTS_WITHOUT_MAPPING},
         {"unused_writen_discarded", TestType::UNUSED_WRITEN_DISCARDED},
         {"depth_stencil_mapping_to_no_index", TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX},
+        {"depth_stencil_mapping_to_no_index_depth_clear", TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_DEPTH_CLEAR},
+        {"depth_stencil_mapping_to_no_index_stencil_clear", TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX_STENCIL_CLEAR},
         {"depth_stencil_mapping_to_same_index", TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX},
         {"depth_stencil_mapping_to_large_index", TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX},
         {"depth_mapping_stencil_not", TestType::DEPTH_MAPPING_STENCIL_NOT},

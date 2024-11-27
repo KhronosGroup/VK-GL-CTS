@@ -249,13 +249,7 @@ MultipleDispatchesUniformSubgroupSize::MultipleDispatchesUniformSubgroupSize(tcu
 
 void MultipleDispatchesUniformSubgroupSize::checkSupport(Context &context) const
 {
-#ifndef CTS_USES_VULKANSC
-    const VkPhysicalDeviceSubgroupSizeControlFeatures &subgroupSizeControlFeatures =
-        context.getSubgroupSizeControlFeatures();
-#else
-    const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT &subgroupSizeControlFeatures =
-        context.getSubgroupSizeControlFeatures();
-#endif // CTS_USES_VULKANSC
+    const auto &subgroupSizeControlFeatures = context.getSubgroupSizeControlFeatures();
 
     if (subgroupSizeControlFeatures.subgroupSizeControl == false)
         TCU_THROW(NotSupportedError, "Device does not support varying subgroup sizes");

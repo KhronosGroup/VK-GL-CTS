@@ -645,8 +645,7 @@ void NestedCommandBuffersTest::checkSupport(Context &context) const
     {
         context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
 
-        const auto &features =
-            *vk::findStructure<vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+        const auto &features = context.getNestedCommandBufferFeaturesEXT();
         if (!features.nestedCommandBuffer)
             TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
         if (!features.nestedCommandBufferRendering)
@@ -657,8 +656,7 @@ void NestedCommandBuffersTest::checkSupport(Context &context) const
     {
         context.requireDeviceFunctionality("VK_KHR_maintenance7");
 
-        const auto &features =
-            *vk::findStructure<vk::VkPhysicalDeviceMaintenance7FeaturesKHR>(&context.getDeviceFeatures2());
+        const auto &features = context.getMaintenance7Features();
         if (!features.maintenance7)
             TCU_THROW(NotSupportedError, "maintenance7 is not supported");
     }

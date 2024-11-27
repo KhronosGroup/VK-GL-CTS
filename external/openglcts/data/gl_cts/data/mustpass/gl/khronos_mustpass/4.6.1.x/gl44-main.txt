@@ -874,6 +874,8 @@ KHR-GL44.transform_feedback2.transform_feedback2_states
 KHR-GL44.api.coverage
 KHR-GL44.get_uniform_tests.get_uniform
 KHR-GL44.frag_coord_conventions.multisample
+KHR-GL44.texture_storage.compressed_data
+KHR-GL44.draw_buffers.draw_buffers_1
 KHR-GL44.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL44.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL44.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp
@@ -15295,6 +15297,7 @@ KHR-GL44.shader_texture_image_samples_tests.glsl_extension_enable
 KHR-GL44.shader_texture_image_samples_tests.glsl_extension_require
 KHR-GL44.texture_filter_anisotropic.queries
 KHR-GL44.texture_filter_anisotropic.drawing
+KHR-GL44.texture_stencil8.multisample
 KHR-GL44.geometry_shader.adjacency.adjacency_non_indiced_lines
 KHR-GL44.geometry_shader.adjacency.adjacency_indiced_lines
 KHR-GL44.geometry_shader.adjacency.adjacency_non_indiced_line_strip

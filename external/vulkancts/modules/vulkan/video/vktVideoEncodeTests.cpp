@@ -931,14 +931,14 @@ struct bytestreamWriteWithStatus
 };
 
 bool processQueryPoolResults(const DeviceInterface &vk, const VkDevice device, VkQueryPool encodeQueryPool,
-                             VkDeviceSize &bitstreamBufferOffset, VkDeviceSize &minBitstreamBufferOffsetAlignment,
-                             const bool queryStatus)
+                             uint32_t firstQueryId, uint32_t queryCount, VkDeviceSize &bitstreamBufferOffset,
+                             VkDeviceSize &minBitstreamBufferOffsetAlignment, const bool queryStatus)
 {
     bytestreamWriteWithStatus queryResultWithStatus;
     deMemset(&queryResultWithStatus, 0xFF, sizeof(queryResultWithStatus));
 
-    if (vk.getQueryPoolResults(device, encodeQueryPool, 1, 1, sizeof(queryResultWithStatus), &queryResultWithStatus,
-                               sizeof(queryResultWithStatus),
+    if (vk.getQueryPoolResults(device, encodeQueryPool, firstQueryId, queryCount, sizeof(queryResultWithStatus),
+                               &queryResultWithStatus, sizeof(queryResultWithStatus),
                                VK_QUERY_RESULT_WITH_STATUS_BIT_KHR | VK_QUERY_RESULT_WAIT_BIT) == VK_SUCCESS)
     {
         bitstreamBufferOffset += queryResultWithStatus.bitstreamWrite;
@@ -1178,6 +1178,7 @@ static shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceCont
     params.queryDecodeStatus  = false;
     params.outOfOrderDecoding = false;
     params.alwaysRecreateDPB  = resolutionChange;
+    params.layeredDpb         = true;
 
     return std::make_shared<VideoBaseDecoder>(std::move(params));
 }
@@ -1691,7 +1692,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
             videoDeviceDriver, videoDevice, videoEncodeSessionParametersCreateInfos.back().get()));
     }
 
-    const VkImageUsageFlags dpbImageUsage = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    const VkImageUsageFlags dpbImageUsage = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR;
     // If the implementation does not support individual images for DPB and so must use arrays
     const bool separateReferenceImages =
         videoCapabilities.get()->flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR;
@@ -2049,6 +2050,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     std::vector<de::MovePtr<VkVideoEncodeH265PictureInfoKHR>> videoEncodeH265PictureInfos;
 
     std::vector<de::MovePtr<VkVideoEncodeInfoKHR>> videoEncodeFrameInfos;
+    uint32_t queryId = 0;
 
     for (uint16_t GOPIdx = 0; GOPIdx < gopCount; ++GOPIdx)
     {
@@ -2245,30 +2247,29 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                 dstBufferOffset = bitstreamBufferOffset;
             }
 
-            const void *pNext = nullptr;
             de::MovePtr<VkVideoInlineQueryInfoKHR> inlineQueryInfo =
-                getVideoInlineQueryInfo(encodeQueryPool.get(), 0, 1, videoEncodePictureInfoPtr);
+                getVideoInlineQueryInfo(encodeQueryPool.get(), queryId, 1, nullptr);
 
             if (useInlineQueries)
             {
-                pNext = inlineQueryInfo.get();
-            }
-            else
-            {
-                pNext = videoEncodePictureInfoPtr;
+                VkBaseInStructure *pStruct = (VkBaseInStructure *)videoEncodePictureInfoPtr;
+                while (pStruct->pNext)
+                    pStruct = (VkBaseInStructure *)pStruct->pNext;
+                pStruct->pNext = (VkBaseInStructure *)inlineQueryInfo.get();
             }
 
-            videoEncodeFrameInfos.push_back(getVideoEncodeInfo(
-                pNext, *encodeBuffer, dstBufferOffset, (*imagePictureResourceVector[srcPictureResourceIdx]),
-                setupReferenceSlotPtr, refsCount, (refsPool == 0) ? nullptr : referenceSlots));
+            videoEncodeFrameInfos.push_back(
+                getVideoEncodeInfo(videoEncodePictureInfoPtr, *encodeBuffer, dstBufferOffset,
+                                   (*imagePictureResourceVector[srcPictureResourceIdx]), setupReferenceSlotPtr,
+                                   refsCount, (refsPool == 0) ? nullptr : referenceSlots));
 
             if (!useInlineQueries)
-                videoDeviceDriver.cmdBeginQuery(encodeCmdBuffer, encodeQueryPool.get(), 1, 0);
+                videoDeviceDriver.cmdBeginQuery(encodeCmdBuffer, encodeQueryPool.get(), queryId, 0);
 
             videoDeviceDriver.cmdEncodeVideoKHR(encodeCmdBuffer, videoEncodeFrameInfos.back().get());
 
             if (!useInlineQueries)
-                videoDeviceDriver.cmdEndQuery(encodeCmdBuffer, encodeQueryPool.get(), 1);
+                videoDeviceDriver.cmdEndQuery(encodeCmdBuffer, encodeQueryPool.get(), queryId);
             videoDeviceDriver.cmdEndVideoCodingKHR(encodeCmdBuffer, &videoEndCodingInfo);
 
             endCommandBuffer(videoDeviceDriver, encodeCmdBuffer);
@@ -2277,10 +2278,9 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
             {
                 submitCommandsAndWait(videoDeviceDriver, videoDevice, encodeQueue, encodeCmdBuffer);
 
-                if (!useInlineQueries)
-                    if (!processQueryPoolResults(videoDeviceDriver, videoDevice, encodeQueryPool.get(),
-                                                 bitstreamBufferOffset, minBitstreamBufferOffsetAlignment, queryStatus))
-                        return tcu::TestStatus::fail("Unexpected query result status");
+                if (!processQueryPoolResults(videoDeviceDriver, videoDevice, encodeQueryPool.get(), queryId, 1,
+                                             bitstreamBufferOffset, minBitstreamBufferOffsetAlignment, queryStatus))
+                    return tcu::TestStatus::fail("Unexpected query result status");
             }
 
             if (!bType)
@@ -2303,8 +2303,8 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                            nullptr, 1, &frameEncodedSemaphore.get());
         waitForFence(videoDeviceDriver, videoDevice, *firstCommandFence);
 
-        if (!processQueryPoolResults(videoDeviceDriver, videoDevice, encodeQueryPool.get(), bitstreamBufferOffset,
-                                     minBitstreamBufferOffsetAlignment, queryStatus))
+        if (!processQueryPoolResults(videoDeviceDriver, videoDevice, encodeQueryPool.get(), queryId, 1,
+                                     bitstreamBufferOffset, minBitstreamBufferOffsetAlignment, queryStatus))
             return tcu::TestStatus::fail("Unexpected query result status");
 
         const auto secondCommandFence =
@@ -2312,8 +2312,8 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                            &frameEncodedSemaphore.get(), &waitDstStageMask);
         waitForFence(videoDeviceDriver, videoDevice, *secondCommandFence);
 
-        if (!processQueryPoolResults(videoDeviceDriver, videoDevice, encodeQueryPool.get(), bitstreamBufferOffset,
-                                     minBitstreamBufferOffsetAlignment, queryStatus))
+        if (!processQueryPoolResults(videoDeviceDriver, videoDevice, encodeQueryPool.get(), queryId, 1,
+                                     bitstreamBufferOffset, minBitstreamBufferOffsetAlignment, queryStatus))
             return tcu::TestStatus::fail("Unexpected query result status");
     }
 
