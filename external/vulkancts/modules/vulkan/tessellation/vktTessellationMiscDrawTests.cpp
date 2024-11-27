@@ -599,9 +599,11 @@ inline std::string getReferenceImagePathPrefix(const std::string &caseName)
 
 struct TessStateSwitchParams
 {
+    const PipelineConstructionType pipelineConstructionType;
     const std::pair<TessPrimitiveType, TessPrimitiveType> patchTypes;
     const std::pair<SpacingMode, SpacingMode> spacing;
     const std::pair<VkTessellationDomainOrigin, VkTessellationDomainOrigin> domainOrigin;
+    const std::pair<uint32_t, uint32_t> outputVertices;
     const bool geometryShader;
 
     bool nonDefaultDomainOrigin(void) const
@@ -663,6 +665,9 @@ void TessStateSwitchCase::checkSupport(Context &context) const
 
     if (m_params.nonDefaultDomainOrigin())
         context.requireDeviceFunctionality("VK_KHR_maintenance2");
+
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.pipelineConstructionType);
 }
 
 void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -674,9 +679,11 @@ void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection)
          << "out gl_PerVertex\n"
          << "{\n"
          << "  vec4 gl_Position;\n"
+         << "  float gl_PointSize;\n"
          << "};\n"
          << "void main() {\n"
          << "    gl_Position = inPos + vec4(pc.offset, 0.0, 0.0);\n"
+         << "    gl_PointSize = 1.0;\n"
          << "}\n";
     programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
 
@@ -689,16 +696,18 @@ void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection)
              << "in gl_PerVertex\n"
              << "{\n"
              << "    vec4 gl_Position;\n"
+             << "    float gl_PointSize;\n"
              << "} gl_in[3];\n"
              << "out gl_PerVertex\n"
              << "{\n"
              << "    vec4 gl_Position;\n"
+             << "    float gl_PointSize;\n"
              << "};\n"
              << "void main() {\n"
-             << "    gl_Position    = gl_in[0].gl_Position; EmitVertex();\n"
-             << "    gl_Position    = gl_in[1].gl_Position; EmitVertex();\n"
-             << "    gl_Position    = gl_in[2].gl_Position; EmitVertex();\n"
-             << "    gl_PrimitiveID = gl_PrimitiveIDIn;     EndPrimitive();\n"
+             << "    gl_Position    = gl_in[0].gl_Position; gl_PointSize = gl_in[0].gl_PointSize; EmitVertex();\n"
+             << "    gl_Position    = gl_in[1].gl_Position; gl_PointSize = gl_in[0].gl_PointSize; EmitVertex();\n"
+             << "    gl_Position    = gl_in[2].gl_Position; gl_PointSize = gl_in[0].gl_PointSize; EmitVertex();\n"
+             << "    gl_PrimitiveID = gl_PrimitiveIDIn;                                           EndPrimitive();\n"
              << "}\n";
         programCollection.glslSources.add("geom") << glu::GeometrySource(geom.str());
     }
@@ -706,33 +715,47 @@ void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection)
     const auto even       = (m_params.spacing.second == SPACINGMODE_FRACTIONAL_EVEN);
     const auto extraLevel = (even ? "1.0" : "0.0");
 
-    std::ostringstream tesc;
-    tesc << "#version 460\n"
-         << "layout (vertices=4) out;\n"
-         << "in gl_PerVertex\n"
-         << "{\n"
-         << "  vec4 gl_Position;\n"
-         << "} gl_in[gl_MaxPatchVertices];\n"
-         << "out gl_PerVertex\n"
-         << "{\n"
-         << "  vec4 gl_Position;\n"
-         << "} gl_out[];\n"
-         << "void main() {\n"
-         << "    const float extraLevel = " << extraLevel << ";\n"
-         << "    gl_TessLevelInner[0] = 10.0 + extraLevel;\n"
-         << "    gl_TessLevelInner[1] = 10.0 + extraLevel;\n"
-         << "    gl_TessLevelOuter[0] = 50.0 + extraLevel;\n"
-         << "    gl_TessLevelOuter[1] = 40.0 + extraLevel;\n"
-         << "    gl_TessLevelOuter[2] = 30.0 + extraLevel;\n"
-         << "    gl_TessLevelOuter[3] = 20.0 + extraLevel;\n"
-         << "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-         << "}\n";
-    programCollection.glslSources.add("tesc") << glu::TessellationControlSource(tesc.str());
+    for (uint32_t i = 0u; i < 2u; ++i)
+    {
+        const auto outVertices = ((i == 0) ? m_params.outputVertices.first : m_params.outputVertices.second);
+
+        std::ostringstream tesc;
+        tesc << "#version 460\n"
+             << "layout (vertices=" << outVertices << ") out;\n"
+             << "in gl_PerVertex\n"
+             << "{\n"
+             << "  vec4 gl_Position;\n"
+             << "  float gl_PointSize;\n"
+             << "} gl_in[gl_MaxPatchVertices];\n"
+             << "out gl_PerVertex\n"
+             << "{\n"
+             << "  vec4 gl_Position;\n"
+             << "  float gl_PointSize;\n"
+             << "} gl_out[];\n"
+             << "void main() {\n"
+             << "    const float extraLevel = " << extraLevel << ";\n"
+             << "    gl_TessLevelInner[0] = 10.0 + extraLevel;\n"
+             << "    gl_TessLevelInner[1] = 10.0 + extraLevel;\n"
+             << "    gl_TessLevelOuter[0] = 50.0 + extraLevel;\n"
+             << "    gl_TessLevelOuter[1] = 40.0 + extraLevel;\n"
+             << "    gl_TessLevelOuter[2] = 30.0 + extraLevel;\n"
+             << "    gl_TessLevelOuter[3] = 20.0 + extraLevel;\n"
+             << "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+             << "    gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n"
+             << "}\n";
+        programCollection.glslSources.add("tesc" + std::to_string(i)) << glu::TessellationControlSource(tesc.str());
+    }
+
+    DE_ASSERT(m_params.patchTypes.first != TESSPRIMITIVETYPE_ISOLINES);
+    DE_ASSERT(m_params.patchTypes.second != TESSPRIMITIVETYPE_ISOLINES);
 
     for (uint32_t i = 0u; i < 2u; ++i)
     {
-        const auto &primType = ((i == 0u) ? m_params.patchTypes.first : m_params.patchTypes.second);
-        const auto &spacing  = ((i == 0u) ? m_params.spacing.first : m_params.spacing.second);
+        const auto &primType   = ((i == 0u) ? m_params.patchTypes.first : m_params.patchTypes.second);
+        const auto &spacing    = ((i == 0u) ? m_params.spacing.first : m_params.spacing.second);
+        const auto outVertices = ((i == 0) ? m_params.outputVertices.first : m_params.outputVertices.second);
+
+        DE_ASSERT(outVertices == 3u || outVertices == 4u);
 
         std::ostringstream tese;
         tese << "#version 460\n"
@@ -741,10 +764,12 @@ void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection)
              << "in gl_PerVertex\n"
              << "{\n"
              << "  vec4 gl_Position;\n"
+             << "  float gl_PointSize;\n"
              << "} gl_in[gl_MaxPatchVertices];\n"
              << "out gl_PerVertex\n"
              << "{\n"
              << "  vec4 gl_Position;\n"
+             << "  float gl_PointSize;\n"
              << "};\n"
              << "\n"
              << "// This assumes 2D, calculates barycentrics for point p inside triangle (a, b, c)\n"
@@ -763,23 +788,36 @@ void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection)
              << "}\n"
              << "\n"
              << "void main() {\n"
+             << "    gl_PointSize  = gl_in[0].gl_PointSize;\n"
+             << "    const vec4 p0 = gl_in[0].gl_Position;\n"
+             << "    const vec4 p1 = gl_in[1].gl_Position;\n"
+             << "    const vec4 p2 = gl_in[2].gl_Position;\n"
+             << ((outVertices == 4u)
+                     // Copy the 4th vertex directly.
+                     ?
+                     "    const vec4 p3 = gl_in[3].gl_Position;\n"
+                     // Make up a 4th vertex on the fly.
+                     :
+                     "    const float delta  = 0.75;\n"
+                     "    const float width  = p2.x - p0.x;\n"
+                     "    const float height = p1.y - p0.y;\n"
+                     "    const vec4 p3 = vec4(p0.x + width * delta, p0.y + height * delta, p0.z, p0.w);\n")
              << ((primType == TESSPRIMITIVETYPE_QUADS)
                      // For quads.
                      ?
                      "    const float u = gl_TessCoord.x;\n"
                      "    const float v = gl_TessCoord.y;\n"
-                     "    gl_Position = (1 - u) * (1 - v) * gl_in[0].gl_Position + (1 - u) * v * gl_in[1].gl_Position "
-                     "+ u * (1 - v) * gl_in[2].gl_Position + u * v * gl_in[3].gl_Position;\n"
+                     "    gl_Position = (1 - u) * (1 - v) * p0 + (1 - u) * v * p1 + u * (1 - v) * p2 + u * v * p3;\n"
                      // For triangles.
                      :
                      "    // We have a patch with 4 corners (v0,v1,v2,v3), but triangle-based tessellation.\n"
                      "    // Lets suppose the triangle covers half the patch (triangle v0,v2,v1).\n"
                      "    // Expand the triangle by virtually grabbing it from the midpoint between v1 and v2 (which "
                      "should fall in the middle of the patch) and stretching that point to the fourth corner (v3).\n"
-                     "    const vec4 origpoint = (gl_TessCoord.x * gl_in[0].gl_Position) +\n"
-                     "                           (gl_TessCoord.y * gl_in[2].gl_Position) +\n"
-                     "                           (gl_TessCoord.z * gl_in[1].gl_Position);\n"
-                     "    const vec4 midpoint = 0.5 * gl_in[1].gl_Position + 0.5 * gl_in[2].gl_Position;\n"
+                     "    const vec4 origpoint = (gl_TessCoord.x * p0) +\n"
+                     "                           (gl_TessCoord.y * p2) +\n"
+                     "                           (gl_TessCoord.z * p1);\n"
+                     "    const vec4 midpoint = 0.5 * p1 + 0.5 * p2;\n"
                      "\n"
                      "    // Find out if it falls on left or right side of the triangle.\n"
                      "    vec4 halfTriangle[3];\n"
@@ -787,23 +825,23 @@ void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection)
                      "\n"
                      "    if (gl_TessCoord.z >= gl_TessCoord.y)\n"
                      "    {\n"
-                     "        halfTriangle[0] = gl_in[0].gl_Position;\n"
+                     "        halfTriangle[0] = p0;\n"
                      "        halfTriangle[1] = midpoint;\n"
-                     "        halfTriangle[2] = gl_in[1].gl_Position;\n"
+                     "        halfTriangle[2] = p1;\n"
                      "\n"
-                     "        stretchedHalf[0] = gl_in[0].gl_Position;\n"
-                     "        stretchedHalf[1] = gl_in[3].gl_Position;\n"
-                     "        stretchedHalf[2] = gl_in[1].gl_Position;\n"
+                     "        stretchedHalf[0] = p0;\n"
+                     "        stretchedHalf[1] = p3;\n"
+                     "        stretchedHalf[2] = p1;\n"
                      "    }\n"
                      "    else\n"
                      "    {\n"
-                     "        halfTriangle[0] = gl_in[0].gl_Position;\n"
-                     "        halfTriangle[1] = gl_in[2].gl_Position;\n"
+                     "        halfTriangle[0] = p0;\n"
+                     "        halfTriangle[1] = p2;\n"
                      "        halfTriangle[2] = midpoint;\n"
                      "\n"
-                     "        stretchedHalf[0] = gl_in[0].gl_Position;\n"
-                     "        stretchedHalf[1] = gl_in[2].gl_Position;\n"
-                     "        stretchedHalf[2] = gl_in[3].gl_Position;\n"
+                     "        stretchedHalf[0] = p0;\n"
+                     "        stretchedHalf[1] = p2;\n"
+                     "        stretchedHalf[2] = p3;\n"
                      "    }\n"
                      "\n"
                      "    // Calculate the barycentric coordinates for the left or right sides.\n"
@@ -821,7 +859,7 @@ void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection)
     frag << "#version 460\n"
          << "layout (location=0) out vec4 outColor;\n"
          << "void main() {\n"
-         << "    outColor = vec4(0.5, 0.5, 0.5, 1.0);\n"
+         << "    outColor = vec4(0.0, 1.0, 1.0, 1.0);\n"
          << "}\n";
     programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
 }
@@ -836,7 +874,7 @@ tcu::TestStatus TessStateSwitchInstance::iterate(void)
     const auto colorUsage  = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
     const auto imageType   = VK_IMAGE_TYPE_2D;
     const auto colorSRR    = makeDefaultImageSubresourceRange();
-    const auto bindPoint   = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    const auto useESO      = isConstructionTypeShaderObject(m_params.pipelineConstructionType);
 
     ImageWithBuffer referenceBuffer(ctx.vkd, ctx.device, ctx.allocator, vkExtent, colorFormat, colorUsage, imageType,
                                     colorSRR);
@@ -867,61 +905,35 @@ tcu::TestStatus TessStateSwitchInstance::iterate(void)
     const auto pcStages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_VERTEX_BIT);
     const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
 
-    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+    const PipelineLayoutWrapper pipelineLayout(m_params.pipelineConstructionType, ctx.vkd, ctx.device, VK_NULL_HANDLE,
+                                               &pcRange);
 
-    const auto renderPass = makeRenderPass(ctx.vkd, ctx.device, colorFormat);
+    RenderPassWrapper renderPass0(m_params.pipelineConstructionType, ctx.vkd, ctx.device, colorFormat);
+    RenderPassWrapper renderPass1 = renderPass0.clone(); // Preserves render pass handle.
+    DE_ASSERT(renderPass0.get() == renderPass1.get());
 
     // Framebuffers.
-    const auto framebuffer0 = makeFramebuffer(ctx.vkd, ctx.device, *renderPass, referenceBuffer.getImageView(),
-                                              vkExtent.width, vkExtent.height);
-    const auto framebuffer1 =
-        makeFramebuffer(ctx.vkd, ctx.device, *renderPass, resultBuffer.getImageView(), vkExtent.width, vkExtent.height);
+    renderPass0.createFramebuffer(ctx.vkd, ctx.device, referenceBuffer.getImage(), referenceBuffer.getImageView(),
+                                  vkExtent.width, vkExtent.height);
+    renderPass1.createFramebuffer(ctx.vkd, ctx.device, resultBuffer.getImage(), resultBuffer.getImageView(),
+                                  vkExtent.width, vkExtent.height);
 
     // Viewport and scissor.
     const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
     const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
 
     // Shaders.
-    const auto &binaries   = m_context.getBinaryCollection();
-    const auto vertModule  = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
-    const auto tescModule  = createShaderModule(ctx.vkd, ctx.device, binaries.get("tesc"));
-    const auto teseModule0 = createShaderModule(ctx.vkd, ctx.device, binaries.get("tese0"));
-    const auto teseModule1 = createShaderModule(ctx.vkd, ctx.device, binaries.get("tese1"));
-    const auto geomModule  = (m_params.geometryShader ? createShaderModule(ctx.vkd, ctx.device, binaries.get("geom")) :
-                                                        Move<VkShaderModule>());
-    const auto fragModule  = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+    const auto &binaries = m_context.getBinaryCollection();
+    const ShaderWrapper vertModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const ShaderWrapper tescModule0(ctx.vkd, ctx.device, binaries.get("tesc0"));
+    const ShaderWrapper tescModule1(ctx.vkd, ctx.device, binaries.get("tesc1"));
+    const ShaderWrapper teseModule0(ctx.vkd, ctx.device, binaries.get("tese0"));
+    const ShaderWrapper teseModule1(ctx.vkd, ctx.device, binaries.get("tese1"));
+    const ShaderWrapper geomModule =
+        (m_params.geometryShader ? ShaderWrapper(ctx.vkd, ctx.device, binaries.get("geom")) : ShaderWrapper());
+    const ShaderWrapper fragModule(ctx.vkd, ctx.device, binaries.get("frag"));
 
-    const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                                     // const void* pNext;
-        0u,                                                          // VkPipelineInputAssemblyStateCreateFlags flags;
-        VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,                            // VkPrimitiveTopology topology;
-        VK_FALSE,                                                    // VkBool32 primitiveRestartEnable;
-    };
-
-    VkPipelineTessellationDomainOriginStateCreateInfo domainOriginStateCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                                                 // const void* pNext;
-        m_params.domainOrigin.first, // VkTessellationDomainOrigin domainOrigin;
-    };
-
-    const auto tessPNext = (m_params.nonDefaultDomainOrigin() ? &domainOriginStateCreateInfo : nullptr);
-    const VkPipelineTessellationStateCreateInfo tessellationStateCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, // VkStructureType sType;
-        tessPNext,                                                 // const void* pNext;
-        0u,                                                        // VkPipelineTessellationStateCreateFlags flags;
-        patchControlPoints,                                        // uint32_t patchControlPoints;
-    };
-
-    const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                               // const void* pNext;
-        0u,                                                    // VkPipelineViewportStateCreateFlags flags;
-        de::sizeU32(viewports),                                // uint32_t viewportCount;
-        de::dataOrNull(viewports),                             // const VkViewport* pViewports;
-        de::sizeU32(scissors),                                 // uint32_t scissorCount;
-        de::dataOrNull(scissors),                              // const VkRect2D* pScissors;
-    };
+    const auto primitiveTopology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
 
     // In the rasterization parameters, use wireframe mode to see each triangle if possible.
     // This makes the test harder to pass by mistake.
@@ -950,18 +962,68 @@ tcu::TestStatus TessStateSwitchInstance::iterate(void)
         1.0f,                                                       // float lineWidth;
     };
 
-    // Create two pipelines varying the tessellation evaluation module.
-    const auto pipeline0 =
-        makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *vertModule, *tescModule, *teseModule0, *geomModule,
-                             *fragModule, *renderPass, 0u, nullptr, &inputAssemblyStateCreateInfo,
-                             &tessellationStateCreateInfo, &viewportStateCreateInfo, &rasterizationStateCreateInfo);
+    // Create two pipelines varying the tessellation evaluation module and domain origin.
+    GraphicsPipelineWrapper pipeline0(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(),
+                                      m_params.pipelineConstructionType);
+    pipeline0.setDefaultVertexInputState(true)
+        .setDefaultTopology(primitiveTopology)
+        .setDefaultPatchControlPoints(patchControlPoints)
+        .setDefaultTessellationDomainOrigin(m_params.domainOrigin.first, m_params.nonDefaultDomainOrigin())
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDefaultColorBlendState()
+        .setupVertexInputState()
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass0.get(), 0u, vertModule,
+                                          &rasterizationStateCreateInfo, tescModule0, teseModule0, geomModule)
+        .setupFragmentShaderState(pipelineLayout, renderPass0.get(), 0u, fragModule)
+        .setupFragmentOutputState(renderPass0.get(), 0u)
+        .buildPipeline();
 
-    domainOriginStateCreateInfo.domainOrigin = m_params.domainOrigin.second;
+    GraphicsPipelineWrapper pipeline1(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(),
+                                      m_params.pipelineConstructionType);
+    pipeline1.setDefaultVertexInputState(true)
+        .setDefaultTopology(primitiveTopology)
+        .setDefaultPatchControlPoints(patchControlPoints)
+        .setDefaultTessellationDomainOrigin(m_params.domainOrigin.second, m_params.nonDefaultDomainOrigin())
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDefaultColorBlendState()
+        .setupVertexInputState()
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass1.get(), 0u, vertModule,
+                                          &rasterizationStateCreateInfo, tescModule1, teseModule1, geomModule)
+        .setupFragmentShaderState(pipelineLayout, renderPass1.get(), 0u, fragModule)
+        .setupFragmentOutputState(renderPass1.get(), 0u)
+        .buildPipeline();
 
-    const auto pipeline1 =
-        makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *vertModule, *tescModule, *teseModule1, *geomModule,
-                             *fragModule, *renderPass, 0u, nullptr, &inputAssemblyStateCreateInfo,
-                             &tessellationStateCreateInfo, &viewportStateCreateInfo, &rasterizationStateCreateInfo);
+    // pipeline2 is like pipeline1 but always monolithic, and it's the one used to create the reference image.
+    PipelineRenderingCreateInfoWrapper renderingCreateInfoPtr;
+#ifndef CTS_USES_VULKANSC
+    VkPipelineRenderingCreateInfo renderingCreateInfo = initVulkanStructure();
+    if (useESO)
+    {
+        // Note the render pass is dynamic in this case, so we need to create the pipeline with dynamic rendering.
+        renderingCreateInfo.colorAttachmentCount    = 1u;
+        renderingCreateInfo.pColorAttachmentFormats = &colorFormat;
+        renderingCreateInfoPtr                      = &renderingCreateInfo;
+    }
+#endif
+
+    GraphicsPipelineWrapper pipeline2(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(),
+                                      PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
+    pipeline2.setDefaultVertexInputState(true)
+        .setDefaultTopology(primitiveTopology)
+        .setDefaultPatchControlPoints(patchControlPoints)
+        .setDefaultTessellationDomainOrigin(m_params.domainOrigin.second, m_params.nonDefaultDomainOrigin())
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDefaultColorBlendState()
+        .setupVertexInputState()
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass1.get(), 0u, vertModule,
+                                          &rasterizationStateCreateInfo, tescModule1, teseModule1, geomModule, nullptr,
+                                          nullptr, renderingCreateInfoPtr)
+        .setupFragmentShaderState(pipelineLayout, renderPass1.get(), 0u, fragModule)
+        .setupFragmentOutputState(renderPass1.get(), 0u)
+        .buildPipeline();
 
     const auto cmdPool      = makeCommandPool(ctx.vkd, ctx.device, ctx.qfIndex);
     const auto cmdBufferRef = allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -973,12 +1035,12 @@ tcu::TestStatus TessStateSwitchInstance::iterate(void)
 
     // Reference image.
     beginCommandBuffer(ctx.vkd, *cmdBufferRef);
-    beginRenderPass(ctx.vkd, *cmdBufferRef, *renderPass, *framebuffer0, scissors.at(0u), clearColor);
+    renderPass0.begin(ctx.vkd, *cmdBufferRef, scissors.at(0u), clearColor);
     ctx.vkd.cmdBindVertexBuffers(*cmdBufferRef, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-    ctx.vkd.cmdBindPipeline(*cmdBufferRef, bindPoint, *pipeline1);
+    pipeline2.bind(*cmdBufferRef);
     ctx.vkd.cmdPushConstants(*cmdBufferRef, *pipelineLayout, pcStages, 0u, pcSize, &noOffset);
     ctx.vkd.cmdDraw(*cmdBufferRef, vertexCount, 1u, 0u, 0u);
-    endRenderPass(ctx.vkd, *cmdBufferRef);
+    renderPass0.end(ctx.vkd, *cmdBufferRef);
     copyImageToBuffer(ctx.vkd, *cmdBufferRef, referenceBuffer.getImage(), referenceBuffer.getBuffer(),
                       fbExtent.swizzle(0, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u, VK_IMAGE_ASPECT_COLOR_BIT,
@@ -988,17 +1050,39 @@ tcu::TestStatus TessStateSwitchInstance::iterate(void)
 
     // Result image.
     beginCommandBuffer(ctx.vkd, *cmdBufferRes);
-    beginRenderPass(ctx.vkd, *cmdBufferRes, *renderPass, *framebuffer1, scissors.at(0u), clearColor);
+    renderPass1.begin(ctx.vkd, *cmdBufferRes, scissors.at(0u), clearColor);
     ctx.vkd.cmdBindVertexBuffers(*cmdBufferRes, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
     // Draw offscreen first to force tessellation state emission.
-    ctx.vkd.cmdBindPipeline(*cmdBufferRes, bindPoint, *pipeline0);
+    pipeline0.bind(*cmdBufferRes);
     ctx.vkd.cmdPushConstants(*cmdBufferRes, *pipelineLayout, pcStages, 0u, pcSize, &offscreenOffset);
     ctx.vkd.cmdDraw(*cmdBufferRes, vertexCount, 1u, 0u, 0u);
-    // Draw on screen second changing some tessellation state.
-    ctx.vkd.cmdBindPipeline(*cmdBufferRes, bindPoint, *pipeline1);
+    // Draw onscreen second, changing some tessellation state.
+    if (useESO && (m_params.domainOrigin.first == m_params.domainOrigin.second))
+    {
+#ifndef CTS_USES_VULKANSC
+        // When using shader objects and the domain origin does not change, we can simply bind the tessellation
+        // shaders without rebinding all state. This makes for a more interesting case.
+        const std::vector<VkShaderStageFlagBits> stages{
+            VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+            VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+        };
+        std::vector<VkShaderEXT> shaders;
+        shaders.reserve(stages.size());
+        for (const auto &stage : stages)
+            shaders.push_back(pipeline1.getShader(stage));
+
+        DE_ASSERT(shaders.size() == stages.size());
+        ctx.vkd.cmdBindShadersEXT(*cmdBufferRes, de::sizeU32(stages), de::dataOrNull(stages), de::dataOrNull(shaders));
+#endif
+    }
+    else
+    {
+        // Domain origin is not part of the shader state, so we need a full state rebind to change it.
+        pipeline1.bind(*cmdBufferRes);
+    }
     ctx.vkd.cmdPushConstants(*cmdBufferRes, *pipelineLayout, pcStages, 0u, pcSize, &noOffset);
     ctx.vkd.cmdDraw(*cmdBufferRes, vertexCount, 1u, 0u, 0u);
-    endRenderPass(ctx.vkd, *cmdBufferRes);
+    renderPass1.end(ctx.vkd, *cmdBufferRes);
     copyImageToBuffer(ctx.vkd, *cmdBufferRes, resultBuffer.getImage(), resultBuffer.getBuffer(), fbExtent.swizzle(0, 1),
                       VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
                       VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
@@ -1018,10 +1102,9 @@ tcu::TestStatus TessStateSwitchInstance::iterate(void)
     const tcu::Vec4 thresholdVec(threshold, threshold, threshold, 0.0f);
 
     if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, thresholdVec,
-                                    tcu::COMPARE_LOG_ON_ERROR))
-        return tcu::TestStatus::fail("Color result does not match reference image -- check log for details");
+                                    tcu::COMPARE_LOG_EVERYTHING))
+        TCU_FAIL("Color result does not match reference image -- check log for details");
 
-    // Render pass and framebuffers.const DeviceCoreFeature requiredDeviceCoreFeature
     return tcu::TestStatus::pass("Pass");
 }
 
@@ -1876,75 +1959,123 @@ tcu::TestCaseGroup *createMiscDrawTests(tcu::TestContext &testCtx)
         }
 
     // Test switching tessellation parameters on the fly.
-    for (const auto &geometryShader : {false, true})
+    struct
     {
-        const auto nameSuffix = (geometryShader ? "_with_geom_shader" : "");
+        PipelineConstructionType constructionType;
+        const char *suffix;
+    } constructionCases[] = {
+        {PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, ""},
+        {PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, "_fast_lib"},
+        {PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV, "_shader_objects"},
+    };
 
-        static const VkTessellationDomainOrigin domainOrigins[] = {
-            VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT,
-            VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT,
-        };
+    for (const auto &constructionCase : constructionCases)
+        for (const auto &geometryShader : {false, true})
+        {
+            std::string nameSuffix;
 
-        for (const auto &firstPrimitiveType : primitivesNoIsolines)
-            for (const auto &secondPrimitiveType : primitivesNoIsolines)
+            if (geometryShader)
+                nameSuffix += "_with_geom_shader";
+            nameSuffix += constructionCase.suffix;
+
+            static const VkTessellationDomainOrigin domainOrigins[] = {
+                VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT,
+                VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT,
+            };
+
+            for (const auto &firstPrimitiveType : primitivesNoIsolines)
+                for (const auto &secondPrimitiveType : primitivesNoIsolines)
+                {
+                    if (firstPrimitiveType == secondPrimitiveType)
+                        continue;
+
+                    const TessStateSwitchParams params{
+                        constructionCase.constructionType,
+                        std::make_pair(firstPrimitiveType, secondPrimitiveType),
+                        std::make_pair(SPACINGMODE_EQUAL, SPACINGMODE_EQUAL),
+                        std::make_pair(VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT,
+                                       VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT),
+                        std::make_pair(4u, 4u),
+                        geometryShader,
+                    };
+
+                    const auto testName = std::string("switch_primitive_") +
+                                          getTessPrimitiveTypeShaderName(params.patchTypes.first) + "_to_" +
+                                          getTessPrimitiveTypeShaderName(params.patchTypes.second) + nameSuffix;
+                    group->addChild(new TessStateSwitchCase(testCtx, testName, params));
+                }
+
+            for (const auto &firstDomainOrigin : domainOrigins)
+                for (const auto &secondDomainOrigin : domainOrigins)
+                {
+                    if (firstDomainOrigin == secondDomainOrigin)
+                        continue;
+
+                    const TessStateSwitchParams params{
+                        constructionCase.constructionType,
+                        std::make_pair(TESSPRIMITIVETYPE_QUADS, TESSPRIMITIVETYPE_QUADS),
+                        std::make_pair(SPACINGMODE_EQUAL, SPACINGMODE_EQUAL),
+                        std::make_pair(firstDomainOrigin, secondDomainOrigin),
+                        std::make_pair(4u, 4u),
+                        geometryShader,
+                    };
+
+                    const auto testName = std::string("switch_domain_origin_") +
+                                          getDomainOriginName(params.domainOrigin.first) + "_to_" +
+                                          getDomainOriginName(params.domainOrigin.second) + nameSuffix;
+                    group->addChild(new TessStateSwitchCase(testCtx, testName, params));
+                }
+
+            for (int firstSpacingModeNdx = 0; firstSpacingModeNdx < SPACINGMODE_LAST; ++firstSpacingModeNdx)
+                for (int secondSpacingModeNdx = 0; secondSpacingModeNdx < SPACINGMODE_LAST; ++secondSpacingModeNdx)
+                {
+                    if (firstSpacingModeNdx == secondSpacingModeNdx)
+                        continue;
+
+                    const SpacingMode firstSpacingMode  = static_cast<SpacingMode>(firstSpacingModeNdx);
+                    const SpacingMode secondSpacingMode = static_cast<SpacingMode>(secondSpacingModeNdx);
+
+                    const TessStateSwitchParams params{
+                        constructionCase.constructionType,
+                        std::make_pair(TESSPRIMITIVETYPE_QUADS, TESSPRIMITIVETYPE_QUADS),
+                        std::make_pair(firstSpacingMode, secondSpacingMode),
+                        std::make_pair(VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT,
+                                       VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT),
+                        std::make_pair(4u, 4u),
+                        geometryShader,
+                    };
+
+                    const auto testName = std::string("switch_spacing_mode_") +
+                                          getSpacingModeShaderName(params.spacing.first) + "_to_" +
+                                          getSpacingModeShaderName(params.spacing.second) + nameSuffix;
+                    group->addChild(new TessStateSwitchCase(testCtx, testName, params));
+                }
+
+            // Switch vertex counts.
             {
-                if (firstPrimitiveType == secondPrimitiveType)
-                    continue;
+                const std::vector<uint32_t> vertexCounts{3u, 4u};
+                for (const auto firstCount : vertexCounts)
+                    for (const auto secondCount : vertexCounts)
+                    {
+                        if (firstCount == secondCount)
+                            continue;
 
-                const TessStateSwitchParams params{
-                    std::make_pair(firstPrimitiveType, secondPrimitiveType),
-                    std::make_pair(SPACINGMODE_EQUAL, SPACINGMODE_EQUAL),
-                    std::make_pair(VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT, VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT),
-                    geometryShader,
-                };
+                        const TessStateSwitchParams params{
+                            constructionCase.constructionType,
+                            std::make_pair(TESSPRIMITIVETYPE_QUADS, TESSPRIMITIVETYPE_QUADS),
+                            std::make_pair(SPACINGMODE_EQUAL, SPACINGMODE_EQUAL),
+                            std::make_pair(VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT,
+                                           VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT),
+                            std::make_pair(firstCount, secondCount),
+                            geometryShader,
+                        };
 
-                const auto testName = std::string("switch_primitive_") +
-                                      getTessPrimitiveTypeShaderName(params.patchTypes.first) + "_to_" +
-                                      getTessPrimitiveTypeShaderName(params.patchTypes.second) + nameSuffix;
-                group->addChild(new TessStateSwitchCase(testCtx, testName, params));
+                        const auto testName = "switch_out_vertices_" + std::to_string(firstCount) + "_to_" +
+                                              std::to_string(secondCount) + nameSuffix;
+                        group->addChild(new TessStateSwitchCase(testCtx, testName, params));
+                    }
             }
-
-        for (const auto &firstDomainOrigin : domainOrigins)
-            for (const auto &secondDomainOrigin : domainOrigins)
-            {
-                if (firstDomainOrigin == secondDomainOrigin)
-                    continue;
-
-                const TessStateSwitchParams params{
-                    std::make_pair(TESSPRIMITIVETYPE_QUADS, TESSPRIMITIVETYPE_QUADS),
-                    std::make_pair(SPACINGMODE_EQUAL, SPACINGMODE_EQUAL),
-                    std::make_pair(firstDomainOrigin, secondDomainOrigin),
-                    geometryShader,
-                };
-
-                const auto testName = std::string("switch_domain_origin_") +
-                                      getDomainOriginName(params.domainOrigin.first) + "_to_" +
-                                      getDomainOriginName(params.domainOrigin.second) + nameSuffix;
-                group->addChild(new TessStateSwitchCase(testCtx, testName, params));
-            }
-
-        for (int firstSpacingModeNdx = 0; firstSpacingModeNdx < SPACINGMODE_LAST; ++firstSpacingModeNdx)
-            for (int secondSpacingModeNdx = 0; secondSpacingModeNdx < SPACINGMODE_LAST; ++secondSpacingModeNdx)
-            {
-                if (firstSpacingModeNdx == secondSpacingModeNdx)
-                    continue;
-
-                const SpacingMode firstSpacingMode  = static_cast<SpacingMode>(firstSpacingModeNdx);
-                const SpacingMode secondSpacingMode = static_cast<SpacingMode>(secondSpacingModeNdx);
-
-                const TessStateSwitchParams params{
-                    std::make_pair(TESSPRIMITIVETYPE_QUADS, TESSPRIMITIVETYPE_QUADS),
-                    std::make_pair(firstSpacingMode, secondSpacingMode),
-                    std::make_pair(VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT, VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT),
-                    geometryShader,
-                };
-
-                const auto testName = std::string("switch_spacing_mode_") +
-                                      getSpacingModeShaderName(params.spacing.first) + "_to_" +
-                                      getSpacingModeShaderName(params.spacing.second) + nameSuffix;
-                group->addChild(new TessStateSwitchCase(testCtx, testName, params));
-            }
-    }
+        }
 
     return group.release();
 }
