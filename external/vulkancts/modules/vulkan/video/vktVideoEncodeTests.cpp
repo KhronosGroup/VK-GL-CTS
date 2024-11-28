@@ -2876,9 +2876,8 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
             else if (useDeltaMap || useEmphasisMap)
             {
                 VkBaseInStructure *pStruct = (VkBaseInStructure *)videoEncodePictureInfoPtr;
-                quantizationMapInfo =
-                    getQuantizationMapInfo(quantizationMapImageViews[GOPIdx % quantizationMapCount]->get(),
-                                           quantizationMapExtent, videoEncodePictureInfoPtr);
+                quantizationMapInfo        = getQuantizationMapInfo(
+                    quantizationMapImageViews[GOPIdx % quantizationMapCount]->get(), quantizationMapExtent);
                 while (pStruct->pNext)
                     pStruct = (VkBaseInStructure *)pStruct->pNext;
                 pStruct->pNext = (VkBaseInStructure *)quantizationMapInfo.get();
