@@ -136,6 +136,7 @@ VkVideoEncodeH265ProfileInfoKHR getProfileOperationH265Encode(
     StdVideoH265ProfileIdc stdProfileIdc = STD_VIDEO_H265_PROFILE_IDC_MAIN);
 VkVideoDecodeAV1ProfileInfoKHR getProfileOperationAV1Decode(StdVideoAV1Profile stdProfile = STD_VIDEO_AV1_PROFILE_MAIN,
                                                             bool filmgrainSupport         = true);
+VkVideoEncodeAV1ProfileInfoKHR getProfileOperationAV1Encode(StdVideoAV1Profile stdProfile = STD_VIDEO_AV1_PROFILE_MAIN);
 const VkExtensionProperties *getVideoExtensionProperties(const VkVideoCodecOperationFlagBitsKHR codecOperation);
 
 de::MovePtr<vector<VkFormat>> getSupportedFormats(const InstanceInterface &vk, const VkPhysicalDevice physicalDevice,
@@ -152,11 +153,12 @@ void validateVideoProfileList(const InstanceInterface &vk, VkPhysicalDevice phys
                               const VkImageUsageFlags usage);
 
 de::MovePtr<VkVideoDecodeCapabilitiesKHR> getVideoDecodeCapabilities(void *pNext);
-
 de::MovePtr<VkVideoDecodeH264CapabilitiesKHR> getVideoCapabilitiesExtensionH264D(void);
-de::MovePtr<VkVideoEncodeH264CapabilitiesKHR> getVideoCapabilitiesExtensionH264E(void);
+de::MovePtr<VkVideoEncodeH264CapabilitiesKHR> getVideoCapabilitiesExtensionH264E(void *pNext);
+de::MovePtr<VkVideoEncodeH264QuantizationMapCapabilitiesKHR> getVideoEncodeH264QuantizationMapCapabilities(void);
 de::MovePtr<VkVideoDecodeH265CapabilitiesKHR> getVideoCapabilitiesExtensionH265D(void);
-de::MovePtr<VkVideoEncodeH265CapabilitiesKHR> getVideoCapabilitiesExtensionH265E(void);
+de::MovePtr<VkVideoEncodeH265CapabilitiesKHR> getVideoCapabilitiesExtensionH265E(void *pNext);
+de::MovePtr<VkVideoEncodeH265QuantizationMapCapabilitiesKHR> getVideoEncodeH265QuantizationMapCapabilities(void);
 de::MovePtr<VkVideoEncodeCapabilitiesKHR> getVideoEncodeCapabilities(void *pNext);
 de::MovePtr<VkVideoCapabilitiesKHR> getVideoCapabilities(const InstanceInterface &vk, VkPhysicalDevice physicalDevice,
                                                          const VkVideoProfileInfoKHR *videoProfile, void *pNext);
@@ -199,7 +201,8 @@ bool validateFormatSupport(const InstanceInterface &vk, VkPhysicalDevice physica
 VkImageCreateInfo makeImageCreateInfo(VkFormat format, const VkExtent2D &extent, const VkImageCreateFlags flags,
                                       const uint32_t *queueFamilyIndex, const VkImageUsageFlags usage, void *pNext,
                                       const uint32_t arrayLayers        = 1,
-                                      const VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED);
+                                      const VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                                      const VkImageTiling tiling        = VK_IMAGE_TILING_OPTIMAL);
 
 de::MovePtr<StdVideoH264SequenceParameterSet> getStdVideoH264DecodeSequenceParameterSet(
     uint32_t width, uint32_t height, StdVideoH264SequenceParameterSetVui *stdVideoH264SequenceParameterSetVui);
@@ -247,7 +250,7 @@ de::MovePtr<VkVideoEncodeH265SessionParametersCreateInfoKHR> getVideoEncodeH265S
     const VkVideoEncodeH265SessionParametersAddInfoKHR *pParametersAddInfo);
 
 de::MovePtr<VkVideoSessionParametersCreateInfoKHR> getVideoSessionParametersCreateInfoKHR(
-    const void *pNext, VkVideoSessionKHR videoSession);
+    const void *pNext, const VkVideoSessionParametersCreateFlagsKHR flags, VkVideoSessionKHR videoSession);
 
 de::MovePtr<StdVideoEncodeH264ReferenceInfo> getStdVideoEncodeH264ReferenceInfo(
     StdVideoH264PictureType primary_pic_type, uint32_t FrameNum, int32_t PicOrderCnt);
@@ -298,18 +301,22 @@ de::MovePtr<VkVideoBeginCodingInfoKHR> getVideoBeginCodingInfo(
 de::MovePtr<VkVideoInlineQueryInfoKHR> getVideoInlineQueryInfo(VkQueryPool queryPool, uint32_t firstQuery,
                                                                uint32_t queryCount, const void *pNext = nullptr);
 
+de::MovePtr<VkVideoEncodeQuantizationMapSessionParametersCreateInfoKHR> getVideoEncodeH264QuantizationMapParameters(
+    VkExtent2D quantizationMapTexelSize);
+de::MovePtr<VkVideoEncodeQuantizationMapInfoKHR> getQuantizationMapInfo(VkImageView quantizationMap,
+                                                                        VkExtent2D quantizationMapExtent,
+                                                                        const void *pNext = DE_NULL);
 de::MovePtr<StdVideoDecodeH264PictureInfo> getStdVideoDecodeH264PictureInfo(void);
 
 de::SharedPtr<VkVideoDecodeH264PictureInfoKHR> getVideoDecodeH264PictureInfo(
     StdVideoDecodeH264PictureInfo *stdPictureInfo, uint32_t *sliceOffset);
 
 de::MovePtr<VkVideoEncodeH264RateControlLayerInfoKHR> getVideoEncodeH264RateControlLayerInfo(
-    VkBool32 useMinQp, int32_t minQpI = 0, int32_t minQpP = 0, int32_t minQpB = 0, VkBool32 useMaxQp = 0,
-    int32_t maxQpI = 0, int32_t maxQpP = 0, int32_t maxQpB = 0);
-de::MovePtr<VkVideoEncodeH265RateControlLayerInfoKHR> getVideoEncodeH265RateControlLayerInfo(VkBool32 useQp,
-                                                                                             int32_t qpI = 0,
-                                                                                             int32_t qpP = 0,
-                                                                                             int32_t qpB = 0);
+    VkBool32 useMinQp, int32_t minQpI, int32_t minQpP, int32_t minQpB, VkBool32 useMaxQp, int32_t maxQpI,
+    int32_t maxQpP, int32_t maxQpB);
+de::MovePtr<VkVideoEncodeH265RateControlLayerInfoKHR> getVideoEncodeH265RateControlLayerInfo(
+    VkBool32 useMinQp, int32_t minQpI, int32_t minQpP, int32_t minQpB, VkBool32 useMaxQp, int32_t maxQpI,
+    int32_t maxQpP, int32_t maxQpB);
 
 de::MovePtr<VkVideoEncodeRateControlLayerInfoKHR> getVideoEncodeRateControlLayerInfo(
     const void *pNext, VkVideoEncodeRateControlModeFlagBitsKHR rateControlMode, const uint32_t frameRateNumerator);
@@ -335,8 +342,8 @@ de::MovePtr<VkVideoEncodeQualityLevelInfoKHR> getVideoEncodeQualityLevelInfo(
 de::MovePtr<VkVideoCodingControlInfoKHR> getVideoCodingControlInfo(VkVideoCodingControlFlagsKHR flags,
                                                                    const void *pNext = nullptr);
 
-de::MovePtr<VkVideoEncodeInfoKHR> getVideoEncodeInfo(const void *pNext, const VkBuffer &dstBuffer,
-                                                     const VkDeviceSize &dstBufferOffset,
+de::MovePtr<VkVideoEncodeInfoKHR> getVideoEncodeInfo(const void *pNext, const VkVideoEncodeFlagsKHR encodeFlags,
+                                                     const VkBuffer &dstBuffer, const VkDeviceSize &dstBufferOffset,
                                                      const VkVideoPictureResourceInfoKHR &srcPictureResource,
                                                      const VkVideoReferenceSlotInfoKHR *pSetupReferenceSlot,
                                                      const uint32_t &referenceSlotCount,
@@ -1179,6 +1186,11 @@ VkResult getVideoDecodeCapabilities(DeviceContext &devCtx, const VkVideoCoreProf
                                     VkVideoCapabilitiesKHR &videoCapabilities,
                                     VkVideoDecodeCapabilitiesKHR &videoDecodeCapabilities);
 double PSNR(const std::vector<uint8_t> &img1, const std::vector<uint8_t> &img2);
+double calculatePSNRdifference(const std::vector<uint8_t> &inVector, const std::vector<uint8_t> &out,
+                               const VkExtent2D &codedExtent, const VkExtent2D &quantizationMapExtent,
+                               const VkExtent2D &quantizationMapTexelSize);
+std::vector<uint8_t> cropImage(const std::vector<uint8_t> &imageData, int imageWidth, int imageHeight, int roiX,
+                               int roiY, int roiWidth, int roiHeight);
 
 } // namespace util
 
