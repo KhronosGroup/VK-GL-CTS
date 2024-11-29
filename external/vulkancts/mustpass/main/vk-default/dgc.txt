@@ -2057,6 +2057,14 @@ dEQP-VK.dgc.ext.graphics.misc.vbo_update_0010
 dEQP-VK.dgc.ext.graphics.misc.vbo_update_0100
 dEQP-VK.dgc.ext.graphics.misc.vbo_update_1000
 dEQP-VK.dgc.ext.graphics.misc.vbo_update_1111
+dEQP-VK.dgc.ext.graphics.tess_state.dynamic_states.fast_lib.pcp
+dEQP-VK.dgc.ext.graphics.tess_state.dynamic_states.fast_lib.pcp_ies
+dEQP-VK.dgc.ext.graphics.tess_state.dynamic_states.fast_lib.pcp_ies_preprocess
+dEQP-VK.dgc.ext.graphics.tess_state.dynamic_states.fast_lib.pcp_preprocess
+dEQP-VK.dgc.ext.graphics.tess_state.dynamic_states.monolithic.pcp
+dEQP-VK.dgc.ext.graphics.tess_state.dynamic_states.monolithic.pcp_ies
+dEQP-VK.dgc.ext.graphics.tess_state.dynamic_states.monolithic.pcp_ies_preprocess
+dEQP-VK.dgc.ext.graphics.tess_state.dynamic_states.monolithic.pcp_preprocess
 dEQP-VK.dgc.ext.graphics.tess_state.fast_lib.isolines_isolines.equal_spacing_equal_spacing.3_4
 dEQP-VK.dgc.ext.graphics.tess_state.fast_lib.isolines_isolines.equal_spacing_equal_spacing.3_4_preprocess
 dEQP-VK.dgc.ext.graphics.tess_state.fast_lib.isolines_isolines.equal_spacing_equal_spacing.4_3

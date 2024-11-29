@@ -251,9 +251,14 @@ void TessStateCase::initPrograms(vk::SourceCollections &programCollection) const
     const std::string positions =
         std::string() +
         // The delta will make sure if we draw geometry as points, we will reach the sampling point.
-        "const vec2 positions[4] = vec2[](\n" + "    vec2(-1.0 + " + deltaX + ", -1.0 + " + deltaY + "),\n" +
-        "    vec2(-1.0 + " + deltaX + ",  1.0 - " + deltaY + "),\n" + "    vec2( 1.0 - " + deltaX + ", -1.0 + " +
-        deltaY + "),\n" + "    vec2( 1.0 - " + deltaX + ",  1.0 - " + deltaY + ")\n" + ");\n";
+        // clang-format off
+        "const vec2 positions[4] = vec2[](\n"
+            + "    vec2(-1.0 + " + deltaX + ", -1.0 + " + deltaY + "),\n"
+            + "    vec2(-1.0 + " + deltaX + ",  1.0 - " + deltaY + "),\n"
+            + "    vec2( 1.0 - " + deltaX + ", -1.0 + " + deltaY + "),\n"
+            + "    vec2( 1.0 - " + deltaX + ",  1.0 - " + deltaY + ")\n"
+            + ");\n";
+    // clang-format on
 
     std::ostringstream vert;
     vert << "#version 460\n"
@@ -656,6 +661,499 @@ tcu::TestStatus TessStateInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+class DynamicPCPInstance : public vkt::TestInstance
+{
+public:
+    struct Params
+    {
+        PipelineConstructionType constructionType;
+        bool useIES;
+        bool usePreprocess;
+
+        VkShaderStageFlags getShaderStages() const
+        {
+            return (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT |
+                    VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+        }
+
+        tcu::IVec3 getExtent() const
+        {
+            return tcu::IVec3(64, 64, 1);
+        }
+
+    protected:
+        uint32_t getDrawOffsetCount() const
+        {
+            return 4u;
+        }
+
+        uint32_t getTessVariationCount() const
+        {
+            return (useIES ? getDrawOffsetCount() : 1u);
+        }
+
+    public:
+        std::vector<tcu::Vec4> getTessColors() const
+        {
+            static const std::vector<tcu::Vec4> colorCatalogue{
+                tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f),
+                tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f),
+                tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+                tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f),
+            };
+
+            std::vector<tcu::Vec4> colors;
+            const auto tessCount = getTessVariationCount();
+            const auto drawCount = getDrawOffsetCount();
+
+            DE_ASSERT(tessCount == 1u || tessCount == drawCount);
+            DE_ASSERT(de::sizeU32(colorCatalogue) == drawCount);
+            DE_UNREF(drawCount); // For release builds.
+
+            colors.reserve(tessCount);
+            if (useIES)
+                colors = colorCatalogue;
+            else
+                colors.push_back(colorCatalogue.front());
+            return colors;
+        }
+
+        std::vector<tcu::Vec4> getDrawOffsets() const
+        {
+            const std::vector<tcu::Vec4> offsets{
+                tcu::Vec4(-1.0f, -1.0f, 0.0f, 0.0f),
+                tcu::Vec4(0.0f, -1.0f, 0.0f, 0.0f),
+                tcu::Vec4(-1.0f, 0.0f, 0.0f, 0.0f),
+                tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
+            };
+            DE_ASSERT(de::sizeU32(offsets) == getDrawOffsetCount());
+            return offsets;
+        }
+
+        uint32_t getActualPCP() const
+        {
+            return 4u; // We will use quads for the patch.
+        }
+
+        uint32_t getStaticPCP() const
+        {
+            return 3u; // But the static value will hint triangles instead.
+        }
+    };
+
+    DynamicPCPInstance(Context &context, const Params &params) : vkt::TestInstance(context), m_params(params)
+    {
+    }
+    virtual ~DynamicPCPInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const Params m_params;
+};
+
+class DynamicPCPCase : public vkt::TestCase
+{
+public:
+    DynamicPCPCase(tcu::TestContext &testCtx, const std::string &name, const DynamicPCPInstance::Params &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~DynamicPCPCase(void) = default;
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DynamicPCPInstance(context, m_params);
+    }
+
+protected:
+    const DynamicPCPInstance::Params m_params;
+};
+
+void DynamicPCPCase::checkSupport(Context &context) const
+{
+#ifdef USE_DGC_PATH
+    const auto stages     = m_params.getShaderStages();
+    const auto bindStages = (m_params.useIES ? stages : 0u);
+    DE_ASSERT(!isConstructionTypeShaderObject(m_params.constructionType));
+
+    checkDGCExtSupport(context, stages, bindStages);
+#endif // USE_DGC_PATH
+
+    const auto &eds2Features = context.getExtendedDynamicState2FeaturesEXT();
+    if (!eds2Features.extendedDynamicState2PatchControlPoints)
+        TCU_THROW(NotSupportedError, "extendedDynamicState2PatchControlPoints not supported");
+}
+
+void DynamicPCPCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "layout (push_constant) uniform PCBlock { vec4 offset; } pc;\n"
+         << "void main (void) {\n"
+         << "    gl_Position = inPos + pc.offset;\n"
+         << "    gl_PointSize = 1.0;\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) in vec4 inColor;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main (void) {\n"
+         << "    outColor = inColor;\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+
+    const auto tessColors = m_params.getTessColors();
+    const auto colorCount = de::sizeU32(tessColors);
+    const auto pcp        = m_params.getActualPCP();
+
+    for (uint32_t i = 0u; i < colorCount; ++i)
+    {
+        std::ostringstream tesc;
+        tesc << "#version 460\n"
+             << "layout (vertices=" << pcp << ") out;\n" // Vertices pass through without changes.
+             << "void main (void) {\n"
+             << "    const bool goodPVI = (gl_PatchVerticesIn == " << pcp << ");\n"
+             << "    const float posOffset = (goodPVI ? 0.0 : 10.0);\n"
+             << "\n"
+             << "    gl_out[gl_InvocationID].gl_Position  = gl_in[gl_InvocationID].gl_Position + posOffset;\n"
+             << "    gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n"
+             << "\n"
+             << "    const float extraLevels = " << i << ".0;\n"
+             << "    if (gl_InvocationID == 0) {\n"
+             << "        gl_TessLevelOuter[0] = 3.0 + extraLevels;\n"
+             << "        gl_TessLevelOuter[1] = 5.0 + extraLevels;\n"
+             << "        gl_TessLevelOuter[2] = 7.0 + extraLevels;\n"
+             << "        gl_TessLevelOuter[3] = 9.0 + extraLevels;\n"
+             << "        gl_TessLevelInner[0] = 3.0 + extraLevels;\n"
+             << "        gl_TessLevelInner[1] = 5.0 + extraLevels;\n"
+             << "    }\n"
+             << "}\n";
+        {
+            const auto shaderName = "tesc" + std::to_string(i);
+            programCollection.glslSources.add(shaderName) << glu::TessellationControlSource(tesc.str());
+        }
+
+        std::ostringstream tese;
+        tese << "#version 460\n"
+             << "layout (quads, point_mode) in;\n"
+             << "layout (location=0) out vec4 vertColor;\n"
+             << "void main (void) {\n"
+             << "    const bool goodPVI = (gl_PatchVerticesIn == " << pcp << ");\n"
+             << "    const float posOffset = (goodPVI ? 0.0 : 10.0);\n"
+             << "\n"
+             << "    const float u = gl_TessCoord.x;\n"
+             << "    const float v = gl_TessCoord.y;\n"
+             << "    const vec4 p0 = gl_in[0].gl_Position;\n"
+             << "    const vec4 p1 = gl_in[1].gl_Position;\n"
+             << "    const vec4 p2 = gl_in[2].gl_Position;\n"
+             << "    const vec4 p3 = gl_in[3].gl_Position;\n"
+             << "    gl_Position = ((1 - u) * (1 - v) * p0 + (1 - u) * v * p1 + u * (1 - v) * p2 + u * v * p3) + "
+                "posOffset;\n"
+             << "    gl_PointSize = 1.0;\n"
+             << "    vertColor = vec4" << tessColors.at(i) << ";\n"
+             << "}\n";
+        {
+            const auto shaderName = "tese" + std::to_string(i);
+            programCollection.glslSources.add(shaderName) << glu::TessellationEvaluationSource(tese.str());
+        }
+    }
+}
+
+tcu::TestStatus DynamicPCPInstance::iterate(void)
+{
+    const auto &ctx      = m_context.getContextCommonData();
+    const auto fbExtent  = m_params.getExtent();
+    const auto vkExtent  = makeExtent3D(fbExtent);
+    const auto fbFormat  = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto tcuFormat = mapVkFormat(fbFormat);
+    const auto fbUsage   = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+
+    // Color buffers for the result and reference images, both with verification buffer.
+    ImageWithBuffer colorBufferRes(ctx.vkd, ctx.device, ctx.allocator, vkExtent, fbFormat, fbUsage, VK_IMAGE_TYPE_2D);
+
+    ImageWithBuffer colorBufferRef(ctx.vkd, ctx.device, ctx.allocator, vkExtent, fbFormat, fbUsage, VK_IMAGE_TYPE_2D);
+
+    // Vertices. These will be offset with the push constants for each section.
+    const std::vector<tcu::Vec4> vertices{
+        tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f),
+        tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f),
+        tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f),
+        tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+    };
+    const auto vertexCount = de::sizeU32(vertices);
+
+    // Vertex buffer
+    const auto vbSize = static_cast<VkDeviceSize>(de::dataSize(vertices));
+    const auto vbInfo = makeBufferCreateInfo(vbSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    BufferWithMemory vertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vbInfo, MemoryRequirement::HostVisible);
+    const auto vbAlloc  = vertexBuffer.getAllocation();
+    void *vbData        = vbAlloc.getHostPtr();
+    const auto vbOffset = static_cast<VkDeviceSize>(0);
+
+    deMemcpy(vbData, de::dataOrNull(vertices), de::dataSize(vertices));
+    flushAlloc(ctx.vkd, ctx.device, vbAlloc); // strictly speaking, not needed.
+
+    // Push constants.
+    const auto pcSize   = DE_SIZEOF32(tcu::Vec4);
+    const auto pcStages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_VERTEX_BIT);
+    const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
+
+    PipelineLayoutWrapper pipelineLayout(m_params.constructionType, ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+    RenderPassWrapper renderPassRes(m_params.constructionType, ctx.vkd, ctx.device, fbFormat);
+    RenderPassWrapper renderPassRef = renderPassRes.clone();
+    renderPassRes.createFramebuffer(ctx.vkd, ctx.device, colorBufferRes.getImage(), colorBufferRes.getImageView(),
+                                    vkExtent.width, vkExtent.height);
+    renderPassRef.createFramebuffer(ctx.vkd, ctx.device, colorBufferRef.getImage(), colorBufferRef.getImageView(),
+                                    vkExtent.width, vkExtent.height);
+
+    // Modules.
+    const auto &binaries = m_context.getBinaryCollection();
+    ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    using ShaderPtr = std::unique_ptr<ShaderWrapper>;
+    std::vector<ShaderPtr> tescShaders;
+    std::vector<ShaderPtr> teseShaders;
+
+    const auto tessColors = m_params.getTessColors();
+    tescShaders.reserve(tessColors.size());
+    teseShaders.reserve(tessColors.size());
+
+    for (uint32_t i = 0u; i < de::sizeU32(tessColors); ++i)
+    {
+        const auto suffix   = std::to_string(i);
+        const auto tescName = "tesc" + suffix;
+        const auto teseName = "tese" + suffix;
+
+        tescShaders.emplace_back(new ShaderWrapper(ctx.vkd, ctx.device, binaries.get(tescName)));
+        teseShaders.emplace_back(new ShaderWrapper(ctx.vkd, ctx.device, binaries.get(teseName)));
+    }
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(vkExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(vkExtent));
+
+    using PipelineWrapperPtr = std::unique_ptr<GraphicsPipelineWrapper>;
+
+    const auto goodPCP = m_params.getActualPCP();
+    const auto badPCP  = m_params.getStaticPCP();
+
+    const auto drawOffsets = m_params.getDrawOffsets();
+
+    const auto cmdPool      = makeCommandPool(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto resCmdBuffer = allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto refCmdBuffer = allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    // Result pipelines, using dynamic state.
+    const std::vector<VkDynamicState> dynamicStates{VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT};
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+#ifdef USE_DGC_PATH
+    const VkPipelineCreateFlags2KHR pipelineFlags2 =
+        (m_params.useIES ? VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT : 0);
+    const VkShaderCreateFlagsEXT shaderFlags = (m_params.useIES ? VK_SHADER_CREATE_INDIRECT_BINDABLE_BIT_EXT : 0);
+#else
+    const VkPipelineCreateFlags2KHR pipelineFlags2 = 0u;
+    const VkShaderCreateFlagsEXT shaderFlags       = 0u;
+#endif
+
+    std::vector<PipelineWrapperPtr> resPipelines;
+    resPipelines.reserve(tessColors.size());
+    for (uint32_t i = 0u; i < de::sizeU32(tessColors); ++i)
+    {
+        resPipelines.emplace_back(new GraphicsPipelineWrapper(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
+                                                              m_context.getDeviceExtensions(),
+                                                              m_params.constructionType));
+        auto &pipeline = *resPipelines.back();
+        pipeline.setDefaultColorBlendState()
+            .setDefaultDepthStencilState()
+            .setDefaultMultisampleState()
+            .setDefaultRasterizationState()
+            .setDefaultPatchControlPoints(badPCP)
+            .setPipelineCreateFlags2(pipelineFlags2)
+            .setShaderCreateFlags(shaderFlags)
+            .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
+            .setDynamicState(&dynamicStateCreateInfo)
+            .setupVertexInputState()
+            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPassRef.get(), 0u, vertShader,
+                                              nullptr, *tescShaders.at(i), *teseShaders.at(i))
+            .setupFragmentShaderState(pipelineLayout, renderPassRef.get(), 0u, fragShader)
+            .setupFragmentOutputState(renderPassRef.get())
+            .buildPipeline();
+    }
+
+#ifdef USE_DGC_PATH
+    // Commands layout.
+    const auto useESO = isConstructionTypeShaderObject(m_params.constructionType);
+    DE_ASSERT(!useESO); // Not handled below.
+    DE_UNREF(useESO);   // For release builds.
+
+    const auto shaderStages = m_params.getShaderStages();
+
+    const VkIndirectCommandsLayoutUsageFlagsEXT cmdsLayoutFlags =
+        (m_params.usePreprocess ? VK_INDIRECT_COMMANDS_LAYOUT_USAGE_EXPLICIT_PREPROCESS_BIT_EXT : 0);
+    IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(cmdsLayoutFlags, shaderStages, pipelineLayout.get());
+    if (m_params.useIES)
+        cmdsLayoutBuilder.addExecutionSetToken(0u, VK_INDIRECT_EXECUTION_SET_INFO_TYPE_PIPELINES_EXT, shaderStages);
+    cmdsLayoutBuilder.addPushConstantToken(cmdsLayoutBuilder.getStreamRange(), pcRange);
+    cmdsLayoutBuilder.addDrawToken(cmdsLayoutBuilder.getStreamRange());
+    const auto cmdsLayout = cmdsLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    ExecutionSetManagerPtr iesManager;
+    VkIndirectExecutionSetEXT iesHandle = VK_NULL_HANDLE;
+
+    if (m_params.useIES)
+    {
+        iesManager = makeExecutionSetManagerPipeline(ctx.vkd, ctx.device, resPipelines.front()->getPipeline(),
+                                                     de::sizeU32(resPipelines));
+        for (uint32_t i = 0u; i < de::sizeU32(resPipelines); ++i)
+            iesManager->addPipeline(i, resPipelines.at(i)->getPipeline());
+        iesManager->update();
+        iesHandle = iesManager->get();
+    }
+
+    // DGC buffer contents.
+    const auto sequenceCount = de::sizeU32(drawOffsets);
+    std::vector<uint32_t> dgcData;
+    dgcData.reserve((sequenceCount * cmdsLayoutBuilder.getStreamStride()) / DE_SIZEOF32(uint32_t));
+    for (uint32_t i = 0u; i < sequenceCount; ++i)
+    {
+        if (m_params.useIES)
+            dgcData.push_back(i);
+        pushBackElement(dgcData, drawOffsets.at(i));
+        dgcData.push_back(vertexCount);
+        dgcData.push_back(1u); // instanceCount
+        dgcData.push_back(0u); // firstVertex
+        dgcData.push_back(0u); // firstInstance
+    }
+
+    // DGC buffer and preprocess buffer.
+    DGCBuffer dgcBuffer(ctx.vkd, ctx.device, ctx.allocator, de::dataSize(dgcData));
+    {
+        auto &alloc = dgcBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(dgcData), de::dataSize(dgcData));
+    }
+
+    const auto preprocessPipeline =
+        ((iesHandle != VK_NULL_HANDLE) ? VK_NULL_HANDLE : resPipelines.front()->getPipeline());
+    PreprocessBufferExt preprocessBuffer(ctx.vkd, ctx.device, ctx.allocator, iesHandle, *cmdsLayout, sequenceCount, 0u,
+                                         preprocessPipeline);
+#endif
+    Move<VkCommandBuffer> preprocessCmdBuffer;
+    VkCommandBuffer cmdBuffer = *resCmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    renderPassRes.begin(ctx.vkd, cmdBuffer, scissors.at(0u), clearColor);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+    ctx.vkd.cmdSetPatchControlPointsEXT(cmdBuffer, goodPCP);
+#ifdef USE_DGC_PATH
+    resPipelines.front()->bind(cmdBuffer); // Bind initial state.
+    {
+        DGCGenCmdsInfo cmdsInfo(shaderStages, iesHandle, *cmdsLayout, dgcBuffer.getDeviceAddress(), dgcBuffer.getSize(),
+                                preprocessBuffer.getDeviceAddress(), preprocessBuffer.getSize(), sequenceCount, 0ull,
+                                0u, preprocessPipeline);
+
+        if (m_params.usePreprocess)
+        {
+            preprocessCmdBuffer = allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+            beginCommandBuffer(ctx.vkd, *preprocessCmdBuffer);
+            ctx.vkd.cmdPreprocessGeneratedCommandsEXT(*preprocessCmdBuffer, &cmdsInfo.get(), cmdBuffer);
+            preprocessToExecuteBarrierExt(ctx.vkd, *preprocessCmdBuffer);
+            endCommandBuffer(ctx.vkd, *preprocessCmdBuffer);
+        }
+        ctx.vkd.cmdExecuteGeneratedCommandsEXT(cmdBuffer, makeVkBool(m_params.usePreprocess), &cmdsInfo.get());
+    }
+#else
+    for (uint32_t i = 0u; i < de::sizeU32(drawOffsets); ++i)
+    {
+        const auto pipelineIdx = (i >= de::sizeU32(resPipelines) ? 0u : i);
+        resPipelines.at(pipelineIdx)->bind(cmdBuffer);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, &drawOffsets.at(i));
+        ctx.vkd.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+    }
+#endif
+    renderPassRes.end(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBufferRes.getImage(), colorBufferRes.getBuffer(), fbExtent.swizzle(0, 1),
+                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+                      VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitAndWaitWithPreprocess(ctx.vkd, ctx.device, ctx.queue, cmdBuffer, *preprocessCmdBuffer);
+
+    // Reference pipelines.
+    std::vector<PipelineWrapperPtr> refPipelines;
+    refPipelines.reserve(tessColors.size());
+    for (uint32_t i = 0u; i < de::sizeU32(tessColors); ++i)
+    {
+        refPipelines.emplace_back(new GraphicsPipelineWrapper(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
+                                                              m_context.getDeviceExtensions(),
+                                                              m_params.constructionType));
+        auto &pipeline = *refPipelines.back();
+        pipeline.setDefaultColorBlendState()
+            .setDefaultDepthStencilState()
+            .setDefaultMultisampleState()
+            .setDefaultRasterizationState()
+            .setDefaultPatchControlPoints(goodPCP)
+            .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
+            .setupVertexInputState()
+            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPassRef.get(), 0u, vertShader,
+                                              nullptr, *tescShaders.at(i), *teseShaders.at(i))
+            .setupFragmentShaderState(pipelineLayout, renderPassRef.get(), 0u, fragShader)
+            .setupFragmentOutputState(renderPassRef.get())
+            .buildPipeline();
+    }
+
+    // Generate reference image.
+    cmdBuffer = *refCmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    renderPassRef.begin(ctx.vkd, cmdBuffer, scissors.at(0u), clearColor);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+    for (uint32_t i = 0u; i < de::sizeU32(drawOffsets); ++i)
+    {
+        const auto pipelineIdx = (i >= de::sizeU32(refPipelines) ? 0u : i);
+        refPipelines.at(pipelineIdx)->bind(cmdBuffer);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, &drawOffsets.at(i));
+        ctx.vkd.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+    }
+    renderPassRef.end(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBufferRef.getImage(), colorBufferRef.getBuffer(), fbExtent.swizzle(0, 1),
+                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+                      VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Verify color output.
+    invalidateAlloc(ctx.vkd, ctx.device, colorBufferRef.getBufferAllocation());
+    tcu::PixelBufferAccess referenceAccess(tcuFormat, fbExtent, colorBufferRef.getBufferAllocation().getHostPtr());
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBufferRes.getBufferAllocation());
+    tcu::PixelBufferAccess resultAccess(tcuFormat, fbExtent, colorBufferRes.getBufferAllocation().getHostPtr());
+
+    auto &log = m_context.getTestContext().getLog();
+    if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold,
+                                    tcu::COMPARE_LOG_EVERYTHING))
+        return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createDGCGraphicsTessStateTestsExt(tcu::TestContext &testCtx)
@@ -723,6 +1221,36 @@ tcu::TestCaseGroup *createDGCGraphicsTessStateTestsExt(tcu::TestContext &testCtx
             }
         mainGroup->addChild(cTypeGroup.release());
     }
+
+    {
+        GroupPtr dynamicStatesGroup(new tcu::TestCaseGroup(testCtx, "dynamic_states"));
+
+        for (const auto &constructionTypeCase : constructionTypes)
+        {
+            if (isConstructionTypeShaderObject(constructionTypeCase.constructionType))
+                continue; // With shader objects, everything is already dynamic.
+
+            GroupPtr cTypeGroup(new tcu::TestCaseGroup(testCtx, constructionTypeCase.name));
+
+            for (const bool useIES : {false, true})
+                for (const bool preprocess : {false, true})
+                {
+                    const DynamicPCPInstance::Params params{
+                        constructionTypeCase.constructionType,
+                        useIES,
+                        preprocess,
+                    };
+                    const auto testName =
+                        std::string("pcp") + (useIES ? "_ies" : "") + (preprocess ? "_preprocess" : "");
+
+                    cTypeGroup->addChild(new DynamicPCPCase(testCtx, testName, params));
+                }
+
+            dynamicStatesGroup->addChild(cTypeGroup.release());
+        }
+        mainGroup->addChild(dynamicStatesGroup.release());
+    }
+
     return mainGroup.release();
 }
 
