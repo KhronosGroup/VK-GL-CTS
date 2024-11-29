@@ -33,8 +33,6 @@
 #include "tcuFunctionLibrary.hpp"
 #include "vkWsiPlatform.hpp"
 
-#include <sys/utsname.h>
-
 // Assume no call translation is needed
 #include <android/native_window.h>
 struct egl_native_pixmap_t;
@@ -200,7 +198,7 @@ eglu::NativeWindow *NativeWindowFactory::createWindow(const eglu::WindowParams &
     Window *window = m_windowRegistry.tryAcquireWindow();
 
     if (!window)
-        throw ResourceError("Native window is not available", nullptr, __FILE__, __LINE__);
+        throw NotSupportedError("Native window is not available", nullptr, __FILE__, __LINE__);
 
     return new NativeWindow(window, params.width, params.height, format);
 }
@@ -315,7 +313,7 @@ private:
     WindowRegistry &m_windowRegistry;
 };
 
-static size_t getTotalSystemMemory(NativeActivity *activity)
+static size_t getTotalSystemMemory(ANativeActivity *activity)
 {
     const size_t MiB = (size_t)(1 << 20);
     // Use relatively high fallback size to encourage CDD-compliant behavior
@@ -325,7 +323,7 @@ static size_t getTotalSystemMemory(NativeActivity *activity)
     {
         try
         {
-            const size_t totalMemory = getTotalAndroidSystemMemory(activity->getNativeActivity());
+            const size_t totalMemory = getTotalAndroidSystemMemory(activity);
             print("Device has %.2f MiB of system memory\n",
                   static_cast<double>(totalMemory) / static_cast<double>(MiB));
             return totalMemory;
@@ -343,15 +341,11 @@ static size_t getTotalSystemMemory(NativeActivity *activity)
 // Platform
 
 Platform::Platform(NativeActivity &activity)
-    : m_activity(&activity)
-    , m_totalSystemMemory(getTotalSystemMemory(&activity))
+    : m_activity(activity)
+    , m_totalSystemMemory(getTotalSystemMemory(activity.getNativeActivity()))
 {
     m_nativeDisplayFactoryRegistry.registerFactory(new NativeDisplayFactory(m_windowRegistry));
     m_contextFactoryRegistry.registerFactory(new eglu::GLContextFactory(m_nativeDisplayFactoryRegistry));
-}
-
-Platform::Platform() : m_activity(nullptr), m_totalSystemMemory(getTotalSystemMemory(nullptr))
-{
 }
 
 Platform::~Platform(void)
@@ -371,22 +365,7 @@ vk::Library *Platform::createLibrary(const char *libraryPath) const
 
 void Platform::describePlatform(std::ostream &dst) const
 {
-    if (m_activity)
-    {
-        tcu::Android::describePlatform(m_activity->getNativeActivity(), dst);
-    }
-    else
-    {
-        utsname sysInfo{};
-        if (uname(&sysInfo) != 0)
-        {
-            dst << "OS: Android (Unknown)\n";
-            return;
-        }
-
-        dst << "OS: Android " << sysInfo.release << " " << sysInfo.version << "\n";
-        dst << "CPU: " << sysInfo.machine << "\n";
-    }
+    tcu::Android::describePlatform(m_activity.getNativeActivity(), dst);
 }
 
 void Platform::getMemoryLimits(tcu::PlatformMemoryLimits &limits) const
@@ -443,5 +422,6 @@ bool Platform::hasDisplay(vk::wsi::Type wsiType) const
 
 tcu::Platform *createPlatform(void)
 {
-    return new tcu::Android::Platform();
+    tcu::Android::NativeActivity activity(NULL);
+    return new tcu::Android::Platform(activity);
 }
