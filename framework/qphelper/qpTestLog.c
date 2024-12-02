@@ -173,6 +173,7 @@ static const qpKeyStringMap s_qpTestResultMap[] = {
     {QP_TEST_RESULT_TIMEOUT, "Timeout"},
     {QP_TEST_RESULT_WAIVER, "Waiver"},
     {QP_TEST_RESULT_DEVICE_LOST, "DeviceLost"},
+    {QP_TEST_RESULT_ENFORCE_DEFAULT_CONTEXT, "EnforceDefaultContext"},
 
     /* Add new values here if needed, remember to update qpTestResult enumeration. */
 

@@ -36,6 +36,7 @@
 #include "vkResourceInterface.hpp"
 #include "vktTestCaseDefs.hpp"
 #include "vkPipelineConstructionUtil.hpp"
+#include "vktContextManager.hpp"
 #include <vector>
 #include <string>
 #ifdef CTS_USES_VULKANSC
@@ -77,7 +78,11 @@ class Context
 public:
     Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platformInterface,
             vk::BinaryCollection &progCollection, de::SharedPtr<vk::ResourceInterface> resourceInterface);
-    ~Context(void);
+    Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platformInterface,
+            vk::BinaryCollection &progCollection, de::SharedPtr<const ContextManager> ctxmgr,
+            vk::Move<vk::VkDevice> suggestedDevice, const std::string &deviceID,
+            de::SharedPtr<DevCaps::RuntimeData> pRuntimeData, const std::vector<std::string> *pDeviceExtensions);
+    virtual ~Context(void);
 
     tcu::TestContext &getTestContext(void) const
     {
@@ -91,6 +96,7 @@ public:
     {
         return m_progCollection;
     }
+    de::SharedPtr<const ContextManager> getContextManager() const;
 
     // Default instance & device, selected with --deqp-vk-device-id=N
     uint32_t getMaximumFrameworkVulkanVersion(void) const;
@@ -155,7 +161,7 @@ public:
     bool contextSupports(const uint32_t requiredApiVersionBits) const;
     bool requireDeviceFunctionality(const std::string &required) const;
     bool requireInstanceFunctionality(const std::string &required) const;
-    bool requireDeviceCoreFeature(const DeviceCoreFeature requiredDeviceCoreFeature);
+    bool requireDeviceCoreFeature(const DeviceCoreFeature requiredDeviceCoreFeature) const;
 
 #ifndef CTS_USES_VULKANSC
     vk::VkFormatProperties3 getFormatProperties(const vk::VkFormat &format) const;
@@ -191,12 +197,18 @@ public:
                                                             const VkFaultData *pFaults);
 #endif // CTS_USES_VULKANSC
 
+    bool isDefaultContext() const;
+    std::string getDeviceID() const;
+    DevCaps::QueueInfo getDeviceQueueInfo(uint32_t queueIndex);
+
 protected:
     tcu::TestContext &m_testCtx;
     const vk::PlatformInterface &m_platformInterface;
+    const de::SharedPtr<const ContextManager> m_contextManager;
     vk::BinaryCollection &m_progCollection;
 
     de::SharedPtr<vk::ResourceInterface> m_resourceInterface;
+    de::SharedPtr<DevCaps::RuntimeData> m_deviceRuntimeData;
     const de::UniquePtr<DefaultDevice> m_device;
     const de::UniquePtr<vk::Allocator> m_allocator;
 
@@ -213,13 +225,21 @@ class TestCase : public tcu::TestCase
 {
 public:
     TestCase(tcu::TestContext &testCtx, const std::string &name);
-    virtual ~TestCase(void)
-    {
-    }
+    virtual ~TestCase(void) = default;
+
+    // Override this function if the test requires a custom device. The framework
+    // invokes this function to determine whether one of the recently created
+    // devices can be reused or if a new custom device needs to be created with
+    // the capabilities defined in initDeviceCapabilities.
+    virtual std::string getRequiredCapabilitiesId() const;
+
+    // Override this function if test requires new custom device.
+    // Requirements for the new device should be recorded to DevCaps.
+    virtual void initDeviceCapabilities(DevCaps &caps);
 
     virtual void delayedInit(void); // non-const init called after checkSupport but before initPrograms
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
-    virtual TestInstance *createInstance(Context &context) const = 0;
+    virtual TestInstance *createInstance(Context &context) const;
     virtual void checkSupport(Context &context) const;
 
     IterateResult iterate(void)

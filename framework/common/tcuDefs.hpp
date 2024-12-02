@@ -156,6 +156,18 @@ public:
     }
 };
 
+//! EnforceDefaultContext
+class EnforceDefaultContext : public TestException
+{
+public:
+    EnforceDefaultContext(const char *message, const char *expr, const char *file, int line);
+    EnforceDefaultContext(const std::string &message, const char *expr, const char *file, int line);
+    EnforceDefaultContext(const std::string &message);
+    virtual ~EnforceDefaultContext(void) throw()
+    {
+    }
+};
+
 } // namespace tcu
 
 #define TCU_THROW_EXPR(ERRCLASS, MSG, EXPR) throw tcu::ERRCLASS(MSG, EXPR, __FILE__, __LINE__)

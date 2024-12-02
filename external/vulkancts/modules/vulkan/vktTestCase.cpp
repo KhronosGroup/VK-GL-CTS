@@ -229,6 +229,56 @@ vector<string> removeExtensions(const vector<string> &a, const vector<const char
     return res;
 }
 
+template <class X>
+struct SharedDeleter : public Deleter<X>
+{
+    template <class... Y>
+    SharedDeleter(Y &&...y) : Deleter<X>(std::forward<Y>(y)...)
+    {
+    }
+    void operator()(X *x) const
+    {
+        static_cast<Deleter<X> const &>(*this)(*x);
+    }
+};
+
+#ifndef CTS_USES_VULKANSC
+Move<VkInstance> createInstance(const PlatformInterface &vkp, uint32_t apiVersion,
+                                const vector<string> &enabledExtensions, const tcu::CommandLine &cmdLine,
+                                DebugReportRecorder *recorder);
+de::SharedPtr<VkInstance> createSharedInstance(VkInstance &instance, const PlatformInterface &vkp, uint32_t apiVersion,
+                                               const vector<string> &enabledExtensions, const tcu::CommandLine &cmdLine,
+                                               DebugReportRecorder *recorder)
+{
+    static_assert(std::is_reference_v<decltype(instance)>, "???");
+    instance = createInstance(vkp, apiVersion, enabledExtensions, cmdLine, recorder).disown();
+    return de::SharedPtr<VkInstance>(&instance,
+                                     SharedDeleter<VkInstance>(vkp, instance, (const VkAllocationCallbacks *)nullptr));
+}
+de::SharedPtr<VkDebugUtilsMessengerEXT> createSharedDebugReportCallback(VkDebugUtilsMessengerEXT &callback,
+                                                                        DebugReportRecorder *recorder,
+                                                                        const InstanceInterface &vki,
+                                                                        VkInstance instance)
+{
+    static_assert(std::is_reference_v<decltype(callback)>, "???");
+    DE_ASSERT(recorder);
+    callback = recorder->createCallback(vki, instance).disown();
+    return de::SharedPtr<VkDebugUtilsMessengerEXT>(
+        &callback, SharedDeleter<VkDebugUtilsMessengerEXT>(vki, instance, (const VkAllocationCallbacks *)nullptr));
+}
+#else
+Move<VkInstance> createInstance(const PlatformInterface &vkp, uint32_t apiVersion,
+                                const vector<string> &enabledExtensions, const tcu::CommandLine &cmdLine);
+de::SharedPtr<VkInstance> createSharedInstance(VkInstance &instance, const PlatformInterface &vkp, uint32_t apiVersion,
+                                               const vector<string> &enabledExtensions, const tcu::CommandLine &cmdLine)
+{
+    static_assert(std::is_reference_v<decltype(instance)>, "???");
+    instance = createInstance(vkp, apiVersion, enabledExtensions, cmdLine).disown();
+    return de::SharedPtr<VkInstance>(&instance,
+                                     SharedDeleter<VkInstance>(vkp, instance, (const VkAllocationCallbacks *)nullptr));
+}
+#endif // CTS_USES_VULKANSC
+
 #ifndef CTS_USES_VULKANSC
 Move<VkInstance> createInstance(const PlatformInterface &vkp, uint32_t apiVersion,
                                 const vector<string> &enabledExtensions, const tcu::CommandLine &cmdLine,
@@ -449,20 +499,51 @@ uint32_t findQueueFamilyIndexWithCaps(const InstanceInterface &vkInstance, VkPhy
     TCU_THROW(NotSupportedError, "No matching queue found");
 }
 
+vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(de::SharedPtr<ContextManager> mgr)
+{
+    const vk::InstanceInterface &vki          = mgr->getInstanceInterface();
+    const vk::VkPhysicalDevice physicalDevice = mgr->getPhysicalDevice();
+
+    vk::VkPhysicalDeviceProperties properties;
+    vki.getPhysicalDeviceProperties(physicalDevice, &properties);
+    return properties;
+}
+
+uint32_t getUsedApiVersion(de::SharedPtr<ContextManager> mgr)
+{
+    return mgr->getUsedApiVersion();
+}
+
+static bool isDeviceFunctionalitySupported(const ContextManager *mgr, const std::string &extension);
+static bool isInstanceFunctionalitySupported(const ContextManager *mgr, const std::string &extension);
+static bool requireDeviceCoreFeatureX(const DeviceCoreFeature requiredFeature,
+                                      const vk::VkPhysicalDeviceFeatures &featuresAvailable);
+
 class DefaultDevice
 {
 public:
     DefaultDevice(const PlatformInterface &vkPlatform, const tcu::CommandLine &cmdLine,
-                  de::SharedPtr<vk::ResourceInterface> resourceInterface);
-    ~DefaultDevice(void);
+                  de::SharedPtr<vk::ResourceInterface> resourceInterface, const std::string &deviceID);
+    DefaultDevice(const PlatformInterface &vkPlatform, const tcu::CommandLine &cmdLine,
+                  de::SharedPtr<const ContextManager> ctxmgr, Move<VkDevice> device, const std::string &deviceID,
+                  const std::vector<std::string> *pDeviceExtensions);
+    virtual ~DefaultDevice() = default;
 
     VkInstance getInstance(void) const
     {
         return *m_instance;
     }
+    de::SharedPtr<const ContextManager> getContextManager() const
+    {
+        return m_contextManager;
+    }
+    bool getEmbeddedContextManager() const
+    {
+        return m_embeddedContextManager;
+    }
     const InstanceInterface &getInstanceInterface(void) const
     {
-        return m_instanceInterface;
+        return *m_instanceInterface;
     }
     uint32_t getMaximumFrameworkVulkanVersion(void) const
     {
@@ -490,34 +571,30 @@ public:
         return m_deviceVersion;
     }
 
-    bool isDeviceFeatureInitialized(VkStructureType sType) const
-    {
-        return m_deviceFeatures.isDeviceFeatureInitialized(sType);
-    }
     const VkPhysicalDeviceFeatures &getDeviceFeatures(void) const
     {
-        return m_deviceFeatures.getCoreFeatures2().features;
+        return m_contextManager->getDeviceFeaturesAndProperties().getDeviceFeatures();
     }
     const VkPhysicalDeviceFeatures2 &getDeviceFeatures2(void) const
     {
-        return m_deviceFeatures.getCoreFeatures2();
+        return m_contextManager->getDeviceFeaturesAndProperties().getDeviceFeatures2();
     }
     const VkPhysicalDeviceVulkan11Features &getVulkan11Features(void) const
     {
-        return m_deviceFeatures.getVulkan11Features();
+        return m_contextManager->getDeviceFeaturesAndProperties().getVulkan11Features();
     }
     const VkPhysicalDeviceVulkan12Features &getVulkan12Features(void) const
     {
-        return m_deviceFeatures.getVulkan12Features();
+        return m_contextManager->getDeviceFeaturesAndProperties().getVulkan12Features();
     }
 #ifndef CTS_USES_VULKANSC
     const VkPhysicalDeviceVulkan13Features &getVulkan13Features(void) const
     {
-        return m_deviceFeatures.getVulkan13Features();
+        return m_contextManager->getDeviceFeaturesAndProperties().getVulkan13Features();
     }
     const VkPhysicalDeviceVulkan14Features &getVulkan14Features(void) const
     {
-        return m_deviceFeatures.getVulkan14Features();
+        return m_contextManager->getDeviceFeaturesAndProperties().getVulkan14Features();
     }
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
@@ -528,49 +605,19 @@ public:
 #endif // CTS_USES_VULKANSC
 
 #include "vkDeviceFeaturesForDefaultDeviceDefs.inl"
-
-    bool isDevicePropertyInitialized(VkStructureType sType) const
-    {
-        return m_deviceProperties.isDevicePropertyInitialized(sType);
-    }
-    const VkPhysicalDeviceProperties &getDeviceProperties(void) const
-    {
-        return m_deviceProperties.getCoreProperties2().properties;
-    }
-    const VkPhysicalDeviceProperties2 &getDeviceProperties2(void) const
-    {
-        return m_deviceProperties.getCoreProperties2();
-    }
-    const VkPhysicalDeviceVulkan11Properties &getDeviceVulkan11Properties(void) const
-    {
-        return m_deviceProperties.getVulkan11Properties();
-    }
-    const VkPhysicalDeviceVulkan12Properties &getDeviceVulkan12Properties(void) const
-    {
-        return m_deviceProperties.getVulkan12Properties();
-    }
-#ifndef CTS_USES_VULKANSC
-    const VkPhysicalDeviceVulkan13Properties &getDeviceVulkan13Properties(void) const
-    {
-        return m_deviceProperties.getVulkan13Properties();
-    }
-    const VkPhysicalDeviceVulkan14Properties &getDeviceVulkan14Properties(void) const
-    {
-        return m_deviceProperties.getVulkan14Properties();
-    }
-#endif // CTS_USES_VULKANSC
-#ifdef CTS_USES_VULKANSC
-    const VkPhysicalDeviceVulkanSC10Properties &getDeviceVulkanSC10Properties(void) const
-    {
-        return m_deviceProperties.getVulkanSC10Properties();
-    }
-#endif // CTS_USES_VULKANSC
-
 #include "vkDevicePropertiesForDefaultDeviceDefs.inl"
 
     VkDevice getDevice(void) const
     {
         return *m_device;
+    }
+    std::string getDeviceID() const
+    {
+        return m_deviceID;
+    }
+    bool isDefaultDevice() const
+    {
+        return m_deviceID == DevCaps::DefDevId;
     }
     const DeviceInterface &getDeviceInterface(void) const
     {
@@ -620,9 +667,11 @@ public:
 #endif // CTS_USES_VULKANSC
 
 private:
+    de::SharedPtr<const ContextManager> m_contextManager;
+
 #ifndef CTS_USES_VULKANSC
-    using DebugReportRecorderPtr = de::UniquePtr<vk::DebugReportRecorder>;
-    using DebugReportCallbackPtr = vk::Move<VkDebugUtilsMessengerEXT>;
+    using DebugReportRecorderPtr = de::SharedPtr<vk::DebugReportRecorder>;
+    using DebugReportCallbackPtr = de::SharedPtr<VkDebugUtilsMessengerEXT>;
 #endif // CTS_USES_VULKANSC
 
     const uint32_t m_maximumFrameworkVulkanVersion;
@@ -636,18 +685,21 @@ private:
     const DebugReportRecorderPtr m_debugReportRecorder;
 #endif // CTS_USES_VULKANSC
     const vector<string> m_instanceExtensions;
-    const Unique<VkInstance> m_instance;
+    VkInstance m_instanceHandle;
+    const de::SharedPtr<VkInstance> m_instance;
 #ifndef CTS_USES_VULKANSC
-    const InstanceDriver m_instanceInterface;
+    const de::SharedPtr<InstanceDriver> m_instanceInterface;
+    VkDebugUtilsMessengerEXT m_debugReportCallbackHandle;
     const DebugReportCallbackPtr m_debugReportCallback;
 #else
-    const InstanceDriverSC m_instanceInterface;
+    const de::SharedPtr<InstanceDriver> m_instanceInterface;
 #endif // CTS_USES_VULKANSC
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_deviceVersion;
 
     const vector<string> m_deviceExtensions;
-    const DeviceFeatures m_deviceFeatures;
+    const de::SharedPtr<DeviceFeatures> m_deviceFeaturesPtr;
+    const DeviceFeatures &m_deviceFeatures;
 
     const uint32_t m_universalQueueFamilyIndex;
     const uint32_t m_sparseQueueFamilyIndex;
@@ -656,11 +708,15 @@ private:
     const int m_computeQueueFamilyIndex;
     const int m_transferQueueFamilyIndex;
 
-    const DeviceProperties m_deviceProperties;
+    const de::SharedPtr<DeviceProperties> m_devicePropertiesPtr;
+    const DeviceProperties &m_deviceProperties;
     const vector<const char *> m_creationExtensions;
 
     const Unique<VkDevice> m_device;
     const de::MovePtr<DeviceDriver> m_deviceInterface;
+
+    const std::string m_deviceID;
+    bool m_embeddedContextManager;
 };
 
 namespace
@@ -679,6 +735,11 @@ de::MovePtr<vk::DebugReportRecorder> createDebugReportRecorder(const vk::Platfor
         return de::MovePtr<vk::DebugReportRecorder>(new vk::DebugReportRecorder(printValidationErrors));
     else
         TCU_THROW(NotSupportedError, "VK_EXT_debug_utils is not supported");
+}
+de::SharedPtr<vk::DebugReportRecorder> createSharedDebugReportRecorder(const vk::PlatformInterface &vkp,
+                                                                       bool printValidationErrors)
+{
+    return de::SharedPtr<vk::DebugReportRecorder>(createDebugReportRecorder(vkp, printValidationErrors).release());
 }
 #endif // CTS_USES_VULKANSC
 
@@ -710,92 +771,148 @@ vector<const char *> removeCoreExtensions(const uint32_t apiVersion, const vecto
 
 } // namespace
 
-DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::CommandLine &cmdLine,
-                             de::SharedPtr<vk::ResourceInterface> resourceInterface)
+// "Define the ContextManager constructor, placed here as a workaround for an older Fedora version
+// where the compiler fails to locate function implementations unless they reside in the same file.
+ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine,
+                               [[maybe_unused]] de::SharedPtr<vk::ResourceInterface> resourceInterface,
+                               int maxCustomDevices, ContextManager::Det_)
 #ifndef CTS_USES_VULKANSC
     : m_maximumFrameworkVulkanVersion(VK_API_MAX_FRAMEWORK_VERSION)
 #else
     : m_maximumFrameworkVulkanVersion(VKSC_API_MAX_FRAMEWORK_VERSION)
 #endif // CTS_USES_VULKANSC
+    , m_platformInterface(vkPlatform)
+    , m_commandLine(commandLine)
+    , m_resourceInterface(resourceInterface)
     , m_availableInstanceVersion(getTargetInstanceVersion(vkPlatform))
     , m_usedInstanceVersion(
           sanitizeApiVersion(minVulkanAPIVersion(m_availableInstanceVersion, m_maximumFrameworkVulkanVersion)))
-    , m_deviceVersions(determineDeviceVersions(vkPlatform, m_usedInstanceVersion, cmdLine))
+    , m_deviceVersions(determineDeviceVersions(vkPlatform, m_usedInstanceVersion, m_commandLine))
     , m_usedApiVersion(sanitizeApiVersion(minVulkanAPIVersion(m_usedInstanceVersion, m_deviceVersions.first)))
-
-#ifndef CTS_USES_VULKANSC
-    , m_debugReportRecorder(cmdLine.isValidationEnabled() ?
-                                createDebugReportRecorder(vkPlatform, cmdLine.printValidationErrors()) :
-                                de::MovePtr<vk::DebugReportRecorder>())
-#endif // CTS_USES_VULKANSC
     , m_instanceExtensions(addCoreInstanceExtensions(
           filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, nullptr)), m_usedApiVersion))
 #ifndef CTS_USES_VULKANSC
+    , m_debugReportRecorder(m_commandLine.isValidationEnabled() ?
+                                createSharedDebugReportRecorder(vkPlatform, m_commandLine.printValidationErrors()) :
+                                DebugReportRecorderPtr())
+#endif
+    , m_instanceHandle(VK_NULL_HANDLE)
+#ifdef CTS_USES_VULKANSC
     , m_instance(
-          createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions, cmdLine, m_debugReportRecorder.get()))
+          createSharedInstance(m_instanceHandle, vkPlatform, m_usedApiVersion, m_instanceExtensions, commandLine))
+    , m_instanceInterface(new InstanceDriverSC(vkPlatform, *m_instance, commandLine, resourceInterface))
 #else
-    , m_instance(createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions, cmdLine))
-#endif // CTS_USES_VULKANSC
-
-#ifndef CTS_USES_VULKANSC
-    , m_instanceInterface(vkPlatform, *m_instance)
-
-    , m_debugReportCallback(cmdLine.isValidationEnabled() ?
-                                m_debugReportRecorder->createCallback(m_instanceInterface, m_instance.get()) :
+    , m_instance(createSharedInstance(m_instanceHandle, vkPlatform, m_usedApiVersion, m_instanceExtensions,
+                                      m_commandLine, m_debugReportRecorder.get()))
+    , m_instanceInterface(new InstanceDriver(vkPlatform, *m_instance))
+    , m_debugReportCallbackHandle(VK_NULL_HANDLE)
+    , m_debugReportCallback(m_commandLine.isValidationEnabled() ?
+                                createSharedDebugReportCallback(m_debugReportCallbackHandle,
+                                                                m_debugReportRecorder.get(), *m_instanceInterface,
+                                                                *m_instance) :
                                 DebugReportCallbackPtr())
-#else
-    , m_instanceInterface(vkPlatform, *m_instance, cmdLine, resourceInterface)
-#endif // CTS_USES_VULKANSC
-    , m_physicalDevice(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
-    , m_deviceVersion(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice).apiVersion)
-
+#endif
+    , m_physicalDevice(chooseDevice(*m_instanceInterface, *m_instance, m_commandLine))
+    , m_deviceVersion(getPhysicalDeviceProperties(*m_instanceInterface, m_physicalDevice).apiVersion)
+    , m_maxCustomDevices(maxCustomDevices)
     , m_deviceExtensions(addCoreDeviceExtensions(
-          filterExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, nullptr)),
+          filterExtensions(enumerateDeviceExtensionProperties(*m_instanceInterface, m_physicalDevice, nullptr)),
           m_usedApiVersion))
-    , m_deviceFeatures(m_instanceInterface, m_usedApiVersion, m_physicalDevice, m_instanceExtensions,
-                       m_deviceExtensions)
+    , m_creationExtensions(removeCoreExtensions(m_usedApiVersion, m_deviceExtensions))
+    , m_deviceFeaturesPtr(new DeviceFeatures(*m_instanceInterface, m_usedApiVersion, m_physicalDevice,
+                                             m_instanceExtensions, m_deviceExtensions))
+    , m_devicePropertiesPtr(new DeviceProperties(*m_instanceInterface, m_usedApiVersion, m_physicalDevice,
+                                                 m_instanceExtensions, m_deviceExtensions))
+    , m_deviceFeaturesAndProperties(new DevFeaturesAndProperties(*m_deviceFeaturesPtr, *m_devicePropertiesPtr))
+    , m_contexts()
+{
+    m_contexts.reserve(m_maxCustomDevices + 1);
+}
+
+DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::CommandLine &cmdLine,
+                             de::SharedPtr<vk::ResourceInterface> resourceInterface, const std::string &deviceID)
+    : DefaultDevice(
+          vkPlatform, cmdLine,
+          ContextManager::create(vkPlatform, cmdLine, resourceInterface,
+                                 std::clamp(cmdLine.getMaxCustomDevices(), 1, std::numeric_limits<int>::max())),
+          Move<VkDevice>(), deviceID, nullptr)
+{
+    m_embeddedContextManager = true;
+}
+
+Move<VkDevice> checkNotDefaultDevice(Move<VkDevice> device, const std::string &deviceID)
+{
+    DE_UNREF(deviceID);
+    DE_ASSERT(VkDevice(VK_NULL_HANDLE) != *device);
+    DE_ASSERT(deviceID != DevCaps::DefDevId);
+    return device;
+}
+
+DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::CommandLine &cmdLine,
+                             de::SharedPtr<const ContextManager> contextManager, Move<VkDevice> suggestedDevice,
+                             const std::string &deviceID, const std::vector<std::string> *pDeviceExtensions)
+    : m_contextManager(contextManager)
+    , m_maximumFrameworkVulkanVersion(contextManager->getMaximumFrameworkVulkanVersion())
+    , m_availableInstanceVersion(contextManager->getAvailableInstanceVersion())
+    , m_usedInstanceVersion(contextManager->getUsedInstanceVersion())
+    , m_deviceVersions(contextManager->getDeviceVersions())
+    , m_usedApiVersion(contextManager->getUsedApiVersion())
+#ifndef CTS_USES_VULKANSC
+    , m_debugReportRecorder(contextManager->getDebugReportRecorder())
+#endif // CTS_USES_VULKANSC
+    , m_instanceExtensions(contextManager->getInstanceExtensions())
+    , m_instanceHandle(contextManager->getInstanceHandle())
+    , m_instance(contextManager->getInstance())
+    , m_instanceInterface(contextManager->getInstanceDriver())
+#ifndef CTS_USES_VULKANSC
+    , m_debugReportCallbackHandle(contextManager->getDebugReportCallbackHandle())
+    , m_debugReportCallback(contextManager->getDebugReportCallback())
+#endif // CTS_USES_VULKANSC
+    , m_physicalDevice(contextManager->getPhysicalDevice())
+    , m_deviceVersion(contextManager->getDeviceVersion())
+    , m_deviceExtensions((deviceID != DevCaps::DefDevId) ? *pDeviceExtensions : contextManager->getDeviceExtensions())
+    , m_deviceFeaturesPtr(contextManager->getDeviceFeaturesPtr())
+    , m_deviceFeatures(*m_deviceFeaturesPtr)
     , m_universalQueueFamilyIndex(findQueueFamilyIndexWithCaps(
-          m_instanceInterface, m_physicalDevice,
+          *m_instanceInterface, m_physicalDevice,
           cmdLine.isComputeOnly() ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT))
 #ifndef CTS_USES_VULKANSC
     , m_sparseQueueFamilyIndex(
           m_deviceFeatures.getCoreFeatures2().features.sparseBinding ?
-              findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_SPARSE_BINDING_BIT) :
+              findQueueFamilyIndexWithCaps(*m_instanceInterface, m_physicalDevice, VK_QUEUE_SPARSE_BINDING_BIT) :
               0)
 #else
     , m_sparseQueueFamilyIndex(0)
 #endif // CTS_USES_VULKANSC
-    , m_computeQueueFamilyIndex(findQueueFamilyIndexWithCapsNoThrow(m_instanceInterface, m_physicalDevice,
+    , m_computeQueueFamilyIndex(findQueueFamilyIndexWithCapsNoThrow(*m_instanceInterface, m_physicalDevice,
                                                                     VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT))
     , m_transferQueueFamilyIndex(findQueueFamilyIndexWithCapsNoThrow(
-          m_instanceInterface, m_physicalDevice, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT))
-    , m_deviceProperties(m_instanceInterface, m_usedApiVersion, m_physicalDevice, m_instanceExtensions,
-                         m_deviceExtensions)
+          *m_instanceInterface, m_physicalDevice, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT))
+    , m_devicePropertiesPtr(contextManager->getDevicePropertiesPtr())
+    , m_deviceProperties(*m_devicePropertiesPtr)
     // When the default device is created, we remove the core extensions from the extension list, but those core extensions are
     // still reported as part of Context::getDeviceExtensions(). If we need the list of extensions actually used when creating the
     // default device, we can use Context::getDeviceCreationExtensions().
     , m_creationExtensions(removeCoreExtensions(m_usedApiVersion, m_deviceExtensions))
-    , m_device(createDefaultDevice(vkPlatform, *m_instance, m_instanceInterface, m_physicalDevice,
-                                   m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_computeQueueFamilyIndex,
-                                   m_transferQueueFamilyIndex, m_deviceFeatures.getCoreFeatures2(),
-                                   m_creationExtensions, cmdLine, resourceInterface))
+    , m_device((VkDevice(VK_NULL_HANDLE) != *suggestedDevice) ?
+                   checkNotDefaultDevice(suggestedDevice, deviceID) :
+                   createDefaultDevice(vkPlatform, *m_instance, *m_instanceInterface, m_physicalDevice,
+                                       m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_computeQueueFamilyIndex,
+                                       m_transferQueueFamilyIndex, m_deviceFeatures.getCoreFeatures2(),
+                                       m_creationExtensions, cmdLine, contextManager->getResourceInterface()))
 #ifndef CTS_USES_VULKANSC
     , m_deviceInterface(
           de::MovePtr<DeviceDriver>(new DeviceDriver(vkPlatform, *m_instance, *m_device, m_usedApiVersion, cmdLine)))
 #else
     , m_deviceInterface(de::MovePtr<DeviceDriverSC>(
-          new DeviceDriverSC(vkPlatform, *m_instance, *m_device, cmdLine, resourceInterface,
-                             getDeviceVulkanSC10Properties(), getDeviceProperties(), m_usedApiVersion)))
+          new DeviceDriverSC(vkPlatform, *m_instance, *m_device, cmdLine, contextManager->getResourceInterface(),
+                             contextManager->getDeviceFeaturesAndProperties().getDeviceVulkanSC10Properties(),
+                             contextManager->getDeviceFeaturesAndProperties().getDeviceProperties(), m_usedApiVersion)))
 #endif // CTS_USES_VULKANSC
+    , m_deviceID(deviceID)
 {
-#ifndef CTS_USES_VULKANSC
-    DE_UNREF(resourceInterface);
-#endif
     DE_ASSERT(m_deviceVersions.first == m_deviceVersion);
-}
-
-DefaultDevice::~DefaultDevice(void)
-{
+    m_embeddedContextManager = false;
 }
 
 VkQueue DefaultDevice::getUniversalQueue(void) const
@@ -849,15 +966,36 @@ Context::Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platfor
                  vk::BinaryCollection &progCollection, de::SharedPtr<vk::ResourceInterface> resourceInterface)
     : m_testCtx(testCtx)
     , m_platformInterface(platformInterface)
+    , m_contextManager(ContextManager::create(
+          platformInterface, testCtx.getCommandLine(), resourceInterface,
+          std::clamp(testCtx.getCommandLine().getMaxCustomDevices(), 1, std::numeric_limits<int>::max())))
     , m_progCollection(progCollection)
     , m_resourceInterface(resourceInterface)
-    , m_device(new DefaultDevice(m_platformInterface, testCtx.getCommandLine(), resourceInterface))
+    , m_deviceRuntimeData()
+    , m_device(new DefaultDevice(m_platformInterface, testCtx.getCommandLine(), resourceInterface, DevCaps::DefDevId))
     , m_allocator(createAllocator(m_device.get()))
     , m_resultSetOnValidation(false)
 {
 }
 
-Context::~Context(void)
+Context::Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platformInterface,
+                 vk::BinaryCollection &progCollection, de::SharedPtr<const ContextManager> contextManager,
+                 Move<VkDevice> suggestedDevice, const std::string &deviceID,
+                 de::SharedPtr<DevCaps::RuntimeData> pRuntimeData, const std::vector<std::string> *pDeviceExtensions)
+    : m_testCtx(testCtx)
+    , m_platformInterface(platformInterface)
+    , m_contextManager(contextManager)
+    , m_progCollection(progCollection)
+    , m_resourceInterface(contextManager->getResourceInterface())
+    , m_deviceRuntimeData(pRuntimeData)
+    , m_device(new DefaultDevice(m_platformInterface, testCtx.getCommandLine(), contextManager, suggestedDevice,
+                                 deviceID, pDeviceExtensions))
+    , m_allocator(createAllocator(m_device.get()))
+    , m_resultSetOnValidation(false)
+{
+}
+
+Context::~Context()
 {
 }
 
@@ -922,31 +1060,32 @@ const vk::VkPhysicalDeviceVulkanSC10Features &Context::getDeviceVulkanSC10Featur
 }
 #endif // CTS_USES_VULKANSC
 
-bool Context::isDeviceFunctionalitySupported(const std::string &extension) const
+static bool isDeviceFunctionalitySupported(const ContextManager *mgr, const std::string &extension)
 {
     // If extension was promoted to core then check using the core mechanism. This is required so that
     // all core implementations have the functionality tested, even if they don't support the extension.
     // (It also means that core-optional extensions will not be reported as supported unless the
     // features are really supported if the CTS code adds all core extensions to the extension list).
-    uint32_t apiVersion = getUsedApiVersion();
+    uint32_t apiVersion                 = mgr->getUsedApiVersion();
+    const DevFeaturesAndProperties &fap = mgr->getDeviceFeaturesAndProperties();
     if (isCoreDeviceExtension(apiVersion, extension))
     {
         if (apiVersion < VK_MAKE_API_VERSION(0, 1, 2, 0))
         {
             // Check feature bits in extension-specific structures.
             if (extension == "VK_KHR_multiview")
-                return !!m_device->getMultiviewFeatures().multiview;
+                return !!fap.getMultiviewFeatures().multiview;
             if (extension == "VK_KHR_variable_pointers")
-                return !!m_device->getVariablePointersFeatures().variablePointersStorageBuffer;
+                return !!fap.getVariablePointersFeatures().variablePointersStorageBuffer;
             if (extension == "VK_KHR_sampler_ycbcr_conversion")
-                return !!m_device->getSamplerYcbcrConversionFeatures().samplerYcbcrConversion;
+                return !!fap.getSamplerYcbcrConversionFeatures().samplerYcbcrConversion;
             if (extension == "VK_KHR_shader_draw_parameters")
-                return !!m_device->getShaderDrawParametersFeatures().shaderDrawParameters;
+                return !!fap.getShaderDrawParametersFeatures().shaderDrawParameters;
         }
         else
         {
             // Check feature bits using the new Vulkan 1.2 structures.
-            const auto &vk11Features = m_device->getVulkan11Features();
+            const auto &vk11Features = fap.getVulkan11Features();
             if (extension == "VK_KHR_multiview")
                 return !!vk11Features.multiview;
             if (extension == "VK_KHR_variable_pointers")
@@ -956,7 +1095,7 @@ bool Context::isDeviceFunctionalitySupported(const std::string &extension) const
             if (extension == "VK_KHR_shader_draw_parameters")
                 return !!vk11Features.shaderDrawParameters;
 
-            const auto &vk12Features = m_device->getVulkan12Features();
+            const auto &vk12Features = fap.getVulkan12Features();
             if (extension == "VK_KHR_timeline_semaphore")
                 return !!vk12Features.timelineSemaphore;
             if (extension == "VK_KHR_buffer_device_address")
@@ -973,7 +1112,7 @@ bool Context::isDeviceFunctionalitySupported(const std::string &extension) const
                 return !!vk12Features.shaderOutputViewportIndex && !!vk12Features.shaderOutputLayer;
 
 #ifndef CTS_USES_VULKANSC
-            const auto &vk13Features = m_device->getVulkan13Features();
+            const auto &vk13Features = fap.getVulkan13Features();
             if (extension == "VK_EXT_inline_uniform_block")
                 return !!vk13Features.inlineUniformBlock;
             if (extension == "VK_EXT_pipeline_creation_cache_control")
@@ -999,7 +1138,7 @@ bool Context::isDeviceFunctionalitySupported(const std::string &extension) const
             if (extension == "VK_KHR_maintenance4")
                 return !!vk13Features.maintenance4;
 
-            const auto &vk14Features = m_device->getVulkan14Features();
+            const auto &vk14Features = fap.getVulkan14Features();
             if (extension == "VK_KHR_dynamic_rendering_local_read")
                 return !!vk14Features.dynamicRenderingLocalRead;
             if (extension == "VK_KHR_global_priority")
@@ -1025,7 +1164,7 @@ bool Context::isDeviceFunctionalitySupported(const std::string &extension) const
 #endif // CTS_USES_VULKANSC
 
 #ifdef CTS_USES_VULKANSC
-            const auto &vk12Properties = m_device->getDeviceVulkan12Properties();
+            const auto &vk12Properties = fap.getDeviceVulkan12Properties();
             if (extension == "VK_KHR_depth_stencil_resolve")
                 return (vk12Properties.supportedDepthResolveModes != VK_RESOLVE_MODE_NONE) &&
                        (vk12Properties.supportedStencilResolveModes != VK_RESOLVE_MODE_NONE);
@@ -1037,50 +1176,60 @@ bool Context::isDeviceFunctionalitySupported(const std::string &extension) const
     }
 
     // If this is not a core extension then just return whether the implementation says it's supported.
-    const auto &extensions = getDeviceExtensions();
+    const auto &extensions = mgr->getDeviceExtensions();
     return de::contains(extensions.begin(), extensions.end(), extension);
 }
 
-bool Context::isInstanceFunctionalitySupported(const std::string &extension) const
+bool Context::isDeviceFunctionalitySupported(const std::string &extension) const
+{
+    return ::vkt::isDeviceFunctionalitySupported(m_device->getContextManager().get(), extension);
+}
+
+static bool isInstanceFunctionalitySupported(const ContextManager *mgr, const std::string &extension)
 {
     // NOTE: current implementation uses isInstanceExtensionSupported but
     // this will change when some instance extensions will be promoted to the
     // core; don't use isInstanceExtensionSupported directly, use this method instead
-    return isInstanceExtensionSupported(getUsedApiVersion(), getInstanceExtensions(), extension);
+    return isInstanceExtensionSupported(mgr->getUsedApiVersion(), mgr->getInstanceExtensions(), extension);
+}
+
+bool Context::isInstanceFunctionalitySupported(const std::string &extension) const
+{
+    return ::vkt::isInstanceFunctionalitySupported(m_device->getContextManager().get(), extension);
 }
 
 #include "vkDeviceFeaturesForContextDefs.inl"
 
 const vk::VkPhysicalDeviceProperties &Context::getDeviceProperties(void) const
 {
-    return m_device->getDeviceProperties();
+    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceProperties();
 }
 const vk::VkPhysicalDeviceProperties2 &Context::getDeviceProperties2(void) const
 {
-    return m_device->getDeviceProperties2();
+    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceProperties2();
 }
 const vk::VkPhysicalDeviceVulkan11Properties &Context::getDeviceVulkan11Properties(void) const
 {
-    return m_device->getDeviceVulkan11Properties();
+    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceVulkan11Properties();
 }
 const vk::VkPhysicalDeviceVulkan12Properties &Context::getDeviceVulkan12Properties(void) const
 {
-    return m_device->getDeviceVulkan12Properties();
+    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceVulkan12Properties();
 }
 #ifndef CTS_USES_VULKANSC
 const vk::VkPhysicalDeviceVulkan13Properties &Context::getDeviceVulkan13Properties(void) const
 {
-    return m_device->getDeviceVulkan13Properties();
+    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceVulkan13Properties();
 }
 const vk::VkPhysicalDeviceVulkan14Properties &Context::getDeviceVulkan14Properties(void) const
 {
-    return m_device->getDeviceVulkan14Properties();
+    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceVulkan14Properties();
 }
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
 const vk::VkPhysicalDeviceVulkanSC10Properties &Context::getDeviceVulkanSC10Properties(void) const
 {
-    return m_device->getDeviceVulkanSC10Properties();
+    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceVulkanSC10Properties();
 }
 #endif // CTS_USES_VULKANSC
 
@@ -1162,11 +1311,11 @@ bool Context::contextSupports(const uint32_t requiredApiVersionBits) const
 }
 bool Context::isDeviceFeatureInitialized(vk::VkStructureType sType) const
 {
-    return m_device->isDeviceFeatureInitialized(sType);
+    return m_contextManager->getDeviceFeaturesAndProperties().isDeviceFeatureInitialized(sType);
 }
 bool Context::isDevicePropertyInitialized(vk::VkStructureType sType) const
 {
-    return m_device->isDevicePropertyInitialized(sType);
+    return m_contextManager->getDeviceFeaturesAndProperties().isDevicePropertyInitialized(sType);
 }
 
 bool Context::requireDeviceFunctionality(const std::string &required) const
@@ -1264,11 +1413,11 @@ const DeviceCoreFeaturesTable deviceCoreFeaturesTable[] = {
     DEVICE_CORE_FEATURE_ENTRY(DEVICE_CORE_FEATURE_INHERITED_QUERIES, inheritedQueries),
 };
 
-bool Context::requireDeviceCoreFeature(const DeviceCoreFeature requiredFeature)
+static bool requireDeviceCoreFeatureX(const DeviceCoreFeature requiredFeature,
+                                      const vk::VkPhysicalDeviceFeatures &featuresAvailable)
 {
-    const vk::VkPhysicalDeviceFeatures &featuresAvailable = getDeviceFeatures();
-    const vk::VkBool32 *featuresAvailableArray            = (vk::VkBool32 *)(&featuresAvailable);
-    const uint32_t requiredFeatureIndex                   = static_cast<uint32_t>(requiredFeature);
+    const vk::VkBool32 *featuresAvailableArray = (vk::VkBool32 *)(&featuresAvailable);
+    const uint32_t requiredFeatureIndex        = static_cast<uint32_t>(requiredFeature);
 
     DE_ASSERT(requiredFeatureIndex * sizeof(vk::VkBool32) < sizeof(featuresAvailable));
     DE_ASSERT(deviceCoreFeaturesTable[requiredFeatureIndex].featureArrayIndex * sizeof(vk::VkBool32) ==
@@ -1279,6 +1428,11 @@ bool Context::requireDeviceCoreFeature(const DeviceCoreFeature requiredFeature)
                                          std::string(deviceCoreFeaturesTable[requiredFeatureIndex].featureName));
 
     return true;
+}
+
+bool Context::requireDeviceCoreFeature(const DeviceCoreFeature requiredFeature) const
+{
+    return requireDeviceCoreFeatureX(requiredFeature, getDeviceFeatures());
 }
 
 #ifndef CTS_USES_VULKANSC
@@ -1546,6 +1700,27 @@ void Context::faultCallbackFunction(VkBool32 unrecordedFaults, uint32_t faultCou
 }
 #endif // CTS_USES_VULKANSC
 
+bool Context::isDefaultContext() const
+{
+    return m_device->isDefaultDevice();
+}
+
+std::string Context::getDeviceID() const
+{
+    return m_device->getDeviceID();
+}
+
+de::SharedPtr<const ContextManager> Context::getContextManager() const
+{
+    return m_device->getContextManager();
+}
+
+DevCaps::QueueInfo Context::getDeviceQueueInfo(uint32_t queueIndex)
+{
+    DE_ASSERT(m_deviceRuntimeData);
+    return m_deviceRuntimeData->getQueue(getDeviceInterface(), getDevice(), queueIndex, isDefaultContext());
+}
+
 // TestCase
 
 void TestCase::initPrograms(SourceCollections &) const
@@ -1623,6 +1798,25 @@ tcu::TestStatus MultiQueueRunnerTestInstance::iterate(void)
     }
 
     return isFail ? tcu::TestStatus::fail(resultDescription) : tcu::TestStatus::pass("All queues passed");
+}
+
+std::string TestCase::getRequiredCapabilitiesId() const
+{
+    return DevCaps::DefDevId;
+}
+
+void TestCase::initDeviceCapabilities(DevCaps &caps)
+{
+    DE_UNREF(caps);
+    TCU_THROW(EnforceDefaultContext,
+              "Default implementation of TestCase::initDeviceCapabilities() throws in order to enforce "
+              "creation of DefaultDevice");
+}
+
+TestInstance *TestCase::createInstance(Context &) const
+{
+    TCU_THROW(NotSupportedError, "Consider to ovveride createInstance(Context &) in test class");
+    return nullptr;
 }
 
 #ifndef CTS_USES_VULKANSC

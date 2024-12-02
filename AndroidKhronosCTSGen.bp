@@ -1881,6 +1881,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/util/vktExternalMemoryAndroidHardwareBufferUtil.cpp",
         "external/vulkancts/modules/vulkan/util/vktExternalMemoryUtil.cpp",
         "external/vulkancts/modules/vulkan/util/vktTypeComparisonUtil.cpp",
+        "external/vulkancts/modules/vulkan/vktContextManager.cpp",
         "external/vulkancts/modules/vulkan/vktCustomInstancesDevices.cpp",
         "external/vulkancts/modules/vulkan/vktInfoTests.cpp",
         "external/vulkancts/modules/vulkan/vktShaderLibrary.cpp",
