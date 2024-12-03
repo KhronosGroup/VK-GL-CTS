@@ -285,6 +285,8 @@ public:
     amber::Result LoadBufferData(const std::string file_name, amber::BufferDataFileType file_type,
                                  amber::BufferInfo *buffer) const override;
 
+    amber::Result LoadFile(const std::string file_name, std::vector<char> *buffer) const override;
+
     void Log(const std::string & /*message*/) override
     {
         DE_FATAL("amber::Delegate::Log unimplemented");
@@ -366,6 +368,30 @@ amber::Result Delegate::LoadBufferData(const std::string file_name, amber::Buffe
 
     buffer->width  = 1;
     buffer->height = 1;
+
+    return {};
+}
+
+amber::Result Delegate::LoadFile(const std::string file_name, std::vector<char> *buffer) const
+{
+    if (!buffer)
+    {
+        return amber::Result("Buffer pointer is null.");
+    }
+
+    const tcu::Archive &archive = m_testCtx.getArchive();
+    const de::FilePath filePath = de::FilePath(m_path).join(file_name);
+    de::UniquePtr<tcu::Resource> file(archive.getResource(filePath.getPath()));
+    int numBytes = file->getSize();
+    std::vector<uint8_t> bytes(numBytes);
+
+    file->read(bytes.data(), numBytes);
+
+    if (bytes.empty())
+        return amber::Result("Failed to load buffer data " + file_name);
+
+    // Convert uint8_t vector to char vector
+    buffer->assign(bytes.begin(), bytes.end());
 
     return {};
 }
