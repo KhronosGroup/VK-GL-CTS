@@ -1131,6 +1131,7 @@ void createGlslTests(tcu::TestCaseGroup *glslTests)
     glslTests->addChild(sr::createLoopTests(testCtx));
     glslTests->addChild(sr::createMatrixTests(testCtx));
     glslTests->addChild(sr::createOperatorTests(testCtx));
+    glslTests->addChild(sr::createShaderPreciseTests(testCtx));
     glslTests->addChild(sr::createReturnTests(testCtx));
     glslTests->addChild(sr::createStructTests(testCtx));
     glslTests->addChild(sr::createSwitchTests(testCtx));
