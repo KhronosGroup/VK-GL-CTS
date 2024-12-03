@@ -285,8 +285,7 @@ public:
     amber::Result LoadBufferData(const std::string file_name, amber::BufferDataFileType file_type,
                                  amber::BufferInfo *buffer) const override;
 
-    amber::Result LoadFile(const std::string file_name,
-                           std::vector<char>* buffer) const override;
+    amber::Result LoadFile(const std::string file_name, std::vector<char> *buffer) const override;
 
     void Log(const std::string & /*message*/) override
     {
@@ -373,10 +372,10 @@ amber::Result Delegate::LoadBufferData(const std::string file_name, amber::Buffe
     return {};
 }
 
-amber::Result Delegate::LoadFile(const std::string file_name,
-                                 std::vector<char>* buffer) const
+amber::Result Delegate::LoadFile(const std::string file_name, std::vector<char> *buffer) const
 {
-    if (!buffer) {
+    if (!buffer)
+    {
         return amber::Result("Buffer pointer is null.");
     }
 
