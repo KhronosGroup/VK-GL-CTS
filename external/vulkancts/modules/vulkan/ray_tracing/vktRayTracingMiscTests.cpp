@@ -965,14 +965,67 @@ public:
         /* Stub */
     }
 
-    virtual tcu::UVec3 getDispatchSize() const                                       = 0;
-    virtual uint32_t getResultBufferSize() const                                     = 0;
-    virtual std::vector<TopLevelAccelerationStructure *> getTLASPtrVecToBind() const = 0;
-    virtual void resetTLAS()                                                         = 0;
+    virtual tcu::UVec3 getDispatchSize() const                                             = 0;
+    virtual uint32_t getResultBufferSize() const                                           = 0;
+    virtual std::vector<TopLevelAccelerationStructure *> getTLASPtrVecToBind() const       = 0;
+    virtual void resetTLAS()                                                               = 0;
     virtual void initAS(vkt::Context &context, RayTracingProperties *rtPropertiesPtr,
-                        VkCommandBuffer commandBuffer)                               = 0;
-    virtual void initPrograms(SourceCollections &programCollection) const            = 0;
-    virtual bool verifyResultBuffer(const void *inBufferPtr) const                   = 0;
+                        VkCommandBuffer commandBuffer)                                     = 0;
+    virtual void initPrograms(SourceCollections &programCollection) const                  = 0;
+    virtual bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const = 0;
+
+    void CopyBufferContent(vkt::Context &context, VkCommandBuffer cmdBuffer, BufferWithMemory &src,
+                           BufferWithMemory &dst, VkBufferCopy bufferCopy) const
+    {
+        const DeviceInterface &deviceInterface = context.getDeviceInterface();
+        const VkDevice deviceVk                = context.getDevice();
+        const VkQueue queueVk                  = context.getUniversalQueue();
+
+        deviceInterface.resetCommandBuffer(cmdBuffer, 0);
+        beginCommandBuffer(deviceInterface, cmdBuffer, 0u /* flags */);
+
+        deviceInterface.cmdCopyBuffer(cmdBuffer, *src, *dst, 1, &bufferCopy);
+
+        const VkMemoryBarrier postCopyMemoryBarrier =
+            makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+
+        cmdPipelineMemoryBarrier(deviceInterface, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &postCopyMemoryBarrier);
+
+        endCommandBuffer(deviceInterface, cmdBuffer);
+
+        submitCommandsAndWait(deviceInterface, deviceVk, queueVk, cmdBuffer);
+
+        invalidateMappedMemoryRange(deviceInterface, deviceVk, dst.getAllocation().getMemory(),
+                                    dst.getAllocation().getOffset(), VK_WHOLE_SIZE);
+    }
+
+    de::MovePtr<BufferWithMemory> copyDeviceBufferToHost(vkt::Context &context, BufferWithMemory &buffer) const
+    {
+        const DeviceInterface &deviceInterface = context.getDeviceInterface();
+        const VkDevice deviceVk                = context.getDevice();
+        Allocator &allocator                   = context.getDefaultAllocator();
+        const uint32_t queueFamilyIndex        = context.getUniversalQueueFamilyIndex();
+
+        const Move<VkCommandPool> cmdPoolPtr = createCommandPool(deviceInterface, deviceVk, 0, /* pCreateInfo */
+                                                                 queueFamilyIndex);
+        const Move<VkCommandBuffer> cmdBufferPtr =
+            allocateCommandBuffer(deviceInterface, deviceVk, *cmdPoolPtr, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+        VkDeviceSize resultBufferSize = buffer.getBufferSize();
+        const auto resultBufferCreateInfo =
+            makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+        de::MovePtr<BufferWithMemory> resultBufferPtr;
+
+        resultBufferPtr = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+            deviceInterface, deviceVk, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+
+        const VkBufferCopy bufferCopy{0, 0, resultBufferSize};
+        CopyBufferContent(context, *cmdBufferPtr, buffer, *resultBufferPtr, bufferCopy);
+
+        return resultBufferPtr;
+    }
 
     virtual std::vector<std::string> getAHitShaderCollectionShaderNames() const
     {
@@ -1279,10 +1332,11 @@ public:
         }
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
 
         typedef struct
         {
@@ -1633,10 +1687,11 @@ public:
                                                       sizeof(uint32_t), &nDispatch);
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
 
         typedef struct
         {
@@ -2078,11 +2133,12 @@ public:
         return m_useDynamicStackSize;
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
-        const auto nItemsStored      = *resultU32Ptr;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
+        const auto nItemsStored                       = *resultU32Ptr;
 
         /* Convert raw binary data into a human-readable vector representation */
         struct ResultItem
@@ -2579,12 +2635,13 @@ public:
         }
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        const auto nHitsReported     = *resultU32Ptr;
-        const auto nMissesReported   = *(resultU32Ptr + 1);
-        bool result                  = true;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        const auto nHitsReported                      = *resultU32Ptr;
+        const auto nMissesReported                    = *(resultU32Ptr + 1);
+        bool result                                   = true;
 
         // For each traced ray:
         //
@@ -2940,10 +2997,11 @@ public:
         }
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
 
         const auto nAHitsReported    = *resultU32Ptr;
         const auto nCHitsRegistered  = *(resultU32Ptr + 1);
@@ -3248,46 +3306,103 @@ public:
         m_tlPtr.reset();
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyHitsMisses(uint32_t nHitsReported, uint32_t nMissesReported) const
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
+        if (nHitsReported != m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2])
+        {
+            return false;
+        }
+
+        if (nMissesReported != 0)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    bool verifyResultChunk(const void *inBufferPtr, uint32_t size, uint32_t offset) const
+    {
+        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(inBufferPtr);
 
         typedef struct
         {
             uint32_t instanceCustomIndex;
         } HitProperties;
 
-        const auto nHitsReported   = *resultU32Ptr;
-        const auto nMissesReported = *(resultU32Ptr + 1);
-
-        if (nHitsReported != m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2])
-        {
-            goto end;
-        }
-
-        if (nMissesReported != 0)
-        {
-            goto end;
-        }
-
-        for (uint32_t nRay = 0; nRay < nHitsReported; ++nRay)
+        for (uint32_t nRay = 0; nRay < size; ++nRay)
         {
             // Touch watch dog every 100000 loops to avoid timeout issue.
             if (nRay > 0 && (nRay % 100000 == 0))
                 m_context->getTestContext().touchWatchdog();
-            const HitProperties *hitPropsPtr =
-                reinterpret_cast<const HitProperties *>(resultU32Ptr + 2 /* preamble ints */) + nRay;
+            const HitProperties *hitPropsPtr = reinterpret_cast<const HitProperties *>(resultU32Ptr) + nRay;
 
-            if (m_nRayToInstanceIndexExpected.at(nRay % m_nMaxCells) != hitPropsPtr->instanceCustomIndex)
+            if (m_nRayToInstanceIndexExpected.at((nRay + offset) % m_nMaxCells) != hitPropsPtr->instanceCustomIndex)
             {
-                goto end;
+                return false;
             }
         }
 
-        result = true;
-    end:
-        return result;
+        return true;
+    }
+
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
+    {
+        const DeviceInterface &deviceInterface = context.getDeviceInterface();
+        const VkDevice deviceVk                = context.getDevice();
+        Allocator &allocator                   = context.getDefaultAllocator();
+        const uint32_t queueFamilyIndex        = context.getUniversalQueueFamilyIndex();
+
+        const Move<VkCommandPool> cmdPoolPtr = createCommandPool(deviceInterface, deviceVk, 0, /* pCreateInfo */
+                                                                 queueFamilyIndex);
+        const Move<VkCommandBuffer> cmdBufferPtr =
+            allocateCommandBuffer(deviceInterface, deviceVk, *cmdPoolPtr, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+        // first read the header and then data as chunks
+        uint32_t headerSize               = 2 * sizeof(uint32_t);
+        const auto headerBufferCreateInfo = makeBufferCreateInfo(headerSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+        de::MovePtr<BufferWithMemory> headerBufferPtr = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+            deviceInterface, deviceVk, allocator, headerBufferCreateInfo, MemoryRequirement::HostVisible));
+
+        const VkBufferCopy headerCopy{0, 0, headerSize};
+        CopyBufferContent(context, *cmdBufferPtr, buffer, *headerBufferPtr, headerCopy);
+
+        const uint32_t *headerPtr = (uint32_t *)headerBufferPtr->getAllocation().getHostPtr();
+
+        const auto nHitsReported   = headerPtr[0];
+        const auto nMissesReported = headerPtr[1];
+
+        if (!verifyHitsMisses(nHitsReported, nMissesReported))
+        {
+            return false;
+        }
+
+        // verification loop that works in chunks
+        uint32_t itemsInChunk = 1024 * 1024;
+        uint32_t chunkSize    = static_cast<uint32_t>(itemsInChunk * sizeof(uint32_t));
+        uint32_t amount       = (getResultBufferSize() - headerSize) / chunkSize;
+
+        // allocate a buffer for verification
+        const auto chunkBufferCreateInfo = makeBufferCreateInfo(chunkSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+        de::MovePtr<BufferWithMemory> chunkBufferPtr = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+            deviceInterface, deviceVk, allocator, chunkBufferCreateInfo, MemoryRequirement::HostVisible));
+
+        // copy each chunk using offset and verify the contents
+        for (uint32_t chunk = 0; chunk < amount; ++chunk)
+        {
+            uint32_t srcOffset = headerSize + (chunk * chunkSize);
+            const VkBufferCopy chunkCopy{srcOffset, 0, chunkSize};
+            CopyBufferContent(context, *cmdBufferPtr, buffer, *chunkBufferPtr, chunkCopy);
+
+            const uint32_t *chunkDataPtr = (uint32_t *)chunkBufferPtr->getAllocation().getHostPtr();
+
+            if (!verifyResultChunk(chunkDataPtr, itemsInChunk, static_cast<uint32_t>(srcOffset / sizeof(uint32_t))))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
 private:
@@ -3512,8 +3627,11 @@ public:
         }
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const void *resultDataPtr                     = resultBufferPtr->getAllocation().getHostPtr();
+
         const auto nTotalPrimitives = m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
         bool result                 = true;
 
@@ -4109,9 +4227,11 @@ public:
         return (has_u64 || has_u64vec2 || has_u64vec3 || has_u64vec4);
     }
 
-    bool verifyResultBuffer(const void *resultBufferDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        bool result = false;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const void *resultBufferDataPtr               = resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
 
         for (const auto &iterator : m_shaderStageToResultBufferOffset)
         {
@@ -6414,14 +6534,15 @@ public:
         m_tlPtr.reset();
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
-        auto nItemsStored            = *resultU32Ptr;
-        const auto nCHitInvocations  = *(resultU32Ptr + 1);
-        const auto nMissInvocations  = *(resultU32Ptr + 2);
-        const bool doFullCheck       = (m_nResultItemsExpected < m_nMaxResultItemsPermitted);
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
+        auto nItemsStored                             = *resultU32Ptr;
+        const auto nCHitInvocations                   = *(resultU32Ptr + 1);
+        const auto nMissInvocations                   = *(resultU32Ptr + 2);
+        const bool doFullCheck                        = (m_nResultItemsExpected < m_nMaxResultItemsPermitted);
 
         struct ResultItem
         {
@@ -6976,8 +7097,11 @@ public:
             << buildOptions;
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const void *resultDataPtr                     = resultBufferPtr->getAllocation().getHostPtr();
+
         for (uint32_t nRay = 0; nRay < m_nRaysToTrace; ++nRay)
         {
             const uint32_t *rayProps = reinterpret_cast<const uint32_t *>(resultDataPtr) + 2 * nRay;
@@ -7245,10 +7369,12 @@ public:
         }
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32Ptr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                  = false;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+
+        bool result = false;
 
         const auto nItemsStored                   = *resultU32Ptr;
         const auto nRays                          = m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
@@ -7711,10 +7837,11 @@ public:
         }
     }
 
-    bool verifyResultBuffer(const void *resultDataPtr) const final
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
     {
-        const uint32_t *resultU32DataPtr = reinterpret_cast<const uint32_t *>(resultDataPtr);
-        bool result                      = false;
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32DataPtr              = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+        bool result                                   = false;
 
         switch (m_mode)
         {
@@ -7824,6 +7951,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
     Allocator &allocator            = m_context.getDefaultAllocator();
 
     de::MovePtr<BufferWithMemory> resultBufferPtr;
+    de::MovePtr<BufferWithMemory> startBufferPtr;
 
     // Determine group indices
     const auto ahitCollectionShaderNameVec         = m_testPtr->getAHitShaderCollectionShaderNames();
@@ -8076,20 +8204,24 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 
     {
         const auto resultBufferCreateInfo = makeBufferCreateInfo(
-            resultBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            resultBufferSize,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
         const auto resultBufferDataVec = m_testPtr->getResultBufferStartData();
 
         resultBufferPtr = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-            deviceInterface, deviceVk, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+            deviceInterface, deviceVk, allocator, resultBufferCreateInfo, MemoryRequirement::DeviceAddress));
 
         if (resultBufferDataVec.size() > 0)
         {
             DE_ASSERT(static_cast<uint32_t>(resultBufferDataVec.size()) == resultBufferSize);
 
-            memcpy(resultBufferPtr->getAllocation().getHostPtr(), resultBufferDataVec.data(),
+            startBufferPtr = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+                deviceInterface, deviceVk, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+
+            memcpy(startBufferPtr->getAllocation().getHostPtr(), resultBufferDataVec.data(),
                    resultBufferDataVec.size());
 
-            flushAlloc(deviceInterface, deviceVk, resultBufferPtr->getAllocation());
+            flushAlloc(deviceInterface, deviceVk, startBufferPtr->getAllocation());
         }
     }
 
@@ -8105,6 +8237,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
             tlasVkVec.push_back(*currentTLASPtr->getPtr());
         }
 
+        // Clear result buffer if startdata was zero ...
         if (m_testPtr->getResultBufferStartData().size() == 0)
         {
             deviceInterface.cmdFillBuffer(*cmdBufferPtr, **resultBufferPtr, 0, /* dstOffset */
@@ -8121,6 +8254,12 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
                                                VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, /* dstStageMask */
                                                &postFillBarrier);
             }
+        }
+        else
+        {
+            // ... otherwise copy given startdata to the gpubuffer
+            const VkBufferCopy bufferCopy{0, 0, resultBufferSize};
+            deviceInterface.cmdCopyBuffer(*cmdBufferPtr, **startBufferPtr, **resultBufferPtr, 1, &bufferCopy);
         }
 
         {
@@ -8234,12 +8373,16 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
                                      &postTraceMemoryBarrier);
         }
     }
+
+    const VkMemoryBarrier postTraceMemoryBarrier =
+        makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+
+    cmdPipelineMemoryBarrier(deviceInterface, *cmdBufferPtr, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT, &postTraceMemoryBarrier);
+
     endCommandBuffer(deviceInterface, *cmdBufferPtr);
 
     submitCommandsAndWait(deviceInterface, deviceVk, queueVk, cmdBufferPtr.get());
-
-    invalidateMappedMemoryRange(deviceInterface, deviceVk, resultBufferPtr->getAllocation().getMemory(),
-                                resultBufferPtr->getAllocation().getOffset(), VK_WHOLE_SIZE);
 
     m_testPtr->resetTLAS();
 
@@ -8251,8 +8394,7 @@ tcu::TestStatus RayTracingMiscTestInstance::iterate(void)
     checkSupport();
 
     const de::MovePtr<BufferWithMemory> bufferGPUPtr = runTest();
-    const uint32_t *bufferGPUDataPtr                 = (uint32_t *)bufferGPUPtr->getAllocation().getHostPtr();
-    const bool result                                = m_testPtr->verifyResultBuffer(bufferGPUDataPtr);
+    const bool result                                = m_testPtr->verifyResultBuffer(m_context, *bufferGPUPtr);
 
     if (result)
         return tcu::TestStatus::pass("Pass");
