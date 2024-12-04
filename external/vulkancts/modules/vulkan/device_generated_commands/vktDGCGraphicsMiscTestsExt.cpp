@@ -6939,6 +6939,682 @@ tcu::TestStatus SampleIDStateInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+#define USE_DGC_PATH 1
+//#undef USE_DGC_PATH
+
+class DynamicA2CInstance : public vkt::TestInstance
+{
+public:
+    struct Params
+    {
+        PipelineConstructionType constructionType;
+        bool alphaToCoverage;
+        bool useIES;
+        bool usePreprocess;
+
+        VkShaderStageFlags getShaderStages() const
+        {
+            return (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+        }
+
+        tcu::IVec3 getExtent() const
+        {
+            return tcu::IVec3(2, 2, 1);
+        }
+
+        uint32_t getDrawCount() const
+        {
+            return 4u;
+        }
+
+    protected:
+        uint32_t getFragVariationCount() const
+        {
+            return (useIES ? getDrawCount() : 1u);
+        }
+
+    public:
+        std::vector<tcu::Vec4> getFragColors() const
+        {
+            static const std::vector<tcu::Vec4> colorCatalogue{
+                tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f),
+                tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f),
+                tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+                tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f),
+            };
+
+            std::vector<tcu::Vec4> colors;
+            const auto fragCount = getFragVariationCount();
+            const auto drawCount = getDrawCount();
+
+            DE_ASSERT(fragCount == 1u || fragCount == drawCount);
+            DE_ASSERT(de::sizeU32(colorCatalogue) == drawCount);
+            DE_UNREF(drawCount); // For release builds.
+
+            colors.reserve(fragCount);
+            if (useIES)
+                colors = colorCatalogue;
+            else
+                colors.push_back(colorCatalogue.front());
+            return colors;
+        }
+
+        tcu::Vec4 getClearColor() const
+        {
+            return tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        }
+
+        VkSampleCountFlagBits getSampleCount() const
+        {
+            return VK_SAMPLE_COUNT_4_BIT;
+        }
+
+        tcu::IVec3 getVerifExtent() const
+        {
+            const auto extent      = getExtent();
+            const auto sampleCount = static_cast<int>(getSampleCount());
+            return tcu::IVec3(extent.x() * sampleCount, extent.y(), extent.z());
+        }
+
+        VkFormat getFormat() const
+        {
+            return VK_FORMAT_R8G8B8A8_UNORM;
+        }
+
+        VkImageType getImageType() const
+        {
+            return VK_IMAGE_TYPE_2D;
+        }
+
+        VkImageTiling getImageTiling() const
+        {
+            return VK_IMAGE_TILING_OPTIMAL;
+        }
+
+        VkImageUsageFlags getImageUsage() const
+        {
+            return (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+        }
+    };
+
+    DynamicA2CInstance(Context &context, const Params &params) : vkt::TestInstance(context), m_params(params)
+    {
+    }
+    virtual ~DynamicA2CInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const Params m_params;
+};
+
+class DynamicA2CCase : public vkt::TestCase
+{
+public:
+    DynamicA2CCase(tcu::TestContext &testCtx, const std::string &name, const DynamicA2CInstance::Params &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~DynamicA2CCase(void) = default;
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DynamicA2CInstance(context, m_params);
+    }
+
+protected:
+    const DynamicA2CInstance::Params m_params;
+};
+
+void DynamicA2CCase::checkSupport(Context &context) const
+{
+#if USE_DGC_PATH
+    const auto stages     = m_params.getShaderStages();
+    const auto bindStages = (m_params.useIES ? stages : 0u);
+    DE_ASSERT(!isConstructionTypeShaderObject(m_params.constructionType));
+
+    checkDGCExtSupport(context, stages, bindStages);
+#endif
+
+    const auto ctx         = context.getContextCommonData();
+    const auto format      = m_params.getFormat();
+    const auto imageType   = m_params.getImageType();
+    const auto imageTiling = m_params.getImageTiling();
+    const auto imageUsage  = m_params.getImageUsage();
+    const auto sampleCount = m_params.getSampleCount();
+
+    VkImageFormatProperties formatProperties;
+    const auto result = ctx.vki.getPhysicalDeviceImageFormatProperties(ctx.physicalDevice, format, imageType,
+                                                                       imageTiling, imageUsage, 0u, &formatProperties);
+
+    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+    {
+        const auto formatName = getFormatSimpleName(format);
+        TCU_THROW(NotSupportedError, formatName + " does not support the required usage flags");
+    }
+    VK_CHECK(result);
+
+    if ((formatProperties.sampleCounts & sampleCount) != sampleCount)
+    {
+        const auto formatName = getFormatSimpleName(format);
+        TCU_THROW(NotSupportedError, formatName + " does not support the required sample count");
+    }
+    const auto &eds3Features = context.getExtendedDynamicState3FeaturesEXT();
+    if (!eds3Features.extendedDynamicState3AlphaToCoverageEnable)
+        TCU_THROW(NotSupportedError, "extendedDynamicState3AlphaToCoverageEnable not supported");
+}
+
+void DynamicA2CCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "void main (void) {\n"
+         << "    gl_Position = inPos;\n"
+         << "    gl_PointSize = 1.0;\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    const auto fragColors = m_params.getFragColors();
+    const auto colorCount = de::sizeU32(fragColors);
+
+    for (uint32_t i = 0u; i < colorCount; ++i)
+    {
+        std::ostringstream frag;
+        frag << "#version 460\n"
+             << "layout (location=0) out vec4 outColor;\n"
+             << "void main (void) {\n"
+             << "    outColor = vec4" << fragColors.at(i) << ";\n"
+             << "}\n";
+        const auto shaderName = "frag" + std::to_string(i);
+        programCollection.glslSources.add(shaderName) << glu::FragmentSource(frag.str());
+    }
+
+    // The verification shader copies sample colors from the color buffer to an output buffer.
+    // Note the output image has sampleCount as many columns as the original image, to store colors for each sample.
+    const auto sampleCount = static_cast<int>(m_params.getSampleCount());
+    const auto extent      = m_params.getExtent();
+    const auto pixelCount  = extent.x() * extent.y() * extent.z();
+    const auto flagCount   = pixelCount * sampleCount;
+
+    std::ostringstream comp;
+    comp << "#version 460\n"
+         << "layout (set=0, binding=0) uniform sampler2DMS resImage;\n"
+         << "layout (set=0, binding=0) uniform sampler2DMS refImage;\n"
+         << "layout (set=0, binding=2, std430) buffer OutputBlock { uint flags[" << flagCount << "]; } outBuffer;\n"
+         << "layout (local_size_x=" << sampleCount << ", local_size_y=1, local_size_z=1) in;\n"
+         << "void main (void) {\n"
+         << "    const ivec2 inCoords = ivec2(gl_WorkGroupID.xy);\n"
+         << "\n"
+         << "    const uint sampleCount = gl_WorkGroupSize.x;\n"
+         << "    const uint colCount = gl_NumWorkGroups.x;\n"
+         << "    const uint rowCount = gl_NumWorkGroups.y;\n"
+         << "    const uint col = gl_WorkGroupID.x;\n"
+         << "    const uint row = gl_WorkGroupID.y;\n"
+         << "    const uint sampleIdx = gl_LocalInvocationIndex;\n"
+         << "    const uint outIndex = row * colCount * sampleCount + col * sampleCount + sampleIdx;\n"
+         << "\n"
+         << "    const vec4 resColor = texelFetch(resImage, inCoords, int(sampleIdx));\n"
+         << "    const vec4 refColor = texelFetch(refImage, inCoords, int(sampleIdx));\n"
+         << "    const uint outValue = (resColor == refColor ? 1u : 0u);\n"
+         << "    outBuffer.flags[outIndex] = outValue;\n"
+         << "}\n";
+    programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+tcu::TestStatus DynamicA2CInstance::iterate(void)
+{
+    const auto &ctx            = m_context.getContextCommonData();
+    const auto fbExtent        = m_params.getExtent();
+    const auto floatExtent     = fbExtent.asFloat();
+    const auto vkExtent        = makeExtent3D(fbExtent);
+    const auto fbFormat        = m_params.getFormat();
+    const auto imageType       = m_params.getImageType();
+    const auto imageTiling     = m_params.getImageTiling();
+    const auto fbUsage         = m_params.getImageUsage();
+    const tcu::Vec4 clearColor = m_params.getClearColor();
+    const auto drawCount       = m_params.getDrawCount();
+    const auto perDrawVerts    = 4u;
+    const auto totalVerts      = perDrawVerts * drawCount;
+    const auto sampleCount     = m_params.getSampleCount();
+    const auto pixelCount      = fbExtent.x() * fbExtent.y() * fbExtent.z();
+    const auto totalFlags      = pixelCount * sampleCount;
+
+    // Vertices, in 4 triangle strips with a 0.25 pixels margin from the edges of the image.
+    const auto pixWidth   = 2.0f / floatExtent.x();
+    const auto pixHeight  = 2.0f / floatExtent.y();
+    const auto horMargin  = pixWidth * 0.25f;
+    const auto vertMargin = pixHeight * 0.25f;
+
+    const tcu::Vec4 topLeft(-1.0f + horMargin, -1.0f + vertMargin, 0.0f, 1.0f);
+    const tcu::Vec4 topRight(1.0f - horMargin, -1.0f + vertMargin, 0.0f, 1.0f);
+    const tcu::Vec4 bottomLeft(-1.0f + horMargin, 1.0f - vertMargin, 0.0f, 1.0f);
+    const tcu::Vec4 bottomRight(1.0f - horMargin, 1.0f - vertMargin, 0.0f, 1.0f);
+    const tcu::Vec4 center(0.0f, 0.0f, 0.0f, 1.0f);
+
+    const std::vector<tcu::Vec4> positions{
+        // clang-format: off
+
+        // Strip covering the top-left quadrant with some margin.
+        topLeft, tcu::Vec4(topLeft.x(), 0.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, topLeft.y(), 0.0f, 1.0f), center,
+
+        // Strip covering the top-right quadrant with some margin.
+        tcu::Vec4(0.0f, topRight.y(), 0.0f, 1.0), center, topRight, tcu::Vec4(topRight.x(), 0.0f, 0.0f, 1.0f),
+
+        // Strip covering the bottom-left quadrant with some margin.
+        tcu::Vec4(bottomLeft.x(), 0.0f, 0.0f, 1.0f), bottomLeft, center, tcu::Vec4(0.0f, bottomLeft.y(), 0.0f, 1.0f),
+
+        // Strip covering the bottom-right quadrant with some margin.
+        center, tcu::Vec4(0.0f, bottomRight.y(), 0.0f, 1.0f), tcu::Vec4(bottomRight.x(), 0.0f, 0.0f, 1.0f), bottomRight,
+
+        // clang-format: on
+    };
+    DE_ASSERT(de::sizeU32(positions) == totalVerts);
+    DE_UNREF(totalVerts); // For release builds.
+
+    // Vertex buffer.
+    const auto vertexBufferInfo = makeBufferCreateInfo(de::dataSize(positions), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    BufferWithMemory vertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, MemoryRequirement::HostVisible);
+    const VkDeviceSize vbOffset = 0ull;
+
+    // Color buffers for the result and reference images.
+    const VkImageCreateInfo colorCreateInfo{
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr,
+        0u,
+        imageType,
+        fbFormat,
+        vkExtent,
+        1u,
+        1u,
+        sampleCount,
+        imageTiling,
+        fbUsage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0u,
+        nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+    ImageWithMemory colorBufferRes(ctx.vkd, ctx.device, ctx.allocator, colorCreateInfo, MemoryRequirement::Any);
+    ImageWithMemory colorBufferRef(ctx.vkd, ctx.device, ctx.allocator, colorCreateInfo, MemoryRequirement::Any);
+
+    const auto colorSRR = makeDefaultImageSubresourceRange();
+    const auto colorBufferResView =
+        makeImageView(ctx.vkd, ctx.device, *colorBufferRes, VK_IMAGE_VIEW_TYPE_2D, fbFormat, colorSRR);
+    const auto colorBufferRefView =
+        makeImageView(ctx.vkd, ctx.device, *colorBufferRef, VK_IMAGE_VIEW_TYPE_2D, fbFormat, colorSRR);
+
+    PipelineLayoutWrapper pipelineLayout(m_params.constructionType, ctx.vkd, ctx.device);
+
+    const auto attDesc =
+        makeAttachmentDescription(0u, fbFormat, sampleCount, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+                                  VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    const auto attRef  = makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    const auto subpass = makeSubpassDescription(0u, VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, nullptr, 1u, &attRef, nullptr,
+                                                nullptr, 0u, nullptr);
+
+    const VkRenderPassCreateInfo renderPassCreateInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, nullptr, 0u, 1u, &attDesc, 1u, &subpass, 0u, nullptr,
+    };
+
+    RenderPassWrapper renderPassRes(m_params.constructionType, ctx.vkd, ctx.device, &renderPassCreateInfo);
+    RenderPassWrapper renderPassRef = renderPassRes.clone();
+    renderPassRes.createFramebuffer(ctx.vkd, ctx.device, *colorBufferRes, *colorBufferResView, vkExtent.width,
+                                    vkExtent.height);
+    renderPassRef.createFramebuffer(ctx.vkd, ctx.device, *colorBufferRef, *colorBufferRefView, vkExtent.width,
+                                    vkExtent.height);
+
+    // Modules.
+    using ShaderPtr      = std::unique_ptr<ShaderWrapper>;
+    const auto &binaries = m_context.getBinaryCollection();
+    std::vector<ShaderPtr> fragShaders;
+    ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+
+    const auto fragColors = m_params.getFragColors();
+    fragShaders.reserve(fragColors.size());
+
+    for (uint32_t i = 0u; i < de::sizeU32(fragColors); ++i)
+    {
+        const auto suffix     = std::to_string(i);
+        const auto shaderName = "frag" + suffix;
+
+        fragShaders.emplace_back(new ShaderWrapper(ctx.vkd, ctx.device, binaries.get(shaderName)));
+    }
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(vkExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(vkExtent));
+
+    using PipelineWrapperPtr = std::unique_ptr<GraphicsPipelineWrapper>;
+
+    const auto goodA2C = m_params.alphaToCoverage;
+    const auto badA2C  = !goodA2C;
+
+    const auto cmdPool       = makeCommandPool(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto resCmdBuffer  = allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto refCmdBuffer  = allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto compCmdBuffer = allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    // Result pipelines, using dynamic state.
+    const std::vector<VkDynamicState> dynamicStates{VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT};
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        sampleCount,
+        VK_FALSE,
+        0.0f,
+        nullptr,
+        badA2C,
+        VK_FALSE,
+    };
+
+#ifdef USE_DGC_PATH
+    const VkPipelineCreateFlags2KHR pipelineFlags2 =
+        (m_params.useIES ? VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT : 0);
+    const VkShaderCreateFlagsEXT shaderFlags = (m_params.useIES ? VK_SHADER_CREATE_INDIRECT_BINDABLE_BIT_EXT : 0);
+#else
+    const VkPipelineCreateFlags2KHR pipelineFlags2 = 0u;
+    const VkShaderCreateFlagsEXT shaderFlags       = 0u;
+#endif
+
+    std::vector<PipelineWrapperPtr> resPipelines;
+    resPipelines.reserve(fragColors.size());
+    for (uint32_t i = 0u; i < de::sizeU32(fragColors); ++i)
+    {
+        resPipelines.emplace_back(new GraphicsPipelineWrapper(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
+                                                              m_context.getDeviceExtensions(),
+                                                              m_params.constructionType));
+        auto &pipeline = *resPipelines.back();
+        pipeline.setDefaultColorBlendState()
+            .setDefaultDepthStencilState()
+            .setDefaultMultisampleState()
+            .setDefaultRasterizationState()
+            .setDefaultPatchControlPoints(0u)
+            .setPipelineCreateFlags2(pipelineFlags2)
+            .setShaderCreateFlags(shaderFlags)
+            .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setDynamicState(&dynamicStateCreateInfo)
+            .setupVertexInputState()
+            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPassRef.get(), 0u, vertShader)
+            .setupFragmentShaderState(pipelineLayout, renderPassRef.get(), 0u, *fragShaders.at(i), nullptr,
+                                      &multisampleStateCreateInfo)
+            .setupFragmentOutputState(renderPassRef.get(), 0u, nullptr, &multisampleStateCreateInfo)
+            .buildPipeline();
+    }
+
+#ifdef USE_DGC_PATH
+    // Commands layout.
+    const auto useESO = isConstructionTypeShaderObject(m_params.constructionType);
+    DE_ASSERT(!useESO); // Not handled below.
+    DE_UNREF(useESO);   // For release builds.
+
+    const auto shaderStages = m_params.getShaderStages();
+
+    const VkIndirectCommandsLayoutUsageFlagsEXT cmdsLayoutFlags =
+        (m_params.usePreprocess ? VK_INDIRECT_COMMANDS_LAYOUT_USAGE_EXPLICIT_PREPROCESS_BIT_EXT : 0);
+    IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(cmdsLayoutFlags, shaderStages, pipelineLayout.get());
+    if (m_params.useIES)
+        cmdsLayoutBuilder.addExecutionSetToken(0u, VK_INDIRECT_EXECUTION_SET_INFO_TYPE_PIPELINES_EXT, shaderStages);
+    cmdsLayoutBuilder.addDrawToken(cmdsLayoutBuilder.getStreamRange());
+    const auto cmdsLayout = cmdsLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    ExecutionSetManagerPtr iesManager;
+    VkIndirectExecutionSetEXT iesHandle = VK_NULL_HANDLE;
+
+    if (m_params.useIES)
+    {
+        iesManager = makeExecutionSetManagerPipeline(ctx.vkd, ctx.device, resPipelines.front()->getPipeline(),
+                                                     de::sizeU32(resPipelines));
+        for (uint32_t i = 0u; i < de::sizeU32(resPipelines); ++i)
+            iesManager->addPipeline(i, resPipelines.at(i)->getPipeline());
+        iesManager->update();
+        iesHandle = iesManager->get();
+    }
+
+    // DGC buffer contents.
+    const auto sequenceCount = drawCount;
+    std::vector<uint32_t> dgcData;
+    dgcData.reserve((sequenceCount * cmdsLayoutBuilder.getStreamStride()) / DE_SIZEOF32(uint32_t));
+    for (uint32_t i = 0u; i < sequenceCount; ++i)
+    {
+        if (m_params.useIES)
+            dgcData.push_back(i);
+        dgcData.push_back(perDrawVerts); // vertexCount
+        dgcData.push_back(1u);           // instanceCount
+        dgcData.push_back(0u);           // firstVertex
+        dgcData.push_back(0u);           // firstInstance
+    }
+
+    // DGC buffer and preprocess buffer.
+    DGCBuffer dgcBuffer(ctx.vkd, ctx.device, ctx.allocator, de::dataSize(dgcData));
+    {
+        auto &alloc = dgcBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(dgcData), de::dataSize(dgcData));
+    }
+
+    const auto preprocessPipeline =
+        ((iesHandle != VK_NULL_HANDLE) ? VK_NULL_HANDLE : resPipelines.front()->getPipeline());
+    PreprocessBufferExt preprocessBuffer(ctx.vkd, ctx.device, ctx.allocator, iesHandle, *cmdsLayout, sequenceCount, 0u,
+                                         preprocessPipeline);
+#endif
+    Move<VkCommandBuffer> preprocessCmdBuffer;
+    VkCommandBuffer cmdBuffer = *resCmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    renderPassRes.begin(ctx.vkd, cmdBuffer, scissors.at(0u), clearColor);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+    ctx.vkd.cmdSetAlphaToCoverageEnableEXT(cmdBuffer, goodA2C);
+#ifdef USE_DGC_PATH
+    resPipelines.front()->bind(cmdBuffer); // Bind initial state.
+    {
+        DGCGenCmdsInfo cmdsInfo(shaderStages, iesHandle, *cmdsLayout, dgcBuffer.getDeviceAddress(), dgcBuffer.getSize(),
+                                preprocessBuffer.getDeviceAddress(), preprocessBuffer.getSize(), sequenceCount, 0ull,
+                                0u, preprocessPipeline);
+
+        if (m_params.usePreprocess)
+        {
+            preprocessCmdBuffer = allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+            beginCommandBuffer(ctx.vkd, *preprocessCmdBuffer);
+            ctx.vkd.cmdPreprocessGeneratedCommandsEXT(*preprocessCmdBuffer, &cmdsInfo.get(), cmdBuffer);
+            preprocessToExecuteBarrierExt(ctx.vkd, *preprocessCmdBuffer);
+            endCommandBuffer(ctx.vkd, *preprocessCmdBuffer);
+        }
+        ctx.vkd.cmdExecuteGeneratedCommandsEXT(cmdBuffer, makeVkBool(m_params.usePreprocess), &cmdsInfo.get());
+    }
+#else
+    for (uint32_t i = 0u; i < drawCount; ++i)
+    {
+        const auto pipelineIdx = (i >= de::sizeU32(resPipelines) ? 0u : i);
+        resPipelines.at(pipelineIdx)->bind(cmdBuffer);
+        ctx.vkd.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+    }
+#endif
+    renderPassRes.end(ctx.vkd, cmdBuffer);
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitAndWaitWithPreprocess(ctx.vkd, ctx.device, ctx.queue, cmdBuffer, *preprocessCmdBuffer);
+
+    // Reference pipelines. These use the right A2C value without dynamic state.
+    multisampleStateCreateInfo.alphaToCoverageEnable = goodA2C;
+
+    std::vector<PipelineWrapperPtr> refPipelines;
+    refPipelines.reserve(fragColors.size());
+    for (uint32_t i = 0u; i < de::sizeU32(fragColors); ++i)
+    {
+        refPipelines.emplace_back(new GraphicsPipelineWrapper(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
+                                                              m_context.getDeviceExtensions(),
+                                                              m_params.constructionType));
+        auto &pipeline = *refPipelines.back();
+        pipeline.setDefaultColorBlendState()
+            .setDefaultDepthStencilState()
+            .setDefaultMultisampleState()
+            .setDefaultRasterizationState()
+            .setDefaultPatchControlPoints(0u)
+            .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setupVertexInputState()
+            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPassRef.get(), 0u, vertShader)
+            .setupFragmentShaderState(pipelineLayout, renderPassRef.get(), 0u, *fragShaders.at(i), nullptr,
+                                      &multisampleStateCreateInfo)
+            .setupFragmentOutputState(renderPassRef.get(), 0u, nullptr, &multisampleStateCreateInfo)
+            .buildPipeline();
+    }
+
+    // Generate reference image.
+    cmdBuffer = *refCmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    renderPassRef.begin(ctx.vkd, cmdBuffer, scissors.at(0u), clearColor);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+    for (uint32_t i = 0u; i < drawCount; ++i)
+    {
+        const auto pipelineIdx = (i >= de::sizeU32(refPipelines) ? 0u : i);
+        refPipelines.at(pipelineIdx)->bind(cmdBuffer);
+        ctx.vkd.cmdDraw(cmdBuffer, perDrawVerts, 1u, 0u, 0u);
+    }
+    renderPassRef.end(ctx.vkd, cmdBuffer);
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Compare both images match using the compute shader.
+    std::vector<uint32_t> flagValues(totalFlags, 0u);
+    const auto flagsBufferInfo = makeBufferCreateInfo(de::dataSize(flagValues), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory flagsBuffer(ctx.vkd, ctx.device, ctx.allocator, flagsBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = flagsBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(flagValues), de::dataSize(flagValues));
+    }
+
+    const VkSamplerCreateInfo samplerCreateInfo = {
+        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FILTER_NEAREST,
+        VK_FILTER_NEAREST,
+        VK_SAMPLER_MIPMAP_MODE_NEAREST,
+        VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        0.0,
+        VK_FALSE,
+        0.0f,
+        VK_FALSE,
+        VK_COMPARE_OP_NEVER,
+        0.0f,
+        0.0f,
+        VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+        VK_FALSE,
+    };
+    const auto sampler = createSampler(ctx.vkd, ctx.device, &samplerCreateInfo);
+
+    const auto imageDescType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(imageDescType, 2u);                 // Reference and result images.
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Flags buffer.
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(imageDescType, VK_SHADER_STAGE_COMPUTE_BIT);
+    setLayoutBuilder.addSingleBinding(imageDescType, VK_SHADER_STAGE_COMPUTE_BIT);
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
+    const auto setLayout          = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto compPipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+    const auto descriptorSet      = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+    {
+        DescriptorSetUpdateBuilder updateBuilder;
+        using Location          = DescriptorSetUpdateBuilder::Location;
+        const auto resImageInfo = makeDescriptorImageInfo(*sampler, *colorBufferResView, VK_IMAGE_LAYOUT_GENERAL);
+        const auto refImageInfo = makeDescriptorImageInfo(*sampler, *colorBufferRefView, VK_IMAGE_LAYOUT_GENERAL);
+        const auto flagsBufInfo = makeDescriptorBufferInfo(*flagsBuffer, 0ull, VK_WHOLE_SIZE);
+        updateBuilder.writeSingle(*descriptorSet, Location::binding(0u), imageDescType, &resImageInfo);
+        updateBuilder.writeSingle(*descriptorSet, Location::binding(1u), imageDescType, &refImageInfo);
+        updateBuilder.writeSingle(*descriptorSet, Location::binding(2u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                  &flagsBufInfo);
+        updateBuilder.update(ctx.vkd, ctx.device);
+    }
+
+    const auto compShader   = createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
+    const auto compPipeline = makeComputePipeline(ctx.vkd, ctx.device, *compPipelineLayout, *compShader);
+
+    cmdBuffer = *compCmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    {
+        const std::vector<VkImageMemoryBarrier> preUsageBarriers = {
+            makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                   VK_IMAGE_LAYOUT_GENERAL, *colorBufferRes, colorSRR),
+            makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                   VK_IMAGE_LAYOUT_GENERAL, *colorBufferRef, colorSRR),
+        };
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, de::dataOrNull(preUsageBarriers),
+                                      preUsageBarriers.size());
+    }
+    {
+        // We dispatch as many groups as pixels in the image. See shader code for details.
+        const auto dispatchSize = fbExtent.asUint();
+        const auto bindPoint    = VK_PIPELINE_BIND_POINT_COMPUTE;
+
+        ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *compPipelineLayout, 0u, 1u, &descriptorSet.get(), 0u,
+                                      nullptr);
+        ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *compPipeline);
+        ctx.vkd.cmdDispatch(cmdBuffer, dispatchSize.x(), dispatchSize.y(), dispatchSize.z());
+    }
+    {
+        const auto preCopyBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &preCopyBarrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Extract updated flags from the buffer.
+    {
+        auto &alloc = flagsBuffer.getAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, alloc);
+        memcpy(de::dataOrNull(flagValues), alloc.getHostPtr(), de::dataSize(flagValues));
+    }
+
+    // Verify flags.
+    bool failed = false;
+    auto &log   = m_context.getTestContext().getLog();
+
+    const auto rowSamples = fbExtent.x() * sampleCount;
+    for (int s = 0; s < sampleCount; ++s)
+        for (int y = 0; y < fbExtent.y(); ++y)
+            for (int x = 0; x < fbExtent.x(); ++x)
+            {
+                const auto idx = y * rowSamples + x * sampleCount + s;
+                if (flagValues.at(idx) != 1u)
+                {
+                    failed = true;
+                    log << tcu::TestLog::Message << "Wrong value at (" << x << ", " << y << ") sample " << s
+                        << tcu::TestLog::EndMessage;
+                }
+            }
+
+    if (failed)
+        TCU_FAIL("Multisample color buffer verification failed; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createDGCGraphicsMiscTestsExt(tcu::TestContext &testCtx)
@@ -7147,6 +7823,31 @@ tcu::TestCaseGroup *createDGCGraphicsMiscTestsExt(tcu::TestContext &testCtx)
                                           (preprocess ? "_preprocess" : "") + "_" + cType.suffix;
                     mainGroup->addChild(new SampleIDStateCase(testCtx, testName, params));
                 }
+    }
+
+    {
+        for (const auto &constructionTypeCase : constructionTypes)
+        {
+            if (isConstructionTypeShaderObject(constructionTypeCase.constructionType))
+                continue; // With shader objects, everything is already dynamic.
+
+            for (const bool useIES : {false, true})
+                for (const bool preprocess : {false, true})
+                    for (const bool useA2C : {false, true})
+                    {
+                        const DynamicA2CInstance::Params params{
+                            constructionTypeCase.constructionType,
+                            useA2C,
+                            useIES,
+                            preprocess,
+                        };
+                        const auto testName = constructionTypeCase.suffix + std::string("_dynamic_a2c") +
+                                              (useA2C ? "_enabled" : "_disabled") + (useIES ? "_ies" : "") +
+                                              (preprocess ? "_preprocess" : "");
+
+                        mainGroup->addChild(new DynamicA2CCase(testCtx, testName, params));
+                    }
+        }
     }
 
     return mainGroup.release();
