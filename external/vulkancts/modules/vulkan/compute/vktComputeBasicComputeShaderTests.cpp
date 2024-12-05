@@ -2954,10 +2954,10 @@ tcu::TestStatus DispatchBaseTestInstance::iterate(void)
     pipeline.setPipelineCreateFlags(VK_PIPELINE_CREATE_DISPATCH_BASE);
 
 #ifndef CTS_USES_VULKANSC
+    VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
     if (m_useMaintenance5)
     {
-        VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
-        pipelineFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DISPATCH_BASE_BIT_KHR;
+        pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_DISPATCH_BASE_BIT_KHR;
         pipeline.setPipelineCreatePNext(&pipelineFlags2CreateInfo);
         pipeline.setPipelineCreateFlags(0);
     }
