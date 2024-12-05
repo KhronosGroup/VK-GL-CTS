@@ -74,7 +74,10 @@ inline void checkConditionalRenderingExt(Context &context)
 
 void checkConditionalDGCComputeSupport(Context &context, TestParams params)
 {
-    checkDGCExtComputeSupport(context, params.pipelineToken);
+    const auto supportType =
+        (params.pipelineToken ? DGCComputeSupportType::BIND_PIPELINE : DGCComputeSupportType::BASIC);
+
+    checkDGCExtComputeSupport(context, supportType);
     checkConditionalRenderingExt(context);
 
     if (params.computeQueue)
@@ -83,7 +86,7 @@ void checkConditionalDGCComputeSupport(Context &context, TestParams params)
 
 void checkConditionalPreprocessSupport(Context &context, ConditionalPreprocessParams params)
 {
-    checkDGCExtComputeSupport(context, false);
+    checkDGCExtComputeSupport(context, DGCComputeSupportType::BASIC);
     checkConditionalRenderingExt(context);
 
     if (params.executeOnCompute)

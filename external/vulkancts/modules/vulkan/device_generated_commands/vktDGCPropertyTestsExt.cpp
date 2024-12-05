@@ -59,7 +59,7 @@ void checkDGCExtFunctionalitySupport(Context &context)
 
 void checkBasicDGCComputeSupport(Context &context)
 {
-    checkDGCExtComputeSupport(context, false);
+    checkDGCExtComputeSupport(context, DGCComputeSupportType::BASIC);
 }
 
 void checkMaxIndirectCommandsTokenCountSupport(Context &context, uint32_t pcSizeBytes)

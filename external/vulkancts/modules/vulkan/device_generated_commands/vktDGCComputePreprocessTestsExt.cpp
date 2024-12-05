@@ -88,7 +88,7 @@ bool usesComputeQueue(Method method)
 
 void checkDGCComputeAndQueueSupport(Context &context, PreprocessParams params)
 {
-    checkDGCExtComputeSupport(context, false);
+    checkDGCExtComputeSupport(context, DGCComputeSupportType::BASIC);
 
     if (usesComputeQueue(params.method))
         context.getComputeQueue(); // Throws NotSupportedError if not available.

@@ -210,9 +210,15 @@ protected:
 void LayoutTestCase::checkSupport(Context &context) const
 {
     const bool requireBinds = hasExecutionSet(m_params.testType);
-    checkDGCExtComputeSupport(context, requireBinds);
+    const bool requireESO   = m_params.shaderObjects;
 
-    if (m_params.shaderObjects)
+    DGCComputeSupportType supportType = DGCComputeSupportType::BASIC;
+    if (requireBinds)
+        supportType = (requireESO ? DGCComputeSupportType::BIND_SHADER : DGCComputeSupportType::BIND_PIPELINE);
+
+    checkDGCExtComputeSupport(context, supportType);
+
+    if (requireESO)
     {
         context.requireDeviceFunctionality("VK_EXT_shader_object");
         if (requireBinds)

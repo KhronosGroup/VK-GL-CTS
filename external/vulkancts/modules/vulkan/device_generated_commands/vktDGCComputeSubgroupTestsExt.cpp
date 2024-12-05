@@ -62,7 +62,9 @@ struct BuiltinParams
 
 void checkSubgroupSupport(Context &context, BuiltinParams params)
 {
-    checkDGCExtComputeSupport(context, params.pipelineToken);
+    const auto supportType =
+        (params.pipelineToken ? DGCComputeSupportType::BIND_PIPELINE : DGCComputeSupportType::BASIC);
+    checkDGCExtComputeSupport(context, supportType);
 
     if (context.getUsedApiVersion() < VK_API_VERSION_1_3)
         TCU_THROW(NotSupportedError, "Vulkan 1.3 not supported");
