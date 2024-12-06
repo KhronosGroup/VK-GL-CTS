@@ -1,0 +1,23 @@
+{
+    "mandatory_features": {
+        "VkPhysicalDeviceCooperativeMatrix2FeaturesNV": [
+            {
+                "features": [
+                    "cooperativeMatrixWorkgroupScope",
+                    "cooperativeMatrixFlexibleDimensions",
+                    "cooperativeMatrixReductions",
+                    "cooperativeMatrixConversions",
+                    "cooperativeMatrixPerElementOperations",
+                    "cooperativeMatrixTensorAddressing",
+                    "cooperativeMatrixBlockLoads"
+                ],
+                "requirements": [
+                    "VK_NV_cooperative_matrix2"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ]
+    }
+}
