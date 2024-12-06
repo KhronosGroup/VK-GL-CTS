@@ -898,8 +898,8 @@ public:
                         SharedPtr<OperationSupport> opSupport(
                             makeOperationSupport(s_copyOps[copyOpIdx], m_resourceDesc).release());
 
-                        if (!checkQueueFlags(opSupport->getQueueFlags(*m_opContext),
-                                             m_queues->getQueueFamilyFlags(familyIdx)))
+                        if (!checkQueueFlags(m_queues->getQueueFamilyFlags(familyIdx),
+                                             opSupport->getQueueFlags(*m_opContext)))
                             continue;
 
                         m_opSupports.push_back(opSupport);
