@@ -39,7 +39,7 @@ class BufferedReader
 public:
     // Open and read from filename
     BufferedReader(const std::string &filename)
-        : m_istream(std::make_unique<std::ifstream>(resourceRelativePath(filename).getPath(), std::ios_base::binary))
+        : m_istream(std::make_unique<std::ifstream>(filename.c_str(), std::ios_base::binary))
     {
         if (!m_istream->good())
         {

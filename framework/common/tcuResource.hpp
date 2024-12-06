@@ -50,9 +50,9 @@ public:
     }
 
     virtual void read(uint8_t *dst, int numBytes) = 0;
-    virtual int getSize(void) const               = 0;
-    virtual int getPosition(void) const           = 0;
-    virtual void setPosition(int position)        = 0;
+    virtual uint32_t getSize(void) const          = 0;
+    virtual uint32_t getPosition(void) const      = 0;
+    virtual void setPosition(uint32_t position)   = 0;
 
     const std::string &getName(void) const
     {
@@ -128,9 +128,10 @@ public:
     ~FileResource(void);
 
     void read(uint8_t *dst, int numBytes);
-    int getSize(void) const;
-    int getPosition(void) const;
-    void setPosition(int position);
+    void read(uint16_t *dst, int numBytes);
+    uint32_t getSize(void) const;
+    uint32_t getPosition(void) const;
+    void setPosition(uint32_t position);
 
 private:
     FileResource(const FileResource &other);

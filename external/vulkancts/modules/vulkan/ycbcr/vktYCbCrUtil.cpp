@@ -203,6 +203,63 @@ void checkImageSupport(Context &context, VkFormat format, VkImageCreateFlags cre
     }
 }
 
+void extractI420Frame(std::vector<uint8_t> &videoDataPtr, uint32_t frameNumber, uint32_t width, uint32_t height,
+                      vkt::ycbcr::MultiPlaneImageData *imageData, bool half_size)
+{
+    uint32_t uOffset   = width * height;
+    uint32_t vOffset   = uOffset + (uOffset / 4);
+    uint32_t frameSize = uOffset + (uOffset / 2);
+
+    // Ensure the videoDataPtr is large enough for the requested frame
+    if (videoDataPtr.size() < (frameNumber + 1) * frameSize)
+    {
+        TCU_THROW(NotSupportedError, "Video data pointer content is too small for requested frame");
+    }
+
+    const uint8_t *yPlane = videoDataPtr.data() + frameNumber * frameSize;
+    const uint8_t *uPlane = videoDataPtr.data() + frameNumber * frameSize + uOffset;
+    const uint8_t *vPlane = videoDataPtr.data() + frameNumber * frameSize + vOffset;
+
+    uint8_t *yPlaneData  = static_cast<uint8_t *>(imageData->getPlanePtr(0));
+    uint8_t *uvPlaneData = static_cast<uint8_t *>(imageData->getPlanePtr(1));
+
+    // If half_size is true, perform a simple 2x reduction
+    if (half_size)
+    {
+        for (uint32_t j = 0; j < height; j += 2)
+        {
+            for (uint32_t i = 0; i < width; i += 2)
+            {
+                yPlaneData[(j / 2) * (width / 2) + (i / 2)] = yPlane[j * width + i];
+            }
+        }
+        for (uint32_t j = 0; j < height / 2; j += 2)
+        {
+            for (uint32_t i = 0; i < width / 2; i += 2)
+            {
+                uint32_t reducedIndex = (j / 2) * (width / 4) + (i / 2);
+                uint32_t fullIndex    = j * (width / 2) + i;
+
+                uvPlaneData[2 * reducedIndex]     = uPlane[fullIndex];
+                uvPlaneData[2 * reducedIndex + 1] = vPlane[fullIndex];
+            }
+        }
+    }
+    else
+    {
+        // Writing NV12 frame
+        uint32_t yPlaneSize = width * height;
+        deMemcpy(yPlaneData, yPlane, yPlaneSize);
+
+        uint32_t uvPlaneSize = yPlaneSize / 2;
+        for (uint32_t i = 0; i < uvPlaneSize; i += 2)
+        {
+            uvPlaneData[i]     = uPlane[i / 2];
+            uvPlaneData[i + 1] = vPlane[i / 2];
+        }
+    }
+}
+
 void fillRandomNoNaN(de::Random *randomGen, uint8_t *const data, uint32_t size, const vk::VkFormat format)
 {
     bool isFloat    = false;

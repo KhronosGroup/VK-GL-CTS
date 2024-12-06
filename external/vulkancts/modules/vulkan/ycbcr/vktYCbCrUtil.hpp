@@ -42,6 +42,7 @@
 #include "tcuFloat.hpp"
 
 #include <vector>
+#include <fstream>
 
 namespace vkt
 {
@@ -99,6 +100,65 @@ private:
 
     std::vector<uint8_t> m_planeData[vk::PlanarFormatDescription::MAX_PLANES];
 };
+
+template <typename planeType>
+class YCbCrContent
+{
+
+public:
+    YCbCrContent()
+    {
+    }
+
+    ~YCbCrContent()
+    {
+    }
+
+    static de::MovePtr<std::vector<planeType>> getFrame(std::string fileName, uint32_t width, uint32_t height,
+                                                        int frameIndex)
+    {
+        tcu::FileResource fileResource(fileName.c_str());
+        uint32_t uOffset   = width * height;
+        uint32_t frameSize = uOffset + (uOffset / 2);
+        uint32_t position  = frameSize * frameIndex;
+        de::MovePtr<std::vector<planeType>> content(new std::vector<planeType>(0));
+
+        if (position > fileResource.getSize())
+        {
+            TCU_THROW(NotSupportedError, "Position is higher than the file size, check the frame index provided");
+        }
+
+        fileResource.setPosition(position * sizeof(planeType));
+        content->resize(frameSize);
+        fileResource.read(content->data(), frameSize);
+        return content;
+    }
+
+    static bool save(const std::vector<planeType> &data, const std::string &outputFileName)
+    {
+        std::ofstream outFile(outputFileName, std::ios::binary | std::ios::out);
+
+        if (!outFile.is_open())
+        {
+            std::cerr << "Error: Unable to open output file '" << outputFileName << "'." << std::endl;
+            return false;
+        }
+
+        if (data.empty())
+        {
+            std::cerr << "Error: Data is empty or doesn't exist" << std::endl;
+            return false;
+        }
+
+        outFile.write(reinterpret_cast<const char *>(data.data()), data.size() * sizeof(planeType));
+        outFile.close();
+
+        return true;
+    }
+};
+
+void extractI420Frame(std::vector<uint8_t> &videoDataPtr, uint32_t frameNumber, uint32_t width, uint32_t height,
+                      vkt::ycbcr::MultiPlaneImageData *imageData, bool half_size);
 
 void checkImageSupport(Context &context, vk::VkFormat format, vk::VkImageCreateFlags createFlags,
                        vk::VkImageTiling tiling = vk::VK_IMAGE_TILING_OPTIMAL);
@@ -195,6 +255,61 @@ void calculateBounds(const ChannelAccess &rPlane, const ChannelAccess &gPlane, c
                      vk::VkSamplerAddressMode addressModeU, vk::VkSamplerAddressMode addressModeV,
                      std::vector<tcu::Vec4> &minBounds, std::vector<tcu::Vec4> &maxBounds,
                      std::vector<tcu::Vec4> &uvBounds, std::vector<tcu::IVec4> &ijBounds);
+
+template <typename planeType> // T can be uint8_t for 8-bit or uint16_t for 16-bit
+class YCbCrConvUtil
+{
+    YCbCrConvUtil()
+    {
+    }
+
+    virtual ~YCbCrConvUtil()
+    {
+    }
+
+public:
+    // This method will convert multiplanar NV12 to one plane I420
+    static de::MovePtr<std::vector<planeType>> MultiPlanarNV12toI420(vkt::ycbcr::MultiPlaneImageData *imageData)
+    {
+        uint32_t i;
+        uint16_t msbShift;
+        planeType *yPlaneData    = static_cast<planeType *>(imageData->getPlanePtr(0));
+        planeType *uvPlaneData   = static_cast<planeType *>(imageData->getPlanePtr(1));
+        tcu::UVec4 channelDepths = ycbcr::getYCbCrBitDepth(imageData->getFormat());
+        int bitDepth             = channelDepths.x();
+        const uint32_t width     = imageData->getSize().x();
+        const uint32_t height    = imageData->getSize().y();
+        uint32_t ySize           = width * height;
+        uint32_t frameSize       = ySize + (ySize / 2);
+        de::MovePtr<std::vector<planeType>> YUVDataPtr =
+            de::MovePtr<std::vector<planeType>>(new std::vector<planeType>(frameSize));
+        planeType *y_plane = YUVDataPtr.get()->data();
+        planeType *u_plane = y_plane + ySize;
+        planeType *v_plane = u_plane + (ySize / 4);
+
+        DE_ASSERT(bitDepth == 8 || bitDepth == 10 || bitDepth == 12 || bitDepth == 16);
+        TCU_CHECK_AND_THROW(InternalError, bitDepth != 16, "16-bit samples have not been tested yet");
+        if (bitDepth == 12)
+            msbShift = 4;
+        else if (bitDepth == 10)
+            msbShift = 6;
+        else
+            msbShift = 0;
+
+        for (i = 0; i < ySize; i++)
+        {
+            y_plane[i] = yPlaneData[i] >> msbShift;
+        }
+
+        for (i = 0; i < ySize / 4; i++)
+        {
+            u_plane[i] = uvPlaneData[2 * i] >> msbShift;
+            v_plane[i] = uvPlaneData[2 * i + 1] >> msbShift;
+        }
+
+        return YUVDataPtr;
+    }
+};
 
 } // namespace ycbcr
 } // namespace vkt
