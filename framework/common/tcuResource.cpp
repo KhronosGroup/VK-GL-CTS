@@ -62,21 +62,27 @@ void FileResource::read(uint8_t *dst, int numBytes)
     TCU_CHECK(numRead == numBytes);
 }
 
-int FileResource::getSize(void) const
+void FileResource::read(uint16_t *dst, int numBytes)
+{
+    int numRead = (int)fread(dst, sizeof(uint16_t), numBytes, m_file);
+    TCU_CHECK(numRead == numBytes);
+}
+
+uint32_t FileResource::getSize(void) const
 {
     long curPos = ftell(m_file);
     fseek(m_file, 0, SEEK_END);
-    int size = (int)ftell(m_file);
+    uint32_t size = (int)ftell(m_file);
     fseek(m_file, curPos, SEEK_SET);
     return size;
 }
 
-int FileResource::getPosition(void) const
+uint32_t FileResource::getPosition(void) const
 {
-    return (int)ftell(m_file);
+    return (uint32_t)ftell(m_file);
 }
 
-void FileResource::setPosition(int position)
+void FileResource::setPosition(uint32_t position)
 {
     fseek(m_file, (size_t)position, SEEK_SET);
 }

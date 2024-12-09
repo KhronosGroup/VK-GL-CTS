@@ -152,6 +152,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 
 #if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceCooperativeMatrix2FeaturesNV physicalDeviceCooperativeMatrix2FeaturesNV;
+	deMemset(&physicalDeviceCooperativeMatrix2FeaturesNV, 0, sizeof(physicalDeviceCooperativeMatrix2FeaturesNV));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_cooperative_matrix2") )
+	{
+		physicalDeviceCooperativeMatrix2FeaturesNV.sType = getStructureType<VkPhysicalDeviceCooperativeMatrix2FeaturesNV>();
+		*nextPtr = &physicalDeviceCooperativeMatrix2FeaturesNV;
+		nextPtr  = &physicalDeviceCooperativeMatrix2FeaturesNV.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceCoverageReductionModeFeaturesNV physicalDeviceCoverageReductionModeFeaturesNV;
 	deMemset(&physicalDeviceCoverageReductionModeFeaturesNV, 0, sizeof(physicalDeviceCoverageReductionModeFeaturesNV));
 
@@ -1176,6 +1188,30 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceVertexInputDynamicStateFeaturesEXT;
 		nextPtr  = &physicalDeviceVertexInputDynamicStateFeaturesEXT.pNext;
 	}
+
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceVideoEncodeAV1FeaturesKHR physicalDeviceVideoEncodeAV1FeaturesKHR;
+	deMemset(&physicalDeviceVideoEncodeAV1FeaturesKHR, 0, sizeof(physicalDeviceVideoEncodeAV1FeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_encode_av1") )
+	{
+		physicalDeviceVideoEncodeAV1FeaturesKHR.sType = getStructureType<VkPhysicalDeviceVideoEncodeAV1FeaturesKHR>();
+		*nextPtr = &physicalDeviceVideoEncodeAV1FeaturesKHR;
+		nextPtr  = &physicalDeviceVideoEncodeAV1FeaturesKHR.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR physicalDeviceVideoEncodeQuantizationMapFeaturesKHR;
+	deMemset(&physicalDeviceVideoEncodeQuantizationMapFeaturesKHR, 0, sizeof(physicalDeviceVideoEncodeQuantizationMapFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_encode_quantization_map") )
+	{
+		physicalDeviceVideoEncodeQuantizationMapFeaturesKHR.sType = getStructureType<VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR>();
+		*nextPtr = &physicalDeviceVideoEncodeQuantizationMapFeaturesKHR;
+		nextPtr  = &physicalDeviceVideoEncodeQuantizationMapFeaturesKHR.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceVulkan11Features physicalDeviceVulkan11Features;
@@ -2744,6 +2780,28 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_video_encode_av1")) )
+	{
+		if ( physicalDeviceVideoEncodeAV1FeaturesKHR.videoEncodeAV1 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature videoEncodeAV1 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_video_encode_quantization_map")) )
+	{
+		if ( physicalDeviceVideoEncodeQuantizationMapFeaturesKHR.videoEncodeQuantizationMap == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature videoEncodeQuantizationMap not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_vulkan_memory_model")) )
 	{
 		if ( physicalDeviceVulkanMemoryModelFeatures.vulkanMemoryModel == VK_FALSE )
@@ -2770,6 +2828,17 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_cooperative_matrix2")) )
+	{
+		if ( ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixWorkgroupScope == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixFlexibleDimensions == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixReductions == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixConversions == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixPerElementOperations == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixTensorAddressing == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixBlockLoads == VK_FALSE ) )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature cooperativeMatrixWorkgroupScope or cooperativeMatrixFlexibleDimensions or cooperativeMatrixReductions or cooperativeMatrixConversions or cooperativeMatrixPerElementOperations or cooperativeMatrixTensorAddressing or cooperativeMatrixBlockLoads not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_device_generated_commands")) )

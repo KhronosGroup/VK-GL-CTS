@@ -1084,6 +1084,7 @@ public:
         {
         case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
         case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
+        case VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR:
         {
             VideoDevice::VideoDeviceFlags flags = VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED;
 
@@ -1241,83 +1242,6 @@ VkVideoCodecOperationFlagBitsKHR getCodecDecodeOperationFromEncode(VkVideoCodecO
     default:
         return VK_VIDEO_CODEC_OPERATION_NONE_KHR;
     }
-}
-
-void extractYUV420pFrame(std::vector<uint8_t> &videoDataPtr, uint32_t frameNumber, uint32_t width, uint32_t height,
-                         MultiPlaneImageData *imageData, bool half_size)
-{
-    uint32_t uOffset   = width * height;
-    uint32_t vOffset   = uOffset + (uOffset / 4);
-    uint32_t frameSize = uOffset + (uOffset / 2);
-
-    // Ensure the videoDataPtr is large enough for the requested frame
-    if (videoDataPtr.size() < (frameNumber + 1) * frameSize)
-    {
-        TCU_THROW(NotSupportedError, "Video data pointer content is too small for requested frame");
-    }
-
-    const uint8_t *yPlane = videoDataPtr.data() + frameNumber * frameSize;
-    const uint8_t *uPlane = videoDataPtr.data() + frameNumber * frameSize + uOffset;
-    const uint8_t *vPlane = videoDataPtr.data() + frameNumber * frameSize + vOffset;
-
-    uint8_t *yPlaneData  = static_cast<uint8_t *>(imageData->getPlanePtr(0));
-    uint8_t *uvPlaneData = static_cast<uint8_t *>(imageData->getPlanePtr(1));
-
-    // If half_size is true, perform a simple 2x reduction
-    if (half_size)
-    {
-        for (uint32_t j = 0; j < height; j += 2)
-        {
-            for (uint32_t i = 0; i < width; i += 2)
-            {
-                yPlaneData[(j / 2) * (width / 2) + (i / 2)] = yPlane[j * width + i];
-            }
-        }
-        for (uint32_t j = 0; j < height / 2; j += 2)
-        {
-            for (uint32_t i = 0; i < width / 2; i += 2)
-            {
-                uint32_t reducedIndex = (j / 2) * (width / 4) + (i / 2);
-                uint32_t fullIndex    = j * (width / 2) + i;
-
-                uvPlaneData[2 * reducedIndex]     = uPlane[fullIndex];
-                uvPlaneData[2 * reducedIndex + 1] = vPlane[fullIndex];
-            }
-        }
-    }
-    else
-    {
-        // Writing NV12 frame
-        uint32_t yPlaneSize = width * height;
-        memcpy(yPlaneData, yPlane, yPlaneSize);
-
-        uint32_t uvPlaneSize = yPlaneSize / 2;
-        for (uint32_t i = 0; i < uvPlaneSize; i += 2)
-        {
-            uvPlaneData[i]     = uPlane[i / 2];
-            uvPlaneData[i + 1] = vPlane[i / 2];
-        }
-    }
-}
-
-de::MovePtr<std::vector<uint8_t>> saveNV12FrameAsYUV(MultiPlaneImageData *imageData)
-{
-    uint8_t *yPlaneData  = static_cast<uint8_t *>(imageData->getPlanePtr(0));
-    uint8_t *uvPlaneData = static_cast<uint8_t *>(imageData->getPlanePtr(1));
-
-    const uint32_t width  = imageData->getSize().x();
-    const uint32_t height = imageData->getSize().y();
-
-    uint32_t uOffset   = width * height;
-    uint32_t frameSize = uOffset + (uOffset / 2);
-
-    de::MovePtr<std::vector<uint8_t>> outputDataPtr =
-        de::MovePtr<std::vector<uint8_t>>(new std::vector<uint8_t>(frameSize));
-
-    memcpy(outputDataPtr.get()->data(), yPlaneData, uOffset);
-    memcpy(&outputDataPtr.get()->data()[uOffset], uvPlaneData, uOffset / 2);
-
-    return outputDataPtr;
 }
 
 template <typename T>
@@ -1508,157 +1432,6 @@ VkVideoReferenceSlotInfoKHR makeVideoReferenceSlot(int32_t slotIndex,
 // all external libraries, helper functions and test instances has been excluded
 #ifdef DE_BUILD_VIDEO
 
-static shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext, const VkVideoCoreProfile *profile,
-                                                       size_t framesToCheck, bool resolutionChange)
-{
-    VkSharedBaseObj<VulkanVideoFrameBuffer> vkVideoFrameBuffer;
-
-    VK_CHECK(VulkanVideoFrameBuffer::Create(deviceContext,
-                                            false, // UseResultStatusQueries
-                                            false, // ResourcesWithoutProfiles
-                                            vkVideoFrameBuffer));
-
-    VideoBaseDecoder::Parameters params;
-
-    params.profile            = profile;
-    params.context            = deviceContext;
-    params.framebuffer        = vkVideoFrameBuffer;
-    params.framesToCheck      = framesToCheck;
-    params.queryDecodeStatus  = false;
-    params.outOfOrderDecoding = false;
-    params.alwaysRecreateDPB  = resolutionChange;
-    params.layeredDpb         = true;
-
-    return std::make_shared<VideoBaseDecoder>(std::move(params));
-}
-
-de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImageFromContext(DeviceContext &deviceContext,
-                                                                        VkImageLayout layout, const DecodedFrame *frame)
-{
-    auto &videoDeviceDriver       = deviceContext.getDeviceDriver();
-    auto device                   = deviceContext.device;
-    auto queueFamilyIndexDecode   = deviceContext.decodeQueueFamilyIdx();
-    auto queueFamilyIndexTransfer = deviceContext.transferQueueFamilyIdx();
-    const VkExtent2D imageExtent{(uint32_t)frame->displayWidth, (uint32_t)frame->displayHeight};
-    const VkImage image      = frame->outputImageView->GetImageResource()->GetImage();
-    const VkFormat format    = frame->outputImageView->GetImageResource()->GetImageCreateInfo().format;
-    uint32_t imageLayerIndex = frame->imageLayerIndex;
-
-    MovePtr<vkt::ycbcr::MultiPlaneImageData> multiPlaneImageData(
-        new vkt::ycbcr::MultiPlaneImageData(format, tcu::UVec2(imageExtent.width, imageExtent.height)));
-    const VkQueue queueDecode   = getDeviceQueue(videoDeviceDriver, device, queueFamilyIndexDecode, 0u);
-    const VkQueue queueTransfer = getDeviceQueue(videoDeviceDriver, device, queueFamilyIndexTransfer, 0u);
-    const VkImageSubresourceRange imageSubresourceRange =
-        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, imageLayerIndex, 1);
-
-    const VkImageMemoryBarrier2KHR imageBarrierDecode =
-        makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
-                                VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR, VK_ACCESS_NONE_KHR, layout,
-                                VK_IMAGE_LAYOUT_GENERAL, image, imageSubresourceRange);
-
-    const VkImageMemoryBarrier2KHR imageBarrierOwnershipDecode = makeImageMemoryBarrier2(
-        VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR, VK_ACCESS_NONE_KHR, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR,
-        VK_ACCESS_NONE_KHR, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, image, imageSubresourceRange,
-        queueFamilyIndexDecode, queueFamilyIndexTransfer);
-
-    const VkImageMemoryBarrier2KHR imageBarrierOwnershipTransfer = makeImageMemoryBarrier2(
-        VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR, VK_ACCESS_NONE_KHR, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_ACCESS_NONE_KHR, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, image, imageSubresourceRange,
-        queueFamilyIndexDecode, queueFamilyIndexTransfer);
-
-    const VkImageMemoryBarrier2KHR imageBarrierTransfer = makeImageMemoryBarrier2(
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_ACCESS_MEMORY_WRITE_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,
-        VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
-        imageSubresourceRange);
-
-    const Move<VkCommandPool> cmdDecodePool(makeCommandPool(videoDeviceDriver, device, queueFamilyIndexDecode));
-    const Move<VkCommandBuffer> cmdDecodeBuffer(
-        allocateCommandBuffer(videoDeviceDriver, device, *cmdDecodePool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-    const Move<VkCommandPool> cmdTransferPool(makeCommandPool(videoDeviceDriver, device, queueFamilyIndexTransfer));
-    const Move<VkCommandBuffer> cmdTransferBuffer(
-        allocateCommandBuffer(videoDeviceDriver, device, *cmdTransferPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-
-    Move<VkSemaphore> semaphore                 = createSemaphore(videoDeviceDriver, device);
-    Move<VkFence> decodeFence                   = createFence(videoDeviceDriver, device);
-    Move<VkFence> transferFence                 = createFence(videoDeviceDriver, device);
-    VkFence fences[]                            = {*decodeFence, *transferFence};
-    const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-
-    VkSubmitInfo decodeSubmitInfo = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO, //  VkStructureType sType;
-        nullptr,                       //  const void* pNext;
-        0u,                            //  uint32_t waitSemaphoreCount;
-        nullptr,                       //  const VkSemaphore* pWaitSemaphores;
-        nullptr,                       //  const VkPipelineStageFlags* pWaitDstStageMask;
-        1u,                            //  uint32_t commandBufferCount;
-        &*cmdDecodeBuffer,             //  const VkCommandBuffer* pCommandBuffers;
-        1u,                            //  uint32_t signalSemaphoreCount;
-        &*semaphore,                   //  const VkSemaphore* pSignalSemaphores;
-    };
-    if (frame->frameCompleteSemaphore != VK_NULL_HANDLE)
-    {
-        decodeSubmitInfo.waitSemaphoreCount = 1;
-        decodeSubmitInfo.pWaitSemaphores    = &frame->frameCompleteSemaphore;
-        decodeSubmitInfo.pWaitDstStageMask  = &waitDstStageMask;
-    }
-    const VkSubmitInfo transferSubmitInfo = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO, //  VkStructureType sType;
-        nullptr,                       //  const void* pNext;
-        1u,                            //  uint32_t waitSemaphoreCount;
-        &*semaphore,                   //  const VkSemaphore* pWaitSemaphores;
-        &waitDstStageMask,             //  const VkPipelineStageFlags* pWaitDstStageMask;
-        1u,                            //  uint32_t commandBufferCount;
-        &*cmdTransferBuffer,           //  const VkCommandBuffer* pCommandBuffers;
-        0u,                            //  uint32_t signalSemaphoreCount;
-        nullptr,                       //  const VkSemaphore* pSignalSemaphores;
-    };
-
-    beginCommandBuffer(videoDeviceDriver, *cmdDecodeBuffer, 0u);
-    cmdPipelineImageMemoryBarrier2(videoDeviceDriver, *cmdDecodeBuffer, &imageBarrierDecode);
-    cmdPipelineImageMemoryBarrier2(videoDeviceDriver, *cmdDecodeBuffer, &imageBarrierOwnershipDecode);
-    endCommandBuffer(videoDeviceDriver, *cmdDecodeBuffer);
-
-    beginCommandBuffer(videoDeviceDriver, *cmdTransferBuffer, 0u);
-    cmdPipelineImageMemoryBarrier2(videoDeviceDriver, *cmdTransferBuffer, &imageBarrierOwnershipTransfer);
-    cmdPipelineImageMemoryBarrier2(videoDeviceDriver, *cmdTransferBuffer, &imageBarrierTransfer);
-    endCommandBuffer(videoDeviceDriver, *cmdTransferBuffer);
-
-    VK_CHECK(videoDeviceDriver.queueSubmit(queueDecode, 1u, &decodeSubmitInfo, *decodeFence));
-    VK_CHECK(videoDeviceDriver.queueSubmit(queueTransfer, 1u, &transferSubmitInfo, *transferFence));
-
-    VK_CHECK(videoDeviceDriver.waitForFences(device, DE_LENGTH_OF_ARRAY(fences), fences, true, ~0ull));
-
-    vkt::ycbcr::downloadImage(videoDeviceDriver, device, queueFamilyIndexTransfer, deviceContext.allocator(), image,
-                              multiPlaneImageData.get(), 0, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageLayerIndex);
-
-    const VkImageMemoryBarrier2KHR imageBarrierTransfer2 =
-        makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR, VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR,
-                                VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT_KHR, VK_ACCESS_NONE_KHR,
-                                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout, image, imageSubresourceRange);
-
-    videoDeviceDriver.resetCommandBuffer(*cmdTransferBuffer, 0u);
-    videoDeviceDriver.resetFences(device, 1, &*transferFence);
-    beginCommandBuffer(videoDeviceDriver, *cmdTransferBuffer, 0u);
-    cmdPipelineImageMemoryBarrier2(videoDeviceDriver, *cmdTransferBuffer, &imageBarrierTransfer2);
-    endCommandBuffer(videoDeviceDriver, *cmdTransferBuffer);
-
-    const VkSubmitInfo transferSubmitInfo2 = {
-        VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
-        nullptr,                       //  const void* pNext;
-        0u,                            //  uint32_t waitSemaphoreCount;
-        nullptr,                       //  const VkSemaphore* pWaitSemaphores;
-        nullptr,                       //  const VkPipelineStageFlags* pWaitDstStageMask;
-        1u,                            //  uint32_t commandBufferCount;
-        &*cmdTransferBuffer,           //  const VkCommandBuffer* pCommandBuffers;
-        0u,                            //  uint32_t signalSemaphoreCount;
-        nullptr,                       // const VkSemaphore* pSignalSemaphores;
-    };
-
-    VK_CHECK(videoDeviceDriver.queueSubmit(queueTransfer, 1u, &transferSubmitInfo2, *transferFence));
-    VK_CHECK(videoDeviceDriver.waitForFences(device, 1, &*transferFence, true, ~0ull));
-
-    return multiPlaneImageData;
-}
 #endif // DE_BUILD_VIDEO
 
 class VideoEncodeTestInstance : public VideoBaseTestInstance
@@ -1785,27 +1558,6 @@ bool saveBufferAsFile(const BufferWithMemory &buffer, VkDeviceSize bufferSize, c
     return true;
 }
 
-bool saveYUVfile(const de::MovePtr<std::vector<uint8_t>> &data, const string &outputFileName)
-{
-    ofstream outFile(outputFileName, ios::binary | ios::out);
-
-    if (!outFile.is_open())
-    {
-        cerr << "Error: Unable to open output file '" << outputFileName << "'." << endl;
-        return false;
-    }
-
-    if (data.get() == nullptr || data.get()->empty())
-    {
-        cerr << "Error: Data is empty or doesn't exist" << endl;
-        return false;
-    }
-
-    outFile.write(reinterpret_cast<char *>(data.get()->data()), data.get()->size());
-    outFile.close();
-
-    return true;
-}
 #endif
 
 tcu::TestStatus VideoEncodeTestInstance::iterate(void)
@@ -2458,7 +2210,6 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
     de::MovePtr<vector<uint8_t>> clip = loadVideoData(m_testDefinition->getClipFilename());
 
-    std::vector<MovePtr<MultiPlaneImageData>> multiPlaneImageDataVector;
     std::vector<de::MovePtr<std::vector<uint8_t>>> inVector;
 
     for (uint32_t i = 0; i < gopCount; ++i)
@@ -2481,21 +2232,21 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
             MovePtr<MultiPlaneImageData> multiPlaneImageData(
                 new MultiPlaneImageData(imageFormat, tcu::UVec2(extentWidth, extentHeight)));
-            extractYUV420pFrame(*clip, index, codedExtent.width, codedExtent.height, multiPlaneImageData.get(),
-                                half_size);
+            vkt::ycbcr::extractI420Frame(*clip, index, codedExtent.width, codedExtent.height, multiPlaneImageData.get(),
+                                         half_size);
 
-            // Save NV12 frame as YUV
-            de::MovePtr<std::vector<uint8_t>> in = saveNV12FrameAsYUV(multiPlaneImageData.get());
+            // Save NV12 Multiplanar frame to YUV 420p 8 bits
+            de::MovePtr<std::vector<uint8_t>> in =
+                vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(multiPlaneImageData.get());
 
 #if STREAM_DUMP_DEBUG
             std::string filename = "in_" + std::to_string(index) + ".yuv";
-            saveYUVfile(in, filename.c_str());
+            vkt::ycbcr::YCbCrContent<uint8_t>::save(*in, filename);
 #endif
 
             vkt::ycbcr::uploadImage(videoDeviceDriver, videoDevice, transferQueueFamilyIndex, allocator,
                                     *(*imageVector[index]), *multiPlaneImageData, 0, VK_IMAGE_LAYOUT_GENERAL);
 
-            multiPlaneImageDataVector.push_back(std::move(multiPlaneImageData));
             inVector.push_back(std::move(in));
         }
     }
@@ -3018,11 +2769,12 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
                                        basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR :
                                                                               VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR,
                                        &frame);
-        de::MovePtr<std::vector<uint8_t>> out = saveNV12FrameAsYUV(resultImage.get());
+        de::MovePtr<std::vector<uint8_t>> out =
+            vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(resultImage.get());
 
 #if STREAM_DUMP_DEBUG
         const string outputFileName = "out_" + std::to_string(NALIdx) + ".yuv";
-        saveYUVfile(out, outputFileName);
+        vkt::ycbcr::YCbCrContent<uint8_t>::save(*out, outputFileName);
 #endif
         // Quantization maps verification
         if (useDeltaMap || useEmphasisMap)
@@ -3217,6 +2969,7 @@ tcu::TestCaseGroup *createVideoEncodeTests(tcu::TestContext &testCtx)
 
     group->addChild(h264Group.release());
     group->addChild(h265Group.release());
+    group->addChild(createVideoEncodeTestsAV1(testCtx));
 
     return group.release();
 }
