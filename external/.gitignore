@@ -1,2 +1,4 @@
 spirv-headers/src
 vulkan-docs/src
+video_generator/src
+vk-video-samples/src
