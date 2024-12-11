@@ -2958,6 +2958,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceSynchronization2Feat
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceUnifiedImageLayoutsVideoFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFIED_IMAGE_LAYOUTS_VIDEO_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceHostImageCopyFeatures> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES;
@@ -4176,6 +4186,11 @@ template<> VkStructureType getStructureType<VkAmigoProfilingSubmitInfoSEC> (void
 template<> VkStructureType getStructureType<VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkAttachmentFeedbackLoopInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_ATTACHMENT_FEEDBACK_LOOP_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClampZeroOneFeaturesEXT> (void)

@@ -1565,6 +1565,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_unified_image_layouts")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shader_float_controls2")
 	{
 		return;
@@ -3729,6 +3733,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_unified_image_layouts")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shader_float_controls2")
 	{
 		return;
@@ -4263,6 +4271,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_attachment_feedback_loop_dynamic_state",
 	"VK_KHR_vertex_attribute_divisor",
 	"VK_KHR_load_store_op_none",
+	"VK_KHR_unified_image_layouts",
 	"VK_KHR_shader_float_controls2",
 	"VK_QNX_external_memory_screen_buffer",
 	"VK_MSFT_layered_driver",

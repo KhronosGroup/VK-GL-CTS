@@ -3712,6 +3712,18 @@ bool check_VK_NV_cooperative_matrix2(const tcu::UVec2& v, const ExtPropVect& vIE
 	return isSupported(vDEP, "VK_KHR_cooperative_matrix");
 }
 
+bool check_VK_EXT_vertex_attribute_robustness(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_vertex_attribute_robustness"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
 static const DependencyCheckVect deviceExtensionDependencies
 {
 	std::make_pair("VK_KHR_swapchain",										&check_VK_KHR_swapchain),
@@ -3980,6 +3992,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_depth_clamp_control",							&check_VK_EXT_depth_clamp_control),
 	std::make_pair("VK_HUAWEI_hdr_vivid",									&check_VK_HUAWEI_hdr_vivid),
 	std::make_pair("VK_NV_cooperative_matrix2",								&check_VK_NV_cooperative_matrix2),
+	std::make_pair("VK_EXT_vertex_attribute_robustness",					&check_VK_EXT_vertex_attribute_robustness),
 };
 
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
@@ -4356,6 +4369,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_attachment_feedback_loop_dynamic_state"),
 	std::make_tuple(1, 0, "VK_KHR_vertex_attribute_divisor"),
 	std::make_tuple(1, 0, "VK_KHR_load_store_op_none"),
+	std::make_tuple(1, 0, "VK_KHR_unified_image_layouts"),
 	std::make_tuple(1, 1, "VK_KHR_shader_float_controls2"),
 	std::make_tuple(1, 0, "VK_QNX_external_memory_screen_buffer"),
 	std::make_tuple(1, 0, "VK_MSFT_layered_driver"),

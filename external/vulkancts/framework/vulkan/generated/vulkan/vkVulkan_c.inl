@@ -3031,6 +3031,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_YCBCR_DEGAMMA_CREATE_INFO_QCOM = 1000520001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_CLAMP_FEATURES_QCOM = 1000521000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT = 1000524000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR = 1000527000,
+    VK_STRUCTURE_TYPE_ATTACHMENT_FEEDBACK_LOOP_INFO_EXT = 1000527001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFIED_IMAGE_LAYOUTS_VIDEO_FEATURES_KHR = 1000527002,
     VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX = 1000529000,
     VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX = 1000529001,
     VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX = 1000529002,
@@ -14378,6 +14381,31 @@ typedef VkPhysicalDeviceVertexAttributeDivisorFeatures VkPhysicalDeviceVertexAtt
 #define VK_KHR_load_store_op_none 1
 #define VK_KHR_LOAD_STORE_OP_NONE_SPEC_VERSION 1
 #define VK_KHR_LOAD_STORE_OP_NONE_EXTENSION_NAME "VK_KHR_load_store_op_none"
+
+
+// VK_KHR_unified_image_layouts is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_unified_image_layouts 1
+#define VK_KHR_UNIFIED_IMAGE_LAYOUTS_SPEC_VERSION 1
+#define VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME "VK_KHR_unified_image_layouts"
+typedef struct VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           unifiedImageLayouts;
+} VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR;
+
+typedef struct VkAttachmentFeedbackLoopInfoEXT {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkBool32           feedbackLoopEnable;
+    VkBool32           resolveFeedbackLoopEnable;
+} VkAttachmentFeedbackLoopInfoEXT;
+
+typedef struct VkPhysicalDeviceUnifiedImageLayoutsVideoFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           unifiedImageLayoutsVideo;
+} VkPhysicalDeviceUnifiedImageLayoutsVideoFeaturesKHR;
+
 
 
 // VK_KHR_shader_float_controls2 is a preprocessor guard. Do not pass it to API calls.

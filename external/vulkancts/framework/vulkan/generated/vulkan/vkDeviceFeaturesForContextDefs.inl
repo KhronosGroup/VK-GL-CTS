@@ -180,6 +180,7 @@ const vk::VkPhysicalDeviceYcbcrDegammaFeaturesQCOM&							Context::getYcbcrDegam
 const vk::VkPhysicalDeviceCubicClampFeaturesQCOM&							Context::getCubicClampFeaturesQCOM							(void) const { return m_device->getCubicClampFeaturesQCOM();						}
 const vk::VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT&	Context::getAttachmentFeedbackLoopDynamicStateFeaturesEXT	(void) const { return m_device->getAttachmentFeedbackLoopDynamicStateFeaturesEXT();	}
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeatures&					Context::getVertexAttributeDivisorFeatures					(void) const { return m_device->getVertexAttributeDivisorFeatures();				}
+const vk::VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR&					Context::getUnifiedImageLayoutsFeatures						(void) const { return m_device->getUnifiedImageLayoutsFeatures();					}
 const vk::VkPhysicalDeviceShaderFloatControls2Features&						Context::getShaderFloatControls2Features					(void) const { return m_device->getShaderFloatControls2Features();					}
 const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			Context::getExternalMemoryScreenBufferFeaturesQNX			(void) const { return m_device->getExternalMemoryScreenBufferFeaturesQNX();			}
 const vk::VkPhysicalDeviceIndexTypeUint8Features&							Context::getIndexTypeUint8Features							(void) const { return m_device->getIndexTypeUint8Features();						}

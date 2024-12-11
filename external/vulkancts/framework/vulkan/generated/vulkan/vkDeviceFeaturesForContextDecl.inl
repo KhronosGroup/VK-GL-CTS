@@ -180,6 +180,7 @@ const vk::VkPhysicalDeviceYcbcrDegammaFeaturesQCOM&							getYcbcrDegammaFeature
 const vk::VkPhysicalDeviceCubicClampFeaturesQCOM&							getCubicClampFeaturesQCOM							(void) const;
 const vk::VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT&	getAttachmentFeedbackLoopDynamicStateFeaturesEXT	(void) const;
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeatures&					getVertexAttributeDivisorFeatures					(void) const;
+const vk::VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR&					getUnifiedImageLayoutsFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderFloatControls2Features&						getShaderFloatControls2Features						(void) const;
 const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			getExternalMemoryScreenBufferFeaturesQNX			(void) const;
 const vk::VkPhysicalDeviceIndexTypeUint8Features&							getIndexTypeUint8Features							(void) const;

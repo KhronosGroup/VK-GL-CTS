@@ -6820,6 +6820,20 @@ struct VkPhysicalDeviceSynchronization2Features
 	VkBool32		synchronization2;
 };
 
+struct VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		unifiedImageLayouts;
+};
+
+struct VkPhysicalDeviceUnifiedImageLayoutsVideoFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		unifiedImageLayoutsVideo;
+};
+
 struct VkPhysicalDeviceHostImageCopyFeatures
 {
 	VkStructureType	sType;
@@ -9012,6 +9026,14 @@ struct VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		attachmentFeedbackLoopLayout;
+};
+
+struct VkAttachmentFeedbackLoopInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		feedbackLoopEnable;
+	VkBool32		resolveFeedbackLoopEnable;
 };
 
 struct VkPhysicalDeviceDepthClampZeroOneFeaturesEXT
