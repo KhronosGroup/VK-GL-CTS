@@ -2,4 +2,3 @@ dEQP-VK.query_pool.frag_invocations.frag_invs.primary
 dEQP-VK.query_pool.frag_invocations.frag_invs.secondary
 dEQP-VK.query_pool.frag_invocations.occlusion.primary
 dEQP-VK.query_pool.frag_invocations.occlusion.secondary
-dEQP-VK.query_pool.statistics_query.clipping_invocations.primary.blit_between_incompatible_formats
