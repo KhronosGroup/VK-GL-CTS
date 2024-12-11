@@ -506,8 +506,38 @@ void ConcurrentCopyTestCase::checkSupport(vkt::Context &context) const
         TCU_THROW(NotSupportedError, "Format unsupported");
     }
 
+#ifndef CTS_USES_VULKANSC
     if (m_parameters.hostCopy)
+    {
         context.requireDeviceFunctionality("VK_EXT_host_image_copy");
+
+        const vk::VkImageLayout requiredDstLayout =
+            m_parameters.read ? vk::VK_IMAGE_LAYOUT_GENERAL : vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+        vk::VkPhysicalDeviceHostImageCopyProperties hostImageCopyProperties = vk::initVulkanStructure();
+        vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&hostImageCopyProperties);
+        vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+        std::vector<vk::VkImageLayout> srcLayouts(hostImageCopyProperties.copySrcLayoutCount);
+        std::vector<vk::VkImageLayout> dstLayouts(hostImageCopyProperties.copyDstLayoutCount);
+        hostImageCopyProperties.pCopySrcLayouts = srcLayouts.data();
+        hostImageCopyProperties.pCopyDstLayouts = dstLayouts.data();
+        vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+        bool hasRequiredLayout = false;
+        for (const auto &dstLayout : dstLayouts)
+        {
+            if (dstLayout == requiredDstLayout)
+            {
+                hasRequiredLayout = true;
+                break;
+            }
+        }
+        if (!hasRequiredLayout)
+        {
+            TCU_THROW(NotSupportedError, "Required layout not supported in "
+                                         "VkPhysicalDeviceHostImageCopyPropertiesEXT::pCopyDstLayouts");
+        }
+    }
+#endif
 }
 
 } // namespace
