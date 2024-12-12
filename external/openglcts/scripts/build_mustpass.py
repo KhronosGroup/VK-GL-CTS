@@ -641,7 +641,9 @@ GLCTS_GLES3_KHR_PKG_1CFG = Package(module = ES3KHR_MODULE, configurations = [
                     surfacewidth = "64",
                     surfaceheight = "64",
                     baseseed = "1",
-                    filters = [include("gles3-khr-main.txt")]),
+                    filters = [include("gles3-khr-main.txt"),
+                               exclude("gles3-khr-test-issues.txt")
+                              ]),
     ])
 
 GLCTS_GLES3_DEQP_PKG_N1CFG = Package(module = ES3CTS_MODULE, useforfirsteglconfig = False, configurations = [
@@ -659,7 +661,9 @@ GLCTS_GLES3_KHR_PKG_N1CFG = Package(module = ES3KHR_MODULE, useforfirsteglconfig
                     surfacewidth = "64",
                     surfaceheight = "64",
                     baseseed = "1",
-                    filters = [include("gles3-khr-main.txt")]),
+                    filters = [include("gles3-khr-main.txt"),
+                               exclude("gles3-khr-test-issues.txt")
+                              ]),
     ])
 
 GLCTS_GLES31_DEQP_PKG_1CFG = Package(module = ES31CTS_MODULE, configurations = [
