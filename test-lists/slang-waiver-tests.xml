@@ -595,5 +595,19 @@
     <t>dEQP-VK.ssbo.layout.random.8bit.all_shared_buffer.45</t>
     <t>dEQP-VK.ssbo.layout.random.8bit.scalar.9</t>
     <t>dEQP-VK.ssbo.layout.random.8bit.scalar.33</t>
+    <!-- begin https://github.com/shader-slang/slang/issues/5840 -->
+    <t>dEQP-VK.ubo.2_level_array.std140.row_major_mat2.vertex</t>
+    <t>dEQP-VK.ubo.2_level_array.std140.row_major_mat2.fragment</t>
+    <t>dEQP-VK.ubo.2_level_array.std140.row_major_mat2.both</t>
+    <t>dEQP-VK.ubo.2_level_array.std140.row_major_mat2.vertex_comp_access</t>
+    <t>dEQP-VK.ubo.2_level_array.std140.row_major_mat2.fragment_comp_access</t>
+    <t>dEQP-VK.ubo.2_level_array.std140.row_major_mat2.both_comp_access</t>
+    <t>dEQP-VK.ubo.2_level_array.std140.column_major_mat2.vertex</t>
+    <t>dEQP-VK.ubo.2_level_array.std140.column_major_mat2.fragment</t>
+    <t>dEQP-VK.ubo.2_level_array.std140.column_major_mat2.both</t>
+    <t>dEQP-VK.ubo.2_level_array.std140.column_major_mat2.vertex_comp_access</t>
+    <t>dEQP-VK.ubo.2_level_array.std140.column_major_mat2.fragment_comp_access</t>
+    <t>dEQP-VK.ubo.2_level_array.std140.column_major_mat2.both_comp_access</t>
+    <!-- end https://github.com/shader-slang/slang/issues/5840 -->
     </waiver>
 </waiver_list>
