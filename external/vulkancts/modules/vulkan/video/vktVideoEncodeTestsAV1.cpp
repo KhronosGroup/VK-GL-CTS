@@ -343,7 +343,7 @@ static void buildClipName(tcu::TestContext &testCtx, const TestDefinition &testD
 {
     auto &cmdLine   = testCtx.getCommandLine();
     auto archiveDir = cmdLine.getArchiveDir();
-    clipName        = archiveDir + std::string("/vulkan/video/");
+    clipName        = archiveDir + std::string("/vulkan/video/yuv/");
 
     clipName += testDef.frameSize.baseClipName;
     clipName += std::to_string(testDef.frameSize.width) + "x" + std::to_string(testDef.frameSize.height);
