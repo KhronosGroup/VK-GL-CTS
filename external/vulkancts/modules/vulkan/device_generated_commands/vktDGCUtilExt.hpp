@@ -43,7 +43,14 @@ void checkDGCExtSupport(Context &context, vk::VkShaderStageFlags stages, vk::VkS
                         vk::VkShaderStageFlags bindStagesShaderObject          = 0u,
                         vk::VkIndirectCommandsInputModeFlagsEXT inputModeFlags = 0u, bool transformFeedback = false);
 
-void checkDGCExtComputeSupport(Context &context, bool requireBinds);
+enum class DGCComputeSupportType
+{
+    BASIC         = 0, // No binds.
+    BIND_PIPELINE = 1,
+    BIND_SHADER   = 2,
+};
+
+void checkDGCExtComputeSupport(Context &context, DGCComputeSupportType supportType);
 
 vk::VkIndirectExecutionSetInfoEXT makeIndirectExecutionSetInfo(
     const vk::VkIndirectExecutionSetPipelineInfoEXT &pipelineInfo);

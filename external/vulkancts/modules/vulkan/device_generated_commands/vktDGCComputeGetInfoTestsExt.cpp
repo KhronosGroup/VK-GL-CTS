@@ -92,12 +92,12 @@ Move<VkDescriptorSetLayout> makeBasicDescriptorSetLayout(const DeviceInterface &
 
 inline void checkDGCComputeBasicSupportCmd(Context &context, ConstantCommandsMemoryReqsCase)
 {
-    checkDGCExtComputeSupport(context, false);
+    checkDGCExtComputeSupport(context, DGCComputeSupportType::BASIC);
 }
 
 inline void checkDGCComputePipelineSupportCmd(Context &context, ConstantCommandsMemoryReqsCase)
 {
-    checkDGCExtComputeSupport(context, true);
+    checkDGCExtComputeSupport(context, DGCComputeSupportType::BIND_PIPELINE);
 }
 
 tcu::TestStatus constantCommandsMemReqs(Context &context, ConstantCommandsMemoryReqsCase memReqsCase)

@@ -65,9 +65,13 @@ void checkDGCExtSupport(Context &context, VkShaderStageFlags stages, VkShaderSta
         TCU_THROW(NotSupportedError, "DGC transform feedback not supported");
 }
 
-void checkDGCExtComputeSupport(Context &context, bool requireBinds)
+void checkDGCExtComputeSupport(Context &context, DGCComputeSupportType supportType)
 {
-    checkDGCExtSupport(context, VK_SHADER_STAGE_COMPUTE_BIT, (requireBinds ? VK_SHADER_STAGE_COMPUTE_BIT : 0));
+    const auto stages                 = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_COMPUTE_BIT);
+    const auto bindStagesPipeline     = ((supportType == DGCComputeSupportType::BIND_PIPELINE) ? stages : 0u);
+    const auto bindStagesShaderObject = ((supportType == DGCComputeSupportType::BIND_SHADER) ? stages : 0u);
+
+    checkDGCExtSupport(context, stages, bindStagesPipeline, bindStagesShaderObject);
 }
 
 VkIndirectExecutionSetInfoEXT makeIndirectExecutionSetInfo(const VkIndirectExecutionSetPipelineInfoEXT &pipelineInfo)

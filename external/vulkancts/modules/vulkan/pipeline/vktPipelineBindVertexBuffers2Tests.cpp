@@ -137,6 +137,7 @@ typedef de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> DeviceDriverPtr
 typedef vk::Move<vk::VkDevice> DevicePtr;
 
 vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
+                                                      const std::vector<std::string> &enabledDeviceExtensions,
                                                       const vk::VkPhysicalDeviceFeatures2 *enabledFeatures2)
 {
     const float queuePriority = 1.0f;
@@ -154,9 +155,9 @@ vk::Move<vk::VkDevice> createRobustBufferAccessDevice(Context &context,
     vk::VkPhysicalDeviceFeatures enabledFeatures1 = context.getDeviceFeatures();
     enabledFeatures1.robustBufferAccess           = true;
 
-    // \note Extensions in core are not explicitly enabled even though
-    //         they are in the extension list advertised to tests.
-    const auto &extensionPtrs = context.getDeviceCreationExtensions();
+    std::vector<const char *> extensionPtrs;
+    for (const auto &ext : enabledDeviceExtensions)
+        extensionPtrs.push_back(ext.c_str());
 
     void *pNext = (void *)enabledFeatures2;
 #ifdef CTS_USES_VULKANSC
@@ -604,7 +605,7 @@ class BindVertexBuffers2Instance : public vkt::TestInstance
 public:
     BindVertexBuffers2Instance(Context &context, DeviceDriverPtr driver, DevicePtr device,
                                vk::PipelineConstructionType pipelineConstructionType, const TestParamsMaint5 &params,
-                               bool robustness2)
+                               bool robustness2, const std::vector<std::string> &enabledDeviceExtensions)
         : vkt::TestInstance(context)
         , m_pipelineConstructionType(pipelineConstructionType)
         , m_params(params)
@@ -615,8 +616,9 @@ public:
                                         context.getTestContext().getCommandLine()))
         , m_allocator(getDeviceInterface(), getDevice(),
                       getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), m_physicalDevice))
+        , m_enabledDeviceExtensions(enabledDeviceExtensions)
         , m_pipelineWrapper(context.getInstanceInterface(), getDeviceInterface(), m_physicalDevice, getDevice(),
-                            m_context.getDeviceExtensions(), m_pipelineConstructionType, 0u)
+                            m_enabledDeviceExtensions, m_pipelineConstructionType, 0u)
         , m_vertShaderModule(getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("vert"))
         , m_fragShaderModule(getDeviceInterface(), getDevice(), m_context.getBinaryCollection().get("frag"))
     {
@@ -643,6 +645,7 @@ private:
     DevicePtr m_device;
     const vk::VkPhysicalDevice m_physicalDevice;
     vk::SimpleAllocator m_allocator;
+    const std::vector<std::string> m_enabledDeviceExtensions;
     vk::GraphicsPipelineWrapper m_pipelineWrapper;
     const vk::ShaderWrapper m_vertShaderModule;
     const vk::ShaderWrapper m_fragShaderModule;
@@ -1338,8 +1341,10 @@ TestInstance *BindVertexBuffers2Case::createInstance(Context &context) const
     DevicePtr device;
     DeviceDriverPtr driver;
 
+    std::vector<std::string> enabledDeviceExtensions;
     if (m_robustness2)
     {
+        enabledDeviceExtensions.push_back("VK_EXT_extended_dynamic_state");
         vk::VkPhysicalDeviceFeatures2 features2                        = vk::initVulkanStructure();
         vk::VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = vk::initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
@@ -1360,21 +1365,29 @@ TestInstance *BindVertexBuffers2Case::createInstance(Context &context) const
 
         const auto addFeatures = vk::makeStructChainAdder(&features2);
         addFeatures(&robustness2Features);
+        enabledDeviceExtensions.push_back("VK_EXT_robustness2");
 
 #ifndef CTS_USES_VULKANSC
         addFeatures(&maintenance5Features);
+        enabledDeviceExtensions.push_back("VK_KHR_maintenance5");
         if (vk::isConstructionTypeLibrary(m_pipelineConstructionType))
+        {
             addFeatures(&gplFeatures);
+            enabledDeviceExtensions.push_back("VK_KHR_pipeline_library");
+            enabledDeviceExtensions.push_back("VK_EXT_graphics_pipeline_library");
+        }
         else if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
         {
             addFeatures(&dynamicRenderingFeatures);
+            enabledDeviceExtensions.push_back("VK_KHR_dynamic_rendering");
             addFeatures(&shaderObjectFeatures);
+            enabledDeviceExtensions.push_back("VK_EXT_shader_object");
         }
 #else
         TCU_THROW(NotSupportedError, "VulkanSC does not support VK_EXT_graphics_pipeline_library");
 #endif // CTS_USES_VULKANSC
 
-        device = createRobustBufferAccessDevice(context, &features2);
+        device = createRobustBufferAccessDevice(context, enabledDeviceExtensions, &features2);
         driver =
 #ifndef CTS_USES_VULKANSC
             DeviceDriverPtr(new vk::DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device,
@@ -1388,9 +1401,14 @@ TestInstance *BindVertexBuffers2Case::createInstance(Context &context) const
                             vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
 #endif // CTS_USES_VULKANSC
     }
+    else
+    {
+        for (const auto &ext : context.getDeviceCreationExtensions())
+            enabledDeviceExtensions.push_back(ext);
+    }
 
-    return (
-        new BindVertexBuffers2Instance(context, driver, device, m_pipelineConstructionType, m_params, m_robustness2));
+    return (new BindVertexBuffers2Instance(context, driver, device, m_pipelineConstructionType, m_params, m_robustness2,
+                                           enabledDeviceExtensions));
 }
 
 tcu::TestCaseGroup *createCmdBindVertexBuffers2Tests(tcu::TestContext &testCtx,

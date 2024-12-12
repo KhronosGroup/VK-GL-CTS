@@ -193,7 +193,7 @@ void SmokeTestCase::initPrograms(vk::SourceCollections &programCollection) const
 
 void SmokeTestCase::checkSupport(Context &context) const
 {
-    checkDGCExtComputeSupport(context, false);
+    checkDGCExtComputeSupport(context, DGCComputeSupportType::BASIC);
 
     // This is needed for the scopes and semantics.
     const auto &mmFeatures = context.getVulkanMemoryModelFeatures();

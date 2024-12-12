@@ -65,7 +65,8 @@ struct TwoCmdBuffersParams
 
 void generalCheckSupport(Context &context, bool pipelineBinds, bool computeQueue)
 {
-    checkDGCExtComputeSupport(context, pipelineBinds);
+    const auto supportType = (pipelineBinds ? DGCComputeSupportType::BIND_PIPELINE : DGCComputeSupportType::BASIC);
+    checkDGCExtComputeSupport(context, supportType);
 
     if (computeQueue)
         context.getComputeQueue();
@@ -664,7 +665,7 @@ public:
 
 void ScratchSpaceCase::checkSupport(Context &context) const
 {
-    checkDGCExtComputeSupport(context, true);
+    checkDGCExtComputeSupport(context, DGCComputeSupportType::BIND_PIPELINE);
     context.getComputeQueue(); // Throws NotSupportedError if not available.
 }
 
@@ -952,7 +953,9 @@ void MaxPushConstantRangeCase::checkSupport(Context &context) const
     if (m_params.useComputeQueue)
         context.getComputeQueue(); // Will throw if not available.
 
-    checkDGCExtComputeSupport(context, m_params.useExecutionSet);
+    const auto supportType =
+        (m_params.useExecutionSet ? DGCComputeSupportType::BIND_PIPELINE : DGCComputeSupportType::BASIC);
+    checkDGCExtComputeSupport(context, supportType);
 
     const auto &properties = context.getDeviceProperties();
     if (properties.limits.maxPushConstantsSize < m_params.pcBytes)
@@ -1246,7 +1249,7 @@ void MultipleSetsCase::checkSupport(Context &context) const
     if (m_params.useComputeQueue)
         context.getComputeQueue(); // Will throw if not available.
 
-    checkDGCExtComputeSupport(context, true);
+    checkDGCExtComputeSupport(context, DGCComputeSupportType::BIND_PIPELINE);
 
     const auto &properties = context.getDeviceProperties();
 
@@ -1494,7 +1497,9 @@ protected:
 
 void IUBUsageCase::checkSupport(Context &context) const
 {
-    checkDGCExtComputeSupport(context, m_params.useExecutionSet);
+    const auto supportType =
+        (m_params.useExecutionSet ? DGCComputeSupportType::BIND_PIPELINE : DGCComputeSupportType::BASIC);
+    checkDGCExtComputeSupport(context, supportType);
     context.requireDeviceFunctionality("VK_EXT_inline_uniform_block");
 }
 
