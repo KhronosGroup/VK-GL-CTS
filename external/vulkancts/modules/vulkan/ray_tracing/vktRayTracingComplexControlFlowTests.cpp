@@ -423,12 +423,15 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingComplexControlFlowInstance:
     Allocator &allocator                              = m_context.getDefaultAllocator();
     de::MovePtr<TopLevelAccelerationStructure> result = makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     result->setInstanceCount(bottomLevelAccelerationStructures.size());
 
     for (size_t structNdx = 0; structNdx < bottomLevelAccelerationStructures.size(); ++structNdx)
         result->addInstance(bottomLevelAccelerationStructures[structNdx]);
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }
@@ -445,11 +448,14 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingComplexControlFlowInstan
 
     DE_UNREF(startPos);
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     result->setGeometryCount(1);
     geometryData.push_back(tcu::Vec3(0.0f, 0.0f, z));
     geometryData.push_back(tcu::Vec3(1.0f, 1.0f, z));
     result->addGeometry(geometryData, false);
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }

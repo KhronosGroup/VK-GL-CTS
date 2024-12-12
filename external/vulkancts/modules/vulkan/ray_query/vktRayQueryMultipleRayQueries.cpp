@@ -469,6 +469,7 @@ tcu::TestCaseGroup *createMultipleRayQueryTests(tcu::TestContext &testCtx)
         RayQueryTestParams testParams{};
         testParams.shaderSourceType = shaderSourceTypes[shaderSourceNdx].shaderSourceType;
         testParams.pipelineType     = shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline;
+        testParams.resourceRes      = ResourceResidency::TRADITIONAL;
         group->addChild(
             new MultipleRayQueriesCase(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name, testParams));
     }

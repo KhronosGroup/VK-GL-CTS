@@ -1335,6 +1335,10 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingBuiltinLaunchTestInstance::
     const VkDevice device                             = m_context.getDevice();
     Allocator &allocator                              = m_context.getDefaultAllocator();
     de::MovePtr<TopLevelAccelerationStructure> result = makeTopLevelAccelerationStructure();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     const bool transformTest =
         m_data.id == TEST_ID_WORLD_RAY_ORIGIN_EXT || m_data.id == TEST_ID_WORLD_RAY_DIRECTION_EXT ||
         m_data.id == TEST_ID_OBJECT_RAY_ORIGIN_EXT || m_data.id == TEST_ID_OBJECT_RAY_DIRECTION_EXT ||
@@ -1359,7 +1363,7 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingBuiltinLaunchTestInstance::
         result->addInstance(bottomLevelAccelerationStructures[structNdx], transform, uint32_t(2 * structNdx));
     }
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }
@@ -1371,6 +1375,9 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingBuiltinLaunchTestInstanc
     const VkDevice device                                = m_context.getDevice();
     Allocator &allocator                                 = m_context.getDefaultAllocator();
     de::MovePtr<BottomLevelAccelerationStructure> result = makeBottomLevelAccelerationStructure();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     result->setGeometryCount(m_data.geometriesGroupCount);
 
@@ -1638,7 +1645,7 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingBuiltinLaunchTestInstanc
         TCU_THROW(InternalError, "Not implemented");
     }
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }
@@ -4086,11 +4093,14 @@ tcu::TestStatus RayTracingIndirectTestInstance::iterate(void)
 
     beginCommandBuffer(vk, *cmdBuffer);
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     for (const auto &accel : blas)
     {
-        accel->createAndBuild(vk, device, *cmdBuffer, allocator);
+        accel->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
     }
-    tlas->createAndBuild(vk, device, *cmdBuffer, allocator);
+    tlas->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
 
     VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;

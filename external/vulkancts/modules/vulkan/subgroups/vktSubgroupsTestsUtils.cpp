@@ -4727,9 +4727,12 @@ static de::MovePtr<TopLevelAccelerationStructure> createTopAccelerationStructure
     Allocator &allocator                              = context.getDefaultAllocator();
     de::MovePtr<TopLevelAccelerationStructure> result = makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     result->setInstanceCount(1);
     result->addInstance(bottomLevelAccelerationStructure);
-    result->create(vkd, device, allocator);
+    result->create(vkd, device, allocator, bufferProps);
 
     return result;
 }
@@ -4742,9 +4745,12 @@ static de::SharedPtr<BottomLevelAccelerationStructure> createBottomAccelerationS
     de::MovePtr<BottomLevelAccelerationStructure> result = makeBottomLevelAccelerationStructure();
     const std::vector<tcu::Vec3> geometryData{tcu::Vec3(-1.0f, -1.0f, -2.0f), tcu::Vec3(+1.0f, +1.0f, -1.0f)};
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     result->setGeometryCount(1u);
     result->addGeometry(geometryData, false);
-    result->create(vkd, device, allocator, 0u);
+    result->create(vkd, device, allocator, bufferProps, 0u);
 
     return de::SharedPtr<BottomLevelAccelerationStructure>(result.release());
 }

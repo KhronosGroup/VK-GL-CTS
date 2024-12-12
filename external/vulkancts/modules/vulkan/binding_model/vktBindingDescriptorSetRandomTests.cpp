@@ -2162,13 +2162,16 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
 
     if (usesAccelerationStructure(m_data.stage))
     {
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         // Create bottom level acceleration structure
         {
             bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
 
             bottomLevelAccelerationStructure->setDefaultGeometryData(getShaderStageFlag(m_data.stage));
 
-            bottomLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator);
+            bottomLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
         }
 
         // Create top level acceleration structure
@@ -2179,7 +2182,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
             topLevelAccelerationStructure->addInstance(
                 de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
 
-            topLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator);
+            topLevelAccelerationStructure->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
         }
     }
 #endif

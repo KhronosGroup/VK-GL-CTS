@@ -4655,6 +4655,9 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
             {
                 DE_ASSERT(resources.rtBlas.get() == nullptr);
 
+                AccelerationStructBufferProperties bufferProps;
+                bufferProps.props.residency = vk::ResourceResidency::TRADITIONAL;
+
                 resources.rtBlas =
                     de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
                 if (binding.isRayTracingAS)
@@ -4662,16 +4665,21 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                 else
                     resources.rtBlas->setGeometryData(vertices, true);
                 resources.rtBlas->setCreateFlags(createFlags);
-                resources.rtBlas->create(*m_deviceInterface, *m_device, allocator, 0, 0, infoPtrs[0], memoryReqs);
+                resources.rtBlas->create(*m_deviceInterface, *m_device, allocator, bufferProps, 0, 0, infoPtrs[0],
+                                         memoryReqs);
             }
 
             {
                 DE_ASSERT(resources.rtTlas.get() == nullptr);
 
+                AccelerationStructBufferProperties bufferProps;
+                bufferProps.props.residency = vk::ResourceResidency::TRADITIONAL;
+
                 resources.rtTlas = makeTopLevelAccelerationStructure();
                 resources.rtTlas->addInstance(resources.rtBlas);
                 resources.rtTlas->setCreateFlags(createFlags);
-                resources.rtTlas->create(*m_deviceInterface, *m_device, allocator, 0, 0, infoPtrs[1], memoryReqs);
+                resources.rtTlas->create(*m_deviceInterface, *m_device, allocator, bufferProps, 0, 0, infoPtrs[1],
+                                         memoryReqs);
             }
 
             if (isCaptureDescriptor(binding.descriptorType) && replayableBinding)

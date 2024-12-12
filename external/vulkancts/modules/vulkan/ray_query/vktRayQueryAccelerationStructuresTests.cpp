@@ -200,6 +200,7 @@ struct TestParams
     uint32_t height;
     uint32_t workerThreadsCount;
     EmptyAccelerationStructureCase emptyASCase;
+    ResourceResidency resResidency; // Resource residency for acceleration buffer
 };
 
 uint32_t getShaderGroupHandleSize(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
@@ -1040,7 +1041,12 @@ void RayTracingConfiguration::fillCommandBuffer(
     const DeviceInterface &vkd            = context.getDeviceInterface();
     const VkDevice device                 = context.getDevice();
     const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const VkQueue queue                   = context.getUniversalQueue();
     Allocator &allocator                  = context.getDefaultAllocator();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = testParams.resResidency;
+    bufferProps.props.queue     = queue;
 
     {
         de::MovePtr<BottomLevelAccelerationStructure> bottomLevelAccelerationStructure =
@@ -1082,13 +1088,13 @@ void RayTracingConfiguration::fillCommandBuffer(
             de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
 
         for (auto &blas : bottomLevelAccelerationStructures)
-            blas->createAndBuild(vkd, device, commandBuffer, allocator);
+            blas->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
     }
 
     topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
     topLevelAccelerationStructure->setInstanceCount(1);
     topLevelAccelerationStructure->addInstance(bottomLevelAccelerationStructures[0]);
-    topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator);
+    topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
 
     const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
     VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
@@ -2568,6 +2574,10 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
         std::vector<VkDeviceSize> bottomBlasCompactSize;
         std::vector<VkDeviceSize> bottomBlasSerialSize;
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = m_data.resResidency;
+        bufferProps.props.queue     = queue;
+
         for (auto &blas : bottomLevelAccelerationStructures)
         {
             blas->setBuildType(m_data.buildType);
@@ -2577,7 +2587,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
             blas->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
             blas->setBuildWithoutGeometries(buildWithoutGeom);
             blas->setBuildWithoutPrimitives(bottomNoPrimitives);
-            blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+            blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps, 0u);
             accelerationStructureHandles.push_back(*(blas->getPtr()));
         }
 
@@ -2648,7 +2658,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                     asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
                     asCopy->setBuildWithoutGeometries(buildWithoutGeom);
                     asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
-                    asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
+                    asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
                                               bottomLevelAccelerationStructures[i].get(), 0u, 0u);
                     bottomLevelAccelerationStructureCopies.push_back(
                         de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
@@ -2667,7 +2677,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                     asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
                     asCopy->setBuildWithoutGeometries(buildWithoutGeom);
                     asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
-                    asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
+                    asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
                                               bottomLevelAccelerationStructures[i].get(), bottomBlasCompactSize[i], 0u);
                     bottomLevelAccelerationStructureCopies.push_back(
                         de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
@@ -2704,7 +2714,8 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                     asCopy->setBuildWithoutGeometries(buildWithoutGeom);
                     asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
                     asCopy->setDeferredOperation(htSerialize, workerThreadsCount);
-                    asCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, storage.get(), 0u);
+                    asCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, bufferProps, storage.get(),
+                                                     0u);
                     bottomLevelAccelerationStructureCopies.push_back(
                         de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
                 }
@@ -2734,7 +2745,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
         topLevelAccelerationStructure->setCreateGeneric(m_data.topGeneric);
         topLevelAccelerationStructure->setCreationBufferUnbounded(m_data.topUnboundedCreation);
         topLevelAccelerationStructure->setInactiveInstances(inactiveInstances);
-        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
         topLevelStructureHandles.push_back(*(topLevelAccelerationStructure->getPtr()));
 
         if (topCompact)
@@ -2784,7 +2795,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                 topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
                 topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
                 topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
-                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
+                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
                                                                      topLevelAccelerationStructure.get(), 0u, 0u);
                 break;
             }
@@ -2798,8 +2809,9 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                 topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
                 topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
                 topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
-                topLevelAccelerationStructureCopy->createAndCopyFrom(
-                    vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), topBlasCompactSize[0], 0u);
+                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
+                                                                     topLevelAccelerationStructure.get(),
+                                                                     topBlasCompactSize[0], 0u);
                 break;
             }
             case OP_SERIALIZE:
@@ -2831,13 +2843,13 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                 topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
                 topLevelAccelerationStructureCopy->setDeferredOperation(htSerialize, workerThreadsCount);
                 topLevelAccelerationStructureCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator,
-                                                                            storage.get(), 0u);
+                                                                            bufferProps, storage.get(), 0u);
                 break;
             }
             case OP_UPDATE:
             {
                 topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
-                topLevelAccelerationStructureCopy->create(vkd, device, allocator, 0u, 0u);
+                topLevelAccelerationStructureCopy->create(vkd, device, allocator, bufferProps, 0u, 0u);
                 // Update AS based on topLevelAccelerationStructure
                 topLevelAccelerationStructureCopy->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
                 break;
@@ -2855,7 +2867,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest(TestConfigura
                 topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
                 topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
                 topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
-                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
+                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
                                                                      topLevelAccelerationStructure.get(), 0u, 0u);
                 break;
             }
@@ -2951,24 +2963,32 @@ tcu::TestStatus RayQueryASBasicTestInstance::iterate(void)
 class RayQueryASDynamicIndexingTestCase : public TestCase
 {
 public:
-    RayQueryASDynamicIndexingTestCase(tcu::TestContext &context, const char *name);
+    RayQueryASDynamicIndexingTestCase(tcu::TestContext &context, const char *name, ResourceResidency accStructRes);
     ~RayQueryASDynamicIndexingTestCase(void) = default;
 
     void checkSupport(Context &context) const override;
     void initPrograms(SourceCollections &programCollection) const override;
     TestInstance *createInstance(Context &context) const override;
+
+private:
+    const ResourceResidency m_residency;
 };
 
 class RayQueryASDynamicIndexingTestInstance : public TestInstance
 {
 public:
-    RayQueryASDynamicIndexingTestInstance(Context &context);
+    RayQueryASDynamicIndexingTestInstance(Context &context, ResourceResidency accStructRes);
     ~RayQueryASDynamicIndexingTestInstance(void) = default;
     tcu::TestStatus iterate(void) override;
+
+private:
+    const ResourceResidency m_residency;
 };
 
-RayQueryASDynamicIndexingTestCase::RayQueryASDynamicIndexingTestCase(tcu::TestContext &context, const char *name)
+RayQueryASDynamicIndexingTestCase::RayQueryASDynamicIndexingTestCase(tcu::TestContext &context, const char *name,
+                                                                     ResourceResidency accStructRes)
     : TestCase(context, name)
+    , m_residency(accStructRes)
 {
 }
 
@@ -3251,11 +3271,13 @@ void RayQueryASDynamicIndexingTestCase::initPrograms(SourceCollections &programC
 
 TestInstance *RayQueryASDynamicIndexingTestCase::createInstance(Context &context) const
 {
-    return new RayQueryASDynamicIndexingTestInstance(context);
+    return new RayQueryASDynamicIndexingTestInstance(context, m_residency);
 }
 
-RayQueryASDynamicIndexingTestInstance::RayQueryASDynamicIndexingTestInstance(Context &context)
+RayQueryASDynamicIndexingTestInstance::RayQueryASDynamicIndexingTestInstance(Context &context,
+                                                                             ResourceResidency accStructRes)
     : vkt::TestInstance(context)
+    , m_residency(accStructRes)
 {
 }
 
@@ -3334,6 +3356,10 @@ tcu::TestStatus RayQueryASDynamicIndexingTestInstance::iterate(void)
     std::vector<VkDeviceAddress> tlasPtrVect(tlasCount);
     std::vector<VkAccelerationStructureKHR> tlasVkVect;
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = m_residency;
+    bufferProps.props.queue     = queue;
+
     // randomly scatter AS indices across the range (number of them should be equal to the max subgroup size)
     deRandom rnd;
     deRandom_init(&rnd, 123);
@@ -3366,7 +3392,7 @@ tcu::TestStatus RayQueryASDynamicIndexingTestInstance::iterate(void)
             },
             true, 0u);
 
-        blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
         // build top level acceleration structures
         for (uint32_t tlasIndex = 0; tlasIndex < tlasCount; ++tlasIndex)
@@ -3381,7 +3407,7 @@ tcu::TestStatus RayQueryASDynamicIndexingTestInstance::iterate(void)
                 // that with current cts utils so we are marking them as inactive instead
                 tlas->setInactiveInstances(true);
             }
-            tlas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+            tlas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
             // get acceleration structure device address
             const VkAccelerationStructureDeviceAddressInfoKHR addressInfo = {
@@ -3664,6 +3690,7 @@ void addBasicBuildingTests(tcu::TestCaseGroup *group)
                                                 TEST_HEIGHT,
                                                 0u,
                                                 EmptyAccelerationStructureCase::NOT_EMPTY,
+                                                ResourceResidency::TRADITIONAL,
                                             };
                                             paddingTypeGroup->addChild(new RayQueryASBasicTestCase(
                                                 group->getTestContext(), testName.c_str(), testParams));
@@ -3839,6 +3866,7 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup *group)
                             TEST_HEIGHT,
                             0u,
                             EmptyAccelerationStructureCase::NOT_EMPTY,
+                            ResourceResidency::TRADITIONAL,
                         };
                         paddingGroup->addChild(new RayQueryASBasicTestCase(
                             group->getTestContext(), indexFormats[indexFormatNdx].name, testParams));
@@ -4008,6 +4036,7 @@ void addOperationTestsImpl(tcu::TestCaseGroup *group, const uint32_t workerThrea
                             TEST_HEIGHT,
                             workerThreads,
                             EmptyAccelerationStructureCase::NOT_EMPTY,
+                            ResourceResidency::TRADITIONAL,
                         };
                         operationTargetGroup->addChild(new RayQueryASBasicTestCase(
                             group->getTestContext(), bottomTestTypes[testTypeNdx].name, testParams));
@@ -4082,6 +4111,7 @@ void addFuncArgTests(tcu::TestCaseGroup *group)
             TEST_HEIGHT,
             0u,
             EmptyAccelerationStructureCase::NOT_EMPTY,
+            ResourceResidency::TRADITIONAL,
         };
 
         group->addChild(new RayQueryASFuncArgTestCase(ctx, buildTypes[buildTypeNdx].name, testParams));
@@ -4231,6 +4261,7 @@ void addInstanceTriangleCullingTests(tcu::TestCaseGroup *group)
                             TEST_HEIGHT,
                             0u,
                             EmptyAccelerationStructureCase::NOT_EMPTY,
+                            ResourceResidency::TRADITIONAL,
                         };
                         indexTypeGroup->addChild(new RayQueryASBasicTestCase(ctx, testName.c_str(), testParams));
                     }
@@ -4295,6 +4326,7 @@ void addInstanceUpdateTests(tcu::TestCaseGroup *group)
                 TEST_HEIGHT,
                 0u,
                 EmptyAccelerationStructureCase::NOT_EMPTY,
+                ResourceResidency::TRADITIONAL,
             };
 
             buildTypeGroup->addChild(
@@ -4307,7 +4339,7 @@ void addInstanceUpdateTests(tcu::TestCaseGroup *group)
 void addDynamicIndexingTests(tcu::TestCaseGroup *group)
 {
     auto &ctx = group->getTestContext();
-    group->addChild(new RayQueryASDynamicIndexingTestCase(ctx, "dynamic_indexing"));
+    group->addChild(new RayQueryASDynamicIndexingTestCase(ctx, "dynamic_indexing", ResourceResidency::TRADITIONAL));
 }
 
 void addEmptyAccelerationStructureTests(tcu::TestCaseGroup *group)
@@ -4441,6 +4473,7 @@ void addEmptyAccelerationStructureTests(tcu::TestCaseGroup *group)
                         TEST_HEIGHT,
                         0u,
                         emptyCases[emptyCaseIdx].emptyASCase,
+                        ResourceResidency::TRADITIONAL,
                     };
                     indexTypeGroup->addChild(
                         new RayQueryASBasicTestCase(ctx, emptyCases[emptyCaseIdx].name.c_str(), testParams));

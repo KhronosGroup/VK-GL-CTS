@@ -802,16 +802,18 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
 
     // build acceleration structure - single, big aabb
     auto blas = makeBottomLevelAccelerationStructure();
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
     blas->setGeometryData(
         {
             {0.0, 0.0, -8.0},
             {8.0, 8.0, -1.0},
         },
         false, 0);
-    blas->createAndBuild(vk, device, *cmdBuffer, memAlloc);
+    blas->createAndBuild(vk, device, *cmdBuffer, memAlloc, bufferProps);
     tlas->setInstanceCount(1);
     tlas->addInstance(de::SharedPtr<BottomLevelAccelerationStructure>(blas.release()));
-    tlas->createAndBuild(vk, device, *cmdBuffer, memAlloc);
+    tlas->createAndBuild(vk, device, *cmdBuffer, memAlloc, bufferProps);
 
     // update descriptor sets
     {

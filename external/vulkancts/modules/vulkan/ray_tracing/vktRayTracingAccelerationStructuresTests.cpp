@@ -191,6 +191,7 @@ struct TestParams
     bool useCullMask;
     uint32_t cullMask;
     UpdateCase updateCase;
+    ResourceResidency resResidency; // Resource residency for acceleration buffer
 };
 
 uint32_t getShaderGroupSize(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
@@ -1903,6 +1904,10 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
         std::vector<VkDeviceSize> bottomBlasCompactSize;
         std::vector<VkDeviceSize> bottomBlasSerialSize;
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = m_data.resResidency;
+        bufferProps.props.queue     = queue;
+
         for (auto &blas : bottomLevelAccelerationStructures)
         {
             blas->setBuildType(m_data.buildType);
@@ -1912,7 +1917,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
             blas->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
             blas->setBuildWithoutGeometries(buildWithoutGeom);
             blas->setBuildWithoutPrimitives(bottomNoPrimitives);
-            blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+            blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
             accelerationStructureHandles.push_back(*(blas->getPtr()));
         }
 
@@ -1983,7 +1988,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
                     asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
                     asCopy->setBuildWithoutGeometries(buildWithoutGeom);
                     asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
-                    asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
+                    asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
                                               bottomLevelAccelerationStructures[i].get(), 0u, 0u);
                     bottomLevelAccelerationStructureCopies.push_back(
                         de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
@@ -2002,7 +2007,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
                     asCopy->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
                     asCopy->setBuildWithoutGeometries(buildWithoutGeom);
                     asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
-                    asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
+                    asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
                                               bottomLevelAccelerationStructures[i].get(), bottomBlasCompactSize[i], 0u);
                     bottomLevelAccelerationStructureCopies.push_back(
                         de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
@@ -2040,7 +2045,8 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
                     asCopy->setBuildWithoutGeometries(buildWithoutGeom);
                     asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
                     asCopy->setDeferredOperation(htSerialize, workerThreadsCount);
-                    asCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, storage.get(), 0u);
+                    asCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, bufferProps, storage.get(),
+                                                     0u);
                     bottomLevelAccelerationStructureCopies.push_back(
                         de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
                 }
@@ -2070,7 +2076,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
         topLevelAccelerationStructure->setCreateGeneric(m_data.topGeneric);
         topLevelAccelerationStructure->setCreationBufferUnbounded(m_data.topUnboundedCreation);
         topLevelAccelerationStructure->setInactiveInstances(inactiveInstances);
-        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
         topLevelStructureHandles.push_back(*(topLevelAccelerationStructure->getPtr()));
 
         if (topCompact)
@@ -2120,7 +2126,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
                 topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
                 topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
                 topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
-                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
+                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
                                                                      topLevelAccelerationStructure.get(), 0u, 0u);
                 break;
             }
@@ -2134,8 +2140,9 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
                 topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
                 topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
                 topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
-                topLevelAccelerationStructureCopy->createAndCopyFrom(
-                    vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), topBlasCompactSize[0], 0u);
+                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
+                                                                     topLevelAccelerationStructure.get(),
+                                                                     topBlasCompactSize[0], 0u);
                 break;
             }
             case OP_SERIALIZE:
@@ -2167,7 +2174,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
                 topLevelAccelerationStructureCopy->setCreationBufferUnbounded(m_data.topUnboundedCreation);
                 topLevelAccelerationStructureCopy->setDeferredOperation(htSerialize, workerThreadsCount);
                 topLevelAccelerationStructureCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator,
-                                                                            storage.get(), 0u);
+                                                                            bufferProps, storage.get(), 0u);
                 break;
             }
             case OP_UPDATE:
@@ -2175,7 +2182,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
                 topLevelAccelerationStructureCopy = m_data.testConfiguration->initTopAccelerationStructure(
                     m_context, m_data, *bottomLevelAccelerationStructuresPtr);
                 topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
-                topLevelAccelerationStructureCopy->create(vkd, device, allocator, 0u, 0u);
+                topLevelAccelerationStructureCopy->create(vkd, device, allocator, bufferProps, 0u, 0u);
                 // Update AS based on topLevelAccelerationStructure
                 topLevelAccelerationStructureCopy->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
                 break;
@@ -2193,7 +2200,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
                 topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
                 topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
                 topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
-                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
+                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
                                                                      topLevelAccelerationStructure.get(), 0u, 0u);
                 break;
             }
@@ -2295,24 +2302,32 @@ tcu::TestStatus RayTracingASBasicTestInstance::iterate(void)
 class RayTracingASDynamicIndexingTestCase : public TestCase
 {
 public:
-    RayTracingASDynamicIndexingTestCase(tcu::TestContext &context, const char *name);
+    RayTracingASDynamicIndexingTestCase(tcu::TestContext &context, const char *name, ResourceResidency accStructRes);
     ~RayTracingASDynamicIndexingTestCase(void) = default;
 
     void checkSupport(Context &context) const override;
     void initPrograms(SourceCollections &programCollection) const override;
     TestInstance *createInstance(Context &context) const override;
+
+private:
+    const ResourceResidency m_residency;
 };
 
 class RayTracingASDynamicIndexingTestInstance : public TestInstance
 {
 public:
-    RayTracingASDynamicIndexingTestInstance(Context &context);
+    RayTracingASDynamicIndexingTestInstance(Context &context, ResourceResidency accStructRes);
     ~RayTracingASDynamicIndexingTestInstance(void) = default;
     tcu::TestStatus iterate(void) override;
+
+private:
+    const ResourceResidency m_residency;
 };
 
-RayTracingASDynamicIndexingTestCase::RayTracingASDynamicIndexingTestCase(tcu::TestContext &context, const char *name)
+RayTracingASDynamicIndexingTestCase::RayTracingASDynamicIndexingTestCase(tcu::TestContext &context, const char *name,
+                                                                         ResourceResidency accStructRes)
     : TestCase(context, name)
+    , m_residency(accStructRes)
 {
 }
 
@@ -2565,11 +2580,13 @@ void RayTracingASDynamicIndexingTestCase::initPrograms(SourceCollections &progra
 
 TestInstance *RayTracingASDynamicIndexingTestCase::createInstance(Context &context) const
 {
-    return new RayTracingASDynamicIndexingTestInstance(context);
+    return new RayTracingASDynamicIndexingTestInstance(context, m_residency);
 }
 
-RayTracingASDynamicIndexingTestInstance::RayTracingASDynamicIndexingTestInstance(Context &context)
+RayTracingASDynamicIndexingTestInstance::RayTracingASDynamicIndexingTestInstance(Context &context,
+                                                                                 ResourceResidency accStructRes)
     : vkt::TestInstance(context)
+    , m_residency(accStructRes)
 {
 }
 
@@ -2657,6 +2674,10 @@ tcu::TestStatus RayTracingASDynamicIndexingTestInstance::iterate(void)
     std::vector<VkDeviceAddress> tlasPtrVect(tlasCount);
     std::vector<VkAccelerationStructureKHR> tlasVkVect;
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = m_residency;
+    bufferProps.props.queue     = queue;
+
     // randomly scatter active AS across the range
     deRandom rnd;
     deRandom_init(&rnd, 123);
@@ -2689,7 +2710,7 @@ tcu::TestStatus RayTracingASDynamicIndexingTestInstance::iterate(void)
             },
             true, VK_GEOMETRY_OPAQUE_BIT_KHR);
 
-        blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
         // build top level acceleration structures
         for (uint32_t tlasIndex = 0; tlasIndex < tlasCount; ++tlasIndex)
@@ -2704,7 +2725,7 @@ tcu::TestStatus RayTracingASDynamicIndexingTestInstance::iterate(void)
                 // that with current cts utils so we are marking them as inactive instead
                 tlas->setInactiveInstances(true);
             }
-            tlas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+            tlas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
             // get acceleration structure device address
             const VkAccelerationStructureDeviceAddressInfoKHR addressInfo = {
@@ -2834,7 +2855,8 @@ public:
 protected:
     de::SharedPtr<TopLevelAccelerationStructure> prepareTopAccelerationStructure(const DeviceInterface &vk,
                                                                                  VkDevice device, Allocator &allocator,
-                                                                                 VkCommandBuffer cmdBuffer);
+                                                                                 VkCommandBuffer cmdBuffer,
+                                                                                 VkQueue queue);
 
     bool areAddressesTheSame(const std::vector<uint64_t> &addresses,
                              const SerialStorage::AccelerationStructureHeader *header);
@@ -2988,6 +3010,10 @@ tcu::TestStatus RayTracingDeviceASCompabilityKHRTestInstance::iterate(void)
     std::vector<VkDeviceSize> compactSizes;
     std::vector<VkDeviceSize> serialSizes;
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = m_params->resResidency;
+    bufferProps.props.queue     = queue;
+
     beginCommandBuffer(vkd, *cmdBuffer, 0u);
 
     bottomStructures = m_params->testConfiguration->initBottomAccelerationStructures(m_context, *m_params);
@@ -2995,7 +3021,7 @@ tcu::TestStatus RayTracingDeviceASCompabilityKHRTestInstance::iterate(void)
     {
         blas->setBuildType(m_params->buildType);
         blas->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
-        blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
         bottomHandles.push_back(*(blas->getPtr()));
     }
 
@@ -3005,7 +3031,7 @@ tcu::TestStatus RayTracingDeviceASCompabilityKHRTestInstance::iterate(void)
             m_params->testConfiguration->initTopAccelerationStructure(m_context, *m_params, bottomStructures);
         tlas->setBuildType(m_params->buildType);
         tlas->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
-        tlas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        tlas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
         topHandles.push_back(*(tlas->getPtr()));
         topStructures.push_back(de::SharedPtr<TopLevelAccelerationStructure>(tlas.release()));
     }
@@ -3075,6 +3101,10 @@ bool RayTracingDeviceASCompabilityKHRTestInstance::performTest(
     std::vector<de::SharedPtr<SerialStorage>> sourceSerialized;
     std::vector<de::SharedPtr<SerialStorage>> compactSerialized;
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = m_params->resResidency;
+    bufferProps.props.queue     = queue;
+
     // make compact copy of acceleration structure
     {
         beginCommandBuffer(vkd, cmdBuffer, 0u);
@@ -3083,8 +3113,8 @@ bool RayTracingDeviceASCompabilityKHRTestInstance::performTest(
         {
             de::MovePtr<ASType> asCopy = makeAccelerationStructure<ASType>();
             asCopy->setBuildType(m_params->buildType);
-            asCopy->createAndCopyFrom(vkd, device, cmdBuffer, allocator, sourceStructures[i].get(), compactSizes[i],
-                                      0u);
+            asCopy->createAndCopyFrom(vkd, device, cmdBuffer, allocator, bufferProps, sourceStructures[i].get(),
+                                      compactSizes[i], 0u);
             compactHandles.push_back(*(asCopy->getPtr()));
             compactStructures.push_back(de::SharedPtr<ASType>(asCopy.release()));
         }
@@ -3156,7 +3186,7 @@ bool RayTracingDeviceASCompabilityKHRTestInstance::performTest(
 }
 
 de::SharedPtr<TopLevelAccelerationStructure> RayTracingHeaderBottomAddressTestInstance::prepareTopAccelerationStructure(
-    const DeviceInterface &vk, VkDevice device, Allocator &allocator, VkCommandBuffer cmdBuffer)
+    const DeviceInterface &vk, VkDevice device, Allocator &allocator, VkCommandBuffer cmdBuffer, VkQueue queue)
 {
     const std::vector<tcu::Vec3> geometryData = {
         {0.0, 0.0, 0.0},
@@ -3166,12 +3196,16 @@ de::SharedPtr<TopLevelAccelerationStructure> RayTracingHeaderBottomAddressTestIn
 
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> bottoms;
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = m_params->resResidency;
+    bufferProps.props.queue     = queue;
+
     if (TopTestType::IDENTICAL_INSTANCES == m_params->topTestType)
     {
         auto blas = de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
         blas->setBuildType(m_params->buildType);
         blas->setGeometryData(geometryData, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
-        blas->createAndBuild(vk, device, cmdBuffer, allocator);
+        blas->createAndBuild(vk, device, cmdBuffer, allocator, bufferProps);
         for (uint32_t i = 0; i < m_params->width; ++i)
         {
             bottoms.emplace_back(blas);
@@ -3185,7 +3219,7 @@ de::SharedPtr<TopLevelAccelerationStructure> RayTracingHeaderBottomAddressTestIn
                 de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
             blas->setBuildType(m_params->buildType);
             blas->setGeometryData(geometryData, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
-            blas->createAndBuild(vk, device, cmdBuffer, allocator);
+            blas->createAndBuild(vk, device, cmdBuffer, allocator, bufferProps);
             bottoms.emplace_back(blas);
         }
     }
@@ -3198,7 +3232,7 @@ de::SharedPtr<TopLevelAccelerationStructure> RayTracingHeaderBottomAddressTestIn
                     de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
                 blas1->setBuildType(m_params->buildType);
                 blas1->setGeometryData(geometryData, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
-                blas1->createAndBuild(vk, device, cmdBuffer, allocator);
+                blas1->createAndBuild(vk, device, cmdBuffer, allocator, bufferProps);
                 bottoms.emplace_back(blas1);
             }
 
@@ -3207,7 +3241,7 @@ de::SharedPtr<TopLevelAccelerationStructure> RayTracingHeaderBottomAddressTestIn
                     de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
                 blas2->setBuildType(m_params->buildType);
                 blas2->setGeometryData(geometryData, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
-                blas2->createAndBuild(vk, device, cmdBuffer, allocator);
+                blas2->createAndBuild(vk, device, cmdBuffer, allocator, bufferProps);
                 bottoms.emplace_back(blas2);
             }
         }
@@ -3231,7 +3265,7 @@ de::SharedPtr<TopLevelAccelerationStructure> RayTracingHeaderBottomAddressTestIn
                           getCullFlags((m_params->cullFlags)));
     }
 
-    tlas->createAndBuild(vk, device, cmdBuffer, allocator);
+    tlas->createAndBuild(vk, device, cmdBuffer, allocator, bufferProps);
 
     return de::SharedPtr<TopLevelAccelerationStructure>(tlas.release());
 }
@@ -3251,7 +3285,7 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate(void)
 
     beginCommandBuffer(vkd, *cmdBuffer, 0);
     de::SharedPtr<TopLevelAccelerationStructure> src =
-        prepareTopAccelerationStructure(vkd, device, allocator, *cmdBuffer);
+        prepareTopAccelerationStructure(vkd, device, allocator, *cmdBuffer, queue);
     endCommandBuffer(vkd, *cmdBuffer);
     submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 
@@ -3262,6 +3296,10 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate(void)
 
     const SerialInfo serialInfo(inAddrs, inSizes);
     SerialStorage deepStorage(vkd, device, allocator, m_params->buildType, serialInfo);
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = m_params->resResidency;
+    bufferProps.props.queue     = queue;
 
     // make deep serialization - top-level AS width bottom-level structures that it owns
     vkd.resetCommandBuffer(*cmdBuffer, 0);
@@ -3274,7 +3312,7 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate(void)
     // bottom-level structure addresses should be updated when deep data is deserialized
     vkd.resetCommandBuffer(*cmdBuffer, 0);
     beginCommandBuffer(vkd, *cmdBuffer, 0);
-    dst->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, &deepStorage);
+    dst->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, bufferProps, &deepStorage);
     endCommandBuffer(vkd, *cmdBuffer);
     submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 
@@ -3283,6 +3321,9 @@ tcu::TestStatus RayTracingHeaderBottomAddressTestInstance::iterate(void)
     // make shallow serialization - only top-level AS without bottom-level structures
     vkd.resetCommandBuffer(*cmdBuffer, 0);
     beginCommandBuffer(vkd, *cmdBuffer, 0);
+    //dst->create(vkd, device, allocator, 0u, 0u);
+    //dst->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR);
+    //dst->build(vkd, device, *cmdBuffer, dst.get());
     dst->serialize(vkd, device, *cmdBuffer, &shallowStorage);
     endCommandBuffer(vkd, *cmdBuffer);
     submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
@@ -3377,6 +3418,7 @@ struct QueryPoolResultsParams
     uint32_t blasCount;
     bool inVkBuffer;
     bool compacted;
+    ResourceResidency accStructRes;
 };
 
 typedef de::SharedPtr<const QueryPoolResultsParams> QueryPoolResultsParamsPtr;
@@ -3396,9 +3438,9 @@ public:
     {
     }
     auto prepareBottomAccStructures(const DeviceInterface &vk, VkDevice device, Allocator &allocator,
-                                    VkCommandBuffer cmdBuffer) -> std::vector<BlasPtr>;
+                                    VkCommandBuffer cmdBuffer, VkQueue queue) -> std::vector<BlasPtr>;
     TlasPtr prepareTopAccStructure(const DeviceInterface &vk, VkDevice device, Allocator &allocator,
-                                   VkCommandBuffer cmdBuffer, const std::vector<BlasPtr> &bottoms);
+                                   VkCommandBuffer cmdBuffer, VkQueue queue, const std::vector<BlasPtr> &bottoms);
 
 protected:
     const QueryPoolResultsParamsPtr m_params;
@@ -3412,7 +3454,7 @@ struct ASInterface
     virtual VkAccelerationStructureKHR getPtr() const                               = 0;
     virtual VkAccelerationStructureBuildSizesInfoKHR getStructureBuildSizes() const = 0;
     virtual ASInterfacePtr clone(Context &ctx, VkAccelerationStructureBuildTypeKHR buildType, const VkCommandBuffer cmd,
-                                 VkDeviceSize size)                                 = 0;
+                                 VkDeviceSize size, ResourceResidency res)          = 0;
 };
 
 template <class>
@@ -3452,16 +3494,20 @@ struct ASInterfaceImpl : ASInterface
         return m_source->getStructureBuildSizes();
     }
     virtual ASInterfacePtr clone(Context &ctx, VkAccelerationStructureBuildTypeKHR buildType, const VkCommandBuffer cmd,
-                                 VkDeviceSize size) override
+                                 VkDeviceSize size, ResourceResidency res) override
     {
         const DeviceInterface &vk = ctx.getDeviceInterface();
         const VkDevice device     = ctx.getDevice();
         Allocator &allocator      = ctx.getDefaultAllocator();
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = res;
+        bufferProps.props.queue     = ctx.getUniversalQueue();
+
         auto ptr = ASAllocator<SharedPtrType>::alloc();
         ptr->setBuildType(buildType);
         ptr->setBuildFlags(m_source->getBuildFlags());
-        ptr->create(vk, device, allocator, size);
+        ptr->create(vk, device, allocator, bufferProps, size);
         ptr->copyFrom(vk, device, cmd, m_source.get(), false);
         return de::SharedPtr<ASInterface>(new ASInterfaceImpl(ptr));
     }
@@ -3481,9 +3527,9 @@ public:
     {
     }
     TestStatus iterate(void) override;
-    auto makeCopyOfStructures(const std::vector<ASInterfacePtr> &structs, const std::vector<VkDeviceSize> sizes)
-        -> std::vector<ASInterfacePtr>;
-    auto getStructureSizes(const std::vector<VkAccelerationStructureKHR> &handles) -> std::vector<VkDeviceSize>;
+    std::vector<ASInterfacePtr> makeCopyOfStructures(const std::vector<ASInterfacePtr> &structs,
+                                                     const std::vector<VkDeviceSize> sizes);
+    std::vector<VkDeviceSize> getStructureSizes(const std::vector<VkAccelerationStructureKHR> &handles);
 };
 
 class QueryPoolResultsPointersInstance : public QueryPoolResultsInstance
@@ -3554,8 +3600,8 @@ void QueryPoolResultsCase::checkSupport(Context &context) const
 }
 
 auto QueryPoolResultsInstance::prepareBottomAccStructures(const DeviceInterface &vk, VkDevice device,
-                                                          Allocator &allocator, VkCommandBuffer cmdBuffer)
-    -> std::vector<BlasPtr>
+                                                          Allocator &allocator, VkCommandBuffer cmdBuffer,
+                                                          VkQueue queue) -> std::vector<BlasPtr>
 {
     std::vector<Vec3> triangle = {
         {0.0, 0.0, 0.0},
@@ -3580,6 +3626,10 @@ auto QueryPoolResultsInstance::prepareBottomAccStructures(const DeviceInterface 
 
     std::vector<BlasPtr> bottoms(m_params->blasCount);
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = m_params->accStructRes;
+    bufferProps.props.queue     = queue;
+
     for (uint32_t b = 0; b < m_params->blasCount; ++b)
     {
         BlasPtr blas(makeBottomLevelAccelerationStructure().release());
@@ -3596,7 +3646,7 @@ auto QueryPoolResultsInstance::prepareBottomAccStructures(const DeviceInterface 
             blas->addGeometry(triangle, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
         }
 
-        blas->createAndBuild(vk, device, cmdBuffer, allocator);
+        blas->createAndBuild(vk, device, cmdBuffer, allocator, bufferProps);
 
         bottoms[b] = blas;
     }
@@ -3605,10 +3655,14 @@ auto QueryPoolResultsInstance::prepareBottomAccStructures(const DeviceInterface 
 }
 
 auto QueryPoolResultsInstance::prepareTopAccStructure(const DeviceInterface &vk, VkDevice device, Allocator &allocator,
-                                                      VkCommandBuffer cmdBuffer, const std::vector<BlasPtr> &bottoms)
-    -> TlasPtr
+                                                      VkCommandBuffer cmdBuffer, VkQueue queue,
+                                                      const std::vector<BlasPtr> &bottoms) -> TlasPtr
 {
     const std::size_t instanceCount = bottoms.size();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = m_params->accStructRes;
+    bufferProps.props.queue     = queue;
 
     de::MovePtr<TopLevelAccelerationStructure> tlas = makeTopLevelAccelerationStructure();
     tlas->setBuildType(m_params->buildType);
@@ -3623,13 +3677,13 @@ auto QueryPoolResultsInstance::prepareTopAccStructure(const DeviceInterface &vk,
         tlas->addInstance(bottoms[i], identityMatrix3x4, 0, 0xFFu, 0u, VkGeometryInstanceFlagsKHR(0));
     }
 
-    tlas->createAndBuild(vk, device, cmdBuffer, allocator);
+    tlas->createAndBuild(vk, device, cmdBuffer, allocator, bufferProps);
 
     return TlasPtr(tlas.release());
 }
 
-auto QueryPoolResultsSizeInstance::getStructureSizes(const std::vector<VkAccelerationStructureKHR> &handles)
-    -> std::vector<VkDeviceSize>
+std::vector<VkDeviceSize> QueryPoolResultsSizeInstance::getStructureSizes(
+    const std::vector<VkAccelerationStructureKHR> &handles)
 {
     const DeviceInterface &vk  = m_context.getDeviceInterface();
     const VkDevice device      = m_context.getDevice();
@@ -3766,9 +3820,8 @@ auto QueryPoolResultsSizeInstance::getStructureSizes(const std::vector<VkAcceler
     return sizeSizes;
 }
 
-auto QueryPoolResultsSizeInstance::makeCopyOfStructures(const std::vector<ASInterfacePtr> &structs,
-                                                        const std::vector<VkDeviceSize> sizes)
-    -> std::vector<ASInterfacePtr>
+std::vector<ASInterfacePtr> QueryPoolResultsSizeInstance::makeCopyOfStructures(
+    const std::vector<ASInterfacePtr> &structs, const std::vector<VkDeviceSize> sizes)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
@@ -3789,7 +3842,8 @@ auto QueryPoolResultsSizeInstance::makeCopyOfStructures(const std::vector<ASInte
 
     for (auto begin = structs.begin(), i = begin; i != structs.end(); ++i)
     {
-        copies.push_back((*i)->clone(m_context, m_params->buildType, *cmdBuffer, sizes.at(std::distance(begin, i))));
+        copies.push_back((*i)->clone(m_context, m_params->buildType, *cmdBuffer, sizes.at(std::distance(begin, i)),
+                                     m_params->accStructRes));
     }
 
     if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -3815,8 +3869,8 @@ TestStatus QueryPoolResultsSizeInstance::iterate(void)
         allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     beginCommandBuffer(vk, *cmdBuffer, 0);
-    const std::vector<BlasPtr> bottoms = prepareBottomAccStructures(vk, device, allocator, *cmdBuffer);
-    TlasPtr tlas                       = prepareTopAccStructure(vk, device, allocator, *cmdBuffer, bottoms);
+    const std::vector<BlasPtr> bottoms = prepareBottomAccStructures(vk, device, allocator, *cmdBuffer, queue);
+    TlasPtr tlas                       = prepareTopAccStructure(vk, device, allocator, *cmdBuffer, queue, bottoms);
     endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
@@ -3864,8 +3918,8 @@ TestStatus QueryPoolResultsPointersInstance::iterate(void)
         allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     beginCommandBuffer(vk, *cmdBuffer, 0);
-    const std::vector<BlasPtr> bottoms = prepareBottomAccStructures(vk, device, allocator, *cmdBuffer);
-    TlasPtr tlas                       = prepareTopAccStructure(vk, device, allocator, *cmdBuffer, bottoms);
+    const std::vector<BlasPtr> bottoms = prepareBottomAccStructures(vk, device, allocator, *cmdBuffer, queue);
+    TlasPtr tlas                       = prepareTopAccStructure(vk, device, allocator, *cmdBuffer, queue, bottoms);
     endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
@@ -3954,6 +4008,7 @@ struct CopyWithinPipelineParams
     uint32_t width;
     uint32_t height;
     VkAccelerationStructureBuildTypeKHR build;
+    ResourceResidency resResidency;
 };
 typedef de::SharedPtr<const CopyWithinPipelineParams> CopyWithinPipelineParamsPtr;
 
@@ -4328,12 +4383,16 @@ auto CopyBlasInstance::getRefImage(BlasPtr blas) const -> de::MovePtr<BufferWith
     const Move<VkCommandBuffer> cmdBuffer =
         allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = m_params->resResidency;
+    bufferProps.props.queue     = queue;
+
     auto tlas = makeTopLevelAccelerationStructure();
     tlas->setBuildType(m_params->build);
     tlas->setInstanceCount(1);
     tlas->addInstance(blas, identityMatrix3x4, 0, (~0u), 0, VkGeometryInstanceFlagsKHR(0));
     beginCommandBuffer(vk, *cmdBuffer);
-    tlas->createAndBuild(vk, device, *cmdBuffer, allocator);
+    tlas->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
     endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
@@ -4476,6 +4535,10 @@ TestStatus CopyBlasInstance::iterate(void)
     std::vector<VkDeviceSize> blasSize(1);
     BlasPtr blas1(makeBottomLevelAccelerationStructure().release());
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = m_params->resResidency;
+    bufferProps.props.queue     = queue;
+
     // After this block the blas1 stays on device or host respectively to its build type.
     // Once it is created it is asked for the serialization size that will be used for a
     // creation of an empty blas2. Probably this size will be bigger than it is needed but
@@ -4486,7 +4549,7 @@ TestStatus CopyBlasInstance::iterate(void)
         beginCommandBuffer(vk, *cmdBuffer);
         blas1->setBuildType(m_params->build);
         blas1->setGeometryData({{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}}, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
-        blas1->createAndBuild(vk, device, *cmdBuffer, allocator);
+        blas1->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
         queryAccelerationStructureSize(vk, device, *cmdBuffer, {*blas1->getPtr()}, m_params->build, *queryPoolSize,
                                        query, 0u, blasSize);
         endCommandBuffer(vk, *cmdBuffer);
@@ -4502,7 +4565,7 @@ TestStatus CopyBlasInstance::iterate(void)
 
     // Create blas2 as empty struct
     BlasPtr blas2(makeBottomLevelAccelerationStructure().release());
-    blas2->create(vk, device, allocator, blasSize[0]);
+    blas2->create(vk, device, allocator, bufferProps, blasSize[0]);
 
     auto tlas = makeTopLevelAccelerationStructure();
     tlas->setBuildType(m_params->build);
@@ -4528,7 +4591,7 @@ TestStatus CopyBlasInstance::iterate(void)
     else
         VK_CHECK(vk.copyAccelerationStructureKHR(device, VK_NULL_HANDLE, &copyBlasInfo));
 
-    tlas->createAndBuild(vk, device, *cmdBuffer, allocator);
+    tlas->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
 
     const VkDescriptorImageInfo descriptorImageInfo =
         makeDescriptorImageInfo(VkSampler(), *view, VK_IMAGE_LAYOUT_GENERAL);
@@ -4697,6 +4760,10 @@ TestStatus CopySBTInstance::iterate(void)
     const Move<VkCommandBuffer> cmdBuffer =
         allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = m_params->resResidency;
+    bufferProps.props.queue     = queue;
+
     auto tlas = makeTopLevelAccelerationStructure();
     BlasPtr blas(makeBottomLevelAccelerationStructure().release());
     blas->setBuildType(m_params->build);
@@ -4705,8 +4772,8 @@ TestStatus CopySBTInstance::iterate(void)
     tlas->setInstanceCount(1);
     tlas->addInstance(blas, identityMatrix3x4, 0, (~0u), 0, VkGeometryInstanceFlagsKHR(0));
     beginCommandBuffer(vk, *cmdBuffer);
-    blas->createAndBuild(vk, device, *cmdBuffer, allocator);
-    tlas->createAndBuild(vk, device, *cmdBuffer, allocator);
+    blas->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
+    tlas->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
     endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
@@ -4948,6 +5015,10 @@ TestStatus ASUpdateInstance::iterate(void)
         std::vector<VkDeviceSize> bottomBlasCompactSize;
         std::vector<VkDeviceSize> bottomBlasSerialSize;
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = m_data.resResidency;
+        bufferProps.props.queue     = queue;
+
         for (auto &blas : bottomLevelAccelerationStructures)
         {
             blas->setBuildType(m_data.buildType);
@@ -4957,7 +5028,7 @@ TestStatus ASUpdateInstance::iterate(void)
             blas->setCreationBufferUnbounded(m_data.bottomUnboundedCreation);
             blas->setBuildWithoutGeometries(buildWithoutGeom);
             blas->setBuildWithoutPrimitives(bottomNoPrimitives);
-            blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+            blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
             accelerationStructureHandles.push_back(*(blas->getPtr()));
         }
 
@@ -4979,7 +5050,7 @@ TestStatus ASUpdateInstance::iterate(void)
         topLevelAccelerationStructure->setCreateGeneric(m_data.topGeneric);
         topLevelAccelerationStructure->setCreationBufferUnbounded(m_data.topUnboundedCreation);
         topLevelAccelerationStructure->setInactiveInstances(inactiveInstances);
-        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
         topLevelStructureHandles.push_back(*(topLevelAccelerationStructure->getPtr()));
 
         const VkMemoryBarrier postBuildBarrier = makeMemoryBarrier(VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
@@ -5266,6 +5337,7 @@ void addBasicBuildingTests(tcu::TestCaseGroup *group)
                                             false,
                                             0xFFu,
                                             UpdateCase::NONE,
+                                            ResourceResidency::TRADITIONAL,
                                         };
                                         paddingGroup->addChild(new RayTracingASBasicTestCase(
                                             group->getTestContext(), testName.c_str(), testParams));
@@ -5381,6 +5453,7 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup *group)
                         false,
                         0xFFu,
                         UpdateCase::NONE,
+                        ResourceResidency::TRADITIONAL,
                     };
                     paddingGroup->addChild(new RayTracingASBasicTestCase(
                         group->getTestContext(), indexFormats[indexFormatNdx].name, testParams));
@@ -5490,6 +5563,7 @@ void addOperationTestsImpl(tcu::TestCaseGroup *group, const uint32_t workerThrea
                         false,
                         0xFFu,
                         UpdateCase::NONE,
+                        ResourceResidency::TRADITIONAL,
                     };
                     operationTargetGroup->addChild(new RayTracingASBasicTestCase(
                         group->getTestContext(), bottomTestTypes[testTypeNdx].name, testParams));
@@ -5565,6 +5639,7 @@ void addFuncArgTests(tcu::TestCaseGroup *group)
             false,
             0xFFu,
             UpdateCase::NONE,
+            ResourceResidency::TRADITIONAL,
         };
 
         group->addChild(new RayTracingASFuncArgTestCase(ctx, buildTypes[buildTypeNdx].name, testParams));
@@ -5656,6 +5731,7 @@ void addInstanceTriangleCullingTests(tcu::TestCaseGroup *group)
                         false,
                         0xFFu,
                         UpdateCase::NONE,
+                        ResourceResidency::TRADITIONAL,
                     };
                     indexTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, testName.c_str(), testParams));
                 }
@@ -5669,7 +5745,7 @@ void addInstanceTriangleCullingTests(tcu::TestCaseGroup *group)
 void addDynamicIndexingTests(tcu::TestCaseGroup *group)
 {
     auto &ctx = group->getTestContext();
-    group->addChild(new RayTracingASDynamicIndexingTestCase(ctx, "dynamic_indexing"));
+    group->addChild(new RayTracingASDynamicIndexingTestCase(ctx, "dynamic_indexing", ResourceResidency::TRADITIONAL));
 }
 
 void addEmptyAccelerationStructureTests(tcu::TestCaseGroup *group)
@@ -5746,6 +5822,7 @@ void addEmptyAccelerationStructureTests(tcu::TestCaseGroup *group)
                     false,
                     0xFFu,
                     UpdateCase::NONE,
+                    ResourceResidency::TRADITIONAL,
                 };
                 indexTypeGroup->addChild(
                     new RayTracingASBasicTestCase(ctx, emptyCases[emptyCaseIdx].name.c_str(), testParams));
@@ -5819,6 +5896,7 @@ void addInstanceIndexTests(tcu::TestCaseGroup *group)
                 false,
                 0xFFu,
                 UpdateCase::NONE,
+                ResourceResidency::TRADITIONAL,
             };
             buildTypeGroup->addChild(
                 new RayTracingASBasicTestCase(ctx, customIndexCases[customIndexCaseIdx].name.c_str(), testParams));
@@ -5882,6 +5960,7 @@ void addInstanceUpdateTests(tcu::TestCaseGroup *group)
                 false,
                 0xFFu,
                 UpdateCase::NONE,
+                ResourceResidency::TRADITIONAL,
             };
             buildTypeGroup->addChild(
                 new RayTracingASBasicTestCase(ctx, operationTypes[operationTypesIdx].name, testParams));
@@ -5968,6 +6047,7 @@ void addInstanceRayCullMaskTests(tcu::TestCaseGroup *group)
                     true,
                     cullMask[cullMaskIdx].cullMask,
                     UpdateCase::NONE,
+                    ResourceResidency::TRADITIONAL,
                 };
                 customIndexCaseGroup->addChild(
                     new RayTracingASBasicTestCase(ctx, cullMask[cullMaskIdx].name.c_str(), testParams));
@@ -6034,6 +6114,7 @@ void addGetDeviceAccelerationStructureCompabilityTests(tcu::TestCaseGroup *group
                 false,                                                             // useCullMask
                 0xFFu,                                                             // cullMask
                 UpdateCase::NONE,                                                  // updateCase
+                ResourceResidency::TRADITIONAL,                                    // resourceResidency
             };
             buildTypeGroup->addChild(new RayTracingDeviceASCompabilityKHRTestCase(
                 ctx, targets[targetIdx].name.c_str(), de::SharedPtr<TestParams>(new TestParams(testParams))));
@@ -6098,6 +6179,7 @@ void addUpdateHeaderBottomAddressTests(tcu::TestCaseGroup *group)
                 false,                                     // useCullMask
                 0xFFu,                                     // cullMask
                 UpdateCase::NONE,                          // updateCase
+                ResourceResidency::TRADITIONAL,            // resourceResidency
             };
             buildTypeGroup->addChild(new RayTracingHeaderBottomAddressTestCase(
                 ctx, instTypes[instTypeIdx].name.c_str(), de::SharedPtr<TestParams>(new TestParams(testParams))));
@@ -6134,11 +6216,12 @@ void addQueryPoolResultsTests(TestCaseGroup *group)
                 for (const auto &queryType : queryTypes)
                 {
                     QueryPoolResultsParams p;
-                    p.buildType  = buildType.first;
-                    p.inVkBuffer = storeType.first;
-                    p.queryType  = queryType.first;
-                    p.blasCount  = 5;
-                    p.compacted  = compacted.first;
+                    p.buildType    = buildType.first;
+                    p.inVkBuffer   = storeType.first;
+                    p.queryType    = queryType.first;
+                    p.blasCount    = 5;
+                    p.compacted    = compacted.first;
+                    p.accStructRes = ResourceResidency::TRADITIONAL;
 
                     storeTypeGroup->addChild(
                         new QueryPoolResultsCase(testContext, queryType.second, makeSharedFrom(p)));
@@ -6169,10 +6252,11 @@ void addCopyWithinPipelineTests(TestCaseGroup *group)
         for (const auto &testType : testTypes)
         {
             CopyWithinPipelineParams p;
-            p.width  = 16;
-            p.height = 16;
-            p.build  = buildType.first;
-            p.type   = testType.first;
+            p.width        = 16;
+            p.height       = 16;
+            p.build        = buildType.first;
+            p.type         = testType.first;
+            p.resResidency = ResourceResidency::TRADITIONAL;
 
             buildTypeGroup->addChild(new PipelineStageASCase(testContext, testType.second, makeSharedFrom(p)));
         }
@@ -6236,6 +6320,7 @@ void addUpdateTests(TestCaseGroup *group)
                 false,
                 0xFFu,
                 updateTypes[updateTypesIdx].updateType,
+                ResourceResidency::TRADITIONAL,
             };
             buildTypeGroup->addChild(new ASUpdateCase(ctx, updateTypes[updateTypesIdx].name, testParams));
         }

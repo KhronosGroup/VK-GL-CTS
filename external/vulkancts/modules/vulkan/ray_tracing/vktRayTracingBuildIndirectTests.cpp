@@ -534,11 +534,14 @@ de::SharedPtr<TopLevelAccelerationStructure> RayTracingBuildIndirectTestInstance
     Allocator &allocator                              = m_context.getDefaultAllocator();
     de::MovePtr<TopLevelAccelerationStructure> result = makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     result->setInstanceCount(1);
     result->addInstance(bottomLevelAccelerationStructure);
     result->setIndirectBuildParameters(indirectBuffer, indirectBufferOffset, indirectBufferStride);
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return de::SharedPtr<TopLevelAccelerationStructure>(result.release());
 }
@@ -551,6 +554,9 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildIndirectTestInsta
     const VkDevice device                                = m_context.getDevice();
     Allocator &allocator                                 = m_context.getDefaultAllocator();
     de::MovePtr<BottomLevelAccelerationStructure> result = makeBottomLevelAccelerationStructure();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     result->setGeometryCount(m_data.geometriesGroupCount);
     result->setIndirectBuildParameters(indirectBuffer, indirectBufferOffset, indirectBufferStride);
@@ -759,7 +765,7 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildInstances::initBo
         result->setGeometryTransform(geoId, transformMatrix);
     }
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return de::SharedPtr<BottomLevelAccelerationStructure>(result.release());
 }

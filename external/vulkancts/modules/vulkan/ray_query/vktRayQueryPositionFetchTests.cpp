@@ -420,6 +420,9 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     const std::vector<tcu::Vec3> triangle = {
         tcu::Vec3(0.0f, 0.0f, 0.0f),
         tcu::Vec3(1.0f, 0.0f, 0.0f),
@@ -440,7 +443,7 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     bottomLevelAS->addGeometry(geometry);
     bottomLevelAS->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR);
     bottomLevelAS->setBuildType(m_params.buildType);
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
 
     topLevelAS->setInstanceCount(1);
@@ -448,7 +451,7 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     topLevelAS->addInstance(blasSharedPtr, (m_params.testFlagMask & TEST_FLAG_BIT_INSTANCE_TRANSFORM) ?
                                                notQuiteIdentityMatrix3x4 :
                                                identityMatrix3x4);
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // One ray for this test
     // XXX Should it be multiple triangles and one ray per triangle for more coverage?

@@ -3340,6 +3340,9 @@ tcu::TestStatus RayQueryTestInstance::iterate()
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     const auto hitIndex       = fragShaderCount - 1u; // Rightmost X location.
     const auto triangleCenter = static_cast<float>(hitIndex);
 
@@ -3351,12 +3354,12 @@ tcu::TestStatus RayQueryTestInstance::iterate()
     };
 
     bottomLevelAS->addGeometry(triangle, true /*triangles*/);
-    bottomLevelAS->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator);
+    bottomLevelAS->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
 
     topLevelAS->setInstanceCount(1);
     topLevelAS->addInstance(blasSharedPtr);
-    topLevelAS->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator);
+    topLevelAS->createAndBuild(ctx.vkd, ctx.device, cmdBuffer, ctx.allocator, bufferProps);
 
     // Update descriptor set.
     DescriptorSetUpdateBuilder updateBuilder;
