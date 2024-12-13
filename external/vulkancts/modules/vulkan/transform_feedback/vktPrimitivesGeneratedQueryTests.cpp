@@ -2418,6 +2418,13 @@ void ConcurrentPrimitivesGeneratedQueryTestCase::checkSupport(vkt::Context &cont
         if (!context.getDeviceFeatures().pipelineStatisticsQuery)
             TCU_THROW(NotSupportedError, "pipelineStatisticsQuery not supported");
     }
+
+    if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3)
+    {
+        // VUID-vkCmdExecuteCommands-commandBuffer-00101
+        if (!context.getDeviceFeatures().inheritedQueries)
+            TCU_THROW(NotSupportedError, "inheritedQueries not supported");
+    }
 }
 
 void ConcurrentPrimitivesGeneratedQueryTestCase::initPrograms(vk::SourceCollections &programCollection) const
