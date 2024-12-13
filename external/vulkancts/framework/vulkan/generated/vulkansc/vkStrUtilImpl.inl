@@ -3053,6 +3053,11 @@ tcu::Format::Bitfield<32> getDirectDriverLoadingFlagsLUNARGStr (VkDirectDriverLo
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
+tcu::Format::Bitfield<32> getAddressCopyFlagsKHRStr (VkAddressCopyFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
 tcu::Format::Bitfield<32> getDisplayModeCreateFlagsKHRStr (VkDisplayModeCreateFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);

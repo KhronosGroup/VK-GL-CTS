@@ -1099,6 +1099,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_device_address_commands")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_graphics_pipeline_library")
 	{
 		return;
@@ -2996,6 +3000,49 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		}
 		return;
 	}
+	if (extName == "VK_KHR_device_address_commands")
+	{
+		functions.push_back("vkCmdBindIndexBuffer3KHR");
+		functions.push_back("vkCmdBindVertexBuffers3KHR");
+		functions.push_back("vkCmdDrawIndirect2KHR");
+		functions.push_back("vkCmdDrawIndexedIndirect2KHR");
+		functions.push_back("vkCmdDispatchIndirect2KHR");
+		functions.push_back("vkCmdCopyMemoryKHR");
+		functions.push_back("vkCmdCopyMemoryToImageKHR");
+		functions.push_back("vkCmdCopyImageToMemoryKHR");
+		functions.push_back("vkCmdUpdateMemoryKHR");
+		functions.push_back("vkCmdFillMemoryKHR");
+		functions.push_back("vkCmdCopyQueryPoolResultsToMemoryKHR");
+		// Dependencies: VK_KHR_draw_indirect_count,VK_VERSION_1_2
+		if ((checkVersion(1, 2, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count"))) {
+			functions.push_back("vkCmdDrawIndirectCount2KHR");
+			functions.push_back("vkCmdDrawIndexedIndirectCount2KHR");
+		}
+		// Dependencies: VK_EXT_conditional_rendering
+		if (extensionIsSupported(vDEP, "VK_EXT_conditional_rendering")) {
+			functions.push_back("vkCmdBeginConditionalRendering2EXT");
+		}
+		// Dependencies: VK_EXT_transform_feedback
+		if (extensionIsSupported(vDEP, "VK_EXT_transform_feedback")) {
+			functions.push_back("vkCmdBindTransformFeedbackBuffers2EXT");
+			functions.push_back("vkCmdBeginTransformFeedback2EXT");
+			functions.push_back("vkCmdEndTransformFeedback2EXT");
+			functions.push_back("vkCmdDrawIndirectByteCount2EXT");
+		}
+		// Dependencies: VK_EXT_mesh_shader
+		if (extensionIsSupported(vDEP, "VK_EXT_mesh_shader")) {
+			functions.push_back("vkCmdDrawMeshTasksIndirect2EXT");
+		}
+		// Dependencies: (VK_KHR_draw_indirect_count,VK_VERSION_1_2)+VK_EXT_mesh_shader
+		if (((checkVersion(1, 2, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count"))) && extensionIsSupported(vDEP, "VK_EXT_mesh_shader")) {
+			functions.push_back("vkCmdDrawMeshTasksIndirectCount2EXT");
+		}
+		// Dependencies: VK_AMD_buffer_marker
+		if (extensionIsSupported(vDEP, "VK_AMD_buffer_marker")) {
+			functions.push_back("vkCmdWriteMarkerToMemoryAMD");
+		}
+		return;
+	}
 	if (extName == "VK_EXT_graphics_pipeline_library")
 	{
 		return;
@@ -4153,6 +4200,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_metal_objects",
 	"VK_KHR_synchronization2",
 	"VK_EXT_descriptor_buffer",
+	"VK_KHR_device_address_commands",
 	"VK_EXT_graphics_pipeline_library",
 	"VK_AMD_shader_early_and_late_fragment_tests",
 	"VK_KHR_fragment_shader_barycentric",

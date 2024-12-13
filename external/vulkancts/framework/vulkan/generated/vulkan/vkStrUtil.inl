@@ -591,6 +591,7 @@ tcu::Format::Bitfield<32>	getIndirectCommandsInputModeFlagsEXTStr						(VkIndire
 tcu::Format::Bitfield<32>	getDirectDriverLoadingFlagsLUNARGStr						(VkDirectDriverLoadingFlagsLUNARG value);
 tcu::Format::Bitfield<64>	getPipelineCreateFlags2Str									(VkPipelineCreateFlags2 value);
 tcu::Format::Bitfield<64>	getBufferUsageFlags2Str										(VkBufferUsageFlags2 value);
+tcu::Format::Bitfield<32>	getAddressCopyFlagsKHRStr									(VkAddressCopyFlagsKHR value);
 tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr								(VkCompositeAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr								(VkDisplayPlaneAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getSurfaceTransformFlagsKHRStr								(VkSurfaceTransformFlagsKHR value);
@@ -1826,6 +1827,16 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatr
 std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixFlexibleDimensionsPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceHdrVividFeaturesHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceAddressRangeKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkStridedDeviceAddressRangeKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceMemoryCopyKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyDeviceMemoryInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceMemoryImageCopyKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyDeviceMemoryImageInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryRangeBarriersInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryRangeBarrierKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkConditionalRenderingBeginInfo2EXT& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

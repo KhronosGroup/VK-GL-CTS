@@ -2716,3 +2716,120 @@ void DeviceDriver::cmdSetDepthClampRangeEXT (VkCommandBuffer commandBuffer, VkDe
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetDepthClampRangeEXT(commandBuffer, depthClampMode, pDepthClampRange);
 }
+
+void DeviceDriver::cmdCopyMemoryKHR (VkCommandBuffer commandBuffer, const VkCopyDeviceMemoryInfoKHR* pCopyMemoryInfo) const
+{
+    m_vk.cmdCopyMemoryKHR(commandBuffer, pCopyMemoryInfo);
+}
+
+void DeviceDriver::cmdCopyMemoryToImageKHR (VkCommandBuffer commandBuffer, const VkCopyDeviceMemoryImageInfoKHR* pCopyMemoryInfo) const
+{
+    m_vk.cmdCopyMemoryToImageKHR(commandBuffer, pCopyMemoryInfo);
+}
+
+void DeviceDriver::cmdCopyImageToMemoryKHR (VkCommandBuffer commandBuffer, const VkCopyDeviceMemoryImageInfoKHR* pCopyMemoryInfo) const
+{
+    m_vk.cmdCopyImageToMemoryKHR(commandBuffer, pCopyMemoryInfo);
+}
+
+void DeviceDriver::cmdUpdateMemoryKHR (VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR dstRange, VkAddressCopyFlagsKHR dstCopyFlags, VkDeviceSize dataSize, const void* pData) const
+{
+    m_vk.cmdUpdateMemoryKHR(commandBuffer, dstRange, dstCopyFlags, dataSize, pData);
+}
+
+void DeviceDriver::cmdFillMemoryKHR (VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR dstRange, VkAddressCopyFlagsKHR dstCopyFlags, uint32_t data) const
+{
+    m_vk.cmdFillMemoryKHR(commandBuffer, dstRange, dstCopyFlags, data);
+}
+
+void DeviceDriver::cmdCopyQueryPoolResultsToMemoryKHR (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkStridedDeviceAddressRangeKHR dstRange, VkAddressCopyFlagsKHR dstCopyFlags, VkQueryResultFlags queryResultFlags) const
+{
+    m_vk.cmdCopyQueryPoolResultsToMemoryKHR(commandBuffer, queryPool, firstQuery, queryCount, dstRange, dstCopyFlags, queryResultFlags);
+}
+
+void DeviceDriver::cmdBeginConditionalRendering2EXT (VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfo2EXT* pConditionalRenderingBegin) const
+{
+    m_vk.cmdBeginConditionalRendering2EXT(commandBuffer, pConditionalRenderingBegin);
+}
+
+void DeviceDriver::cmdBindTransformFeedbackBuffers2EXT (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkDeviceAddressRangeKHR* pRanges) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdBindTransformFeedbackBuffers2EXT(commandBuffer, firstBinding, bindingCount, pRanges);
+}
+
+void DeviceDriver::cmdBeginTransformFeedback2EXT (VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pRanges) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdBeginTransformFeedback2EXT(commandBuffer, firstCounterRange, counterRangeCount, pRanges);
+}
+
+void DeviceDriver::cmdEndTransformFeedback2EXT (VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pRanges) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdEndTransformFeedback2EXT(commandBuffer, firstCounterRange, counterRangeCount, pRanges);
+}
+
+void DeviceDriver::cmdDrawIndirectByteCount2EXT (VkCommandBuffer commandBuffer, uint32_t instanceCount, uint32_t firstInstance, VkDeviceAddressRangeKHR counterRange, uint32_t counterOffset, uint32_t vertexStride) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdDrawIndirectByteCount2EXT(commandBuffer, instanceCount, firstInstance, counterRange, counterOffset, vertexStride);
+}
+
+void DeviceDriver::cmdWriteMarkerToMemoryAMD (VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkDeviceAddressRangeKHR dstRange, VkAddressCopyFlagsKHR dstCopyFlags, uint32_t marker) const
+{
+    m_vk.cmdWriteMarkerToMemoryAMD(commandBuffer, stage, dstRange, dstCopyFlags, marker);
+}
+
+void DeviceDriver::cmdBindIndexBuffer3KHR (VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR addressRange, VkIndexType indexType) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdBindIndexBuffer3KHR(commandBuffer, addressRange, indexType);
+}
+
+void DeviceDriver::cmdBindVertexBuffers3KHR (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkStridedDeviceAddressRangeKHR* pRanges) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdBindVertexBuffers3KHR(commandBuffer, firstBinding, bindingCount, pRanges);
+}
+
+void DeviceDriver::cmdDrawIndirect2KHR (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, uint32_t drawCount) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdDrawIndirect2KHR(commandBuffer, addressRange, drawCount);
+}
+
+void DeviceDriver::cmdDrawIndexedIndirect2KHR (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, uint32_t drawCount) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdDrawIndexedIndirect2KHR(commandBuffer, addressRange, drawCount);
+}
+
+void DeviceDriver::cmdDrawIndirectCount2KHR (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, VkDeviceAddressRangeKHR countAddressRange, uint32_t maxDrawCount) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdDrawIndirectCount2KHR(commandBuffer, addressRange, countAddressRange, maxDrawCount);
+}
+
+void DeviceDriver::cmdDrawIndexedIndirectCount2KHR (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, VkDeviceAddressRangeKHR countAddressRange, uint32_t maxDrawCount) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdDrawIndexedIndirectCount2KHR(commandBuffer, addressRange, countAddressRange, maxDrawCount);
+}
+
+void DeviceDriver::cmdDrawMeshTasksIndirect2EXT (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, uint32_t drawCount) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdDrawMeshTasksIndirect2EXT(commandBuffer, addressRange, drawCount);
+}
+
+void DeviceDriver::cmdDrawMeshTasksIndirectCount2EXT (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, VkDeviceAddressRangeKHR countAddressRange, uint32_t maxDrawCount) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdDrawMeshTasksIndirectCount2EXT(commandBuffer, addressRange, countAddressRange, maxDrawCount);
+}
+
+void DeviceDriver::cmdDispatchIndirect2KHR (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange) const
+{
+    m_vk.cmdDispatchIndirect2KHR(commandBuffer, addressRange);
+}

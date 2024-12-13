@@ -2913,6 +2913,8 @@ typedef uint64_t VkBufferUsageFlags2;
 
 typedef VkBufferUsageFlags2 VkBufferUsageFlags2KHR;
 
+typedef uint32_t VkAddressCopyFlagsKHR;
+
 typedef uint32_t VkCompositeAlphaFlagsKHR;
 
 typedef uint32_t VkDisplayPlaneAlphaFlagsKHR;

@@ -10213,6 +10213,96 @@ struct VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT
 	VkBool32		vertexAttributeRobustness;
 };
 
+struct VkDeviceAddressRangeKHR
+{
+	VkDeviceAddress	address;
+	VkDeviceSize	size;
+};
+
+struct VkStridedDeviceAddressRangeKHR
+{
+	VkDeviceAddress	address;
+	VkDeviceSize	size;
+	VkDeviceSize	stride;
+};
+
+struct VkDeviceMemoryCopyKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkDeviceAddressRangeKHR	srcRange;
+	VkAddressCopyFlagsKHR	srcCopyFlags;
+	VkDeviceAddressRangeKHR	dstRange;
+	VkAddressCopyFlagsKHR	dstCopyFlags;
+};
+
+struct VkCopyDeviceMemoryInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	uint32_t						regionCount;
+	const VkDeviceMemoryCopyKHR*	pRegions;
+};
+
+struct VkDeviceMemoryImageCopyKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDeviceAddressRangeKHR		addressRange;
+	VkAddressCopyFlagsKHR		addressCopyFlags;
+	uint32_t					addressRowLength;
+	uint32_t					addressImageHeight;
+	VkImageSubresourceLayers	imageSubresource;
+	VkImageLayout				imageLayout;
+	VkOffset3D					imageOffset;
+	VkExtent3D					imageExtent;
+};
+
+struct VkCopyDeviceMemoryImageInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkImage								image;
+	uint32_t							regionCount;
+	const VkDeviceMemoryImageCopyKHR*	pRegions;
+};
+
+struct VkMemoryRangeBarrierKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkPipelineStageFlags2	srcStageMask;
+	VkAccessFlags2			srcAccessMask;
+	VkPipelineStageFlags2	dstStageMask;
+	VkAccessFlags2			dstAccessMask;
+	uint32_t				srcQueueFamilyIndex;
+	uint32_t				dstQueueFamilyIndex;
+	VkDeviceAddressRangeKHR	addressRange;
+};
+
+struct VkMemoryRangeBarriersInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	uint32_t						memoryRangeBarrierCount;
+	const VkMemoryRangeBarrierKHR*	pMemoryRangeBarriers;
+};
+
+struct VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceAddressCommands;
+};
+
+struct VkConditionalRenderingBeginInfo2EXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDeviceAddressRangeKHR			addressRange;
+	VkConditionalRenderingFlagsEXT	flags;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;

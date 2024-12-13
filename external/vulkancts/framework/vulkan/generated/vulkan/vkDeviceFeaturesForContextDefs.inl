@@ -87,6 +87,7 @@ const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&						Context::getDiagnost
 const vk::VkPhysicalDeviceCudaKernelLaunchFeaturesNV&						Context::getCudaKernelLaunchFeaturesNV						(void) const { return m_device->getCudaKernelLaunchFeaturesNV();					}
 const vk::VkPhysicalDeviceSynchronization2Features&							Context::getSynchronization2Features						(void) const { return m_device->getSynchronization2Features();						}
 const vk::VkPhysicalDeviceDescriptorBufferFeaturesEXT&						Context::getDescriptorBufferFeaturesEXT						(void) const { return m_device->getDescriptorBufferFeaturesEXT();					}
+const vk::VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR&					Context::getDeviceAddressCommandsFeatures					(void) const { return m_device->getDeviceAddressCommandsFeatures();					}
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT&				Context::getGraphicsPipelineLibraryFeaturesEXT				(void) const { return m_device->getGraphicsPipelineLibraryFeaturesEXT();			}
 const vk::VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD&		Context::getShaderEarlyAndLateFragmentTestsFeaturesAMD		(void) const { return m_device->getShaderEarlyAndLateFragmentTestsFeaturesAMD();	}
 const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR&				Context::getFragmentShaderBarycentricFeatures				(void) const { return m_device->getFragmentShaderBarycentricFeatures();				}

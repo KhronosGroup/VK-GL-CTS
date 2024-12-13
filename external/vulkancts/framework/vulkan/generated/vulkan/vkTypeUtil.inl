@@ -953,6 +953,23 @@ inline VkDepthClampRangeEXT makeDepthClampRangeEXT (float minDepthClamp, float m
 	return res;
 }
 
+inline VkDeviceAddressRangeKHR makeDeviceAddressRangeKHR (VkDeviceAddress address, VkDeviceSize size)
+{
+	VkDeviceAddressRangeKHR res;
+	res.address	= address;
+	res.size	= size;
+	return res;
+}
+
+inline VkStridedDeviceAddressRangeKHR makeStridedDeviceAddressRangeKHR (VkDeviceAddress address, VkDeviceSize size, VkDeviceSize stride)
+{
+	VkStridedDeviceAddressRangeKHR res;
+	res.address	= address;
+	res.size	= size;
+	res.stride	= stride;
+	return res;
+}
+
 inline StdVideoEncodeH264WeightTableFlags makeStdVideoEncodeH264WeightTableFlags (uint32_t luma_weight_l0_flag, uint32_t chroma_weight_l0_flag, uint32_t luma_weight_l1_flag, uint32_t chroma_weight_l1_flag)
 {
 	StdVideoEncodeH264WeightTableFlags res;

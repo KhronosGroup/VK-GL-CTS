@@ -5702,6 +5702,43 @@ tcu::TestStatus testPhysicalDeviceFeatureVertexAttributeRobustnessFeaturesEXT (C
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureDeviceAddressCommandsFeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+	VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR	deviceDeviceAddressCommandsFeaturesKHR[count];
+	const bool											isDeviceAddressCommandsFeaturesKHR = checkExtension(properties, "VK_KHR_device_address_commands");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceDeviceAddressCommandsFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR));
+		deviceDeviceAddressCommandsFeaturesKHR[ndx].sType = isDeviceAddressCommandsFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_ADDRESS_COMMANDS_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceDeviceAddressCommandsFeaturesKHR[ndx].pNext = nullptr;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceDeviceAddressCommandsFeaturesKHR[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isDeviceAddressCommandsFeaturesKHR)
+		log << TestLog::Message << deviceDeviceAddressCommandsFeaturesKHR[0] << TestLog::EndMessage;
+
+	if (isDeviceAddressCommandsFeaturesKHR &&
+		(deviceDeviceAddressCommandsFeaturesKHR[0].deviceAddressCommands != deviceDeviceAddressCommandsFeaturesKHR[1].deviceAddressCommands))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
 {
     if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
@@ -6108,6 +6145,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_replicated_composites_features_ext", testPhysicalDeviceFeatureShaderReplicatedCompositesFeaturesEXT);
 	addFunctionCase(testGroup, "present_mode_fifo_latest_ready_features_ext", testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_attribute_robustness_features_ext", testPhysicalDeviceFeatureVertexAttributeRobustnessFeaturesEXT);
+	addFunctionCase(testGroup, "device_address_commands_features_khr", testPhysicalDeviceFeatureDeviceAddressCommandsFeaturesKHR);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", createDeviceWithPromoted12Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted13_structures", createDeviceWithPromoted13Structures);

@@ -4350,6 +4350,167 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixFlexibleDimensi
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryKHR (VkCommandBuffer commandBuffer, const VkCopyDeviceMemoryInfoKHR* pCopyMemoryInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCopyMemoryInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryToImageKHR (VkCommandBuffer commandBuffer, const VkCopyDeviceMemoryImageInfoKHR* pCopyMemoryInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCopyMemoryInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyImageToMemoryKHR (VkCommandBuffer commandBuffer, const VkCopyDeviceMemoryImageInfoKHR* pCopyMemoryInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCopyMemoryInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdUpdateMemoryKHR (VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR dstRange, VkAddressCopyFlagsKHR dstCopyFlags, VkDeviceSize dataSize, const void* pData)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(dstRange);
+	DE_UNREF(dstCopyFlags);
+	DE_UNREF(dataSize);
+	DE_UNREF(pData);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdFillMemoryKHR (VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR dstRange, VkAddressCopyFlagsKHR dstCopyFlags, uint32_t data)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(dstRange);
+	DE_UNREF(dstCopyFlags);
+	DE_UNREF(data);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyQueryPoolResultsToMemoryKHR (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkStridedDeviceAddressRangeKHR dstRange, VkAddressCopyFlagsKHR dstCopyFlags, VkQueryResultFlags queryResultFlags)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(queryPool);
+	DE_UNREF(firstQuery);
+	DE_UNREF(queryCount);
+	DE_UNREF(dstRange);
+	DE_UNREF(dstCopyFlags);
+	DE_UNREF(queryResultFlags);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBeginConditionalRendering2EXT (VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfo2EXT* pConditionalRenderingBegin)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pConditionalRenderingBegin);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBindTransformFeedbackBuffers2EXT (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkDeviceAddressRangeKHR* pRanges)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstBinding);
+	DE_UNREF(bindingCount);
+	DE_UNREF(pRanges);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBeginTransformFeedback2EXT (VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pRanges)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstCounterRange);
+	DE_UNREF(counterRangeCount);
+	DE_UNREF(pRanges);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdEndTransformFeedback2EXT (VkCommandBuffer commandBuffer, uint32_t firstCounterRange, uint32_t counterRangeCount, const VkDeviceAddressRangeKHR* pRanges)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstCounterRange);
+	DE_UNREF(counterRangeCount);
+	DE_UNREF(pRanges);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectByteCount2EXT (VkCommandBuffer commandBuffer, uint32_t instanceCount, uint32_t firstInstance, VkDeviceAddressRangeKHR counterRange, uint32_t counterOffset, uint32_t vertexStride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(instanceCount);
+	DE_UNREF(firstInstance);
+	DE_UNREF(counterRange);
+	DE_UNREF(counterOffset);
+	DE_UNREF(vertexStride);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdWriteMarkerToMemoryAMD (VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkDeviceAddressRangeKHR dstRange, VkAddressCopyFlagsKHR dstCopyFlags, uint32_t marker)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(stage);
+	DE_UNREF(dstRange);
+	DE_UNREF(dstCopyFlags);
+	DE_UNREF(marker);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBindIndexBuffer3KHR (VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR addressRange, VkIndexType indexType)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(addressRange);
+	DE_UNREF(indexType);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBindVertexBuffers3KHR (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkStridedDeviceAddressRangeKHR* pRanges)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstBinding);
+	DE_UNREF(bindingCount);
+	DE_UNREF(pRanges);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndirect2KHR (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, uint32_t drawCount)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(addressRange);
+	DE_UNREF(drawCount);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirect2KHR (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, uint32_t drawCount)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(addressRange);
+	DE_UNREF(drawCount);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCount2KHR (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, VkDeviceAddressRangeKHR countAddressRange, uint32_t maxDrawCount)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(addressRange);
+	DE_UNREF(countAddressRange);
+	DE_UNREF(maxDrawCount);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCount2KHR (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, VkDeviceAddressRangeKHR countAddressRange, uint32_t maxDrawCount)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(addressRange);
+	DE_UNREF(countAddressRange);
+	DE_UNREF(maxDrawCount);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirect2EXT (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, uint32_t drawCount)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(addressRange);
+	DE_UNREF(drawCount);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirectCount2EXT (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange, VkDeviceAddressRangeKHR countAddressRange, uint32_t maxDrawCount)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(addressRange);
+	DE_UNREF(countAddressRange);
+	DE_UNREF(maxDrawCount);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDispatchIndirect2KHR (VkCommandBuffer commandBuffer, VkStridedDeviceAddressRangeKHR addressRange)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(addressRange);
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -4972,5 +5133,26 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSetRenderingAttachmentLocations,						cmdSetRenderingAttachmentLocations),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRenderingInputAttachmentIndices,						cmdSetRenderingInputAttachmentIndices),
 	VK_NULL_FUNC_ENTRY(vkCmdSetDepthClampRangeEXT,									cmdSetDepthClampRangeEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryKHR,											cmdCopyMemoryKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryToImageKHR,									cmdCopyMemoryToImageKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyImageToMemoryKHR,									cmdCopyImageToMemoryKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdUpdateMemoryKHR,										cmdUpdateMemoryKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdFillMemoryKHR,											cmdFillMemoryKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyQueryPoolResultsToMemoryKHR,						cmdCopyQueryPoolResultsToMemoryKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginConditionalRendering2EXT,							cmdBeginConditionalRendering2EXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBindTransformFeedbackBuffers2EXT,						cmdBindTransformFeedbackBuffers2EXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginTransformFeedback2EXT,								cmdBeginTransformFeedback2EXT),
+	VK_NULL_FUNC_ENTRY(vkCmdEndTransformFeedback2EXT,								cmdEndTransformFeedback2EXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectByteCount2EXT,								cmdDrawIndirectByteCount2EXT),
+	VK_NULL_FUNC_ENTRY(vkCmdWriteMarkerToMemoryAMD,									cmdWriteMarkerToMemoryAMD),
+	VK_NULL_FUNC_ENTRY(vkCmdBindIndexBuffer3KHR,									cmdBindIndexBuffer3KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdBindVertexBuffers3KHR,									cmdBindVertexBuffers3KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirect2KHR,										cmdDrawIndirect2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirect2KHR,								cmdDrawIndexedIndirect2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCount2KHR,									cmdDrawIndirectCount2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCount2KHR,							cmdDrawIndexedIndirectCount2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawMeshTasksIndirect2EXT,								cmdDrawMeshTasksIndirect2EXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawMeshTasksIndirectCount2EXT,							cmdDrawMeshTasksIndirectCount2EXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDispatchIndirect2KHR,									cmdDispatchIndirect2KHR),
 };
 

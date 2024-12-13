@@ -2264,6 +2264,18 @@ bool check_VK_EXT_descriptor_buffer(const tcu::UVec2& v, const ExtPropVect& vIEP
 	return (((((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_buffer_device_address")) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_EXT_descriptor_indexing")))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")));
 }
 
+bool check_VK_KHR_device_address_commands(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_device_address_commands"))
+		return true;
+
+	// depends attribute in xml: ((((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_buffer_device_address),VK_VERSION_1_2)+VK_KHR_synchronization2+VK_EXT_extended_dynamic_state),VK_VERSION_1_3
+	return (((((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_buffer_device_address")))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_EXT_extended_dynamic_state")));
+}
+
 bool check_VK_EXT_graphics_pipeline_library(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3712,6 +3724,18 @@ bool check_VK_NV_cooperative_matrix2(const tcu::UVec2& v, const ExtPropVect& vIE
 	return isSupported(vDEP, "VK_KHR_cooperative_matrix");
 }
 
+bool check_VK_EXT_vertex_attribute_robustness(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_vertex_attribute_robustness"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
 static const DependencyCheckVect deviceExtensionDependencies
 {
 	std::make_pair("VK_KHR_swapchain",										&check_VK_KHR_swapchain),
@@ -3862,6 +3886,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_NV_device_diagnostics_config",						&check_VK_NV_device_diagnostics_config),
 	std::make_pair("VK_KHR_synchronization2",								&check_VK_KHR_synchronization2),
 	std::make_pair("VK_EXT_descriptor_buffer",								&check_VK_EXT_descriptor_buffer),
+	std::make_pair("VK_KHR_device_address_commands",						&check_VK_KHR_device_address_commands),
 	std::make_pair("VK_EXT_graphics_pipeline_library",						&check_VK_EXT_graphics_pipeline_library),
 	std::make_pair("VK_AMD_shader_early_and_late_fragment_tests",			&check_VK_AMD_shader_early_and_late_fragment_tests),
 	std::make_pair("VK_KHR_fragment_shader_barycentric",					&check_VK_KHR_fragment_shader_barycentric),
@@ -3980,6 +4005,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_depth_clamp_control",							&check_VK_EXT_depth_clamp_control),
 	std::make_pair("VK_HUAWEI_hdr_vivid",									&check_VK_HUAWEI_hdr_vivid),
 	std::make_pair("VK_NV_cooperative_matrix2",								&check_VK_NV_cooperative_matrix2),
+	std::make_pair("VK_EXT_vertex_attribute_robustness",					&check_VK_EXT_vertex_attribute_robustness),
 };
 
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
@@ -4241,6 +4267,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_metal_objects"),
 	std::make_tuple(1, 0, "VK_KHR_synchronization2"),
 	std::make_tuple(1, 0, "VK_EXT_descriptor_buffer"),
+	std::make_tuple(1, 0, "VK_KHR_device_address_commands"),
 	std::make_tuple(1, 0, "VK_EXT_graphics_pipeline_library"),
 	std::make_tuple(1, 0, "VK_AMD_shader_early_and_late_fragment_tests"),
 	std::make_tuple(1, 0, "VK_KHR_fragment_shader_barycentric"),

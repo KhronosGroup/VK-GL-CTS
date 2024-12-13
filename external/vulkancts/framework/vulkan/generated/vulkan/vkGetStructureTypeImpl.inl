@@ -4843,3 +4843,43 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceVertexAttributeRobus
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkDeviceMemoryCopyKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_MEMORY_COPY_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyDeviceMemoryInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_DEVICE_MEMORY_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDeviceMemoryImageCopyKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_MEMORY_IMAGE_COPY_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyDeviceMemoryImageInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_DEVICE_MEMORY_IMAGE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkMemoryRangeBarriersInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIERS_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkMemoryRangeBarrierKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIER_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_ADDRESS_COMMANDS_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkConditionalRenderingBeginInfo2EXT> (void)
+{
+	return VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_2_EXT;
+}
+

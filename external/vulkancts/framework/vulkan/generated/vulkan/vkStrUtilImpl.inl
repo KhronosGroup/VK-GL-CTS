@@ -2146,6 +2146,14 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT:									return "VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_PUSH_DESCRIPTOR_BUFFER_HANDLE_EXT:			return "VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_PUSH_DESCRIPTOR_BUFFER_HANDLE_EXT";
+		case VK_STRUCTURE_TYPE_DEVICE_MEMORY_COPY_KHR:												return "VK_STRUCTURE_TYPE_DEVICE_MEMORY_COPY_KHR";
+		case VK_STRUCTURE_TYPE_COPY_DEVICE_MEMORY_INFO_KHR:											return "VK_STRUCTURE_TYPE_COPY_DEVICE_MEMORY_INFO_KHR";
+		case VK_STRUCTURE_TYPE_DEVICE_MEMORY_IMAGE_COPY_KHR:										return "VK_STRUCTURE_TYPE_DEVICE_MEMORY_IMAGE_COPY_KHR";
+		case VK_STRUCTURE_TYPE_COPY_DEVICE_MEMORY_IMAGE_INFO_KHR:									return "VK_STRUCTURE_TYPE_COPY_DEVICE_MEMORY_IMAGE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIERS_INFO_KHR:										return "VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIERS_INFO_KHR";
+		case VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIER_KHR:											return "VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIER_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_ADDRESS_COMMANDS_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_ADDRESS_COMMANDS_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_2_EXT:								return "VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_2_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_LIBRARY_CREATE_INFO_EXT";
@@ -4032,6 +4040,17 @@ const char* getDepthClampModeEXTName (VkDepthClampModeEXT value)
 		case VK_DEPTH_CLAMP_MODE_USER_DEFINED_RANGE_EXT:	return "VK_DEPTH_CLAMP_MODE_USER_DEFINED_RANGE_EXT";
 		default:											return nullptr;
 	}
+}
+
+tcu::Format::Bitfield<32> getAddressCopyFlagsKHRStr (VkAddressCopyFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR,	"VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR"),
+		tcu::Format::BitDesc(VK_ADDRESS_COPY_SPARSE_BIT_KHR,		"VK_ADDRESS_COPY_SPARSE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_ADDRESS_COPY_PROTECTED_BIT_KHR,		"VK_ADDRESS_COPY_PROTECTED_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
 const char* getColorSpaceKHRName (VkColorSpaceKHR value)
@@ -19940,6 +19959,126 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAttribute
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvertexAttributeRobustness = " << value.vertexAttributeRobustness << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceAddressRangeKHR& value)
+{
+	s << "VkDeviceAddressRangeKHR = {\n";
+	s << "\taddress = " << value.address << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkStridedDeviceAddressRangeKHR& value)
+{
+	s << "VkStridedDeviceAddressRangeKHR = {\n";
+	s << "\taddress = " << value.address << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << "\tstride = " << value.stride << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceMemoryCopyKHR& value)
+{
+	s << "VkDeviceMemoryCopyKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcRange = " << value.srcRange << '\n';
+	s << "\tsrcCopyFlags = " << getAddressCopyFlagsKHRStr(value.srcCopyFlags) << '\n';
+	s << "\tdstRange = " << value.dstRange << '\n';
+	s << "\tdstCopyFlags = " << getAddressCopyFlagsKHRStr(value.dstCopyFlags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyDeviceMemoryInfoKHR& value)
+{
+	s << "VkCopyDeviceMemoryInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tregionCount = " << value.regionCount << '\n';
+	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceMemoryImageCopyKHR& value)
+{
+	s << "VkDeviceMemoryImageCopyKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\taddressRange = " << value.addressRange << '\n';
+	s << "\taddressCopyFlags = " << getAddressCopyFlagsKHRStr(value.addressCopyFlags) << '\n';
+	s << "\taddressRowLength = " << value.addressRowLength << '\n';
+	s << "\taddressImageHeight = " << value.addressImageHeight << '\n';
+	s << "\timageSubresource = " << value.imageSubresource << '\n';
+	s << "\timageLayout = " << value.imageLayout << '\n';
+	s << "\timageOffset = " << value.imageOffset << '\n';
+	s << "\timageExtent = " << value.imageExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyDeviceMemoryImageInfoKHR& value)
+{
+	s << "VkCopyDeviceMemoryImageInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timage = " << value.image << '\n';
+	s << "\tregionCount = " << value.regionCount << '\n';
+	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryRangeBarriersInfoKHR& value)
+{
+	s << "VkMemoryRangeBarriersInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryRangeBarrierCount = " << value.memoryRangeBarrierCount << '\n';
+	s << "\tpMemoryRangeBarriers = " << value.pMemoryRangeBarriers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryRangeBarrierKHR& value)
+{
+	s << "VkMemoryRangeBarrierKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcStageMask = " << getPipelineStageFlags2Str(value.srcStageMask) << '\n';
+	s << "\tsrcAccessMask = " << getAccessFlags2Str(value.srcAccessMask) << '\n';
+	s << "\tdstStageMask = " << getPipelineStageFlags2Str(value.dstStageMask) << '\n';
+	s << "\tdstAccessMask = " << getAccessFlags2Str(value.dstAccessMask) << '\n';
+	s << "\tsrcQueueFamilyIndex = " << value.srcQueueFamilyIndex << '\n';
+	s << "\tdstQueueFamilyIndex = " << value.dstQueueFamilyIndex << '\n';
+	s << "\taddressRange = " << value.addressRange << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceAddressCommands = " << value.deviceAddressCommands << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkConditionalRenderingBeginInfo2EXT& value)
+{
+	s << "VkConditionalRenderingBeginInfo2EXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\taddressRange = " << value.addressRange << '\n';
+	s << "\tflags = " << getConditionalRenderingFlagsEXTStr(value.flags) << '\n';
 	s << '}';
 	return s;
 }

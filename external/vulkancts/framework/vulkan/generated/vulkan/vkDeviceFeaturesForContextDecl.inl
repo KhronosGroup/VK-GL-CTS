@@ -87,6 +87,7 @@ const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&						getDiagnosticsConfig
 const vk::VkPhysicalDeviceCudaKernelLaunchFeaturesNV&						getCudaKernelLaunchFeaturesNV						(void) const;
 const vk::VkPhysicalDeviceSynchronization2Features&							getSynchronization2Features							(void) const;
 const vk::VkPhysicalDeviceDescriptorBufferFeaturesEXT&						getDescriptorBufferFeaturesEXT						(void) const;
+const vk::VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR&					getDeviceAddressCommandsFeatures					(void) const;
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT&				getGraphicsPipelineLibraryFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD&		getShaderEarlyAndLateFragmentTestsFeaturesAMD		(void) const;
 const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR&				getFragmentShaderBarycentricFeatures				(void) const;
