@@ -832,12 +832,13 @@ VkPipeline DGCComputePipelineExt::operator*(void) const
 DGCShaderExt::DGCShaderExt(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkShaderStageFlagBits stage,
                            vk::VkShaderCreateFlagsEXT shaderFlags, const vk::ProgramBinary &shaderBinary,
                            const std::vector<vk::VkDescriptorSetLayout> &setLayouts,
-                           const std::vector<vk::VkPushConstantRange> &pushConstantRanges,
-                           const vk::VkSpecializationInfo *specializationInfo, const void *pNext)
+                           const std::vector<vk::VkPushConstantRange> &pushConstantRanges, bool tessellationFeature,
+                           bool geometryFeature, const vk::VkSpecializationInfo *specializationInfo, const void *pNext)
 
     : m_shader()
 {
-    init(vkd, device, stage, shaderFlags, shaderBinary, setLayouts, pushConstantRanges, specializationInfo, pNext);
+    init(vkd, device, stage, shaderFlags, shaderBinary, setLayouts, pushConstantRanges, tessellationFeature,
+         geometryFeature, specializationInfo, pNext);
 }
 
 DGCShaderExt::DGCShaderExt(void) : m_shader()
@@ -847,8 +848,8 @@ DGCShaderExt::DGCShaderExt(void) : m_shader()
 void DGCShaderExt::init(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkShaderStageFlagBits stage,
                         vk::VkShaderCreateFlagsEXT shaderFlags, const vk::ProgramBinary &shaderBinary,
                         const std::vector<vk::VkDescriptorSetLayout> &setLayouts,
-                        const std::vector<vk::VkPushConstantRange> &pushConstantRanges,
-                        const vk::VkSpecializationInfo *specializationInfo, const void *pNext)
+                        const std::vector<vk::VkPushConstantRange> &pushConstantRanges, bool tessellationFeature,
+                        bool geometryFeature, const vk::VkSpecializationInfo *specializationInfo, const void *pNext)
 {
     if (shaderBinary.getFormat() != PROGRAM_FORMAT_SPIRV)
         TCU_THROW(InternalError, "Program format not supported");
@@ -856,12 +857,46 @@ void DGCShaderExt::init(const vk::DeviceInterface &vkd, vk::VkDevice device, vk:
     // Make sure not to forget the mandatory flag.
     const auto createFlags = (shaderFlags | VK_SHADER_CREATE_INDIRECT_BINDABLE_BIT_EXT);
 
+    VkShaderStageFlags nextStage = 0u;
+    switch (stage)
+    {
+    case VK_SHADER_STAGE_VERTEX_BIT:
+        if (tessellationFeature)
+            nextStage |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        if (geometryFeature)
+            nextStage |= VK_SHADER_STAGE_GEOMETRY_BIT;
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+        DE_ASSERT(tessellationFeature);
+        nextStage |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        break;
+    case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+        DE_ASSERT(tessellationFeature);
+        if (geometryFeature)
+            nextStage |= VK_SHADER_STAGE_GEOMETRY_BIT;
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    case VK_SHADER_STAGE_GEOMETRY_BIT:
+        DE_ASSERT(geometryFeature);
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    case VK_SHADER_STAGE_TASK_BIT_EXT:
+        nextStage |= VK_SHADER_STAGE_MESH_BIT_EXT;
+        break;
+    case VK_SHADER_STAGE_MESH_BIT_EXT:
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    default:
+        break;
+    }
+
     const VkShaderCreateInfoEXT shaderCreateInfo = {
         VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, //	VkStructureType					sType;
         pNext,                                    //	const void*						pNext;
         createFlags,                              //	VkShaderCreateFlagsEXT			flags;
         stage,                                    //	VkShaderStageFlagBits			stage;
-        0u,                                       //	VkShaderStageFlags				nextStage;
+        nextStage,                                //	VkShaderStageFlags				nextStage;
         VK_SHADER_CODE_TYPE_SPIRV_EXT,            //	VkShaderCodeTypeEXT				codeType;
         shaderBinary.getSize(),                   //	size_t							codeSize;
         shaderBinary.getBinary(),                 //	const void*						pCode;
@@ -893,8 +928,8 @@ DGCComputeShaderExt::DGCComputeShaderExt(const vk::DeviceInterface &vkd, vk::VkD
 
     const auto pNext = (subgroupSize > 0u ? &subgroupSizeInfo : nullptr);
 
-    init(vkd, device, VK_SHADER_STAGE_COMPUTE_BIT, shaderFlags, shaderBinary, setLayouts, pushConstantRanges,
-         specializationInfo, pNext);
+    init(vkd, device, VK_SHADER_STAGE_COMPUTE_BIT, shaderFlags, shaderBinary, setLayouts, pushConstantRanges, false,
+         false, specializationInfo, pNext);
 }
 
 namespace

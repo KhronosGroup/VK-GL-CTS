@@ -413,12 +413,20 @@ Move<VkShaderEXT> makeSingleShader(const DeviceInterface &vkd, VkDevice device, 
                                    const ProgramBinary &binary, const std::vector<VkDescriptorSetLayout> &setLayouts,
                                    const std::vector<VkPushConstantRange> &pcRanges)
 {
+    VkShaderStageFlags nextStage = 0u;
+    if (stage == VK_SHADER_STAGE_VERTEX_BIT)
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+    else if (stage == VK_SHADER_STAGE_FRAGMENT_BIT)
+        ;
+    else
+        DE_ASSERT(false);
+
     const VkShaderCreateInfoEXT createInfo = {
         VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, //  VkStructureType				sType;
         nullptr,                                  //  const void*					pNext;
         0u,                                       //  VkShaderCreateFlagsEXT		flags;
         stage,                                    //  VkShaderStageFlagBits			stage;
-        0u,                                       //  VkShaderStageFlags			nextStage;
+        nextStage,                                //  VkShaderStageFlags			nextStage;
         VK_SHADER_CODE_TYPE_SPIRV_EXT,            //  VkShaderCodeTypeEXT			codeType;
         binary.getSize(),                         //  size_t						codeSize;
         binary.getBinary(),                       //  const void*					pCode;
@@ -984,6 +992,12 @@ tcu::TestStatus testDrawCountRun(Context &context, TestParams params)
     DGCShaderVec vertShadersDGC;
     DGCShaderVec fragShadersDGC;
 
+    const auto &meshFeatures = context.getMeshShaderFeaturesEXT();
+    const auto &features     = context.getDeviceFeatures();
+
+    const auto tessFeature = (features.tessellationShader == VK_TRUE);
+    const auto geomFeature = (features.geometryShader == VK_TRUE);
+
     if (!params.useShaderObjects)
     {
         vertModules.reserve(shaderSetCount);
@@ -1038,9 +1052,11 @@ tcu::TestStatus testDrawCountRun(Context &context, TestParams params)
             if (params.useExecutionSet)
             {
                 vertShadersDGC.emplace_back(new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_VERTEX_BIT, 0u,
-                                                             binaries.get(vertName), vertSetLayouts, vertPCRanges));
+                                                             binaries.get(vertName), vertSetLayouts, vertPCRanges,
+                                                             tessFeature, geomFeature));
                 fragShadersDGC.emplace_back(new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_FRAGMENT_BIT, 0u,
-                                                             binaries.get(fragName), fragSetLayouts, fragPCRanges));
+                                                             binaries.get(fragName), fragSetLayouts, fragPCRanges,
+                                                             tessFeature, geomFeature));
             }
             else
             {
@@ -1282,9 +1298,6 @@ tcu::TestStatus testDrawCountRun(Context &context, TestParams params)
     }
 
     // Record pre-execution state to all needed command buffers.
-    const auto &meshFeatures = context.getMeshShaderFeaturesEXT();
-    const auto &features     = context.getDeviceFeatures();
-
     VkCommandBuffer prevCmdBuffer = VK_NULL_HANDLE;
     for (const auto &stateCmdBufferPair : stateCmdBuffers)
     {
