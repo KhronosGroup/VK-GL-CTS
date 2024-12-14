@@ -200,8 +200,8 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
     const vk::Move<vk::VkCommandBuffer> cmdBuffer(
         allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-    const uint32_t width  = 256u;
-    const uint32_t height = 256u;
+    const uint32_t width  = 128u;
+    const uint32_t height = 128u;
     const uint32_t depth  = m_parameters.type == vk::VK_IMAGE_TYPE_3D ? 32u : 1u;
 
     const vk::VkImageLayout imageLayout =
