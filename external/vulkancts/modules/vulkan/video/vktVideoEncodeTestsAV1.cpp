@@ -855,14 +855,7 @@ void removeClip(const std::string &clipName)
 {
     try
     {
-        if (std::filesystem::remove(clipName))
-        {
-            std::cout << "File " << clipName << " deleted successfully." << std::endl;
-        }
-        else
-        {
-            std::cout << "File " << clipName << " does not exist." << std::endl;
-        }
+        std::filesystem::remove(clipName);
     }
     catch (const std::filesystem::filesystem_error &e)
     {

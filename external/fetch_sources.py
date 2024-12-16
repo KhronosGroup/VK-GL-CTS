@@ -363,10 +363,10 @@ PACKAGES = [
     # NOTE: Temporary vk_video_samples repo and branch where AV1
     # encoder library is being developed by NVidia.
     GitRepo(
-        "https://github.com/nvpro-samples/vk_video_samples.git",
-        "git@github.com:nvpro-samples/vk_video_samples.git",
-        "d78acbefe82183d00634a95705885a7cbabdf20b",
-        "vk-video-samples"),
+        "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
+        "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
+        "70dfd5a6007680ddb8970d7e71bf7af9ee173f3c",
+        "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(
         "https://github.com/Igalia/video_generator.git",
