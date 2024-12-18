@@ -4131,8 +4131,10 @@ void copyAndFlush(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::Buffe
 }
 
 // Sets values for dynamic states if needed according to the test configuration.
-void setDynamicStates(const TestConfig &testConfig, const vk::DeviceInterface &vkd, vk::VkCommandBuffer cmdBuffer)
+void setDynamicStates(const TestConfig &testConfig, const vk::DeviceInterface &vkd, const bool depthClampControlEnabled,
+                      vk::VkCommandBuffer cmdBuffer)
 {
+    (void)depthClampControlEnabled;
     if (testConfig.lineWidthConfig.dynamicValue)
         vkd.cmdSetLineWidth(cmdBuffer, testConfig.lineWidthConfig.dynamicValue.get());
 
@@ -4323,7 +4325,7 @@ void setDynamicStates(const TestConfig &testConfig, const vk::DeviceInterface &v
         vkd.cmdSetDepthClampEnableEXT(cmdBuffer, testConfig.depthClampEnableConfig.dynamicValue.get());
 
     if (testConfig.depthClampEnableConfig.dynamicValue &&
-        vk::isConstructionTypeShaderObject(testConfig.pipelineConstructionType))
+        vk::isConstructionTypeShaderObject(testConfig.pipelineConstructionType) && depthClampControlEnabled)
         vkd.cmdSetDepthClampRangeEXT(cmdBuffer, vk::VK_DEPTH_CLAMP_MODE_VIEWPORT_RANGE_EXT, nullptr);
 
     if (testConfig.polygonModeConfig.dynamicValue)
@@ -4958,15 +4960,16 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate(void)
     using ImageViewVec       = std::vector<vk::Move<vk::VkImageView>>;
     using RenderPassVec      = std::vector<vk::RenderPassWrapper>;
 
-    const auto &vki           = m_context.getInstanceInterface();
-    const auto physicalDevice = m_context.getPhysicalDevice();
-    const auto &deviceHelper  = getDeviceHelper(m_context, m_testConfig);
-    const auto &vkd           = deviceHelper.getDeviceInterface();
-    const auto device         = deviceHelper.getDevice();
-    auto &allocator           = deviceHelper.getAllocator();
-    const auto queue          = deviceHelper.getQueue();
-    const auto queueIndex     = deviceHelper.getQueueFamilyIndex();
-    auto &log                 = m_context.getTestContext().getLog();
+    const auto &vki              = m_context.getInstanceInterface();
+    const auto physicalDevice    = m_context.getPhysicalDevice();
+    const auto &deviceHelper     = getDeviceHelper(m_context, m_testConfig);
+    const auto &deviceExtensions = deviceHelper.getDeviceExtensions();
+    const auto &vkd              = deviceHelper.getDeviceInterface();
+    const auto device            = deviceHelper.getDevice();
+    auto &allocator              = deviceHelper.getAllocator();
+    const auto queue             = deviceHelper.getQueue();
+    const auto queueIndex        = deviceHelper.getQueueFamilyIndex();
+    auto &log                    = m_context.getTestContext().getLog();
 
     const auto kReversed          = m_testConfig.isReversed();
     const auto kBindStaticFirst   = m_testConfig.bindStaticFirst();
@@ -4979,14 +4982,16 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate(void)
         (m_testConfig.sampleLocationsStruct() ?
              static_cast<vk::VkImageCreateFlags>(vk::VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT) :
              0u);
-    const auto colorFormat       = m_testConfig.colorFormat();
-    const auto colorSampleCount  = m_testConfig.getColorSampleCount();
-    const auto activeSampleCount = m_testConfig.getActiveSampleCount();
-    const bool vertDataAsSSBO    = m_testConfig.useMeshShaders;
-    const auto pipelineBindPoint = vk::VK_PIPELINE_BIND_POINT_GRAPHICS;
-    const bool kUseResolveAtt    = (colorSampleCount != kSingleSampleCount);
-    const bool kMultisampleDS    = (activeSampleCount != kSingleSampleCount);
-    const bool kFragAtomics      = m_testConfig.useFragShaderAtomics();
+    const auto colorFormat              = m_testConfig.colorFormat();
+    const auto colorSampleCount         = m_testConfig.getColorSampleCount();
+    const auto activeSampleCount        = m_testConfig.getActiveSampleCount();
+    const bool vertDataAsSSBO           = m_testConfig.useMeshShaders;
+    const auto pipelineBindPoint        = vk::VK_PIPELINE_BIND_POINT_GRAPHICS;
+    const bool kUseResolveAtt           = (colorSampleCount != kSingleSampleCount);
+    const bool kMultisampleDS           = (activeSampleCount != kSingleSampleCount);
+    const bool kFragAtomics             = m_testConfig.useFragShaderAtomics();
+    const bool depthClampControlEnabled = std::find(deviceExtensions.begin(), deviceExtensions.end(),
+                                                    "VK_EXT_depth_clamp_control") != deviceExtensions.end();
 
     // Choose depth/stencil format.
     const DepthStencilFormat *dsFormatInfo = nullptr;
@@ -6390,7 +6395,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate(void)
         // Maybe set extended dynamic state here.
         if (kSequenceOrdering == SequenceOrdering::CMD_BUFFER_START)
         {
-            setDynamicStates(m_testConfig, vkd, cmdBuffer);
+            setDynamicStates(m_testConfig, vkd, depthClampControlEnabled, cmdBuffer);
             boundInAdvance =
                 maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffers, rvertBuffers);
         }
@@ -6407,7 +6412,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate(void)
         // Maybe set extended dynamic state here.
         if (kSequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES)
         {
-            setDynamicStates(m_testConfig, vkd, cmdBuffer);
+            setDynamicStates(m_testConfig, vkd, depthClampControlEnabled, cmdBuffer);
             boundInAdvance =
                 maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffers, rvertBuffers);
         }
@@ -6446,7 +6451,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate(void)
                 if (kSequenceOrdering == SequenceOrdering::BEFORE_DRAW ||
                     kSequenceOrdering == SequenceOrdering::AFTER_PIPELINES ||
                     kSequenceOrdering == SequenceOrdering::BEFORE_GOOD_STATIC)
-                    setDynamicStates(m_testConfig, vkd, cmdBuffer);
+                    setDynamicStates(m_testConfig, vkd, depthClampControlEnabled, cmdBuffer);
 
                 vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
             }
@@ -6463,7 +6468,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate(void)
             (kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC && iteration == 0u) ||
             (kSequenceOrdering == SequenceOrdering::THREE_DRAWS_DYNAMIC && (iteration == 0u || iteration > 1u)))
         {
-            setDynamicStates(m_testConfig, vkd, cmdBuffer);
+            setDynamicStates(m_testConfig, vkd, depthClampControlEnabled, cmdBuffer);
             boundInAdvance =
                 maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffers, rvertBuffers);
         }
@@ -6506,7 +6511,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate(void)
                 if (kSequenceOrdering == SequenceOrdering::BEFORE_DRAW ||
                     kSequenceOrdering == SequenceOrdering::AFTER_PIPELINES)
                 {
-                    setDynamicStates(m_testConfig, vkd, cmdBuffer);
+                    setDynamicStates(m_testConfig, vkd, depthClampControlEnabled, cmdBuffer);
                     boundBeforeDraw = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, meshIdx, vertBuffers,
                                                                      rvertBuffers);
                 }
