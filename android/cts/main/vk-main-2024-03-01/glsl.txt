@@ -158,6 +158,9 @@ dEQP-VK.glsl.atomic_operations.min_f16vec4_tess_eval
 dEQP-VK.glsl.atomic_operations.min_f16vec4_tess_eval_reference
 dEQP-VK.glsl.atomic_operations.min_f16vec4_vertex
 dEQP-VK.glsl.atomic_operations.min_f16vec4_vertex_reference
+dEQP-VK.glsl.bfloat16.constant.compute
+dEQP-VK.glsl.bfloat16.constant.fragment
+dEQP-VK.glsl.bfloat16.constant.vertex
 dEQP-VK.glsl.bfloat16.dot.vec2
 dEQP-VK.glsl.bfloat16.dot.vec3
 dEQP-VK.glsl.bfloat16.dot.vec4

@@ -90,11 +90,14 @@ const char *getVecTypeName<tcu::Float16, 4>()
 } // namespace bf16
 
 extern void createBFloat16DotTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *bfloat16);
+extern void createBFloat16ConstantTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *bfloat16);
 
 tcu::TestCaseGroup *createBFloat16Tests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> bfloat16(new tcu::TestCaseGroup(testCtx, "bfloat16", "Tests for bfloat16 type"));
     createBFloat16DotTests(testCtx, bfloat16.operator->());
+    createBFloat16ConstantTests(testCtx, bfloat16.operator->());
+
     return bfloat16.release();
 }
 
