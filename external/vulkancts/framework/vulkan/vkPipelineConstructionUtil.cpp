@@ -1837,6 +1837,7 @@ struct GraphicsPipelineWrapper::InternalData
     VkGraphicsPipelineLibraryCreateInfoEXT pipelinePartLibraryCreateInfo[4];
     VkPipelineLibraryCreateInfoKHR finalPipelineLibraryCreateInfo;
     VkPipelineCreateFlags2CreateInfoKHR pipelinePartFlags2CreateInfo[4];
+    VkPipelineCreateFlags2CreateInfoKHR finalPipelineFlags2CreateInfo;
 #endif
     std::vector<VkDynamicState> pipelinePartDynamicStates[4];
     VkPipelineDynamicStateCreateInfo pipelinePartDynamicStateCreateInfo[4];
@@ -2046,7 +2047,9 @@ struct GraphicsPipelineWrapper::InternalData
 #endif
             pipelinePartDynamicStateCreateInfo[i] = initVulkanStructure();
         }
-
+#ifndef CTS_USES_VULKANSC
+        finalPipelineFlags2CreateInfo = initVulkanStructure();
+#endif
         monolithicPipelineCreateInfo = initVulkanStructure();
     }
 
@@ -4007,7 +4010,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
         if (m_internalData->pipelineFlags2)
         {
             void *firstStructInChain = static_cast<void *>(pointerToCreateInfo);
-            auto &flags2CreateInfo   = m_internalData->pipelinePartFlags2CreateInfo[0];
+            auto &flags2CreateInfo   = m_internalData->finalPipelineFlags2CreateInfo;
             flags2CreateInfo.flags   = m_internalData->pipelineFlags2 | translateCreateFlag(pointerToCreateInfo->flags);
             addToChain(&firstStructInChain, &flags2CreateInfo);
             pointerToCreateInfo->flags = 0u;
