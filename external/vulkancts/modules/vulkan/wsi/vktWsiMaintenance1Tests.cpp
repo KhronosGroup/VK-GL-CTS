@@ -2211,7 +2211,10 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
 
                     if (testParams.scaling == 0)
                     {
-                        swapchainInfo.imageExtent = vk::makeExtent2D(native.windowSize.x(), native.windowSize.y());
+                        const VkSurfaceCapabilitiesKHR currentCapabilities = getPhysicalDeviceSurfaceCapabilities(
+                            instHelper.vki, devHelper.physicalDevice, *surface, nullptr);
+                        swapchainInfo.imageExtent = vk::makeExtent2D(currentCapabilities.minImageExtent.width,
+                                                                     currentCapabilities.minImageExtent.height);
                     }
 
                     swapchainInfo.oldSwapchain = *swapchain;
