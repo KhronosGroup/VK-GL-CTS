@@ -93,7 +93,8 @@ enum OperationType
     OP_COMPACT,
     OP_SERIALIZE,
     OP_UPDATE,
-    OP_UPDATE_IN_PLACE
+    OP_UPDATE_IN_PLACE,
+    OP_UPDATE_UNINITIALIZED
 };
 
 enum class InstanceCullFlags
@@ -939,15 +940,16 @@ public:
     size_t getResultImageFormatSize() override;
     VkClearValue getClearValue() override;
 
-    // two triangles: one in the front we will replace with one in the back after updating
-    // update vertex: build with vertices[0], update vertices with vertices[1]
-    // update index: build with vertices[0], updade indices with indices[1]
     const std::vector<tcu::Vec3> vertices = {
-        tcu::Vec3(0.0f, 0.0f, 0.0f),  tcu::Vec3(0.5f, 0.0f, 0.0f),  tcu::Vec3(0.0f, 0.5f, 0.0f),
-        tcu::Vec3(0.0f, 0.0f, -0.5f), tcu::Vec3(0.5f, 0.0f, -0.5f), tcu::Vec3(0.0f, 0.5f, -0.5f),
+        tcu::Vec3(0.0f, 0.0f, 0.0f),    tcu::Vec3(0.5f, 0.0f, 0.0f),    tcu::Vec3(0.0f, 0.5f, 0.0f),
+        tcu::Vec3(0.0f, 0.0f, -0.5f),   tcu::Vec3(0.5f, 0.0f, -0.5f),   tcu::Vec3(0.0f, 0.5f, -0.5f),
+        tcu::Vec3(-0.9f, -0.9f, 0.0f),  tcu::Vec3(-0.4f, -0.9f, 0.0f),  tcu::Vec3(-0.9f, -0.4f, 0.0f),
+        tcu::Vec3(-0.9f, -0.9f, -0.5f), tcu::Vec3(-0.4f, -0.9f, -0.5f), tcu::Vec3(-0.9f, -0.4f, -0.5f),
     };
 
-    const std::vector<uint32_t> indices = {0, 1, 2};
+    const std::vector<uint32_t> indices = {
+        0, 1, 2, 6, 8, 7,
+    };
 };
 
 std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> UpdateableASConfiguration::
@@ -2201,6 +2203,13 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const uint3
                 topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
                 topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
                 topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bufferProps,
+                                                                     topLevelAccelerationStructure.get(), 0u, 0u);
+                break;
+            }
+            case OP_UPDATE_UNINITIALIZED:
+            {
+                topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
+                topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator,
                                                                      topLevelAccelerationStructure.get(), 0u, 0u);
                 break;
             }
@@ -5062,15 +5071,22 @@ TestStatus ASUpdateInstance::iterate(void)
         {
             for (auto &blas : bottomLevelAccelerationStructures)
             {
-                const std::vector<tcu::Vec3> vertices = {
-                    tcu::Vec3(0.0f, 0.0f, -0.5f), tcu::Vec3(0.5f, 0.0f, -0.5f), tcu::Vec3(0.0f, 0.5f, -0.5f),
-                    tcu::Vec3(0.0f, 0.0f, -0.5f), tcu::Vec3(0.5f, 0.0f, -0.5f), tcu::Vec3(0.0f, 0.5f, -0.5f),
+
+                const std::vector<tcu::Vec3> verticesUpdate = {
+                    tcu::Vec3(0.0f, 0.0f, -0.5f),  tcu::Vec3(0.5f, 0.0f, -0.5f),  tcu::Vec3(0.0f, 0.5f, -0.5f),
+                    tcu::Vec3(0.0f, 0.0f, -0.5f),  tcu::Vec3(0.5f, 0.0f, -0.5f),  tcu::Vec3(0.0f, 0.5f, -0.5f),
+                    tcu::Vec3(-0.8f, 0.8f, -0.5f), tcu::Vec3(-0.3f, 0.8f, -0.5f), tcu::Vec3(-0.8f, 0.3f, -0.5f),
+                    tcu::Vec3(-0.8f, 0.8f, -0.5f), tcu::Vec3(-0.3f, 0.8f, -0.5f), tcu::Vec3(-0.8f, 0.3f, -0.5f),
                 };
-                const std::vector<uint32_t> indices = {0, 1, 2};
+
+                const std::vector<uint32_t> indices = {
+                    0, 1, 2, 6, 8, 7,
+                };
+
                 de::SharedPtr<RaytracedGeometryBase> geometry;
                 geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_data.vertexFormat, m_data.indexType);
 
-                for (auto it = begin(vertices), eit = end(vertices); it != eit; ++it)
+                for (auto it = begin(verticesUpdate), eit = end(verticesUpdate); it != eit; ++it)
                     geometry->addVertex(*it);
 
                 if (m_data.indexType != VK_INDEX_TYPE_NONE_KHR)
@@ -5086,12 +5102,16 @@ TestStatus ASUpdateInstance::iterate(void)
         {
             for (auto &blas : bottomLevelAccelerationStructures)
             {
-                const std::vector<tcu::Vec3> vertices = {
-                    tcu::Vec3(0.0f, 0.0f, 0.0f),  tcu::Vec3(0.5f, 0.0f, 0.0f),  tcu::Vec3(0.0f, 0.5f, 0.0f),
-                    tcu::Vec3(0.0f, 0.0f, -0.5f), tcu::Vec3(0.5f, 0.0f, -0.5f), tcu::Vec3(0.0f, 0.5f, -0.5f),
-                };
 
-                const std::vector<uint32_t> indices = {3, 4, 5};
+                const std::vector<tcu::Vec3> vertices = {
+                    tcu::Vec3(0.0f, 0.0f, 0.0f),    tcu::Vec3(0.5f, 0.0f, 0.0f),    tcu::Vec3(0.0f, 0.5f, 0.0f),
+                    tcu::Vec3(0.0f, 0.0f, -0.5f),   tcu::Vec3(0.5f, 0.0f, -0.5f),   tcu::Vec3(0.0f, 0.5f, -0.5f),
+                    tcu::Vec3(-0.9f, -0.9f, 0.0f),  tcu::Vec3(-0.4f, -0.9f, 0.0f),  tcu::Vec3(-0.9f, -0.4f, 0.0f),
+                    tcu::Vec3(-0.9f, -0.9f, -0.5f), tcu::Vec3(-0.4f, -0.9f, -0.5f), tcu::Vec3(-0.9f, -0.4f, -0.5f),
+                };
+                const std::vector<uint32_t> indicesUpdate = {
+                    3, 4, 5, 3, 10, 9,
+                };
                 de::SharedPtr<RaytracedGeometryBase> geometry;
                 geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_data.vertexFormat, m_data.indexType);
 
@@ -5100,7 +5120,7 @@ TestStatus ASUpdateInstance::iterate(void)
 
                 if (m_data.indexType != VK_INDEX_TYPE_NONE_KHR)
                 {
-                    for (auto it = begin(indices), eit = end(indices); it != eit; ++it)
+                    for (auto it = begin(indicesUpdate), eit = end(indicesUpdate); it != eit; ++it)
                         geometry->addIndex(*it);
                 }
                 blas->updateGeometry(0, geometry);
@@ -5923,6 +5943,7 @@ void addInstanceUpdateTests(tcu::TestCaseGroup *group)
     } operationTypes[] = {
         {OP_UPDATE, "update"},
         {OP_UPDATE_IN_PLACE, "update_in_place"},
+        {OP_UPDATE_UNINITIALIZED, "update_uninitialized"},
     };
 
     auto &ctx = group->getTestContext();

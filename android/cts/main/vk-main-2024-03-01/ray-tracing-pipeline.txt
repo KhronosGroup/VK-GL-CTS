@@ -1,7 +1,9 @@
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.instance_update.cpu_built.update
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.instance_update.cpu_built.update_in_place
+dEQP-VK.ray_tracing_pipeline.acceleration_structures.instance_update.cpu_built.update_uninitialized
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.instance_update.gpu_built.update
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.instance_update.gpu_built.update_in_place
+dEQP-VK.ray_tracing_pipeline.acceleration_structures.instance_update.gpu_built.update_uninitialized
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.update.cpu.indices
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.update.cpu.transform
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.update.cpu.vertices
