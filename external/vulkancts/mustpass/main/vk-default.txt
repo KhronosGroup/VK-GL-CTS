@@ -169,6 +169,7 @@ vk-default/ray-tracing-pipeline.txt
 vk-default/reconvergence.txt
 vk-default/renderpasses.txt
 vk-default/robustness.txt
+vk-default/shader-abort.txt
 vk-default/shader-object/api.txt
 vk-default/shader-object/binary.txt
 vk-default/shader-object/binding.txt

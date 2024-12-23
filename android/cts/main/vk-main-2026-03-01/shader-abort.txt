@@ -1,0 +1,8 @@
+dEQP-VK.shader_abort.basic_termination
+dEQP-VK.shader_abort.empty_message
+dEQP-VK.shader_abort.large_buffer
+dEQP-VK.shader_abort.large_constant
+dEQP-VK.shader_abort.max_message_size
+dEQP-VK.shader_abort.pipeline_binary
+dEQP-VK.shader_abort.pipeline_cache
+dEQP-VK.shader_abort.shader_object

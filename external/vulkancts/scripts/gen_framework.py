@@ -214,6 +214,7 @@ VK_KHR_ray_tracing_position_fetch
 VK_KHR_robustness2
 VK_KHR_shader_abort
 VK_KHR_shader_bfloat16
+VK_KHR_shader_constant_data
 VK_KHR_shader_clock
 VK_KHR_shader_constant_data
 VK_KHR_shader_fma

@@ -121,6 +121,7 @@
 #include "vktRayTracingTests.hpp"
 #include "vktRayQueryTests.hpp"
 #include "vktPostmortemTests.hpp"
+#include "vktPostmortemShaderAbortTests.hpp"
 #include "vktFragmentShadingRateTests.hpp"
 #include "vktReconvergenceTests.hpp"
 #include "vktMeshShaderTests.hpp"
@@ -1474,6 +1475,7 @@ void TestPackage::init(void)
     addRootChild("ray_query", m_caseListFilter, RayQuery::createTests);
     addRootChild("fragment_shading_rate", m_caseListFilter, FragmentShadingRate::createTests);
     addRootChild("reconvergence", m_caseListFilter, Reconvergence::createTests);
+    addRootChild("shader_abort", m_caseListFilter, postmortem::createShaderAbortTests);
     addRootChild("mesh_shader", m_caseListFilter, MeshShader::createTests);
     addRootChild("fragment_shading_barycentric", m_caseListFilter, FragmentShadingBarycentric::createTests);
     // Amber depth pipeline tests

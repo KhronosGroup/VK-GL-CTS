@@ -18,6 +18,10 @@ set(DEQP_VK_POSTMORTEM_SRCS
 	vktPostmortemDeviceFaultTests.hpp
 	vktPostmortemDeviceLossTests.cpp
 	vktPostmortemDeviceLossTests.hpp
+	vktPostmortemShaderAbortTests.hpp
+	vktPostmortemShaderAbortTests.cpp
+	vktPostmortemTestsUtils.hpp
+	vktPostmortemTestsUtils.cpp
 )
 
 set(DEQP_VK_POSTMORTEM_LIBS

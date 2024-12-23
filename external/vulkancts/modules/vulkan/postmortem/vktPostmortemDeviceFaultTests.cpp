@@ -24,6 +24,7 @@
 #include "vktPostmortemDeviceFaultTests.hpp"
 #include "vkQueryUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#include "vktPostmortemTestsUtils.hpp"
 
 #include "deStringUtil.hpp"
 #include "vkDefs.hpp"
@@ -239,110 +240,10 @@ public:
     {
     }
 
-    struct Header : VkDeviceFaultVendorBinaryHeaderVersionOneEXT
-    {
-        char applicationName[32];
-        char engineName[32];
-        Header()
-        {
-            headerSize    = sizeof(VkDeviceFaultVendorBinaryHeaderVersionOneEXT);
-            headerVersion = VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_ONE_EXT;
-            vendorID      = 0x9876;
-            deviceID      = 0x5432;
-            driverVersion = VK_MAKE_VERSION(3, 4, 5);
-            deMemcpy(pipelineCacheUUID, this, sizeof(pipelineCacheUUID));
-            applicationNameOffset = uint32_t(sizeof(VkDeviceFaultVendorBinaryHeaderVersionOneEXT));
-            applicationVersion    = VK_MAKE_API_VERSION(1, 7, 3, 11);
-            engineNameOffset      = uint32_t(applicationNameOffset + sizeof(applicationName));
-
-            strcpy(applicationName, "application.exe");
-            strcpy(engineName, "driver.so.3.4.5");
-        }
-    };
-
-    virtual VkResult getDeviceFaultInfoEXT(VkDevice, VkDeviceFaultCountsEXT *pFaultCounts,
+    virtual VkResult getDeviceFaultInfoEXT(VkDevice device, VkDeviceFaultCountsEXT *pFaultCounts,
                                            VkDeviceFaultInfoEXT *pFaultInfo) const override
     {
-        static std::vector<VkDeviceFaultAddressInfoEXT> addressInfos;
-        static std::vector<VkDeviceFaultVendorInfoEXT> vendorInfos;
-        static VkDeviceFaultAddressTypeEXT addressTypes[]{
-            VK_DEVICE_FAULT_ADDRESS_TYPE_NONE_EXT,
-            VK_DEVICE_FAULT_ADDRESS_TYPE_READ_INVALID_EXT,
-            VK_DEVICE_FAULT_ADDRESS_TYPE_WRITE_INVALID_EXT,
-            VK_DEVICE_FAULT_ADDRESS_TYPE_EXECUTE_INVALID_EXT,
-            VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_UNKNOWN_EXT,
-            VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_INVALID_EXT,
-            VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_FAULT_EXT,
-        };
-        static VkDeviceSize addressPrecisions[]{2, 4, 8, 16};
-        static uint64_t vendorFaultCodes[]{0x11223344, 0x22334455, 0xAABBCCDD, 0xCCDDEEFF};
-        static Header vendorBinaryData;
-
-        if (nullptr == pFaultInfo)
-        {
-            if (nullptr == pFaultCounts)
-                return VK_ERROR_UNKNOWN;
-
-            DE_ASSERT(pFaultCounts->sType == VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT);
-            DE_ASSERT(pFaultCounts->pNext == nullptr);
-
-            pFaultCounts->vendorBinarySize = sizeof(Header);
-            pFaultCounts->vendorInfoCount  = 2;
-            pFaultCounts->addressInfoCount = 2;
-        }
-        else
-        {
-            DE_ASSERT(pFaultCounts);
-            DE_ASSERT(pFaultCounts->sType == VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT);
-            DE_ASSERT(pFaultCounts->pNext == nullptr);
-            DE_ASSERT(pFaultInfo->sType == VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_EXT);
-            DE_ASSERT(pFaultInfo->pNext == nullptr);
-
-            if (pFaultCounts->addressInfoCount && pFaultInfo->pAddressInfos)
-            {
-                VkDeviceAddress deviceAddress = 1024;
-                addressInfos.resize(pFaultCounts->addressInfoCount);
-                for (uint32_t i = 0; i < pFaultCounts->addressInfoCount; ++i)
-                {
-                    VkDeviceFaultAddressInfoEXT &info = addressInfos[i];
-                    info.addressType                  = addressTypes[i % ARRAY_LENGTH(addressTypes)];
-                    info.addressPrecision             = addressPrecisions[i % ARRAY_LENGTH(addressPrecisions)];
-                    info.reportedAddress              = deviceAddress;
-                    deviceAddress <<= 1;
-
-                    pFaultInfo->pAddressInfos[i] = info;
-                }
-            }
-
-            if (pFaultCounts->vendorInfoCount && pFaultInfo->pVendorInfos)
-            {
-                vendorInfos.resize(pFaultCounts->vendorInfoCount);
-                for (uint32_t i = 0; i < pFaultCounts->vendorInfoCount; ++i)
-                {
-                    VkDeviceFaultVendorInfoEXT &info = vendorInfos[i];
-                    info.vendorFaultCode             = vendorFaultCodes[i % ARRAY_LENGTH(vendorFaultCodes)];
-                    info.vendorFaultData             = (i + 1) % ARRAY_LENGTH(vendorFaultCodes);
-                    deMemset(info.description, 0, sizeof(info.description));
-
-                    std::stringstream s;
-                    s << "VendorFaultDescription" << info.vendorFaultData;
-                    s.sync();
-                    const auto &str = s.str();
-                    deMemcpy(info.description, str.c_str(), str.length());
-
-                    pFaultInfo->pVendorInfos[i] = info;
-                }
-            }
-
-            if (pFaultCounts->vendorBinarySize && pFaultInfo->pVendorBinaryData)
-            {
-                DE_ASSERT(pFaultCounts->vendorBinarySize >= sizeof(VkDeviceFaultVendorBinaryHeaderVersionOneEXT));
-                deMemcpy(pFaultInfo->pVendorBinaryData, &vendorBinaryData,
-                         deMaxu32(sizeof(Header), uint32_t(pFaultCounts->vendorBinarySize)));
-            }
-        }
-
-        return VK_SUCCESS;
+        return vkt::postmortem::getDeviceFaultInfoKHR(device, pFaultCounts, pFaultInfo);
     }
 };
 

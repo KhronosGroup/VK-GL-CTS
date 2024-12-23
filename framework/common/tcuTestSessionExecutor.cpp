@@ -79,7 +79,7 @@ TestSessionExecutor::TestSessionExecutor(TestPackageRoot &root, TestContext &tes
             the group name is part of another test name being run, it will be misinterpreted
             as the name of a group of tests to be run in subprocesses.
     */
-    , m_subprocessTestExecutor(testCtx, {"dEQP-VK.postmortem.device_fault"})
+    , m_subprocessTestExecutor(testCtx, {"dEQP-VK.postmortem.device_fault", "dEQP-VK.shader_abort"})
 {
 }
 
