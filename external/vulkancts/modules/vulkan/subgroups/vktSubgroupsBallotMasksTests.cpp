@@ -1358,13 +1358,14 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 return subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr, checkComputeOrMesh);
         }
 
+        // gl_SubGroup*MaskARB are uint64_t, so we limit max subgroup size to 64 for this test
+        uint32_t maxSubgroupSize = min(subgroupSizeControlProperties.maxSubgroupSize, 64U);
+
         log << TestLog::Message << "Testing required subgroup size range ["
-            << subgroupSizeControlProperties.minSubgroupSize << ", " << subgroupSizeControlProperties.maxSubgroupSize
-            << "]" << TestLog::EndMessage;
+            << subgroupSizeControlProperties.minSubgroupSize << ", " << maxSubgroupSize << "]" << TestLog::EndMessage;
 
         // According to the spec, requiredSubgroupSize must be a power-of-two integer.
-        for (uint32_t size = subgroupSizeControlProperties.minSubgroupSize;
-             size <= subgroupSizeControlProperties.maxSubgroupSize; size *= 2)
+        for (uint32_t size = subgroupSizeControlProperties.minSubgroupSize; size <= maxSubgroupSize; size *= 2)
         {
             TestStatus result(QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
 
