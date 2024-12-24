@@ -294,7 +294,7 @@ class VulkanVideoSession : public VkVideoRefCountBase
 {
     enum
     {
-        MAX_BOUND_MEMORY = 9
+        MAX_BOUND_MEMORY = 40
     };
 
 public:
