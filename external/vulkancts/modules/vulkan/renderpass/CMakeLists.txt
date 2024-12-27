@@ -30,6 +30,8 @@ set(DEQP_VK_VKSC_RENDER_PASS_SRCS
 	vktRenderPassUnusedClearAttachmentTests.hpp
 	vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.cpp
 	vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.hpp
+	vktRenderPassRemainingArrayLayersTests.cpp
+	vktRenderPassRemainingArrayLayersTests.hpp
 	)
 
 set(DEQP_VK_RENDER_PASS_SRCS

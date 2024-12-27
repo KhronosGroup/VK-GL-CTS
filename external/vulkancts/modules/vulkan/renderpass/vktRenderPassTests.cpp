@@ -49,6 +49,7 @@
 #include "vktDynamicRenderingRandomTests.hpp"
 #include "vktRenderPassDitheringTests.hpp"
 #include "vktDynamicRenderingUnusedAttachmentsTests.hpp"
+#include "vktRenderPassRemainingArrayLayersTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -8455,6 +8456,11 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
             renderingTests->addChild(createNestedCommandBufferTests(testCtx, groupParams));
 #endif // CTS_USES_VULKANSC
         }
+    }
+
+    if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+    {
+        renderingTests->addChild(createRenderPassRemainingArrayLayersTests(testCtx, groupParams));
     }
 
     renderingTests->addChild(suballocationTestGroup.release());
