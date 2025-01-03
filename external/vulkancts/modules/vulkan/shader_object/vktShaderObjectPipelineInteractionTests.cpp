@@ -488,7 +488,9 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
     const vk::VkPipelineDynamicStateCreateInfo *pipelineDynamicState =
         (createDynamicPipeline) ? &dynamicStateCreateInfo : DE_NULL;
 
-    const vk::VkDeviceSize bufferSizeBytes = sizeof(uint32_t) * 4;
+    const uint32_t local_size_x            = 16u;
+    const uint32_t dispatch_x_count        = 4u;
+    const vk::VkDeviceSize bufferSizeBytes = sizeof(uint32_t) * dispatch_x_count * local_size_x;
 
     const vk::Unique<vk::VkDescriptorSet> descriptorSet(
         makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
@@ -644,7 +646,7 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
 
         vk::VkShaderStageFlagBits stages[] = {vk::VK_SHADER_STAGE_COMPUTE_BIT};
         vk.cmdBindShadersEXT(*cmdBuffer, 1, stages, &*compShader);
-        vk.cmdDispatch(*cmdBuffer, 4, 1, 1);
+        vk.cmdDispatch(*cmdBuffer, dispatch_x_count, 1, 1);
 
         vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL,
                            vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
@@ -665,7 +667,7 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         vk::endRendering(vk, *cmdBuffer);
 
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
-        vk.cmdDispatch(*cmdBuffer, 4, 1, 1);
+        vk.cmdDispatch(*cmdBuffer, dispatch_x_count, 1, 1);
     }
 
     if (m_params.testType != COMPUTE_SHADER_OBJECT_MIN_PIPELINE && m_params.testType != SHADER_OBJECT_COMPUTE_PIPELINE)
