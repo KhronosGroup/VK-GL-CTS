@@ -390,8 +390,9 @@ public:
     DGCShaderExt(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkShaderStageFlagBits stage,
                  vk::VkShaderCreateFlagsEXT shaderFlags, const vk::ProgramBinary &shaderBinary,
                  const std::vector<vk::VkDescriptorSetLayout> &setLayouts,
-                 const std::vector<vk::VkPushConstantRange> &pushConstantRanges,
-                 const vk::VkSpecializationInfo *specializationInfo = nullptr, const void *pNext = nullptr);
+                 const std::vector<vk::VkPushConstantRange> &pushConstantRanges, bool tessellationFeature,
+                 bool geometryFeature, const vk::VkSpecializationInfo *specializationInfo = nullptr,
+                 const void *pNext = nullptr);
 
     virtual ~DGCShaderExt()
     {
@@ -418,8 +419,9 @@ protected:
     void init(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkShaderStageFlagBits stage,
               vk::VkShaderCreateFlagsEXT shaderFlags, const vk::ProgramBinary &shaderBinary,
               const std::vector<vk::VkDescriptorSetLayout> &setLayouts,
-              const std::vector<vk::VkPushConstantRange> &pushConstantRanges,
-              const vk::VkSpecializationInfo *specializationInfo = nullptr, const void *pNext = nullptr);
+              const std::vector<vk::VkPushConstantRange> &pushConstantRanges, bool tessellationFeature,
+              bool geometryFeature, const vk::VkSpecializationInfo *specializationInfo = nullptr,
+              const void *pNext = nullptr);
 
     vk::Move<vk::VkShaderEXT> m_shader;
 };
