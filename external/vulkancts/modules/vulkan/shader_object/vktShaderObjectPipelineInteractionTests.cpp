@@ -396,7 +396,11 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_ADVANCED_EXT);
     if (extensionEnabled(deviceExtensions, "VK_EXT_conservative_rasterization") &&
         eds3Features.extendedDynamicState3ConservativeRasterizationMode)
+    {
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT);
+        // // VUID-VkGraphicsPipelineCreateInfo-pDynamicState-09639
+        // dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT);
+    }
     if (extensionEnabled(deviceExtensions, "VK_NV_framebuffer_mixed_samples") &&
         eds3Features.extendedDynamicState3CoverageModulationMode)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COVERAGE_MODULATION_MODE_NV);
@@ -478,6 +482,40 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
     if (extensionEnabled(deviceExtensions, "VK_EXT_attachment_feedback_loop_dynamic_state"))
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT);
 
+    vk::VkPipelineRasterizationStateCreateInfo *rasterizationStateCreateInfoDefault = nullptr;
+
+    if (extensionEnabled(deviceExtensions, "VK_EXT_conservative_rasterization") &&
+        eds3Features.extendedDynamicState3ConservativeRasterizationMode)
+    {
+        vk::VkPipelineRasterizationConservativeStateCreateInfoEXT rasterizationConservativeStateCreateInfo = {
+            vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT, //  VkStructureType sType;
+            nullptr,                                                                         //  const void* pNext;
+            (vk::VkPipelineRasterizationConservativeStateCreateFlagsEXT)0, //  VkPipelineRasterizationConservativeStateCreateFlagsEXT flags;
+            vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT, //  VkConservativeRasterizationModeEXT conservativeRasterizationMode;
+            0.0f                                                 //  float extraPrimitiveOverestimationSize;
+        };
+
+        vk::VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
+            vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                            sType
+            //nullptr,                             // const void*                                pNext
+            &rasterizationConservativeStateCreateInfo, // const void*                                pNext
+            0u,                                        // VkPipelineRasterizationStateCreateFlags    flags
+            VK_FALSE,                                  // VkBool32                                   depthClampEnable
+            VK_FALSE,                            // VkBool32                                   rasterizerDiscardEnable
+            vk::VK_POLYGON_MODE_FILL,            // VkPolygonMode                              polygonMode
+            vk::VK_CULL_MODE_NONE,               // VkCullModeFlags                            cullMode
+            vk::VK_FRONT_FACE_COUNTER_CLOCKWISE, // VkFrontFace                                frontFace
+            VK_FALSE,                            // VkBool32                                   depthBiasEnable
+            0.0f,                                // float                                      depthBiasConstantFactor
+            0.0f,                                // float                                      depthBiasClamp
+            0.0f,                                // float                                      depthBiasSlopeFactor
+            1.0f                                 // float                                      lineWidth
+        };
+
+        // VUID-VkGraphicsPipelineCreateInfo-pDynamicState-09639(
+        rasterizationStateCreateInfoDefault = &rasterizationStateCreateInfo;
+    }
+
     const vk::VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType sType;
         nullptr,                                                  // const void* pNext;
@@ -514,21 +552,24 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         renderPassHandle             = *renderPass;
     }
 
-    const auto pipeline1 = makeGraphicsPipeline(
-        vk, device, pipelineLayout.get(), vertShaderModule1.get(), tescShaderModule.get(), teseShaderModule.get(),
-        geomShaderModule.get(), fragShaderModule1.get(), renderPassHandle, 0u, &vertexInputStateParams,
-        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, nullptr, nullptr, nullptr,
-        nullptr, pipelineDynamicState, pPipelineRenderingCreateInfo);
-    const auto pipeline2 = makeGraphicsPipeline(
-        vk, device, pipelineLayout.get(), vertShaderModule2.get(), tescShaderModule.get(), teseShaderModule.get(),
-        geomShaderModule.get(), fragShaderModule2.get(), renderPassHandle, 0u, &vertexInputStateParams,
-        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, nullptr, nullptr, nullptr,
-        nullptr, pipelineDynamicState, pPipelineRenderingCreateInfo);
-    const auto pipeline3 = makeGraphicsPipeline(
-        vk, device, pipelineLayout.get(), vertShaderModule3.get(), tescShaderModule.get(), teseShaderModule.get(),
-        geomShaderModule.get(), fragShaderModule3.get(), renderPassHandle, 0u, &vertexInputStateParams,
-        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, nullptr, nullptr, nullptr,
-        nullptr, pipelineDynamicState, pPipelineRenderingCreateInfo);
+    const auto pipeline1 =
+        makeGraphicsPipeline(vk, device, pipelineLayout.get(), vertShaderModule1.get(), tescShaderModule.get(),
+                             teseShaderModule.get(), geomShaderModule.get(), fragShaderModule1.get(), renderPassHandle,
+                             0u, &vertexInputStateParams, &pipelineInputAssemblyStateInfo, &tessStateCreateInfo,
+                             &viewportStateCreateInfo, rasterizationStateCreateInfoDefault, nullptr, nullptr, nullptr,
+                             pipelineDynamicState, pPipelineRenderingCreateInfo);
+    const auto pipeline2 =
+        makeGraphicsPipeline(vk, device, pipelineLayout.get(), vertShaderModule2.get(), tescShaderModule.get(),
+                             teseShaderModule.get(), geomShaderModule.get(), fragShaderModule2.get(), renderPassHandle,
+                             0u, &vertexInputStateParams, &pipelineInputAssemblyStateInfo, &tessStateCreateInfo,
+                             &viewportStateCreateInfo, rasterizationStateCreateInfoDefault, nullptr, nullptr, nullptr,
+                             pipelineDynamicState, pPipelineRenderingCreateInfo);
+    const auto pipeline3 =
+        makeGraphicsPipeline(vk, device, pipelineLayout.get(), vertShaderModule3.get(), tescShaderModule.get(),
+                             teseShaderModule.get(), geomShaderModule.get(), fragShaderModule3.get(), renderPassHandle,
+                             0u, &vertexInputStateParams, &pipelineInputAssemblyStateInfo, &tessStateCreateInfo,
+                             &viewportStateCreateInfo, rasterizationStateCreateInfoDefault, nullptr, nullptr, nullptr,
+                             pipelineDynamicState, pPipelineRenderingCreateInfo);
     const auto computePipeline =
         vk::makeComputePipeline(vk, device, computePipelineLayout.get(), compShaderModule.get());
 
@@ -582,6 +623,13 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline1);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
+        //  VUID-vkCmdDraw-None-07630
+        if (extensionEnabled(deviceExtensions, "VK_EXT_conservative_rasterization") &&
+            eds3Features.extendedDynamicState3ConservativeRasterizationMode)
+        {
+            vk.cmdSetRasterizationStreamEXT(*cmdBuffer, 0);
+        }
+
         vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader2, *tescShader, *teseShader, *geomShader, *fragShader2,
                                 taskSupported, meshSupported);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
@@ -597,6 +645,13 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
 
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline2);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
+
+        //  VUID-vkCmdDraw-None-07630
+        if (extensionEnabled(deviceExtensions, "VK_EXT_conservative_rasterization") &&
+            eds3Features.extendedDynamicState3ConservativeRasterizationMode)
+        {
+            vk.cmdSetRasterizationStreamEXT(*cmdBuffer, 0);
+        }
 
         vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader3, *tescShader, *teseShader, *geomShader, *fragShader3,
                                 taskSupported, meshSupported);
