@@ -707,11 +707,15 @@ PreprocessBufferExt::PreprocessBufferExt(const DeviceInterface &vkd, VkDevice de
     // Save the original required size. This is used by getSize() and others.
     m_size = origMemReqs.size;
 
+    // Align the requested offset to a multiple of the required alignment.
+    if (offset > 0ull)
+        m_offset = de::roundUp(offset, origMemReqs.alignment);
+
     if (needed())
     {
-        // Take into account the requested offset when allocating memory and saving the device address.
-        const VkMemoryRequirements allocationReqs = {m_size + offset, origMemReqs.alignment,
-                                                     origMemReqs.memoryTypeBits};
+        // Calculate total buffer size based on the requested size and offset.
+        const VkDeviceSize preprocessSize = m_size + m_offset;
+
         const VkBufferUsageFlags2KHR bufferUsage =
             (VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR | VK_BUFFER_USAGE_2_PREPROCESS_BUFFER_BIT_EXT);
 
@@ -722,18 +726,37 @@ PreprocessBufferExt::PreprocessBufferExt(const DeviceInterface &vkd, VkDevice de
         };
 
         const VkBufferCreateInfo preprocessBufferCreateInfo = {
-            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, //	VkStructureType		sType;
-            &usageFlags2CreateInfo,               //	const void*			pNext;
-            0u,                                   //	VkBufferCreateFlags	flags;
-            allocationReqs.size,                  //	VkDeviceSize		size;
-            0u,                                   //	VkBufferUsageFlags	usage;
-            VK_SHARING_MODE_EXCLUSIVE,            //	VkSharingMode		sharingMode;
-            0u,                                   //	uint32_t			queueFamilyIndexCount;
-            nullptr,                              //	const uint32_t*		pQueueFamilyIndices;
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
+            &usageFlags2CreateInfo,               // const void* pNext;
+            0u,                                   // VkBufferCreateFlags flags;
+            preprocessSize,                       // VkDeviceSize size;
+            0u,                                   // VkBufferUsageFlags usage;
+            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
+            0u,                                   // uint32_t queueFamilyIndexCount;
+            nullptr,                              // const uint32_t* pQueueFamilyIndices;
         };
 
-        m_buffer           = createBuffer(vkd, device, &preprocessBufferCreateInfo);
-        m_bufferAllocation = allocator.allocate(allocationReqs, MemoryRequirement::DeviceAddress);
+        m_buffer = createBuffer(vkd, device, &preprocessBufferCreateInfo);
+
+        VkMemoryRequirements bufferMemReqs;
+        vkd.getBufferMemoryRequirements(device, *m_buffer, &bufferMemReqs);
+
+        // The buffer, created for preprocessing with the corresponding usage flags, should not have a required size
+        // that's smaller than the original size.
+        if (bufferMemReqs.size < preprocessSize)
+            TCU_FAIL("DGC memory requirements size larger than preprocess buffer requirements size");
+
+        // The buffer alignment requirement must not be lower than the DGC alignment requirement.
+        if (bufferMemReqs.alignment < origMemReqs.alignment)
+            TCU_FAIL("DGC alignment requirement larger than preprocess buffer alignment requirement");
+
+        // Find the largest alignment of the two.
+        bufferMemReqs.alignment = de::lcm(bufferMemReqs.alignment, origMemReqs.alignment);
+
+        // Find the common memory types.
+        bufferMemReqs.memoryTypeBits &= origMemReqs.memoryTypeBits;
+
+        m_bufferAllocation = allocator.allocate(bufferMemReqs, MemoryRequirement::DeviceAddress);
         VK_CHECK(
             vkd.bindBufferMemory(device, *m_buffer, m_bufferAllocation->getMemory(), m_bufferAllocation->getOffset()));
 
@@ -742,7 +765,9 @@ PreprocessBufferExt::PreprocessBufferExt(const DeviceInterface &vkd, VkDevice de
             nullptr,                                      //	const void*		pNext;
             *m_buffer,                                    //	VkBuffer		buffer;
         };
-        m_deviceAddress = vkd.getBufferDeviceAddress(device, &deviceAddressInfo) + offset;
+
+        // Take the offset into account when calculating the base device address.
+        m_deviceAddress = vkd.getBufferDeviceAddress(device, &deviceAddressInfo) + m_offset;
     }
 }
 
@@ -832,12 +857,13 @@ VkPipeline DGCComputePipelineExt::operator*(void) const
 DGCShaderExt::DGCShaderExt(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkShaderStageFlagBits stage,
                            vk::VkShaderCreateFlagsEXT shaderFlags, const vk::ProgramBinary &shaderBinary,
                            const std::vector<vk::VkDescriptorSetLayout> &setLayouts,
-                           const std::vector<vk::VkPushConstantRange> &pushConstantRanges,
-                           const vk::VkSpecializationInfo *specializationInfo, const void *pNext)
+                           const std::vector<vk::VkPushConstantRange> &pushConstantRanges, bool tessellationFeature,
+                           bool geometryFeature, const vk::VkSpecializationInfo *specializationInfo, const void *pNext)
 
     : m_shader()
 {
-    init(vkd, device, stage, shaderFlags, shaderBinary, setLayouts, pushConstantRanges, specializationInfo, pNext);
+    init(vkd, device, stage, shaderFlags, shaderBinary, setLayouts, pushConstantRanges, tessellationFeature,
+         geometryFeature, specializationInfo, pNext);
 }
 
 DGCShaderExt::DGCShaderExt(void) : m_shader()
@@ -847,8 +873,8 @@ DGCShaderExt::DGCShaderExt(void) : m_shader()
 void DGCShaderExt::init(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkShaderStageFlagBits stage,
                         vk::VkShaderCreateFlagsEXT shaderFlags, const vk::ProgramBinary &shaderBinary,
                         const std::vector<vk::VkDescriptorSetLayout> &setLayouts,
-                        const std::vector<vk::VkPushConstantRange> &pushConstantRanges,
-                        const vk::VkSpecializationInfo *specializationInfo, const void *pNext)
+                        const std::vector<vk::VkPushConstantRange> &pushConstantRanges, bool tessellationFeature,
+                        bool geometryFeature, const vk::VkSpecializationInfo *specializationInfo, const void *pNext)
 {
     if (shaderBinary.getFormat() != PROGRAM_FORMAT_SPIRV)
         TCU_THROW(InternalError, "Program format not supported");
@@ -856,12 +882,46 @@ void DGCShaderExt::init(const vk::DeviceInterface &vkd, vk::VkDevice device, vk:
     // Make sure not to forget the mandatory flag.
     const auto createFlags = (shaderFlags | VK_SHADER_CREATE_INDIRECT_BINDABLE_BIT_EXT);
 
+    VkShaderStageFlags nextStage = 0u;
+    switch (stage)
+    {
+    case VK_SHADER_STAGE_VERTEX_BIT:
+        if (tessellationFeature)
+            nextStage |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        if (geometryFeature)
+            nextStage |= VK_SHADER_STAGE_GEOMETRY_BIT;
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+        DE_ASSERT(tessellationFeature);
+        nextStage |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        break;
+    case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+        DE_ASSERT(tessellationFeature);
+        if (geometryFeature)
+            nextStage |= VK_SHADER_STAGE_GEOMETRY_BIT;
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    case VK_SHADER_STAGE_GEOMETRY_BIT:
+        DE_ASSERT(geometryFeature);
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    case VK_SHADER_STAGE_TASK_BIT_EXT:
+        nextStage |= VK_SHADER_STAGE_MESH_BIT_EXT;
+        break;
+    case VK_SHADER_STAGE_MESH_BIT_EXT:
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    default:
+        break;
+    }
+
     const VkShaderCreateInfoEXT shaderCreateInfo = {
         VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, //	VkStructureType					sType;
         pNext,                                    //	const void*						pNext;
         createFlags,                              //	VkShaderCreateFlagsEXT			flags;
         stage,                                    //	VkShaderStageFlagBits			stage;
-        0u,                                       //	VkShaderStageFlags				nextStage;
+        nextStage,                                //	VkShaderStageFlags				nextStage;
         VK_SHADER_CODE_TYPE_SPIRV_EXT,            //	VkShaderCodeTypeEXT				codeType;
         shaderBinary.getSize(),                   //	size_t							codeSize;
         shaderBinary.getBinary(),                 //	const void*						pCode;
@@ -893,8 +953,8 @@ DGCComputeShaderExt::DGCComputeShaderExt(const vk::DeviceInterface &vkd, vk::VkD
 
     const auto pNext = (subgroupSize > 0u ? &subgroupSizeInfo : nullptr);
 
-    init(vkd, device, VK_SHADER_STAGE_COMPUTE_BIT, shaderFlags, shaderBinary, setLayouts, pushConstantRanges,
-         specializationInfo, pNext);
+    init(vkd, device, VK_SHADER_STAGE_COMPUTE_BIT, shaderFlags, shaderBinary, setLayouts, pushConstantRanges, false,
+         false, specializationInfo, pNext);
 }
 
 namespace

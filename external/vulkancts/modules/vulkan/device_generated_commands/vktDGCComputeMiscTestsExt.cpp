@@ -418,8 +418,14 @@ tcu::TestStatus manyExecutesRun(Context &context, ManyDispatchesParams params)
 
             preprocessBufferCreateInfo.pNext = &usageFlags2CreateInfo;
 
-            preprocessBuffer      = createBuffer(ctx.vkd, ctx.device, &preprocessBufferCreateInfo);
-            preprocessBufferAlloc = ctx.allocator.allocate(preprocessBufferReqs, MemoryRequirement::DeviceAddress);
+            preprocessBuffer = createBuffer(ctx.vkd, ctx.device, &preprocessBufferCreateInfo);
+
+            VkMemoryRequirements bufferMemReqs;
+            ctx.vkd.getBufferMemoryRequirements(ctx.device, *preprocessBuffer, &bufferMemReqs);
+            bufferMemReqs.memoryTypeBits &= preprocessBufferReqs.memoryTypeBits;
+            bufferMemReqs.alignment = de::lcm(bufferMemReqs.alignment, preprocessBufferReqs.alignment);
+
+            preprocessBufferAlloc = ctx.allocator.allocate(bufferMemReqs, MemoryRequirement::DeviceAddress);
             VK_CHECK(ctx.vkd.bindBufferMemory(ctx.device, *preprocessBuffer, preprocessBufferAlloc->getMemory(),
                                               preprocessBufferAlloc->getOffset()));
 

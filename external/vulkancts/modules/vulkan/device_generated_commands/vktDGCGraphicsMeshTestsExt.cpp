@@ -568,12 +568,28 @@ Move<VkShaderEXT> makeShaderExt(const vk::DeviceInterface &vkd, vk::VkDevice dev
     if (shaderBinary.getFormat() != PROGRAM_FORMAT_SPIRV)
         TCU_THROW(InternalError, "Program format not supported");
 
+    VkShaderStageFlags nextStage = 0u;
+    switch (stage)
+    {
+    case VK_SHADER_STAGE_TASK_BIT_EXT:
+        nextStage |= VK_SHADER_STAGE_MESH_BIT_EXT;
+        break;
+    case VK_SHADER_STAGE_MESH_BIT_EXT:
+        nextStage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    case VK_SHADER_STAGE_FRAGMENT_BIT:
+        break;
+    default:
+        DE_ASSERT(false);
+        break;
+    }
+
     const VkShaderCreateInfoEXT shaderCreateInfo = {
         VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, //	VkStructureType					sType;
         nullptr,                                  //	const void*						pNext;
         shaderFlags,                              //	VkShaderCreateFlagsEXT			flags;
         stage,                                    //	VkShaderStageFlagBits			stage;
-        0u,                                       //	VkShaderStageFlags				nextStage;
+        nextStage,                                //	VkShaderStageFlags				nextStage;
         VK_SHADER_CODE_TYPE_SPIRV_EXT,            //	VkShaderCodeTypeEXT				codeType;
         shaderBinary.getSize(),                   //	size_t							codeSize;
         shaderBinary.getBinary(),                 //	const void*						pCode;
@@ -843,19 +859,20 @@ tcu::TestStatus DGCMeshDrawInstance::iterate(void)
             {
                 const auto name = "mesh" + std::to_string(i);
                 meshDGCShaders.emplace_back(new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_MESH_BIT_EXT,
-                                                             meshFlags, binaries.get(name), setLayouts, pcRanges));
+                                                             meshFlags, binaries.get(name), setLayouts, pcRanges, false,
+                                                             false));
             }
             for (uint32_t i = 0u; i < m_params.getFragShaderCount(); ++i)
             {
                 const auto name = "frag" + std::to_string(i);
                 fragDGCShaders.emplace_back(new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_FRAGMENT_BIT, 0u,
-                                                             binaries.get(name), setLayouts, pcRanges));
+                                                             binaries.get(name), setLayouts, pcRanges, false, false));
             }
             for (uint32_t i = 0u; i < m_params.getTaskShaderCount(); ++i)
             {
                 const auto name = "task" + std::to_string(i);
                 taskDGCShaders.emplace_back(new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_TASK_BIT_EXT, 0u,
-                                                             binaries.get(name), setLayouts, pcRanges));
+                                                             binaries.get(name), setLayouts, pcRanges, false, false));
             }
         }
         else
