@@ -3440,6 +3440,15 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams 
     const bool hasDepth                 = tcu::hasDepthComponent(mapVkFormat(m_params.dst.image.format).order);
     const bool hasStencil               = tcu::hasStencilComponent(mapVkFormat(m_params.dst.image.format).order);
 
+    // As copying depth/stencil requires queue that supports graphics operations we need to throw NotSupported for compute only implementations
+    {
+        const bool isComputeOnly = m_context.getTestContext().getCommandLine().isComputeOnly();
+        if (isComputeOnly)
+        {
+            TCU_THROW(NotSupportedError, "Universal queue does not support graphics operations.");
+        }
+    }
+
     if (!isSupportedDepthStencilFormat(vki, vkPhysDevice, testParams.dst.image.format))
     {
         TCU_THROW(NotSupportedError, "Image format not supported.");
